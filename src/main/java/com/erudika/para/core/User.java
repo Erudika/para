@@ -35,7 +35,6 @@ public class User extends PObject implements UserDetails{
 			return this.name().toLowerCase();
 		}
 	}
-
 	
 	@Stored @Locked @NotBlank private String identifier;
 	@Stored @Locked @NotBlank private String groups;

@@ -564,7 +564,7 @@ public class CasDAO {
 //
 //	public Long getBeanCount(String classtype){
 ////		return getCounterColumn(classtype);
-//		return AppListener.searchClient.prepareCount(Utils.INDEX_NAME).
+//		return AppListener.getSearchClient().prepareCount(Utils.INDEX_NAME).
 //				setTypes(classtype).execute().actionGet().count();
 //	}
 ////

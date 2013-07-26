@@ -15,14 +15,18 @@ import com.amazonaws.services.dynamodbv2.model.KeysAndAttributes;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.AttributeValueUpdate;
 import com.amazonaws.services.dynamodbv2.model.BatchGetItemRequest;
+import com.amazonaws.services.dynamodbv2.model.BatchWriteItemRequest;
+import com.amazonaws.services.dynamodbv2.model.BatchWriteItemResult;
 import com.amazonaws.services.dynamodbv2.model.DeleteItemRequest;
+import com.amazonaws.services.dynamodbv2.model.DeleteRequest;
 import com.amazonaws.services.dynamodbv2.model.PutItemRequest;
+import com.amazonaws.services.dynamodbv2.model.PutRequest;
 import com.amazonaws.services.dynamodbv2.model.ReturnConsumedCapacity;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.dynamodbv2.model.UpdateItemRequest;
+import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.erudika.para.core.PObject;
-import static com.erudika.para.utils.Utils.getClassname;
 import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.Map.Entry;
@@ -34,6 +38,7 @@ import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
 
 /**
  *
@@ -46,12 +51,12 @@ public class DAO {
 	private static DAO dao;
 	
 	//////////  DB CONFIG  ////////////// 
-	public static final String TABLE_PREFIX = Utils.PRODUCT_NAME.toLowerCase().concat("-");
+	public static final String TABLE_PREFIX = Utils.PRODUCT_NAME_NS.concat("-");
 	public static final String ENDPOINT = "dynamodb.".concat(Utils.AWS_REGION).concat(".amazonaws.com");
 	////////////////////////////////////
 	
 	//////////  DB TABLES  ////////////// 
-	public static final String OBJECTS = TABLE_PREFIX + "objects";
+	public static final String OBJECTS = TABLE_PREFIX.concat("objects");
 //	public static final String VOTES = "Votes";
 //	public static final String LOCALES_TRANSLATIONS = "LocalesTranslations";
 //	public static final String APPROVED_TRANSLATIONS = "ApprovedTranslations";
@@ -71,11 +76,14 @@ public class DAO {
 	public static final String CN_TOKEN = "token";
 	public static final String CN_KEY = "key";
 	public static final String CN_ID = "id";
+	public static final String CN_PARENTID = "parentid";
+	public static final String CN_CREATORID = "creatorid";
 	public static final String CN_TIMESTAMP = "timestamp";
 	public static final String CN_UPDATED = "updated";
-	public static final String CN_CLASSTYPE = "classtype";
+	public static final String CN_NAME = "name";
+	public static final String CN_CLASSNAME = "classname";
 	public static final String SYSTEM_OBJECTS_KEY = "1";
-//	public static final String SYSTEM_MESSAGE_KEY = "system-message";
+	public static final String SYSTEM_MESSAGE_KEY = "system-message";
 	public static final String SYSTEM_TYPE = "system"; // system data type
 	public static final String ADDRESS_TYPE = "address"; // default address type
 	public static final String TAG_TYPE = "tag"; // default tag type
@@ -105,7 +113,7 @@ public class DAO {
 	 *			CORE FUNCTIONS
 	********************************************/
  
-	public String create(PObject so){
+	public <P extends PObject> String create(P so){
 		if(so == null) return null;
 		String[] errors = Utils.validateRequest(so);
 		if (errors.length != 0) return null;
@@ -119,16 +127,16 @@ public class DAO {
 		return so.getId();
 	}
 	
-	public PObject read(String key) {
+	public <P extends PObject> P read(String key) {
 		if(StringUtils.isBlank(key)) return null;
 		
-		PObject so = fromRow(readRow(key, OBJECTS));
+		P so = (P) fromRow(readRow(key, OBJECTS));
 		
 		logger.log(Level.INFO, "DAO.read() {0} -> {1}", new Object[]{key, so});
 		return so != null ? so : null;
 	}
 
-	public void update(PObject so){
+	public <P extends PObject> void update(P so){
 		if(so == null || so.getId() == null) return;
 		so.setUpdated(System.currentTimeMillis());
 		
@@ -138,7 +146,7 @@ public class DAO {
 		Search.index(so, so.getClassname());
 	}
 
-	public void delete(PObject so){
+	public <P extends PObject> void delete(P so){
 		if(so == null || so.getId() == null) return ;
 		
 		deleteRow(so.getId(), OBJECTS);
@@ -222,7 +230,8 @@ public class DAO {
 			for (Entry<String, AttributeValue> attr : row.entrySet()) {
 				rou.put(attr.getKey(), new AttributeValueUpdate(attr.getValue(), AttributeAction.PUT));
 			}
-			UpdateItemRequest updateItemRequest = new UpdateItemRequest(cf, Collections.singletonMap(CN_KEY, new AttributeValue(key)), rou);
+			UpdateItemRequest updateItemRequest = new UpdateItemRequest(cf, 
+					Collections.singletonMap(CN_KEY, new AttributeValue(key)), rou);
 			ddb.updateItem(updateItemRequest); 
 		} catch (Exception e) {
 			logger.log(Level.SEVERE, null, e);
@@ -233,7 +242,8 @@ public class DAO {
 		if(StringUtils.isBlank(key) || StringUtils.isBlank(cf)) return null;
 		Map<String, AttributeValue> row = null;
 		try {
-			GetItemRequest getItemRequest = new GetItemRequest(cf, Collections.singletonMap(CN_KEY, new AttributeValue(key)));
+			GetItemRequest getItemRequest = new GetItemRequest(cf,
+					Collections.singletonMap(CN_KEY, new AttributeValue(key)));
 			GetItemResult res = ddb.getItem(getItemRequest);
 			if(res != null && res.getItem() != null && !res.getItem().isEmpty()){
 				row = res.getItem();
@@ -247,7 +257,8 @@ public class DAO {
 	private void deleteRow(String key, String cf){
 		if(StringUtils.isBlank(key) || StringUtils.isBlank(cf)) return;
 		try {
-			DeleteItemRequest delItemRequest = new DeleteItemRequest(cf, Collections.singletonMap(CN_KEY, new AttributeValue(key)));
+			DeleteItemRequest delItemRequest = new DeleteItemRequest(cf, 
+					Collections.singletonMap(CN_KEY, new AttributeValue(key)));
 			ddb.deleteItem(delItemRequest);
 		} catch (Exception e) {
 			logger.log(Level.SEVERE, null, e);
@@ -263,28 +274,63 @@ public class DAO {
 	 *				READ ALL FUNCTIONS
 	********************************************/
 	
-	public Map<String, PObject> readAll(List<String> keys, boolean getAllAtrributes){
-		if(keys == null || keys.isEmpty()) return new LinkedHashMap<String, PObject>();
+	public <P extends PObject> Map<String, P> readAll(List<String> keys, boolean getAllAtrributes){
+		if(keys == null || keys.isEmpty()) return new LinkedHashMap<String, P>();
 		
-		Map<String, PObject> results = new LinkedHashMap<String, PObject>();
+		Map<String, P> results = new LinkedHashMap<String, P>();
 		ArrayList<Map<String, AttributeValue>> keyz = new ArrayList<Map<String, AttributeValue>>();
 		
-		for (int i = 0; i < keys.size(); i++){
-			String key = keys.get(i);
+		for (String key : keys) {
 			results.put(key, null);
 			keyz.add(Collections.singletonMap(CN_KEY, new AttributeValue(key)));
 		}
 		
 		KeysAndAttributes kna = new KeysAndAttributes().withKeys(keyz);
-		if(!getAllAtrributes) kna.setAttributesToGet(Arrays.asList(CN_KEY, CN_CLASSTYPE));
+		if(!getAllAtrributes) kna.setAttributesToGet(Arrays.asList(CN_KEY, CN_CLASSNAME));
 		
 		batchGet(Collections.singletonMap(OBJECTS, kna), results);
 		
 		return results;
 	}
+	
+	public <P extends PObject> void createAll(List<P> objects){
+		updateAll(objects);
+	}
+	
+	public <P extends PObject> void updateAll(List<P> objects){
+		if(objects == null || objects.isEmpty()) return;
 		
-	public List<PObject> readPage(String cf, String lastKey, int limit){
-		List<PObject> results = new LinkedList<PObject>();
+		List<WriteRequest> reqs = new ArrayList<WriteRequest>();
+		BulkRequestBuilder brb = AppListener.getSearchClient().prepareBulk();
+		
+		for (PObject object : objects) {
+			reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(toRow(object, Locked.class))));
+			brb.add(AppListener.getSearchClient().prepareIndex(Utils.INDEX_ALIAS, object.getClassname(), 
+					object.getId()).setSource(Utils.getAnnotatedFields(object, Stored.class, null)));
+		}
+		batchWrite(Collections.singletonMap(OBJECTS, reqs));
+		brb.execute();
+	}
+	
+	public <P extends PObject> void deleteAll(List<P> objects){
+		if(objects == null || objects.isEmpty()) return;
+		
+		List<WriteRequest> reqs = new ArrayList<WriteRequest>();
+		BulkRequestBuilder brb = AppListener.getSearchClient().prepareBulk();
+		for (P object : objects) {
+			if(object != null){
+				reqs.add(new WriteRequest().withDeleteRequest(new DeleteRequest().
+						withKey(Collections.singletonMap(CN_KEY, new AttributeValue(object.getId())))));
+				brb.add(AppListener.getSearchClient().
+						prepareDelete(Utils.INDEX_ALIAS, object.getClassname(), object.getId()));
+			}
+		}
+		batchWrite(Collections.singletonMap(OBJECTS, reqs));
+		brb.execute();
+	}
+		
+	public <P extends PObject> List<P> readPage(String cf, String lastKey, int limit){
+		List<P> results = new LinkedList<P>();
 		if(StringUtils.isBlank(cf)) return results;
 		
 		try {
@@ -299,7 +345,7 @@ public class DAO {
 			logger.log(Level.INFO, "readPage() CC: {0}", new Object[]{result.getConsumedCapacity()});
 			
 			for (Map<String, AttributeValue> item : result.getItems()) {
-				PObject obj = fromRow(item);
+				P obj = (P) fromRow(item);
 				if(obj != null) {
 					results.add(obj);
 				}
@@ -311,7 +357,7 @@ public class DAO {
 		return results;
 	}
 	
-	private void batchGet(Map<String, KeysAndAttributes> kna, Map<String, PObject> results){
+	private <P extends PObject> void batchGet(Map<String, KeysAndAttributes> kna, Map<String, P> results){
 		if(kna == null || kna.isEmpty() || results == null) return;
 		try{
 			BatchGetItemResult result = ddb.batchGetItem(new BatchGetItemRequest().
@@ -320,7 +366,7 @@ public class DAO {
 			
 			List<Map<String, AttributeValue>> res = result.getResponses().get(OBJECTS);
 
-			for (Map<String, AttributeValue> item : res) results.put(item.get(CN_KEY).getS(), fromRow(item));
+			for (Map<String, AttributeValue> item : res) results.put(item.get(CN_KEY).getS(), (P) fromRow(item));
 			logger.log(Level.INFO, "batchGet() CC: {0}", new Object[]{result.getConsumedCapacity()});
 
 			if(result.getUnprocessedKeys() != null && !result.getUnprocessedKeys().isEmpty()){
@@ -330,7 +376,22 @@ public class DAO {
 			logger.log(Level.SEVERE, null, e);
 		}
 	}
-				
+	
+	private void batchWrite(Map<String, List<WriteRequest>> items){
+		if(items == null || items.isEmpty()) return;
+		try{
+			BatchWriteItemResult result = ddb.batchWriteItem(new BatchWriteItemRequest().
+					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL).withRequestItems(items));
+			if(result == null) return;
+			logger.log(Level.INFO, "batchDelete() CC: {0}", new Object[]{result.getConsumedCapacity()});
+
+			if(result.getUnprocessedItems() != null && !result.getUnprocessedItems().isEmpty()){
+				batchWrite(result.getUnprocessedItems());
+			}
+		} catch (Exception e) {
+			logger.log(Level.SEVERE, null, e);
+		}
+	}	
 			
 //	public List<Row<String, String, String>> readAll(CF<String> cf){
 //		return readAll(null, cf);
@@ -355,15 +416,15 @@ public class DAO {
 	 *				MISC FUNCTIONS
 	********************************************/
 	
-	public static boolean voteUp(String userid, PObject votable){
+	public static <P extends PObject> boolean voteUp(String userid, P votable){
 		return vote(userid, votable, true, VOTE_LOCK_AFTER_SEC, VOTE_LOCKED_FOR_SEC);
 	}
 	
-	public static boolean voteDown(String userid, PObject votable){
+	public static <P extends PObject> boolean voteDown(String userid, P votable){
 		return vote(userid, votable, false, VOTE_LOCK_AFTER_SEC, VOTE_LOCKED_FOR_SEC);
 	}
 
-	protected static boolean vote(String userid, PObject votable, boolean isUpvote,
+	protected static <P extends PObject> boolean vote(String userid, P votable, boolean isUpvote,
 			long voteLockAfterSec, int voteLockedForSec) {
 		//no voting on your own stuff!
 		if(votable == null || StringUtils.isBlank(userid) || userid.equals(votable.getCreatorid()) ||
@@ -371,7 +432,6 @@ public class DAO {
 
 		boolean voteSuccess = false;
 		String key = userid.concat(Utils.SEPARATOR).concat(VOTE_TYPE).concat(votable.getId());
-		String colName = CN_TIMESTAMP;
 		
 		//read vote for user & id
 		Map<String, Object> vote = Search.getSource(key, VOTE_TYPE);
@@ -400,7 +460,7 @@ public class DAO {
 		return voteSuccess;
 	}
 	
-	private Map<String, AttributeValue> toRow(PObject so, Class<? extends Annotation> filter){
+	private <P extends PObject> Map<String, AttributeValue> toRow(P so, Class<? extends Annotation> filter){
 		if(so == null) return new HashMap<String, AttributeValue>();
 		HashMap<String, Object> propsMap = Utils.getAnnotatedFields(so, Stored.class, filter);
 		HashMap<String, AttributeValue> row = new HashMap<String, AttributeValue>();
@@ -416,10 +476,10 @@ public class DAO {
 		return row;
 	}
 
-	private PObject fromRow(Map<String, AttributeValue> row) {
+	private <P extends PObject> P fromRow(Map<String, AttributeValue> row) {
 		if (row == null || row.isEmpty())	return null;
 
-		PObject transObject = null;
+		P transObject = null;
 		Map<String, String> props = new HashMap<String, String>();
 		try {
 			for (Entry<String, AttributeValue> col : row.entrySet()) {
@@ -427,9 +487,9 @@ public class DAO {
 				AttributeValue value = col.getValue();
 				props.put(name, value.getS());
 			}
-			Class<?> clazz = Utils.getClassname(props.get(CN_CLASSTYPE));
+			Class<?> clazz = Utils.toClass(props.get(CN_CLASSNAME));
 			if(clazz != null){
-				transObject = (PObject) clazz.newInstance();
+				transObject = (P) clazz.newInstance();
 				BeanUtils.populate(transObject, props);
 			}
 		} catch (Exception ex) {
@@ -439,16 +499,6 @@ public class DAO {
 		return transObject;
 	}
 	
-	public PObject getObject(String id, String classname){
-		Class<? extends PObject> clazz = 
-				(Class<? extends PObject>) getClassname(classname);
-		PObject sobject = null;
-
-		if(clazz != null){
-			sobject = read(id);
-		}
-		return sobject;
-	}
 	
 	/********************************************
 	 *	    	USERS FUNCTIONS
@@ -498,7 +548,7 @@ public class DAO {
 			}
 			
 			delete(user);
-			deleteRow(ident, OBJECTS);
+			deleteIdentifier(ident);
 		}				
 	}
 	
@@ -559,7 +609,7 @@ public class DAO {
 		return map;
 	}
 	
-	public void storeAuthMap(String identifier, Map<String, String> authMap){
+	private void storeAuthMap(String identifier, Map<String, String> authMap){
 		if(StringUtils.isBlank(identifier) || authMap == null || authMap.isEmpty()) return;
 		Map<String, AttributeValue> authmap = new HashMap<String, AttributeValue>();
 		for (Entry<String, String> entry : authMap.entrySet()) {
@@ -583,6 +633,20 @@ public class DAO {
 		}
 	}
 	
+	public boolean createIdentifier(String userid, String newIdent){
+		if(StringUtils.isBlank(userid) || StringUtils.isBlank(newIdent)) return false;
+		Map<String, String> authMap = new HashMap<String, String>();
+		authMap.put(CN_AUTHTOKEN,  Utils.generateAuthToken());
+		authMap.put(CN_ID, userid);
+		storeAuthMap(newIdent.trim(), authMap);
+		return true;
+	}
+	
+	public void deleteIdentifier(String ident){
+		if(StringUtils.isBlank(ident)) return;
+		deleteRow(ident, OBJECTS);
+	}
+	
 	/********************************************
 	 *	    	REST FUNCTIONS
 	********************************************/
@@ -596,7 +660,7 @@ public class DAO {
 		}
 	}
 		
-	public Response createREST(PObject content, UriInfo context){
+	public <P extends PObject> Response createREST(P content, UriInfo context){
 		String[] errors = Utils.validateRequest(content);
 		if (errors.length == 0) {
 			String id = content.create();
@@ -607,7 +671,7 @@ public class DAO {
 		}
 	}
 	
-	public Response updateREST(String id, PObject content){
+	public <P extends PObject> Response updateREST(String id, P content){
 		PObject c = read(id);
 		if(c != null){
 			HashMap<String, Object> propsMap = Utils.getAnnotatedFields(content, Stored.class, Locked.class);
@@ -635,7 +699,7 @@ public class DAO {
 		}
 	}
 	
-	public Response deleteREST(String id, PObject content){
+	public <P extends PObject> Response deleteREST(String id, P content){
 		if(content != null && content.getId() != null){
 			content.delete();
 			return Response.ok().build();

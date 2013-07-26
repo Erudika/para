@@ -9,10 +9,10 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.node.Node;
 
 
 /**
@@ -22,8 +22,8 @@ import org.elasticsearch.node.Node;
 
 public class AppListener implements ServletContextListener, HttpSessionListener {
 	
-	public static org.elasticsearch.client.Client searchClient;
-    public static Node searchNode;
+	private static Client searchClient;
+//    public static Node searchNode;
 	
 	public void contextInitialized(ServletContextEvent sce) {
 		ImmutableSettings.Builder settings = ImmutableSettings.settingsBuilder();
@@ -72,4 +72,8 @@ public class AppListener implements ServletContextListener, HttpSessionListener 
 	
 	public void sessionCreated(HttpSessionEvent se) { }
 	public void sessionDestroyed(HttpSessionEvent se) { }
+	
+	public static Client getSearchClient(){
+		return searchClient;
+	}
 }

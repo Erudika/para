@@ -1,6 +1,8 @@
-package com.erudika.para.utils;
+package com.erudika.para.security;
 
 import com.erudika.para.core.User;
+import com.erudika.para.utils.DAO;
+import com.erudika.para.utils.Utils;
 import java.io.IOException;
 import java.util.*;
 import java.util.logging.Level;

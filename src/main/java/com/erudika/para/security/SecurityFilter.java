@@ -2,9 +2,12 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.erudika.para.utils;
+package com.erudika.para.security;
 
+import com.erudika.para.security.AuthModule;
 import com.erudika.para.core.User;
+import com.erudika.para.utils.DAO;
+import com.erudika.para.utils.Utils;
 import java.io.IOException;
 import java.util.Map;
 import javax.servlet.FilterChain;

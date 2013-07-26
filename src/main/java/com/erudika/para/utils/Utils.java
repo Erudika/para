@@ -57,9 +57,17 @@ import org.apache.http.util.EntityUtils;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ObjectNode;
+import org.geonames.FeatureClass;
+import org.geonames.Style;
+import org.geonames.Toponym;
+import org.geonames.ToponymSearchCriteria;
+import org.geonames.ToponymSearchResult;
+import org.geonames.WebService;
 import org.hibernate.validator.constraints.Email;
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.NotEmpty;
+import org.jsoup.Jsoup;
+import org.pegdown.PegDownProcessor;
 
 /**
  *
@@ -98,6 +106,7 @@ public class Utils {
 	public static final int MAX_IMG_SIZE_PX = 800;
 	public static final String SEPARATOR = ":";
 	public static final String DEFAULT_ENCODING = "UTF-8";
+	public static final String CORE_PACKAGE = "corepackage";
 	
 	//////////  ID GEN VARS  ////////////// 	
 	private static final long TIMER_OFFSET = 1310084584692L;
@@ -128,21 +137,23 @@ public class Utils {
 	protected static final String AWS_SECRETKEY = getInitParam("awssecretkey", "");
 	public static final String AWS_REGION = getInitParam("awsregion", "eu-west-1");
 	public static final String FB_APP_ID = getInitParam("fbappid", "");
-	protected static final String FB_SECRET = getInitParam("fbsecret", "");
+	public static final String FB_SECRET = getInitParam("fbsecret", "");
 	public static final String OPENX_API_KEY = getInitParam("openxkey", "");
 	public static final String GM_API_KEY = getInitParam("gmapskey", "");
 	public static final String ADMIN_IDENT = getInitParam("adminident", "");
 	public static final String WORKER_ID = getInitParam("workerid", "1");
 	public static final String PRODUCT_NAME = getInitParam("productname", "MyApp");
+	public static final String PRODUCT_NAME_NS = PRODUCT_NAME.replaceAll("\\s", "-").toLowerCase();
 	public static final String ES_HOSTS = getInitParam("eshosts", "localhost");
-	public static final String ES_CLUSTER = getInitParam("escluster", PRODUCT_NAME.toLowerCase());
-	public static final String AUTH_COOKIE = getInitParam("authcookie", PRODUCT_NAME.toLowerCase().concat("-auth"));
+	public static final String ES_CLUSTER = getInitParam("escluster", PRODUCT_NAME_NS);
+	public static final String AUTH_COOKIE = getInitParam("authcookie", PRODUCT_NAME_NS.concat("-auth"));
 	public static final String SUPPORT_EMAIL = getInitParam("supportemail", "support@myapp.co");
 	
 	public static final boolean READ_FROM_INDEX = Boolean.parseBoolean(getInitParam("readfromindex", "true")); // read object data from index, not db
 	public static final int READ_CAPACITY = NumberUtils.toInt(getInitParam("readcapacity", "10"));
-	public static final String INDEX_ALIAS = PRODUCT_NAME.toLowerCase();
+	public static final String INDEX_ALIAS = PRODUCT_NAME_NS;
 	public static final boolean IN_PRODUCTION = Boolean.parseBoolean(getInitParam("production", "false")); 
+	
 	
 	static {
 		utils = new Utils();
@@ -154,10 +165,6 @@ public class Utils {
 	}
 	
 	private Utils() {}
-//		
-//	public static DAO getDaoInstance(){
-//		return dao;
-//	}
 	
 	public static Utils getInstance(){
 		return utils;
@@ -211,8 +218,20 @@ public class Utils {
 	public static String escapeJavascript(String str){
 		return StringEscapeUtils.escapeEcmaScript(str);
 	}
+	
+	public static String stripHtml(String html){
+		if(html == null) return "";
+		return Jsoup.parse(html).text();
+	}
+	
+	public static String markdownToHtml(String markdownString) {
+		if (StringUtils.isBlank(markdownString)) return "";
 
-	public static <T extends PObject> void populate(T transObject, Map<String, String[]> paramMap) {
+		PegDownProcessor pdp = new PegDownProcessor();
+		return pdp.markdownToHtml(markdownString);		
+	}
+		
+	public static <P extends PObject> void populate(P transObject, Map<String, String[]> paramMap) {
 		if (transObject == null || paramMap.isEmpty()) return;
 		Class<Locked> locked = (paramMap.containsKey("id")) ? Locked.class : null;
 		HashMap<String, Object> fields = getAnnotatedFields(transObject, Stored.class, locked);
@@ -232,6 +251,38 @@ public class Utils {
 		} catch (Exception ex) {
 			logger.log(Level.SEVERE, null, ex);
 		}
+	}
+	
+	public static List<Toponym> readLocationForKeyword(String q) {
+		return readLocationForKeyword(q, Style.FULL);
+	}
+
+	public static List<Toponym> readLocationForKeyword(String q, Style style) {
+		List<Toponym> list = new ArrayList<Toponym> ();
+		ToponymSearchResult locationSearchResult = null;
+		ToponymSearchCriteria searchLocation = new ToponymSearchCriteria();
+		searchLocation.setMaxRows(7);
+		searchLocation.setFeatureClass(FeatureClass.P);
+		searchLocation.setStyle(style);		
+		searchLocation.setQ(q);
+		try {
+			WebService.setUserName("erudika");
+			locationSearchResult = WebService.search(searchLocation);
+			if(locationSearchResult != null) 
+				list.addAll(locationSearchResult.getToponyms());
+		} catch (Exception ex) {
+			logger.log(Level.SEVERE, null, ex);
+		}
+		return list;
+	}
+	
+	public static int getCurrentYear() {
+		return Calendar.getInstance().get(Calendar.YEAR);
+	}
+
+	public boolean typesMatch(PObject so){
+		return (so == null) ? false : so.getClass().equals(
+				Utils.toClass(so.getClassname()));
 	}
 
 	public static int round(float d) {
@@ -346,10 +397,6 @@ public class Utils {
 		return fixCSV(s, 0);
 	}
 
-	public static int getCurrentYear() {
-		return Calendar.getInstance().get(Calendar.YEAR);
-	}
-
 	public static long timestamp(){
 		return System.currentTimeMillis();
 	}
@@ -384,21 +431,19 @@ public class Utils {
 		return abbrevn;
 	}
 
-	public static Class<? extends PObject> getClassname(String classname){
+	public static Class<? extends PObject> toClass(String classname){
+		String pkg = getInitParam(CORE_PACKAGE, "");
+		if(StringUtils.isBlank(pkg)) throw new IllegalStateException("System property '"+CORE_PACKAGE+"' not set.");
 		if(StringUtils.isBlank(classname)) return null;
 		Class<? extends PObject> clazz = null;
 		try {
-			clazz = (Class<? extends PObject>) Class.forName(PObject.class.getPackage().getName().concat(".").
+			clazz = (Class<? extends PObject>) Class.forName(pkg.concat(".").
 					concat(StringUtils.capitalize(classname.toLowerCase())));
 		} catch (Exception ex) {
 			logger.severe(ex.toString());
 		}
 
 		return clazz;
-	}
-	
-	public static Class<? extends PObject> classtypeToClass(String classtype){
-		return getClassname(classtype);
 	}
 	
 	public static HumanTime getHumanTime(){
@@ -468,29 +513,7 @@ public class Utils {
 		}
 		return u;
 	}
-
-	public static boolean endsWithAny(String ext, String[] string) {
-		if(StringUtils.isBlank(ext) || string == null) return false;
-		boolean res = false;
-		for (String string1 : string) {
-			if(ext.endsWith(string1)){
-				res = true;
-			}
-		}		
-		return res;
-	}
-	
-	public static boolean containsAny(String ext, String[] string) {
-		if(StringUtils.isBlank(ext) || string == null) return false;
-		boolean res = false;
-		for (String string1 : string) {
-			if(StringUtils.contains(ext, string1)){
-				res = true;
-			}
-		}		
-		return res;
-	}
-	
+		
 	public static void setStateParam(String name, String value, HttpServletRequest req,
 			HttpServletResponse res){
 		setStateParam(name, value, req, res, false);
@@ -555,7 +578,7 @@ public class Utils {
 	
 	public static String getInitParam(String key, String def){
 		if(INIT_PARAMS_MAP.isEmpty()) initConfig();
-		return INIT_PARAMS_MAP.containsKey(key) ? INIT_PARAMS_MAP.get(key) : def;
+		return INIT_PARAMS_MAP.containsKey(key) ? INIT_PARAMS_MAP.get(key) : System.getProperty(key, def);
 	}
 		
 	public static String arrayJoin(ArrayList<String> arr, String separator){
@@ -745,7 +768,7 @@ public class Utils {
 	public static String getJSONValidationObject(String classtype, ArrayList<String> fields, Map<String, String> lang){
 		String root = "{}";
 		if (!StringUtils.isBlank(classtype)) {
-			Class<? extends PObject> c = getClassname(classtype);
+			Class<? extends PObject> c = toClass(classtype);
 			ArrayList<String> rules = new ArrayList<String>();
 			ArrayList<String> messages = new ArrayList<String>();
 			for (Entry<String, List<Annotation>> entry : getAnnotationsMap(c, fields).entrySet()) {
@@ -772,12 +795,10 @@ public class Utils {
 		return root;
 	}
 	
-	public static boolean sendEmail(String email, String subject, String body){
-		if (!StringUtils.isBlank(email) && !StringUtils.isBlank(body)) {
+	public static boolean sendEmail(List<String> emails, String subject, String body){
+		if (emails == null || emails.isEmpty() && !StringUtils.isBlank(body)) {
 			final SendEmailRequest request = new SendEmailRequest().withSource(SUPPORT_EMAIL);
-			List<String> toAddresses = new ArrayList<String>();
-			toAddresses.add(email);
-			Destination dest = new Destination().withToAddresses(toAddresses);
+			Destination dest = new Destination().withToAddresses(emails);
 			request.setDestination(dest);
 
 			Content subjContent = new Content().withData(subject);

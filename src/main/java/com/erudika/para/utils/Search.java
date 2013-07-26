@@ -25,6 +25,8 @@ import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.action.search.MultiSearchRequestBuilder;
+import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
@@ -102,7 +104,7 @@ public class Search {
 		if(!existsIndex(Utils.INDEX_ALIAS)){
 			createIndex(getIndexName());
 		}else{
-			IndicesGetAliasesResponse get = AppListener.searchClient.admin().indices().
+			IndicesGetAliasesResponse get = AppListener.getSearchClient().admin().indices().
 					prepareGetAliases(Utils.INDEX_ALIAS).execute().actionGet();
 			Map<String, List<AliasMetaData>> aliases = get.getAliases();
 			if(aliases.size() > 1){
@@ -127,7 +129,7 @@ public class Search {
 	public static void index(String key, Map<String, Object> data, String type, long ttl){
 		if(data == null || data.isEmpty() || StringUtils.isBlank(type)) return;
 		try {
-			IndexRequestBuilder irb = AppListener.searchClient.prepareIndex(Utils.INDEX_ALIAS, type, key).setSource(data);
+			IndexRequestBuilder irb = AppListener.getSearchClient().prepareIndex(Utils.INDEX_ALIAS, type, key).setSource(data);
 			if(ttl > 0) irb.setTTL(ttl);
 			irb.execute();
 		} catch (Exception e) {
@@ -138,7 +140,7 @@ public class Search {
 	public static void unindex(String id, String type){
 		if(StringUtils.isBlank(id) || StringUtils.isBlank(type)) return;
 		try{
-			AppListener.searchClient.prepareDelete(Utils.INDEX_ALIAS, type, id).setType(type).execute();
+			AppListener.getSearchClient().prepareDelete(Utils.INDEX_ALIAS, type, id).setType(type).execute();
 		} catch (Exception e) {
 			logger.log(Level.WARNING, null, e);
 		}
@@ -146,7 +148,7 @@ public class Search {
 	
 //	public static void addToDocument(String key, String type, String field, Object value){
 //		if(StringUtils.isBlank(key) || StringUtils.isBlank(type) || StringUtils.isBlank(field) || value == null) return ;
-//		UpdateRequestBuilder urb = AppListener.searchClient.prepareUpdate(Utils.INDEX_ALIAS, type, key);
+//		UpdateRequestBuilder urb = AppListener.getSearchClient().prepareUpdate(Utils.INDEX_ALIAS, type, key);
 //		field = "field_".concat(field);
 //		urb.setScript("ctx._source.".concat(field).concat(" = field"));
 //		urb.addScriptParam("field", value);
@@ -156,7 +158,7 @@ public class Search {
 //	
 //	public static void removeFromDocument(String key, String type, String field){
 //		if(StringUtils.isBlank(key) || StringUtils.isBlank(type) || StringUtils.isBlank(field)) return ;
-//		UpdateRequestBuilder urb = AppListener.searchClient.prepareUpdate(Utils.INDEX_ALIAS, type, key);
+//		UpdateRequestBuilder urb = AppListener.getSearchClient().prepareUpdate(Utils.INDEX_ALIAS, type, key);
 //		field = "field_".concat(field);
 //		urb.setScript("ctx._source.remove(\"".concat(field).concat("\");"));
 //		urb.execute().actionGet();
@@ -178,14 +180,14 @@ public class Search {
 					"swedish", "turkish"); 
 
 					
-			CreateIndexRequestBuilder create = AppListener.searchClient.admin().indices().prepareCreate(name).
+			CreateIndexRequestBuilder create = AppListener.getSearchClient().admin().indices().prepareCreate(name).
 					setSettings(nb.settings().build());
 
 			create.addMapping(DAO.ADDRESS_TYPE, getAddressMapping());
 			create.addMapping(DAO.VOTE_TYPE, getVoteMapping());
 			create.execute().actionGet();
 			
-			AppListener.searchClient.admin().indices().prepareAliases().
+			AppListener.getSearchClient().admin().indices().prepareAliases().
 					addAlias(name, Utils.INDEX_ALIAS).execute();
 		} catch (Exception e) {
 			logger.log(Level.WARNING, null, e);
@@ -196,7 +198,7 @@ public class Search {
 		if(StringUtils.isBlank(name)) return;
 		try {
 			if(existsIndex(name)){
-				AppListener.searchClient.admin().indices().prepareDelete(name).execute();
+				AppListener.getSearchClient().admin().indices().prepareDelete(name).execute();
 			}
 		} catch (Exception e) {
 			logger.log(Level.WARNING, null, e);
@@ -207,7 +209,7 @@ public class Search {
 		if(StringUtils.isBlank(name)) return false;
 		boolean exists = false;
 		try {
-			exists = AppListener.searchClient.admin().indices().prepareExists(name).execute().
+			exists = AppListener.getSearchClient().admin().indices().prepareExists(name).execute().
 					actionGet().isExists();
 		} catch (Exception e) {
 			logger.log(Level.WARNING, null, e);
@@ -224,7 +226,7 @@ public class Search {
 			logger.log(Level.INFO, "rebuildIndex(): {0}", new Object[]{newIndex});
 //			Map<String, PObject> all = DAO.getInstance().readAll(DAO.OBJECTS, READ_CAP);
 			LinkedHashMap<String, PObject> results = new LinkedHashMap<String, PObject>();
-			BulkRequestBuilder brb = AppListener.searchClient.prepareBulk();
+			BulkRequestBuilder brb = AppListener.getSearchClient().prepareBulk();
 			BulkResponse resp = null;
 			String lastKey = null;
 			
@@ -235,7 +237,7 @@ public class Search {
 				if (!list.isEmpty()) {
 					for (PObject obj : list) {
 						results.put(obj.getId(), obj);
-						brb.add(AppListener.searchClient.prepareIndex(newIndex, obj.getClassname(), obj.getId()).
+						brb.add(AppListener.getSearchClient().prepareIndex(newIndex, obj.getClassname(), obj.getId()).
 								setSource(Utils.getAnnotatedFields(obj, Stored.class, null)));
 					}
 					// bulk index 1000 objects
@@ -258,7 +260,7 @@ public class Search {
 			}
 			
 			// create index alias NEW_INDEX -> INDEX_ALIAS, OLD_INDEX -> X
-			AppListener.searchClient.admin().indices().prepareAliases().
+			AppListener.getSearchClient().admin().indices().prepareAliases().
 					addAlias(newIndex, Utils.INDEX_ALIAS).
 					removeAlias(getIndexName(), Utils.INDEX_ALIAS).execute();
 			
@@ -273,7 +275,7 @@ public class Search {
 		if(StringUtils.isBlank(name)) return false;
 		boolean result = false;
 		try {
-			OptimizeResponse resp = AppListener.searchClient.admin().indices().
+			OptimizeResponse resp = AppListener.getSearchClient().admin().indices().
 					prepareOptimize(name).execute().actionGet();
 			
 			result = resp.getFailedShards() == 0;
@@ -298,51 +300,56 @@ public class Search {
 //		return results;
 //	}
 	
-	public static ArrayList<PObject> findTerm(String type, MutableLong page, MutableLong itemcount, 
+	public static <P extends PObject> ArrayList<P> findTerm(String type, MutableLong page, MutableLong itemcount, 
 			String field, Object term){
 		return findTerm(type, page, itemcount, field, term, null, true, Utils.MAX_ITEMS_PER_PAGE);
 	}
 	
-	public static ArrayList<PObject> findTerm(String type, MutableLong page, MutableLong itemcount, 
+	public static <P extends PObject> ArrayList<P> findTerm(String type, MutableLong page, MutableLong itemcount, 
 			String field, Object term, String sortfield, boolean reverse, int max){
 		return searchQuery(type, page, itemcount, null, FilterBuilders.termFilter(field, term), 
 				sortfield, reverse, max);
 	}
 	
-	public static ArrayList<PObject> findPrefix(String type, MutableLong page, MutableLong itemcount, 
+	public static <P extends PObject> ArrayList<P> findTermInList(String type, MutableLong page, MutableLong itemcount, 
+			String field, List<?> terms, String sortfield, boolean reverse, int max){
+		return searchQuery(type, page, itemcount, null, FilterBuilders.termsFilter(field, terms), sortfield, reverse, max);
+	}
+	
+	public static <P extends PObject> ArrayList<P> findPrefix(String type, MutableLong page, MutableLong itemcount, 
 			String field, String prefix){
 		return findPrefix(type, page, itemcount, field, prefix, null, true, Utils.MAX_ITEMS_PER_PAGE);
 	}
 	
-	public static ArrayList<PObject> findPrefix(String type, MutableLong page, MutableLong itemcount, 
+	public static <P extends PObject> ArrayList<P> findPrefix(String type, MutableLong page, MutableLong itemcount, 
 			String field, String prefix, String sortfield, boolean reverse, int max){
 		return searchQuery(type, page, itemcount, QueryBuilders.prefixQuery(field, prefix), null, 
 				sortfield, reverse, max);
 	}
 	
-	public static ArrayList<PObject> findQuery(String type, MutableLong page, MutableLong itemcount, 
+	public static <P extends PObject> ArrayList<P> findQuery(String type, MutableLong page, MutableLong itemcount, 
 			String query){
 		return findQuery(type, page, itemcount, query, null, true, Utils.MAX_ITEMS_PER_PAGE);
 	}
 	
-	public static ArrayList<PObject> findQuery(String type, MutableLong page, MutableLong itemcount, 
+	public static <P extends PObject> ArrayList<P> findQuery(String type, MutableLong page, MutableLong itemcount, 
 			String query, String sortfield, boolean reverse, int max){
 		return searchQuery(type, page, itemcount, QueryBuilders.queryString(query), null, 
 				sortfield, reverse, max);
 	}
 
-	public static ArrayList<PObject> findWildcard(String type, MutableLong page, MutableLong itemcount, 
+	public static <P extends PObject> ArrayList<P> findWildcard(String type, MutableLong page, MutableLong itemcount, 
 			String field, String wildcard){
 		return findWildcard(type, page, itemcount, field, wildcard, null, true, Utils.MAX_ITEMS_PER_PAGE);
 	}
 	
-	public static ArrayList<PObject> findWildcard(String type, MutableLong page, MutableLong itemcount, 
+	public static <P extends PObject> ArrayList<P> findWildcard(String type, MutableLong page, MutableLong itemcount, 
 			String field, String wildcard, String sortfield, boolean reverse, int max){
 		return searchQuery(type, page, itemcount, QueryBuilders.wildcardQuery(field, wildcard), null,
 				sortfield, reverse, max);
 	}
 	
-	public static ArrayList<PObject> findTagged(String type, MutableLong page, MutableLong itemcount, 
+	public static <P extends PObject> ArrayList<P> findTagged(String type, MutableLong page, MutableLong itemcount, 
 			ArrayList<String> tags){
 		OrFilterBuilder tagFilter = FilterBuilders.orFilter(
 				FilterBuilders.termFilter("tags", tags.remove(0)));
@@ -360,41 +367,47 @@ public class Search {
 		return searchQuery(type, page, itemcount, null, andFilter, null, true, Utils.MAX_ITEMS_PER_PAGE);
 	}
 
-	public static ArrayList<PObject> findFilteredTerm(String type, MutableLong page, MutableLong itemcount, 
-			String filterField, Object filterTerm, String field, Object term){
-		return findFilteredTerm(type, page, itemcount, filterField, filterTerm, field, term, 
+	public static <P extends PObject> ArrayList<P> findTwoTerms(String type, MutableLong page, MutableLong itemcount, 
+			String field1, Object term1, String field2, Object term2){
+		return findTwoTerms(type, page, itemcount, field1, term1, field2, term2, 
 				null, true, Utils.MAX_ITEMS_PER_PAGE);
+	}	
+	
+	public static <P extends PObject> ArrayList<P> findTwoTerms(String type, MutableLong page, MutableLong itemcount, 
+			String field1, Object term1, String field2, Object term2, String sortfield, boolean reverse, int max){
+		return findTwoTerms(type, page, itemcount, field1, term1, field2, term2, true, sortfield, reverse, max);
 	}
 	
-	
-	public static ArrayList<PObject> findFilteredTerm(String type, MutableLong page, MutableLong itemcount, 
-			String filterField, Object filterTerm, String field, Object term, String sortfield, boolean reverse, int max){
-		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.termQuery(field, term), 
-				FilterBuilders.termFilter(filterField, filterTerm));
-		return searchQuery(type, page, itemcount, qb, null, sortfield, reverse, max);
+	public static <P extends PObject> ArrayList<P> findTwoTerms(String type, MutableLong page, MutableLong itemcount, 
+			String field1, Object term1, String field2, Object term2, boolean mustMatchBoth, 
+			String sortfield, boolean reverse, int max){
+		FilterBuilder fb;
+		if (mustMatchBoth) {
+			fb = FilterBuilders.andFilter(
+					FilterBuilders.termFilter(field1, term1), 
+					FilterBuilders.termFilter(field2, term2));
+		} else {
+			fb = FilterBuilders.orFilter(
+					FilterBuilders.termFilter(field1, term1), 
+					FilterBuilders.termFilter(field2, term2));
+		}
+		return searchQuery(type, page, itemcount, null, fb, sortfield, reverse, max);
 	}
 	
-	public static ArrayList<String> findFilteredTermIds(String type, MutableLong page, MutableLong itemcount, 
-			String filterField, Object filterTerm, String field, Object term, String sortfield, boolean reverse, int max){
-		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.termQuery(field, term), 
-				FilterBuilders.termFilter(filterField, filterTerm));
-		return searchQueryIds(type, page, itemcount, qb, null, SortBuilders.fieldSort(DAO.CN_ID).order(SortOrder.DESC), max);
-	}
-	
-	public static ArrayList<PObject> findSimilar(String type, String filterKey, String[] fields, String liketext, int max){
+	public static <P extends PObject> ArrayList<P> findSimilar(String type, String filterKey, String[] fields, String liketext, int max){
 		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.moreLikeThisQuery(fields).
 			likeText(liketext), FilterBuilders.notFilter(FilterBuilders.inFilter(DAO.CN_ID, filterKey)));
 		SortBuilder sb = SortBuilders.scoreSort().order(SortOrder.DESC);
 		return searchQuery(type, null, searchQueryRaw(type, null, null, qb, null, sb, max));
 	}
 
-	public static ArrayList<PObject> findTags(String keyword, int max){
+	public static <P extends PObject> ArrayList<P> findTags(String keyword, int max){
 		QueryBuilder qb = QueryBuilders.wildcardQuery(DAO.TAG_TYPE, keyword.concat("*"));
 //		SortBuilder sb = SortBuilders.fieldSort("count").order(SortOrder.DESC);
 		return searchQuery(DAO.TAG_TYPE, null, null, qb, null, null, true, max);
 	}
-	
-	public static ArrayList<PObject> findNearbyObjects(String type, MutableLong page, MutableLong itemcount, 
+		
+	public static <P extends PObject> ArrayList<P> findNearbyObjects(String type, MutableLong page, MutableLong itemcount, 
 			String query, int radius, double lat, double lng, String sortby){
 		
 		FieldSortBuilder sort = SortBuilders.fieldSort(sortby).order(SortOrder.DESC);
@@ -402,11 +415,11 @@ public class Search {
 				FilterBuilders.geoDistanceFilter("latlng").point(lat, lng).distance(radius, DistanceUnit.KILOMETERS));
 		SearchHits hits1 = Search.searchQueryRaw(DAO.ADDRESS_TYPE, page, itemcount, qb1, null, sort, Utils.MAX_ITEMS_PER_PAGE);
 		
-		if(hits1 == null) return new ArrayList<PObject> ();
+		if(hits1 == null) return new ArrayList<P> ();
 			
 		String[] ridsarr = new String[(int) hits1.getTotalHits()];
 		for (int i = 0; i < hits1.getTotalHits(); i++) {
-			Object pid = hits1.getAt(i).getSource().get("parentid");
+			Object pid = hits1.getAt(i).getSource().get(DAO.CN_PARENTID);
 			if(pid != null) ridsarr[i] = pid.toString();
 		}
 
@@ -417,19 +430,18 @@ public class Search {
 		return Search.searchQuery(type, itemcount, hits2);
 	}
 	
-	
-	private static ArrayList<PObject> searchQuery(String type, MutableLong page, MutableLong itemcount,
+	private static <P extends PObject> ArrayList<P> searchQuery(String type, MutableLong page, MutableLong itemcount,
 			QueryBuilder query, FilterBuilder filter, String sortfield, boolean reverse, int max){
 		SortOrder order = reverse ? SortOrder.DESC : SortOrder.ASC;
 		SortBuilder sort = StringUtils.isBlank(sortfield) ? null : SortBuilders.fieldSort(sortfield).order(order);
 		return searchQuery(type, itemcount, searchQueryRaw(type, page, itemcount, query, filter, sort, max));
 	}
 	
-	public static ArrayList<PObject> searchQuery(String type, MutableLong itemcount, SearchHits hits){
+	public static <P extends PObject> ArrayList<P> searchQuery(String type, MutableLong itemcount, SearchHits hits){
 		ArrayList<PObject> results = new ArrayList<PObject> ();
 		ArrayList<String> keys = new ArrayList<String>();
 		
-		if(hits == null || StringUtils.isBlank(type)) return results;
+		if(hits == null || StringUtils.isBlank(type)) return new ArrayList<P> ();
 		
 		try{
 			for (SearchHit hit : hits){
@@ -449,7 +461,7 @@ public class Search {
 		} catch (Exception e) {
 			logger.log(Level.WARNING, null, e);
 		}
-		return results;
+		return (ArrayList<P>) results;
 	}
 		
 	private static SearchHits searchQueryRaw(String type, MutableLong page, MutableLong itemcount, 
@@ -463,7 +475,7 @@ public class Search {
 		SearchHits hits = null;
 		
 		try{
-			SearchResponse response = AppListener.searchClient.prepareSearch(Utils.INDEX_ALIAS).
+			SearchResponse response = AppListener.getSearchClient().prepareSearch(Utils.INDEX_ALIAS).
 					setSearchType(SearchType.DFS_QUERY_THEN_FETCH).setTypes(type).
 					setQuery(query).setFilter(filter).addSort(sort).setFrom(start).setSize(max).
 					execute().actionGet();
@@ -478,38 +490,38 @@ public class Search {
 		return hits;
 	}
 	
-	private static ArrayList<String> searchQueryIds(String type, MutableLong page, MutableLong itemcount, 
-			QueryBuilder query, FilterBuilder filter, SortBuilder sort, int max){
-		ArrayList<String> keys = new ArrayList<String>();
-		SearchHits hits = searchQueryRaw(type, page, itemcount, query, filter, sort, max);
-		if (hits != null) {
-			for (SearchHit hit : hits) {
-				keys.add(hit.getId());
-			}
-		}
-		return keys;
-	}
+//	private static ArrayList<String> searchQueryIds(String type, MutableLong page, MutableLong itemcount, 
+//			QueryBuilder query, FilterBuilder filter, SortBuilder sort, int max){
+//		ArrayList<String> keys = new ArrayList<String>();
+//		SearchHits hits = searchQueryRaw(type, page, itemcount, query, filter, sort, max);
+//		if (hits != null) {
+//			for (SearchHit hit : hits) {
+//				keys.add(hit.getId());
+//			}
+//		}
+//		return keys;
+//	}
 	
-	public static boolean existsTerm(String term, String value){
-		if(StringUtils.isBlank(term) || StringUtils.isBlank(value)) return false;
-		SearchHits hits = null;
-		try{ 
-			SearchResponse response = AppListener.searchClient.prepareSearch(Utils.INDEX_ALIAS)
-				.setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
-				.setFilter(FilterBuilders.termFilter(term, value)).execute().actionGet();
-
-			hits = response.getHits();
-		} catch (Exception e) {
-			logger.log(Level.WARNING, null, e);
-		}
-		return hits != null && hits.getTotalHits() > 0;
-	}
+//	public static boolean existsTerm(String term, String value){
+//		if(StringUtils.isBlank(term) || StringUtils.isBlank(value)) return false;
+//		SearchHits hits = null;
+//		try{
+//			SearchResponse response = AppListener.getSearchClient().prepareSearch(Utils.INDEX_ALIAS)
+//				.setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
+//				.setFilter(FilterBuilders.termFilter(term, value)).execute().actionGet();
+//
+//			hits = response.getHits();
+//		} catch (Exception e) {
+//			logger.log(Level.WARNING, null, e);
+//		}
+//		return hits != null && hits.getTotalHits() > 0;
+//	}
 	
 	public static Map<String, Object> getSource(String key, String type){
 		Map<String, Object> map = new HashMap<String, Object>();
 		if(StringUtils.isBlank(key) || StringUtils.isBlank(type)) return map;
 		try{
-			GetResponse resp = AppListener.searchClient.prepareGet().setIndex(Utils.INDEX_ALIAS).
+			GetResponse resp = AppListener.getSearchClient().prepareGet().setIndex(Utils.INDEX_ALIAS).
 					setId(key).setType(type).execute().actionGet();
 			map = resp.getSource();
 		} catch (Exception e) {
@@ -519,9 +531,9 @@ public class Search {
 	}
 	
 	private static PObject fromSource(String type, Map<String, Object> source) throws Exception{
-		Class<?> clazz = Utils.getClassname(type);
+		Class<? extends PObject> clazz = Utils.toClass(type);
 		if(clazz != null){
-			PObject obj = (PObject) clazz.newInstance();
+			PObject obj = clazz.newInstance();
 			BeanUtils.populate(obj, source);
 			return obj;
 		}else{
@@ -530,8 +542,22 @@ public class Search {
 	}
 	
 	public static Long getBeanCount(String classtype){
-		return AppListener.searchClient.prepareCount(Utils.INDEX_ALIAS).
+		return AppListener.getSearchClient().prepareCount(Utils.INDEX_ALIAS).
 				setTypes(classtype).execute().actionGet().getCount();
+	}
+	
+	public static Long getCount(String classtype, String field, Object term){
+		return AppListener.getSearchClient().prepareCount(Utils.INDEX_ALIAS).
+				setTypes(classtype).setQuery(QueryBuilders.termQuery(field, term)).
+				execute().actionGet().getCount();
+	}
+	
+	public static Long getCount(String classtype, String field1, Object term1, String field2, Object term2){
+		return AppListener.getSearchClient().prepareCount(Utils.INDEX_ALIAS).
+				setTypes(classtype).setQuery(QueryBuilders.filteredQuery(
+				QueryBuilders.termQuery(field1, term1), 
+				FilterBuilders.termFilter(field2, term2))).
+				execute().actionGet().getCount();
 	}
 	
 	private static void unindexNulls(final String type, final List<String> keys, final Map<String, PObject> fromDB){
@@ -545,14 +571,14 @@ public class Search {
 				}			
 				// remove objects that are still indexed but not in the database
 				if (!dbKeys.isEmpty() && dbKeys.values().contains(null)) {
-					BulkRequestBuilder brb = AppListener.searchClient.prepareBulk();
+					BulkRequestBuilder brb = AppListener.getSearchClient().prepareBulk();
 
 					for (Iterator<Map.Entry<String, PObject>> it = dbKeys.entrySet().iterator(); it.hasNext();) {
 						Map.Entry<String, PObject> entry = it.next();
 						String key = entry.getKey();
 						PObject value = entry.getValue();
 						if (value == null) {
-							brb.add(AppListener.searchClient.prepareDelete(Utils.INDEX_ALIAS, type, key).request());
+							brb.add(AppListener.getSearchClient().prepareDelete(Utils.INDEX_ALIAS, type, key).request());
 						}
 					}
 					brb.execute();
