@@ -1,7 +1,25 @@
+/*
+ * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * You can reach the author at: https://github.com/albogdano
+ */
 package com.erudika.para.security;
 
+import com.erudika.para.api.DAO;
+import com.erudika.para.api.MemoryGrid;
 import com.erudika.para.core.User;
-import com.erudika.para.utils.DAO;
 import com.erudika.para.utils.Utils;
 import java.io.IOException;
 import java.util.*;
@@ -23,7 +41,6 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.core.userdetails.AuthenticationUserDetailsService;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -32,10 +49,12 @@ import org.springframework.security.openid.AxFetchListFactory;
 import org.springframework.security.openid.OpenIDAttribute;
 import org.springframework.security.openid.OpenIDAuthenticationFilter;
 import org.springframework.security.openid.OpenIDAuthenticationToken;
+import org.springframework.security.web.context.HttpRequestResponseHolder;
+import org.springframework.security.web.context.SecurityContextRepository;
 
 /**
  *
- * @author alexb
+ * @author Alex Bogdanovski <albogdano@me.com>
  */
 public class AuthModule extends OpenIDAuthenticationFilter { 
 
@@ -44,34 +63,21 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 	private static final String PASSWORD_ACTION = "password_auth";
 	private static final String PASSWORD = "password";
 	private static final String EMAIL = "email";
-	private static final String APP_KEY = "b8db69a24a43f2ce134909f164a45263";	// salt for token gen
-
-	private static DAO dao = DAO.getInstance();
+	private static final String APP_KEY = Utils.APP_SECRET_KEY;	// salt for token gen
 	private static final Logger logger = Logger.getLogger(AuthModule.class.getName());
 	private static final ObjectMapper mapper = new ObjectMapper();
 
 	public AuthModule() {
 	}
-	
-	public static SecurityContext getAuthenticatedContext(User user) {
-		if(user == null || user.getId() == null) return SecurityContextHolder.createEmptyContext();
-		SecurityContext ctx = new SecurityContextImpl();
-		ctx.setAuthentication(new AuthModule.UserAuthentication(user));
-		return ctx;
-	}
-	
-	public static SecurityContext getAuthenticatedContext(String uid) {
-		final User user = (User) dao.read(uid);
-		return getAuthenticatedContext(user);
-	}
 
-	public static String getCookieHash(String identifier, Map<String, String> authmap){
-		if(StringUtils.isBlank(identifier) || authmap.isEmpty()) return null;
-		return Utils.MD5(identifier.concat(Utils.SEPARATOR).
-				concat(StringUtils.trimToEmpty(authmap.get(DAO.CN_AUTHSTAMP))).
-				concat(Utils.SEPARATOR).
-				concat(StringUtils.trimToEmpty(authmap.get(DAO.CN_AUTHTOKEN))).
-				concat(Utils.SEPARATOR).concat(APP_KEY));
+	public static User getAuthenticatedUser(){
+		if(SecurityContextHolder.getContext().getAuthentication() == null) return null;
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		if(auth instanceof UserAuthentication && auth.isAuthenticated()){
+			return (User) auth.getPrincipal();
+		}else{
+			return null;
+		}
 	}
 	
 	public static void clearSession(HttpServletRequest req, HttpServletResponse res){
@@ -89,7 +95,8 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 			throws AuthenticationException, IOException {
 		String requestURI = request.getRequestURI();
 		UserAuthentication userAuth = null;
-		User user;
+		User user = null;
+		DAO dao = Utils.getInstanceOf(DAO.class);
 		
 		if(requestURI.endsWith(FACEBOOK_ACTION)){
 			//Facebook Connect Authentication 
@@ -100,14 +107,17 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 			
 			if (fbID != null) {
 				//success!
-				user = dao.readUserForIdentifier(fbID);
+				user = User.readUserForIdentifier(fbID, dao);
 				if(user == null){
 					//user is new
 					user = new User();
 					user.setEmail(StringUtils.isBlank(fbEmail) ? "email@domain.com" : fbEmail);
-					user.setName(StringUtils.isBlank(fbName) ? "Your Name" : fbName);
+					user.setName(StringUtils.isBlank(fbName) ? "No Name" : fbName);
 					user.setIdentifier(fbID);
-					DAO.getInstance().createUser(user);
+					String id = user.create();
+					if(id == null){
+						throw new BadCredentialsException("Authentication failed: cannot create new user.");
+					}
 				}
 				userAuth = new UserAuthentication(user);
 			}
@@ -115,9 +125,9 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 			String email = request.getParameter(EMAIL);
 			String pass = request.getParameter(PASSWORD);
 			
-			if(DAO.getInstance().passwordMatches(pass, email)){
+			if(User.passwordMatches(pass, email, dao)){
 				//success!
-				user = dao.readUserForIdentifier(email);
+				user = User.readUserForIdentifier(email, dao);
 				userAuth = new UserAuthentication(user);
 			}
 		}else if(requestURI.endsWith(OPENID_ACTION)){
@@ -125,34 +135,56 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 			
 			if(oidAuth == null){
 				// hang on... redirecting to openid provider
-				return null;	
+				return null;
 			}else{
 				//success!
-				userAuth = new UserAuthentication((User) oidAuth.getPrincipal());
+				user = (User) oidAuth.getPrincipal();
+				userAuth = new UserAuthentication(user);
 			}
 		}
 		
-		onAuthSuccess(userAuth, request, response);
-		return userAuth;
-	}
-	
-	private void onAuthSuccess(Authentication userAuth, HttpServletRequest request, HttpServletResponse response){
-		if(userAuth == null || userAuth.getPrincipal() == null || !((User) userAuth.getPrincipal()).isEnabled()) {
+		if(userAuth == null || user == null || !user.isEnabled() || user.getIdentifier() == null) {
 			throw new BadCredentialsException("Bad credentials.");
 		}else{
-			User user = (User) userAuth.getPrincipal();
-			long authstamp = System.currentTimeMillis();
-			DAO.getInstance().setAuthstamp(user.getIdentifier(), authstamp);
-			Utils.setStateParam(Utils.AUTH_COOKIE, Base64.encodeBase64URLSafeString(user.getIdentifier().getBytes()).trim().
-					concat(Utils.SEPARATOR).concat(getCookieHash(user, authstamp)), request, response, true);
+			setAuthCookie(user, request, response);
 		}
+		return userAuth;
+	}
+		
+	private void setAuthCookie(User user, HttpServletRequest request, HttpServletResponse response){
+		if(user.getCurrentIdentifier() == null) return;
+		Long authstamp = System.currentTimeMillis();
+		String ident = user.getCurrentIdentifier();
+		user.setIdentifier(ident);
+		user.setAuthstamp(authstamp.toString());
+		user.update();
+		Utils.setStateParam(Utils.AUTH_COOKIE, Base64.encodeBase64URLSafeString(ident.getBytes()).trim().
+				concat(Utils.SEPARATOR).concat(getCookieHash(user)), request, response, true);
+	}
+		
+	private static String getCookieHash(User user){
+		String authtoken = user.getAuthtoken();
+		String ident = user.getCurrentIdentifier();
+		if(StringUtils.isBlank(authtoken)) logger.log(Level.WARNING, "Authtoken is blank!");
+		return Utils.MD5(ident.
+				concat(Utils.SEPARATOR).
+				concat(StringUtils.trimToEmpty(user.getAuthstamp())).
+				concat(Utils.SEPARATOR).
+				concat(StringUtils.trimToEmpty(authtoken)).
+				concat(Utils.SEPARATOR).concat(APP_KEY));
 	}
 	
-	private String getCookieHash(User user, Long authstamp){
-		Map<String, String> map = new TreeMap<String, String>();
-		map.put(DAO.CN_AUTHSTAMP, authstamp.toString());
-		map.put(DAO.CN_AUTHTOKEN, user.getAuthtoken());
-		return getCookieHash(user.getIdentifier(), map);
+	public static String getCSRFtoken(User user){
+		if(user == null || user.getAuthtoken() == null || user.getCurrentIdentifier() == null) return "";
+		String authtoken = user.getAuthtoken();
+		String ident = user.getCurrentIdentifier();
+		if(StringUtils.isBlank(authtoken)) logger.log(Level.WARNING, "Authtoken is blank!");
+		// Sectoken (stoken)
+		return Utils.MD5(ident.
+				concat(Utils.SEPARATOR).
+				concat(StringUtils.trimToEmpty(authtoken)).
+				concat(Utils.SEPARATOR).
+				concat(StringUtils.trimToEmpty(user.getAuthstamp())));
 	}
 	
 	private String verifiedFacebookID(String fbSig){
@@ -177,7 +209,7 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 				}
 			}
 		} catch (Exception ex) {
-			logger.log(Level.INFO, "Failed to decode FB sig: {0}", ex);
+			logger.log(Level.WARNING, "Failed to decode FB sig: {0}", ex);
 		}
 
 		return fbid;
@@ -201,7 +233,7 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 		}
 
 		public Object getCredentials() {
-			return principal.getIdentifier();
+			return principal.getAuthtoken();
 		}
 
 		public Object getDetails() {
@@ -221,7 +253,9 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 		}
 
 		public String getName() {
-			return principal.getIdentifier();
+			return (principal.getCurrentIdentifier() != null) ? 
+					principal.getCurrentIdentifier() : 
+					principal.getIdentifier();
 		}
 	}
 
@@ -249,7 +283,7 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 			AuthenticationUserDetailsService<OpenIDAuthenticationToken> {
 		
 		public UserDetails loadUserByUsername(String ident) throws UsernameNotFoundException {
-			User user = dao.readUserForIdentifier(ident);
+			User user = User.readUserForIdentifier(ident, Utils.getInstanceOf(DAO.class));
 
 			if (user == null) {
 				throw new UsernameNotFoundException(ident);
@@ -262,7 +296,7 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 			if(token == null) return null;
 
 			String identifier = token.getIdentityUrl();
-			User user = dao.readUserForIdentifier(identifier);
+			User user = User.readUserForIdentifier(identifier, Utils.getInstanceOf(DAO.class));
 
 			if(user == null){
 				// create new OpenID user
@@ -278,7 +312,7 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 				}
 
 				if (fullName == null) {
-					if (firstName == null) firstName = "Your";
+					if (firstName == null) firstName = "No";
 					if (lastName == null) lastName = "Name";
 					fullName = firstName.concat(" ").concat(lastName);
 				}
@@ -287,10 +321,67 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 				user.setEmail(email);
 				user.setName(fullName);
 				user.setIdentifier(identifier);
-				DAO.getInstance().createUser(user);
+				String id = user.create();
+				if(id == null){
+					throw new BadCredentialsException("Authentication failed: cannot create new user.");
+				}
 			}
 
 			return user;
+		}
+	}
+	
+	public static class HazelcastSecurityContextRepository implements SecurityContextRepository{
+
+		private MemoryGrid memgrid = Utils.getInstanceOf(MemoryGrid.class);
+		private String KEY_PREFIX = "SC_";
+		
+		public SecurityContext loadContext(HttpRequestResponseHolder requestResponseHolder) {
+			SecurityContext ctx = memgrid.get(KEY_PREFIX.concat(requestResponseHolder.getRequest().getRemoteUser()));
+			if(ctx != null){
+				return ctx;
+			}else {
+				String ident = authenticateFromCookie(requestResponseHolder.getRequest(), requestResponseHolder.getResponse());
+				return StringUtils.isBlank(ident) ? SecurityContextHolder.createEmptyContext() : SecurityContextHolder.getContext();
+			}
+		}
+
+		public void saveContext(SecurityContext context, HttpServletRequest request, HttpServletResponse response) {
+			if(context.getAuthentication() instanceof UserAuthentication){
+				UserAuthentication auth = (UserAuthentication) context.getAuthentication();
+				String ident = auth.getName();
+				if(!StringUtils.isBlank(ident)){
+					memgrid.put(KEY_PREFIX.concat(ident), context);
+				}
+			}
+		}
+
+		public boolean containsContext(HttpServletRequest request) {
+			if(request.getRemoteUser() == null) return false;
+			return memgrid.contains(KEY_PREFIX.concat(request.getRemoteUser()));
+		}
+		
+		private String authenticateFromCookie(HttpServletRequest req, HttpServletResponse res) {
+			String cookie = Utils.getStateParam(Utils.AUTH_COOKIE, req, res);
+			User user = getAuthenticatedUser();
+			if (cookie != null && user == null && !StringUtils.isBlank(cookie) && cookie.contains(Utils.SEPARATOR)) {
+				String[] tuparts = cookie.split(Utils.SEPARATOR);
+				String identifier = new String(Base64.decodeBase64(tuparts[0]));
+				String hash = tuparts[1];
+
+				user = User.readUserForIdentifier(identifier, Utils.getInstanceOf(DAO.class));
+				if (user.getCurrentIdentifier() != null && user.getAuthtoken() != null && user.getAuthstamp() != null) {
+					String h = getCookieHash(user);
+
+					if (StringUtils.equals(hash, h)) {
+						SecurityContextHolder.getContext().setAuthentication(new UserAuthentication(user));
+						return identifier;
+					} else {
+						Utils.removeStateParam(Utils.AUTH_COOKIE, req, res);
+					}
+				}
+			}
+			return null;
 		}
 	}
 }

@@ -2,6 +2,7 @@
 *.class
 *.jar
 *.zip
+*.tgz
 *.bak
 keys.txt
 rebel.xml

@@ -15,26 +15,31 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.utils;
+package com.erudika.para.impl;
 
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.http.HttpSessionEvent;
-import javax.servlet.http.HttpSessionListener;
+import com.erudika.para.api.CurrencyConverter;
+import com.erudika.para.api.DAO;
+import com.erudika.para.api.EmailService;
+import com.erudika.para.api.MemoryGrid;
+import com.erudika.para.api.Queue;
+import com.erudika.para.api.Search;
+import com.erudika.para.utils.Utils;
+import com.google.inject.AbstractModule;
 
 /**
- * Web application lifecycle listener.
+ *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public class AppListener implements ServletContextListener, HttpSessionListener {
-	
-	public void contextInitialized(ServletContextEvent sce) {}
+public class DefaultImplModule extends AbstractModule {
 
-	public void contextDestroyed(ServletContextEvent sce) {
-//		com.amazonaws.http.IdleConnectionReaper.shutdown();
+	protected void configure() {
+		bind(Utils.class);
+		bind(DAO.class).to(AWSDynamoDAO.class);
+		bind(EmailService.class).to(AWSEmailService.class);
+		bind(Queue.class).to(AWSQueue.class);
+		bind(Search.class).to(ElasticSearch.class);
+		bind(MemoryGrid.class).to(HazelcastMemoryGrid.class);
+		bind(CurrencyConverter.class).to(OXRConverter.class);
 	}
-	
-	public void sessionCreated(HttpSessionEvent se) { }
-	public void sessionDestroyed(HttpSessionEvent se) { }
 	
 }

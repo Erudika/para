@@ -15,26 +15,14 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.utils;
-
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.http.HttpSessionEvent;
-import javax.servlet.http.HttpSessionListener;
+package com.erudika.para.api;
 
 /**
- * Web application lifecycle listener.
+ *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public class AppListener implements ServletContextListener, HttpSessionListener {
+public interface CurrencyConverter {
 	
-	public void contextInitialized(ServletContextEvent sce) {}
-
-	public void contextDestroyed(ServletContextEvent sce) {
-//		com.amazonaws.http.IdleConnectionReaper.shutdown();
-	}
-	
-	public void sessionCreated(HttpSessionEvent se) { }
-	public void sessionDestroyed(HttpSessionEvent se) { }
+	public Double convertCurrency(Number amount, String from, String to);
 	
 }

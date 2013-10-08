@@ -15,26 +15,19 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.utils;
+package com.erudika.para.annotations;
 
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.http.HttpSessionEvent;
-import javax.servlet.http.HttpSessionListener;
-
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 /**
- * Web application lifecycle listener.
+ *
  * @author Alex Bogdanovski <albogdano@me.com>
+ * 
+ * Annotation indicates that this field will be stored in the database.
+ * 
  */
-public class AppListener implements ServletContextListener, HttpSessionListener {
-	
-	public void contextInitialized(ServletContextEvent sce) {}
-
-	public void contextDestroyed(ServletContextEvent sce) {
-//		com.amazonaws.http.IdleConnectionReaper.shutdown();
-	}
-	
-	public void sessionCreated(HttpSessionEvent se) { }
-	public void sessionDestroyed(HttpSessionEvent se) { }
-	
-}
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+public @interface Stored {}

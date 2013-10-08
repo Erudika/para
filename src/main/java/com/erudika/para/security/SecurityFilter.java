@@ -1,15 +1,25 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * You can reach the author at: https://github.com/albogdano
  */
 package com.erudika.para.security;
 
-import com.erudika.para.security.AuthModule;
 import com.erudika.para.core.User;
-import com.erudika.para.utils.DAO;
 import com.erudika.para.utils.Utils;
 import java.io.IOException;
-import java.util.Map;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -18,20 +28,17 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.GenericFilterBean;
 
 /**
  *
- * @author alexb
+ * @author Alex Bogdanovski <albogdano@me.com>
  */
 public class SecurityFilter extends GenericFilterBean{
 
 //	private static final boolean debug = false;
-
+	
 	public SecurityFilter() {
 	}
 
@@ -41,17 +48,12 @@ public class SecurityFilter extends GenericFilterBean{
 		final HttpServletRequest request = (HttpServletRequest) req;
 		final HttpServletResponse response = (HttpServletResponse) resp;
 		
-		String authCookie = Utils.getStateParam(Utils.AUTH_COOKIE, request, response);
-		SecurityContext ctx = AuthModule.getAuthenticatedContext(getUserIdFromCookie(authCookie));
-		if(ctx != null)	SecurityContextHolder.setContext(ctx);
-		
-		boolean isAuthenticated = SecurityContextHolder.getContext().getAuthentication() != null && 
-				SecurityContextHolder.getContext().getAuthentication().isAuthenticated();
+		boolean isAuthenticated = AuthModule.getAuthenticatedUser() != null;
 		
 		// anti-CSRF token validation
 		if(request.getMethod().equals("POST") && isAuthenticated && !request.getRequestURI().startsWith("/api")){
-			User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-			String storedCSRFToken = getCSRFtoken(user);
+			User user = AuthModule.getAuthenticatedUser();
+			String storedCSRFToken = AuthModule.getCSRFtoken(user);
 			String givenCSRFToken = request.getParameter("stoken");
 			
 			if(StringUtils.equals(storedCSRFToken, givenCSRFToken)){
@@ -74,14 +76,7 @@ public class SecurityFilter extends GenericFilterBean{
 			chain.doFilter(request, response);
 		}
 	}
-	
-	public static String getCSRFtoken(User user){
-		if(user == null) return "";
-		return Utils.MD5(user.getIdentifier().concat(Utils.SEPARATOR).
-				concat(user.getAuthtoken()).concat(Utils.SEPARATOR).
-				concat(user.getAuthstamp().toString()));
-	}
-	
+
 	private void forbidden(HttpServletResponse response, String host, String address, 
 			String userAgent) throws IOException{
 		response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied!");
@@ -97,19 +92,5 @@ public class SecurityFilter extends GenericFilterBean{
 		}else{
 			response.sendRedirect(path + "/" + HttpServletResponse.SC_BAD_REQUEST);
 		}
-	}
-	
-	private String getUserIdFromCookie(String cookie){
-		if(StringUtils.isBlank(cookie) || !cookie.contains(Utils.SEPARATOR)) return null;
-		String[] tuparts = cookie.split(Utils.SEPARATOR);
-		String identifier = new String(Base64.decodeBase64(tuparts[0]));
-		String hash = tuparts[1];
-		
-		Map<String, String> authmap = DAO.getInstance().loadAuthMap(identifier);
-	 	
-		if(authmap.isEmpty()) return null;
-		String uid = authmap.get(DAO.CN_ID);
-		String h = AuthModule.getCookieHash(identifier, authmap);
-		return StringUtils.equals(hash, h) ? uid : null; 
 	}
 }

@@ -15,26 +15,41 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.utils;
+package com.erudika.para.utils.aop;
 
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.http.HttpSessionEvent;
-import javax.servlet.http.HttpSessionListener;
+import com.erudika.para.core.Tag;
+import com.erudika.para.impl.AWSDynamoDAO;
+import com.erudika.para.utils.DynamoDBHelper;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import static org.junit.Assert.*;
 
 /**
- * Web application lifecycle listener.
+ *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public class AppListener implements ServletContextListener, HttpSessionListener {
+public class IndexingAspectIT {
 	
-	public void contextInitialized(ServletContextEvent sce) {}
-
-	public void contextDestroyed(ServletContextEvent sce) {
-//		com.amazonaws.http.IdleConnectionReaper.shutdown();
+	public IndexingAspectIT() {
 	}
 	
-	public void sessionCreated(HttpSessionEvent se) { }
-	public void sessionDestroyed(HttpSessionEvent se) { }
+	@BeforeClass
+	public static void setUpClass() {
+	}
 	
+	@AfterClass
+	public static void tearDownClass() {
+	}
+
+	@Test
+	public void testInvoke() throws Exception {
+		
+		DynamoDBHelper.start(null);
+		AWSDynamoDAO dao = new AWSDynamoDAO();
+		assertNotNull(dao.create(new Tag("TEST")));
+		assertNotNull(dao.read(Tag.id("TEST")));
+		
+//		assertEquals("aa", "bb");
+	}
 }

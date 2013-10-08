@@ -15,26 +15,22 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.utils;
+package com.erudika.para.utils.aop;
 
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.http.HttpSessionEvent;
-import javax.servlet.http.HttpSessionListener;
+import com.erudika.para.annotations.Indexed;
+import com.google.inject.AbstractModule;
+import com.google.inject.matcher.Matchers;
 
 /**
- * Web application lifecycle listener.
+ *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public class AppListener implements ServletContextListener, HttpSessionListener {
-	
-	public void contextInitialized(ServletContextEvent sce) {}
+public class AOPModule extends AbstractModule {
 
-	public void contextDestroyed(ServletContextEvent sce) {
-//		com.amazonaws.http.IdleConnectionReaper.shutdown();
+	protected void configure() {
+		IndexingAspect ia = new IndexingAspect();
+		requestInjection(ia);
+		bindInterceptor(Matchers.any(), Matchers.annotatedWith(Indexed.class), ia);
 	}
-	
-	public void sessionCreated(HttpSessionEvent se) { }
-	public void sessionDestroyed(HttpSessionEvent se) { }
 	
 }

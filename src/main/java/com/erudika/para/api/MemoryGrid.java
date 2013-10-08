@@ -15,26 +15,24 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.utils;
-
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.http.HttpSessionEvent;
-import javax.servlet.http.HttpSessionListener;
+package com.erudika.para.api;
 
 /**
- * Web application lifecycle listener.
+ *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public class AppListener implements ServletContextListener, HttpSessionListener {
+public interface MemoryGrid {
 	
-	public void contextInitialized(ServletContextEvent sce) {}
-
-	public void contextDestroyed(ServletContextEvent sce) {
-//		com.amazonaws.http.IdleConnectionReaper.shutdown();
-	}
+	public boolean contains(String id);
 	
-	public void sessionCreated(HttpSessionEvent se) { }
-	public void sessionDestroyed(HttpSessionEvent se) { }
+	public <T> void put(String id, T object);
+	
+	public <T> void put(String id, T object, Long ttl_seconds);
+	
+	public <T> T get(String id);
+	
+	public void remove(String id);
+	
+	public void removeAll();
 	
 }

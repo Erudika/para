@@ -1,13 +1,27 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * You can reach the author at: https://github.com/albogdano
  */
 package com.erudika.para.core;
 
-import com.erudika.para.utils.DAO;
-import com.erudika.para.utils.Locked;
-import com.erudika.para.utils.Search;
-import com.erudika.para.utils.Stored;
+import com.erudika.para.annotations.Locked;
+import com.erudika.para.annotations.Stored;
+import com.erudika.para.api.DAO;
+import com.erudika.para.api.ParaObject;
+import static com.erudika.para.core.PObject.classname;
 import com.erudika.para.utils.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
@@ -16,36 +30,34 @@ import org.hibernate.validator.constraints.NotBlank;
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  * 
- * This class represents a many-to-many relationship between two objects.
+ * This class represents a many-to-many relationship (link) between two objects.
  */
 public class Linker extends PObject{
 	private static final long serialVersionUID = 1L;
 
 	@Stored @Locked @NotBlank private String id1;
 	@Stored @Locked @NotBlank private String id2;
+	@Stored @Locked @NotBlank private String classname1;
+	@Stored @Locked @NotBlank private String classname2;
 	@Stored private String metadata;
-
-	private transient String classname1;
-	private transient String classname2;
-	
 	
 	public Linker() {
 	}
 
-	public Linker(Class<? extends PObject> c1, Class<? extends PObject> c2, String i1, String i2) {
-		classname1 = classname(c1);
-		classname2 = classname(c2);
-		if(isReversed()){
+	public Linker(Class<? extends ParaObject> c1, Class<? extends ParaObject> c2, String i1, String i2) {
+		if(isReversed(classname(c1), classname(c2))){
+			classname1 = classname(c2);
+			classname2 = classname(c1);
 			this.id1 = i2;
 			this.id2 = i1;
-			setName(classname2 + Utils.SEPARATOR + classname1);
-			setId(classname2 + Utils.SEPARATOR + id2 + Utils.SEPARATOR + classname1 + Utils.SEPARATOR + id1);
 		}else{
+			classname1 = classname(c1);
+			classname2 = classname(c2);
 			this.id1 = i1;
 			this.id2 = i2;
-			setName(classname1 + Utils.SEPARATOR + classname2);
-			setId(classname2 + Utils.SEPARATOR + id2 + Utils.SEPARATOR + classname1 + Utils.SEPARATOR + id1);
 		}
+		setName(classname1 + Utils.SEPARATOR + classname2);
+		setId(classname1 + Utils.SEPARATOR + id1 + Utils.SEPARATOR + classname2 + Utils.SEPARATOR + id2);
 	}
 		
 	public String getId2() {
@@ -64,6 +76,22 @@ public class Linker extends PObject{
 		this.id1 = id1;
 	}
 
+	public String getClassname1() {
+		return classname1;
+	}
+
+	public void setClassname1(String classname1) {
+		this.classname1 = classname1;
+	}
+
+	public String getClassname2() {
+		return classname2;
+	}
+
+	public void setClassname2(String classname2) {
+		this.classname2 = classname2;
+	}
+	
 	public String create() {
 		if(StringUtils.isBlank(getId()) || StringUtils.isBlank(getName()) || 
 				StringUtils.isBlank(id1) || StringUtils.isBlank(id2)) return null;
@@ -80,26 +108,28 @@ public class Linker extends PObject{
 
 //	public void delete() {
 //		ArrayList<String> keys = new ArrayList<String>();
-//		for (PObject link : Search.findTwoTerms(getClassname(), null, null, "id1", id1, "id2", id2)) {
+//		for (PObject link : search.indTwoTerms(getClassname(), null, null, "id1", id1, "id2", id2)) {
 //			keys.add(link.getId());
 //		}
-//		DAO.getInstance().deleteAll(keys);
+//		AWSDynamoDAO.getInstance().deleteAll(keys);
 //	}
 	
 	public boolean exists(){
-		return Search.getCount(getClassname(), DAO.CN_ID, getId()) > 0;
+//		return search.getCount(getClassname(), DAO.CN_ID, getId()) > 0;
+		return Utils.getInstanceOf(DAO.class).read(getId()) != null;
 	}
 	
-	public boolean isReversed(){
-		if(classname1 == null || classname2 == null) return false;
-		return classname1.compareToIgnoreCase(classname2) > 0;
+	private boolean isReversed(String s1, String s2){
+		if(s1 == null || s2 == null) return false;
+		return s1.compareToIgnoreCase(s2) > 0;
 	}
 	
-	public boolean isFirst(Class<? extends PObject> c){
-		return classname1.equals(classname(c));
+	public boolean isFirst(Class<? extends ParaObject> c1){
+		if(c1 == null) return false;
+		return classname(c1).equals(classname1);
 	}
-	
-	public String getFirstIdFieldName(){
-		return isReversed() ? "id2" : "id1";
+//	
+	public String getIdFieldNameFor(Class<? extends ParaObject> c){
+		return isFirst(c) ? "id1" : "id2";
 	}
 }
