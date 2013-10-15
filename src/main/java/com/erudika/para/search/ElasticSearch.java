@@ -15,12 +15,12 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.impl;
+package com.erudika.para.search;
 
-import com.erudika.para.api.Search;
+import com.erudika.para.search.Search;
 import com.erudika.para.annotations.Stored;
-import com.erudika.para.api.DAO;
-import com.erudika.para.api.ParaObject;
+import com.erudika.para.persistence.DAO;
+import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Address;
 import com.erudika.para.core.PObject;
 import com.erudika.para.core.Tag;
@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -83,7 +84,9 @@ public class ElasticSearch implements Search {
 	private String INDEX_NAME;
 	private static Client searchClient;
 	private static Node searchNode;
-		
+	
+	private DAO dao;
+	
 	public ElasticSearch(){
 		// init search index
 		if(!existsIndex(Utils.INDEX_ALIAS)){
@@ -101,6 +104,11 @@ public class ElasticSearch implements Search {
 				}
 			}
 		}
+	}
+	
+	@Inject
+	public void setDao(DAO dao) {
+		this.dao = dao;
 	}
 	
 	private Client getSearchClient(){
@@ -131,8 +139,8 @@ public class ElasticSearch implements Search {
 //			searchClient = new TransportClient(settings.put("cluster.name", Utils.CLUSTER_NAME).build());
 //				((TransportClient) searchClient).addTransportAddress(
 //						new InetSocketTransportAddress("localhost", 9300));
-			
-			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(true).data(true).node();
+			searchNode = NodeBuilder.nodeBuilder().settings(settings).
+					clusterName(Utils.CLUSTER_NAME).local(true).data(true).node();
 			searchClient = searchNode.client();
 		}
 				
@@ -162,7 +170,7 @@ public class ElasticSearch implements Search {
 	/********************************************
 	 *				SEARCH FUNCTIONS
 	********************************************/
-			
+	
 	private XContentBuilder getVoteMapping() throws Exception{
 		return XContentFactory.jsonBuilder().startObject().startObject(PObject.classname(Vote.class)).
 					startObject("_ttl").
@@ -184,10 +192,18 @@ public class ElasticSearch implements Search {
 			endObject();
 	}
 	
-	static{
-		
+	private XContentBuilder getTagMapping() throws Exception{
+		return XContentFactory.jsonBuilder().startObject().startObject(PObject.classname(Tag.class)).
+					startObject("properties").
+						startObject("tag").
+							field("type", "string").
+							field("index", "not_analyzed").
+						endObject().
+					endObject().
+				endObject().
+			endObject();
 	}
-		
+	
 	@Override
 	public void index(ParaObject so, String type){
 		index(so, type, 0);
@@ -195,15 +211,11 @@ public class ElasticSearch implements Search {
 	
 	@Override
 	public void index(ParaObject so, String type, long ttl){
-		index(so.getId(), Utils.getAnnotatedFields(so, Stored.class, null), 
-				(StringUtils.isBlank(type) ? so.getClassname() : type), ttl);		
-	}
-		
-	@Override
-	public void index(String key, Map<String, Object> data, String type, long ttl){
-		if(data == null || data.isEmpty() || StringUtils.isBlank(type)) return;
+		if(so == null || StringUtils.isBlank(type)) return;
+		Map<String, Object> data = Utils.getAnnotatedFields(so, Stored.class, null);
 		try {
-			IndexRequestBuilder irb = getSearchClient().prepareIndex(Utils.INDEX_ALIAS, type, key).setSource(data);
+			IndexRequestBuilder irb = getSearchClient().prepareIndex(Utils.INDEX_ALIAS, 
+					(StringUtils.isBlank(type) ? so.getClassname() : type), so.getId()).setSource(data);
 			if(ttl > 0) irb.setTTL(ttl);
 			irb.execute();
 		} catch (Exception e) {
@@ -215,7 +227,7 @@ public class ElasticSearch implements Search {
 	public void unindex(ParaObject so, String type){
 		if(so == null || StringUtils.isBlank(so.getId()) || StringUtils.isBlank(type)) return;
 		try{
-			getSearchClient().prepareDelete(Utils.INDEX_ALIAS, type, so.getId()).setType(type).execute();
+			getSearchClient().prepareDelete(Utils.INDEX_ALIAS, type, so.getId()).execute();
 		} catch (Exception e) {
 			logger.log(Level.WARNING, null, e);
 		}
@@ -280,8 +292,9 @@ public class ElasticSearch implements Search {
 			CreateIndexRequestBuilder create = getSearchClient().admin().indices().prepareCreate(name).
 					setSettings(nb.settings().build());
 
-			create.addMapping(PObject.classname(Address.class), getAddressMapping());
 			create.addMapping(PObject.classname(Vote.class), getVoteMapping());
+			create.addMapping(PObject.classname(Address.class), getAddressMapping());
+			create.addMapping(PObject.classname(Tag.class), getTagMapping());
 			create.execute().actionGet();
 			
 			getSearchClient().admin().indices().prepareAliases().
@@ -328,7 +341,6 @@ public class ElasticSearch implements Search {
 			BulkRequestBuilder brb = getSearchClient().prepareBulk();
 			BulkResponse resp = null;
 			String lastKey = null;
-			DAO dao = Utils.getInstanceOf(DAO.class);
 			
 			List<ParaObject> list = dao.readPage(DAO.OBJECTS, null);
 
@@ -585,7 +597,7 @@ public class ElasticSearch implements Search {
 			}
 			
 			if (!Utils.READ_FROM_INDEX) {
-				Map<String, P> fromDB = Utils.getInstanceOf(DAO.class).readAll(keys, true);
+				Map<String, P> fromDB = dao.readAll(keys, true);
 				results.addAll(fromDB.values());
 //				unindexNulls(type, keys, fromDB);
 			}			
@@ -675,7 +687,7 @@ public class ElasticSearch implements Search {
 	
 	private <P extends ParaObject> P fromSource(String type, Map<String, Object> source) throws Exception{
 		Class<P> clazz = (Class<P>) Utils.toClass(type);
-		if(clazz != null){
+		if(clazz != null && source != null && !source.isEmpty()){
 			P obj = clazz.newInstance();
 			BeanUtils.populate(obj, source);
 			return obj;

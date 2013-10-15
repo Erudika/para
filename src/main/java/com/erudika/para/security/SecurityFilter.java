@@ -77,11 +77,11 @@ public class SecurityFilter extends GenericFilterBean{
 		}
 	}
 
-	private void forbidden(HttpServletResponse response, String host, String address, 
-			String userAgent) throws IOException{
-		response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied!");
+//	private void forbidden(HttpServletResponse response, String host, String address, 
+//			String userAgent) throws IOException{
+//		response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied!");
 //		log("forbidden: "+host+"/"+address+" ("+userAgent+")");
-	}
+//	}
 	
 	private void badrequest(HttpServletResponse response, String host, String address, 
 			String userAgent, boolean isAjax) throws IOException{

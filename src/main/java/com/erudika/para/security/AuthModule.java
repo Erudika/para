@@ -17,8 +17,8 @@
  */
 package com.erudika.para.security;
 
-import com.erudika.para.api.DAO;
-import com.erudika.para.api.MemoryGrid;
+import com.erudika.para.persistence.DAO;
+import com.erudika.para.cache.Cache;
 import com.erudika.para.core.User;
 import com.erudika.para.utils.Utils;
 import java.io.IOException;
@@ -28,6 +28,7 @@ import java.util.logging.Logger;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import javax.inject.Inject;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -64,11 +65,12 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 	private static final String PASSWORD = "password";
 	private static final String EMAIL = "email";
 	private static final String APP_KEY = Utils.APP_SECRET_KEY;	// salt for token gen
-	private static final Logger logger = Logger.getLogger(AuthModule.class.getName());
+	private static final Logger log = Logger.getLogger(AuthModule.class.getName());
 	private static final ObjectMapper mapper = new ObjectMapper();
 
-	public AuthModule() {
-	}
+	@Inject private DAO dao;
+	
+	AuthModule() {}
 
 	public static User getAuthenticatedUser(){
 		if(SecurityContextHolder.getContext().getAuthentication() == null) return null;
@@ -86,7 +88,7 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 		try {
 			req.logout();
 		} catch (ServletException ex) {
-			logger.log(Level.WARNING, null, ex);
+			log.log(Level.WARNING, null, ex);
 		}
 		SecurityContextHolder.clearContext();		
 	}
@@ -96,7 +98,6 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 		String requestURI = request.getRequestURI();
 		UserAuthentication userAuth = null;
 		User user = null;
-		DAO dao = Utils.getInstanceOf(DAO.class);
 		
 		if(requestURI.endsWith(FACEBOOK_ACTION)){
 			//Facebook Connect Authentication 
@@ -165,7 +166,7 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 	private static String getCookieHash(User user){
 		String authtoken = user.getAuthtoken();
 		String ident = user.getCurrentIdentifier();
-		if(StringUtils.isBlank(authtoken)) logger.log(Level.WARNING, "Authtoken is blank!");
+		if(StringUtils.isBlank(authtoken)) log.log(Level.WARNING, "Authtoken is blank!");
 		return Utils.MD5(ident.
 				concat(Utils.SEPARATOR).
 				concat(StringUtils.trimToEmpty(user.getAuthstamp())).
@@ -178,7 +179,7 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 		if(user == null || user.getAuthtoken() == null || user.getCurrentIdentifier() == null) return "";
 		String authtoken = user.getAuthtoken();
 		String ident = user.getCurrentIdentifier();
-		if(StringUtils.isBlank(authtoken)) logger.log(Level.WARNING, "Authtoken is blank!");
+		if(StringUtils.isBlank(authtoken)) log.log(Level.WARNING, "Authtoken is blank!");
 		// Sectoken (stoken)
 		return Utils.MD5(ident.
 				concat(Utils.SEPARATOR).
@@ -209,7 +210,7 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 				}
 			}
 		} catch (Exception ex) {
-			logger.log(Level.WARNING, "Failed to decode FB sig: {0}", ex);
+			log.log(Level.WARNING, "Failed to decode FB sig: {0}", ex);
 		}
 
 		return fbid;
@@ -282,8 +283,10 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 	public static class StandardUserService implements UserDetailsService, 
 			AuthenticationUserDetailsService<OpenIDAuthenticationToken> {
 		
+		@Inject private DAO dao;
+		
 		public UserDetails loadUserByUsername(String ident) throws UsernameNotFoundException {
-			User user = User.readUserForIdentifier(ident, Utils.getInstanceOf(DAO.class));
+			User user = User.readUserForIdentifier(ident, dao);
 
 			if (user == null) {
 				throw new UsernameNotFoundException(ident);
@@ -296,7 +299,7 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 			if(token == null) return null;
 
 			String identifier = token.getIdentityUrl();
-			User user = User.readUserForIdentifier(identifier, Utils.getInstanceOf(DAO.class));
+			User user = User.readUserForIdentifier(identifier, dao);
 
 			if(user == null){
 				// create new OpenID user
@@ -333,8 +336,10 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 	
 	public static class HazelcastSecurityContextRepository implements SecurityContextRepository{
 
-		private MemoryGrid memgrid = Utils.getInstanceOf(MemoryGrid.class);
 		private String KEY_PREFIX = "SC_";
+		
+		@Inject private Cache memgrid;
+		@Inject private DAO dao;
 		
 		public SecurityContext loadContext(HttpRequestResponseHolder requestResponseHolder) {
 			SecurityContext ctx = memgrid.get(KEY_PREFIX.concat(requestResponseHolder.getRequest().getRemoteUser()));
@@ -369,7 +374,7 @@ public class AuthModule extends OpenIDAuthenticationFilter {
 				String identifier = new String(Base64.decodeBase64(tuparts[0]));
 				String hash = tuparts[1];
 
-				user = User.readUserForIdentifier(identifier, Utils.getInstanceOf(DAO.class));
+				user = User.readUserForIdentifier(identifier, dao);
 				if (user.getCurrentIdentifier() != null && user.getAuthtoken() != null && user.getAuthstamp() != null) {
 					String h = getCookieHash(user);
 

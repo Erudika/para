@@ -15,9 +15,10 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.api;
+package com.erudika.para.persistence;
 
 import com.erudika.para.annotations.Indexed;
+import com.erudika.para.core.ParaObject;
 import com.erudika.para.utils.Utils;
 import java.util.List;
 import java.util.Map;

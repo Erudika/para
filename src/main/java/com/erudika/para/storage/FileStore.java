@@ -15,24 +15,18 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.api;
+package com.erudika.para.storage;
+
+import java.io.InputStream;
 
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public interface MemoryGrid {
+public interface FileStore {
 	
-	public boolean contains(String id);
+	public InputStream load(String url);
 	
-	public <T> void put(String id, T object);
-	
-	public <T> void put(String id, T object, Long ttl_seconds);
-	
-	public <T> T get(String id);
-	
-	public void remove(String id);
-	
-	public void removeAll();
+	public String store(InputStream data);
 	
 }

@@ -15,7 +15,7 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.api;
+package com.erudika.para.core;
 
 import java.io.Serializable;
 import org.codehaus.jackson.annotate.JsonIgnore;

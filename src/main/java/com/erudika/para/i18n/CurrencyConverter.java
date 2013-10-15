@@ -15,25 +15,14 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.api;
+package com.erudika.para.i18n;
 
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public interface Votable extends ParaObject{
+public interface CurrencyConverter {
 	
-	public enum VoteType{
-		UP, DOWN;
-		public String toString() {
-			return name().toLowerCase();
-		}
-	}
-	
-	public <P extends ParaObject> boolean voteUp(String userid);
-	
-	public <P extends ParaObject> boolean voteDown(String userid);
-	
-	public Integer getVotes();
+	public Double convertCurrency(Number amount, String from, String to);
 	
 }

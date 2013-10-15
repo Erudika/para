@@ -19,8 +19,6 @@ package com.erudika.para.core;
 
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
-import com.erudika.para.api.DAO;
-import com.erudika.para.api.ParaObject;
 import static com.erudika.para.core.PObject.classname;
 import com.erudika.para.utils.Utils;
 import org.apache.commons.lang3.StringUtils;
@@ -116,7 +114,7 @@ public class Linker extends PObject{
 	
 	public boolean exists(){
 //		return search.getCount(getClassname(), DAO.CN_ID, getId()) > 0;
-		return Utils.getInstanceOf(DAO.class).read(getId()) != null;
+		return getDao().read(getId()) != null;
 	}
 	
 	private boolean isReversed(String s1, String s2){

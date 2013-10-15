@@ -15,7 +15,7 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.impl;
+package com.erudika.para.email;
 
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
@@ -24,7 +24,7 @@ import com.amazonaws.services.simpleemail.model.Content;
 import com.amazonaws.services.simpleemail.model.Destination;
 import com.amazonaws.services.simpleemail.model.Message;
 import com.amazonaws.services.simpleemail.model.SendEmailRequest;
-import com.erudika.para.api.EmailService;
+import com.erudika.para.email.Emailer;
 import com.erudika.para.utils.Utils;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -36,11 +36,11 @@ import org.apache.commons.lang3.StringUtils;
  * @author Alex Bogdanovski <albogdano@me.com>
  */
 @Singleton
-public class AWSEmailService implements EmailService{
+public class AWSEmailer implements Emailer{
 
 	private static AmazonSimpleEmailServiceClient sesclient;
 	
-	public AWSEmailService() {
+	public AWSEmailer() {
 		if (StringUtils.isBlank(Utils.AWS_ACCESSKEY) || StringUtils.isBlank(Utils.AWS_SECRETKEY)) {
 			sesclient = new AmazonSimpleEmailServiceClient();
 		} else {

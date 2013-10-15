@@ -17,18 +17,15 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.api.Linkable;
-import com.erudika.para.api.ParaObject;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
-import com.erudika.para.api.DAO;
-import com.erudika.para.api.Search;
-import com.erudika.para.api.Votable;
-import com.erudika.para.impl.SimpleVote;
+import com.erudika.para.persistence.DAO;
+import com.erudika.para.search.Search;
 import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
+import javax.inject.Inject;
 import javax.validation.constraints.Size;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -48,17 +45,38 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 	@Stored @Locked private String parentid;
 	@Stored @Locked private String creatorid;
 	@Stored @NotBlank @Size(min=2, max=255) private String name;
-	@Stored private transient Integer votes;
+	@Stored private Integer votes;
 	
 	private transient PObject parent;
 	private transient PObject creator;
+	
+	private DAO dao;
+	private Search search;
+	
+	public DAO getDao() {
+		return dao;
+	}
+
+	@Inject
+	public void setDao(DAO dao) {
+		this.dao = dao;
+	}
+
+	public Search getSearch() {
+		return search;
+	}
+
+	@Inject
+	public void setSearch(Search search) {
+		this.search = search;
+	}
 	
 	// one-to-many relationships (may return self)
 	@JsonIgnore
 	@Override
 	public PObject getParent(){
 		if(parent == null)
-			parent = Utils.getInstanceOf(DAO.class).read(parentid);
+			parent = dao.read(parentid);
 		return parent;
 	}
 	
@@ -66,7 +84,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 	@Override
 	public PObject getCreator(){
 		if(creator == null)
-			creator = Utils.getInstanceOf(DAO.class).read(creatorid);
+			creator = dao.read(creatorid);
 		return creator;
 	}
 	
@@ -132,17 +150,17 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 	
 	@Override
 	public String create() {
-		return Utils.getInstanceOf(DAO.class).create(this);
+		return dao.create(this);
 	}
 
 	@Override
 	public void update() {
-		Utils.getInstanceOf(DAO.class).update(this);
+		dao.update(this);
 	}
 
 	@Override
 	public void delete() {
-		Utils.getInstanceOf(DAO.class).delete(this);
+		dao.delete(this);
 	}
 	
 	@Override
@@ -171,8 +189,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 	
 	@Override
 	public void unlinkAll(){
-		Utils.getInstanceOf(DAO.class).deleteAll(Utils.getInstanceOf(Search.class).
-			findTwoTerms(classname(Linker.class), null, null, "id1", id, "id2", id, 
+		dao.deleteAll(search.findTwoTerms(classname(Linker.class), null, null, "id1", id, "id2", id, 
 				false, null, true, Utils.DEFAULT_LIMIT));
 	}
 	
@@ -187,7 +204,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 		if(c2 == null) return new ArrayList<Linker>();
 		Linker link = new Linker(this.getClass(), c2, null, null);
 		String idField = link.getIdFieldNameFor(this.getClass());
-		return Utils.getInstanceOf(Search.class).findTwoTerms(link.getClassname(), pagenum, itemcount, 
+		return search.findTwoTerms(link.getClassname(), pagenum, itemcount, 
 				DAO.CN_NAME, link.getName(), idField, id, null, reverse, maxItems);
 	}
 	
@@ -202,7 +219,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 		if(id == null) return 0L;
 		Linker link = new Linker(this.getClass(), c2, null, null);
 		String idField = link.getIdFieldNameFor(this.getClass());
-		return Utils.getInstanceOf(Search.class).getCount(link.getClassname(), 
+		return search.getCount(link.getClassname(), 
 				DAO.CN_NAME, link.getName(), idField, id);
 	}
 	
@@ -219,14 +236,14 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 	@Override
     public <P extends ParaObject> ArrayList<P> getChildren(Class<? extends ParaObject> clazz, 
 			MutableLong page, MutableLong itemcount, String sortfield, int max){
-		return Utils.getInstanceOf(Search.class).findTerm(classname(clazz), page, itemcount, 
+		return search.findTerm(classname(clazz), page, itemcount, 
 				DAO.CN_PARENTID, getId(), sortfield, true, max);
     }
 	
 	@Override
 	public void deleteChildren(Class<? extends ParaObject> clazz){
 		if(StringUtils.isBlank(getId())) return ;
-		Utils.getInstanceOf(DAO.class).deleteAll(Utils.getInstanceOf(Search.class).findTerm(classname(clazz), 
+		dao.deleteAll(search.findTerm(classname(clazz), 
 				null, null, DAO.CN_PARENTID, getId()));
 	}
 	
@@ -243,7 +260,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 			}
 		}
 		
-		return new ArrayList<P>((Collection<? extends P>) Utils.getInstanceOf(DAO.class).readAll(keys, true).values());
+		return new ArrayList<P>((Collection<? extends P>) dao.readAll(keys, true).values());
 //		return search.findTermInList(classname(clazz), page, itemcount, DAO.CN_ID, keys, 
 //				null, true, Utils.MAX_ITEMS_PER_PAGE);
 	}
@@ -256,8 +273,6 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 		//no voting on your own stuff!
 		if(votable == null || StringUtils.isBlank(userid) || userid.equals(votable.getCreatorid()) ||
 				votable.getId() == null || upDown == null) return false;
-		
-		Search search = Utils.getInstanceOf(Search.class);
 		
 		Vote v = new SimpleVote();
 		v.setCreatorid(userid);
@@ -291,6 +306,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 
 	@Override
 	public final Integer getVotes() {
+		if(votes == null) votes = 0;
 		return votes;
 	}
 	

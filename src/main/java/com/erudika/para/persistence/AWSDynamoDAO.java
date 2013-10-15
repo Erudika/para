@@ -15,10 +15,8 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.impl;
+package com.erudika.para.persistence;
 
-import com.erudika.para.api.Search;
-import com.erudika.para.api.DAO;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.annotations.Locked;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -48,9 +46,8 @@ import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.dynamodbv2.model.UpdateItemRequest;
 import com.amazonaws.services.dynamodbv2.model.WriteRequest;
-import com.erudika.para.api.ParaObject;
+import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
-import com.erudika.para.utils.DynamoDBHelper;
 import com.erudika.para.utils.Utils;
 import java.lang.annotation.Annotation;
 import java.util.*;
@@ -81,7 +78,7 @@ public class AWSDynamoDAO implements DAO {
 			ddb = new AmazonDynamoDBClient();
 			ddb.setEndpoint(ENDPOINT);
 		}else{
-			DynamoDBHelper.start(null);
+			AWSDynamoHelper.start(null);
 			
 			ddb = new AmazonDynamoDBClient(new BasicAWSCredentials("local", "null"));
 			ddb.setEndpoint(LOCAL_ENDPOINT);
@@ -95,15 +92,7 @@ public class AWSDynamoDAO implements DAO {
 			}
 		}
 	}
-	
-//	public static AWSDynamoDAO getInstance(){
-//		if(dao == null){
-//			Utils.initConfig();
-//			dao = new AWSDynamoDAO();
-//		}
-//		return dao;
-//	}
-	
+		
 	/********************************************
 	 *			CORE FUNCTIONS
 	********************************************/
@@ -118,7 +107,6 @@ public class AWSDynamoDAO implements DAO {
 		createRow(so.getId(), OBJECTS, toRow(so, null));
 		
 		logger.log(Level.FINE, "DAO.create() {0}", new Object[]{so.getId()});
-		Utils.getInstanceOf(Search.class).index(so, so.getClassname());
 		return so.getId();
 	}
 	
@@ -126,7 +114,7 @@ public class AWSDynamoDAO implements DAO {
 	public <P extends ParaObject> P read(String key) {
 		if(StringUtils.isBlank(key)) return null;
 		
-		P so = (P) fromRow(readRow(key, OBJECTS));
+		P so = fromRow(readRow(key, OBJECTS));
 		
 		logger.log(Level.FINE, "DAO.read() {0} -> {1}", new Object[]{key, so});
 		return so != null ? so : null;
@@ -140,7 +128,6 @@ public class AWSDynamoDAO implements DAO {
 		updateRow(so.getId(), OBJECTS, toRow(so, Locked.class));
 		
 		logger.log(Level.FINE, "DAO.update() {0}", new Object[]{so.getId()});
-		Utils.getInstanceOf(Search.class).index(so, so.getClassname());
 	}
 
 	@Override
@@ -150,7 +137,6 @@ public class AWSDynamoDAO implements DAO {
 		deleteRow(so.getId(), OBJECTS);
 		
 		logger.log(Level.FINE, "DAO.delete() {0}", new Object[]{so.getId()});
-		Utils.getInstanceOf(Search.class).unindex(so, so.getClassname());
 	}
 
 	/********************************************
@@ -345,15 +331,17 @@ public class AWSDynamoDAO implements DAO {
 			}
 		}
 		batchWrite(Collections.singletonMap(OBJECTS, reqs));
-		Utils.getInstanceOf(Search.class).unindexAll(objects);
 	}
 	
 	private  <P extends ParaObject> void writeAll(List<P> objects, boolean isUpdate){
 		if(objects == null || objects.isEmpty()) return;
 		
 		List<WriteRequest> reqs = new ArrayList<WriteRequest>();
-		int batchSteps = (objects.size() > MAX_ITEMS_PER_BATCH) ? (objects.size() / MAX_ITEMS_PER_BATCH) : 1;
-		if(objects.size() % MAX_ITEMS_PER_BATCH > 0) batchSteps++;
+		int batchSteps = 1;
+		if((objects.size() > MAX_ITEMS_PER_BATCH)){
+			batchSteps = (objects.size() / MAX_ITEMS_PER_BATCH) + 
+					((objects.size() % MAX_ITEMS_PER_BATCH > 0) ? 1 : 0);
+		}
 				
 		Iterator<P> it = objects.iterator();
 		
@@ -368,7 +356,6 @@ public class AWSDynamoDAO implements DAO {
 			batchWrite(Collections.singletonMap(OBJECTS, reqs));
 			reqs.clear();
 		}
-		Utils.getInstanceOf(Search.class).indexAll(objects);
 	}
 	
 	private <P extends ParaObject> void batchGet(Map<String, KeysAndAttributes> kna, Map<String, P> results){

@@ -19,14 +19,16 @@ package com.erudika.para.utils;
 
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.annotations.Locked;
+import com.erudika.para.core.CoreModule;
 import com.erudika.para.core.PObject;
-import com.erudika.para.api.ParaObject;
-import com.erudika.para.impl.DefaultImplModule;
+import com.erudika.para.core.ParaObject;
 import com.erudika.para.utils.aop.AOPModule;
 import com.github.rjeschke.txtmark.Configuration;
 import com.github.rjeschke.txtmark.Processor;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Module;
+import com.google.inject.util.Modules;
 import com.ibm.icu.text.NumberFormat;
 import com.ibm.icu.util.Currency;
 import java.io.InputStream;
@@ -45,6 +47,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -57,6 +60,7 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -65,7 +69,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import javax.inject.Singleton;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -84,6 +87,7 @@ import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -108,13 +112,9 @@ import org.jsoup.Jsoup;
  * @author Alex Bogdanovski <albogdano@me.com>
  */
 @SuppressWarnings("unchecked")
-@Singleton
 public final class Utils {
 	
 	///////////////////////////////////////////////////
-	private static final Map<String, Locale> COUNTRY_TO_LOCALE_MAP = new HashMap<String, Locale>();
-	private static final Map<String, Locale> CURRENCY_TO_LOCALE_MAP = new HashMap<String, Locale>();
-	private static final Map<String, String> CURRENCIES_MAP = new TreeMap<String, String>();
 	private static final Map<String, String> INIT_PARAMS_MAP = new HashMap<String, String>();
 	
 	private static final Logger logger = Logger.getLogger(Utils.class.getName());
@@ -123,6 +123,7 @@ public final class Utils {
 	private static HumanTime humantime = new HumanTime();
 	private static ExecutorService exec = Executors.newSingleThreadExecutor();
 	private static Injector injector;
+	private static Utils instance;
 	
 	// GLOBAL LIMITS	
 	public static final int MAX_ITEMS_PER_PAGE = 30;
@@ -165,9 +166,7 @@ public final class Utils {
 	
 	static {
 		initConfig();
-		initLocales();
 		initSnowflake();
-//		initDI();
 	}
 	
 	//////////  INITIALIZATION PARAMETERS  //////////////
@@ -187,7 +186,6 @@ public final class Utils {
 	public static final String AUTH_COOKIE = getInitParam("authcookie", PRODUCT_NAME_NS.concat("-auth"));
 	public static final String SUPPORT_EMAIL = getInitParam("supportemail", "support@myapp.co");
 	public static final String APP_SECRET_KEY = getInitParam("appsecretkey", MD5("secret"));
-	public static final String CORE_PACKAGE_NAME = getInitParam(CORE_PACKAGE, PObject.class.getPackage().getName());
 	
 	// read object data from index, not db
 	public static final boolean READ_FROM_INDEX = Boolean.parseBoolean(getInitParam("readfromindex", "true")); 
@@ -195,12 +193,64 @@ public final class Utils {
 	public static final boolean IN_PRODUCTION = Boolean.parseBoolean(getInitParam("production", "false")); 
 	public static final String INDEX_ALIAS = PRODUCT_NAME_NS;
 	
-	public Utils() {
+	private Utils() {
 	}
-		
+	
+	public static Utils getInstance(){
+		if(instance == null) instance = new Utils();
+		return instance;
+	}
+	
 	public static ObjectMapper getObjectMapper(){
 		return jsonMapper;
 	}
+	
+	
+	/********************************************
+	 *	    	   INIT FUNCTIONS
+	********************************************/
+	
+	public static void initDI(Module... modules){
+		try {
+			Arrays.asList(new CoreModule(), modules).toArray();
+			injector = Guice.createInjector(new CoreModule());
+			if(modules != null && modules.length > 0){
+				injector.createChildInjector(modules);
+			}
+		} catch (Exception e) {
+			logger.log(Level.SEVERE, null, e);
+		}
+	}
+		
+	protected static void initConfig(){
+		try {
+			Properties props = new Properties();
+			InputStream in = Utils.class.getClassLoader().getResourceAsStream("init.properties");
+			if(in != null){
+				props.load(in);
+				INIT_PARAMS_MAP.putAll((Map) props);
+			}
+		} catch (Exception ex) {
+			logger.log(Level.SEVERE, null, ex);
+		}
+	}
+	
+	private static void initSnowflake(){
+		String workerID = Utils.WORKER_ID;
+		workerId = NumberUtils.toLong(workerID, 1);
+				
+		if (workerId > maxWorkerId || workerId < 0) {
+			workerId = new Random().nextInt((int) maxWorkerId + 1);
+		}
+
+//		if (dataCenterId > maxDataCenterId || dataCenterId < 0) {
+//			dataCenterId =  new Random().nextInt((int) maxDataCenterId+1);
+//		}
+	}
+
+	/********************************************
+	 *	    	   HASH UTILS
+	********************************************/
 	
 	public static String MD5(String s) {
 		return (s == null) ? "" :  DigestUtils.md5Hex(s); 
@@ -236,13 +286,9 @@ public final class Utils {
 		return Base64.encodeBase64URLSafeString(bytes);
 	}
 
-	public static String formatDate(Long timestamp, String format, Locale loc) {
-		return DateFormatUtils.format(timestamp, format, loc);
-	}
-
-	public static String formatDate(String format, Locale loc) {
-		return DateFormatUtils.format(System.currentTimeMillis(), format, loc);
-	}
+	/********************************************
+	 *	    	   STRING UTILS
+	********************************************/
 	
 	public static String escapeJavascript(String str){
 		return StringEscapeUtils.escapeEcmaScript(str);
@@ -257,130 +303,7 @@ public final class Utils {
 		if (StringUtils.isBlank(markdownString)) return "";
 		return Processor.process(markdownString, Configuration.DEFAULT_SAFE);
 	}
-		
-	public static <P extends ParaObject> void populate(P transObject, Map<String, String[]> paramMap) {
-		if (transObject == null || paramMap.isEmpty()) return;
-		Class<Locked> locked = (paramMap.containsKey("id")) ? Locked.class : null;
-		HashMap<String, Object> fields = getAnnotatedFields(transObject, Stored.class, locked);
-		// populate an object with converted param values from param map.
-		try {
-			for (Map.Entry<String, String[]> ks : paramMap.entrySet()) {
-				String param = ks.getKey();
-				String[] values = ks.getValue();
-				String value = values[0];
-				
-				// filter out any params that are different from the core params
-				if(fields.containsKey(param)){
-					//set property WITH CONVERSION
-					BeanUtils.setProperty(transObject, param, value);
-				}
-			}
-		} catch (Exception ex) {
-			logger.log(Level.SEVERE, null, ex);
-		}
-	}
 	
-	public static List<Toponym> readLocationForKeyword(String q) {
-		return readLocationForKeyword(q, Style.FULL);
-	}
-
-	public static List<Toponym> readLocationForKeyword(String q, Style style) {
-		List<Toponym> list = new ArrayList<Toponym> ();
-		ToponymSearchResult locationSearchResult = null;
-		ToponymSearchCriteria searchLocation = new ToponymSearchCriteria();
-		searchLocation.setMaxRows(7);
-		searchLocation.setFeatureClass(FeatureClass.P);
-		searchLocation.setStyle(style);
-		searchLocation.setQ(q);
-		try {
-			WebService.setUserName("erudika");
-			locationSearchResult = WebService.search(searchLocation);
-			if(locationSearchResult != null) 
-				list.addAll(locationSearchResult.getToponyms());
-		} catch (Exception ex) {
-			logger.log(Level.SEVERE, null, ex);
-		}
-		return list;
-	}
-	
-	public static int getCurrentYear() {
-		return Calendar.getInstance().get(Calendar.YEAR);
-	}
-
-	public boolean typesMatch(ParaObject so){
-		return (so == null) ? false : so.getClass().equals(
-				Utils.toClass(so.getClassname()));
-	}
-
-	public static int round(float d) {
-		return Math.round(d);
-	}
-
-	public static String stripAndTrim(String str) {
-		if (StringUtils.isBlank(str)) return "";
-		
-		str = str.replaceAll("\\p{S}", "");
-		str = str.replaceAll("\\p{P}", "");
-		str = str.replaceAll("\\p{C}", "");
-
-		return str.trim();
-	}
-	
-	public static String spacesToDashes(String str) {
-		if (StringUtils.isBlank(str)) return "";
-		return stripAndTrim(str).replaceAll("\\p{Z}+","-").toLowerCase();
-	}
-
-	public static String formatMessage(String msg, Object... params){
-		return MessageFormat.format(msg, params);
-	}
-	
-	public static String formatPrice(Double price, String cur){
-		String formatted = "";
-		if(price != null){
-			Locale locale = CURRENCY_TO_LOCALE_MAP.get(cur);
-			NumberFormat f = (locale == null) ? NumberFormat.getCurrencyInstance(Locale.US) : 
-					NumberFormat.getCurrencyInstance(locale);
-			
-			formatted = f.format(price);
-		}
-		return formatted;
-	}
-	
-	public static String getCurrencyName(String cur, Locale locale){
-		if(CURRENCY_TO_LOCALE_MAP.containsKey(cur.toUpperCase())){
-			return com.ibm.icu.util.Currency.getInstance(cur).getName((locale == null ? Locale.US : locale), 1, new boolean[1]);
-		}else{
-			return "";
-		}
-	}
-	
-	public static String urlDecode(String s) {
-		if (s == null) {
-			return "";
-		}
-		String decoded = s;
-		try {
-			decoded = URLDecoder.decode(s, DEFAULT_ENCODING);
-		} catch (UnsupportedEncodingException ex) {
-			logger.log(Level.SEVERE, null, ex);
-		}
-		return decoded;
-	}
-
-	public static String urlEncode(String s) {
-		if (s == null) {
-			return "";
-		}
-		String encoded = s;
-		try {
-			encoded = URLEncoder.encode(s, DEFAULT_ENCODING);
-		} catch (UnsupportedEncodingException ex) {
-			logger.log(Level.SEVERE, null, ex);
-		}
-		return encoded;
-	}
-
 	public static String fixCSV(String s, int maxValues){
 		if(StringUtils.trimToNull(s) == null) return "";
 		String t = ",";
@@ -407,13 +330,101 @@ public final class Utils {
 	public static String fixCSV(String s){
 		return fixCSV(s, 0);
 	}
+	
+	public static List<String> csvToKeys(String csv){
+		if(StringUtils.isBlank(csv)) return new ArrayList<String> ();
+		ArrayList<String> list = new ArrayList<String>();
+		
+		for (String str : csv.split(",")) {
+			list.add(str.trim());
+		}
+		
+		return list;
+	}	
+	
+	public static String abbreviate(String str, int max){
+		return StringUtils.abbreviate(str, max);
+	}
+	
+	public static String arrayJoin(ArrayList<String> arr, String separator){
+		return StringUtils.join(arr, separator);
+	}
+	
+	public static boolean isBadString(String s) {
+		if (StringUtils.isBlank(s)) {
+			return false;
+		} else if (s.contains("<") ||
+				s.contains(">") ||
+				s.contains("&") ||
+				s.contains("/")) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	public static String cleanString(String s){
+		if(StringUtils.isBlank(s)) return "";
+		return s.replaceAll("<", "").
+				replaceAll(">", "").
+				replaceAll("&", "").
+				replaceAll("/", "");
+	}
+	
+	public static String stripAndTrim(String str) {
+		if (StringUtils.isBlank(str)) return "";
+		
+		str = str.replaceAll("\\p{S}", "");
+		str = str.replaceAll("\\p{P}", "");
+		str = str.replaceAll("\\p{C}", "");
+
+		return str.trim();
+	}
+	
+	public static String spacesToDashes(String str) {
+		if (StringUtils.isBlank(str)) return "";
+		return stripAndTrim(str).replaceAll("\\p{Z}+","-").toLowerCase();
+	}
+
+	public static String formatMessage(String msg, Object... params){
+		return MessageFormat.format(msg, params);
+	}
+	
+	/********************************************
+	 *	    	   DATE UTILS
+	********************************************/
+	
+	public static String formatDate(Long timestamp, String format, Locale loc) {
+		return DateFormatUtils.format(timestamp, format, loc);
+	}
+
+	public static String formatDate(String format, Locale loc) {
+		return DateFormatUtils.format(System.currentTimeMillis(), format, loc);
+	}
+		
+	public static int getCurrentYear() {
+		return Calendar.getInstance().get(Calendar.YEAR);
+	}
 
 	public static long timestamp(){
 		return System.currentTimeMillis();
 	}
+	
+	public static HumanTime getHumanTime(){
+		return humantime;
+	}
 
-	public static String abbreviate(String str, int max){
-		return StringUtils.abbreviate(str, max);
+	public static String[] getMonths(Locale locale) {
+		DateFormatSymbols dfs = DateFormatSymbols.getInstance(locale);
+		return dfs.getMonths();
+	}
+	
+	/********************************************
+	 *	    	   NUMBER UTILS
+	********************************************/
+	
+	public static int round(float d) {
+		return Math.round(d);
 	}
 
 	public static String abbreviateInt(Number number, int decPlaces){
@@ -441,56 +452,39 @@ public final class Utils {
 		}
 		return abbrevn;
 	}
-
-	public static Class<? extends ParaObject> toClass(String classname){
-		if(StringUtils.isBlank(CORE_PACKAGE_NAME)) throw new IllegalStateException("System property '"+CORE_PACKAGE+"' not set.");
-		if(StringUtils.isBlank(classname)) return null;
-		Class<? extends ParaObject> clazz = null;
+	
+	public static Long toLong(MutableLong page){
+		return (page != null && page.longValue() > 1) ?	page.longValue() : null;
+	}
+	
+	/********************************************
+	 *	    	   URL UTILS
+	********************************************/
+	
+	public static String urlDecode(String s) {
+		if (s == null) {
+			return "";
+		}
+		String decoded = s;
 		try {
-			clazz = (Class<? extends ParaObject>) Class.forName(CORE_PACKAGE_NAME.concat(".").
-					concat(StringUtils.capitalize(classname)));
-		} catch (Exception ex) {
-			if(ex instanceof ClassNotFoundException){
-				try {
-					clazz = (Class<? extends ParaObject>) Class.forName(PObject.class.getPackage().getName().concat(".").
-						concat(StringUtils.capitalize(classname)));
-				} catch (Exception ex1) {
-					logger.severe(ex1.toString());
-				}
-			}
+			decoded = URLDecoder.decode(s, DEFAULT_ENCODING);
+		} catch (UnsupportedEncodingException ex) {
+			logger.log(Level.SEVERE, null, ex);
 		}
-
-		return clazz;
-	}
-	
-	public static HumanTime getHumanTime(){
-		return humantime;
+		return decoded;
 	}
 
-	public static String[] getMonths(Locale locale) {
-		DateFormatSymbols dfs = DateFormatSymbols.getInstance(locale);
-		return dfs.getMonths();
-	}
-	
-	public static boolean isBadString(String s) {
-		if (StringUtils.isBlank(s)) {
-			return false;
-		} else if (s.contains("<") ||
-				s.contains(">") ||
-				s.contains("&") ||
-				s.contains("/")) {
-			return true;
-		} else {
-			return false;
+	public static String urlEncode(String s) {
+		if (s == null) {
+			return "";
 		}
-	}
-	
-	public static String cleanString(String s){
-		if(StringUtils.isBlank(s)) return "";
-		return s.replaceAll("<", "").
-				replaceAll(">", "").
-				replaceAll("&", "").
-				replaceAll("/", "");
+		String encoded = s;
+		try {
+			encoded = URLEncoder.encode(s, DEFAULT_ENCODING);
+		} catch (UnsupportedEncodingException ex) {
+			logger.log(Level.SEVERE, null, ex);
+		}
+		return encoded;
 	}
 
 	public static boolean isValidURL(String url){
@@ -531,6 +525,10 @@ public final class Utils {
 		return u;
 	}
 		
+	/********************************************
+	 *    	   COOKIE & STATE UTILS
+	********************************************/
+	
 	public static void setStateParam(String name, String value, HttpServletRequest req,
 			HttpServletResponse res){
 		setStateParam(name, value, req, res, false);
@@ -598,26 +596,9 @@ public final class Utils {
 		return INIT_PARAMS_MAP.containsKey(key) ? INIT_PARAMS_MAP.get(key) : System.getProperty(key, def);
 	}
 	
-	protected static void initConfig(){
-		try {
-			Properties props = new Properties();
-			InputStream in = Utils.class.getClassLoader().getResourceAsStream("init.properties");
-			if(in != null){
-				props.load(in);
-				INIT_PARAMS_MAP.putAll((Map) props);
-			}
-		} catch (Exception ex) {
-			logger.log(Level.SEVERE, null, ex);
-		}
-	}
-		
-	public static String arrayJoin(ArrayList<String> arr, String separator){
-		return StringUtils.join(arr, separator);
-	}
-
-	public static Long toLong(MutableLong page){
-		return (page != null && page.longValue() > 1) ?	page.longValue() : null;
-	}
+	/********************************************
+	 *    	        MISC UTILS
+	********************************************/
 	
 	public static int[] getMaxImgSize(int h, int w){
 		int[] size = {h, w};
@@ -635,74 +616,96 @@ public final class Utils {
 		return size;
 	}
 	
+	public static List<Toponym> readLocationForKeyword(String q) {
+		return readLocationForKeyword(q, Style.FULL);
+	}
+
+	public static List<Toponym> readLocationForKeyword(String q, Style style) {
+		List<Toponym> list = new ArrayList<Toponym> ();
+		ToponymSearchResult locationSearchResult = null;
+		ToponymSearchCriteria searchLocation = new ToponymSearchCriteria();
+		searchLocation.setMaxRows(7);
+		searchLocation.setFeatureClass(FeatureClass.P);
+		searchLocation.setStyle(style);
+		searchLocation.setQ(q);
+		try {
+			WebService.setUserName("erudika");
+			locationSearchResult = WebService.search(searchLocation);
+			if(locationSearchResult != null) 
+				list.addAll(locationSearchResult.getToponyms());
+		} catch (Exception ex) {
+			logger.log(Level.SEVERE, null, ex);
+		}
+		return list;
+	}
+	
 	public static boolean isAjaxRequest(HttpServletRequest request) {
         return "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With")) ||
 				"XMLHttpRequest".equalsIgnoreCase(request.getParameter("X-Requested-With"));
     }
 	
-	public static String toIndexableJSON(ParaObject so, String type, boolean hasData){
-		String json = "";
-		if(so == null || StringUtils.isBlank(type)) return json;
-		
-		JsonNode rootNode = jsonMapper.createObjectNode(); // will be of type ObjectNode
-		
+	public static Future<?> asyncExecute(Callable<?> callable){
 		try {
-			((ObjectNode) rootNode).put("_id", so.getId());
-			((ObjectNode) rootNode).put("_type", type);
-			((ObjectNode) rootNode).put("_index", INDEX_ALIAS);
-			
-			if(hasData){
-				((ObjectNode) rootNode).putPOJO("_data", getAnnotatedFields(so, Stored.class, null));
+			return exec.submit(callable);
+		} catch (Exception ex) {
+			logger.log(Level.WARNING, null, ex);
+			return null;
+		}
+	}
+	
+	public static void attachShutdownHook(final Class<?> clazz, final Thread run){
+		try {
+			Runtime.getRuntime().addShutdownHook(run);
+			logger.log(Level.INFO, "Shutdown hook added: {0}", clazz.getCanonicalName());
+		} catch (Exception e) {
+			logger.log(Level.WARNING, "Failed to attach hook: {0}", new Object[]{e});
+		}
+	}
+	
+	// quick & dirty
+	public static String pluralToSingular(String plural){
+		return StringUtils.isBlank(plural) ? plural : 
+				(plural.endsWith("ses") ? StringUtils.removeEndIgnoreCase(plural, "es") : 
+				(plural.endsWith("ies") ? StringUtils.removeEndIgnoreCase(plural, "ies") + "y" : 
+										  StringUtils.removeEndIgnoreCase(plural, "s") ) );
+	}
+	
+	public static String singularToPlural(String singul){
+		return StringUtils.isBlank(singul) ? singul : 
+				(singul.endsWith("s") ? singul + "es" : 
+				(singul.endsWith("y") ? StringUtils.removeEndIgnoreCase(singul, "y") + "ies" : 
+										singul + "s" ) );
+	}
+	
+	/********************************************
+	 *	     REFLECTION & CLASS UTILS 
+	********************************************/
+	
+	public static <P extends ParaObject> void populate(P transObject, Map<String, String[]> paramMap) {
+		if (transObject == null || paramMap.isEmpty()) return;
+		Class<Locked> locked = (paramMap.containsKey("id")) ? Locked.class : null;
+		HashMap<String, Object> fields = getAnnotatedFields(transObject, Stored.class, locked);
+		// populate an object with converted param values from param map.
+		try {
+			for (Map.Entry<String, String[]> ks : paramMap.entrySet()) {
+				String param = ks.getKey();
+				String[] values = ks.getValue();
+				String value = values[0];
+				
+				// filter out any params that are different from the core params
+				if(fields.containsKey(param)){
+					//set property WITH CONVERSION
+					BeanUtils.setProperty(transObject, param, value);
+				}
 			}
-			json = jsonMapper.writeValueAsString(rootNode);
 		} catch (Exception ex) {
 			logger.log(Level.SEVERE, null, ex);
 		}
-		
-		return json;
-	}
-		
-	public static Response getJSONResponse(final Status status, final String... errors){
-		String json = "{}";
-		try {
-			LinkedHashMap<Object, Object> map = new LinkedHashMap<Object, Object>(){
-				private static final long serialVersionUID = 1L;{
-				put("code", status.getStatusCode());
-				put("message", status.getReasonPhrase().concat(". ").
-						concat(StringUtils.join(errors, "; ")));
-			}};
-			json = jsonMapper.writeValueAsString(map);
-		} catch (Exception ex) {}
-		
-		return Response.status(status).entity(json).type(MediaType.APPLICATION_JSON).build();
 	}
 	
-	public static boolean isValidObject(ParaObject obj){
-		return validateRequest(obj).length == 0;
-	}
-	
-	public static String[] validateRequest(ParaObject content){
-		if(content == null) return new String[]{ "Object cannot be null." };
-		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-        Validator validator = factory.getValidator();
-		ArrayList<String> list = new ArrayList<String>();
-		for (ConstraintViolation<ParaObject> constraintViolation : validator.validate(content)) {
-			String prop = "'".concat(constraintViolation.getPropertyPath().toString()).concat("'");
-			list.add(prop.concat(" ").concat(constraintViolation.getMessage()));
-		}
-		return list.toArray(new String[list.size()]);
-	}
-	
-	public static boolean isFacebookUser(String identifier){
-		return NumberUtils.isDigits(identifier);
-	}
-	
-	public static boolean isOpenidUser(String identifier){
-		return StringUtils.startsWith(identifier, "http");
-	}
-	
-	public static boolean isNormalUser(String identifier){
-		return StringUtils.contains(identifier, "@");
+	public boolean typesMatch(ParaObject so){
+		return (so == null) ? false : so.getClass().equals(
+				Utils.toClass(so.getClassname()));
 	}
 	
 	public static HashMap<String, Object> getAnnotatedFields(ParaObject bean,
@@ -725,6 +728,50 @@ public final class Utils {
 		}
 
 		return map;
+	}
+	
+	public static Class<? extends ParaObject> toClass(String classname){
+		String corepackage = getInitParam(CORE_PACKAGE, "");
+		if(StringUtils.isBlank(corepackage)){
+			logger.warning("System property '"+CORE_PACKAGE+"' not set.");
+		}
+		if(StringUtils.isBlank(classname)) return null;
+		Class<? extends ParaObject> clazz = null;
+		try {
+			clazz = (Class<? extends ParaObject>) Class.forName(corepackage.concat(".").
+					concat(StringUtils.capitalize(classname)));
+		} catch (Exception ex) {
+			if(ex instanceof ClassNotFoundException){
+				try {
+					clazz = (Class<? extends ParaObject>) Class.forName(PObject.class.getPackage().getName().concat(".").
+						concat(StringUtils.capitalize(classname)));
+				} catch (Exception ex1) {
+					logger.severe(ex1.toString());
+				}
+			}
+		}
+
+		return clazz;
+	}
+	
+	/********************************************
+	 *	     ANNOTATIONS & VALIDATION 
+	********************************************/
+	
+	public static boolean isValidObject(ParaObject obj){
+		return validateRequest(obj).length == 0;
+	}
+	
+	public static String[] validateRequest(ParaObject content){
+		if(content == null) return new String[]{ "Object cannot be null." };
+		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        Validator validator = factory.getValidator();
+		ArrayList<String> list = new ArrayList<String>();
+		for (ConstraintViolation<ParaObject> constraintViolation : validator.validate(content)) {
+			String prop = "'".concat(constraintViolation.getPropertyPath().toString()).concat("'");
+			list.add(prop.concat(" ").concat(constraintViolation.getMessage()));
+		}
+		return list.toArray(new String[list.size()]);
 	}
 	
 	public static String getJSONValidationObject(String classname, List<String> fields, Map<String, String> lang){
@@ -828,95 +875,11 @@ public final class Utils {
 		}
 		return new String[]{rule, msg};
 	}
-	
-	public static Future<?> asyncExecute(Callable<?> callable){
-		try {
-			return exec.submit(callable);
-		} catch (Exception ex) {
-			logger.log(Level.WARNING, null, ex);
-			return null;
-		}
-	}
-	
-	// rubbish but quick
-	public static String pluralToSingular(String plural){
-		return StringUtils.isBlank(plural) ? plural : 
-				(plural.endsWith("ses") ? StringUtils.removeEnd(plural, "es") : 
-				(plural.endsWith("ies") ? StringUtils.removeEnd(plural, "y") : 
-										  StringUtils.removeEnd(plural, "s") ) );
-	}
-	
-	public static String singularToPlural(String singul){
-		return StringUtils.isBlank(singul) ? singul : 
-				(singul.endsWith("s") ? singul + "es" : 
-				(singul.endsWith("y") ? singul + "ies" : singul + "s" ) );
-	}
-	
-	public static List<String> csvToKeys(String csv){
-		if(StringUtils.isBlank(csv)) return new ArrayList<String> ();
-		ArrayList<String> list = new ArrayList<String>();
-		
-		for (String str : csv.split(",")) {
-			list.add(str.trim());
-		}
-		
-		return list;
-	}
-	
-	public static Locale getLocaleForCountry(String countryCode){
-		return COUNTRY_TO_LOCALE_MAP.get(countryCode);
-	}
-	
-	private static void initLocales(){
-		Locale[] locales = Locale.getAvailableLocales();
-		for (Locale l : locales) {
-			COUNTRY_TO_LOCALE_MAP.put(l.getCountry(), l); 
-            try {
-				Currency c = Currency.getInstance(l);
-				if(c != null){
-					CURRENCY_TO_LOCALE_MAP.put(c.getCurrencyCode(), l);
-					CURRENCIES_MAP.put(c.getCurrencyCode(), 
-							getCurrencyName(c.getCurrencyCode(), Locale.US).concat(" ").concat(c.getSymbol(l)));
-				}
-            } catch (Exception e) {}
-		}
-	}
-	
-	public static Currency getCurrency(String cur){
-		if(StringUtils.isBlank(cur)) return null;
-		Currency currency = null;
-		try {
-			currency = Currency.getInstance(cur);
-		} catch (Exception e) {}
-		return currency;
-	}
-	
-	public static Locale getLocaleForCurrency(String cur){
-		return (StringUtils.isBlank(cur) || !CURRENCY_TO_LOCALE_MAP.containsKey(cur)) ? 
-				Locale.US : CURRENCY_TO_LOCALE_MAP.get(cur);
-	}
 
-	public static Map<String, String> getCurrenciesMap(){
-		return CURRENCIES_MAP;
-	}
-	
-	public static boolean isValidCurrency(String cur){
-		return cur != null && CURRENCIES_MAP.containsKey(cur);
-	}
-	
-	private static void initSnowflake(){
-		String workerID = Utils.WORKER_ID;
-		workerId = NumberUtils.toLong(workerID, 1);
-				
-		if (workerId > maxWorkerId || workerId < 0) {
-			workerId = new Random().nextInt((int) maxWorkerId + 1);
-		}
+	/********************************************
+	 *	        MODIFIED SNOWFLAKE 
+	********************************************/
 
-//		if (dataCenterId > maxDataCenterId || dataCenterId < 0) {
-//			dataCenterId =  new Random().nextInt((int) maxDataCenterId+1);
-//		}
-	}
-	
 	public static synchronized String getNewId() {
 		// NEW version - unique across JVMs as long as each has a different workerID
 		// based on Twitter's Snowflake algorithm
@@ -954,30 +917,8 @@ public final class Utils {
 		return timestamp;
 	}
 	
-	public static void attachShutdownHook(final Class<?> clazz, final Thread run){
-		try {
-			Runtime.getRuntime().addShutdownHook(run);
-			logger.log(Level.INFO, "Shutdown hook added: {0}", clazz.getCanonicalName());
-		} catch (Exception e) {
-			logger.log(Level.WARNING, "Failed to attach hook: {0}", new Object[]{e});
-		}
-	}
-	
-	private static void initDI(){
-		try {
-			injector = Guice.createInjector(new DefaultImplModule(), new AOPModule());
-		} catch (Exception e) {
-			logger.log(Level.SEVERE, null, e);
-		}		
-	}
-	
-	public static <T> T getInstanceOf(Class<T> clazz){
-		if(injector == null) initDI();
-		return injector.getInstance(clazz);
-	}
-	
 	/********************************************
-	 *	    	REST FUNCTIONS
+	 *	    	 REST HANDLERS
 	********************************************/
 	
 	public static <P extends ParaObject> Response getReadResponse(ParaObject content){
@@ -1029,5 +970,42 @@ public final class Utils {
 		}else{
 			return Utils.getJSONResponse(Response.Status.BAD_REQUEST);
 		}
+	}
+	
+	public static String toIndexableJSON(ParaObject so, String type, boolean hasData){
+		String json = "";
+		if(so == null || StringUtils.isBlank(type)) return json;
+		
+		JsonNode rootNode = jsonMapper.createObjectNode(); // will be of type ObjectNode
+		
+		try {
+			((ObjectNode) rootNode).put("_id", so.getId());
+			((ObjectNode) rootNode).put("_type", type);
+			((ObjectNode) rootNode).put("_index", INDEX_ALIAS);
+			
+			if(hasData){
+				((ObjectNode) rootNode).putPOJO("_data", getAnnotatedFields(so, Stored.class, null));
+			}
+			json = jsonMapper.writeValueAsString(rootNode);
+		} catch (Exception ex) {
+			logger.log(Level.SEVERE, null, ex);
+		}
+		
+		return json;
+	}
+		
+	public static Response getJSONResponse(final Status status, final String... errors){
+		String json = "{}";
+		try {
+			LinkedHashMap<Object, Object> map = new LinkedHashMap<Object, Object>(){
+				private static final long serialVersionUID = 1L;{
+				put("code", status.getStatusCode());
+				put("message", status.getReasonPhrase().concat(". ").
+						concat(StringUtils.join(errors, "; ")));
+			}};
+			json = jsonMapper.writeValueAsString(map);
+		} catch (Exception ex) {}
+		
+		return Response.status(status).entity(json).type(MediaType.APPLICATION_JSON).build();
 	}
 }

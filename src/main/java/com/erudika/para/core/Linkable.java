@@ -15,9 +15,8 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.api;
+package com.erudika.para.core;
 
-import com.erudika.para.core.Linker;
 import java.util.ArrayList;
 import org.apache.commons.lang3.mutable.MutableLong;
 

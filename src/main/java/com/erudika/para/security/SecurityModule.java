@@ -15,26 +15,18 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.utils;
+package com.erudika.para.security;
 
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.http.HttpSessionEvent;
-import javax.servlet.http.HttpSessionListener;
+import com.google.inject.AbstractModule;
 
 /**
- * Web application lifecycle listener.
+ *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public class AppListener implements ServletContextListener, HttpSessionListener {
-	
-	public void contextInitialized(ServletContextEvent sce) {}
+public class SecurityModule extends AbstractModule {
 
-	public void contextDestroyed(ServletContextEvent sce) {
-//		com.amazonaws.http.IdleConnectionReaper.shutdown();
+	protected void configure() {
+		bind(AuthModule.class);
 	}
-	
-	public void sessionCreated(HttpSessionEvent se) { }
-	public void sessionDestroyed(HttpSessionEvent se) { }
 	
 }

@@ -15,10 +15,10 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.impl;
+package com.erudika.para.i18n;
 
-import com.erudika.para.api.CurrencyConverter;
-import com.erudika.para.api.DAO;
+import com.erudika.para.i18n.CurrencyConverter;
+import com.erudika.para.persistence.DAO;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.utils.Utils;
 import java.util.Date;
@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -48,13 +49,17 @@ public class OXRConverter implements CurrencyConverter {
 	private static final Logger logger = Logger.getLogger(OXRConverter.class.getName());
 	private static final String SERVICE_URL = "http://openexchangerates.org/api/latest.json?app_id=".concat(Utils.OPENX_API_KEY);
 	private static final long REFRESH_AFTER = 24 * 60 * 60 * 1000; // 24 hours in ms
-		
-	public OXRConverter() {
+	
+	private DAO dao;
+	
+	@Inject
+	public OXRConverter(DAO dao) {
+		this.dao = dao;
 	}
 	
 	public Double convertCurrency(Number amount, String from, String to){
 		if(amount == null || StringUtils.isBlank(from) || StringUtils.isBlank(to)) return 0.0;
-		Sysprop s = Utils.getInstanceOf(DAO.class).read(Utils.FXRATES_KEY);
+		Sysprop s = dao.read(Utils.FXRATES_KEY);
 		if(s == null){
 			s = fetchFxRatesJSON();
 		}else if((System.currentTimeMillis() - s.getTimestamp()) > REFRESH_AFTER){

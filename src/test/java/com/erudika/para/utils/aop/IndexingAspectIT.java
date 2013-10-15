@@ -17,9 +17,14 @@
  */
 package com.erudika.para.utils.aop;
 
+import com.erudika.para.persistence.DAO;
+import com.erudika.para.core.ParaObject;
+import com.erudika.para.core.PObject;
 import com.erudika.para.core.Tag;
-import com.erudika.para.impl.AWSDynamoDAO;
-import com.erudika.para.utils.DynamoDBHelper;
+import com.erudika.para.persistence.AWSDynamoDAO;
+import com.erudika.para.search.ElasticSearch;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -44,12 +49,56 @@ public class IndexingAspectIT {
 
 	@Test
 	public void testInvoke() throws Exception {
+		IndexingAspect i = new IndexingAspect();
 		
-		DynamoDBHelper.start(null);
-		AWSDynamoDAO dao = new AWSDynamoDAO();
-		assertNotNull(dao.create(new Tag("TEST")));
-		assertNotNull(dao.read(Tag.id("TEST")));
+		Tag tag = new Tag("tag");
+		Tag tag1 = new Tag("tag1");
+		Tag tag2 = new Tag("tag2");
+		Tag tag3 = new Tag("tag3");
 		
-//		assertEquals("aa", "bb");
+		List<ParaObject> list1 = new ArrayList<ParaObject> ();
+		list1.add(tag1);
+		list1.add(tag2);
+		list1.add(tag3);
+		List<PObject> list2 = new ArrayList<PObject> ();
+		list2.add(new Tag("tagzz1"));
+		list2.add(new Tag("tagzz2"));
+		list2.add(new Tag("tagzz3"));
+		List<String> badList = new ArrayList<String> ();
+		badList.add("XXXtagXXX");
+		
+		assertEquals(tag, i.getIndexableParameter(new Object[]{tag, "string"}));
+		assertNull(i.getIndexableParameter(new Object[]{"string"}));
+		assertEquals(list1, i.getIndexableParameter(new Object[]{list1}));
+		assertEquals(list2, i.getIndexableParameter(new Object[]{list2}));
+		assertNull(i.getIndexableParameter(new Object[]{badList}));
+		
+		DAO dao = new AWSDynamoDAO();
+		ElasticSearch search = new ElasticSearch();
+		search.setDao(dao);
+		
+		assertNotNull(dao.create(tag));
+		assertNotNull(dao.read(tag.getId()));
+		assertNotNull(search.findById(tag.getId(), tag.getClassname()));
+		
+		dao.delete(tag);
+		assertNull(dao.read(tag.getId()));
+		assertNull(search.findById(tag.getId(), tag.getClassname()));
+		
+		dao.createAll(list1);
+		assertNotNull(dao.read(tag1.getId()));
+		assertNotNull(dao.read(tag2.getId()));
+		assertNotNull(dao.read(tag3.getId()));
+		assertNotNull(search.findById(tag1.getId(), tag.getClassname()));
+		assertNotNull(search.findById(tag2.getId(), tag.getClassname()));
+		assertNotNull(search.findById(tag3.getId(), tag.getClassname()));
+		
+		dao.deleteAll(list1);
+		assertNull(dao.read(tag1.getId()));
+		assertNull(dao.read(tag2.getId()));
+		assertNull(dao.read(tag3.getId()));
+		assertNull(search.findById(tag1.getId(), tag.getClassname()));
+		assertNull(search.findById(tag2.getId(), tag.getClassname()));
+		assertNull(search.findById(tag3.getId(), tag.getClassname()));
 	}
 }

@@ -15,10 +15,8 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.impl;
+package com.erudika.para.core;
 
-import com.erudika.para.api.Search;
-import com.erudika.para.core.Vote;
 import com.erudika.para.utils.Utils;
 import javax.enterprise.inject.Default;
 import org.apache.commons.lang3.BooleanUtils;
@@ -31,10 +29,8 @@ import org.apache.commons.lang3.StringUtils;
 @Default
 public class SimpleVote extends Vote{
 	private static final long serialVersionUID = 1L;
-	private Search search;
 	
 	public SimpleVote() {
-		search = Utils.getInstanceOf(Search.class);
 	}
 	
 	@Override
@@ -42,18 +38,18 @@ public class SimpleVote extends Vote{
 		if(StringUtils.isBlank(getId()) || !Utils.isValidObject(this)) return null;
 		// save new vote & set expiration date 
 		// users can vote again after vote lock period is over
-		search.index(this, super.getClassname(), Utils.VOTE_LOCKED_FOR_SEC);
+		getSearch().index(this, super.getClassname(), Utils.VOTE_LOCKED_FOR_SEC);
 		return getId();
 	}
 
 	@Override
 	public void delete() {
-		search.unindex(this, super.getClassname());
+		getSearch().unindex(this, super.getClassname());
 	}
 
 	@Override
 	public boolean amendVote() {
-		SimpleVote vote = search.findById(getId(), super.getClassname());
+		SimpleVote vote = getSearch().findById(getId(), super.getClassname());
 		if(vote == null || vote.getType() == null || getType() == null) return false;
 		
 		boolean success = false;

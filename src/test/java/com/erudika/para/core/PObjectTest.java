@@ -20,6 +20,7 @@ package com.erudika.para.core;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import static org.junit.Assert.*;
 
 /**
  *
@@ -29,6 +30,10 @@ public class PObjectTest {
 	
 	@BeforeClass
 	public static void setUpClass(){
+	
+		// TODO CREATE MOCK OF DAO AND SET INSIDE POBJECT!!!!!
+		// TODO CREATE MOCK OF DAO AND SET INSIDE POBJECT!!!!!
+		// TODO CREATE MOCK OF DAO AND SET INSIDE POBJECT!!!!!
 		
 	}
 	
@@ -36,84 +41,31 @@ public class PObjectTest {
 	public static void tearDownClass() {
 	}
 
-	@Test
-	public void testGetParent() {
-	}
-
-	@Test
-	public void testGetCreator() {
-	}
-
-	@Test
-	public void testGetParentid() {
-	}
-
-	@Test
-	public void testSetParentid() {
-	}
-
-	@Test
-	public void testGetUpdated() {
-	}
-
-	@Test
-	public void testSetUpdated() {
-	}
-
-	@Test
-	public void testGetName() {
-	}
-
-	@Test
-	public void testSetName() {
-	}
-
-	@Test
-	public void testGetId() {
-	}
-
-	@Test
-	public void testSetId() {
-	}
-
-	@Test
-	public void testGetTimestamp() {
-	}
-
-	@Test
-	public void testSetTimestamp() {
-	}
-
-	@Test
-	public void testGetCreatorid() {
-	}
-
-	@Test
-	public void testSetCreatorid() {
-	}
-
-	@Test
-	public void testCreate() {
-	}
-
-	@Test
-	public void testUpdate() {
-	}
-
-	@Test
-	public void testDelete() {
-	}
 
 	@Test
 	public void testGetClassname() {
+		Tag tag = new Tag();
+		PObject p = new PObject() {};
+		assertNotNull(tag.getClassname());
+		assertNotNull(p.getClassname());
+		assertEquals("tag", tag.getClassname());
+		assertEquals("", p.getClassname());
 	}
 
 	@Test
 	public void testSetClassname() {
+		Tag tag = new Tag();
+		tag.setClassname("bag");
+		assertEquals("bag", tag.getClassname());		
 	}
 
 	@Test
 	public void testLink() {
+		User u = new User("1");
+		Tag t = new Tag("tag");
+		u.link(Tag.class, t.getId());
+		assertTrue(t.isLinked(User.class, u.getId()));
+		assertTrue(u.isLinked(Tag.class, t.getId()));
 	}
 
 	@Test

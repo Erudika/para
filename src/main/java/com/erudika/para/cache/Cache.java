@@ -15,16 +15,24 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.api;
-
-import java.util.List;
+package com.erudika.para.cache;
 
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public interface EmailService {
+public interface Cache {
 	
-	public boolean sendEmail(List<String> emails, String subject, String body);
+	public boolean contains(String id);
+	
+	public <T> void put(String id, T object);
+	
+	public <T> void put(String id, T object, Long ttl_seconds);
+	
+	public <T> T get(String id);
+	
+	public void remove(String id);
+	
+	public void removeAll();
 	
 }

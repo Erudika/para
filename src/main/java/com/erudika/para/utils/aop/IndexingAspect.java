@@ -18,10 +18,10 @@
 package com.erudika.para.utils.aop;
 
 import com.erudika.para.annotations.Indexed;
-import com.erudika.para.api.ParaObject;
-import com.erudika.para.api.Search;
+import com.erudika.para.persistence.DAO;
+import com.erudika.para.core.ParaObject;
+import com.erudika.para.search.Search;
 import java.lang.reflect.Method;
-import java.lang.reflect.TypeVariable;
 import java.util.List;
 import javax.inject.Inject;
 import org.aopalliance.intercept.MethodInterceptor;
@@ -36,50 +36,61 @@ public class IndexingAspect implements MethodInterceptor {
 	@Inject private Search search;
 	
 	public Object invoke(MethodInvocation mi) throws Throwable {
+		Object result = mi.proceed();
 		Method m = mi.getMethod();
-		Indexed ano = m.getAnnotation(Indexed.class);
+		Method superMethod = DAO.class.getMethod(m.getName(), m.getParameterTypes());
+		Indexed ano = superMethod.getAnnotation(Indexed.class);
 		
-		Object[] params = mi.getArguments();
-		ParaObject indexable = null;
-		List<ParaObject> indexables = null;
+		if(ano != null){
+			Object[] params = mi.getArguments();
+			switch(ano.action()){
+				case ADD: 
+					if(ano.batch()){
+						List<ParaObject> indexables = getIndexableParameter(params);
+						search.indexAll(indexables);
+					}else{
+						ParaObject indexable = getIndexableParameter(params);
+						search.index(indexable, indexable.getClassname());
+					}
+					break;
+				case REMOVE: 
+					if(ano.batch()){
+						List<ParaObject> indexables = getIndexableParameter(params);
+						search.unindexAll(indexables);
+					}else{
+						ParaObject indexable = getIndexableParameter(params);
+						search.unindex(indexable, indexable.getClassname());
+					}
+					break;
+				default: break;
+			}
+		}
 		
+		return result;
+	}
+	
+	<P> P getIndexableParameter(Object[] params){
 		if(params.length == 0){
-			throw new IllegalAccessException("Method " + m.getName() + " has no parameters.");
+			return null;
 		}else{
+			P indexable = null;
 			for (Object param : params) {
-//				TypeVariable<Class<?>>[] ts = (TypeVariable<Class<?>>[]) param.getClass().getTypeParameters();
-//				&& ParaObject.class.isAssignableFrom(((List) param).get(0).getClass())
 				if(param != null){
 					if(param instanceof ParaObject){
-						indexable = (ParaObject) param; 
+						indexable = (P) param; 
 						break;
 					}else if(param instanceof List){
-						indexables = (List<ParaObject>) param;
+						List<?> list = (List) param;
+						// the only valid type is List<? extends ParaObject>
+						if(!list.isEmpty() && ParaObject.class.isAssignableFrom((list.get(0).getClass()))){
+							indexable = (P) list;
+						}
 						break;
 					}
 				}
 			}
+			return indexable;
 		}
-		
-		switch(ano.action()){
-			case ADD: 
-				if(ano.batch()){
-					search.indexAll(indexables);
-				}else{
-					search.index(indexable, indexable.getClassname());
-				}
-				break;
-			case REMOVE: 
-				if(ano.batch()){
-					search.unindexAll(indexables);
-				}else{
-					search.unindex(indexable, indexable.getClassname());
-				}
-				break;
-			default: break;
-		}
-		
-		return null;
 	}
 	
 }

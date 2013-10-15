@@ -15,10 +15,10 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.impl;
+package com.erudika.para.cache;
 
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
-import com.erudika.para.api.MemoryGrid;
+import com.erudika.para.cache.Cache;
 import com.erudika.para.utils.Utils;
 import com.hazelcast.config.AwsConfig;
 import com.hazelcast.config.Config;
@@ -41,14 +41,14 @@ import org.apache.commons.lang3.StringUtils;
  * @author Alex Bogdanovski <albogdano@me.com>
  */
 @Singleton
-public class HazelcastMemoryGrid implements MemoryGrid{
+public class HazelcastCache implements Cache{
 
 	private static final String NODE_NAME = Utils.CLUSTER_NAME + Utils.WORKER_ID;
 	private static final String MAP_NAME = Utils.CLUSTER_NAME;
 	
 	private HazelcastInstance haze;
 
-	public HazelcastMemoryGrid() {
+	public HazelcastCache() {
 		haze = Hazelcast.getHazelcastInstanceByName(NODE_NAME);
 		if(haze == null){
 			Config cfg = new Config();

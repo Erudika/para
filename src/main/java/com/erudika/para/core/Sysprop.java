@@ -17,7 +17,6 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.api.ParaObject;
 import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -82,6 +81,8 @@ public class Sysprop extends PObject{
 	public void setProperties(Map<String, Object> properties) {
 		this.properties = properties;
 	}
+	
+	///////////////////////////////////////////////////////////////
 	
 	public String link(Class<? extends ParaObject> c2, String id2) {
 		throw new UnsupportedOperationException();

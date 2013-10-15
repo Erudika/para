@@ -15,16 +15,20 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.utils;
+package com.erudika.para.persistence;
 
+import com.erudika.para.utils.Utils;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public class DynamoDBHelper {
+public class AWSDynamoHelper {
 	
 	private static volatile boolean called = false;
 	
@@ -37,7 +41,8 @@ public class DynamoDBHelper {
 	public static void start(File dir) {
 		if(called) return;
 		try {
-			if(dir == null) dir = new File(System.getProperty("dynamodir"));
+			if(dir == null) dir = new File(System.getProperty("dynamodir", ""));
+			if(!dir.exists()) throw new FileNotFoundException();
 			final Process proc = new ProcessBuilder().command(new String[]{
 				String.format("%s%sbin%<sjava", System.getProperty("java.home"), System.getProperty("file.separator")), 
 				String.format("-Djava.library.path=%s", dir.getAbsolutePath()), "-jar", "DynamoDBLocal.jar"}).
@@ -45,14 +50,14 @@ public class DynamoDBHelper {
 			called = true;
 			Thread.sleep(2000);
 			System.out.println("------ DynamoDB START ------");
-			Utils.attachShutdownHook(DynamoDBHelper.class, new Thread(){
+			Utils.attachShutdownHook(AWSDynamoHelper.class, new Thread(){
 				public void run() {
 					System.out.println("------ DynamoDB STOP ------");
 					proc.destroy();
 				}			
 			});
 		} catch (Exception e) {
-			System.out.println(e);
+			Logger.getLogger(AWSDynamoHelper.class.getName()).log(Level.SEVERE, null, e);
 		}
 	}
 //

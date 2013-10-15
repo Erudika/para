@@ -15,24 +15,18 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.utils.aop;
+package com.erudika.para.storage;
 
-import com.erudika.para.persistence.DAO;
 import com.google.inject.AbstractModule;
-import com.google.inject.matcher.Matchers;
 
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public class AOPModule extends AbstractModule {
+public class StorageModule extends AbstractModule {
 
 	protected void configure() {
-		IndexingAspect ia = new IndexingAspect();
-		requestInjection(ia);
-		bindInterceptor(Matchers.subclassesOf(DAO.class), Matchers.any(), ia);
-		
-//		 TODO ADD CACHING ASPECT
+		bind(FileStore.class).to(AWSFileStore.class);
 	}
 	
 }

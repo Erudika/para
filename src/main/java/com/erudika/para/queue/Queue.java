@@ -15,24 +15,19 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.utils.aop;
-
-import com.erudika.para.persistence.DAO;
-import com.google.inject.AbstractModule;
-import com.google.inject.matcher.Matchers;
+package com.erudika.para.queue;
 
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public class AOPModule extends AbstractModule {
+public interface Queue {
 
-	protected void configure() {
-		IndexingAspect ia = new IndexingAspect();
-		requestInjection(ia);
-		bindInterceptor(Matchers.subclassesOf(DAO.class), Matchers.any(), ia);
-		
-//		 TODO ADD CACHING ASPECT
-	}
+	public String pull();
+
+	public void push(String task);
+
+	public String getName();
 	
+	public void setName(String name);
 }

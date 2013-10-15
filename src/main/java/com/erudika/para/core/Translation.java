@@ -17,11 +17,11 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.utils.LanguageUtils;
+import com.erudika.para.i18n.LanguageUtils;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
-import com.erudika.para.api.Search;
 import com.erudika.para.utils.Utils;
+import javax.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 
@@ -37,8 +37,8 @@ public class Translation extends PObject{
 	@Stored @Locked private String thekey;
 	@Stored private String value;
 	@Stored private Boolean approved;
-	@Stored private Integer votes;
-	@Stored private Integer oldvotes;
+	
+	@Inject LanguageUtils langutils;
 	
 	public Translation() {
 		this(null, null, null);
@@ -53,7 +53,6 @@ public class Translation extends PObject{
 		this.locale = locale;
 		this.thekey = thekey;
 		this.value = value;
-		this.votes = 0;
 		this.approved = false;
 	}
 	
@@ -91,13 +90,13 @@ public class Translation extends PObject{
 
 	public void approve(){
 		this.approved = true;
-		LanguageUtils.onApprove(locale, thekey, value, Utils.getInstanceOf(Search.class));
+		langutils.onApprove(locale, thekey, value);
 		update();
 	}
 
 	public void disapprove(){
 		this.approved = false;
-		LanguageUtils.onDisapprove(locale, thekey, Utils.getInstanceOf(Search.class));
+		langutils.onDisapprove(locale, thekey);
 		update();
 	}
 	
@@ -113,6 +112,5 @@ public class Translation extends PObject{
 		if(StringUtils.isBlank(locale) && StringUtils.isBlank(thekey)) return null;
 		return locale.concat(Utils.SEPARATOR).concat(thekey);
 	}
-
 	
 }

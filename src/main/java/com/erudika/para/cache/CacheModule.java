@@ -15,19 +15,18 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.api;
+package com.erudika.para.cache;
+
+import com.google.inject.AbstractModule;
 
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public interface Queue {
+public class CacheModule extends AbstractModule {
 
-	public String pull();
-
-	public void push(String task);
-
-	public String getName();
+	protected void configure() {
+		bind(Cache.class).to(HazelcastCache.class);
+	}
 	
-	public void setName(String name);
 }

@@ -12,6 +12,7 @@
     <properties>
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <netbeans.hint.j2eeVersion>1.7</netbeans.hint.j2eeVersion>
     </properties>
 	
@@ -22,17 +23,22 @@
 			<artifactId>guice</artifactId>
 			<version>3.0</version>
 		</dependency>
+		<dependency>
+			<groupId>com.google.inject.extensions</groupId>
+			<artifactId>guice-servlet</artifactId>
+			<version>3.0</version>
+		</dependency>
 		
 		<!-- JERSEY -->
 		<dependency>
 			<groupId>org.glassfish.jersey.core</groupId>
 			<artifactId>jersey-server</artifactId>
-			<version>2.0</version>
+			<version>2.3</version>
 		</dependency>
 		<dependency>
 			<groupId>org.glassfish.jersey.containers</groupId>
 			<artifactId>jersey-container-servlet</artifactId>
-			<version>2.0</version>
+			<version>2.3</version>
 		</dependency>
 		
 		<!-- SPRING -->
@@ -98,6 +104,23 @@
 			<version>3.0.2</version>
 		</dependency>
 		
+		<!-- CASSANDRA CLIENT -->
+		<dependency>
+			<groupId>org.hectorclient</groupId>
+			<artifactId>hector-core</artifactId>
+			<version>1.1-4</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>servlet-api</artifactId>
+					<groupId>javax.servlet</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>slf4j-api</artifactId>
+					<groupId>org.slf4j</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		
 		<!-- OTHER -->
 		<dependency>
 			<groupId>com.ibm.icu</groupId>
@@ -113,6 +136,12 @@
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-jcl</artifactId>
 			<version>1.6.6</version>
+		 <exclusions>
+		  <exclusion>
+		   <artifactId>slf4j-api</artifactId>
+		   <groupId>org.slf4j</groupId>
+		  </exclusion>
+		 </exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.hibernate</groupId>
@@ -145,6 +174,11 @@
 			<version>4.2.5</version>
 		</dependency>
 		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>1.7.5</version>
+		</dependency>
+		<dependency>
 			<groupId>javax</groupId>
 			<artifactId>javaee-web-api</artifactId>
 			<version>7.0</version>
@@ -165,6 +199,12 @@
 			<artifactId>geonames-ws-client</artifactId>
 			<version>1.1.9</version>
 		</dependency>
+		<dependency>
+			<groupId>org.tuckey</groupId>
+			<artifactId>urlrewritefilter</artifactId>
+			<version>4.0.4</version>
+		</dependency>
+		
 		
 		<!-- TESTING -->
 		<dependency>

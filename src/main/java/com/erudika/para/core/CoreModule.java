@@ -15,24 +15,38 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.utils.aop;
+package com.erudika.para.core;
 
-import com.erudika.para.persistence.DAO;
+import com.erudika.para.cache.CacheModule;
+import com.erudika.para.email.EmailModule;
+import com.erudika.para.i18n.I18nModule;
+import com.erudika.para.persistence.PersistenceModule;
+import com.erudika.para.queue.QueueModule;
+import com.erudika.para.search.SearchModule;
+import com.erudika.para.security.SecurityModule;
+import com.erudika.para.storage.StorageModule;
+import com.erudika.para.utils.aop.AOPModule;
 import com.google.inject.AbstractModule;
-import com.google.inject.matcher.Matchers;
 
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public class AOPModule extends AbstractModule {
+public class CoreModule extends AbstractModule {
 
 	protected void configure() {
-		IndexingAspect ia = new IndexingAspect();
-		requestInjection(ia);
-		bindInterceptor(Matchers.subclassesOf(DAO.class), Matchers.any(), ia);
+		bind(PObject.class);
+//		bind(Translation.class);
 		
-//		 TODO ADD CACHING ASPECT
+		install(new CacheModule());
+		install(new EmailModule());
+		install(new I18nModule());
+		install(new PersistenceModule());
+		install(new QueueModule());
+		install(new SearchModule());
+		install(new SecurityModule());
+		install(new StorageModule());
+		install(new AOPModule());
 	}
 	
 }

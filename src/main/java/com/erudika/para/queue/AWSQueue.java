@@ -15,9 +15,9 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.impl;
+package com.erudika.para.queue;
 
-import com.erudika.para.api.Queue;
+import com.erudika.para.queue.Queue;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.BasicAWSCredentials;

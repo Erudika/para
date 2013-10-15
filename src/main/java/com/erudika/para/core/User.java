@@ -19,8 +19,8 @@ package com.erudika.para.core;
 
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
-import com.erudika.para.api.DAO;
-import com.erudika.para.api.Search;
+import com.erudika.para.persistence.DAO;
+import com.erudika.para.search.Search;
 import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -169,7 +169,7 @@ public class User extends PObject implements UserDetails{
 	}
 	
 	public List<String> getIdentifiers(){
-		List<Sysprop> list = Utils.getInstanceOf(Search.class).findTerm(PObject.classname(Sysprop.class), 
+		List<Sysprop> list = getSearch().findTerm(PObject.classname(Sysprop.class), 
 				null, null, DAO.CN_CREATORID, getId());
 		ArrayList<String> idents = new ArrayList<String>();
 		for (Sysprop s : list) {
@@ -266,7 +266,7 @@ public class User extends PObject implements UserDetails{
 	
 	public final String generatePasswordResetToken(){
 		if(StringUtils.isBlank(identifier)) return "";
-		Sysprop s = Utils.getInstanceOf(DAO.class).read(identifier);
+		Sysprop s = getDao().read(identifier);
 		if(s == null) return "";
 		String salt = (String) s.getProperty(DAO.CN_SALT);
 		String token = Utils.HMACSHA(Long.toString(System.currentTimeMillis()), salt);
@@ -277,7 +277,7 @@ public class User extends PObject implements UserDetails{
 	
 	public final boolean resetPassword(String identifier, String token, String newpass){
 		if(StringUtils.isBlank(newpass) || StringUtils.isBlank(token)) return false;
-		Sysprop s = Utils.getInstanceOf(DAO.class).read(identifier);
+		Sysprop s = getDao().read(identifier);
 		if(s != null && s.hasProperty(DAO.CN_RESET_TOKEN)){
 			String storedToken = (String) s.getProperty(DAO.CN_RESET_TOKEN);
 			long now = System.currentTimeMillis();
@@ -295,7 +295,7 @@ public class User extends PObject implements UserDetails{
 		
 	private void changeIdentifier(String oldIdent, String newIdent){
 		if(StringUtils.isBlank(oldIdent) || StringUtils.isBlank(newIdent) || oldIdent.equalsIgnoreCase(newIdent)) return;
-		Sysprop s = Utils.getInstanceOf(DAO.class).read(oldIdent);
+		Sysprop s = getDao().read(oldIdent);
 		if(s != null){
 			s.delete();
 			s.setId(newIdent);

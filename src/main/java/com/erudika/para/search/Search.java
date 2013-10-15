@@ -15,8 +15,9 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.api;
+package com.erudika.para.search;
 
+import com.erudika.para.core.ParaObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -84,8 +85,6 @@ public interface Search {
 	public void index(ParaObject so, String type);
 
 	public void index(ParaObject so, String type, long ttl);
-
-	public void index(String key, Map<String, Object> data, String type, long ttl);
 
 	public <P extends ParaObject> void indexAll(List<P> objects);
 

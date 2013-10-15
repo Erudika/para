@@ -18,7 +18,7 @@
 package com.erudika.para.core;
 
 import com.erudika.para.annotations.Stored;
-import static com.erudika.para.api.Votable.VoteType.*;
+import static com.erudika.para.core.Votable.VoteType.*;
 import com.erudika.para.utils.Utils;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -72,12 +72,12 @@ public abstract class Vote extends PObject{
 	}
 		
 	@Override
-	public abstract String create();
-
-	@Override
 	public final void update() {
 		// NOOP
 	}
+	
+	@Override
+	public abstract String create();
 
 	@Override
 	public abstract void delete();
