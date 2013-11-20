@@ -20,7 +20,7 @@ package com.erudika.para.core;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.persistence.DAO;
-import com.erudika.para.search.Search;
+import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -55,12 +55,20 @@ public class User extends PObject implements UserDetails{
 		}
 	}
 	
+	public static enum Roles{
+		USER, MOD, ADMIN;
+
+		public String toString() {
+			return "ROLE_".concat(this.name());
+		}
+	}
+	
 	@Stored @NotBlank private String identifier;
 	@Stored @Locked @NotBlank private String groups;
 	@Stored @Locked private Boolean active;
 	@Stored @NotBlank @Email private String email;
 	@Stored private String authstamp;
-	@NotBlank @Size(min=Utils.MIN_PASS_LENGTH, max=255) private transient String password;	// for validation purposes only
+	@NotBlank @Size(min=Config.MIN_PASS_LENGTH, max=255) private transient String password;	// for validation purposes only
 	
 	private transient String currentIdentifier;
 	private transient String authtoken;
@@ -137,10 +145,10 @@ public class User extends PObject implements UserDetails{
 	
 	public String create() {
 		if(StringUtils.isBlank(getIdentifier())) return null;
-		if (!StringUtils.isBlank(getPassword()) && getPassword().length() < Utils.MIN_PASS_LENGTH) return null;
+		if (!StringUtils.isBlank(getPassword()) && getPassword().length() < Config.MIN_PASS_LENGTH) return null;
 		
 		// admin detected
-		if (!Utils.ADMIN_IDENT.isEmpty() && Utils.ADMIN_IDENT.equals(getIdentifier()) ){
+		if (!Config.ADMIN_IDENT.isEmpty() && Config.ADMIN_IDENT.equals(getIdentifier()) ){
 			setGroups(User.Groups.ADMINS.toString());
 		}else{
 			setGroups(User.Groups.USERS.toString());
@@ -187,7 +195,7 @@ public class User extends PObject implements UserDetails{
 	}
 	
 	public boolean isFacebookUser(){
-		return StringUtils.startsWithIgnoreCase(identifier, Utils.FB_PREFIX);
+		return StringUtils.startsWithIgnoreCase(identifier, Config.FB_PREFIX);
 	}
 	
 	public String getCreatorid(){
@@ -234,19 +242,20 @@ public class User extends PObject implements UserDetails{
 	}
 
 	public String getPassword() {
-		return password;
+		return StringUtils.isBlank(password) ? authtoken : password;
 	}
 
 	public void setPassword(String password) {
 		this.password = password;
 	}
 	
-	public static User readUserForIdentifier (String identifier, DAO dao){
+	public static User readUserForIdentifier(String identifier){
 		if(StringUtils.isBlank(identifier)) return null;
-		if(NumberUtils.isDigits(identifier)) identifier = Utils.FB_PREFIX + identifier;
-		Sysprop s = dao.read(identifier);
+		if(NumberUtils.isDigits(identifier)) identifier = Config.FB_PREFIX + identifier;
+		Sysprop s = new Sysprop();
+		s = s.getDao().read(identifier);
 		if(s == null || s.getCreatorid() == null) return null;
-		User user = dao.read(s.getCreatorid());
+		User user = s.getDao().read(s.getCreatorid());
 		if(user != null ){
 			user.setCurrentIdentifier(identifier);
 			user.setAuthtoken((String) s.getProperty(DAO.CN_AUTHTOKEN));
@@ -254,9 +263,10 @@ public class User extends PObject implements UserDetails{
 		return user;
     }
 	
-	public static boolean passwordMatches(String password, String identifier, DAO dao){
+	public static boolean passwordMatches(String password, String identifier){
 		if(StringUtils.isBlank(password)) return false;
-		Sysprop s = dao.read(identifier);
+		Sysprop s = new Sysprop();
+		s = s.getDao().read(identifier);
 		if(s == null) return false;
 		String salt = (String) s.getProperty(DAO.CN_SALT);
 		String storedHash = (String) s.getProperty(DAO.CN_PASSWORD);
@@ -266,7 +276,8 @@ public class User extends PObject implements UserDetails{
 	
 	public final String generatePasswordResetToken(){
 		if(StringUtils.isBlank(identifier)) return "";
-		Sysprop s = getDao().read(identifier);
+		Sysprop s = new Sysprop();
+		s = s.getDao().read(identifier);
 		if(s == null) return "";
 		String salt = (String) s.getProperty(DAO.CN_SALT);
 		String token = Utils.HMACSHA(Long.toString(System.currentTimeMillis()), salt);
@@ -309,7 +320,7 @@ public class User extends PObject implements UserDetails{
 	
 	private boolean createIdentifier(String userid, String newIdent, String password){
 		if(StringUtils.isBlank(userid) || StringUtils.isBlank(newIdent)) return false;
-		if(NumberUtils.isDigits(newIdent)) newIdent = Utils.FB_PREFIX + newIdent;
+		if(NumberUtils.isDigits(newIdent)) newIdent = Config.FB_PREFIX + newIdent;
 		Sysprop s = new Sysprop();
 		s.setId(newIdent);
 		s.setName(DAO.CN_IDENTIFIER);
@@ -325,7 +336,7 @@ public class User extends PObject implements UserDetails{
 	
 	private void deleteIdentifier(String ident){
 		if(StringUtils.isBlank(ident)) return;
-		if(NumberUtils.isDigits(ident)) ident = Utils.FB_PREFIX + ident;
+		if(NumberUtils.isDigits(ident)) ident = Config.FB_PREFIX + ident;
 		new Sysprop(ident).delete();
 	}
 	

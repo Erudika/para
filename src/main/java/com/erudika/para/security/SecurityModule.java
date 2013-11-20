@@ -26,7 +26,6 @@ import com.google.inject.AbstractModule;
 public class SecurityModule extends AbstractModule {
 
 	protected void configure() {
-		bind(AuthModule.class);
 	}
 	
 }

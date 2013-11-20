@@ -98,32 +98,4 @@ public interface Search {
 
 	public <P extends ParaObject> void unindexAll(List<P> objects);
 		
-	//	private void unindexNulls(final String type, final List<String> keys, final Map<String, ParaObject> fromDB){
-	//		Utils.asyncExecute(new Callable<Object>(){
-	//			public Object call() throws Exception {
-	//				Map<String, ParaObject> dbKeys;
-	//				if(fromDB == null){
-	//					dbKeys = AWSDynamoDAO.getInstance().readAll(keys, !Utils.READ_FROM_INDEX);
-	//				}else{
-	//					dbKeys = fromDB;
-	//				}
-	//				// remove objects that are still indexed but not in the database
-	//				if (!dbKeys.isEmpty() && dbKeys.values().contains(null)) {
-	//					BulkRequestBuilder brb = getSearchClient().prepareBulk();
-	//
-	//					for (Iterator<Map.Entry<String, ParaObject>> it = dbKeys.entrySet().iterator(); it.hasNext();) {
-	//						Map.Entry<String, ParaObject> entry = it.next();
-	//						String key = entry.getKey();
-	//						ParaObject value = entry.getValue();
-	//						if (value == null) {
-	//							brb.add(getSearchClient().prepareDelete(Utils.INDEX_ALIAS, type, key).request());
-	//						}
-	//					}
-	//					brb.execute();
-	//				}
-	//				return true;
-	//			}
-	//		});
-	//	}
-
 }

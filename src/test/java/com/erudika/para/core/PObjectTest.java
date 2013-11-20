@@ -17,6 +17,11 @@
  */
 package com.erudika.para.core;
 
+import com.erudika.para.Para;
+import com.erudika.para.cache.Cache;
+import com.erudika.para.cache.CacheModule;
+import java.util.List;
+import java.util.Map;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -28,20 +33,79 @@ import static org.junit.Assert.*;
  */
 public class PObjectTest {
 	
+	public static class XCache implements Cache{
+
+		public XCache() {
+			System.out.println("MOCK CACHE");
+		}
+		public boolean contains(String id) {
+			return false;
+		}
+		public <T> void put(String id, T object) {
+			System.out.println("PUT");
+		}
+		public <T> void put(String id, T object, Long ttl_seconds) {
+			System.out.println("PUT2");
+		}
+		public <T> T get(String id) {
+			System.out.println("GET");
+			return (T) "OK";
+		}
+		public void remove(String id) {
+			System.out.println("REMOVE");
+		}
+		public void removeAll() {
+		}
+		public <T> void putAll(Map<String, T> objects) {
+		}
+		public <T> Map<String, T> getAll(List<String> ids) {
+			return null;
+		}
+
+		@Override
+		public void removeAll(List<String> ids) {
+			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		}
+	}
+	
+	public static class MyModule extends CacheModule{
+		protected void configure() {
+			bind(Cache.class).to(XCache.class);
+		}
+	}
+	
 	@BeforeClass
 	public static void setUpClass(){
-	
-		// TODO CREATE MOCK OF DAO AND SET INSIDE POBJECT!!!!!
-		// TODO CREATE MOCK OF DAO AND SET INSIDE POBJECT!!!!!
-		// TODO CREATE MOCK OF DAO AND SET INSIDE POBJECT!!!!!
 		
+		Para.initialize(new MyModule());
+		
+		
+		// TODO CREATE MOCK OF DAO AND SET INSIDE POBJECT!!!!!
+		// TODO CREATE MOCK OF DAO AND SET INSIDE POBJECT!!!!!
+		// TODO CREATE MOCK OF DAO AND SET INSIDE POBJECT!!!!!
+//		embedded = new EmbeddedServerHelper();
+////		embedded.setup();
+////
+////		testObject = new User("user@test.com", true, User.UserType.ALUMNUS, "Test User");
+////		testObject.setAboutme("Test about me");
+////		testObject.setDob(12314325234L);
+////		testObject.setLocation("Test location");
 	}
 	
 	@AfterClass
 	public static void tearDownClass() {
+		Para.destroy();
 	}
 
-
+	@Test
+	public void test(){
+		Tag tag = new Tag();
+		Tag tag1 = new Tag("taat");
+		assertNotNull(tag.getDao());
+		assertNotNull(tag1.getDao());
+		
+	}
+	
 	@Test
 	public void testGetClassname() {
 		Tag tag = new Tag();

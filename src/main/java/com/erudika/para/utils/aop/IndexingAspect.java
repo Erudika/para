@@ -38,59 +38,68 @@ public class IndexingAspect implements MethodInterceptor {
 	public Object invoke(MethodInvocation mi) throws Throwable {
 		Object result = mi.proceed();
 		Method m = mi.getMethod();
-		Method superMethod = DAO.class.getMethod(m.getName(), m.getParameterTypes());
-		Indexed ano = superMethod.getAnnotation(Indexed.class);
 		
-		if(ano != null){
-			Object[] params = mi.getArguments();
-			switch(ano.action()){
-				case ADD: 
-					if(ano.batch()){
-						List<ParaObject> indexables = getIndexableParameter(params);
-						search.indexAll(indexables);
-					}else{
-						ParaObject indexable = getIndexableParameter(params);
-						search.index(indexable, indexable.getClassname());
-					}
-					break;
-				case REMOVE: 
-					if(ano.batch()){
-						List<ParaObject> indexables = getIndexableParameter(params);
-						search.unindexAll(indexables);
-					}else{
-						ParaObject indexable = getIndexableParameter(params);
-						search.unindex(indexable, indexable.getClassname());
-					}
-					break;
-				default: break;
+		Method superMethod = null;
+		try {
+			superMethod = DAO.class.getMethod(m.getName(), m.getParameterTypes());
+		} catch (Exception e) {}
+		
+		if(superMethod != null){
+			Indexed ano = superMethod.getAnnotation(Indexed.class);
+			if(ano != null){
+				Object[] args = mi.getArguments();
+				switch(ano.action()){
+					case ADD: 
+						ParaObject addMe = getArgOfParaObject(args);
+						search.index(addMe, addMe.getClassname());
+						break;
+					case REMOVE: 
+						ParaObject removeMe = getArgOfParaObject(args);
+						search.unindex(removeMe, removeMe.getClassname());
+						break;
+					case ADD_ALL: 
+						List<ParaObject> addUs = getArgOfListOfType(args, ParaObject.class);
+						search.indexAll(addUs);
+						break;
+					case REMOVE_ALL: 
+						List<ParaObject> removeUs = getArgOfListOfType(args, ParaObject.class);
+						search.unindexAll(removeUs);
+						break;
+					default: break;
+				}
 			}
 		}
 		
 		return result;
 	}
 	
-	<P> P getIndexableParameter(Object[] params){
-		if(params.length == 0){
-			return null;
-		}else{
-			P indexable = null;
-			for (Object param : params) {
-				if(param != null){
-					if(param instanceof ParaObject){
-						indexable = (P) param; 
-						break;
-					}else if(param instanceof List){
-						List<?> list = (List) param;
-						// the only valid type is List<? extends ParaObject>
-						if(!list.isEmpty() && ParaObject.class.isAssignableFrom((list.get(0).getClass()))){
-							indexable = (P) list;
+	static <T> List<T> getArgOfListOfType(Object[] args, Class<T> type){
+		if(args != null){
+			for (Object arg : args) {
+				if(arg != null){
+					if(arg instanceof List){
+						List<T> list = (List) arg;
+						if(!list.isEmpty() && type.isAssignableFrom((list.get(0).getClass()))){
+							return (List<T>) list;
 						}
-						break;
 					}
 				}
 			}
-			return indexable;
 		}
+		return null;
+	}
+	
+	static ParaObject getArgOfParaObject(Object[] args){
+		if(args != null){
+			for (Object arg : args) {
+				if(arg != null){
+					if(arg instanceof ParaObject){
+						return (ParaObject) arg;
+					}
+				}
+			}
+		}
+		return null;
 	}
 	
 }

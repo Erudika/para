@@ -20,7 +20,7 @@ package com.erudika.para.core;
 import com.erudika.para.i18n.LanguageUtils;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
-import com.erudika.para.utils.Utils;
+import com.erudika.para.utils.Config;
 import javax.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
@@ -38,10 +38,10 @@ public class Translation extends PObject{
 	@Stored private String value;
 	@Stored private Boolean approved;
 	
-	@Inject LanguageUtils langutils;
+	LanguageUtils langutils;
 	
 	public Translation() {
-		this(null, null, null);
+		this(null, null, null, null);
 	}
 
 	public Translation(String id) {
@@ -49,11 +49,13 @@ public class Translation extends PObject{
 		setId(id);
 	}
 
-	public Translation(String locale, String thekey, String value) {
+	@Inject
+	public Translation(String locale, String thekey, String value, LanguageUtils langutils) {
 		this.locale = locale;
 		this.thekey = thekey;
 		this.value = value;
 		this.approved = false;
+		this.langutils = langutils;
 	}
 	
 	public Boolean getApproved() {
@@ -110,7 +112,7 @@ public class Translation extends PObject{
 
 	public String getParentid() {
 		if(StringUtils.isBlank(locale) && StringUtils.isBlank(thekey)) return null;
-		return locale.concat(Utils.SEPARATOR).concat(thekey);
+		return locale.concat(Config.SEPARATOR).concat(thekey);
 	}
 	
 }

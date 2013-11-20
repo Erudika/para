@@ -17,9 +17,10 @@
  */
 package com.erudika.para.persistence;
 
+import com.erudika.para.annotations.Cached;
 import com.erudika.para.annotations.Indexed;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.utils.Utils;
+import com.erudika.para.utils.Config;
 import java.util.List;
 import java.util.Map;
 
@@ -29,42 +30,42 @@ import java.util.Map;
  */
 public interface DAO {
 	
-	public static String CN_AUTHTOKEN = "authtoken";
-	public static String CN_CLASSNAME = "classname";
-	public static String CN_COUNTS_COUNT = "count";
-	public static String CN_CREATORID = "creatorid";
-	public static String CN_ID = "id";
-	public static String CN_IDENTIFIER = "identifier";
-	public static String CN_KEY = "key";
-	public static String CN_NAME = "name";
-	public static String CN_PARENTID = "parentid";
-	public static String CN_PASSWORD = "password";
-	public static String CN_RESET_TOKEN = "token";
-	public static String CN_SALT = "salt";
-	public static String CN_TIMESTAMP = "timestamp";
-	public static String CN_UPDATED = "updated";
+	public static final String CN_AUTHTOKEN = "authtoken";
+	public static final String CN_CLASSNAME = "classname";
+	public static final String CN_COUNTS_COUNT = "count";
+	public static final String CN_CREATORID = "creatorid";
+	public static final String CN_ID = "id";
+	public static final String CN_IDENTIFIER = "identifier";
+	public static final String CN_KEY = "key";
+	public static final String CN_NAME = "name";
+	public static final String CN_PARENTID = "parentid";
+	public static final String CN_PASSWORD = "password";
+	public static final String CN_RESET_TOKEN = "token";
+	public static final String CN_SALT = "salt";
+	public static final String CN_TIMESTAMP = "timestamp";
+	public static final String CN_UPDATED = "updated";
 	
 	//////////  DB CONFIG  //////////////
-	public static String TABLE_PREFIX = Utils.CLUSTER_NAME.concat("-");
+	public static final String TABLE_PREFIX = Config.CLUSTER_NAME.concat("_");
 	//////////  DB TABLES  //////////////
-	public static String OBJECTS = TABLE_PREFIX.concat("objects");
-	//	public static final String VOTES = "Votes";
-	//	public static final String LOCALES_TRANSLATIONS = "LocalesTranslations";
-	//	public static final String APPROVED_TRANSLATIONS = "ApprovedTranslations";
-	//	public static final String LANGUAGE = "Language";
+	public static final String OBJECTS = TABLE_PREFIX.concat("objects");
 
 	/********************************************
 	 *			CORE FUNCTIONS
 	 ********************************************/
 	@Indexed(action = Indexed.Action.ADD)
+	@Cached(action = Cached.Action.PUT)
 	public <P extends ParaObject> String create(P so);
 
+	@Cached(action = Cached.Action.GET)
 	public <P extends ParaObject> P read(String key);
 
 	@Indexed(action = Indexed.Action.ADD)
+	@Cached(action = Cached.Action.PUT)
 	public <P extends ParaObject> void update(P so);
 	
 	@Indexed(action = Indexed.Action.REMOVE)
+	@Cached(action = Cached.Action.DELETE)
 	public <P extends ParaObject> void delete(P so);
 
 	/********************************************
@@ -81,16 +82,20 @@ public interface DAO {
 	/********************************************
 	 *				READ ALL FUNCTIONS
 	 ********************************************/	
-	@Indexed(action = Indexed.Action.ADD, batch = true)
+	@Indexed(action = Indexed.Action.ADD_ALL)
+	@Cached(action = Cached.Action.PUT_ALL)
 	public <P extends ParaObject> void createAll(List<P> objects);
 	
+	@Cached(action = Cached.Action.GET_ALL)
 	public <P extends ParaObject> Map<String, P> readAll(List<String> keys, boolean getAllAtrributes);
 
 	public <P extends ParaObject> List<P> readPage(String cf, String lastKey);
 
-	@Indexed(action = Indexed.Action.ADD, batch = true)
+	@Indexed(action = Indexed.Action.ADD_ALL)
+	@Cached(action = Cached.Action.PUT_ALL)
 	public <P extends ParaObject> void updateAll(List<P> objects);
 	
-	@Indexed(action = Indexed.Action.REMOVE, batch = true)
+	@Indexed(action = Indexed.Action.REMOVE_ALL)
+	@Cached(action = Cached.Action.DELETE_ALL)
 	public <P extends ParaObject> void deleteAll(List<P> objects);
 }

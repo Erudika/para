@@ -67,15 +67,14 @@ public class IndexingAspectIT {
 		List<String> badList = new ArrayList<String> ();
 		badList.add("XXXtagXXX");
 		
-		assertEquals(tag, i.getIndexableParameter(new Object[]{tag, "string"}));
-		assertNull(i.getIndexableParameter(new Object[]{"string"}));
-		assertEquals(list1, i.getIndexableParameter(new Object[]{list1}));
-		assertEquals(list2, i.getIndexableParameter(new Object[]{list2}));
-		assertNull(i.getIndexableParameter(new Object[]{badList}));
+		assertEquals(tag, IndexingAspect.getArgOfParaObject(new Object[]{tag, "string"}));
+		assertNull(IndexingAspect.getArgOfParaObject(new Object[]{"string"}));
+		assertEquals(list1, IndexingAspect.getArgOfListOfType(new Object[]{list1}, ParaObject.class));
+		assertEquals(list2, IndexingAspect.getArgOfListOfType(new Object[]{list2}, ParaObject.class));
+		assertNull(IndexingAspect.getArgOfListOfType(new Object[]{badList}, ParaObject.class));
 		
 		DAO dao = new AWSDynamoDAO();
-		ElasticSearch search = new ElasticSearch();
-		search.setDao(dao);
+		ElasticSearch search = new ElasticSearch(dao);
 		
 		assertNotNull(dao.create(tag));
 		assertNotNull(dao.read(tag.getId()));

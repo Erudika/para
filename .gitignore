@@ -6,8 +6,8 @@
 *.bak
 keys.txt
 rebel.xml
-init.properties
 nbactions.xml
+application.conf
 Tomcat.dpf
 nb-configuration.xml
 onemenu-server/target/

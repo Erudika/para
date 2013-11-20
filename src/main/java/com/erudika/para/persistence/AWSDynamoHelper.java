@@ -17,12 +17,12 @@
  */
 package com.erudika.para.persistence;
 
-import com.erudika.para.utils.Utils;
+import com.erudika.para.Para;
+import com.erudika.para.utils.Config;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -32,48 +32,28 @@ public class AWSDynamoHelper {
 	
 	private static volatile boolean called = false;
 	
-	/**
-	 * Start a new one at this port.
-	 *
-	 * @param port The port to start at
-	 * @throws IOException If fails to start
-	 */
 	public static void start(File dir) {
 		if(called) return;
 		try {
-			if(dir == null) dir = new File(System.getProperty("dynamodir", ""));
-			if(!dir.exists()) throw new FileNotFoundException();
-			final Process proc = new ProcessBuilder().command(new String[]{
-				String.format("%s%sbin%<sjava", System.getProperty("java.home"), System.getProperty("file.separator")), 
-				String.format("-Djava.library.path=%s", dir.getAbsolutePath()), "-jar", "DynamoDBLocal.jar"}).
-					directory(dir).redirectErrorStream(false).start();
+			Path p = FileSystems.getDefault().getPath(System.getProperty("dynamodir", Config.getConfig().get("dynamodir")));
+			if(dir == null) dir = p.toFile();
+			String[] cmd = new String[]{ String.format("%s%sbin%<sjava", 
+					System.getProperty("java.home"), System.getProperty("file.separator")), 
+					String.format("-Djava.library.path=%s", dir.getAbsolutePath()), "-jar", "DynamoDBLocal.jar"};
+			final Process proc = new ProcessBuilder().command(cmd).directory(dir).redirectErrorStream(false).start();
 			called = true;
 			Thread.sleep(2000);
-			System.out.println("------ DynamoDB START ------");
-			Utils.attachShutdownHook(AWSDynamoHelper.class, new Thread(){
-				public void run() {
-					System.out.println("------ DynamoDB STOP ------");
+			System.out.println("------ DynamoDB local START ------");
+			
+			Para.addDestroyListener(new Para.DestroyListener() {
+				public void onDestroy() {
+					System.out.println("------ DynamoDB local STOP ------");
 					proc.destroy();
-				}			
+				}
 			});
 		} catch (Exception e) {
-			Logger.getLogger(AWSDynamoHelper.class.getName()).log(Level.SEVERE, null, e);
+			LoggerFactory.getLogger(AWSDynamoHelper.class).error(null, e);
 		}
 	}
-//
-//	/**
-//	 * Stop a running one at this port.
-//	 *
-//	 * @param port The port to stop at
-//	 */
-//	public void stop(final int port) {
-//		final Process proc = this.processes.get(port);
-//		if (proc == null) {
-//			throw new IllegalArgumentException(
-//					String.format(
-//					"No DynamoDB Local instances running on port %d", port));
-//		}
-//		proc.destroy();
-//	}
-	
+
 }

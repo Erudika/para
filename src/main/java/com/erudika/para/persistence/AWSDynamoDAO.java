@@ -48,15 +48,16 @@ import com.amazonaws.services.dynamodbv2.model.UpdateItemRequest;
 import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
+import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.inject.Singleton;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -65,21 +66,19 @@ import org.apache.commons.lang3.StringUtils;
 @Singleton
 public class AWSDynamoDAO implements DAO {
 		
-	private static final Logger logger = Logger.getLogger(AWSDynamoDAO.class.getName());
+	private static final Logger logger = LoggerFactory.getLogger(AWSDynamoDAO.class);
 	private static AmazonDynamoDBClient ddb;
 //	private static AWSDynamoDAO dao;
-	private static final String ENDPOINT = "dynamodb.".concat(Utils.AWS_REGION).concat(".amazonaws.com");
+	private static final String ENDPOINT = "dynamodb.".concat(Config.AWS_REGION).concat(".amazonaws.com");
 	private static final String LOCAL_ENDPOINT = "http://localhost:8000";
 	private static final int MAX_ITEMS_PER_BATCH = 4; // Amazon DynamoDB limit ~= WRITE CAP
 	////////////////////////////////////
 	
 	public AWSDynamoDAO() {
-		if(Utils.IN_PRODUCTION){
+		if(Config.IN_PRODUCTION){
 			ddb = new AmazonDynamoDBClient();
 			ddb.setEndpoint(ENDPOINT);
 		}else{
-			AWSDynamoHelper.start(null);
-			
 			ddb = new AmazonDynamoDBClient(new BasicAWSCredentials("local", "null"));
 			ddb.setEndpoint(LOCAL_ENDPOINT);
 			if(!ddb.listTables().getTableNames().contains(DAO.OBJECTS)){
@@ -88,7 +87,8 @@ public class AWSDynamoDAO implements DAO {
 						withAttributeDefinitions(new AttributeDefinition().withAttributeName(CN_KEY).
 						withAttributeType(ScalarAttributeType.S)).
 						withProvisionedThroughput(new ProvisionedThroughput(1L, 1L)));
-					
+
+
 			}
 		}
 	}
@@ -106,7 +106,7 @@ public class AWSDynamoDAO implements DAO {
 
 		createRow(so.getId(), OBJECTS, toRow(so, null));
 		
-		logger.log(Level.FINE, "DAO.create() {0}", new Object[]{so.getId()});
+		logger.debug("DAO.create() {0}", new Object[]{so.getId()});
 		return so.getId();
 	}
 	
@@ -116,7 +116,7 @@ public class AWSDynamoDAO implements DAO {
 		
 		P so = fromRow(readRow(key, OBJECTS));
 		
-		logger.log(Level.FINE, "DAO.read() {0} -> {1}", new Object[]{key, so});
+		logger.debug("DAO.read() {0} -> {1}", new Object[]{key, so});
 		return so != null ? so : null;
 	}
 
@@ -127,7 +127,7 @@ public class AWSDynamoDAO implements DAO {
 		
 		updateRow(so.getId(), OBJECTS, toRow(so, Locked.class));
 		
-		logger.log(Level.FINE, "DAO.update() {0}", new Object[]{so.getId()});
+		logger.debug("DAO.update() {0}", new Object[]{so.getId()});
 	}
 
 	@Override
@@ -136,7 +136,7 @@ public class AWSDynamoDAO implements DAO {
 		
 		deleteRow(so.getId(), OBJECTS);
 		
-		logger.log(Level.FINE, "DAO.delete() {0}", new Object[]{so.getId()});
+		logger.debug("DAO.delete() {0}", new Object[]{so.getId()});
 	}
 
 	/********************************************
@@ -154,7 +154,7 @@ public class AWSDynamoDAO implements DAO {
 			UpdateItemRequest updateItemRequest = new UpdateItemRequest(cf, Collections.singletonMap(CN_KEY, new AttributeValue(key)), row);
 			ddb.updateItem(updateItemRequest); 
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, null, e);
+			logger.error(null, e);
 		}
 	}
 
@@ -170,7 +170,7 @@ public class AWSDynamoDAO implements DAO {
 				result = res.getItem().get(colName).getS();
 			}
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, null, e);
+			logger.error(null, e);
 		}
 		return result;
 	}
@@ -185,7 +185,7 @@ public class AWSDynamoDAO implements DAO {
 			UpdateItemRequest updateItemRequest = new UpdateItemRequest(cf, Collections.singletonMap(CN_KEY, new AttributeValue(key)), row);
 			ddb.updateItem(updateItemRequest); 
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, null, e);
+			logger.error(null, e);
 		}
 	}
 	
@@ -206,7 +206,7 @@ public class AWSDynamoDAO implements DAO {
 			PutItemRequest putItemRequest = new PutItemRequest(cf, row);
 			ddb.putItem(putItemRequest); 
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, null, e);
+			logger.error(null, e);
 		}		
 		return key;
 	}
@@ -222,7 +222,7 @@ public class AWSDynamoDAO implements DAO {
 					Collections.singletonMap(CN_KEY, new AttributeValue(key)), rou);
 			ddb.updateItem(updateItemRequest); 
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, null, e);
+			logger.error(null, e);
 		}
 	}
 
@@ -237,7 +237,7 @@ public class AWSDynamoDAO implements DAO {
 				row = res.getItem();
 			}
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, null, e);
+			logger.error(null, e);
 		}
 		return (row == null || row.isEmpty()) ? null : row;
 	}
@@ -249,7 +249,7 @@ public class AWSDynamoDAO implements DAO {
 					Collections.singletonMap(CN_KEY, new AttributeValue(key)));
 			ddb.deleteItem(delItemRequest);
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, null, e);
+			logger.error(null, e);
 		}
 	}
 	
@@ -288,7 +288,7 @@ public class AWSDynamoDAO implements DAO {
 		if(StringUtils.isBlank(cf)) return results;
 		
 		try {
-			ScanRequest scanRequest = new ScanRequest().withTableName(OBJECTS).withLimit(Utils.MAX_ITEMS_PER_PAGE).
+			ScanRequest scanRequest = new ScanRequest().withTableName(OBJECTS).withLimit(Config.MAX_ITEMS_PER_PAGE).
 					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
 			
 			if(!StringUtils.isBlank(lastKey)){
@@ -296,7 +296,7 @@ public class AWSDynamoDAO implements DAO {
 			}
 			
 			ScanResult result = ddb.scan(scanRequest);
-			logger.log(Level.FINE, "readPage() CC: {0}", new Object[]{result.getConsumedCapacity()});
+			logger.debug("readPage() CC: {0}", new Object[]{result.getConsumedCapacity()});
 			
 			for (Map<String, AttributeValue> item : result.getItems()) {
 				P obj = fromRow(item);
@@ -308,7 +308,7 @@ public class AWSDynamoDAO implements DAO {
 				return readPage(cf, result.getLastEvaluatedKey().get(CN_KEY).getS());
 			}
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, null, e);
+			logger.error(null, e);
 		}
 		
 		return results;
@@ -368,15 +368,15 @@ public class AWSDynamoDAO implements DAO {
 			List<Map<String, AttributeValue>> res = result.getResponses().get(OBJECTS);
 
 			for (Map<String, AttributeValue> item : res) results.put(item.get(CN_KEY).getS(), (P) fromRow(item));
-			logger.log(Level.FINE, "batchGet() CC: {0}", new Object[]{result.getConsumedCapacity()});
+			logger.debug("batchGet() CC: {0}", new Object[]{result.getConsumedCapacity()});
 			
 			if(result.getUnprocessedKeys() != null && !result.getUnprocessedKeys().isEmpty()){
 				Thread.sleep(1000);
-				logger.log(Level.WARNING, "UNPROCESSED {0}", result.getUnprocessedKeys().size());
+				logger.warn("UNPROCESSED {0}", result.getUnprocessedKeys().size());
 				batchGet(result.getUnprocessedKeys(), results);
 			}
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, null, e);
+			logger.error(null, e);
 		}
 	}
 	
@@ -386,16 +386,16 @@ public class AWSDynamoDAO implements DAO {
 			BatchWriteItemResult result = ddb.batchWriteItem(new BatchWriteItemRequest().
 					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL).withRequestItems(items));
 			if(result == null) return;
-			logger.log(Level.FINE, "batchWrite() CC: {0}", new Object[]{result.getConsumedCapacity()});
+			logger.debug("batchWrite() CC: {0}", new Object[]{result.getConsumedCapacity()});
 
 			Thread.sleep(1000);
 			
 			if(result.getUnprocessedItems() != null && !result.getUnprocessedItems().isEmpty()){
-				logger.log(Level.WARNING, "UNPROCESSED {0}", result.getUnprocessedItems().size());
+				logger.warn("UNPROCESSED {0}", result.getUnprocessedItems().size());
 				batchWrite(result.getUnprocessedItems());
 			}
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, null, e);
+			logger.error(null, e);
 		}
 	}
 	
@@ -447,14 +447,14 @@ public class AWSDynamoDAO implements DAO {
 				}
 			}
 		} catch (Exception ex) {
-			logger.log(Level.SEVERE, null, ex);
+			logger.error(null, ex);
 		}
 
 		return transObject;
 	}
 	
 	private void setRowKey(String key, Map<String, AttributeValue> row){
-		if(row.containsKey(CN_KEY)) logger.log(Level.WARNING, "Attribute name conflict:  "
+		if(row.containsKey(CN_KEY)) logger.warn("Attribute name conflict:  "
 			+ "attribute '{0}' will be overwritten! '{0}' is a reserved keyword.", new Object[]{CN_KEY});
 		row.put(CN_KEY, new AttributeValue(key));
 	}

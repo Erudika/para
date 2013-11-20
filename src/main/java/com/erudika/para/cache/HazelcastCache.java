@@ -18,10 +18,9 @@
 package com.erudika.para.cache;
 
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
-import com.erudika.para.cache.Cache;
-import com.erudika.para.utils.Utils;
+import com.erudika.para.Para;
+import com.erudika.para.utils.Config;
 import com.hazelcast.config.AwsConfig;
-import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
@@ -32,6 +31,12 @@ import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
@@ -41,43 +46,50 @@ import org.apache.commons.lang3.StringUtils;
  * @author Alex Bogdanovski <albogdano@me.com>
  */
 @Singleton
-public class HazelcastCache implements Cache{
+public class HazelcastCache implements Cache {
 
-	private static final String NODE_NAME = Utils.CLUSTER_NAME + Utils.WORKER_ID;
-	private static final String MAP_NAME = Utils.CLUSTER_NAME;
+	private static final String NODE_NAME = Config.CLUSTER_NAME + Config.WORKER_ID;
+	private static final String MAP_NAME = Config.CLUSTER_NAME;
 	
 	private HazelcastInstance haze;
 
 	public HazelcastCache() {
 		haze = Hazelcast.getHazelcastInstanceByName(NODE_NAME);
 		if(haze == null){
-			Config cfg = new Config();
+			com.hazelcast.config.Config cfg = new com.hazelcast.config.Config();
 			MapConfig mapcfg = new MapConfig(MAP_NAME);
 			mapcfg.setEvictionPercentage(25);
 			mapcfg.setEvictionPolicy(MapConfig.EvictionPolicy.LRU);
-			mapcfg.setMapStoreConfig(new MapStoreConfig().setEnabled(false));
+//			mapcfg.setMapStoreConfig(new MapStoreConfig().setEnabled(false).setClassName(NODE_NAME));
 			mapcfg.setMaxSizeConfig(new MaxSizeConfig().setSize(25).setMaxSizePolicy(USED_HEAP_PERCENTAGE));
 			cfg.addMapConfig(mapcfg);
 			cfg.setInstanceName(NODE_NAME);
 			cfg.setProperty("hazelcast.jmx", "true");
-			if(Utils.IN_PRODUCTION){
+			cfg.setProperty("hazelcast.logging.type", "slf4j");
+			if(Config.IN_PRODUCTION){
 				cfg.setNetworkConfig(new NetworkConfig().setJoin(new JoinConfig().
 					setMulticastConfig(new MulticastConfig().setEnabled(false)).
 						setTcpIpConfig(new TcpIpConfig().setEnabled(false)).
 						setAwsConfig(new AwsConfig().setEnabled(true).
 							setAccessKey(getAwsCredentials()[0]).
 							setSecretKey(getAwsCredentials()[1]).
-							setRegion(Utils.AWS_REGION).
-							setSecurityGroupName(Utils.CLUSTER_NAME))));
+							setRegion(Config.AWS_REGION).
+							setSecurityGroupName(Config.CLUSTER_NAME))));
 			}
 			
 			haze = Hazelcast.newHazelcastInstance(cfg);
-		}		
+			
+			Para.addDestroyListener(new Para.DestroyListener() {
+				public void onDestroy() {
+					haze.getLifecycleService().shutdown();
+				}
+			});
+		}
 	}
 	
 	private String[] getAwsCredentials(){
-		if(!StringUtils.isBlank(Utils.AWS_ACCESSKEY) && !StringUtils.isBlank(Utils.AWS_SECRETKEY)){
-			return new String[]{Utils.AWS_ACCESSKEY, Utils.AWS_SECRETKEY};
+		if(!StringUtils.isBlank(Config.AWS_ACCESSKEY) && !StringUtils.isBlank(Config.AWS_SECRETKEY)){
+			return new String[]{Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY};
 		}else{
 			InstanceProfileCredentialsProvider ipcp = new InstanceProfileCredentialsProvider();
 			try {
@@ -95,12 +107,17 @@ public class HazelcastCache implements Cache{
 	
 	@Override
 	public <T> void put(String id, T object) {
-		haze.getMap(MAP_NAME).put(id, object);
+		haze.getMap(MAP_NAME).putAsync(id, object);
 	}
 
 	@Override
 	public <T> void put(String id, T object, Long ttl_seconds) {
-		haze.getMap(MAP_NAME).put(id, object, ttl_seconds, TimeUnit.SECONDS);
+		haze.getMap(MAP_NAME).putAsync(id, object, ttl_seconds, TimeUnit.SECONDS);
+	}
+
+	@Override
+	public <T> void putAll(Map<String, T> objects) {
+		haze.getMap(MAP_NAME).putAll(objects);
 	}
 
 	@Override
@@ -109,13 +126,31 @@ public class HazelcastCache implements Cache{
 	}
 
 	@Override
+	public <T> Map<String, T> getAll(List<String> ids) {
+		Map<String, T> map = new TreeMap<String, T>();
+		if(ids == null) return map;
+		for (Entry<Object, Object> entry : haze.getMap(MAP_NAME).getAll(new TreeSet<Object>(ids)).entrySet()) {
+			map.put((String) entry.getKey(), (T) entry.getValue());
+		}
+		return map;
+	}
+	
+	@Override
 	public void remove(String id) {
-		haze.getMap(MAP_NAME).remove(id);
+		haze.getMap(MAP_NAME).delete(id);
 	}
 
 	@Override
 	public void removeAll() {
 		haze.getMap(MAP_NAME).clear();
+	}
+	
+	@Override
+	public void removeAll(List<String> ids) {
+		IMap<?,?> map = haze.getMap(MAP_NAME);
+		for (String id : ids) {
+			map.delete(id);
+		}
 	}
 	
 }

@@ -17,6 +17,9 @@
  */
 package com.erudika.para.cache;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
@@ -29,10 +32,16 @@ public interface Cache {
 	
 	public <T> void put(String id, T object, Long ttl_seconds);
 	
+	public <T> void putAll(Map<String, T> objects);
+	
 	public <T> T get(String id);
+	
+	public <T> Map<String, T> getAll(List<String> ids);
 	
 	public void remove(String id);
 	
 	public void removeAll();
+	
+	public void removeAll(List<String> ids);
 	
 }

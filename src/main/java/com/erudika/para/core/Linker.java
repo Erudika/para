@@ -20,7 +20,7 @@ package com.erudika.para.core;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
 import static com.erudika.para.core.PObject.classname;
-import com.erudika.para.utils.Utils;
+import com.erudika.para.utils.Config;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -54,8 +54,8 @@ public class Linker extends PObject{
 			this.id1 = i1;
 			this.id2 = i2;
 		}
-		setName(classname1 + Utils.SEPARATOR + classname2);
-		setId(classname1 + Utils.SEPARATOR + id1 + Utils.SEPARATOR + classname2 + Utils.SEPARATOR + id2);
+		setName(classname1 + Config.SEPARATOR + classname2);
+		setId(classname1 + Config.SEPARATOR + id1 + Config.SEPARATOR + classname2 + Config.SEPARATOR + id2);
 	}
 		
 	public String getId2() {

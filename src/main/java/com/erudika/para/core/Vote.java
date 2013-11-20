@@ -19,7 +19,7 @@ package com.erudika.para.core;
 
 import com.erudika.para.annotations.Stored;
 import static com.erudika.para.core.Votable.VoteType.*;
-import com.erudika.para.utils.Utils;
+import com.erudika.para.utils.Config;
 import org.hibernate.validator.constraints.NotBlank;
 
 /**
@@ -33,7 +33,7 @@ public abstract class Vote extends PObject{
 	@Override
 	public final String getId() {
 		if(getCreatorid() != null && getParentid() != null && super.getId() == null){
-			setId(getCreatorid().concat(Utils.SEPARATOR).concat(getClassname()).concat(getParentid()));
+			setId(getCreatorid().concat(Config.SEPARATOR).concat(getClassname()).concat(getParentid()));
 		}
 		return super.getId();
 	}

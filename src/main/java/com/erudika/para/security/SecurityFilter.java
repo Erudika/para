@@ -48,21 +48,7 @@ public class SecurityFilter extends GenericFilterBean{
 		final HttpServletRequest request = (HttpServletRequest) req;
 		final HttpServletResponse response = (HttpServletResponse) resp;
 		
-		boolean isAuthenticated = AuthModule.getAuthenticatedUser() != null;
-		
-		// anti-CSRF token validation
-		if(request.getMethod().equals("POST") && isAuthenticated && !request.getRequestURI().startsWith("/api")){
-			User user = AuthModule.getAuthenticatedUser();
-			String storedCSRFToken = AuthModule.getCSRFtoken(user);
-			String givenCSRFToken = request.getParameter("stoken");
-			
-			if(StringUtils.equals(storedCSRFToken, givenCSRFToken)){
-				chain.doFilter(request, response);
-			}else{
-				badrequest(response, request.getRemoteHost(), request.getRemoteAddr(), 
-						request.getHeader("User-Agent"), Utils.isAjaxRequest(request));
-			}
-		}else if(request.getRequestURI().startsWith("/api")){
+		if(request.getRequestURI().startsWith("/api/")){
 			if(!StringUtils.equals(request.getHeader("Content-Type"), MediaType.APPLICATION_JSON)){
 				String err = "'Content-Type' should be 'application/json'.";
 				Response res = Utils.getJSONResponse(Response.Status.UNSUPPORTED_MEDIA_TYPE, err);
@@ -71,6 +57,18 @@ public class SecurityFilter extends GenericFilterBean{
 				response.setStatus(res.getStatus());
 			}else{
 				chain.doFilter(request, response);
+			}
+		}else if(StringUtils.equalsIgnoreCase(request.getMethod(), "POST")){
+			// anti-CSRF token validation
+			User user = SecurityUtils.getAuthenticatedUser();
+			String storedCSRFToken = SecurityUtils.getCSRFtoken(user);
+			String givenCSRFToken = request.getParameter("stoken");
+			
+			if(StringUtils.equals(storedCSRFToken, givenCSRFToken)){
+				chain.doFilter(request, response);
+			}else{
+				badrequest(response, request.getRemoteHost(), request.getRemoteAddr(), 
+						request.getHeader("User-Agent"), Utils.isAjaxRequest(request));
 			}
 		}else{
 			chain.doFilter(request, response);

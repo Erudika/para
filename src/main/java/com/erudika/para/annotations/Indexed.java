@@ -25,6 +25,8 @@ import java.lang.annotation.Target;
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
+ * 
+ * Annotation that marks methods that can modify the search index. Mainly used for weaving through AOP.
  */
 @Retention(RetentionPolicy.RUNTIME) 
 @Target(ElementType.METHOD)
@@ -34,11 +36,10 @@ public @interface Indexed {
 	public enum Action {
 		NOOP,
 		ADD,	// add to index 
-		REMOVE;	// remove from index
+		REMOVE,	// remove from index
+		ADD_ALL,
+		REMOVE_ALL;	
 	}
 	
 	Action action() default Action.NOOP;
-	
-	boolean batch() default false;
-	
 }

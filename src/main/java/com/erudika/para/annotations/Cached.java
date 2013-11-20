@@ -21,13 +21,27 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  * 
- * Annotation that marks a field as 'locked' i.e. once stored it cannot be updated, only deleted.
+ * Annotation that marks methods that can modify the cache. Mainly used for weaving through AOP.
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
+@Retention(RetentionPolicy.RUNTIME) 
+@Target(ElementType.METHOD)
 
-public @interface Locked {}
+public @interface Cached {
+
+	public enum Action {
+		NOOP,
+		PUT,	// put in cache
+		GET,	// get from cache
+		DELETE,	// delete from cache
+		GET_ALL,
+		PUT_ALL,
+		DELETE_ALL;	
+	}
+	
+	Action action() default Action.NOOP;
+}

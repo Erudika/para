@@ -17,7 +17,6 @@
  */
 package com.erudika.para.queue;
 
-import com.erudika.para.queue.Queue;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -26,16 +25,17 @@ import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
+import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.io.IOException;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -46,9 +46,9 @@ public class AWSQueue implements Queue {
 	
 	private static final int MAX_MESSAGES = 10;  //max in bulk
 	private AmazonSQSAsyncClient sqs;
-	private String endpoint = "https://sqs.".concat(Utils.AWS_REGION).concat(".amazonaws.com");
-	private static final Logger logger = Logger.getLogger(AWSQueue.class.getName());
-	private ObjectMapper mapper = Utils.getObjectMapper();
+	private String endpoint = "https://sqs.".concat(Config.AWS_REGION).concat(".amazonaws.com");
+	private static final Logger logger = LoggerFactory.getLogger(AWSQueue.class);
+	private ObjectMapper mapper = Utils.getInstance().getObjectMapper();
 	private String name;
 
 	public AWSQueue() {
@@ -57,10 +57,10 @@ public class AWSQueue implements Queue {
 	
 	// This queue contains only messages in JSON format!
 	public AWSQueue(String name){
-		if (StringUtils.isBlank(Utils.AWS_ACCESSKEY) || StringUtils.isBlank(Utils.AWS_SECRETKEY)) {
+		if (StringUtils.isBlank(Config.AWS_ACCESSKEY) || StringUtils.isBlank(Config.AWS_SECRETKEY)) {
 			sqs = new AmazonSQSAsyncClient();
 		} else {
-			sqs = new AmazonSQSAsyncClient(new BasicAWSCredentials(Utils.AWS_ACCESSKEY, Utils.AWS_SECRETKEY));
+			sqs = new AmazonSQSAsyncClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
 		}
 		sqs.setEndpoint(endpoint);
 	}
@@ -79,7 +79,7 @@ public class AWSQueue implements Queue {
 				} catch (AmazonServiceException ase) {
 					logException(ase);
 				} catch (AmazonClientException ace) {
-					logger.log(Level.SEVERE, "Could not reach SQS. {0}", ace.getMessage());
+					logger.error("Could not reach SQS. {0}", ace.getMessage());
 				}
 			}
 		}
@@ -106,11 +106,11 @@ public class AWSQueue implements Queue {
 				}
 				task = mapper.writeValueAsString(rootNode);
 			} catch (IOException ex) {
-				logger.log(Level.SEVERE, null, ex);
+				logger.error(null, ex);
 			} catch (AmazonServiceException ase) {
 				logException(ase);
 			} catch (AmazonClientException ace) {
-				logger.log(Level.SEVERE, "Could not reach SQS. {0}", ace.getMessage());
+				logger.error("Could not reach SQS. {0}", ace.getMessage());
 			}
 		}
 		return task;
@@ -135,7 +135,7 @@ public class AWSQueue implements Queue {
 //		} catch (AmazonServiceException ase) {
 //			logException(ase);
 //		} catch (AmazonClientException ace) {
-//			logger.log(Level.SEVERE, "Could not reach SQS. {0}", ace.getMessage());
+//			logger.error("Could not reach SQS. {0}", ace.getMessage());
 //		}	
 //		return url;
 //	}
@@ -146,7 +146,7 @@ public class AWSQueue implements Queue {
 //		} catch (AmazonServiceException ase) {
 //			logException(ase);
 //		} catch (AmazonClientException ace) {
-//			logger.log(Level.SEVERE, "Could not reach SQS. {0}", ace.getMessage());
+//			logger.error("Could not reach SQS. {0}", ace.getMessage());
 //		}
 //	}
 //	
@@ -157,13 +157,13 @@ public class AWSQueue implements Queue {
 //		} catch (AmazonServiceException ase) {
 //			logException(ase);
 //		} catch (AmazonClientException ace) {
-//			logger.log(Level.SEVERE, "Could not reach SQS. {0}", ace.getMessage());
+//			logger.error("Could not reach SQS. {0}", ace.getMessage());
 //		}
 //		return list;
 //	}
 	
 	private void logException(AmazonServiceException ase){
-		logger.log(Level.SEVERE, "AmazonServiceException: error={0}, statuscode={1}, "
+		logger.error("AmazonServiceException: error={0}, statuscode={1}, "
 			+ "awserrcode={2}, errtype={3}, reqid={4}", 
 			new Object[]{ase.getMessage(), ase.getStatusCode(), 
 				ase.getErrorCode(), ase.getErrorType(), ase.getRequestId()});

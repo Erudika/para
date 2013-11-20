@@ -24,7 +24,7 @@ import com.amazonaws.services.simpleemail.model.Content;
 import com.amazonaws.services.simpleemail.model.Destination;
 import com.amazonaws.services.simpleemail.model.Message;
 import com.amazonaws.services.simpleemail.model.SendEmailRequest;
-import com.erudika.para.email.Emailer;
+import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -41,17 +41,17 @@ public class AWSEmailer implements Emailer{
 	private static AmazonSimpleEmailServiceClient sesclient;
 	
 	public AWSEmailer() {
-		if (StringUtils.isBlank(Utils.AWS_ACCESSKEY) || StringUtils.isBlank(Utils.AWS_SECRETKEY)) {
+		if (StringUtils.isBlank(Config.AWS_ACCESSKEY) || StringUtils.isBlank(Config.AWS_SECRETKEY)) {
 			sesclient = new AmazonSimpleEmailServiceClient();
 		} else {
 			sesclient = new AmazonSimpleEmailServiceClient(
-					new BasicAWSCredentials(Utils.AWS_ACCESSKEY, Utils.AWS_SECRETKEY));
+					new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
 		}
 	}
 	
 	public boolean sendEmail(List<String> emails, String subject, String body){
 		if (emails == null || emails.isEmpty() && !StringUtils.isBlank(body)) {
-			final SendEmailRequest request = new SendEmailRequest().withSource(Utils.SUPPORT_EMAIL);
+			final SendEmailRequest request = new SendEmailRequest().withSource(Config.SUPPORT_EMAIL);
 			Destination dest = new Destination().withToAddresses(emails);
 			request.setDestination(dest);
 

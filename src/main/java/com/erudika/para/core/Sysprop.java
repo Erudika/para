@@ -17,7 +17,7 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.utils.Utils;
+import com.erudika.para.utils.Config;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -66,7 +66,7 @@ public class Sysprop extends PObject{
 	}
 	
 	private String getPropName(String name){
-		return getClassname().concat(Utils.SEPARATOR).concat(name);
+		return getClassname().concat(Config.SEPARATOR).concat(name);
 	}
 	
 	public static boolean isSysprop(String name){

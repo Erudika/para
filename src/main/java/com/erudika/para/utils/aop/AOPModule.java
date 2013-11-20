@@ -30,9 +30,11 @@ public class AOPModule extends AbstractModule {
 	protected void configure() {
 		IndexingAspect ia = new IndexingAspect();
 		requestInjection(ia);
-		bindInterceptor(Matchers.subclassesOf(DAO.class), Matchers.any(), ia);
 		
-//		 TODO ADD CACHING ASPECT
+		CachingAspect ca = new CachingAspect();
+		requestInjection(ca);
+		
+		bindInterceptor(Matchers.subclassesOf(DAO.class), Matchers.any(), ia, ca);
 	}
 	
 }

@@ -19,19 +19,10 @@ package com.erudika.para.utils;
 
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.annotations.Locked;
-import com.erudika.para.core.CoreModule;
 import com.erudika.para.core.PObject;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.utils.aop.AOPModule;
 import com.github.rjeschke.txtmark.Configuration;
 import com.github.rjeschke.txtmark.Processor;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Module;
-import com.google.inject.util.Modules;
-import com.ibm.icu.text.NumberFormat;
-import com.ibm.icu.util.Currency;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -47,7 +38,6 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -56,17 +46,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.http.Cookie;
@@ -87,7 +73,6 @@ import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -106,6 +91,7 @@ import org.hibernate.validator.constraints.Email;
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.jsoup.Jsoup;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -114,38 +100,14 @@ import org.jsoup.Jsoup;
 @SuppressWarnings("unchecked")
 public final class Utils {
 	
-	///////////////////////////////////////////////////
-	private static final Map<String, String> INIT_PARAMS_MAP = new HashMap<String, String>();
-	
-	private static final Logger logger = Logger.getLogger(Utils.class.getName());
+	//////////////////////////////////////////////
+	private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 	private static final SecureRandom random = new SecureRandom();
 	private static final ObjectMapper jsonMapper = new ObjectMapper();
 	private static HumanTime humantime = new HumanTime();
 	private static ExecutorService exec = Executors.newSingleThreadExecutor();
-	private static Injector injector;
+
 	private static Utils instance;
-	
-	// GLOBAL LIMITS	
-	public static final int MAX_ITEMS_PER_PAGE = 30;
-	//
-	// TODO: LIMITS
-	public static final int MAX_ADDRESSES = 1;
-	public static final int MAX_MENUITEMS = 100;
-	public static final int MAX_MENUITEMS_PRO = 10000;
-	public static final int DEFAULT_RADIUS = 10;	//10km search radius
-	//
-	public static final int	DEFAULT_LIMIT = Integer.MAX_VALUE;
-	public static final int MAX_PAGES = 10000;
-	public static final int SESSION_TIMEOUT_SEC = 24 * 60 * 60;
-	public static final int MAX_IMG_SIZE_PX = 800;
-	public static final int MIN_PASS_LENGTH = 6;
-	public static final String SEPARATOR = ":";
-	public static final String DEFAULT_ENCODING = "UTF-8";
-	public static final String CORE_PACKAGE = "corepackage";
-	public static final String FB_PREFIX = "fb" + SEPARATOR;
-	public static final String FXRATES_KEY = "fxrates";
-	public static final int VOTE_LOCKED_FOR_SEC = 4 * 7 * 24 * 60 * 60; //1 month in seconds
-	public static final int VOTE_LOCK_AFTER_SEC = 30; // 30 sec
 	
 	//////////  ID GEN VARS  ////////////// 	
 	private static final long TIMER_OFFSET = 1310084584692L;
@@ -165,33 +127,9 @@ public final class Utils {
 	/////////////////////////////////////////////
 	
 	static {
-		initConfig();
 		initSnowflake();
+		random.setSeed(random.generateSeed(8));
 	}
-	
-	//////////  INITIALIZATION PARAMETERS  //////////////
-	public static final String AWS_ACCESSKEY = getInitParam("awsaccesskey", "");
-	public static final String AWS_SECRETKEY = getInitParam("awssecretkey", "");
-	public static final String AWS_REGION = getInitParam("awsregion", "eu-west-1");
-	public static final String FB_APP_ID = getInitParam("fbappid", "");
-	public static final String FB_SECRET = getInitParam("fbsecret", "");
-	public static final String OPENX_API_KEY = getInitParam("openxkey", "");
-	public static final String GM_API_KEY = getInitParam("gmapskey", "");
-	public static final String ADMIN_IDENT = getInitParam("adminident", "");
-	public static final String WORKER_ID = getInitParam("workerid", "1");
-	public static final String PRODUCT_NAME = getInitParam("productname", "MyApp");
-	public static final String PRODUCT_NAME_NS = PRODUCT_NAME.replaceAll("\\s", "-").toLowerCase();
-//	public static final String ES_HOSTS = getInitParam("eshosts", "localhost");
-	public static final String CLUSTER_NAME = getInitParam("clustername", PRODUCT_NAME_NS);
-	public static final String AUTH_COOKIE = getInitParam("authcookie", PRODUCT_NAME_NS.concat("-auth"));
-	public static final String SUPPORT_EMAIL = getInitParam("supportemail", "support@myapp.co");
-	public static final String APP_SECRET_KEY = getInitParam("appsecretkey", MD5("secret"));
-	
-	// read object data from index, not db
-	public static final boolean READ_FROM_INDEX = Boolean.parseBoolean(getInitParam("readfromindex", "true")); 
-//	public static final int READ_CAPACITY = NumberUtils.toInt(getInitParam("readcapacity", "10"));
-	public static final boolean IN_PRODUCTION = Boolean.parseBoolean(getInitParam("production", "false")); 
-	public static final String INDEX_ALIAS = PRODUCT_NAME_NS;
 	
 	private Utils() {
 	}
@@ -201,42 +139,20 @@ public final class Utils {
 		return instance;
 	}
 	
-	public static ObjectMapper getObjectMapper(){
+	public ObjectMapper getObjectMapper(){
 		return jsonMapper;
 	}
 	
+	public HumanTime getHumanTime(){
+		return humantime;
+	}
 	
 	/********************************************
 	 *	    	   INIT FUNCTIONS
 	********************************************/
 	
-	public static void initDI(Module... modules){
-		try {
-			Arrays.asList(new CoreModule(), modules).toArray();
-			injector = Guice.createInjector(new CoreModule());
-			if(modules != null && modules.length > 0){
-				injector.createChildInjector(modules);
-			}
-		} catch (Exception e) {
-			logger.log(Level.SEVERE, null, e);
-		}
-	}
-		
-	protected static void initConfig(){
-		try {
-			Properties props = new Properties();
-			InputStream in = Utils.class.getClassLoader().getResourceAsStream("init.properties");
-			if(in != null){
-				props.load(in);
-				INIT_PARAMS_MAP.putAll((Map) props);
-			}
-		} catch (Exception ex) {
-			logger.log(Level.SEVERE, null, ex);
-		}
-	}
-	
 	private static void initSnowflake(){
-		String workerID = Utils.WORKER_ID;
+		String workerID = Config.WORKER_ID;
 		workerId = NumberUtils.toLong(workerID, 1);
 				
 		if (workerId > maxWorkerId || workerId < 0) {
@@ -247,7 +163,7 @@ public final class Utils {
 //			dataCenterId =  new Random().nextInt((int) maxDataCenterId+1);
 //		}
 	}
-
+	
 	/********************************************
 	 *	    	   HASH UTILS
 	********************************************/
@@ -274,7 +190,7 @@ public final class Utils {
             byte[] hexBytes = new Hex().encode(rawHmac);
 
             //  Covert array of Hex bytes to a String
-            return new String(hexBytes, DEFAULT_ENCODING);
+            return new String(hexBytes, Config.DEFAULT_ENCODING);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -409,10 +325,6 @@ public final class Utils {
 	public static long timestamp(){
 		return System.currentTimeMillis();
 	}
-	
-	public static HumanTime getHumanTime(){
-		return humantime;
-	}
 
 	public static String[] getMonths(Locale locale) {
 		DateFormatSymbols dfs = DateFormatSymbols.getInstance(locale);
@@ -467,9 +379,9 @@ public final class Utils {
 		}
 		String decoded = s;
 		try {
-			decoded = URLDecoder.decode(s, DEFAULT_ENCODING);
+			decoded = URLDecoder.decode(s, Config.DEFAULT_ENCODING);
 		} catch (UnsupportedEncodingException ex) {
-			logger.log(Level.SEVERE, null, ex);
+			logger.error(null, ex);
 		}
 		return decoded;
 	}
@@ -480,9 +392,9 @@ public final class Utils {
 		}
 		String encoded = s;
 		try {
-			encoded = URLEncoder.encode(s, DEFAULT_ENCODING);
+			encoded = URLEncoder.encode(s, Config.DEFAULT_ENCODING);
 		} catch (UnsupportedEncodingException ex) {
-			logger.log(Level.SEVERE, null, ex);
+			logger.error(null, ex);
 		}
 		return encoded;
 	}
@@ -565,7 +477,7 @@ public final class Utils {
 		if(StringUtils.isBlank(name)) return;
         Cookie cookie = new Cookie(name, value);
 		cookie.setHttpOnly(httpOnly);
-		cookie.setMaxAge(maxAge < 0 ? SESSION_TIMEOUT_SEC : maxAge);
+		cookie.setMaxAge(maxAge < 0 ? Config.SESSION_TIMEOUT_SEC : maxAge);
 		cookie.setPath("/");
 		cookie.setSecure(req.isSecure());
 		res.addCookie(cookie);
@@ -587,22 +499,13 @@ public final class Utils {
 		return StringUtils.isBlank(name) ? "" : System.getProperty(name);
 	}
 	
-	public static Map<String, String> getInitParamsMap(){
-		return INIT_PARAMS_MAP;
-	}
-	
-	public static String getInitParam(String key, String def){
-		if(INIT_PARAMS_MAP.isEmpty()) initConfig();
-		return INIT_PARAMS_MAP.containsKey(key) ? INIT_PARAMS_MAP.get(key) : System.getProperty(key, def);
-	}
-	
 	/********************************************
 	 *    	        MISC UTILS
 	********************************************/
 	
 	public static int[] getMaxImgSize(int h, int w){
 		int[] size = {h, w};
-		int max = MAX_IMG_SIZE_PX;
+		int max = Config.MAX_IMG_SIZE_PX;
 		if(Math.max(h, w) > max){
 			int ratio = (100 * max) / Math.max(h, w);
 			if(h > w){
@@ -634,7 +537,7 @@ public final class Utils {
 			if(locationSearchResult != null) 
 				list.addAll(locationSearchResult.getToponyms());
 		} catch (Exception ex) {
-			logger.log(Level.SEVERE, null, ex);
+			logger.error(null, ex);
 		}
 		return list;
 	}
@@ -648,17 +551,8 @@ public final class Utils {
 		try {
 			return exec.submit(callable);
 		} catch (Exception ex) {
-			logger.log(Level.WARNING, null, ex);
+			logger.warn(null, ex);
 			return null;
-		}
-	}
-	
-	public static void attachShutdownHook(final Class<?> clazz, final Thread run){
-		try {
-			Runtime.getRuntime().addShutdownHook(run);
-			logger.log(Level.INFO, "Shutdown hook added: {0}", clazz.getCanonicalName());
-		} catch (Exception e) {
-			logger.log(Level.WARNING, "Failed to attach hook: {0}", new Object[]{e});
 		}
 	}
 	
@@ -699,7 +593,7 @@ public final class Utils {
 				}
 			}
 		} catch (Exception ex) {
-			logger.log(Level.SEVERE, null, ex);
+			logger.error(null, ex);
 		}
 	}
 	
@@ -724,16 +618,21 @@ public final class Utils {
 				}
 			}
 		} catch (Exception ex) {
-			logger.log(Level.SEVERE, null, ex);
+			logger.error(null, ex);
 		}
 
 		return map;
 	}
 	
 	public static Class<? extends ParaObject> toClass(String classname){
-		String corepackage = getInitParam(CORE_PACKAGE, "");
+		return toClass(classname, null);
+	}
+	
+	public static Class<? extends ParaObject> toClass(String classname, String scanPackageName){
+		String packagename = System.getProperty(Config.CORE_PACKAGE, Config.CORE_PACKAGE_NAME);
+		String corepackage = StringUtils.isBlank(scanPackageName) ? packagename : scanPackageName;
 		if(StringUtils.isBlank(corepackage)){
-			logger.warning("System property '"+CORE_PACKAGE+"' not set.");
+			logger.warn("System property '" + Config.CORE_PACKAGE + "' not set.");
 		}
 		if(StringUtils.isBlank(classname)) return null;
 		Class<? extends ParaObject> clazz = null;
@@ -746,7 +645,7 @@ public final class Utils {
 					clazz = (Class<? extends ParaObject>) Class.forName(PObject.class.getPackage().getName().concat(".").
 						concat(StringUtils.capitalize(classname)));
 				} catch (Exception ex1) {
-					logger.severe(ex1.toString());
+					logger.error(ex1.toString());
 				}
 			}
 		}
@@ -831,7 +730,7 @@ public final class Utils {
 				}
 			}
 		} catch (Exception ex) {
-			logger.log(Level.SEVERE, null, ex);
+			logger.error(null, ex);
 		}
 		return map;
 	}
@@ -866,7 +765,7 @@ public final class Utils {
 				msg = "'minlength': '" + formatMessage(lang.get("minlength"), min) + "', " + 
 					  "'maxlength': '" + formatMessage(lang.get("maxlength"), max) + "'";
 			} catch (Exception ex) {
-				logger.log(Level.SEVERE, null, ex);
+				logger.error(null, ex);
 			}
 			
 		} else if (atype.equals(Email.class)) {
@@ -981,14 +880,14 @@ public final class Utils {
 		try {
 			((ObjectNode) rootNode).put("_id", so.getId());
 			((ObjectNode) rootNode).put("_type", type);
-			((ObjectNode) rootNode).put("_index", INDEX_ALIAS);
+			((ObjectNode) rootNode).put("_index", Config.INDEX_ALIAS);
 			
 			if(hasData){
 				((ObjectNode) rootNode).putPOJO("_data", getAnnotatedFields(so, Stored.class, null));
 			}
 			json = jsonMapper.writeValueAsString(rootNode);
 		} catch (Exception ex) {
-			logger.log(Level.SEVERE, null, ex);
+			logger.error(null, ex);
 		}
 		
 		return json;

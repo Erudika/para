@@ -22,8 +22,8 @@ import com.erudika.para.cache.Cache;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.search.Search;
 import com.erudika.para.core.Translation;
-import com.erudika.para.utils.Utils;
 import static com.erudika.para.core.PObject.classname;
+import com.erudika.para.utils.Config;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,12 +31,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -45,16 +46,19 @@ import org.apache.commons.lang3.mutable.MutableLong;
 @Singleton
 public class LanguageUtils {
 	
-	private static final Logger logger = Logger.getLogger(LanguageUtils.class.getName());
+	private static final Logger logger = LoggerFactory.getLogger(LanguageUtils.class);
 	
 	private HashMap<String, Locale> allLocales = new HashMap<String, Locale>();
 	private HashMap<String, Integer> progressMap = new HashMap<String, Integer>();
 	private Map<String, String> deflang;
 	
-	@Inject private Cache memgrid;
-	@Inject private Search search;
+	private Cache cache;
+	private Search search;
 
-	public LanguageUtils() {
+	@Inject
+	public LanguageUtils(Search search, Cache cache) {
+		this.search = search;
+		this.cache = cache;
 		for (Object loc : LocaleUtils.availableLocaleList()) {
 			Locale locale = new Locale(((Locale) loc).getLanguage());
 			String locstr = locale.getLanguage();
@@ -68,7 +72,7 @@ public class LanguageUtils {
 	public Map<String, String> readLanguage(String loc){
 		if(StringUtils.isBlank(loc) || !allLocales.containsKey(loc)) return getDefaultLanguage();
 		
-		if(!memgrid.contains(loc)){
+		if(!cache.contains(loc)){
 			ArrayList<ParaObject> tlist = search.findTwoTerms(classname(Translation.class), 
 					null, null, "locale", loc, "approved", true, 
 					null, true, getDefaultLanguage().size());
@@ -81,11 +85,11 @@ public class LanguageUtils {
 				lang.put(((Translation) trans).getThekey(), ((Translation) trans).getValue());
 				approvedCount++;
 			}
-			memgrid.put(loc, lang);
+			cache.put(loc, lang);
 			updateTranslationProgressMap(loc, approvedCount);
 		}
 		
-		return memgrid.get(loc);
+		return cache.get(loc);
 	}
 
 	public Locale getProperLocale(String langname){
@@ -97,7 +101,7 @@ public class LanguageUtils {
 
 	public Map<String, String> getDefaultLanguage(){
 		if(deflang == null){
-			logger.warning("Default language not set.");
+			logger.warn("Default language not set.");
 			deflang = new HashMap<String, String>();
 		}
 		return deflang;
@@ -110,7 +114,7 @@ public class LanguageUtils {
 	public ArrayList<ParaObject> readAllTranslationsForKey(String locale, String key,
 			MutableLong pagenum, MutableLong itemcount){
 		return search.findTerm(classname(Translation.class), pagenum, itemcount, 
-				DAO.CN_PARENTID, key, null, true, Utils.DEFAULT_LIMIT);
+				DAO.CN_PARENTID, key, null, true, Config.DEFAULT_LIMIT);
 	}
 	
 	public Set<String> getApprovedTransKeys(String locale){
@@ -134,19 +138,19 @@ public class LanguageUtils {
 	}
 	
 	public void onApprove(String locale, String key, String value){
-		HashMap<String, String> lang = memgrid.get(locale);
+		HashMap<String, String> lang = cache.get(locale);
 		if(lang != null){
 			lang.put(key, value);
-			memgrid.put(locale, lang);
+			cache.put(locale, lang);
 		}
 		updateTranslationProgressMap(locale, 1);
 	}
 	
 	public void onDisapprove(String locale, String key){
-		HashMap<String, String> lang = memgrid.get(locale);
+		HashMap<String, String> lang = cache.get(locale);
 		if(lang != null){
 			lang.put(key, getDefaultLanguage().get(key));
-			memgrid.put(locale, lang);
+			cache.put(locale, lang);
 		}
 		updateTranslationProgressMap(locale, -1);
 	}
@@ -162,7 +166,11 @@ public class LanguageUtils {
 		}
 		
 		if(cols > getDefaultLanguage().size()) cols = getDefaultLanguage().size();
-		progressMap.put(locale, (cols / getDefaultLanguage().size()) * 100);
+		if(getDefaultLanguage().isEmpty()){
+			progressMap.put(locale, 0);
+		}else{
+			progressMap.put(locale, (cols / getDefaultLanguage().size()) * 100);
+		}
 	}
 	
 }

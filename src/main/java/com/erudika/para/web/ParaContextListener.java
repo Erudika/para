@@ -17,63 +17,30 @@
  */
 package com.erudika.para.web;
 
-import com.erudika.para.security.SecurityFilter;
-import com.google.inject.servlet.GuiceFilter;
-import com.google.inject.servlet.GuiceServletContextListener;
-import java.util.EnumSet;
-import javax.servlet.DispatcherType;
-import javax.servlet.FilterRegistration;
-import javax.servlet.ServletContext;
+import com.erudika.para.Para;
+import org.slf4j.Logger;
 import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletRegistration;
-import org.glassfish.jersey.servlet.ServletContainer;
-import org.springframework.web.context.ContextLoaderListener;
-import org.springframework.web.filter.DelegatingFilterProxy;
-import org.tuckey.web.filters.urlrewrite.UrlRewriteFilter;
+import javax.servlet.ServletContextListener;
+import org.slf4j.LoggerFactory;
 
 /**
- * Web application lifecycle listener.
+ *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public abstract class ParaContextListener extends GuiceServletContextListener {
+public class ParaContextListener implements ServletContextListener {
+
+	private static final Logger logger = LoggerFactory.getLogger(ParaContextListener.class);
 	
-//	protected abstract Injector getInjector();
-//	@Override
-//	protected Injector getInjector() {
-////		return Utils.initDI(new ServletModule(){
-////			@Override
-////			protected void configureServlets() {
-////				super.configureServlets();
-////			}		
-////		});
-//		return null;
-//	}
-	
+	@Override
 	public void contextInitialized(ServletContextEvent sce) {
-		super.contextInitialized(sce);
-		
-		ServletContext sc = sce.getServletContext();
-		// Guice (Dependency Injection & AOP)
-		sc.addFilter("guiceFilter", GuiceFilter.class).addMappingForServletNames(null, false, "/*");
-		// Spring Security (Authetication - Facebook, OpenID, cookie verification etc.)
-		sc.addListener(ContextLoaderListener.class);
-		sc.setInitParameter("contextConfigLocation", "/WEB-INF/applicationContext-security.xml");
-		sc.addFilter("springSecurityFilterChain", DelegatingFilterProxy.class).addMappingForUrlPatterns(null, false, "/*");
-		// Security Filter (Anti-CSRF, REST JSON checks, etc.)
-		sc.addFilter("securityFilter", SecurityFilter.class).addMappingForUrlPatterns(null, false, "/*");
-		// UrlRewriteFilter (nice URLs)
-		FilterRegistration.Dynamic urf = sc.addFilter("urlRewriteFilter", UrlRewriteFilter.class);
-		urf.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD), false, "/*");
-		urf.setInitParameter("confPath", "/WEB-INF/urlrewrite.xml");
-		urf.setInitParameter("logLevel", "WARN");
-		urf.setInitParameter("statusEnabled", "false");
-		// Jersey REST service (XML, JSON APIs)
-		ServletRegistration.Dynamic jersey = sc.addServlet("servletAdaptor", ServletContainer.class);
-		jersey.setLoadOnStartup(1);
-		jersey.addMapping("/api/*");
+		logger.info("--- Para: initialize() ---");
+		Para.initialize();
 	}
 
+	@Override
 	public void contextDestroyed(ServletContextEvent sce) {
-		super.contextDestroyed(sce);
+		logger.info("--- Para: destroy() ---");
+		Para.destroy();
 	}
+	
 }

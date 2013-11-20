@@ -18,7 +18,7 @@
 package com.erudika.para.core;
 
 import com.erudika.para.annotations.Stored;
-import com.erudika.para.utils.Utils;
+import com.erudika.para.utils.Config;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -43,7 +43,7 @@ public class Tag extends PObject{
 	
 	public static String id(String tag){
 		if(StringUtils.isBlank(tag)) return null;
-		return PObject.classname(Tag.class).concat(Utils.SEPARATOR).concat(StringUtils.trimToEmpty(tag));
+		return PObject.classname(Tag.class).concat(Config.SEPARATOR).concat(StringUtils.trimToEmpty(tag));
 	}
 	
 	@Override

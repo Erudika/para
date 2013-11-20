@@ -17,15 +17,15 @@
  */
 package com.erudika.para.core;
 
+import com.erudika.para.Para;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
-import com.erudika.para.utils.Utils;
+import com.erudika.para.utils.Config;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
-import javax.inject.Inject;
 import javax.validation.constraints.Size;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -50,23 +50,27 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 	private transient PObject parent;
 	private transient PObject creator;
 	
-	private DAO dao;
-	private Search search;
+	private transient DAO dao;
+	private transient Search search;
 	
 	public DAO getDao() {
+		if(dao == null){
+			dao = Para.getDAO();
+		}
 		return dao;
 	}
 
-	@Inject
 	public void setDao(DAO dao) {
 		this.dao = dao;
 	}
 
 	public Search getSearch() {
+		if(search == null){
+			search = Para.getSearch();
+		}
 		return search;
 	}
 
-	@Inject
 	public void setSearch(Search search) {
 		this.search = search;
 	}
@@ -76,7 +80,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 	@Override
 	public PObject getParent(){
 		if(parent == null)
-			parent = dao.read(parentid);
+			parent = getDao().read(parentid);
 		return parent;
 	}
 	
@@ -84,7 +88,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 	@Override
 	public PObject getCreator(){
 		if(creator == null)
-			creator = dao.read(creatorid);
+			creator = getDao().read(creatorid);
 		return creator;
 	}
 	
@@ -150,17 +154,17 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 	
 	@Override
 	public String create() {
-		return dao.create(this);
+		return getDao().create(this);
 	}
 
 	@Override
 	public void update() {
-		dao.update(this);
+		getDao().update(this);
 	}
 
 	@Override
 	public void delete() {
-		dao.delete(this);
+		getDao().delete(this);
 	}
 	
 	@Override
@@ -189,13 +193,13 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 	
 	@Override
 	public void unlinkAll(){
-		dao.deleteAll(search.findTwoTerms(classname(Linker.class), null, null, "id1", id, "id2", id, 
-				false, null, true, Utils.DEFAULT_LIMIT));
+		getDao().deleteAll(getSearch().findTwoTerms(classname(Linker.class), null, null, "id1", id, "id2", id, 
+				false, null, true, Config.DEFAULT_LIMIT));
 	}
 	
 	@Override
 	public ArrayList<Linker> getAllLinks(Class<? extends ParaObject> c2){
-		return getAllLinks(c2, null, null, true, Utils.DEFAULT_LIMIT);
+		return getAllLinks(c2, null, null, true, Config.DEFAULT_LIMIT);
 	}
 	
 	@Override
@@ -204,7 +208,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 		if(c2 == null) return new ArrayList<Linker>();
 		Linker link = new Linker(this.getClass(), c2, null, null);
 		String idField = link.getIdFieldNameFor(this.getClass());
-		return search.findTwoTerms(link.getClassname(), pagenum, itemcount, 
+		return getSearch().findTwoTerms(link.getClassname(), pagenum, itemcount, 
 				DAO.CN_NAME, link.getName(), idField, id, null, reverse, maxItems);
 	}
 	
@@ -219,7 +223,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 		if(id == null) return 0L;
 		Linker link = new Linker(this.getClass(), c2, null, null);
 		String idField = link.getIdFieldNameFor(this.getClass());
-		return search.getCount(link.getClassname(), 
+		return getSearch().getCount(link.getClassname(), 
 				DAO.CN_NAME, link.getName(), idField, id);
 	}
 	
@@ -230,27 +234,27 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 	
 	@Override
 	public <P extends ParaObject> ArrayList<P> getChildren(Class<? extends ParaObject> clazz){
-		return getChildren(clazz, null, null, null, Utils.DEFAULT_LIMIT);
+		return getChildren(clazz, null, null, null, Config.DEFAULT_LIMIT);
 	}
 	
 	@Override
     public <P extends ParaObject> ArrayList<P> getChildren(Class<? extends ParaObject> clazz, 
 			MutableLong page, MutableLong itemcount, String sortfield, int max){
-		return search.findTerm(classname(clazz), page, itemcount, 
+		return getSearch().findTerm(classname(clazz), page, itemcount, 
 				DAO.CN_PARENTID, getId(), sortfield, true, max);
     }
 	
 	@Override
 	public void deleteChildren(Class<? extends ParaObject> clazz){
 		if(StringUtils.isBlank(getId())) return ;
-		dao.deleteAll(search.findTerm(classname(clazz), 
+		getDao().deleteAll(getSearch().findTerm(classname(clazz), 
 				null, null, DAO.CN_PARENTID, getId()));
 	}
 	
 	@Override
 	public <P extends ParaObject> ArrayList<P> getLinkedObjects(Class<? extends ParaObject> clazz, MutableLong page,
 			MutableLong itemcount){
-		ArrayList<Linker> links = getAllLinks(clazz, null, null, true, Utils.MAX_ITEMS_PER_PAGE);
+		ArrayList<Linker> links = getAllLinks(clazz, null, null, true, Config.MAX_ITEMS_PER_PAGE);
 		ArrayList<String> keys = new ArrayList<String>();
 		for (Linker link : links) {
 			if(link.isFirst(clazz)){
@@ -260,9 +264,9 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 			}
 		}
 		
-		return new ArrayList<P>((Collection<? extends P>) dao.readAll(keys, true).values());
-//		return search.findTermInList(classname(clazz), page, itemcount, DAO.CN_ID, keys, 
-//				null, true, Utils.MAX_ITEMS_PER_PAGE);
+		return new ArrayList<P>((Collection<? extends P>) getDao().readAll(keys, true).values());
+//		return getSearch().findTermInList(classname(clazz), page, itemcount, DAO.CN_ID, keys, 
+//				null, true, Config.MAX_ITEMS_PER_PAGE);
 	}
 	
 	/********************************************
@@ -283,9 +287,9 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 		
 		if(done){
 			// recalculate votes
-			long countPositive = search.getCount(v.getClassname(), DAO.CN_PARENTID, 
+			long countPositive = getSearch().getCount(v.getClassname(), DAO.CN_PARENTID, 
 					getId(), "type", VoteType.UP.toString());
-			long countNegative = search.getCount(v.getClassname(), DAO.CN_PARENTID, 
+			long countNegative = getSearch().getCount(v.getClassname(), DAO.CN_PARENTID, 
 					getId(), "type", VoteType.DOWN.toString());
 			
 			setVotes((int) (countPositive - countNegative));

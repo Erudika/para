@@ -18,7 +18,6 @@
 package com.erudika.para.persistence;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.name.Names;
 
 /**
  *
@@ -28,7 +27,6 @@ public class PersistenceModule extends AbstractModule {
 	
 	protected void configure() {
 		bind(DAO.class).to(AWSDynamoDAO.class).asEagerSingleton();
-		bind(DAO.class).annotatedWith(Names.named("cassandra")).to(CassandraDAO.class).asEagerSingleton();
 	}
 	
 }

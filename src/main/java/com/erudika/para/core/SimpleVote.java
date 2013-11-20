@@ -17,6 +17,7 @@
  */
 package com.erudika.para.core;
 
+import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import javax.enterprise.inject.Default;
 import org.apache.commons.lang3.BooleanUtils;
@@ -38,7 +39,7 @@ public class SimpleVote extends Vote{
 		if(StringUtils.isBlank(getId()) || !Utils.isValidObject(this)) return null;
 		// save new vote & set expiration date 
 		// users can vote again after vote lock period is over
-		getSearch().index(this, super.getClassname(), Utils.VOTE_LOCKED_FOR_SEC);
+		getSearch().index(this, super.getClassname(), Config.VOTE_LOCKED_FOR_SEC);
 		return getId();
 	}
 
@@ -60,7 +61,7 @@ public class SimpleVote extends Vote{
 		long now = System.currentTimeMillis();
 		
 		// check timestamp for recent correction,
-		if((timestamp + (Utils.VOTE_LOCK_AFTER_SEC * 1000)) > now && voteHasChanged) {
+		if((timestamp + (Config.VOTE_LOCK_AFTER_SEC * 1000)) > now && voteHasChanged) {
 			// clear vote and restore votes to original count
 			delete();
 			success = true;

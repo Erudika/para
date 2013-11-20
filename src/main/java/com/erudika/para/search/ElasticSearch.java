@@ -17,7 +17,7 @@
  */
 package com.erudika.para.search;
 
-import com.erudika.para.search.Search;
+import com.erudika.para.Para;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.core.ParaObject;
@@ -25,13 +25,13 @@ import com.erudika.para.core.Address;
 import com.erudika.para.core.PObject;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.Vote;
+import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.beanutils.BeanUtils;
@@ -71,6 +71,7 @@ import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -79,24 +80,26 @@ import org.elasticsearch.search.sort.SortOrder;
 @Singleton
 public class ElasticSearch implements Search {
 	
-	private final Logger logger = Logger.getLogger(ElasticSearch.class.getName());
+	private final Logger logger = LoggerFactory.getLogger(ElasticSearch.class);
 	private final String DEFAULT_SORT = DAO.CN_TIMESTAMP;
 	private String INDEX_NAME;
 	private static Client searchClient;
 	private static Node searchNode;
 	
 	private DAO dao;
-	
-	public ElasticSearch(){
+
+	@Inject
+	public ElasticSearch(DAO dao){
+		this.dao = dao;
 		// init search index
-		if(!existsIndex(Utils.INDEX_ALIAS)){
+		if(!existsIndex(Config.INDEX_ALIAS)){
 			createIndex(getIndexName());
 		}else{
 			IndicesGetAliasesResponse get = getSearchClient().admin().indices().
-					prepareGetAliases(Utils.INDEX_ALIAS).execute().actionGet();
+					prepareGetAliases(Config.INDEX_ALIAS).execute().actionGet();
 			Map<String, List<AliasMetaData>> aliases = get.getAliases();
 			if(aliases.size() > 1){
-				logger.log(Level.WARNING, "More than one index for alias {0}", new Object[]{Utils.INDEX_ALIAS});
+				logger.warn("More than one index for alias {0}", new Object[]{Config.INDEX_ALIAS});
 			}else{
 				for (Map.Entry<String, List<AliasMetaData>> entry : aliases.entrySet()) {
 					INDEX_NAME = entry.getKey();
@@ -104,11 +107,6 @@ public class ElasticSearch implements Search {
 				}
 			}
 		}
-	}
-	
-	@Inject
-	public void setDao(DAO dao) {
-		this.dao = dao;
 	}
 	
 	private Client getSearchClient(){
@@ -119,12 +117,12 @@ public class ElasticSearch implements Search {
 		settings.put("path.work", "/var/lib/elasticsearch/work");
 //		settings.put("path.logs", "/var/log/elasticsearch/");
 
-		if (Utils.IN_PRODUCTION) {
-			if (!StringUtils.isBlank(Utils.AWS_ACCESSKEY) && !StringUtils.isBlank(Utils.AWS_SECRETKEY)) {
-				settings.put("cloud.aws.access_key", Utils.AWS_ACCESSKEY);
-				settings.put("cloud.aws.secret_key", Utils.AWS_SECRETKEY);
+		if (Config.IN_PRODUCTION) {
+			if (!StringUtils.isBlank(Config.AWS_ACCESSKEY) && !StringUtils.isBlank(Config.AWS_SECRETKEY)) {
+				settings.put("cloud.aws.access_key", Config.AWS_ACCESSKEY);
+				settings.put("cloud.aws.secret_key", Config.AWS_SECRETKEY);
 			}
-			settings.put("cloud.aws.region", Utils.AWS_REGION);
+			settings.put("cloud.aws.region", Config.AWS_REGION);
 			settings.put("network.tcp.keep_alive", true);
 //			settings.put("index.number_of_shards", 5);
 //			settings.put("index.number_of_replicas", 0);
@@ -133,20 +131,19 @@ public class ElasticSearch implements Search {
 			settings.put("discovery.ec2.groups", "elasticsearch");
 ////			settings.put("discovery.ec2.availability_zones", "eu-west-1a"); 
 			searchNode = NodeBuilder.nodeBuilder().settings(settings).
-					clusterName(Utils.CLUSTER_NAME).client(true).data(false).node();
+					clusterName(Config.CLUSTER_NAME).client(true).data(false).node();
 			searchClient = searchNode.client();
 		}else{
-//			searchClient = new TransportClient(settings.put("cluster.name", Utils.CLUSTER_NAME).build());
-//				((TransportClient) searchClient).addTransportAddress(
-//						new InetSocketTransportAddress("localhost", 9300));
-			searchNode = NodeBuilder.nodeBuilder().settings(settings).
-					clusterName(Utils.CLUSTER_NAME).local(true).data(true).node();
-			searchClient = searchNode.client();
+			searchClient = new TransportClient(settings.put("cluster.name", Config.CLUSTER_NAME).build());
+				((TransportClient) searchClient).addTransportAddress(
+						new InetSocketTransportAddress("localhost", 9300));
+//			searchNode = NodeBuilder.nodeBuilder().settings(settings).
+//					clusterName(Config.CLUSTER_NAME).local(true).data(true).node();
+//			searchClient = searchNode.client();
 		}
-				
-		Utils.attachShutdownHook(ElasticSearch.class, new Thread() {
-			public void run() {
-				System.out.println("Stopping search..."); 
+		
+		Para.addDestroyListener(new Para.DestroyListener() {
+			public void onDestroy() {
 				closeSearch();
 			}
 		});
@@ -162,7 +159,7 @@ public class ElasticSearch implements Search {
 	@Override
 	public String getIndexName(){
 		if(StringUtils.isBlank(INDEX_NAME)){
-			INDEX_NAME = Utils.INDEX_ALIAS + "1";	// avoids alias/name conflict
+			INDEX_NAME = Config.INDEX_ALIAS + "1";	// avoids alias/name conflict
 		}
 		return INDEX_NAME;
 	}
@@ -214,12 +211,12 @@ public class ElasticSearch implements Search {
 		if(so == null || StringUtils.isBlank(type)) return;
 		Map<String, Object> data = Utils.getAnnotatedFields(so, Stored.class, null);
 		try {
-			IndexRequestBuilder irb = getSearchClient().prepareIndex(Utils.INDEX_ALIAS, 
+			IndexRequestBuilder irb = getSearchClient().prepareIndex(Config.INDEX_ALIAS, 
 					(StringUtils.isBlank(type) ? so.getClassname() : type), so.getId()).setSource(data);
 			if(ttl > 0) irb.setTTL(ttl);
 			irb.execute();
 		} catch (Exception e) {
-			logger.log(Level.WARNING, null, e);
+			logger.warn(null, e);
 		}
 	}
 	
@@ -227,9 +224,9 @@ public class ElasticSearch implements Search {
 	public void unindex(ParaObject so, String type){
 		if(so == null || StringUtils.isBlank(so.getId()) || StringUtils.isBlank(type)) return;
 		try{
-			getSearchClient().prepareDelete(Utils.INDEX_ALIAS, type, so.getId()).execute();
+			getSearchClient().prepareDelete(Config.INDEX_ALIAS, type, so.getId()).execute();
 		} catch (Exception e) {
-			logger.log(Level.WARNING, null, e);
+			logger.warn(null, e);
 		}
 	}
 	
@@ -238,7 +235,7 @@ public class ElasticSearch implements Search {
 		if(objects == null) return ;
 		BulkRequestBuilder brb = getSearchClient().prepareBulk();
 		for (ParaObject pObject : objects) {
-			brb.add(getSearchClient().prepareIndex(Utils.INDEX_ALIAS, pObject.getClassname(), 
+			brb.add(getSearchClient().prepareIndex(Config.INDEX_ALIAS, pObject.getClassname(), 
 						pObject.getId()).setSource(Utils.getAnnotatedFields(pObject, Stored.class, null)));
 		}
 		brb.execute();
@@ -249,14 +246,14 @@ public class ElasticSearch implements Search {
 		if(objects == null) return ;
 		BulkRequestBuilder brb = getSearchClient().prepareBulk();
 		for (ParaObject pObject : objects) {
-			brb.add(getSearchClient().prepareDelete(Utils.INDEX_ALIAS, pObject.getClassname(), pObject.getId()));
+			brb.add(getSearchClient().prepareDelete(Config.INDEX_ALIAS, pObject.getClassname(), pObject.getId()));
 		}
 		brb.execute();
 	}
 	
 //	public void addToDocument(String key, String type, String field, Object value){
 //		if(StringUtils.isBlank(key) || StringUtils.isBlank(type) || StringUtils.isBlank(field) || value == null) return ;
-//		UpdateRequestBuilder urb = getSearchClient().prepareUpdate(Utils.INDEX_ALIAS, type, key);
+//		UpdateRequestBuilder urb = getSearchClient().prepareUpdate(Config.INDEX_ALIAS, type, key);
 //		field = "field_".concat(field);
 //		urb.setScript("ctx._source.".concat(field).concat(" = field"));
 //		urb.addScriptParam("field", value);
@@ -266,7 +263,7 @@ public class ElasticSearch implements Search {
 //	
 //	public void removeFromDocument(String key, String type, String field){
 //		if(StringUtils.isBlank(key) || StringUtils.isBlank(type) || StringUtils.isBlank(field)) return ;
-//		UpdateRequestBuilder urb = getSearchClient().prepareUpdate(Utils.INDEX_ALIAS, type, key);
+//		UpdateRequestBuilder urb = getSearchClient().prepareUpdate(Config.INDEX_ALIAS, type, key);
 //		field = "field_".concat(field);
 //		urb.setScript("ctx._source.remove(\"".concat(field).concat("\");"));
 //		urb.execute().actionGet();
@@ -298,9 +295,9 @@ public class ElasticSearch implements Search {
 			create.execute().actionGet();
 			
 			getSearchClient().admin().indices().prepareAliases().
-					addAlias(name, Utils.INDEX_ALIAS).execute();
+					addAlias(name, Config.INDEX_ALIAS).execute();
 		} catch (Exception e) {
-			logger.log(Level.WARNING, null, e);
+			logger.warn(null, e);
 		}
 	}
 	
@@ -312,7 +309,7 @@ public class ElasticSearch implements Search {
 				getSearchClient().admin().indices().prepareDelete(name).execute();
 			}
 		} catch (Exception e) {
-			logger.log(Level.WARNING, null, e);
+			logger.warn(null, e);
 		}
 	}
 	
@@ -324,7 +321,7 @@ public class ElasticSearch implements Search {
 			exists = getSearchClient().admin().indices().prepareExists(name).execute().
 					actionGet().isExists();
 		} catch (Exception e) {
-			logger.log(Level.WARNING, null, e);
+			logger.warn(null, e);
 		}
 		return exists;
 	}
@@ -335,9 +332,9 @@ public class ElasticSearch implements Search {
 		try {
 			deleteIndex(getIndexName());
 			if(!existsIndex(newIndex)) createIndex(newIndex);
-			logger.log(Level.INFO, "rebuildIndex(): {0}", new Object[]{newIndex});
-//			Map<String, PObject> all = AWSDynamoDAO.getInstance().readAll(AWSDynamoDAO.OBJECTS, READ_CAP);
-//			LinkedHashMap<String, PObject> results = new LinkedHashMap<String, PObject>();
+			
+			logger.info("rebuildIndex(): {0}", new Object[]{newIndex});
+
 			BulkRequestBuilder brb = getSearchClient().prepareBulk();
 			BulkResponse resp = null;
 			String lastKey = null;
@@ -352,11 +349,10 @@ public class ElasticSearch implements Search {
 						lastKey = obj.getId();
 					}
 //					Thread.sleep(1000);
-					logger.log(Level.INFO, "brb {0}", new Object[]{brb.numberOfActions()});
 					// bulk index 1000 objects
 					if(brb.numberOfActions() > 100){
 						resp = brb.execute().actionGet();
-						logger.log(Level.INFO, "rebuildIndex(): indexed {0}, hasFailures: {1}", 
+						logger.info("rebuildIndex(): indexed {0}, hasFailures: {1}", 
 								new Object[]{brb.numberOfActions(), resp.hasFailures()});
 					}
 				}while(!(list = dao.readPage(DAO.OBJECTS, lastKey)).isEmpty());
@@ -365,19 +361,19 @@ public class ElasticSearch implements Search {
 			// anything left after loop? index that too
 			if (brb.numberOfActions() > 0) {
 				resp = brb.execute().actionGet();
-				logger.log(Level.INFO, "rebuildIndex(): indexed {0}, hasFailures: {1}", 
+				logger.info("rebuildIndex(): indexed {0}, hasFailures: {1}", 
 						new Object[]{brb.numberOfActions(), resp.hasFailures()});
 			}
 			
 			// create index alias NEW_INDEX -> INDEX_ALIAS, OLD_INDEX -> X
 			getSearchClient().admin().indices().prepareAliases().
-					addAlias(newIndex, Utils.INDEX_ALIAS).
-					removeAlias(getIndexName(), Utils.INDEX_ALIAS).execute();
+					addAlias(newIndex, Config.INDEX_ALIAS).
+					removeAlias(getIndexName(), Config.INDEX_ALIAS).execute();
 			
 			// rename current index
 			INDEX_NAME = newIndex;
 		} catch (Exception e) {
-			logger.log(Level.WARNING, null, e);
+			logger.warn(null, e);
 		}
 	}
 	
@@ -391,7 +387,7 @@ public class ElasticSearch implements Search {
 			
 			result = resp.getFailedShards() == 0;
 		} catch (Exception e) {
-			logger.log(Level.WARNING, null, e);
+			logger.warn(null, e);
 		}
 		return result;
 	}
@@ -430,7 +426,7 @@ public class ElasticSearch implements Search {
 	@Override
 	public <P extends ParaObject> ArrayList<P> findTerm(String type, MutableLong page, MutableLong itemcount, 
 			String field, Object term){
-		return findTerm(type, page, itemcount, field, term, DEFAULT_SORT, true, Utils.MAX_ITEMS_PER_PAGE);
+		return findTerm(type, page, itemcount, field, term, DEFAULT_SORT, true, Config.MAX_ITEMS_PER_PAGE);
 	}
 	
 	@Override
@@ -449,7 +445,7 @@ public class ElasticSearch implements Search {
 	@Override
 	public <P extends ParaObject> ArrayList<P> findPrefix(String type, MutableLong page, MutableLong itemcount, 
 			String field, String prefix){
-		return findPrefix(type, page, itemcount, field, prefix, DEFAULT_SORT, true, Utils.MAX_ITEMS_PER_PAGE);
+		return findPrefix(type, page, itemcount, field, prefix, DEFAULT_SORT, true, Config.MAX_ITEMS_PER_PAGE);
 	}
 	
 	@Override
@@ -462,7 +458,7 @@ public class ElasticSearch implements Search {
 	@Override
 	public <P extends ParaObject> ArrayList<P> findQuery(String type, MutableLong page, MutableLong itemcount, 
 			String query){
-		return findQuery(type, page, itemcount, query, DEFAULT_SORT, true, Utils.MAX_ITEMS_PER_PAGE);
+		return findQuery(type, page, itemcount, query, DEFAULT_SORT, true, Config.MAX_ITEMS_PER_PAGE);
 	}
 	
 	@Override
@@ -475,7 +471,7 @@ public class ElasticSearch implements Search {
 	@Override
 	public <P extends ParaObject> ArrayList<P> findWildcard(String type, MutableLong page, MutableLong itemcount, 
 			String field, String wildcard){
-		return findWildcard(type, page, itemcount, field, wildcard, DEFAULT_SORT, true, Utils.MAX_ITEMS_PER_PAGE);
+		return findWildcard(type, page, itemcount, field, wildcard, DEFAULT_SORT, true, Config.MAX_ITEMS_PER_PAGE);
 	}
 	
 	@Override
@@ -501,13 +497,13 @@ public class ElasticSearch implements Search {
 		AndFilterBuilder andFilter = FilterBuilders.andFilter(tagFilter);
 		andFilter.add(FilterBuilders.termFilter("type", type));
 
-		return searchQuery(type, page, itemcount, null, andFilter, null, true, Utils.MAX_ITEMS_PER_PAGE);
+		return searchQuery(type, page, itemcount, null, andFilter, null, true, Config.MAX_ITEMS_PER_PAGE);
 	}
 
 	@Override
 	public <P extends ParaObject> ArrayList<P> findTwoTerms(String type, MutableLong page, MutableLong itemcount, 
 			String field1, Object term1, String field2, Object term2){
-		return findTwoTerms(type, page, itemcount, field1, term1, field2, term2, DEFAULT_SORT, true, Utils.MAX_ITEMS_PER_PAGE);
+		return findTwoTerms(type, page, itemcount, field1, term1, field2, term2, DEFAULT_SORT, true, Config.MAX_ITEMS_PER_PAGE);
 	}	
 	
 	@Override
@@ -556,7 +552,7 @@ public class ElasticSearch implements Search {
 		QueryBuilder qb1 = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(),
 				FilterBuilders.geoDistanceFilter("latlng").point(lat, lng).distance(radius, DistanceUnit.KILOMETERS));
 		SearchHits hits1 = searchQueryRaw(PObject.classname(Address.class), page, itemcount, qb1, 
-				null, sort, Utils.MAX_ITEMS_PER_PAGE);
+				null, sort, Config.MAX_ITEMS_PER_PAGE);
 		
 		if(hits1 == null) return new ArrayList<P> ();
 			
@@ -568,7 +564,7 @@ public class ElasticSearch implements Search {
 
 		QueryBuilder qb2 = QueryBuilders.filteredQuery(QueryBuilders.queryString(query),
 				FilterBuilders.idsFilter(type).ids(ridsarr));
-		SearchHits hits2 = searchQueryRaw(type, null, null, qb2, null, sort, Utils.MAX_ITEMS_PER_PAGE);
+		SearchHits hits2 = searchQueryRaw(type, null, null, qb2, null, sort, Config.MAX_ITEMS_PER_PAGE);
 
 		return searchQuery(type, itemcount, hits2);
 	}
@@ -590,19 +586,19 @@ public class ElasticSearch implements Search {
 		try{
 			for (SearchHit hit : hits){
 				keys.add(hit.getId());
-				if(Utils.READ_FROM_INDEX){
+				if(Config.READ_FROM_INDEX){
 					P pobj = fromSource(type, hit.getSource());
 					results.add(pobj);
 				}
 			}
 			
-			if (!Utils.READ_FROM_INDEX) {
+			if (!Config.READ_FROM_INDEX) {
 				Map<String, P> fromDB = dao.readAll(keys, true);
 				results.addAll(fromDB.values());
 //				unindexNulls(type, keys, fromDB);
 			}			
 		} catch (Exception e) {
-			logger.log(Level.WARNING, null, e);
+			logger.warn(null, e);
 		}
 		return results;
 	}
@@ -613,12 +609,12 @@ public class ElasticSearch implements Search {
 		if(sort == null) sort = SortBuilders.scoreSort();
 //		if(query == null) query = QueryBuilders.matchAllQuery();
 		int start = (page == null || page.intValue() < 1 || 
-				page.intValue() > Utils.MAX_PAGES) ? 0 : (page.intValue() - 1) * max;
+				page.intValue() > Config.MAX_PAGES) ? 0 : (page.intValue() - 1) * max;
 		
 		SearchHits hits = null;
 		
 		try{
-			SearchResponse response = getSearchClient().prepareSearch(Utils.INDEX_ALIAS).
+			SearchResponse response = getSearchClient().prepareSearch(Config.INDEX_ALIAS).
 					setSearchType(SearchType.DFS_QUERY_THEN_FETCH).setTypes(type).
 					setQuery(query).setFilter(filter).addSort(sort).setFrom(start).setSize(max).
 					execute().actionGet();
@@ -627,7 +623,7 @@ public class ElasticSearch implements Search {
 			if(itemcount != null)	itemcount.setValue(hits.getTotalHits());
 			
 		} catch (Exception e) {
-			logger.log(Level.WARNING, null, e);
+			logger.warn(null, e);
 		}
 		
 		return hits;
@@ -649,13 +645,13 @@ public class ElasticSearch implements Search {
 //		if(StringUtils.isBlank(term) || StringUtils.isBlank(value)) return false;
 //		SearchHits hits = null;
 //		try{
-//			SearchResponse response = getSearchClient().prepareSearch(Utils.INDEX_ALIAS)
+//			SearchResponse response = getSearchClient().prepareSearch(Config.INDEX_ALIAS)
 //				.setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
 //				.setFilter(FilterBuilders.termFilter(term, value)).execute().actionGet();
 //
 //			hits = response.getHits();
 //		} catch (Exception e) {
-//			logger.log(Level.WARNING, null, e);
+//			logger.warn(null, e);
 //		}
 //		return hits != null && hits.getTotalHits() > 0;
 //	}
@@ -666,7 +662,7 @@ public class ElasticSearch implements Search {
 		try {
 			return fromSource(type, getSource(key, type));
 		} catch (Exception e) {
-			logger.log(Level.WARNING, null, e);
+			logger.warn(null, e);
 			return null;
 		}
 	}
@@ -676,11 +672,11 @@ public class ElasticSearch implements Search {
 		Map<String, Object> map = new HashMap<String, Object>();
 		if(StringUtils.isBlank(key) || StringUtils.isBlank(type)) return map;
 		try{
-			GetResponse resp = getSearchClient().prepareGet().setIndex(Utils.INDEX_ALIAS).
+			GetResponse resp = getSearchClient().prepareGet().setIndex(Config.INDEX_ALIAS).
 					setId(key).setType(type).execute().actionGet();
 			map = resp.getSource();
 		} catch (Exception e) {
-			logger.log(Level.WARNING, null, e);
+			logger.warn(null, e);
 		}
 		return map;
 	}
@@ -698,20 +694,20 @@ public class ElasticSearch implements Search {
 	
 	@Override
 	public Long getBeanCount(String classtype){
-		return getSearchClient().prepareCount(Utils.INDEX_ALIAS).
+		return getSearchClient().prepareCount(Config.INDEX_ALIAS).
 				setTypes(classtype).execute().actionGet().getCount();
 	}
 	
 	@Override
 	public Long getCount(String classtype, String field, Object term){
-		return getSearchClient().prepareCount(Utils.INDEX_ALIAS).
+		return getSearchClient().prepareCount(Config.INDEX_ALIAS).
 				setTypes(classtype).setQuery(QueryBuilders.termQuery(field, term)).
 				execute().actionGet().getCount();
 	}
 	
 	@Override
 	public Long getCount(String classtype, String field1, Object term1, String field2, Object term2){
-		return getSearchClient().prepareCount(Utils.INDEX_ALIAS).
+		return getSearchClient().prepareCount(Config.INDEX_ALIAS).
 				setTypes(classtype).setQuery(QueryBuilders.filteredQuery(
 				QueryBuilders.termQuery(field1, term1), 
 				FilterBuilders.termFilter(field2, term2))).
@@ -723,7 +719,7 @@ public class ElasticSearch implements Search {
 //			public Object call() throws Exception {
 //				Map<String, PObject> dbKeys;
 //				if(fromDB == null){
-//					dbKeys = AWSDynamoDAO.getInstance().readAll(keys, !Utils.READ_FROM_INDEX);
+//					dbKeys = AWSDynamoDAO.getInstance().readAll(keys, !Config.READ_FROM_INDEX);
 //				}else{
 //					dbKeys = fromDB;
 //				}			
@@ -736,7 +732,7 @@ public class ElasticSearch implements Search {
 //						String key = entry.getKey();
 //						PObject value = entry.getValue();
 //						if (value == null) {
-//							brb.add(getSearchClient().prepareDelete(Utils.INDEX_ALIAS, type, key).request());
+//							brb.add(getSearchClient().prepareDelete(Config.INDEX_ALIAS, type, key).request());
 //						}
 //					}
 //					brb.execute();
