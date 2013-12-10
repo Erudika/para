@@ -59,6 +59,7 @@ public class CachingAspect implements MethodInterceptor {
 							result = cache.get(getMe);
 						}else{
 							result = mi.proceed();
+							cache.put(getMe, result);
 						}
 						break;
 					case PUT:

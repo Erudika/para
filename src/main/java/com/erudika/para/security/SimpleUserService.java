@@ -17,6 +17,7 @@
  */
 package com.erudika.para.security;
 
+import com.eaio.uuid.UUID;
 import com.erudika.para.core.User;
 import java.util.List;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -31,11 +32,13 @@ import org.springframework.security.openid.OpenIDAuthenticationToken;
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public class StandardUserService implements UserDetailsService, 
+public class SimpleUserService implements UserDetailsService, 
 		AuthenticationUserDetailsService<OpenIDAuthenticationToken> {
-
+	
 	public UserDetails loadUserByUsername(String ident) throws UsernameNotFoundException {
-		User user = User.readUserForIdentifier(ident);
+		User user = new User();
+		user.setIdentifier(ident);
+		user = loadUser(user);
 
 		if (user == null) {
 			throw new UsernameNotFoundException(ident);
@@ -48,9 +51,10 @@ public class StandardUserService implements UserDetailsService,
 		if (token == null) {
 			return null;
 		}
-
-		String identifier = token.getIdentityUrl();
-		User user = User.readUserForIdentifier(identifier);
+		
+		User user = new User();
+		user.setIdentifier(token.getIdentityUrl());
+		user = loadUser(user);
 
 		if (user == null) {
 			// create new OpenID user
@@ -86,7 +90,8 @@ public class StandardUserService implements UserDetailsService,
 			user = new User();
 			user.setEmail(email);
 			user.setName(fullName);
-			user.setIdentifier(identifier);
+			user.setPassword(new UUID().toString());
+			user.setIdentifier(token.getIdentityUrl());
 			String id = user.create();
 			if (id == null) {
 				throw new BadCredentialsException("Authentication failed: cannot create new user.");
@@ -94,5 +99,9 @@ public class StandardUserService implements UserDetailsService,
 		}
 
 		return user;
+	}
+	
+	private User loadUser(User u){
+		return User.readUserForIdentifier(u);
 	}
 }

@@ -23,7 +23,6 @@ import com.erudika.para.utils.Config;
 import com.hazelcast.config.AwsConfig;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_PERCENTAGE;
 import com.hazelcast.config.MulticastConfig;
@@ -102,26 +101,31 @@ public class HazelcastCache implements Cache {
 
 	@Override
 	public boolean contains(String id) {
+		if(id == null) return false;
 		return haze.getMap(MAP_NAME).containsKey(id);
 	}
 	
 	@Override
 	public <T> void put(String id, T object) {
+		if(id == null || object == null) return;
 		haze.getMap(MAP_NAME).putAsync(id, object);
 	}
 
 	@Override
 	public <T> void put(String id, T object, Long ttl_seconds) {
+		if(id == null || object == null) return;
 		haze.getMap(MAP_NAME).putAsync(id, object, ttl_seconds, TimeUnit.SECONDS);
 	}
 
 	@Override
 	public <T> void putAll(Map<String, T> objects) {
+		if(objects == null || objects.isEmpty()) return;
 		haze.getMap(MAP_NAME).putAll(objects);
 	}
 
 	@Override
 	public <T> T get(String id) {
+		if(id == null) return null;
 		return (T) haze.getMap(MAP_NAME).get(id);
 	}
 
@@ -137,6 +141,7 @@ public class HazelcastCache implements Cache {
 	
 	@Override
 	public void remove(String id) {
+		if(id == null) return;
 		haze.getMap(MAP_NAME).delete(id);
 	}
 
@@ -147,6 +152,7 @@ public class HazelcastCache implements Cache {
 	
 	@Override
 	public void removeAll(List<String> ids) {
+		if(ids == null) return;
 		IMap<?,?> map = haze.getMap(MAP_NAME);
 		for (String id : ids) {
 			map.delete(id);

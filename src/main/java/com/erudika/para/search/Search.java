@@ -37,7 +37,7 @@ public interface Search {
 	public boolean existsIndex(String name);
 
 	public <P extends ParaObject> P findById(String key, String type);
-
+	
 	public <P extends ParaObject> ArrayList<P> findNearbyObjects(String type, MutableLong page, MutableLong itemcount, String query, int radius, double lat, double lng, String sortby);
 
 	public <P extends ParaObject> ArrayList<P> findPrefix(String type, MutableLong page, MutableLong itemcount, String field, String prefix);

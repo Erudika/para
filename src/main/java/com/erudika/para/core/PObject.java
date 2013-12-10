@@ -23,10 +23,12 @@ import com.erudika.para.annotations.Stored;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
 import javax.validation.constraints.Size;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.codehaus.jackson.annotate.JsonIgnore;
@@ -36,7 +38,7 @@ import org.hibernate.validator.constraints.NotBlank;
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public abstract class PObject implements ParaObject, Linkable, Votable{
+public abstract class PObject implements ParaObject, Linkable, Votable {
 	
 	@Stored @Locked private String id;
 	@Stored @Locked private Long timestamp;
@@ -52,6 +54,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 	
 	private transient DAO dao;
 	private transient Search search;
+
 	
 	public DAO getDao() {
 		if(dao == null){
@@ -73,6 +76,17 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 
 	public void setSearch(Search search) {
 		this.search = search;
+	}
+	
+	@Override
+	public String getPlural() {
+		return Utils.singularToPlural(getClassname());
+	}
+
+	@Override
+	public String getObjectURL() {
+		String defurl = "/".concat(getPlural());
+		return (getId() != null) ? defurl.concat("/").concat(getId()) : defurl;
 	}
 	
 	// one-to-many relationships (may return self)
@@ -166,12 +180,15 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 	public void delete() {
 		getDao().delete(this);
 	}
+
+	@Override
+	public boolean exists() {
+		return getDao().existsColumn(id, DAO.OBJECTS, DAO.CN_ID);
+	}
 	
 	@Override
 	public String getClassname() {
-		if(classname == null) 
-			classname = classname(this.getClass());
-		return classname;
+		return classname(this.getClass());
 	}
 	
 	@Override
@@ -181,14 +198,12 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 	
 	@Override
 	public String link(Class<? extends ParaObject> c2, String id2){
-		if(c2 == null) return null;
-		return new Linker(this.getClass(), c2, getId(), id2).create();
+		return getDao().create(new Linker(this.getClass(), c2, getId(), id2));
 	}
 	
 	@Override
 	public void unlink(Class<? extends ParaObject> c2, String id2){
-		if(c2 == null) return;
-		new Linker(this.getClass(), c2, getId(), id2).delete();
+		getDao().delete(new Linker(this.getClass(), c2, getId(), id2));
 	}
 	
 	@Override
@@ -208,14 +223,20 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 		if(c2 == null) return new ArrayList<Linker>();
 		Linker link = new Linker(this.getClass(), c2, null, null);
 		String idField = link.getIdFieldNameFor(this.getClass());
-		return getSearch().findTwoTerms(link.getClassname(), pagenum, itemcount, 
+		return getSearch().findTwoTerms(link.getPlural(), pagenum, itemcount, 
 				DAO.CN_NAME, link.getName(), idField, id, null, reverse, maxItems);
 	}
 	
 	@Override
 	public boolean isLinked(Class<? extends ParaObject> c2, String toId){
 		if(c2 == null) return false;
-		return new Linker(this.getClass(), c2, getId(), toId).exists();
+		return getDao().read(new Linker(this.getClass(), c2, getId(), toId).getId()) != null;
+	}
+	
+	@Override
+	public boolean isLinked(ParaObject toObj){
+		if(toObj == null) return false;
+		return isLinked(toObj.getClass(), toObj.getId());
 	}
 	
 	@Override
@@ -223,7 +244,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 		if(id == null) return 0L;
 		Linker link = new Linker(this.getClass(), c2, null, null);
 		String idField = link.getIdFieldNameFor(this.getClass());
-		return getSearch().getCount(link.getClassname(), 
+		return getSearch().getCount(link.getPlural(), 
 				DAO.CN_NAME, link.getName(), idField, id);
 	}
 	
@@ -274,25 +295,34 @@ public abstract class PObject implements ParaObject, Linkable, Votable{
 	********************************************/
 	
 	private boolean vote(String userid, Votable votable, VoteType upDown) {
+		if(StringUtils.isBlank(userid) || votable == null || votable.getId() == null || upDown == null) return false;
 		//no voting on your own stuff!
-		if(votable == null || StringUtils.isBlank(userid) || userid.equals(votable.getCreatorid()) ||
-				votable.getId() == null || upDown == null) return false;
+		if(userid.equals(votable.getCreatorid()) || userid.equals(votable.getId())) return false;
 		
-		Vote v = new SimpleVote();
-		v.setCreatorid(userid);
-		v.setParentid(votable.getId());
-		v.setType(upDown.toString());
-		v.setTimestamp(System.currentTimeMillis());
-		boolean done = v.amendVote() || v.create() != null;
+		Vote v = new Vote(userid, votable.getId(), upDown.toString());
+		Vote saved = getDao().read(v.getId());
+		boolean done = false;
+		int vote = (upDown == VoteType.UP) ? 1 : -1;
+		
+		if(saved != null){
+			boolean isUpvote = upDown.equals(VoteType.UP);
+			boolean wasUpvote = VoteType.UP.toString().equals(saved.getType());
+			boolean voteHasChanged = BooleanUtils.xor(new boolean[]{isUpvote, wasUpvote});
+			
+			if(saved.isExpired()){
+				done = getDao().create(v) != null;
+			}else if(saved.isAmendable() && voteHasChanged){
+				getDao().delete(saved);
+				done = true;
+			}
+		}else{
+			done = getDao().create(v) != null;
+		}
 		
 		if(done){
-			// recalculate votes
-			long countPositive = getSearch().getCount(v.getClassname(), DAO.CN_PARENTID, 
-					getId(), "type", VoteType.UP.toString());
-			long countNegative = getSearch().getCount(v.getClassname(), DAO.CN_PARENTID, 
-					getId(), "type", VoteType.DOWN.toString());
-			
-			setVotes((int) (countPositive - countNegative));
+			synchronized(this){
+				setVotes(getVotes() + vote);
+			}
 		}
 		
 		return done;

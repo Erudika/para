@@ -26,7 +26,7 @@ import org.springframework.security.openid.OpenIDAttribute;
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public class DefaultAxFetchListFactory implements AxFetchListFactory {
+public class SimpleAxFetchListFactory implements AxFetchListFactory {
 	private static final long serialVersionUID = 1L;
 
 	public List<OpenIDAttribute> createAttributeList(String identifier) {

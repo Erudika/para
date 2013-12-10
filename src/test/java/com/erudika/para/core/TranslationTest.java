@@ -17,10 +17,13 @@
  */
 package com.erudika.para.core;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import com.erudika.para.persistence.DAO;
+import com.erudika.para.persistence.MockDAO;
+import com.erudika.para.search.Search;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Before;
+import static org.mockito.Mockito.*;
 
 /**
  *
@@ -28,66 +31,26 @@ import static org.junit.Assert.*;
  */
 public class TranslationTest {
 	
-	public TranslationTest() {
-	}
+	private DAO dao;
+	private Translation t;
 	
-	@BeforeClass
-	public static void setUpClass() {
-	}
-	
-	@AfterClass
-	public static void tearDownClass() {
-	}
-
-	@Test
-	public void testGetApproved() {
+	@Before
+	public void setUp() {
+		dao = new MockDAO();
+		t = new Translation("en", "test", "value");
+		t.setCreatorid("111");
+		t.setName("test.123");
+		t.setDao(dao);
+		t.setSearch(mock(Search.class));
 	}
 
 	@Test
-	public void testSetApproved() {
+	public void testApproved() {
+		assertFalse(t.isApproved());
+		t.approve();
+		assertTrue(t.isApproved());
+		t.disapprove();
+		assertFalse(t.isApproved());
 	}
 
-	@Test
-	public void testGetValue() {
-	}
-
-	@Test
-	public void testSetValue() {
-	}
-
-	@Test
-	public void testGetLocale() {
-	}
-
-	@Test
-	public void testSetLocale() {
-	}
-
-	@Test
-	public void testGetThekey() {
-	}
-
-	@Test
-	public void testSetThekey() {
-	}
-
-	@Test
-	public void testApprove() {
-	}
-
-	@Test
-	public void testDisapprove() {
-	}
-
-	@Test
-	public void testIsApproved() {
-	}
-
-	@Test
-	public void testGetName() {
-	}
-
-	@Test
-	public void testGetParentid() {
-	}
 }

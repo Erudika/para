@@ -19,35 +19,31 @@ package com.erudika.para.security;
 
 import com.erudika.para.Para;
 import com.erudika.para.utils.Config;
+import com.typesafe.config.ConfigList;
+import com.typesafe.config.ConfigObject;
+import com.typesafe.config.ConfigValue;
+import java.util.ArrayList;
 import java.util.Collections;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.List;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
-import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.authentication.RememberMeAuthenticationProvider;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.AbstractConfiguredSecurityBuilder;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserCache;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsChecker;
 import org.springframework.security.openid.OpenID4JavaConsumer;
 import org.springframework.security.openid.OpenIDAuthenticationProvider;
-import org.springframework.security.web.DefaultSecurityFilterChain;
-import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
-import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationProvider;
 import org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices;
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
-import org.springframework.security.web.authentication.session.SessionFixationProtectionStrategy;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.context.NullSecurityContextRepository;
 
 /**
  *
@@ -56,7 +52,8 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-	
+
+	private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 //	@Autowired
 //	public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
 //		auth.inMemoryAuthentication().
@@ -64,19 +61,24 @@ public class SecurityConfig {
 //				.withUser("admin").password("password").roles("USER", "ADMIN");
 //	}
 	
-	@Configuration
-	@Order(1)
-	public static class ApiWebSecurityConfigurationAdapter extends WebSecurityConfigurerAdapter {
-		protected void configure(HttpSecurity http) throws Exception {
-			http.antMatcher("/api/**")
-					.authorizeRequests()
-					.anyRequest().hasAnyRole("USER","MOD","ADMIN")
-					.and()
-					.httpBasic()
-					.and().csrf().disable();
-			http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-		}
-	}
+//	@Configuration
+//	@Order(1)
+//	public static class ApiWebSecurityConfigurationAdapter extends WebSecurityConfigurerAdapter {
+//		protected void configure(HttpSecurity http) throws Exception {
+////			CachedCsrfTokenRepository str = new CachedCsrfTokenRepository();
+////			Para.injectInto(str);
+////			http.csrf().csrfTokenRepository(str);
+////			http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.NEVER);
+//			http.authorizeRequests().antMatchers("/api/**").hasAnyRole("USER","MOD","ADMIN")
+////					.anyRequest().authenticated()
+//					.and().httpBasic()
+//					.and().csrf().disable();
+////			http.antMatcher("/api/**")
+////					.authorizeRequests()
+////					.anyRequest().hasAnyRole("USER","MOD","ADMIN")
+////					.and().httpBasic().and().csrf().disable();
+//		}
+//	}
 	
 	@Configuration
 	public static class FormLoginWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
@@ -84,54 +86,69 @@ public class SecurityConfig {
 		@Override
 		protected void configure(AuthenticationManagerBuilder auth) throws Exception {
 			OpenIDAuthenticationProvider openidProvider = new OpenIDAuthenticationProvider();
-			openidProvider.setAuthenticationUserDetailsService(new StandardUserService());
+			openidProvider.setAuthenticationUserDetailsService(new SimpleUserService());
 			auth.authenticationProvider(openidProvider);
 			
 			RememberMeAuthenticationProvider rmeProvider = new RememberMeAuthenticationProvider(Config.APP_SECRET_KEY);
 			auth.authenticationProvider(rmeProvider);
 		}
 				
-//		@Override
-//		public void configure(WebSecurity web) throws Exception {
-//			web.ignoring().antMatchers("/images/**");
-//			web.ignoring().antMatchers("/styles/**");
-//			web.ignoring().antMatchers("/scripts/**");
-//////			web.ignoring().antMatchers("/signin/**");
-////			web.debug(true);
-//		}
+		@Override
+		public void configure(WebSecurity web) throws Exception {
+			ConfigList c = Config.getConfig().getList("security.ignored");
+			for (ConfigValue configValue : c) {
+				web.ignoring().antMatchers((String) configValue.unwrapped());
+			}
+//			web.debug(true);
+		}
 		
 		@Override
 		protected void configure(HttpSecurity http) throws Exception {
-//			http.authorizeRequests().anyRequest().authenticated().and().formLogin().loginPage("/signin").permitAll();
-			http.csrf().disable();
-	//		Map<String, String
-			http.authorizeRequests()
-				.antMatchers("/admin", "/admin/**").hasAnyRole("ROLE_ADMIN")
-				.antMatchers("/p/", "/p/**").hasAnyRole("USER","MOD","ADMIN")
-				.antMatchers("/votedown/**").hasAnyRole("USER","MOD","ADMIN")
-				.antMatchers("/voteup/**").hasAnyRole("USER","MOD","ADMIN")
-				.antMatchers("/settings", "/settings/**").hasAnyRole("USER","MOD","ADMIN");
-//				.anyRequest().authenticated().and().formLogin();
+			String[] defroles = { "USER", "MOD", "ADMIN" };
+			Map<String, String> confMap = Config.getConfigMap();
+			ConfigObject c = Config.getConfig().getObject("security.protected");
+			
+			for (ConfigValue cv : c.values()) {
+				ArrayList<String> patterns = new ArrayList<String>();
+				ArrayList<String> roles = new ArrayList<String>();
+				
+				for (ConfigValue configValue : (ConfigList) cv) {
+					if (configValue instanceof List) {
+						for (ConfigValue role : (ConfigList) configValue) {
+							roles.add(((String) role.unwrapped()).toUpperCase());
+						}
+					} else {
+						patterns.add((String) configValue.unwrapped());
+					}
+				}
 
-			CachedSecurityContextRepository cscr = new CachedSecurityContextRepository();
-			Para.injectInto(cscr);
-
+				String[] rolz = (roles.isEmpty()) ? defroles : roles.toArray(new String[0]);
+				http.authorizeRequests().antMatchers(patterns.toArray(new String[0])).hasAnyRole(rolz);
+			}
+			
+			CachedCsrfTokenRepository str = new CachedCsrfTokenRepository();
+			Para.injectInto(str);
+			http.csrf().csrfTokenRepository(str);
+			
 			http.sessionManagement().enableSessionUrlRewriting(false);
-			http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+			http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.NEVER);
 			http.sessionManagement().sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy());
-			http.securityContext().securityContextRepository(cscr);
-			http.exceptionHandling().authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/signin"));
-			http.exceptionHandling().accessDeniedPage("/403");
-
-			SimpleUrlAuthenticationSuccessHandler successHandler = new SimpleUrlAuthenticationSuccessHandler();
-			successHandler.setDefaultTargetUrl("/");
-			successHandler.setTargetUrlParameter("returnto");
-
+			http.securityContext().securityContextRepository(new NullSecurityContextRepository());
+			http.exceptionHandling().authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint(confMap.get("security.signin")));
+			http.exceptionHandling().accessDeniedPage(confMap.get("security.accessdenied"));
+			http.requestCache().requestCache(new SimpleRequestCache());
+			
+			SimpleAuthenticationSuccessHandler successHandler = new SimpleAuthenticationSuccessHandler();
+			successHandler.setDefaultTargetUrl(confMap.get("security.signinsuccess"));
+			successHandler.setTargetUrlParameter(confMap.get("security.returnto"));
+			successHandler.setUseReferer(true);
+			
 			SimpleUrlAuthenticationFailureHandler failureHandler = new SimpleUrlAuthenticationFailureHandler();
-			failureHandler.setDefaultFailureUrl("/signin?code=3&error=true");
-
-			TokenBasedRememberMeServices tbrms = new TokenBasedRememberMeServices(Config.APP_SECRET_KEY, new StandardUserService());
+			failureHandler.setDefaultFailureUrl(confMap.get("security.signinfailure"));
+			
+			TokenBasedRememberMeServices tbrms = new TokenBasedRememberMeServices(Config.APP_SECRET_KEY, new SimpleUserService());
 			tbrms.setAlwaysRemember(true);
+			tbrms.setTokenValiditySeconds(Config.SESSION_TIMEOUT_SEC.intValue());
 			tbrms.setCookieName(Config.AUTH_COOKIE);
 			tbrms.setParameter(Config.AUTH_COOKIE.concat("-remember-me"));
 			http.rememberMe().rememberMeServices(tbrms);
@@ -144,8 +161,8 @@ public class SecurityConfig {
 			
 			OpenIDAuthFilter openidFilter = new OpenIDAuthFilter("/"+OpenIDAuthFilter.OPENID_ACTION);
 			openidFilter.setAuthenticationManager(authenticationManager());
-			openidFilter.setConsumer(new OpenID4JavaConsumer(new DefaultAxFetchListFactory()));
-			openidFilter.setReturnToUrlParameters(Collections.singleton("returnto"));
+			openidFilter.setConsumer(new OpenID4JavaConsumer(new SimpleAxFetchListFactory()));
+			openidFilter.setReturnToUrlParameters(Collections.singleton(confMap.get("security.returnto")));
 			openidFilter.setAuthenticationSuccessHandler(successHandler);
 			openidFilter.setAuthenticationFailureHandler(failureHandler);
 			openidFilter.setRememberMeServices(tbrms);
@@ -159,18 +176,8 @@ public class SecurityConfig {
 			http.addFilterAfter(passwordFilter, BasicAuthenticationFilter.class);
 			http.addFilterAfter(openidFilter, BasicAuthenticationFilter.class);
 			http.addFilterAfter(facebookFilter, BasicAuthenticationFilter.class);
-			
-	//		http.authorizeRequests()
-	//				.antMatchers("/signup","/about").permitAll()
-	//				.anyRequest().hasRole("USER")
-	//				.and()
-	//			.formLogin()
-	//				// You must render the login page now
-	//				.loginPage("/login")
-	//				// set permitAll for all URLs associated with Form Login
-	//				.permitAll();
 		}
 		
 	}
-		
+	
 }

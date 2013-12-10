@@ -17,10 +17,11 @@
  */
 package com.erudika.para.core;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import com.erudika.para.persistence.DAO;
+import com.erudika.para.persistence.MockDAO;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Before;
 
 /**
  *
@@ -28,66 +29,84 @@ import static org.junit.Assert.*;
  */
 public class TagTest {
 	
-	public TagTest() {
+	private DAO dao;
+	private Tag t;
+	
+	@Before
+	public void setUp() {
+		dao = new MockDAO();
+		t = new Tag("test");
+		t.setCreatorid("111");
+		t.setDao(dao);
 	}
 	
-	@BeforeClass
-	public static void setUpClass() {
-	}
-	
-	@AfterClass
-	public static void tearDownClass() {
-	}
-
 	@Test
-	public void testGetId() {
-	}
-
-	@Test
-	public void testSetId() {
+	public void testId() {
+		assertEquals("tag:test", t.getId());
+		t.setId("test1");
+		assertEquals("test1", t.getId());
 	}
 
 	@Test
 	public void testGetClassname() {
+		t.setClassname("asd");
+		assertEquals("tag", t.getClassname());
 	}
 
 	@Test
-	public void testSetClassname() {
-	}
-
-	@Test
-	public void testGetCount() {
+	public void testCount() {
+		assertTrue(t.getCount() == 0);
+		t.incrementCount();
+		assertTrue(t.getCount() == 1);
+		t.incrementCount();
+		assertTrue(t.getCount() == 2);
+		t.decrementCount();
+		t.decrementCount();
+		t.decrementCount();
+		assertTrue(t.getCount() == -1);
 	}
 
 	@Test
 	public void testSetCount() {
+		t.setCount(999);
+		assertTrue(t.getCount() == 999);		
 	}
 
 	@Test
 	public void testGetTag() {
+		assertEquals("test", t.getTag());
 	}
 
 	@Test
 	public void testSetTag() {
+		t.setTag("test1");
+		assertEquals("tag:test1", t.getId());
 	}
 
 	@Test
-	public void testIncrementCount() {
+	public void testIncrementCount() {		
 	}
 
 	@Test
 	public void testDecrementCount() {
-	}
-
-	@Test
-	public void testIsValidTagString() {
+		t.create();
+		assertTrue(t.exists());
+		
+		t.setCount(2);
+		t.decrementCount();
+		assertEquals(1, t.getCount().intValue());
+		t.decrementCount();
+		
+		assertFalse(t.exists());
 	}
 
 	@Test
 	public void testEquals() {
-	}
-
-	@Test
-	public void testHashCode() {
+		Tag t1 = new Tag("tag1");
+		t1.setId("id1");
+		Tag t2 = new Tag("tag2");
+		t2.setId("id2");
+		
+		assertTrue(t1.equals(t2));
 	}
 }

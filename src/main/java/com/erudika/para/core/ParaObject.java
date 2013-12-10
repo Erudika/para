@@ -26,11 +26,11 @@ import org.codehaus.jackson.annotate.JsonIgnore;
  */
 public interface ParaObject extends Serializable {
 
-	public String create();
-
-	public void delete();
-
 	public String getClassname();
+	
+	public String getPlural();
+
+	public String getObjectURL();
 
 	@JsonIgnore
 	public ParaObject getCreator();
@@ -65,6 +65,12 @@ public interface ParaObject extends Serializable {
 
 	public void setUpdated(Long updated);
 
+	public String create();
+
 	public void update();
+	
+	public void delete();
+	
+	public boolean exists();
 	
 }

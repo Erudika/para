@@ -21,8 +21,10 @@ package com.erudika.para.utils;
 
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
+import com.typesafe.config.ConfigValueType;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,10 +47,8 @@ public final class Config {
 	
 	// GLOBAL LIMITS	
 	public static final int MAX_ITEMS_PER_PAGE = 30;
-
 	public static final int	DEFAULT_LIMIT = Integer.MAX_VALUE;
 	public static final int MAX_PAGES = 10000;
-	public static final int SESSION_TIMEOUT_SEC = 24 * 60 * 60;
 	public static final int MAX_IMG_SIZE_PX = 800;
 	public static final int MIN_PASS_LENGTH = 6;
 	public static final String SEPARATOR = ":";
@@ -56,8 +56,6 @@ public final class Config {
 	public static final String CORE_PACKAGE = "corepackage";
 	public static final String FB_PREFIX = "fb" + SEPARATOR;
 	public static final String FXRATES_KEY = "fxrates";
-	public static final int VOTE_LOCKED_FOR_SEC = 4 * 7 * 24 * 60 * 60; //1 month in seconds
-	public static final int VOTE_LOCK_AFTER_SEC = 30; // 30 sec
 	
 	//////////  INITIALIZATION PARAMETERS  //////////////
 	public static final String AWS_ACCESSKEY = getConfigParam("awsaccesskey", "");
@@ -74,9 +72,14 @@ public final class Config {
 //	public static final String ES_HOSTS = getInitParam("eshosts", "localhost");
 	public static final String CLUSTER_NAME = getConfigParam("clustername", PRODUCT_NAME_NS);
 	public static final String AUTH_COOKIE = getConfigParam("authcookie", PRODUCT_NAME_NS.concat("-auth"));
+	public static final String RETURNTO_COOKIE = getConfigParam("returntocookie", PRODUCT_NAME_NS.concat("-returnto"));
 	public static final String SUPPORT_EMAIL = getConfigParam("supportemail", "support@myapp.co");
 	public static final String APP_SECRET_KEY = getConfigParam("appsecretkey", Utils.MD5("secret"));
 	public static final String CORE_PACKAGE_NAME = getConfigParam(CORE_PACKAGE, "");
+	public static final Long SESSION_TIMEOUT_SEC = NumberUtils.toLong(getConfigParam("sessiontimeout", ""), 24 * 60 * 60);
+	public static final Long VOTE_EXPIRES_AFTER_SEC = NumberUtils.toLong(getConfigParam("voteexpiresafter", ""), 30 * 24 * 60 * 60); //1 month in seconds
+	public static final Long VOTE_LOCKED_AFTER_SEC = NumberUtils.toLong(getConfigParam("votelockedafter", ""), 30); // 30 sec
+	public static final Long PASSRESET_TIMEOUT_SEC = NumberUtils.toLong(getConfigParam("passresettimeout", ""), 30 * 60); // 30 MIN
 	
 	// read object data from index, not db
 	public static final boolean READ_FROM_INDEX = Boolean.parseBoolean(getConfigParam("readfromindex", "true")); 
@@ -94,7 +97,9 @@ public final class Config {
 			
 			configMap = new HashMap<String, String>();
 			for (Map.Entry<String, ConfigValue> con : config.entrySet()) {
-				configMap.put(con.getKey(), config.getString(con.getKey()));
+				if(con.getValue().valueType() != ConfigValueType.LIST){
+					configMap.put(con.getKey(), config.getString(con.getKey()));
+				}
 			}
 		} catch (Exception ex) {
 			logger.error(null, ex);
@@ -106,9 +111,14 @@ public final class Config {
 		return config.hasPath(key) ? config.getString(key) : defaultValue;
 	}
 	
-	public static Map<String, String> getConfig(){
+	public static Map<String, String> getConfigMap(){
 		if(configMap == null) init(null);
 		return configMap;
+	}
+	
+	public static com.typesafe.config.Config getConfig(){
+		if(config == null) init(null);
+		return config;
 	}
 	
 }

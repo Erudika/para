@@ -105,15 +105,14 @@ public class OXRConverter implements CurrencyConverter {
 						s.setId(Config.FXRATES_KEY);
 						s.setProperties(map);
 //						s.addProperty("fetched", Utils.formatDate("dd MM yyyy HH:mm", Locale.UK));
-						s.create();
+						dao.create(s);
 					}
 				}
 				EntityUtils.consume(entity);
 			}
-			logger.debug("Fetched rates from OpenExchange for {0}.", 
-					new Object[]{new Date().toString()});
+			logger.debug("Fetched rates from OpenExchange for {}.", new Date().toString());
 		} catch (Exception e) {
-			logger.error("TimerTask failed: {0}", new Object[]{e});
+			logger.error("TimerTask failed: {}", e);
 		}
 		return s;
 	}

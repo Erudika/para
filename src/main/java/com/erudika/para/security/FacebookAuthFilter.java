@@ -17,6 +17,7 @@
  */
 package com.erudika.para.security;
 
+import com.eaio.uuid.UUID;
 import com.erudika.para.core.User;
 import com.erudika.para.utils.Config;
 import java.io.IOException;
@@ -58,8 +59,8 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) 
 			throws AuthenticationException, IOException, ServletException {
 		String requestURI = request.getRequestURI();
-		UserAuthentication userAuth = null;
-		User user = null;
+		Authentication userAuth = null;
+		User user = new User();
 		
 		if(requestURI.endsWith(FACEBOOK_ACTION)){
 			//Facebook Connect Authentication 
@@ -70,13 +71,15 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 			
 			if (fbID != null) {
 				//success!
-				user = User.readUserForIdentifier(fbID);
+				user.setIdentifier(Config.FB_PREFIX.concat(fbID));
+				user = User.readUserForIdentifier(user);
 				if(user == null){
 					//user is new
 					user = new User();
 					user.setEmail(StringUtils.isBlank(fbEmail) ? "email@domain.com" : fbEmail);
 					user.setName(StringUtils.isBlank(fbName) ? "No Name" : fbName);
-					user.setIdentifier(fbID);
+					user.setPassword(new UUID().toString());
+					user.setIdentifier(Config.FB_PREFIX.concat(fbID));
 					String id = user.create();
 					if(id == null){
 						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");

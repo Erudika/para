@@ -18,25 +18,27 @@
 package com.erudika.para.utils.aop;
 
 import com.erudika.para.annotations.Indexed;
-import com.erudika.para.persistence.DAO;
+import static com.erudika.para.annotations.Indexed.Action.ADD;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.search.Search;
+import com.erudika.para.persistence.DAO;
+import com.erudika.para.utils.Utils;
+import static com.erudika.para.utils.aop.IndexingAspect.getArgOfParaObject;
 import java.lang.reflect.Method;
-import java.util.List;
-import javax.inject.Inject;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public class IndexingAspect implements MethodInterceptor {
+public class ValidationAspect implements MethodInterceptor {
 
-	@Inject private Search search;
+	private static final Logger logger = LoggerFactory.getLogger(ValidationAspect.class);
 	
 	public Object invoke(MethodInvocation mi) throws Throwable {
-		Object result = mi.proceed();
+		Object result = null;
 		Method m = mi.getMethod();
 		
 		Method superMethod = null;
@@ -51,19 +53,12 @@ public class IndexingAspect implements MethodInterceptor {
 				switch(ano.action()){
 					case ADD: 
 						ParaObject addMe = getArgOfParaObject(args);
-						search.index(addMe, addMe.getPlural());
-						break;
-					case REMOVE: 
-						ParaObject removeMe = getArgOfParaObject(args);
-						search.unindex(removeMe, removeMe.getPlural());
-						break;
-					case ADD_ALL: 
-						List<ParaObject> addUs = getArgOfListOfType(args, ParaObject.class);
-						search.indexAll(addUs);
-						break;
-					case REMOVE_ALL: 
-						List<ParaObject> removeUs = getArgOfListOfType(args, ParaObject.class);
-						search.unindexAll(removeUs);
+						String[] err = Utils.validateRequest(addMe);
+						if (err.length == 0){
+							result = mi.proceed();
+						}else{
+							logger.warn(m.getName(), " ", err);
+						}
 						break;
 					default: break;
 				}
@@ -71,35 +66,6 @@ public class IndexingAspect implements MethodInterceptor {
 		}
 		
 		return result;
-	}
-	
-	static <T> List<T> getArgOfListOfType(Object[] args, Class<T> type){
-		if(args != null){
-			for (Object arg : args) {
-				if(arg != null){
-					if(arg instanceof List){
-						List<T> list = (List) arg;
-						if(!list.isEmpty() && type.isAssignableFrom((list.get(0).getClass()))){
-							return (List<T>) list;
-						}
-					}
-				}
-			}
-		}
-		return null;
-	}
-	
-	static ParaObject getArgOfParaObject(Object[] args){
-		if(args != null){
-			for (Object arg : args) {
-				if(arg != null){
-					if(ParaObject.class.isAssignableFrom(arg.getClass())){
-						return (ParaObject) arg;
-					}
-				}
-			}
-		}
-		return null;
 	}
 	
 }

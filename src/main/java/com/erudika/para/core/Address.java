@@ -36,10 +36,12 @@ public class Address extends PObject{
 	@Stored private String phone;
 	
 	public Address() {
+		this(null);
 	}
 
 	public Address(String id) {
 		setId(id);
+		setName(getClassname());
 	}
 	
 	public String getLatlng() {

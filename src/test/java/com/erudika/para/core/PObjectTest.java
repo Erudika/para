@@ -17,15 +17,14 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.Para;
-import com.erudika.para.cache.Cache;
-import com.erudika.para.cache.CacheModule;
-import java.util.List;
-import java.util.Map;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import com.erudika.para.persistence.DAO;
+import com.erudika.para.persistence.MockDAO;
+import com.erudika.para.search.Search;
+import java.util.ArrayList;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  *
@@ -33,85 +32,13 @@ import static org.junit.Assert.*;
  */
 public class PObjectTest {
 	
-	public static class XCache implements Cache{
-
-		public XCache() {
-			System.out.println("MOCK CACHE");
-		}
-		public boolean contains(String id) {
-			return false;
-		}
-		public <T> void put(String id, T object) {
-			System.out.println("PUT");
-		}
-		public <T> void put(String id, T object, Long ttl_seconds) {
-			System.out.println("PUT2");
-		}
-		public <T> T get(String id) {
-			System.out.println("GET");
-			return (T) "OK";
-		}
-		public void remove(String id) {
-			System.out.println("REMOVE");
-		}
-		public void removeAll() {
-		}
-		public <T> void putAll(Map<String, T> objects) {
-		}
-		public <T> Map<String, T> getAll(List<String> ids) {
-			return null;
-		}
-
-		@Override
-		public void removeAll(List<String> ids) {
-			throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-		}
-	}
-	
-	public static class MyModule extends CacheModule{
-		protected void configure() {
-			bind(Cache.class).to(XCache.class);
-		}
-	}
-	
-	@BeforeClass
-	public static void setUpClass(){
-		
-		Para.initialize(new MyModule());
-		
-		
-		// TODO CREATE MOCK OF DAO AND SET INSIDE POBJECT!!!!!
-		// TODO CREATE MOCK OF DAO AND SET INSIDE POBJECT!!!!!
-		// TODO CREATE MOCK OF DAO AND SET INSIDE POBJECT!!!!!
-//		embedded = new EmbeddedServerHelper();
-////		embedded.setup();
-////
-////		testObject = new User("user@test.com", true, User.UserType.ALUMNUS, "Test User");
-////		testObject.setAboutme("Test about me");
-////		testObject.setDob(12314325234L);
-////		testObject.setLocation("Test location");
-	}
-	
-	@AfterClass
-	public static void tearDownClass() {
-		Para.destroy();
-	}
-
-	@Test
-	public void test(){
-		Tag tag = new Tag();
-		Tag tag1 = new Tag("taat");
-		assertNotNull(tag.getDao());
-		assertNotNull(tag1.getDao());
-		
-	}
-	
 	@Test
 	public void testGetClassname() {
 		Tag tag = new Tag();
 		PObject p = new PObject() {};
 		assertNotNull(tag.getClassname());
 		assertNotNull(p.getClassname());
+		assertEquals("", p.getClassname());
 		assertEquals("tag", tag.getClassname());
 		assertEquals("", p.getClassname());
 	}
@@ -120,86 +47,75 @@ public class PObjectTest {
 	public void testSetClassname() {
 		Tag tag = new Tag();
 		tag.setClassname("bag");
-		assertEquals("bag", tag.getClassname());		
+		assertEquals("tag", tag.getClassname());		
 	}
 
 	@Test
-	public void testLink() {
-		User u = new User("1");
+	public void testGetObjectURL() {
+		assertEquals("/tags/tag", new Tag("tag").getObjectURL());
+		assertEquals("/users/1", new User("1").getObjectURL());
+		assertEquals("/votes", new Vote(null,null,null).getObjectURL());
+	}
+	
+	@Test
+	public void testLinks() {
+		Search search = mock(Search.class);
+		DAO dao = new MockDAO();
+		
 		Tag t = new Tag("tag");
-		u.link(Tag.class, t.getId());
-		assertTrue(t.isLinked(User.class, u.getId()));
-		assertTrue(u.isLinked(Tag.class, t.getId()));
-	}
-
-	@Test
-	public void testUnlink() {
-	}
-
-	@Test
-	public void testUnlinkAll() {
-	}
-
-	@Test
-	public void testGetAllLinks_Class() {
-	}
-
-	@Test
-	public void testGetAllLinks_5args() {
-	}
-
-	@Test
-	public void testIsLinked() {
-	}
-
-	@Test
-	public void testCountLinks() {
+		User u = new User("111");
+		User u3 = new User("333");
+		
+		u.setDao(dao);
+		u.setSearch(search);
+		
+		Linker l1 = new Linker(User.class, Tag.class, "111", "222");
+		Linker l2 = new Linker(User.class, User.class, "111", "333");
+		
+		u.link(t.getClass(), t.getId());
+		u.link(u3.getClass(), u3.getId());
+		
+		assertTrue(u.isLinked(t));
+		assertTrue(u.isLinked(u3));
+		
+		ArrayList<ParaObject> list = new ArrayList<ParaObject>();
+		list.add(l1);
+		list.add(l2);
+		
+		when(search.findTwoTerms(anyString(), (MutableLong) any(), (MutableLong) any(), anyString(), 
+				any(), anyString(), any(), anyBoolean(), anyString(), anyBoolean(), anyInt())).
+			thenReturn(list);
+		
+		assertEquals(0, u.getLinkedObjects(Tag.class, null, null).size());
+		assertEquals(0, u.getLinkedObjects(User.class, null, null).size());
+		
+		u.unlinkAll();
+		
+		assertNull(dao.read(l1.getId()));
+		assertNull(dao.read(l2.getId()));
 	}
 
 	@Test
 	public void testClassname() {
+		assertEquals("user", PObject.classname(User.class));
+		assertEquals("tag", PObject.classname(Tag.class));
+		assertEquals("paraobject", PObject.classname(ParaObject.class));
+		assertEquals("vote", PObject.classname(Vote.class));
+		assertEquals("", PObject.classname(null));
 	}
 
 	@Test
-	public void testGetChildren_Class() {
+	public void testGetPlural() {
+		assertEquals("users", new User().getPlural());
+		assertEquals("addresses", new Address().getPlural());
+		assertEquals("votes", new Vote().getPlural());
+		assertEquals("linkers", new Linker().getPlural());
 	}
-
-	@Test
-	public void testGetChildren_5args() {
-	}
-
-	@Test
-	public void testDeleteChildren() {
-	}
-
-	@Test
-	public void testGetLinkedObjects() {
-	}
-
-	@Test
-	public void testVoteUp() {
-	}
-
-	@Test
-	public void testVoteDown() {
-	}
-
-	@Test
-	public void testGetVotes() {
-	}
-
-	@Test
-	public void testSetVotes() {
-	}
-
-	@Test
-	public void testHashCode() {
-	}
-
+	
 	@Test
 	public void testEquals() {
-	}
-
-	public class PObjectImpl extends PObject {
+		User u1 = new User("111");
+		User u2 = new User("111");
+		assertTrue(u1.equals(u2));
 	}
 }

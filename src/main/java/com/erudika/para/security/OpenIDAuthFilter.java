@@ -51,7 +51,7 @@ public class OpenIDAuthFilter extends OpenIDAuthenticationFilter {
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) 
 			throws AuthenticationException, IOException {
 		String requestURI = request.getRequestURI();
-		UserAuthentication userAuth = null;
+		Authentication userAuth = null;
 		User user = null;
 		
 		if(requestURI.endsWith(OPENID_ACTION)){

@@ -18,11 +18,11 @@
 package com.erudika.para.i18n;
 
 import com.erudika.para.persistence.DAO;
-import com.erudika.para.cache.Cache;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.search.Search;
 import com.erudika.para.core.Translation;
 import static com.erudika.para.core.PObject.classname;
+import com.erudika.para.core.Sysprop;
 import com.erudika.para.utils.Config;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,14 +51,15 @@ public class LanguageUtils {
 	private HashMap<String, Locale> allLocales = new HashMap<String, Locale>();
 	private HashMap<String, Integer> progressMap = new HashMap<String, Integer>();
 	private Map<String, String> deflang;
+	private String keyPrefix = "language".concat(Config.SEPARATOR);
 	
-	private Cache cache;
 	private Search search;
+	private DAO dao;
 
 	@Inject
-	public LanguageUtils(Search search, Cache cache) {
+	public LanguageUtils(Search search, DAO dao) {
 		this.search = search;
-		this.cache = cache;
+		this.dao = dao;
 		for (Object loc : LocaleUtils.availableLocaleList()) {
 			Locale locale = new Locale(((Locale) loc).getLanguage());
 			String locstr = locale.getLanguage();
@@ -72,24 +73,32 @@ public class LanguageUtils {
 	public Map<String, String> readLanguage(String loc){
 		if(StringUtils.isBlank(loc) || !allLocales.containsKey(loc)) return getDefaultLanguage();
 		
-		if(!cache.contains(loc)){
-			ArrayList<ParaObject> tlist = search.findTwoTerms(classname(Translation.class), 
+		Sysprop s = dao.read(keyPrefix.concat(loc));
+		TreeMap<String, String> lang = new TreeMap<String, String>();
+		
+		if(s == null || s.getProperties().isEmpty()){
+			ArrayList<Translation> tlist = search.findTwoTerms(classname(Translation.class), 
 					null, null, "locale", loc, "approved", true, 
 					null, true, getDefaultLanguage().size());
 
-			TreeMap<String, String> lang = new TreeMap<String, String>();
+			Sysprop saved = new Sysprop(keyPrefix.concat(loc));
 			lang.putAll(getDefaultLanguage());	// copy default langmap
 			int approvedCount = 0;
 			
-			for (ParaObject trans : tlist) {
-				lang.put(((Translation) trans).getThekey(), ((Translation) trans).getValue());
+			for (Translation trans : tlist) {
+				lang.put(trans.getThekey(), trans.getValue());
+				saved.addProperty(trans.getThekey(), trans.getValue());
 				approvedCount++;
 			}
-			cache.put(loc, lang);
+			dao.create(saved);
 			updateTranslationProgressMap(loc, approvedCount);
+		}else{
+			Map<String, Object> loaded = s.getProperties();
+			for (String key : loaded.keySet()) {
+				lang.put(key, loaded.get(key).toString());
+			}
 		}
-		
-		return cache.get(loc);
+		return lang;
 	}
 
 	public Locale getProperLocale(String langname){
@@ -137,22 +146,28 @@ public class LanguageUtils {
 		return allLocales;
 	}
 	
-	public void onApprove(String locale, String key, String value){
-		HashMap<String, String> lang = cache.get(locale);
-		if(lang != null){
-			lang.put(key, value);
-			cache.put(locale, lang);
+	public boolean approveTranslation(String locale, String key, String value){
+		if(locale == null || key == null || value == null) return false;
+		Sysprop s = dao.read(keyPrefix.concat(locale));
+		if(s != null){
+			s.addProperty(key, value);
+			dao.update(s);
+			updateTranslationProgressMap(locale, 1);
+			return true;
 		}
-		updateTranslationProgressMap(locale, 1);
+		return false;
 	}
 	
-	public void onDisapprove(String locale, String key){
-		HashMap<String, String> lang = cache.get(locale);
-		if(lang != null){
-			lang.put(key, getDefaultLanguage().get(key));
-			cache.put(locale, lang);
+	public boolean disapproveTranslation(String locale, String key){
+		if(locale == null || key == null) return false;
+		Sysprop s = dao.read(keyPrefix.concat(locale));
+		if(s != null){
+			s.addProperty(key, getDefaultLanguage().get(key));
+			dao.update(s);
+			updateTranslationProgressMap(locale, -1);
+			return true;
 		}
-		updateTranslationProgressMap(locale, -1);
+		return false;
 	}
 	
 	private void updateTranslationProgressMap(String locale, int value){

@@ -17,7 +17,6 @@
  */
 package com.erudika.para;
 
-import com.erudika.para.cache.Cache;
 import com.erudika.para.cache.CacheModule;
 import com.erudika.para.email.EmailModule;
 import com.erudika.para.i18n.I18nModule;
@@ -95,13 +94,8 @@ public class Para {
 		return injector.getInstance(Search.class);
 	}
 	
-	public static Cache getCache(){
-		if (injector == null) handleNotInitializedError();
-		return injector.getInstance(Cache.class);
-	}
-	
 	public static Map<String, String> getConfig(){
-		return Config.getConfig();
+		return Config.getConfigMap();
 	}
 	
 	public static void addDestroyListener(DestroyListener dl){

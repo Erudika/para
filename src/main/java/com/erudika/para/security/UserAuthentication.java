@@ -65,8 +65,6 @@ public class UserAuthentication implements Authentication {
 	}
 
 	public String getName() {
-		return (principal.getCurrentIdentifier() != null)
-				? principal.getCurrentIdentifier()
-				: principal.getIdentifier();
+		return principal.getIdentifier();
 	}
 }

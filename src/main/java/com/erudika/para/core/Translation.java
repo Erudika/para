@@ -38,10 +38,10 @@ public class Translation extends PObject{
 	@Stored private String value;
 	@Stored private Boolean approved;
 	
-	LanguageUtils langutils;
+	private LanguageUtils langutils;
 	
 	public Translation() {
-		this(null, null, null, null);
+		this(null, null, null);
 	}
 
 	public Translation(String id) {
@@ -50,12 +50,18 @@ public class Translation extends PObject{
 	}
 
 	@Inject
-	public Translation(String locale, String thekey, String value, LanguageUtils langutils) {
+	public Translation(String locale, String thekey, String value) {
 		this.locale = locale;
 		this.thekey = thekey;
 		this.value = value;
 		this.approved = false;
-		this.langutils = langutils;
+		setName(value);
+	}
+
+	public LanguageUtils getLangutils() {
+		if(langutils == null)
+			langutils = new LanguageUtils(getSearch(), getDao());
+		return langutils;
 	}
 	
 	public Boolean getApproved() {
@@ -92,13 +98,13 @@ public class Translation extends PObject{
 
 	public void approve(){
 		this.approved = true;
-		langutils.onApprove(locale, thekey, value);
+		getLangutils().approveTranslation(locale, thekey, value);
 		update();
 	}
 
 	public void disapprove(){
 		this.approved = false;
-		langutils.onDisapprove(locale, thekey);
+		getLangutils().disapproveTranslation(locale, thekey);
 		update();
 	}
 	

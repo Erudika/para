@@ -17,10 +17,11 @@
  */
 package com.erudika.para.core;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import com.erudika.para.persistence.DAO;
+import com.erudika.para.persistence.MockDAO;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  *
@@ -28,76 +29,84 @@ import static org.junit.Assert.*;
  */
 public class VoteTest {
 	
-	public VoteTest() {
-	}
-	
-	@BeforeClass
-	public static void setUpClass() {
-	}
-	
-	@AfterClass
-	public static void tearDownClass() {
-	}
-
 	@Test
-	public void testGetId() {
-	}
-
-	@Test
-	public void testSetId() {
-	}
-
-	@Test
-	public void testGetClassname() {
-	}
-
-	@Test
-	public void testSetClassname() {
-	}
-
-	@Test
-	public void testUp() {
-	}
-
-	@Test
-	public void testDown() {
-	}
-
-	@Test
-	public void testGetType() {
-	}
-
-	@Test
-	public void testSetType() {
-	}
-
-	@Test
-	public void testCreate() {
-	}
-
-	@Test
-	public void testUpdate() {
-	}
-
-	@Test
-	public void testDelete() {
-	}
-
-	@Test
-	public void testAmendVote() {
-	}
-
-	public class VoteImpl extends Vote {
-
-		public String create() {
-			return "";
-		}
-
-		public void delete() {
-		}
-
-		public boolean amendVote() {
-			return false;
-		}
+	public void testVotes() {
+		DAO dao = new MockDAO();
+		User u = new User("111");
+		User u2 = spy(new User("222"));
+		
+		u.setDao(dao);
+		u2.setDao(dao);
+		
+		assertEquals(0, u.getVotes().intValue());
+		u.voteUp(u2.getId());
+		assertEquals(1, u.getVotes().intValue());
+		u.voteUp(u2.getId());
+		assertEquals(1, u.getVotes().intValue());
+		u.voteUp(u2.getId());
+		assertEquals(1, u.getVotes().intValue());
+		
+		u.voteDown(u2.getId());
+		assertEquals(0, u.getVotes().intValue());
+		
+		u.voteDown(u2.getId());
+		assertEquals(-1, u.getVotes().intValue());
+		u.voteDown(u2.getId());
+		assertEquals(-1, u.getVotes().intValue());
+		
+		u.voteUp(u2.getId());
+		assertEquals(0, u.getVotes().intValue());
+		
+		// test expirations and locks
+		u2.voteUp(u.getId());
+		assertEquals(1, u2.getVotes().intValue());
+		
+		// isExpired() = true
+		Vote v = dao.read("vote:111:222");
+		v.setTimestamp(-1234L);
+		dao.create(v);
+		
+		u2.voteUp(u.getId());
+		assertEquals(2, u2.getVotes().intValue());
+		
+		// isExpired() = true
+		v = dao.read("vote:111:222");
+		v.setTimestamp(-1234L);
+		dao.create(v);
+		
+		u2.voteUp(u.getId());
+		assertEquals(3, u2.getVotes().intValue());
+		
+		// clear
+		dao.delete(v);
+		u2.setVotes(0);
+		
+		u2.voteUp(u.getId());
+		assertEquals(1, u2.getVotes().intValue());
+		
+		// isAmendable() = false
+		v = dao.read("vote:111:222");
+		v.setExpiresAfter(0L);
+		v.setTimestamp(-1234L); 
+		dao.create(v);
+		
+		u2.voteDown(u.getId());
+		assertEquals(1, u2.getVotes().intValue());
+		
+		// voting on self 
+		u.setVotes(0);
+		u.voteDown(u.getId());
+		assertEquals(0, u.getVotes().intValue());
+		u.voteDown(u.getId());
+		assertEquals(0, u.getVotes().intValue());
+		u.voteUp(u.getId());
+		assertEquals(0, u.getVotes().intValue());
+		u.voteUp(u.getId());
+		assertEquals(0, u.getVotes().intValue());
+		
+		Tag t = new Tag("test");
+		t.setDao(dao);
+		t.voteUp(t.getId());
+		assertEquals(0, t.getVotes().intValue());		
 	}
 }

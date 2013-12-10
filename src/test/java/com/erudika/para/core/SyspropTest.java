@@ -17,10 +17,14 @@
  */
 package com.erudika.para.core;
 
+import com.erudika.para.persistence.DAO;
+import com.erudika.para.persistence.MockDAO;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Before;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -28,86 +32,48 @@ import static org.junit.Assert.*;
  */
 public class SyspropTest {
 	
-	public SyspropTest() {
-	}
+	private static DAO dao;
+	private static Sysprop s;
 	
-	@BeforeClass
-	public static void setUpClass() {
-	}
-	
-	@AfterClass
-	public static void tearDownClass() {
+	@Before
+	public void setUp() {
+		dao = new MockDAO();
+		s = new Sysprop("5");
+		s.setDao(dao);
+		s.addProperty("test1", "ok");
+		s.addProperty("test2", "nope");
+		s.addProperty("test3", "sure");
+		s.addProperty("test4", false);
+		s.addProperty("test5", 42);		
 	}
 
 	@Test
-	public void testAddProperty() {
+	public void testAddRemoveHasProperty() {
+		s.setProperties(null);
+		assertTrue(s.getProperties().isEmpty());
+		s.addProperty(null, "asd");
+		assertTrue(s.getProperties().isEmpty());
+		s.addProperty("123", "123").addProperty("123", "1234").addProperty("", "123");
+		assertTrue(s.getProperties().size() == 1);
+		assertFalse(s.hasProperty(""));
+		assertFalse(s.hasProperty(null));
+		assertFalse(s.hasProperty("141"));
+		assertTrue(s.hasProperty("123"));
+		s.removeProperty("123");
+		assertTrue(s.getProperties().isEmpty());		
 	}
 
 	@Test
 	public void testGetProperty() {
+		s.create();
+		Sysprop s1 = dao.read(s.getId());
+		assertEquals(s.getProperty("test5"), s1.getProperty("test5"));
+		assertEquals(s.getProperty("test4"), s1.getProperty("test4"));
+		assertEquals(s.getProperty("test3"), s1.getProperty("test3"));
+		assertEquals(s.getProperty("test2"), s1.getProperty("test2"));
+		assertEquals(s.getProperty("test1"), s1.getProperty("test1"));
+		assertFalse((Boolean) s1.getProperty("test4"));
+		assertTrue(s1.getProperty("test5") == 42);
 	}
 
-	@Test
-	public void testRemoveProperty() {
-	}
-
-	@Test
-	public void testHasProperty() {
-	}
-
-	@Test
-	public void testIsSysprop() {
-	}
-
-	@Test
-	public void testGetProperties() {
-	}
-
-	@Test
-	public void testSetProperties() {
-	}
-
-	@Test
-	public void testLink() {
-	}
-
-	@Test
-	public void testUnlink() {
-	}
-
-	@Test
-	public void testUnlinkAll() {
-	}
-
-	@Test
-	public void testGetAllLinks_Class() {
-	}
-
-	@Test
-	public void testGetAllLinks_5args() {
-	}
-
-	@Test
-	public void testIsLinked() {
-	}
-
-	@Test
-	public void testCountLinks() {
-	}
-
-	@Test
-	public void testGetChildren_Class() {
-	}
-
-	@Test
-	public void testGetChildren_5args() {
-	}
-
-	@Test
-	public void testDeleteChildren() {
-	}
-
-	@Test
-	public void testGetLinkedObjects() {
-	}
 }

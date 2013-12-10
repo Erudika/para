@@ -21,7 +21,6 @@ import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
 import static com.erudika.para.core.PObject.classname;
 import com.erudika.para.utils.Config;
-import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
 
 /**
@@ -57,7 +56,7 @@ public class Linker extends PObject{
 		setName(classname1 + Config.SEPARATOR + classname2);
 		setId(classname1 + Config.SEPARATOR + id1 + Config.SEPARATOR + classname2 + Config.SEPARATOR + id2);
 	}
-		
+	
 	public String getId2() {
 		return id2;
 	}
@@ -90,12 +89,6 @@ public class Linker extends PObject{
 		this.classname2 = classname2;
 	}
 	
-	public String create() {
-		if(StringUtils.isBlank(getId()) || StringUtils.isBlank(getName()) || 
-				StringUtils.isBlank(id1) || StringUtils.isBlank(id2)) return null;
-		return super.create();
-	}
-
 	public String getMetadata() {
 		return metadata;
 	}
@@ -106,14 +99,14 @@ public class Linker extends PObject{
 
 //	public void delete() {
 //		ArrayList<String> keys = new ArrayList<String>();
-//		for (PObject link : search.indTwoTerms(getClassname(), null, null, "id1", id1, "id2", id2)) {
+//		for (PObject link : search.findTwoTerms(getPlural(), null, null, "id1", id1, "id2", id2)) {
 //			keys.add(link.getId());
 //		}
 //		AWSDynamoDAO.getInstance().deleteAll(keys);
 //	}
 	
 	public boolean exists(){
-//		return search.getCount(getClassname(), DAO.CN_ID, getId()) > 0;
+//		return search.getCount(getPlural(), DAO.CN_ID, getId()) > 0;
 		return getDao().read(getId()) != null;
 	}
 	

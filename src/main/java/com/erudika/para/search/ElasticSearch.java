@@ -99,7 +99,7 @@ public class ElasticSearch implements Search {
 					prepareGetAliases(Config.INDEX_ALIAS).execute().actionGet();
 			Map<String, List<AliasMetaData>> aliases = get.getAliases();
 			if(aliases.size() > 1){
-				logger.warn("More than one index for alias {0}", new Object[]{Config.INDEX_ALIAS});
+				logger.warn("More than one index for alias {}", Config.INDEX_ALIAS);
 			}else{
 				for (Map.Entry<String, List<AliasMetaData>> entry : aliases.entrySet()) {
 					INDEX_NAME = entry.getKey();
@@ -169,7 +169,9 @@ public class ElasticSearch implements Search {
 	********************************************/
 	
 	private XContentBuilder getVoteMapping() throws Exception{
-		return XContentFactory.jsonBuilder().startObject().startObject(PObject.classname(Vote.class)).
+		return XContentFactory.jsonBuilder().
+			startObject().
+				startObject(PObject.classname(Vote.class)).
 					startObject("_ttl").
 						field("enabled", true).
 					endObject().
@@ -178,7 +180,9 @@ public class ElasticSearch implements Search {
 	}
 	
 	private XContentBuilder getAddressMapping() throws Exception{
-		return XContentFactory.jsonBuilder().startObject().startObject(PObject.classname(Address.class)).
+		return XContentFactory.jsonBuilder().
+			startObject().
+				startObject(PObject.classname(Address.class)).
 					startObject("properties").
 						startObject("latlng").
 							field("type", "geo_point").
@@ -190,7 +194,9 @@ public class ElasticSearch implements Search {
 	}
 	
 	private XContentBuilder getTagMapping() throws Exception{
-		return XContentFactory.jsonBuilder().startObject().startObject(PObject.classname(Tag.class)).
+		return XContentFactory.jsonBuilder().
+			startObject().
+				startObject(PObject.classname(Tag.class)).
 					startObject("properties").
 						startObject("tag").
 							field("type", "string").
@@ -212,7 +218,7 @@ public class ElasticSearch implements Search {
 		Map<String, Object> data = Utils.getAnnotatedFields(so, Stored.class, null);
 		try {
 			IndexRequestBuilder irb = getSearchClient().prepareIndex(Config.INDEX_ALIAS, 
-					(StringUtils.isBlank(type) ? so.getClassname() : type), so.getId()).setSource(data);
+					(StringUtils.isBlank(type) ? so.getPlural() : type), so.getId()).setSource(data);
 			if(ttl > 0) irb.setTTL(ttl);
 			irb.execute();
 		} catch (Exception e) {
@@ -235,7 +241,7 @@ public class ElasticSearch implements Search {
 		if(objects == null) return ;
 		BulkRequestBuilder brb = getSearchClient().prepareBulk();
 		for (ParaObject pObject : objects) {
-			brb.add(getSearchClient().prepareIndex(Config.INDEX_ALIAS, pObject.getClassname(), 
+			brb.add(getSearchClient().prepareIndex(Config.INDEX_ALIAS, pObject.getPlural(), 
 						pObject.getId()).setSource(Utils.getAnnotatedFields(pObject, Stored.class, null)));
 		}
 		brb.execute();
@@ -246,7 +252,7 @@ public class ElasticSearch implements Search {
 		if(objects == null) return ;
 		BulkRequestBuilder brb = getSearchClient().prepareBulk();
 		for (ParaObject pObject : objects) {
-			brb.add(getSearchClient().prepareDelete(Config.INDEX_ALIAS, pObject.getClassname(), pObject.getId()));
+			brb.add(getSearchClient().prepareDelete(Config.INDEX_ALIAS, pObject.getPlural(), pObject.getId()));
 		}
 		brb.execute();
 	}
@@ -333,7 +339,7 @@ public class ElasticSearch implements Search {
 			deleteIndex(getIndexName());
 			if(!existsIndex(newIndex)) createIndex(newIndex);
 			
-			logger.info("rebuildIndex(): {0}", new Object[]{newIndex});
+			logger.info("rebuildIndex(): {}", newIndex);
 
 			BulkRequestBuilder brb = getSearchClient().prepareBulk();
 			BulkResponse resp = null;
@@ -344,7 +350,7 @@ public class ElasticSearch implements Search {
 			if (!list.isEmpty()) {
 				do{
 					for (ParaObject obj : list) {
-						brb.add(getSearchClient().prepareIndex(newIndex, obj.getClassname(), obj.getId()).
+						brb.add(getSearchClient().prepareIndex(newIndex, obj.getPlural(), obj.getId()).
 								setSource(Utils.getAnnotatedFields(obj, Stored.class, null)));
 						lastKey = obj.getId();
 					}
@@ -352,8 +358,8 @@ public class ElasticSearch implements Search {
 					// bulk index 1000 objects
 					if(brb.numberOfActions() > 100){
 						resp = brb.execute().actionGet();
-						logger.info("rebuildIndex(): indexed {0}, hasFailures: {1}", 
-								new Object[]{brb.numberOfActions(), resp.hasFailures()});
+						logger.info("rebuildIndex(): indexed {}, hasFailures: {}", 
+								brb.numberOfActions(), resp.hasFailures());
 					}
 				}while(!(list = dao.readPage(DAO.OBJECTS, lastKey)).isEmpty());
 			}
@@ -361,8 +367,8 @@ public class ElasticSearch implements Search {
 			// anything left after loop? index that too
 			if (brb.numberOfActions() > 0) {
 				resp = brb.execute().actionGet();
-				logger.info("rebuildIndex(): indexed {0}, hasFailures: {1}", 
-						new Object[]{brb.numberOfActions(), resp.hasFailures()});
+				logger.info("rebuildIndex(): indexed {}, hasFailures: {}", 
+						brb.numberOfActions(), resp.hasFailures());
 			}
 			
 			// create index alias NEW_INDEX -> INDEX_ALIAS, OLD_INDEX -> X
@@ -464,10 +470,10 @@ public class ElasticSearch implements Search {
 	@Override
 	public <P extends ParaObject> ArrayList<P> findQuery(String type, MutableLong page, MutableLong itemcount, 
 			String query, String sortfield, boolean reverse, int max){
-		return searchQuery(type, page, itemcount, QueryBuilders.queryString(query), null, 
+		return searchQuery(type, page, itemcount, QueryBuilders.queryString(query).allowLeadingWildcard(false), null, 
 				sortfield, reverse, max);
 	}
-
+	
 	@Override
 	public <P extends ParaObject> ArrayList<P> findWildcard(String type, MutableLong page, MutableLong itemcount, 
 			String field, String wildcard){
@@ -684,7 +690,7 @@ public class ElasticSearch implements Search {
 	private <P extends ParaObject> P fromSource(String type, Map<String, Object> source) throws Exception{
 		Class<P> clazz = (Class<P>) Utils.toClass(type);
 		if(clazz != null && source != null && !source.isEmpty()){
-			P obj = clazz.newInstance();
+			P obj = clazz.getConstructor().newInstance();
 			BeanUtils.populate(obj, source);
 			return obj;
 		}else{

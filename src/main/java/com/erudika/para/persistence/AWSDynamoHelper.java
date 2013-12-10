@@ -35,7 +35,7 @@ public class AWSDynamoHelper {
 	public static void start(File dir) {
 		if(called) return;
 		try {
-			Path p = FileSystems.getDefault().getPath(System.getProperty("dynamodir", Config.getConfig().get("dynamodir")));
+			Path p = FileSystems.getDefault().getPath(System.getProperty("dynamodir", Config.getConfigMap().get("dynamodir")));
 			if(dir == null) dir = p.toFile();
 			String[] cmd = new String[]{ String.format("%s%sbin%<sjava", 
 					System.getProperty("java.home"), System.getProperty("file.separator")), 

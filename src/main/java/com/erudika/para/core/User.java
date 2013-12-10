@@ -17,8 +17,10 @@
  */
 package com.erudika.para.core;
 
+import com.erudika.para.annotations.Email;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
+import com.erudika.para.i18n.CurrencyUtils;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
@@ -31,7 +33,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.hibernate.validator.constraints.Email;
 import org.hibernate.validator.constraints.NotBlank;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -44,8 +45,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class User extends PObject implements UserDetails{
 	private static final long serialVersionUID = 1L;
-	
-	public static int TOKEN_EXPIRES_AFTER = 20 * 60 * 1000; //20 minutes in milliseconds
 	
 	public static enum Groups{
 		USERS, MODS, ADMINS;
@@ -68,9 +67,13 @@ public class User extends PObject implements UserDetails{
 	@Stored @Locked private Boolean active;
 	@Stored @NotBlank @Email private String email;
 	@Stored private String authstamp;
-	@NotBlank @Size(min=Config.MIN_PASS_LENGTH, max=255) private transient String password;	// for validation purposes only
+	@Stored private String currency;
+	@Stored private Boolean pro;
+	@Stored private Integer plan;
 	
-	private transient String currentIdentifier;
+	@NotBlank @Size(min=Config.MIN_PASS_LENGTH, max=255) 
+	private transient String password;	// for validation purposes only? 
+	
 	private transient String authtoken;
 	
 	public User() {
@@ -82,6 +85,26 @@ public class User extends PObject implements UserDetails{
 	
 	public PObject getParent(){
 		return this;
+	}
+
+	public Integer getPlan() {
+		return plan;
+	}
+
+	public void setPlan(Integer plan) {
+		this.plan = plan;
+	}
+	
+	public boolean isPro(){
+		return pro != null && pro == true;
+	}
+	
+	public Boolean getPro() {
+		return pro;
+	}
+
+	public void setPro(Boolean pro) {
+		this.pro = pro;
 	}
 	
 	public String getAuthstamp(){
@@ -98,14 +121,6 @@ public class User extends PObject implements UserDetails{
 
 	public void setAuthtoken(String authtoken) {
 		this.authtoken = authtoken;
-	}
-	
-	public String getCurrentIdentifier() {
-		return currentIdentifier;
-	}
-
-	public void setCurrentIdentifier(String currentIdentifier) {
-		this.currentIdentifier = currentIdentifier;
 	}
 	
 	public Boolean getActive() {
@@ -137,10 +152,17 @@ public class User extends PObject implements UserDetails{
 	}
 
 	public void setEmail(String email) {
-		if(!StringUtils.isBlank(this.email) && !StringUtils.isBlank(email) && !this.email.equals(email)){
-			changeIdentifier(this.email, email);
-		}
 		this.email = email;
+	}
+
+	public String getCurrency() {
+		return currency;
+	}
+
+	public void setCurrency(String currency) {
+		currency = StringUtils.upperCase(currency);
+		if(!CurrencyUtils.getInstance().isValidCurrency(currency)) currency = "EUR";
+		this.currency = currency;
 	}
 	
 	public String create() {
@@ -156,20 +178,16 @@ public class User extends PObject implements UserDetails{
 		
 		setActive(true);	
 		
-		if(super.create() != null){
+		if(getDao().create(this) != null){
 			createIdentifier(getId(), getIdentifier(), getPassword());
 		}
 		
 		return getId();
 	}
 
-	public void update() {
-		super.update();
-	}
-
 	public void delete() {
 		if(getId() != null){
-			super.delete();
+			getDao().delete(this);
 			for (String ident1 : getIdentifiers()) {
 				deleteIdentifier(ident1);
 			}
@@ -187,11 +205,16 @@ public class User extends PObject implements UserDetails{
 	}
 	
 	public void attachIdentifier(String identifier){
+		if(!this.exists()) return;
 		createIdentifier(getId(), identifier);
 	}
 
 	public void detachIdentifier(String identifier){
-		deleteIdentifier(identifier);
+		if(StringUtils.equals(identifier, getIdentifier())) return;
+		Sysprop s = getDao().read(identifier);
+		if(s != null && StringUtils.equals(getId(), s.getCreatorid())){
+			deleteIdentifier(identifier);
+		}
 	}
 	
 	public boolean isFacebookUser(){
@@ -213,11 +236,11 @@ public class User extends PObject implements UserDetails{
 	
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 		if(isAdmin()){
-			return Collections.singleton(new SimpleGrantedAuthority("ROLE_ADMIN"));
+			return Collections.singleton(new SimpleGrantedAuthority(Roles.ADMIN.toString()));
 		}else if(isModerator()){
-			return Collections.singleton(new SimpleGrantedAuthority("ROLE_MOD"));
+			return Collections.singleton(new SimpleGrantedAuthority(Roles.MOD.toString()));
 		}else{
-			return Collections.singleton(new SimpleGrantedAuthority("ROLE_USER"));
+			return Collections.singleton(new SimpleGrantedAuthority(Roles.USER.toString()));
 		}
 	}
 
@@ -249,70 +272,82 @@ public class User extends PObject implements UserDetails{
 		this.password = password;
 	}
 	
-	public static User readUserForIdentifier(String identifier){
-		if(StringUtils.isBlank(identifier)) return null;
-		if(NumberUtils.isDigits(identifier)) identifier = Config.FB_PREFIX + identifier;
-		Sysprop s = new Sysprop();
-		s = s.getDao().read(identifier);
-		if(s == null || s.getCreatorid() == null) return null;
-		User user = s.getDao().read(s.getCreatorid());
-		if(user != null ){
-			user.setCurrentIdentifier(identifier);
-			user.setAuthtoken((String) s.getProperty(DAO.CN_AUTHTOKEN));
+	public static User readUserForIdentifier(User u){
+		if(u == null || StringUtils.isBlank(u.getIdentifier())) return null;
+		String identifier = u.getIdentifier();
+		if(NumberUtils.isDigits(identifier)) identifier = Config.FB_PREFIX + u.getIdentifier();
+		Sysprop s = u.getDao().read(identifier);
+		if(s != null && s.getCreatorid() != null){
+			User user = u.getDao().read(s.getCreatorid());
+			if(user != null ){
+				if(!identifier.equals(user.getIdentifier())){
+					user.setIdentifier(identifier);
+					user.update();
+				}
+				user.setAuthtoken((String) s.getProperty(DAO.CN_AUTHTOKEN));
+				return user;
+			}
 		}
-		return user;
+		return null;
     }
 	
-	public static boolean passwordMatches(String password, String identifier){
-		if(StringUtils.isBlank(password)) return false;
-		Sysprop s = new Sysprop();
-		s = s.getDao().read(identifier);
-		if(s == null) return false;
-		String salt = (String) s.getProperty(DAO.CN_SALT);
-		String storedHash = (String) s.getProperty(DAO.CN_PASSWORD);
-		String givenHash = Utils.HMACSHA(password, salt);
-		return StringUtils.equals(givenHash, storedHash);
+	public static boolean passwordMatches(User u){
+		if(u == null) return false;
+		String password = u.getPassword();
+		String identifier = u.getIdentifier();
+		if(StringUtils.isBlank(password) || StringUtils.isBlank(identifier)) return false;
+		Sysprop s = u.getDao().read(identifier);
+		if(s != null){
+			String salt = (String) s.getProperty(DAO.CN_SALT);
+			String storedHash = (String) s.getProperty(DAO.CN_PASSWORD);
+			String givenHash = Utils.HMACSHA(password, salt);
+			return StringUtils.equals(givenHash, storedHash);
+		}
+		return false;
 	}
 	
 	public final String generatePasswordResetToken(){
 		if(StringUtils.isBlank(identifier)) return "";
-		Sysprop s = new Sysprop();
-		s = s.getDao().read(identifier);
-		if(s == null) return "";
-		String salt = (String) s.getProperty(DAO.CN_SALT);
-		String token = Utils.HMACSHA(Long.toString(System.currentTimeMillis()), salt);
-		s.addProperty(DAO.CN_RESET_TOKEN, token);
-		s.update();
-		return token;
+		Sysprop s = getDao().read(identifier);
+		if(s != null){
+			String salt = (String) s.getProperty(DAO.CN_SALT);
+			String token = Utils.HMACSHA(Long.toString(System.currentTimeMillis()), salt);
+			s.addProperty(DAO.CN_RESET_TOKEN, token);
+			getDao().update(s);
+			return token;
+		}
+		return "";
 	}
 	
-	public final boolean resetPassword(String identifier, String token, String newpass){
+	public final boolean resetPassword(String token, String newpass){
 		if(StringUtils.isBlank(newpass) || StringUtils.isBlank(token)) return false;
+		if(newpass.length() < Config.MIN_PASS_LENGTH) return false;
 		Sysprop s = getDao().read(identifier);
 		if(s != null && s.hasProperty(DAO.CN_RESET_TOKEN)){
 			String storedToken = (String) s.getProperty(DAO.CN_RESET_TOKEN);
 			long now = System.currentTimeMillis();
-			if(StringUtils.equals(storedToken, token) && (s.getTimestamp() + TOKEN_EXPIRES_AFTER) > now){
+			long timeout = Config.PASSRESET_TIMEOUT_SEC * 1000;
+			if(StringUtils.equals(storedToken, token) && (s.getTimestamp() + timeout) > now){
 				s.removeProperty(DAO.CN_RESET_TOKEN);
 				String salt = getPassSalt();
 				s.addProperty(DAO.CN_SALT, salt);
 				s.addProperty(DAO.CN_PASSWORD, getPassHash(newpass, salt));
-				s.update();
+				getDao().update(s);
 				return true;
 			}
 		}
 		return false;
 	}
 		
-	private void changeIdentifier(String oldIdent, String newIdent){
-		if(StringUtils.isBlank(oldIdent) || StringUtils.isBlank(newIdent) || oldIdent.equalsIgnoreCase(newIdent)) return;
-		Sysprop s = getDao().read(oldIdent);
-		if(s != null){
-			s.delete();
-			s.setId(newIdent);
-			s.create();
-		}
-	}
+//	private void changeIdentifier(String oldIdent, String newIdent){
+//		if(StringUtils.isBlank(oldIdent) || StringUtils.isBlank(newIdent) || oldIdent.equalsIgnoreCase(newIdent)) return;
+//		Sysprop s = getDao().read(oldIdent);
+//		if(s != null){
+//			getDao().delete(s);
+//			s.setId(newIdent);
+//			getDao().create(s);
+//		}
+//	}
 	
 	private boolean createIdentifier(String userid, String newIdent){
 		return createIdentifier(userid, newIdent, null);
@@ -331,13 +366,13 @@ public class User extends PObject implements UserDetails{
 			s.addProperty(DAO.CN_SALT, salt);
 			s.addProperty(DAO.CN_PASSWORD, getPassHash(password, salt));
 		}
-		return s.create() != null;
+		return getDao().create(s) != null;
 	}
 	
 	private void deleteIdentifier(String ident){
 		if(StringUtils.isBlank(ident)) return;
-		if(NumberUtils.isDigits(ident)) ident = Config.FB_PREFIX + ident;
-		new Sysprop(ident).delete();
+		if(NumberUtils.isDigits(ident)) ident = Config.FB_PREFIX + ident;		
+		getDao().delete(new Sysprop(ident));
 	}
 	
 	private String getPassSalt(){

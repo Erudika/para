@@ -22,6 +22,7 @@ import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
@@ -46,16 +47,16 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) 
 			throws AuthenticationException, IOException, ServletException {
 		String requestURI = request.getRequestURI();
-		UserAuthentication userAuth = null;
-		User user = null;
+		Authentication userAuth = null;
+		User user = new User();
 		
 		if(requestURI.endsWith(PASSWORD_ACTION)){
-			String email = request.getParameter(EMAIL);
-			String pass = request.getParameter(PASSWORD);
+			user.setIdentifier(request.getParameter(EMAIL));
+			user.setPassword(request.getParameter(PASSWORD));
 			
-			if(User.passwordMatches(pass, email)){
+			if(User.passwordMatches(user) && StringUtils.contains(user.getIdentifier(), "@")){
 				//success!
-				user = User.readUserForIdentifier(email);
+				user = User.readUserForIdentifier(user);
 				userAuth = new UserAuthentication(user);
 			}
 		}

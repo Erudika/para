@@ -20,39 +20,43 @@ package com.erudika.para.core;
 import com.erudika.para.annotations.Stored;
 import static com.erudika.para.core.Votable.VoteType.*;
 import com.erudika.para.utils.Config;
+import javax.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.NotBlank;
 
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public abstract class Vote extends PObject{
+public class Vote extends PObject {
 
 	@Stored @NotBlank private String type;
+	@Stored @NotNull private Long expiresAfter;	
+
+	public Vote() {
+	}
+
+	public Vote(String voterid, String voteeid, String type) {
+		setName(getClassname());
+		setCreatorid(voterid);
+		setParentid(voteeid);
+		setTimestamp(System.currentTimeMillis());
+		this.type = type;
+		this.expiresAfter = Config.VOTE_EXPIRES_AFTER_SEC;
+	}
+
+	@Override
+	public final String getPlural() {
+		return "votes";
+	}
 	
 	@Override
 	public final String getId() {
 		if(getCreatorid() != null && getParentid() != null && super.getId() == null){
-			setId(getCreatorid().concat(Config.SEPARATOR).concat(getClassname()).concat(getParentid()));
+			setId(getClassname().concat(Config.SEPARATOR).concat(getCreatorid()).concat(Config.SEPARATOR).concat(getParentid()));
 		}
 		return super.getId();
 	}
-
-	@Override
-	public final void setId(String id) {
-		if(super.getId() == null) super.setId(id);
-	}
-	
-	@Override
-	public final String getClassname() {
-		return super.getClassname();
-	}
-
-	@Override
-	public final void setClassname(String classname) {
-		super.setClassname(classname);
-	}
-	
+		
 	public Vote up(){
 		this.type = UP.toString();
 		return this;
@@ -70,22 +74,30 @@ public abstract class Vote extends PObject{
 	public void setType(String type) {
 		this.type = type;
 	}
-		
-	@Override
-	public final void update() {
-		// NOOP
+
+	public Long getExpiresAfter() {
+		if(expiresAfter == null) 
+			expiresAfter = Config.VOTE_EXPIRES_AFTER_SEC;
+		return expiresAfter;
+	}
+
+	public void setExpiresAfter(Long expiresAfter) {
+		this.expiresAfter = expiresAfter;
 	}
 	
-	@Override
-	public abstract String create();
-
-	@Override
-	public abstract void delete();
-
-	/**
-	 * Amends the vote after it has been cast.
-	 * @return true if the vote was amended
-	 */
-	public abstract boolean amendVote();
+	public boolean isExpired(){
+		if(getTimestamp() == null || getExpiresAfter() == 0) return false;
+		long timestamp = getTimestamp();
+		long expires = (getExpiresAfter() * 1000);
+		long now = System.currentTimeMillis();
+		return (timestamp + expires) <= now;
+	}
 	
+	public boolean isAmendable(){
+		if(getTimestamp() == null) return false;
+		long timestamp = getTimestamp();
+		long now = System.currentTimeMillis();
+		// check timestamp for recent correction,
+		return (timestamp + (Config.VOTE_LOCKED_AFTER_SEC * 1000)) > now;
+	}
 }

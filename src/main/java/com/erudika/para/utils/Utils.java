@@ -17,10 +17,13 @@
  */
 package com.erudika.para.utils;
 
+import com.erudika.para.annotations.Email;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.core.PObject;
 import com.erudika.para.core.ParaObject;
+import com.erudika.para.persistence.DAO;
+import static com.erudika.para.persistence.DAO.CN_CLASSNAME;
 import com.github.rjeschke.txtmark.Configuration;
 import com.github.rjeschke.txtmark.Processor;
 import java.io.UnsupportedEncodingException;
@@ -81,13 +84,13 @@ import org.apache.commons.lang3.time.DateFormatUtils;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ObjectNode;
+import org.codehaus.jackson.type.TypeReference;
 import org.geonames.FeatureClass;
 import org.geonames.Style;
 import org.geonames.Toponym;
 import org.geonames.ToponymSearchCriteria;
 import org.geonames.ToponymSearchResult;
 import org.geonames.WebService;
-import org.hibernate.validator.constraints.Email;
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.jsoup.Jsoup;
@@ -448,36 +451,25 @@ public final class Utils {
 	
 	public static void setStateParam(String name, String value, HttpServletRequest req,
 			HttpServletResponse res, boolean httpOnly){
-//		HttpSession session = useSessions ? req.getSession() : null;
 		setRawCookie(name, value, req, res, httpOnly, -1);
 	}
 	
-	public static String getStateParam(String name, HttpServletRequest req, 
-			HttpServletResponse res){
-//		HttpSession session = useSessions ? req.getSession() : null;
+	public static String getStateParam(String name, HttpServletRequest req){
 		String param = getCookieValue(req, name);
 		return param;
 	}
 	
 	public static void removeStateParam(String name, HttpServletRequest req, 
 			HttpServletResponse res){
-//		HttpSession session = useSessions ? req.getSession() : null;
 		setRawCookie(name, "", req, res, false, 0);
 	}
 	
 	public static void setRawCookie(String name, String value, HttpServletRequest req, 
 			HttpServletResponse res, boolean httpOnly, int maxAge){
-//		long now = System.currentTimeMillis();
-//		String date = (expire < 0) ? "Thu, 01-Jan-1970 00:00:01" : 
-//				DateFormatUtils.format((expire == 0L) ? now + (SESSION_TIMEOUT_SEC * 1000) : now + expire, 
-//				"EEE, dd-MMM-yyyy HH:mm:ss", TimeZone.getTimeZone("GMT"));
-//		String httponly = httpOnly ? "; HttpOnly" : "";
-//		String cookie = name+"="+value+"; Path=/; Expires="+date+" GMT"+httponly;
-//		res.setHeader("Set-Cookie", cookie);
 		if(StringUtils.isBlank(name)) return;
         Cookie cookie = new Cookie(name, value);
 		cookie.setHttpOnly(httpOnly);
-		cookie.setMaxAge(maxAge < 0 ? Config.SESSION_TIMEOUT_SEC : maxAge);
+		cookie.setMaxAge(maxAge < 0 ? Config.SESSION_TIMEOUT_SEC.intValue() : maxAge);
 		cookie.setPath("/");
 		cookie.setSecure(req.isSecure());
 		res.addCookie(cookie);
@@ -556,20 +548,25 @@ public final class Utils {
 		}
 	}
 	
-	// quick & dirty
-	public static String pluralToSingular(String plural){
-		return StringUtils.isBlank(plural) ? plural : 
-				(plural.endsWith("ses") ? StringUtils.removeEndIgnoreCase(plural, "es") : 
-				(plural.endsWith("ies") ? StringUtils.removeEndIgnoreCase(plural, "ies") + "y" : 
-										  StringUtils.removeEndIgnoreCase(plural, "s") ) );
+	public static String getObjectLink(ParaObject obj, boolean includeName, boolean includeId){
+		if(obj == null) return "/";		
+		if(includeId && obj.getId() != null){
+			return (includeName && !StringUtils.isBlank(obj.getName())) ? 
+					obj.getObjectURL().concat("-").concat(urlEncode(spacesToDashes(obj.getName()))) : obj.getObjectURL();
+		}else{
+			return "/".concat(obj.getPlural());
+		}
 	}
 	
+	// quick & dirty
 	public static String singularToPlural(String singul){
 		return StringUtils.isBlank(singul) ? singul : 
 				(singul.endsWith("s") ? singul + "es" : 
 				(singul.endsWith("y") ? StringUtils.removeEndIgnoreCase(singul, "y") + "ies" : 
 										singul + "s" ) );
 	}
+	
+	
 	
 	/********************************************
 	 *	     REFLECTION & CLASS UTILS 
@@ -578,7 +575,7 @@ public final class Utils {
 	public static <P extends ParaObject> void populate(P transObject, Map<String, String[]> paramMap) {
 		if (transObject == null || paramMap.isEmpty()) return;
 		Class<Locked> locked = (paramMap.containsKey("id")) ? Locked.class : null;
-		HashMap<String, Object> fields = getAnnotatedFields(transObject, Stored.class, locked);
+		Map<String, Object> fields = getAnnotatedFields(transObject, Stored.class, locked);
 		// populate an object with converted param values from param map.
 		try {
 			for (Map.Entry<String, String[]> ks : paramMap.entrySet()) {
@@ -602,17 +599,21 @@ public final class Utils {
 				Utils.toClass(so.getClassname()));
 	}
 	
-	public static HashMap<String, Object> getAnnotatedFields(ParaObject bean,
+	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P bean,
 			Class<? extends Annotation> anno, Class<? extends Annotation> filter) {
 		HashMap<String, Object> map = new HashMap<String, Object>();
+		if(bean == null) return map;
 		try {
-			if(bean != null || bean.getClass().getSuperclass() != null){
-				ArrayList<Field> fields = getAllDeclaredFields(bean.getClass());
-				// filter transient fields and those without annotations
-				for (Field field : fields) {
-					if(!Modifier.isTransient(field.getModifiers())){
-						if(field.isAnnotationPresent(anno) && ((filter == null) ? true : !field.isAnnotationPresent(filter))){
-							map.put(field.getName(), PropertyUtils.getProperty(bean, field.getName()));
+			ArrayList<Field> fields = getAllDeclaredFields(bean.getClass());
+			// filter transient fields and those without annotations
+			for (Field field : fields) {
+				if(!Modifier.isTransient(field.getModifiers())){
+					if(field.isAnnotationPresent(anno) && ((filter == null) ? true : !field.isAnnotationPresent(filter))){
+						Object prop = PropertyUtils.getProperty(bean, field.getName());
+						if(prop instanceof Map){
+							map.put(field.getName(), jsonMapper.writeValueAsString(prop));
+						}else{
+							map.put(field.getName(), prop);
 						}
 					}
 				}
@@ -622,6 +623,32 @@ public final class Utils {
 		}
 
 		return map;
+	}
+	
+	public static <P extends ParaObject> P setAnnotatedFields(Map<String, Object> data){
+		if(data == null || data.isEmpty() || !data.containsKey(DAO.CN_CLASSNAME)) return null;
+		P bean = null;
+		try {
+			Class<P> clazz = (Class<P>) Utils.toClass((String) data.get(CN_CLASSNAME));
+			if(clazz != null){
+				bean = clazz.getConstructor().newInstance();
+				ArrayList<Field> fields = getAllDeclaredFields(clazz);
+				for (Field field : fields) {
+					String name = field.getName();
+					Object value = data.get(name);
+					if (value != null && Map.class.isAssignableFrom(field.getType())) {
+						Map<String, Object> map = jsonMapper.readValue(value.toString(), 
+								new TypeReference<Map<String, Object>>() {});
+						BeanUtils.setProperty(bean, name, map);
+					} else {
+						BeanUtils.setProperty(bean, name, value);
+					}					
+				}
+			}
+		} catch (Exception ex) {
+			logger.error(null, ex);
+		}
+		return bean;
 	}
 	
 	public static Class<? extends ParaObject> toClass(String classname){
@@ -670,6 +697,7 @@ public final class Utils {
 			String prop = "'".concat(constraintViolation.getPropertyPath().toString()).concat("'");
 			list.add(prop.concat(" ").concat(constraintViolation.getMessage()));
 		}
+		logger.debug("Invalid object. ", list);
 		return list.toArray(new String[list.size()]);
 	}
 	
@@ -841,7 +869,7 @@ public final class Utils {
 	
 	public static <P extends ParaObject> Response getUpdateResponse(P object, P newContent){
 		if(object != null){
-			HashMap<String, Object> propsMap = Utils.getAnnotatedFields(newContent, Stored.class, Locked.class);
+			Map<String, Object> propsMap = Utils.getAnnotatedFields(newContent, Stored.class, Locked.class);
 			try {
 				for (Map.Entry<String, Object> entry : propsMap.entrySet()) {
 					if(entry.getValue() != null){

@@ -17,9 +17,11 @@
  */
 package com.erudika.para.core;
 
+import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.utils.Config;
 import org.apache.commons.lang3.StringUtils;
+import org.hibernate.validator.constraints.NotBlank;
 
 /**
  *
@@ -28,16 +30,17 @@ import org.apache.commons.lang3.StringUtils;
 public class Tag extends PObject{
 	private static final long serialVersionUID = 1L;
 
-	@Stored private String tag;
+	@Stored @NotBlank @Locked private String tag;
 	@Stored private Integer count;
 
 	public Tag(){
+		this(null);
 	}
 	
 	public Tag(String tag) {
 		setName(tag);
 		setId(id(tag));
-		this.count = 1;
+		this.count = 0;
 		this.tag = tag;
 	}
 	
@@ -45,17 +48,16 @@ public class Tag extends PObject{
 		if(StringUtils.isBlank(tag)) return null;
 		return PObject.classname(Tag.class).concat(Config.SEPARATOR).concat(StringUtils.trimToEmpty(tag));
 	}
-	
-	@Override
-	public final String getClassname() {
-		return super.getClassname();
-	}
 
 	@Override
-	public final void setClassname(String classname) {
-		super.setClassname(classname);
+	public String getObjectURL() {
+		String realid = getId();
+		setId(tag);
+		String url = super.getObjectURL();
+		setId(realid);
+		return url;
 	}
-	
+			
 	public Integer getCount() {
 		return count;
 	}
@@ -69,6 +71,8 @@ public class Tag extends PObject{
 	}
 
 	public void setTag(String tag) {
+		if(tag == null) return;
+		setId(id(tag));
 		this.tag = tag;
 	}
 
@@ -77,14 +81,10 @@ public class Tag extends PObject{
 	}
 
 	public void decrementCount(){
-		if(this.count <= 1)
+		this.count--;
+		if(this.count < 1 && exists()){
 			delete();
-		else	
-			this.count--;
-	}
-	
-	public static boolean isValidTagString(String tags){
-		return !StringUtils.isBlank(tags) && tags.startsWith(",") && tags.endsWith(",");
+		}
 	}
 
 	public boolean equals(Object obj) {
@@ -95,10 +95,10 @@ public class Tag extends PObject{
 			return false;
 		}
 		final Tag other = (Tag) obj;
-		if ((this.tag == null) ? (other.tag != null) : !this.tag.equalsIgnoreCase(other.tag)) {
-			return false;
+		if (!StringUtils.equalsIgnoreCase(tag, other.tag)) {
+			return true;
 		}
-		return true;
+		return false;
 	}
 
 	public int hashCode() {

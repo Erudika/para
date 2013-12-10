@@ -164,8 +164,7 @@ public class AWSQueue implements Queue {
 	
 	private void logException(AmazonServiceException ase){
 		logger.error("AmazonServiceException: error={0}, statuscode={1}, "
-			+ "awserrcode={2}, errtype={3}, reqid={4}", 
-			new Object[]{ase.getMessage(), ase.getStatusCode(), 
-				ase.getErrorCode(), ase.getErrorType(), ase.getRequestId()});
+			+ "awserrcode={2}, errtype={3}, reqid={4}", ase.getMessage(), ase.getStatusCode(), 
+			ase.getErrorCode(), ase.getErrorType(), ase.getRequestId());
 	}
 }

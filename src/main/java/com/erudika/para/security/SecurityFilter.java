@@ -17,7 +17,6 @@
  */
 package com.erudika.para.security;
 
-import com.erudika.para.core.User;
 import com.erudika.para.utils.Utils;
 import java.io.IOException;
 import javax.servlet.FilterChain;
@@ -37,8 +36,6 @@ import org.springframework.web.filter.GenericFilterBean;
  */
 public class SecurityFilter extends GenericFilterBean{
 
-//	private static final boolean debug = false;
-	
 	public SecurityFilter() {
 	}
 
@@ -57,18 +54,6 @@ public class SecurityFilter extends GenericFilterBean{
 				response.setStatus(res.getStatus());
 			}else{
 				chain.doFilter(request, response);
-			}
-		}else if(StringUtils.equalsIgnoreCase(request.getMethod(), "POST")){
-			// anti-CSRF token validation
-			User user = SecurityUtils.getAuthenticatedUser();
-			String storedCSRFToken = SecurityUtils.getCSRFtoken(user);
-			String givenCSRFToken = request.getParameter("stoken");
-			
-			if(StringUtils.equals(storedCSRFToken, givenCSRFToken)){
-				chain.doFilter(request, response);
-			}else{
-				badrequest(response, request.getRemoteHost(), request.getRemoteAddr(), 
-						request.getHeader("User-Agent"), Utils.isAjaxRequest(request));
 			}
 		}else{
 			chain.doFilter(request, response);

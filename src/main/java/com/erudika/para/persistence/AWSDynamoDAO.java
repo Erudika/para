@@ -47,14 +47,12 @@ import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.dynamodbv2.model.UpdateItemRequest;
 import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.core.Sysprop;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.Map.Entry;
 import javax.inject.Singleton;
-import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,8 +85,6 @@ public class AWSDynamoDAO implements DAO {
 						withAttributeDefinitions(new AttributeDefinition().withAttributeName(CN_KEY).
 						withAttributeType(ScalarAttributeType.S)).
 						withProvisionedThroughput(new ProvisionedThroughput(1L, 1L)));
-
-
 			}
 		}
 	}
@@ -100,13 +96,12 @@ public class AWSDynamoDAO implements DAO {
 	@Override
 	public <P extends ParaObject> String create(P so){
 		if(so == null) return null;
-		if (!Utils.isValidObject(so)) return null;
 		if(StringUtils.isBlank(so.getId())) so.setId(Utils.getNewId());
 		if(so.getTimestamp() == null) so.setTimestamp(Utils.timestamp());
 
 		createRow(so.getId(), OBJECTS, toRow(so, null));
 		
-		logger.debug("DAO.create() {0}", new Object[]{so.getId()});
+		logger.debug("DAO.create() {}", so.getId());
 		return so.getId();
 	}
 	
@@ -116,7 +111,7 @@ public class AWSDynamoDAO implements DAO {
 		
 		P so = fromRow(readRow(key, OBJECTS));
 		
-		logger.debug("DAO.read() {0} -> {1}", new Object[]{key, so});
+		logger.debug("DAO.read() {} -> {}", key, so);
 		return so != null ? so : null;
 	}
 
@@ -127,7 +122,7 @@ public class AWSDynamoDAO implements DAO {
 		
 		updateRow(so.getId(), OBJECTS, toRow(so, Locked.class));
 		
-		logger.debug("DAO.update() {0}", new Object[]{so.getId()});
+		logger.debug("DAO.update() {}", so.getId());
 	}
 
 	@Override
@@ -136,7 +131,7 @@ public class AWSDynamoDAO implements DAO {
 		
 		deleteRow(so.getId(), OBJECTS);
 		
-		logger.debug("DAO.delete() {0}", new Object[]{so.getId()});
+		logger.debug("DAO.delete() {}", so.getId());
 	}
 
 	/********************************************
@@ -296,7 +291,7 @@ public class AWSDynamoDAO implements DAO {
 			}
 			
 			ScanResult result = ddb.scan(scanRequest);
-			logger.debug("readPage() CC: {0}", new Object[]{result.getConsumedCapacity()});
+			logger.debug("readPage() CC: {}", result.getConsumedCapacity());
 			
 			for (Map<String, AttributeValue> item : result.getItems()) {
 				P obj = fromRow(item);
@@ -338,6 +333,7 @@ public class AWSDynamoDAO implements DAO {
 		
 		List<WriteRequest> reqs = new ArrayList<WriteRequest>();
 		int batchSteps = 1;
+		long now = System.currentTimeMillis();
 		if((objects.size() > MAX_ITEMS_PER_BATCH)){
 			batchSteps = (objects.size() / MAX_ITEMS_PER_BATCH) + 
 					((objects.size() % MAX_ITEMS_PER_BATCH > 0) ? 1 : 0);
@@ -348,6 +344,7 @@ public class AWSDynamoDAO implements DAO {
 		for (int i = 0, j = 0; i < batchSteps; i++, j = 0) {
 			while (it.hasNext() && j < MAX_ITEMS_PER_BATCH) {
 				ParaObject object = it.next();
+				if(isUpdate) object.setUpdated(now);
 				Map<String, AttributeValue> row = toRow(object, (isUpdate ? Locked.class : null));
 				setRowKey(object.getId(), row);
 				reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(row)));
@@ -368,11 +365,11 @@ public class AWSDynamoDAO implements DAO {
 			List<Map<String, AttributeValue>> res = result.getResponses().get(OBJECTS);
 
 			for (Map<String, AttributeValue> item : res) results.put(item.get(CN_KEY).getS(), (P) fromRow(item));
-			logger.debug("batchGet() CC: {0}", new Object[]{result.getConsumedCapacity()});
+			logger.debug("batchGet() CC: {}", result.getConsumedCapacity());
 			
 			if(result.getUnprocessedKeys() != null && !result.getUnprocessedKeys().isEmpty()){
 				Thread.sleep(1000);
-				logger.warn("UNPROCESSED {0}", result.getUnprocessedKeys().size());
+				logger.warn("UNPROCESSED {}", result.getUnprocessedKeys().size());
 				batchGet(result.getUnprocessedKeys(), results);
 			}
 		} catch (Exception e) {
@@ -386,7 +383,7 @@ public class AWSDynamoDAO implements DAO {
 			BatchWriteItemResult result = ddb.batchWriteItem(new BatchWriteItemRequest().
 					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL).withRequestItems(items));
 			if(result == null) return;
-			logger.debug("batchWrite() CC: {0}", new Object[]{result.getConsumedCapacity()});
+			logger.debug("batchWrite() CC: {}", result.getConsumedCapacity());
 
 			Thread.sleep(1000);
 			
@@ -404,58 +401,29 @@ public class AWSDynamoDAO implements DAO {
 	********************************************/
 	
 	private <P extends ParaObject> Map<String, AttributeValue> toRow(P so, Class<? extends Annotation> filter){
-		if(so == null) return new HashMap<String, AttributeValue>();
-		HashMap<String, Object> propsMap = Utils.getAnnotatedFields(so, Stored.class, filter);
 		HashMap<String, AttributeValue> row = new HashMap<String, AttributeValue>();
-		if (so instanceof Sysprop) propsMap.putAll(((Sysprop) so).getProperties());
-		
-		for (Entry<String, Object> entry : propsMap.entrySet()) {
-			String field = entry.getKey();
+		if(so == null) return row;		
+		for (Entry<String, Object> entry : Utils.getAnnotatedFields(so, Stored.class, filter).entrySet()) {
 			Object value = entry.getValue();
-
 			if(value != null && !StringUtils.isBlank(value.toString())){
-				row.put(field, new AttributeValue(value.toString()));
+				row.put(entry.getKey(), new AttributeValue(value.toString()));
 			}
 		}
 		return row;
 	}
 
 	private <P extends ParaObject> P fromRow(Map<String, AttributeValue> row) {
-		if (row == null || row.isEmpty())	return null;
-
-		P transObject = null;
+		if (row == null || row.isEmpty()) return null;
 		Map<String, String> props = new HashMap<String, String>();
-		Map<String, Object> sysprops = new HashMap<String, Object>();
-		
-		try {
-			for (Entry<String, AttributeValue> col : row.entrySet()) {
-				String name = col.getKey();
-				String value = col.getValue().getS();
-				
-				if(Sysprop.isSysprop(name)){
-					sysprops.put(name, value);
-				}else{
-					props.put(name, value);
-				}
-			}
-			Class<?> clazz = Utils.toClass(props.get(CN_CLASSNAME));
-			if(clazz != null){
-				transObject = (P) clazz.newInstance();
-				BeanUtils.populate(transObject, props);
-				if(transObject instanceof Sysprop && !sysprops.isEmpty()){
-					((Sysprop) transObject).setProperties(sysprops);
-				}
-			}
-		} catch (Exception ex) {
-			logger.error(null, ex);
+		for (Entry<String, AttributeValue> col : row.entrySet()) {
+			props.put(col.getKey(), col.getValue().getS());
 		}
-
-		return transObject;
+		return Utils.setAnnotatedFields(props);
 	}
 	
 	private void setRowKey(String key, Map<String, AttributeValue> row){
 		if(row.containsKey(CN_KEY)) logger.warn("Attribute name conflict:  "
-			+ "attribute '{0}' will be overwritten! '{0}' is a reserved keyword.", new Object[]{CN_KEY});
+			+ "attribute '{}' will be overwritten! '{}' is a reserved keyword.", CN_KEY);
 		row.put(CN_KEY, new AttributeValue(key));
 	}
 	

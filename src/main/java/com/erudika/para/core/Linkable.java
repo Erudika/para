@@ -41,6 +41,8 @@ public interface Linkable extends ParaObject{
 	public <P extends ParaObject> ArrayList<P> getLinkedObjects(Class<? extends ParaObject> clazz, MutableLong page, MutableLong itemcount);
 
 	public boolean isLinked(Class<? extends ParaObject> c2, String toId);
+	
+	public boolean isLinked(ParaObject toObj);
 
 	public String link(Class<? extends ParaObject> c2, String id2);
 

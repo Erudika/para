@@ -15,8 +15,10 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.core;
+package com.erudika.para.persistence;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -24,17 +26,68 @@ import static org.junit.Assert.*;
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-
-public class AddressTest {
+public class AWSDynamoDAOTest {
 	
-	@Test
-	public void test() {
-		Address a = new Address();
-		assertNull(a.getId());
-		
-		Address b = new Address("123");
-		assertNotNull(b.getId());
-		assertEquals("123", b.getId());
+	public AWSDynamoDAOTest() {
+	}
+	
+	@BeforeClass
+	public static void setUpClass() {
+	}
+	
+	@AfterClass
+	public static void tearDownClass() {
 	}
 
+	@Test
+	public void testCreate() {
+	}
+
+	@Test
+	public void testRead() {
+	}
+
+	@Test
+	public void testUpdate() {
+	}
+
+	@Test
+	public void testDelete() {
+	}
+
+	@Test
+	public void testPutColumn() {
+	}
+
+	@Test
+	public void testGetColumn() {
+	}
+
+	@Test
+	public void testRemoveColumn() {
+	}
+
+	@Test
+	public void testExistsColumn() {
+	}
+
+	@Test
+	public void testCreateAll() {
+	}
+
+	@Test
+	public void testReadAll() {
+	}
+
+	@Test
+	public void testReadPage() {
+	}
+
+	@Test
+	public void testUpdateAll() {
+	}
+
+	@Test
+	public void testDeleteAll() {
+	}
 }
