@@ -414,7 +414,7 @@ public class AWSDynamoDAO implements DAO {
 
 	private <P extends ParaObject> P fromRow(Map<String, AttributeValue> row) {
 		if (row == null || row.isEmpty()) return null;
-		Map<String, String> props = new HashMap<String, String>();
+		Map<String, Object> props = new HashMap<String, Object>();
 		for (Entry<String, AttributeValue> col : row.entrySet()) {
 			props.put(col.getKey(), col.getValue().getS());
 		}

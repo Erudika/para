@@ -50,7 +50,7 @@ public class AWSEmailer implements Emailer{
 	}
 	
 	public boolean sendEmail(List<String> emails, String subject, String body){
-		if (emails == null || emails.isEmpty() && !StringUtils.isBlank(body)) {
+		if (emails != null && !emails.isEmpty() && !StringUtils.isBlank(body)) {
 			final SendEmailRequest request = new SendEmailRequest().withSource(Config.SUPPORT_EMAIL);
 			Destination dest = new Destination().withToAddresses(emails);
 			request.setDestination(dest);

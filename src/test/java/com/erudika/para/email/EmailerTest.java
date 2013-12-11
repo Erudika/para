@@ -15,31 +15,43 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.persistence;
+package com.erudika.para.email;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public class AWSDynamoHelperTest {
+@RunWith(Parameterized.class)
+public class EmailerTest {
 	
-	public AWSDynamoHelperTest() {
+	@Parameterized.Parameters
+	public static Collection<Object[]> data() {
+		return Arrays.asList(new Object[][]{
+			{new MockEmailer()}, 
+			{new AWSEmailer()}
+		});
 	}
 	
-	@BeforeClass
-	public static void setUpClass() {
-	}
+	private Emailer e;
 	
-	@AfterClass
-	public static void tearDownClass() {
+	public EmailerTest(Emailer e) {
+		this.e = e;
 	}
 
 	@Test
-	public void testStart() {
+	public void testSendEmail() {
+		assertFalse(e.sendEmail(null, null, null));
+		assertFalse(e.sendEmail(new ArrayList<String>(), null, "asd"));
+		assertFalse(e.sendEmail(Collections.singletonList("test@test.com"), null, ""));
+		assertTrue(e.sendEmail(Collections.singletonList("test@test.com"), null, "asd"));
 	}
 }

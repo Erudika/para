@@ -15,9 +15,11 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.persistence;
+package com.erudika.para.i18n;
 
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -26,9 +28,9 @@ import static org.junit.Assert.*;
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public class PersistenceModuleTest {
+public class LanguageUtilsTest {
 	
-	public PersistenceModuleTest() {
+	public LanguageUtilsTest() {
 	}
 	
 	@BeforeClass
@@ -38,8 +40,52 @@ public class PersistenceModuleTest {
 	@AfterClass
 	public static void tearDownClass() {
 	}
+	
+	@Before
+	public void setUp() {
+	}
+	
+	@After
+	public void tearDown() {
+	}
 
 	@Test
-	public void testConfigure() {
+	public void testReadLanguage() {
+	}
+
+	@Test
+	public void testGetProperLocale() {
+	}
+
+	@Test
+	public void testGetDefaultLanguage() {
+	}
+
+	@Test
+	public void testSetDefaultLanguage() {
+	}
+
+	@Test
+	public void testReadAllTranslationsForKey() {
+	}
+
+	@Test
+	public void testGetApprovedTransKeys() {
+	}
+
+	@Test
+	public void testGetTranslationProgressMap() {
+	}
+
+	@Test
+	public void testGetAllLocales() {
+	}
+
+	@Test
+	public void testApproveTranslation() {
+	}
+
+	@Test
+	public void testDisapproveTranslation() {
 	}
 }

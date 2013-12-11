@@ -15,19 +15,20 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.i18n;
+package com.erudika.para.email;
 
-import com.google.inject.AbstractModule;
+import java.util.List;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public class I18nModule extends AbstractModule {
-	
-	protected void configure() {
-		bind(CurrencyConverter.class).to(OXRCurrencyConverter.class);
-		bind(LanguageUtils.class).asEagerSingleton();
+public class MockEmailer implements Emailer {
+	public boolean sendEmail(List<String> emails, String subject, String body) {
+		if (emails != null && !emails.isEmpty() && !StringUtils.isBlank(body)) {
+			return true;
+		}
+		return false;
 	}
-	
 }

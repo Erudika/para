@@ -101,31 +101,33 @@ public class HazelcastCache implements Cache {
 
 	@Override
 	public boolean contains(String id) {
-		if(id == null) return false;
+		if(StringUtils.isBlank(id)) return false;
 		return haze.getMap(MAP_NAME).containsKey(id);
 	}
 	
 	@Override
 	public <T> void put(String id, T object) {
-		if(id == null || object == null) return;
+		if(StringUtils.isBlank(id) || object == null) return;
 		haze.getMap(MAP_NAME).putAsync(id, object);
 	}
 
 	@Override
 	public <T> void put(String id, T object, Long ttl_seconds) {
-		if(id == null || object == null) return;
+		if(StringUtils.isBlank(id) || object == null) return;
 		haze.getMap(MAP_NAME).putAsync(id, object, ttl_seconds, TimeUnit.SECONDS);
 	}
 
 	@Override
 	public <T> void putAll(Map<String, T> objects) {
 		if(objects == null || objects.isEmpty()) return;
+		objects.remove(null);
+		objects.remove("");
 		haze.getMap(MAP_NAME).putAll(objects);
 	}
 
 	@Override
 	public <T> T get(String id) {
-		if(id == null) return null;
+		if(StringUtils.isBlank(id)) return null;
 		return (T) haze.getMap(MAP_NAME).get(id);
 	}
 
@@ -133,6 +135,7 @@ public class HazelcastCache implements Cache {
 	public <T> Map<String, T> getAll(List<String> ids) {
 		Map<String, T> map = new TreeMap<String, T>();
 		if(ids == null) return map;
+		ids.remove(null);
 		for (Entry<Object, Object> entry : haze.getMap(MAP_NAME).getAll(new TreeSet<Object>(ids)).entrySet()) {
 			map.put((String) entry.getKey(), (T) entry.getValue());
 		}
@@ -141,7 +144,7 @@ public class HazelcastCache implements Cache {
 	
 	@Override
 	public void remove(String id) {
-		if(id == null) return;
+		if(StringUtils.isBlank(id)) return;
 		haze.getMap(MAP_NAME).delete(id);
 	}
 
