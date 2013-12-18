@@ -17,14 +17,15 @@
  */
 package com.erudika.para.persistence;
 
-import com.erudika.para.annotations.Stored;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.utils.Utils;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Singleton;
 import org.apache.commons.beanutils.BeanUtils;
+import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,11 +42,7 @@ public class MockDAO implements DAO {
 	
 	@Override
 	public <P extends ParaObject> String create(P so) {
-		String[] err = Utils.validateRequest(so);
-		if(err.length > 0){
-			logger.warn("create ", err.toString());
-			return null;
-		}
+		if(so == null) return null;
 		if(StringUtils.isBlank(so.getId())) so.setId(Utils.getNewId());
 		if(so.getTimestamp() == null) so.setTimestamp(Utils.timestamp());
 		map.put(so.getId(), so);
@@ -54,16 +51,13 @@ public class MockDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> P read(String key) {
+		if(key == null) return null;
 		return (P) map.get(key);
 	}
 
 	@Override
 	public <P extends ParaObject> void update(P so) {
-		String[] err = Utils.validateRequest(so);
-		if(err.length > 0){
-			logger.warn("update ", err.toString());
-			return;
-		}
+		if(so == null) return;
 		so.setUpdated(System.currentTimeMillis());
 		map.put(so.getId(), so);
 	}
@@ -77,7 +71,7 @@ public class MockDAO implements DAO {
 	@Override
 	public String getColumn(String key, String cf, String colName) {
 		try {
-			return Utils.getAnnotatedFields(map.get(key), Stored.class, null).get(colName).toString();
+			return BeanUtils.getProperty(read(key), colName);
 		} catch (Exception e) {
 			return null;
 		}
@@ -85,8 +79,9 @@ public class MockDAO implements DAO {
 
 	@Override
 	public void putColumn(String key, String cf, String colName, String colValue) {
-		if(key == null || !map.containsKey(key)) return;
+		if(key == null || StringUtils.isBlank(colName) || StringUtils.isBlank(colValue)) return;
 		ParaObject p = map.get(key);
+		if(p == null) return;
 		try {
 			BeanUtils.setProperty(p, colName, colValue);
 			map.put(key, p);
@@ -95,17 +90,19 @@ public class MockDAO implements DAO {
 
 	@Override
 	public void removeColumn(String key, String cf, String colName) {
-		if(key == null || !map.containsKey(key)) return;
+		if(key == null || StringUtils.isBlank(colName)) return;
 		ParaObject p = map.get(key);
+		if(p == null) return;
 		try {
-			BeanUtils.setProperty(p, colName, null);
+			PropertyUtils.setProperty(p, colName, null);
+			map.put(key, p);
 		} catch (Exception ex) {}
 	}
 
 	@Override
 	public boolean existsColumn(String key, String cf, String columnName) {
 		try {
-			return map.containsKey(key) && BeanUtils.getProperty(map.get(key), columnName) != null;
+			return getColumn(key, cf, columnName) != null;
 		} catch (Exception ex) {
 			return false;
 		}
@@ -131,7 +128,7 @@ public class MockDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> List<P> readPage(String cf, String lastKey) {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		return new ArrayList<P> ();
 	}
 
 	@Override

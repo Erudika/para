@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -40,14 +42,19 @@ public class CurrencyUtils {
 	private CurrencyUtils() {
 		Locale[] locales = Locale.getAvailableLocales();
 		for (Locale l : locales) {
-			COUNTRY_TO_LOCALE_MAP.put(l.getCountry(), l); 
+			if(!StringUtils.isBlank(l.getCountry())){
+				COUNTRY_TO_LOCALE_MAP.put(l.getCountry(), l); 
+			}
             try {
 				Currency c = Currency.getInstance(l);
 				if(c != null){
 					CURRENCY_TO_LOCALE_MAP.put(c.getCurrencyCode(), l);
-					CURRENCIES_MAP.put(c.getCurrencyCode(), 
-							getCurrencyName(c.getCurrencyCode(), Locale.US).concat(" ").concat(c.getSymbol(l)));
+					CURRENCIES_MAP.put(c.getCurrencyCode(), getCurrencyName(c.getCurrencyCode(), 
+							Locale.US).concat(" ").concat(c.getSymbol(l)));
 				}
+				// overwrite main locales
+				CURRENCY_TO_LOCALE_MAP.put("USD", Locale.US);
+				CURRENCY_TO_LOCALE_MAP.put("EUR", Locale.FRANCE);				
             } catch (Exception e) {}
 		}
 	}
@@ -72,29 +79,27 @@ public class CurrencyUtils {
 	}
 	
 	public String getCurrencyName(String cur, Locale locale){
-		if(CURRENCY_TO_LOCALE_MAP.containsKey(cur.toUpperCase())){
-			return com.ibm.icu.util.Currency.getInstance(cur).getName((locale == null ? Locale.US : locale), 1, new boolean[1]);
+		if(cur != null && CURRENCY_TO_LOCALE_MAP.containsKey(cur.toUpperCase())){
+			return com.ibm.icu.util.Currency.getInstance(cur.toUpperCase()).
+					getName((locale == null ? Locale.US : locale), 1, new boolean[1]);
 		}else{
 			return "";
 		}
 	}
 	
 	public Locale getLocaleForCountry(String countryCode){
-		return COUNTRY_TO_LOCALE_MAP.get(countryCode);
+		if(countryCode == null) return null;
+		return COUNTRY_TO_LOCALE_MAP.get(countryCode.toUpperCase());
 	}
 	
 	public Currency getCurrency(String cur){
 		if(StringUtils.isBlank(cur)) return null;
 		Currency currency = null;
 		try {
-			currency = Currency.getInstance(cur);
+			currency = Currency.getInstance(cur.toUpperCase());
+			
 		} catch (Exception e) {}
 		return currency;
-	}
-	
-	public Locale getLocaleForCurrency(String cur){
-		return (StringUtils.isBlank(cur) || !CURRENCY_TO_LOCALE_MAP.containsKey(cur)) ? 
-				Locale.US : CURRENCY_TO_LOCALE_MAP.get(cur);
 	}
 
 	public Map<String, String> getCurrenciesMap(){
@@ -102,6 +107,6 @@ public class CurrencyUtils {
 	}
 	
 	public boolean isValidCurrency(String cur){
-		return cur != null && CURRENCIES_MAP.containsKey(cur);
+		return cur != null && CURRENCIES_MAP.containsKey(cur.toUpperCase());
 	}
 }

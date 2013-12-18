@@ -77,12 +77,12 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	public void setSearch(Search search) {
 		this.search = search;
 	}
-	
+
 	@Override
 	public String getPlural() {
 		return Utils.singularToPlural(getClassname());
 	}
-
+	
 	@Override
 	public String getObjectURL() {
 		String defurl = "/".concat(getPlural());
@@ -223,7 +223,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		if(c2 == null) return new ArrayList<Linker>();
 		Linker link = new Linker(this.getClass(), c2, null, null);
 		String idField = link.getIdFieldNameFor(this.getClass());
-		return getSearch().findTwoTerms(link.getPlural(), pagenum, itemcount, 
+		return getSearch().findTwoTerms(link.getClassname(), pagenum, itemcount, 
 				DAO.CN_NAME, link.getName(), idField, id, null, reverse, maxItems);
 	}
 	
@@ -244,7 +244,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		if(id == null) return 0L;
 		Linker link = new Linker(this.getClass(), c2, null, null);
 		String idField = link.getIdFieldNameFor(this.getClass());
-		return getSearch().getCount(link.getPlural(), 
+		return getSearch().getCount(link.getClassname(), 
 				DAO.CN_NAME, link.getName(), idField, id);
 	}
 	

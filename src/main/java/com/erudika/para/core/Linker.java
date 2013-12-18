@@ -99,14 +99,14 @@ public class Linker extends PObject{
 
 //	public void delete() {
 //		ArrayList<String> keys = new ArrayList<String>();
-//		for (PObject link : search.findTwoTerms(getPlural(), null, null, "id1", id1, "id2", id2)) {
+//		for (PObject link : search.findTwoTerms(getClassname(), null, null, "id1", id1, "id2", id2)) {
 //			keys.add(link.getId());
 //		}
 //		AWSDynamoDAO.getInstance().deleteAll(keys);
 //	}
 	
 	public boolean exists(){
-//		return search.getCount(getPlural(), DAO.CN_ID, getId()) > 0;
+//		return search.getCount(getClassname(), DAO.CN_ID, getId()) > 0;
 		return getDao().read(getId()) != null;
 	}
 	

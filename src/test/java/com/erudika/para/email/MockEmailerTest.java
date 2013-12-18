@@ -17,27 +17,14 @@
  */
 package com.erudika.para.email;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import junit.framework.TestCase;
-import static org.junit.Assert.*;
-import org.junit.Ignore;
-import org.junit.Test;
-
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-@Ignore
-public abstract class EmailerTest extends TestCase {
-	
-	protected Emailer e;
+public class MockEmailerTest extends EmailerTest {
 
-	@Test
-	public void testSendEmail() {
-		assertFalse(e.sendEmail(null, null, null));
-		assertFalse(e.sendEmail(new ArrayList<String>(), null, "asd"));
-		assertFalse(e.sendEmail(Collections.singletonList("test@test.com"), null, ""));
-		assertTrue(e.sendEmail(Collections.singletonList("test@test.com"), null, "asd"));
+	public MockEmailerTest() {
+		e = new MockEmailer();
 	}
+	
 }

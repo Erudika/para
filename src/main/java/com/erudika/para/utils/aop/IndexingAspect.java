@@ -51,11 +51,11 @@ public class IndexingAspect implements MethodInterceptor {
 				switch(ano.action()){
 					case ADD: 
 						ParaObject addMe = getArgOfParaObject(args);
-						search.index(addMe, addMe.getPlural());
+						search.index(addMe, addMe.getClassname());
 						break;
 					case REMOVE: 
 						ParaObject removeMe = getArgOfParaObject(args);
-						search.unindex(removeMe, removeMe.getPlural());
+						search.unindex(removeMe, removeMe.getClassname());
 						break;
 					case ADD_ALL: 
 						List<ParaObject> addUs = getArgOfListOfType(args, ParaObject.class);

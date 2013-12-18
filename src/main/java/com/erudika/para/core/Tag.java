@@ -96,9 +96,9 @@ public class Tag extends PObject{
 		}
 		final Tag other = (Tag) obj;
 		if (!StringUtils.equalsIgnoreCase(tag, other.tag)) {
-			return true;
+			return false;
 		}
-		return false;
+		return true;
 	}
 
 	public int hashCode() {

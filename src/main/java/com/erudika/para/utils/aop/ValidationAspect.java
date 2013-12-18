@@ -56,8 +56,6 @@ public class ValidationAspect implements MethodInterceptor {
 						String[] err = Utils.validateRequest(addMe);
 						if (err.length == 0){
 							result = mi.proceed();
-						}else{
-							logger.warn(m.getName(), " ", err);
 						}
 						break;
 					default: break;

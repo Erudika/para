@@ -311,7 +311,7 @@ public class User extends PObject implements UserDetails{
 		Sysprop s = getDao().read(identifier);
 		if(s != null){
 			String salt = (String) s.getProperty(DAO.CN_SALT);
-			String token = Utils.HMACSHA(Long.toString(System.currentTimeMillis()), salt);
+			String token = Utils.HMACSHA(Utils.getNewId(), salt);
 			s.addProperty(DAO.CN_RESET_TOKEN, token);
 			getDao().update(s);
 			return token;

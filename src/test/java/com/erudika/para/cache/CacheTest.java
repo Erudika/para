@@ -19,37 +19,21 @@ package com.erudika.para.cache;
 
 import com.erudika.para.core.User;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.Ignore;
 
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-@RunWith(Parameterized.class)
-public class CacheIT {
-	
-	@Parameters
-	public static Collection<Object[]> data() {
-		return Arrays.asList(new Object[][]{
-			{new MockCache()}, 
-			{new HazelcastCache()}
-		});
-	}
-	
-	private Cache c;
-	
-	public CacheIT(Cache c) {
-		this.c = c;
-	}
+@Ignore
+public abstract class CacheTest {
+		
+	protected Cache c;
 	
 	@Before
 	public void setUp(){

@@ -14,6 +14,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <netbeans.hint.j2eeVersion>1.7</netbeans.hint.j2eeVersion>
+		<skipTests>false</skipTests>
+		<skipITs>${skipTests}</skipITs>
+		<skipUTs>${skipTests}</skipUTs>
     </properties>
 	
 	<dependencies>
@@ -242,6 +245,8 @@
 					</execution>
 				</executions>
 				<configuration>
+					<skipTests>${skipTests}</skipTests>
+					<skipITs>${skipITs}</skipITs>
 					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
@@ -250,6 +255,11 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>2.16</version>
+				<configuration>
+					<skipTests>${skipUTs}</skipTests>
+					<!--<parallel>methods</parallel>-->
+					<!--<threadCount>10</threadCount>-->
+				</configuration>
 			</plugin>
 			
 			<plugin>
@@ -314,7 +324,54 @@
 					</execution>
 				</executions>
 			</plugin>-->
-		</plugins>		
+			
+			<plugin>
+				<groupId>com.jcabi</groupId>
+				<artifactId>jcabi-dynamodb-maven-plugin</artifactId>
+				<version>0.4</version>
+				<executions>
+					<execution>
+						<id>dynamodb-integration-test</id>
+						<goals>
+							<goal>start</goal>
+							<goal>stop</goal>
+						</goals>
+						<configuration>
+							<scope>test</scope>
+							<skip>${skipITs}</skip>
+							<port>8000</port>
+							<dist>${project.build.directory}/dynamodb-dist</dist>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>2.8</version>
+				<executions>
+					<execution>
+						<id>unpack-dynamodb-local</id>
+						<goals>
+							<goal>unpack</goal>
+						</goals>
+						<configuration>
+							<scope>test</scope>
+							<skip>${skipITs}</skip>
+							<artifactItems>
+								<artifactItem>
+									<groupId>com.jcabi</groupId>
+									<artifactId>DynamoDBLocal</artifactId>
+									<version>2013-09-12</version>
+									<type>zip</type>
+									<outputDirectory>${project.build.directory}/dynamodb-dist</outputDirectory>
+									<overWrite>false</overWrite>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
 	</build>
 	
 	<pluginRepositories>

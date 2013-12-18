@@ -43,11 +43,6 @@ public class Vote extends PObject {
 		this.type = type;
 		this.expiresAfter = Config.VOTE_EXPIRES_AFTER_SEC;
 	}
-
-	@Override
-	public final String getPlural() {
-		return "votes";
-	}
 	
 	@Override
 	public final String getId() {

@@ -17,12 +17,15 @@
  */
 package com.erudika.para.i18n;
 
-import org.junit.After;
-import org.junit.AfterClass;
+import com.erudika.para.persistence.DAO;
+import com.erudika.para.persistence.MockDAO;
+import com.erudika.para.search.Search;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  *
@@ -30,62 +33,145 @@ import static org.junit.Assert.*;
  */
 public class LanguageUtilsTest {
 	
-	public LanguageUtilsTest() {
-	}
+	private LanguageUtils lu;
+	private Map<String, String> deflang = new HashMap<String, String>(){
+		private static final long serialVersionUID = 1L;{
+		put("hello", "hello");
+		put("yes", "yes");
+		put("what", "what");
+	}};
 	
-	@BeforeClass
-	public static void setUpClass() {
-	}
+	private Map<String, String> es = new HashMap<String, String>(){
+		private static final long serialVersionUID = 1L;{
+		put("hello", "hola");
+		put("yes", "si");
+		put("what", "que");
+	}};
 	
-	@AfterClass
-	public static void tearDownClass() {
-	}
+	private Map<String, String> de = new HashMap<String, String>(){
+		private static final long serialVersionUID = 1L;{
+		put("hello", "hello");
+		put("yes", "ja");
+		put("what", "was");
+	}};
 	
 	@Before
 	public void setUp() {
+		DAO dao = new MockDAO();
+		lu = new LanguageUtils(mock(Search.class), dao);
+		lu.setDefaultLanguage(deflang);
+	}
+
+	@Test
+	public void testReadWriteLanguage() {
+		assertNotNull(lu.readLanguage(null));
+		assertNotNull(lu.readLanguage(""));
+		assertTrue(lu.readLanguage("").containsKey("hello"));		
+		assertEquals("hello", lu.readLanguage("").get("hello"));		
+		
+		lu.writeLanguage("", es);
+		assertEquals("hello", lu.readLanguage("es").get("hello"));
+		
+		lu.writeLanguage("es", es);
+		assertEquals(es.get("hello"), lu.readLanguage("es").get("hello"));
 	}
 	
-	@After
-	public void tearDown() {
-	}
-
-	@Test
-	public void testReadLanguage() {
-	}
-
 	@Test
 	public void testGetProperLocale() {
+		assertNotNull(lu.getProperLocale("en"));
+		assertNotNull(lu.getProperLocale("en"));
+		assertNotNull(lu.getProperLocale("es"));
+		assertEquals(lu.getProperLocale("en_GB"), lu.getProperLocale("en"));
+		assertEquals(lu.getProperLocale("es_XX"), lu.getProperLocale("es"));
+		assertEquals(lu.getProperLocale("en_GB"), lu.getProperLocale(null));
 	}
 
 	@Test
 	public void testGetDefaultLanguage() {
+		assertTrue(!lu.getDefaultLanguage().isEmpty());
 	}
 
 	@Test
 	public void testSetDefaultLanguage() {
+		lu.setDefaultLanguage(null);
+		assertTrue(lu.getDefaultLanguage().isEmpty());
+		lu.setDefaultLanguage(es);
+		assertEquals(es.get("hello"), lu.getDefaultLanguage().get("hello"));
 	}
 
 	@Test
 	public void testReadAllTranslationsForKey() {
+		assertTrue(lu.readAllTranslationsForKey(null, null, null, null).isEmpty());
 	}
 
 	@Test
 	public void testGetApprovedTransKeys() {
+		lu.writeLanguage("es", es);
+		assertTrue(lu.getApprovedTransKeys(null).isEmpty());
+		assertTrue(lu.getApprovedTransKeys("xxx").isEmpty());
+		assertEquals(es.keySet(), lu.getApprovedTransKeys("es"));
 	}
 
 	@Test
 	public void testGetTranslationProgressMap() {
+		lu.writeLanguage("es", es);
+		lu.writeLanguage("de", de);	
+		assertEquals("66", lu.getTranslationProgressMap().get("de").toString());
+		assertEquals("100", lu.getTranslationProgressMap().get("es").toString());
+		assertEquals("100", lu.getTranslationProgressMap().get("en").toString());
 	}
 
 	@Test
 	public void testGetAllLocales() {
+		assertNotNull(lu.getAllLocales());
+		assertFalse(lu.getAllLocales().isEmpty());
+		assertNotNull(lu.getAllLocales().get("en"));
 	}
 
 	@Test
 	public void testApproveTranslation() {
+		lu.writeLanguage("es", es);
+		lu.writeLanguage("de", de);	
+		assertEquals("66", lu.getTranslationProgressMap().get("de").toString());
+		assertEquals("100", lu.getTranslationProgressMap().get("es").toString());
+		
+		assertFalse(lu.approveTranslation(null, null, null));
+		assertFalse(lu.approveTranslation("", "", ""));
+		assertFalse(lu.approveTranslation("en", "asd", "asd"));
+		assertFalse(lu.approveTranslation("en", "asd", "asd"));
+		
+		assertTrue(lu.approveTranslation("de", "hello", "hallo"));
+		assertEquals("100", lu.getTranslationProgressMap().get("de").toString());
 	}
 
 	@Test
 	public void testDisapproveTranslation() {
+		lu.writeLanguage("es", es);
+		lu.writeLanguage("de", de);	
+		assertEquals("66", lu.getTranslationProgressMap().get("de").toString());
+		assertEquals("100", lu.getTranslationProgressMap().get("es").toString());
+		
+		assertFalse(lu.disapproveTranslation(null, null));
+		assertFalse(lu.disapproveTranslation("", ""));
+		assertFalse(lu.disapproveTranslation("en", "asd"));
+		assertFalse(lu.disapproveTranslation("en", "asd"));
+		
+		assertFalse(lu.disapproveTranslation("de", "hello"));
+		
+		assertTrue(lu.disapproveTranslation("de", "yes"));
+		assertEquals("33", lu.getTranslationProgressMap().get("de").toString());
+		
+		assertTrue(lu.disapproveTranslation("de", "what"));
+		assertEquals("0", lu.getTranslationProgressMap().get("de").toString());
+		
+		// one more time
+		assertTrue(lu.approveTranslation("de", "hello", "hallooo"));
+		assertEquals("33", lu.getTranslationProgressMap().get("de").toString());	
+		
+		assertTrue(lu.approveTranslation("de", "yes", "yaa"));
+		assertEquals("66", lu.getTranslationProgressMap().get("de").toString());
+		
+		assertTrue(lu.approveTranslation("de", "what", "waas"));
+		assertEquals("100", lu.getTranslationProgressMap().get("de").toString());	
 	}
 }

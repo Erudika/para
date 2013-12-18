@@ -23,6 +23,7 @@ import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -84,14 +85,16 @@ public class UserTest {
 
 	@Test
 	public void testDelete() {
-		u = spy(u);
 		u.create();
 		
 		String secIdent = "t:1";
-		ArrayList<String> list = new ArrayList<String>();
-		list.add(u.getIdentifier());
-		list.add(secIdent);
-		doReturn(list).when(u).getIdentifiers();
+		ArrayList<ParaObject> list = new ArrayList<ParaObject>();
+		list.add(new Sysprop(u.getIdentifier()));
+		list.add(new Sysprop(secIdent));
+		
+		when(u.getSearch().findTerm(anyString(), any(MutableLong.class), any(MutableLong.class), 
+				anyString(), any())).thenReturn(list);
+		
 		u.attachIdentifier(secIdent);
 		assertNotNull(dao.read(secIdent));
 		

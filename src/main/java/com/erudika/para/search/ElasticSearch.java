@@ -218,7 +218,7 @@ public class ElasticSearch implements Search {
 		Map<String, Object> data = Utils.getAnnotatedFields(so, Stored.class, null);
 		try {
 			IndexRequestBuilder irb = getSearchClient().prepareIndex(Config.INDEX_ALIAS, 
-					(StringUtils.isBlank(type) ? so.getPlural() : type), so.getId()).setSource(data);
+					(StringUtils.isBlank(type) ? so.getClassname() : type), so.getId()).setSource(data);
 			if(ttl > 0) irb.setTTL(ttl);
 			irb.execute();
 		} catch (Exception e) {
@@ -241,7 +241,7 @@ public class ElasticSearch implements Search {
 		if(objects == null) return ;
 		BulkRequestBuilder brb = getSearchClient().prepareBulk();
 		for (ParaObject pObject : objects) {
-			brb.add(getSearchClient().prepareIndex(Config.INDEX_ALIAS, pObject.getPlural(), 
+			brb.add(getSearchClient().prepareIndex(Config.INDEX_ALIAS, pObject.getClassname(), 
 						pObject.getId()).setSource(Utils.getAnnotatedFields(pObject, Stored.class, null)));
 		}
 		brb.execute();
@@ -252,7 +252,7 @@ public class ElasticSearch implements Search {
 		if(objects == null) return ;
 		BulkRequestBuilder brb = getSearchClient().prepareBulk();
 		for (ParaObject pObject : objects) {
-			brb.add(getSearchClient().prepareDelete(Config.INDEX_ALIAS, pObject.getPlural(), pObject.getId()));
+			brb.add(getSearchClient().prepareDelete(Config.INDEX_ALIAS, pObject.getClassname(), pObject.getId()));
 		}
 		brb.execute();
 	}
@@ -350,7 +350,7 @@ public class ElasticSearch implements Search {
 			if (!list.isEmpty()) {
 				do{
 					for (ParaObject obj : list) {
-						brb.add(getSearchClient().prepareIndex(newIndex, obj.getPlural(), obj.getId()).
+						brb.add(getSearchClient().prepareIndex(newIndex, obj.getClassname(), obj.getId()).
 								setSource(Utils.getAnnotatedFields(obj, Stored.class, null)));
 						lastKey = obj.getId();
 					}

@@ -554,7 +554,7 @@ public final class Utils {
 			return (includeName && !StringUtils.isBlank(obj.getName())) ? 
 					obj.getObjectURL().concat("-").concat(urlEncode(spacesToDashes(obj.getName()))) : obj.getObjectURL();
 		}else{
-			return "/".concat(obj.getPlural());
+			return obj.getObjectURL();
 		}
 	}
 	
@@ -565,7 +565,6 @@ public final class Utils {
 				(singul.endsWith("y") ? StringUtils.removeEndIgnoreCase(singul, "y") + "ies" : 
 										singul + "s" ) );
 	}
-	
 	
 	
 	/********************************************
@@ -659,7 +658,7 @@ public final class Utils {
 		String packagename = System.getProperty(Config.CORE_PACKAGE, Config.CORE_PACKAGE_NAME);
 		String corepackage = StringUtils.isBlank(scanPackageName) ? packagename : scanPackageName;
 		if(StringUtils.isBlank(corepackage)){
-			logger.warn("System property '" + Config.CORE_PACKAGE + "' not set.");
+			logger.warn("System property '{}' not set.", Config.CORE_PACKAGE);
 		}
 		if(StringUtils.isBlank(classname)) return null;
 		Class<? extends ParaObject> clazz = null;

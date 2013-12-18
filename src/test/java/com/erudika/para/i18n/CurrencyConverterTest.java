@@ -17,36 +17,19 @@
  */
 package com.erudika.para.i18n;
 
-import com.erudika.para.persistence.MockDAO;
-import java.util.Arrays;
-import java.util.Collection;
-import org.junit.Test;
+import junit.framework.TestCase;
 import static org.junit.Assert.*;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.Ignore;
 
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-@RunWith(Parameterized.class)
-public class CurrencyConverterIT {
+@Ignore
+public abstract class CurrencyConverterTest extends TestCase{
 	
-	@Parameterized.Parameters
-	public static Collection<Object[]> data() {
-		return Arrays.asList(new Object[][]{
-			{new MockCurrencyConverter()}, 
-			{new OXRCurrencyConverter(new MockDAO())}
-		});
-	}
-	
-	private CurrencyConverter cc;
+	protected CurrencyConverter cc;
 
-	public CurrencyConverterIT(CurrencyConverter cc) {
-		this.cc = cc;
-	}
-
-	@Test
 	public void testConvertCurrency() {
 		assertTrue(cc.convertCurrency(null, null, null) == 0.0);
 		assertTrue(cc.convertCurrency(1, null, null) == 0.0);

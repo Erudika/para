@@ -103,10 +103,10 @@ public class TagTest {
 	@Test
 	public void testEquals() {
 		Tag t1 = new Tag("tag1");
-		t1.setId("id1");
 		Tag t2 = new Tag("tag2");
-		t2.setId("id2");
 		
-		assertTrue(t1.equals(t2));
+		assertFalse(t1.equals(t2));
+		t1.setId("tag2");
+		assertFalse(t1.equals(t2));
 	}
 }

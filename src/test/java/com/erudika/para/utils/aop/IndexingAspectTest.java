@@ -17,36 +17,28 @@
  */
 package com.erudika.para.utils.aop;
 
-import com.erudika.para.Para;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.PObject;
+import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
+import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.search.Search;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 /**
  *
  * @author Alex Bogdanovski <albogdano@me.com>
  */
-public class IndexingAspectIT {
+public class IndexingAspectTest {
 	
-	public IndexingAspectIT() {
-	}
-	
-	@BeforeClass
-	public static void setUpClass() {
-		Para.initialize();
-	}
-	
-	@AfterClass
-	public static void tearDownClass() {
-		Para.destroy();
+	public IndexingAspectTest() {
 	}
 
 	@Test
@@ -75,31 +67,62 @@ public class IndexingAspectIT {
 		assertEquals(list2, IndexingAspect.getArgOfListOfType(new Object[]{list2}, ParaObject.class));
 		assertNull(IndexingAspect.getArgOfListOfType(new Object[]{badList}, ParaObject.class));
 		
-		DAO dao = Para.getDAO();
-		Search search = Para.getSearch();
+		DAO dao = new MockDAO();
+		Search search = getSearch(dao);
 		
 		assertNotNull(dao.create(tag));
 		assertNotNull(dao.read(tag.getId()));
-		assertNotNull(search.findById(tag.getId(), tag.getPlural()));
+		assertNotNull(search.findById(tag.getId(), tag.getClassname()));
 		
 		dao.delete(tag);
 		assertNull(dao.read(tag.getId()));
-		assertNull(search.findById(tag.getId(), tag.getPlural()));
+		assertNull(search.findById(tag.getId(), tag.getClassname()));
 		
 		dao.createAll(list1);
 		assertNotNull(dao.read(tag1.getId()));
 		assertNotNull(dao.read(tag2.getId()));
 		assertNotNull(dao.read(tag3.getId()));
-		assertNotNull(search.findById(tag1.getId(), tag.getPlural()));
-		assertNotNull(search.findById(tag2.getId(), tag.getPlural()));
-		assertNotNull(search.findById(tag3.getId(), tag.getPlural()));
+		assertNotNull(search.findById(tag1.getId(), tag.getClassname()));
+		assertNotNull(search.findById(tag2.getId(), tag.getClassname()));
+		assertNotNull(search.findById(tag3.getId(), tag.getClassname()));
 		
 		dao.deleteAll(list1);
 		assertNull(dao.read(tag1.getId()));
 		assertNull(dao.read(tag2.getId()));
 		assertNull(dao.read(tag3.getId()));
-		assertNull(search.findById(tag1.getId(), tag.getPlural()));
-		assertNull(search.findById(tag2.getId(), tag.getPlural()));
-		assertNull(search.findById(tag3.getId(), tag.getPlural()));
+		assertNull(search.findById(tag1.getId(), tag.getClassname()));
+		assertNull(search.findById(tag2.getId(), tag.getClassname()));
+		assertNull(search.findById(tag3.getId(), tag.getClassname()));
+	}
+	
+	private Search getSearch(final DAO dao){
+		Search search = mock(Search.class);
+		
+		doAnswer(new Answer<Boolean>() {
+			public Boolean answer(InvocationOnMock invocation) throws Throwable {
+				ParaObject p = (ParaObject) invocation.getArguments()[0];
+				if(p != null){
+					dao.create(new Sysprop(p.getId().concat(":INDEXED")));
+				}
+				return null;
+			}
+		}).when(search).index((ParaObject) anyObject(), anyString());
+		
+		doAnswer(new Answer<Boolean>() {
+			public Boolean answer(InvocationOnMock invocation) throws Throwable {
+				ParaObject p = (ParaObject) invocation.getArguments()[0];
+				if(p != null){
+					dao.delete(new Sysprop(p.getId().concat(":INDEXED")));
+				}
+				return null;
+			}
+		}).when(search).unindex((ParaObject) anyObject(), anyString());
+		
+		when(search.findById(anyString(), anyString())).thenAnswer(new Answer<ParaObject>() {
+			public ParaObject answer(InvocationOnMock invocation) throws Throwable {
+				return dao.read((String) invocation.getArguments()[0]);
+			}
+		});
+		return search;
 	}
 }
