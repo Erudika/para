@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,12 +45,13 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class Para {
 	
 	private static final Logger logger = LoggerFactory.getLogger(Para.class);
-	private static List<DestroyListener> listeners = new ArrayList<DestroyListener>();
+	private static List<DestroyListener> destroyListeners = new ArrayList<DestroyListener>();
+	private static List<InitializeListener> initListeners = new ArrayList<InitializeListener>();
 	
 	private static Injector injector;
 	
@@ -66,6 +67,10 @@ public class Para {
 				}else{
 					injector = Guice.createInjector(stage, coreModules);
 				}
+				
+				for (InitializeListener destroyListener : initListeners) {
+					destroyListener.onInitialize();
+				}
 			} catch (Exception e) {
 				logger.error(null, e);
 			}
@@ -73,8 +78,12 @@ public class Para {
 	}
 	
 	public static void destroy(){
-		for (DestroyListener destroyListener : listeners) {
-			destroyListener.onDestroy();
+		try {
+			for (DestroyListener destroyListener : destroyListeners) {
+				destroyListener.onDestroy();
+			}
+		}catch (Exception e) {
+			logger.error(null, e);
 		}
 	}
 	
@@ -98,8 +107,16 @@ public class Para {
 		return Config.getConfigMap();
 	}
 	
+	public static void addInitListener(InitializeListener il){
+		initListeners.add(il);
+	}
+
 	public static void addDestroyListener(DestroyListener dl){
-		listeners.add(dl);
+		destroyListeners.add(dl);
+	}
+	
+	public static interface InitializeListener extends EventListener {
+		public abstract void onInitialize();
 	}
 	
 	public static interface DestroyListener extends EventListener {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import org.apache.commons.lang3.StringUtils;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 @Singleton
 public class AWSEmailer implements Emailer{
@@ -41,12 +41,8 @@ public class AWSEmailer implements Emailer{
 	private static AmazonSimpleEmailServiceClient sesclient;
 	
 	public AWSEmailer() {
-		if (StringUtils.isBlank(Config.AWS_ACCESSKEY) || StringUtils.isBlank(Config.AWS_SECRETKEY)) {
-			sesclient = new AmazonSimpleEmailServiceClient();
-		} else {
-			sesclient = new AmazonSimpleEmailServiceClient(
-					new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
-		}
+		sesclient = new AmazonSimpleEmailServiceClient(
+				new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
 	}
 	
 	public boolean sendEmail(List<String> emails, String subject, String body){

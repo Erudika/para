@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import org.aopalliance.intercept.MethodInvocation;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class IndexingAspect implements MethodInterceptor {
 
@@ -48,22 +48,23 @@ public class IndexingAspect implements MethodInterceptor {
 			Indexed ano = superMethod.getAnnotation(Indexed.class);
 			if(ano != null){
 				Object[] args = mi.getArguments();
+				String appName = getFirstArgOfString(args);
 				switch(ano.action()){
-					case ADD: 
+					case ADD:
 						ParaObject addMe = getArgOfParaObject(args);
-						search.index(addMe, addMe.getClassname());
+						search.index(appName, addMe);
 						break;
 					case REMOVE: 
 						ParaObject removeMe = getArgOfParaObject(args);
-						search.unindex(removeMe, removeMe.getClassname());
+						search.unindex(appName, removeMe);
 						break;
 					case ADD_ALL: 
 						List<ParaObject> addUs = getArgOfListOfType(args, ParaObject.class);
-						search.indexAll(addUs);
+						search.indexAll(appName, addUs);
 						break;
 					case REMOVE_ALL: 
 						List<ParaObject> removeUs = getArgOfListOfType(args, ParaObject.class);
-						search.unindexAll(removeUs);
+						search.unindexAll(appName, removeUs);
 						break;
 					default: break;
 				}
@@ -95,6 +96,19 @@ public class IndexingAspect implements MethodInterceptor {
 				if(arg != null){
 					if(ParaObject.class.isAssignableFrom(arg.getClass())){
 						return (ParaObject) arg;
+					}
+				}
+			}
+		}
+		return null;
+	}
+	
+	static String getFirstArgOfString(Object[] args){
+		if(args != null){
+			for (Object arg : args) {
+				if(arg != null){
+					if(arg instanceof String){
+						return (String) arg;
 					}
 				}
 			}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class User extends PObject implements UserDetails{
@@ -178,7 +178,7 @@ public class User extends PObject implements UserDetails{
 		
 		setActive(true);	
 		
-		if(getDao().create(this) != null){
+		if(getDao().create(getAppname(), this) != null){
 			createIdentifier(getId(), getIdentifier(), getPassword());
 		}
 		
@@ -187,7 +187,7 @@ public class User extends PObject implements UserDetails{
 
 	public void delete() {
 		if(getId() != null){
-			getDao().delete(this);
+			getDao().delete(getAppname(), this);
 			for (String ident1 : getIdentifiers()) {
 				deleteIdentifier(ident1);
 			}
@@ -195,7 +195,7 @@ public class User extends PObject implements UserDetails{
 	}
 	
 	public List<String> getIdentifiers(){
-		List<Sysprop> list = getSearch().findTerm(PObject.classname(Sysprop.class), 
+		List<Sysprop> list = getSearch().findTerm(getAppname(), PObject.classname(Sysprop.class), 
 				null, null, DAO.CN_CREATORID, getId());
 		ArrayList<String> idents = new ArrayList<String>();
 		for (Sysprop s : list) {
@@ -211,7 +211,7 @@ public class User extends PObject implements UserDetails{
 
 	public void detachIdentifier(String identifier){
 		if(StringUtils.equals(identifier, getIdentifier())) return;
-		Sysprop s = getDao().read(identifier);
+		Sysprop s = getDao().read(getAppname(), identifier);
 		if(s != null && StringUtils.equals(getId(), s.getCreatorid())){
 			deleteIdentifier(identifier);
 		}
@@ -276,9 +276,9 @@ public class User extends PObject implements UserDetails{
 		if(u == null || StringUtils.isBlank(u.getIdentifier())) return null;
 		String identifier = u.getIdentifier();
 		if(NumberUtils.isDigits(identifier)) identifier = Config.FB_PREFIX + u.getIdentifier();
-		Sysprop s = u.getDao().read(identifier);
+		Sysprop s = u.getDao().read(u.getAppname(), identifier);
 		if(s != null && s.getCreatorid() != null){
-			User user = u.getDao().read(s.getCreatorid());
+			User user = u.getDao().read(u.getAppname(), s.getCreatorid());
 			if(user != null ){
 				if(!identifier.equals(user.getIdentifier())){
 					user.setIdentifier(identifier);
@@ -296,7 +296,7 @@ public class User extends PObject implements UserDetails{
 		String password = u.getPassword();
 		String identifier = u.getIdentifier();
 		if(StringUtils.isBlank(password) || StringUtils.isBlank(identifier)) return false;
-		Sysprop s = u.getDao().read(identifier);
+		Sysprop s = u.getDao().read(u.getAppname(), identifier);
 		if(s != null){
 			String salt = (String) s.getProperty(DAO.CN_SALT);
 			String storedHash = (String) s.getProperty(DAO.CN_PASSWORD);
@@ -308,12 +308,12 @@ public class User extends PObject implements UserDetails{
 	
 	public final String generatePasswordResetToken(){
 		if(StringUtils.isBlank(identifier)) return "";
-		Sysprop s = getDao().read(identifier);
+		Sysprop s = getDao().read(getAppname(), identifier);
 		if(s != null){
 			String salt = (String) s.getProperty(DAO.CN_SALT);
 			String token = Utils.HMACSHA(Utils.getNewId(), salt);
 			s.addProperty(DAO.CN_RESET_TOKEN, token);
-			getDao().update(s);
+			getDao().update(getAppname(), s);
 			return token;
 		}
 		return "";
@@ -322,7 +322,7 @@ public class User extends PObject implements UserDetails{
 	public final boolean resetPassword(String token, String newpass){
 		if(StringUtils.isBlank(newpass) || StringUtils.isBlank(token)) return false;
 		if(newpass.length() < Config.MIN_PASS_LENGTH) return false;
-		Sysprop s = getDao().read(identifier);
+		Sysprop s = getDao().read(getAppname(), identifier);
 		if(s != null && s.hasProperty(DAO.CN_RESET_TOKEN)){
 			String storedToken = (String) s.getProperty(DAO.CN_RESET_TOKEN);
 			long now = System.currentTimeMillis();
@@ -332,7 +332,7 @@ public class User extends PObject implements UserDetails{
 				String salt = getPassSalt();
 				s.addProperty(DAO.CN_SALT, salt);
 				s.addProperty(DAO.CN_PASSWORD, getPassHash(newpass, salt));
-				getDao().update(s);
+				getDao().update(getAppname(), s);
 				return true;
 			}
 		}
@@ -366,13 +366,13 @@ public class User extends PObject implements UserDetails{
 			s.addProperty(DAO.CN_SALT, salt);
 			s.addProperty(DAO.CN_PASSWORD, getPassHash(password, salt));
 		}
-		return getDao().create(s) != null;
+		return getDao().create(getAppname(), s) != null;
 	}
 	
 	private void deleteIdentifier(String ident){
 		if(StringUtils.isBlank(ident)) return;
 		if(NumberUtils.isDigits(ident)) ident = Config.FB_PREFIX + ident;		
-		getDao().delete(new Sysprop(ident));
+		getDao().delete(getAppname(), new Sysprop(ident));
 	}
 	
 	private String getPassSalt(){

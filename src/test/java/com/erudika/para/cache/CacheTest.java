@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,14 @@ import org.junit.Ignore;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 @Ignore
 public abstract class CacheTest {
 		
 	protected Cache c;
+	private String testApp1 = "testApp1";
+	private String testApp2 = "testApp2";
 	
 	@Before
 	public void setUp(){
@@ -48,7 +50,7 @@ public abstract class CacheTest {
 	}
 
 	@Test
-	public void testPut_String_GenericType() {
+	public void testPut() throws InterruptedException {
 		c.put("", "empty");
 		assertFalse(c.contains(""));
 		c.put("123", new Integer(123));
@@ -58,14 +60,22 @@ public abstract class CacheTest {
 		assertTrue(c.get("1234") instanceof User);
 		c.remove("123");
 		assertFalse(c.contains("123"));
-	}
-
-	@Test
-	public void testPut_3args() throws InterruptedException {
-		c.put("test", "test", 1L);
-		assertTrue(c.contains("test"));
-		Thread.sleep(2000);
+		
+		// test multiapp support
+		c.put(testApp1, "123", "123");
+		c.put(testApp2, "456", "456");
+		assertFalse(c.contains("123") && c.contains("456"));
+		assertFalse(c.contains(testApp1, "456"));
+		assertFalse(c.contains(testApp2, "123"));
+		c.put(testApp2, "123", "456");
+		assertEquals("456", c.get(testApp2, "123"));
+		
+		c.put(testApp1, "test", "test", 1L);
+		assertTrue(c.contains(testApp1, "test"));
 		assertFalse(c.contains("test"));
+		assertFalse(c.contains(testApp2, "test"));
+		Thread.sleep(2000);
+		assertFalse(c.contains(testApp1, "test"));
 	}
 
 	@Test

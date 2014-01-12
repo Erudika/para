@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import static org.mockito.Mockito.*;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class PObjectTest {
 	
@@ -41,13 +41,6 @@ public class PObjectTest {
 		assertEquals("", p.getClassname());
 		assertEquals("tag", tag.getClassname());
 		assertEquals("", p.getClassname());
-	}
-
-	@Test
-	public void testSetClassname() {
-		Tag tag = new Tag();
-		tag.setClassname("bag");
-		assertEquals("tag", tag.getClassname());		
 	}
 
 	@Test
@@ -82,7 +75,7 @@ public class PObjectTest {
 		list.add(l1);
 		list.add(l2);
 		
-		when(search.findTwoTerms(anyString(), (MutableLong) any(), (MutableLong) any(), anyString(), 
+		when(search.findTwoTerms(anyString(), anyString(), (MutableLong) any(), (MutableLong) any(), anyString(), 
 				any(), anyString(), any(), anyBoolean(), anyString(), anyBoolean(), anyInt())).
 			thenReturn(list);
 		

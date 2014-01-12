@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import com.erudika.para.cache.Cache;
 import com.erudika.para.core.User;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
-import java.io.UnsupportedEncodingException;
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,7 +37,7 @@ import org.springframework.util.Assert;
 /**
  * A {@link CsrfTokenRepository} that stores the {@link CsrfToken} in the {@link Cache}.
  * 
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	
@@ -69,8 +68,8 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 			HttpServletResponse response) {
 		if (token != null) {
 			User u = SecurityUtils.getAuthenticatedUser();
-			if(u != null && !cache.contains(u.getIdentifier().concat(parameterName))){
-				cache.put(u.getIdentifier().concat(parameterName), token, Config.SESSION_TIMEOUT_SEC);
+			if(u != null && !cache.contains(Config.APP_NAME_NS, u.getIdentifier().concat(parameterName))){
+				cache.put(Config.APP_NAME_NS, u.getIdentifier().concat(parameterName), token, Config.SESSION_TIMEOUT_SEC);
 			}
 		}
 	}
@@ -89,7 +88,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 			}else{
 				ident = ctokens[0];
 			}
-			token = cache.get(ident.concat(parameterName));
+			token = cache.get(Config.APP_NAME_NS, ident.concat(parameterName));
 		}else{
 			String t = request.getParameter(parameterName);
 			token = (t == null) ? null : new DefaultCsrfToken(headerName, parameterName, t);

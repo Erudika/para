@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,96 +17,99 @@
  */
 package com.erudika.para.cache;
 
+import com.erudika.para.utils.Config;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
+@Singleton
 public class MockCache implements Cache {
 	
-	private Map<String, Object> map = new HashMap<String, Object>();
-		
+	private Map<String, Map<String, Object>> maps = new HashMap<String, Map<String, Object>>();
+	
 	@Override
-	public boolean contains(String id) {
-		if(StringUtils.isBlank(id)) return false;
-		if(isExpired((Long) map.get(id+":ttl"))){
-			remove(id);
+	public boolean contains(String appName, String id) {
+		if(StringUtils.isBlank(id) || StringUtils.isBlank(appName)) return false;
+		if(isExpired((Long) getMap(appName).get(id+":ttl"))){
+			remove(appName, id);
 			return false;
 		}else{
-			return map.containsKey(id);
+			return getMap(appName).containsKey(id);
 		}
 	}
 	
 	@Override
-	public <T> void put(String id, T object) {
-		if(StringUtils.isBlank(id) || object == null) return;
-		map.put(id, object);
+	public <T> void put(String appName, String id, T object) {
+		if(StringUtils.isBlank(id) || object == null || StringUtils.isBlank(appName)) return;
+		getMap(appName).put(id, object);
 	}
 
 	@Override
-	public <T> void put(String id, T object, Long ttl_seconds) {
-		if(StringUtils.isBlank(id) || object == null) return;
-		map.put(id, object);
-		map.put(id+":ttl", System.currentTimeMillis() + ttl_seconds*1000);
-		
+	public <T> void put(String appName, String id, T object, Long ttl_seconds) {
+		if(StringUtils.isBlank(id) || object == null || StringUtils.isBlank(appName)) return;
+		getMap(appName).put(id, object);
+		getMap(appName).put(id+":ttl", System.currentTimeMillis() + ttl_seconds*1000);
 	}
 
 	@Override
-	public <T> void putAll(Map<String, T> objects) {
-		if(objects == null || objects.isEmpty()) return;
+	public <T> void putAll(String appName, Map<String, T> objects) {
+		if(objects == null || objects.isEmpty() || StringUtils.isBlank(appName)) return;
 		objects.remove(null);
 		objects.remove("");
-		map.putAll(objects);
+		getMap(appName).putAll(objects);
 	}
 
 	@Override
-	public <T> T get(String id) {
-		if(StringUtils.isBlank(id)) return null;
-		if(isExpired((Long) map.get(id+":ttl"))){
-			remove(id);
+	public <T> T get(String appName, String id) {
+		if(StringUtils.isBlank(id) || StringUtils.isBlank(appName)) return null;
+		if(isExpired((Long) getMap(appName).get(id+":ttl"))){
+			remove(appName, id);
 			return null;
 		}else{
-			return (T) map.get(id);
+			return (T) getMap(appName).get(id);
 		}
 	}
 
 	@Override
-	public <T> Map<String, T> getAll(List<String> ids) {
+	public <T> Map<String, T> getAll(String appName, List<String> ids) {
 		Map<String, T> map1 = new TreeMap<String, T>();
-		if(ids == null) return map1;
+		if(ids == null || StringUtils.isBlank(appName)) return map1;
 		ids.remove(null);
 		for (String id : ids) {
-			if(!isExpired((Long) map.get(id+":ttl"))){
-				T t = (T) map.get(id);
+			if(!isExpired((Long) getMap(appName).get(id+":ttl"))){
+				T t = (T) getMap(appName).get(id);
 				if(t != null) map1.put(id, t);
 			}else{
-				remove(id);
+				remove(appName, id);
 			}
 		}
 		return map1;
 	}
 	
 	@Override
-	public void remove(String id) {
-		if(StringUtils.isBlank(id)) return;
-		map.remove(id);
+	public void remove(String appName, String id) {
+		if(StringUtils.isBlank(id) || StringUtils.isBlank(appName)) return;
+		getMap(appName).remove(id);
 	}
 
 	@Override
-	public void removeAll() {
-		map.clear();
+	public void removeAll(String appName) {
+		if(StringUtils.isBlank(appName)) return;
+		getMap(appName).clear();
 	}
 	
 	@Override
-	public void removeAll(List<String> ids) {
-		if(ids == null) return;
+	public void removeAll(String appName, List<String> ids) {
+		if(ids == null || StringUtils.isBlank(appName)) return;
 		for (String id : ids) {
-			remove(id);
+			remove(appName, id);
 		}
 	}
 	
@@ -114,4 +117,54 @@ public class MockCache implements Cache {
 		if(ttl == null) return false;
 		return System.currentTimeMillis() > ttl;
 	}
+	
+	private Map<String, Object> getMap(String appName){
+		if(!maps.containsKey(appName)){
+			maps.put(appName, new  HashMap<String, Object>());
+		}
+		return maps.get(appName);
+	}
+
+	////////////////////////////////////////////////////
+	
+	@Override
+	public boolean contains(String id) {
+		return contains(Config.APP_NAME_NS, id);
+	}
+
+	@Override
+	public <T> void put(String id, T object) {
+		put(Config.APP_NAME_NS, id, object);
+	}
+	
+	@Override
+	public <T> void putAll(Map<String, T> objects) {
+		putAll(Config.APP_NAME_NS, objects);
+	}
+	
+	@Override
+	public <T> T get(String id) {
+		return get(Config.APP_NAME_NS, id);
+	}
+	
+	@Override
+	public <T> Map<String, T> getAll(List<String> ids) {
+		return getAll(Config.APP_NAME_NS, ids);
+	}
+	
+	@Override
+	public void remove(String id) {
+		remove(Config.APP_NAME_NS, id);
+	}
+	
+	@Override
+	public void removeAll() {
+		removeAll(Config.APP_NAME_NS);
+	}
+	
+	@Override
+	public void removeAll(List<String> ids) {
+		removeAll(Config.APP_NAME_NS, ids);
+	}
+
 }

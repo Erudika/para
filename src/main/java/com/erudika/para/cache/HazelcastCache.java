@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,7 @@
  */
 package com.erudika.para.cache;
 
-import com.amazonaws.auth.InstanceProfileCredentialsProvider;
-import com.erudika.para.Para;
 import com.erudika.para.utils.Config;
-import com.hazelcast.config.AwsConfig;
-import com.hazelcast.config.JoinConfig;
-import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MaxSizeConfig;
-import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_PERCENTAGE;
-import com.hazelcast.config.MulticastConfig;
-import com.hazelcast.config.NetworkConfig;
-import com.hazelcast.config.TcpIpConfig;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import java.util.List;
@@ -42,124 +31,127 @@ import org.apache.commons.lang3.StringUtils;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 @Singleton
 public class HazelcastCache implements Cache {
 
-	private static final String NODE_NAME = Config.CLUSTER_NAME + Config.WORKER_ID;
-	private static final String MAP_NAME = Config.CLUSTER_NAME;
-	
-	private HazelcastInstance haze;
+	private HazelcastInstance hcInstance;
 
 	public HazelcastCache() {
-		haze = Hazelcast.getHazelcastInstanceByName(NODE_NAME);
-		if(haze == null){
-			com.hazelcast.config.Config cfg = new com.hazelcast.config.Config();
-			MapConfig mapcfg = new MapConfig(MAP_NAME);
-			mapcfg.setEvictionPercentage(25);
-			mapcfg.setEvictionPolicy(MapConfig.EvictionPolicy.LRU);
-//			mapcfg.setMapStoreConfig(new MapStoreConfig().setEnabled(false).setClassName(NODE_NAME));
-			mapcfg.setMaxSizeConfig(new MaxSizeConfig().setSize(25).setMaxSizePolicy(USED_HEAP_PERCENTAGE));
-			cfg.addMapConfig(mapcfg);
-			cfg.setInstanceName(NODE_NAME);
-			cfg.setProperty("hazelcast.jmx", "true");
-			cfg.setProperty("hazelcast.logging.type", "slf4j");
-			if(Config.IN_PRODUCTION){
-				cfg.setNetworkConfig(new NetworkConfig().setJoin(new JoinConfig().
-					setMulticastConfig(new MulticastConfig().setEnabled(false)).
-						setTcpIpConfig(new TcpIpConfig().setEnabled(false)).
-						setAwsConfig(new AwsConfig().setEnabled(true).
-							setAccessKey(getAwsCredentials()[0]).
-							setSecretKey(getAwsCredentials()[1]).
-							setRegion(Config.AWS_REGION).
-							setSecurityGroupName(Config.CLUSTER_NAME))));
-			}
-			
-			haze = Hazelcast.newHazelcastInstance(cfg);
-			
-			Para.addDestroyListener(new Para.DestroyListener() {
-				public void onDestroy() {
-					haze.getLifecycleService().shutdown();
-				}
-			});
-		}
 	}
 	
-	private String[] getAwsCredentials(){
-		if(!StringUtils.isBlank(Config.AWS_ACCESSKEY) && !StringUtils.isBlank(Config.AWS_SECRETKEY)){
-			return new String[]{Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY};
-		}else{
-			InstanceProfileCredentialsProvider ipcp = new InstanceProfileCredentialsProvider();
-			try {
-				return new String[]{ipcp.getCredentials().getAWSAccessKeyId(), ipcp.getCredentials().getAWSSecretKey()};
-			} catch (Exception e) {
-				return new String[]{"", ""};
-			}
-		}
+	HazelcastInstance client(){
+		if(hcInstance == null){
+			hcInstance = HazelcastUtils.getClient();
+		}		
+		return hcInstance;
 	}
 
 	@Override
-	public boolean contains(String id) {
-		if(StringUtils.isBlank(id)) return false;
-		return haze.getMap(MAP_NAME).containsKey(id);
+	public boolean contains(String appName, String id) {
+		if(StringUtils.isBlank(id) || StringUtils.isBlank(appName)) return false;
+		return client().getMap(appName).containsKey(id);
 	}
 	
 	@Override
-	public <T> void put(String id, T object) {
-		if(StringUtils.isBlank(id) || object == null) return;
-		haze.getMap(MAP_NAME).putAsync(id, object);
+	public <T> void put(String appName, String id, T object) {
+		if(StringUtils.isBlank(id) || object == null || StringUtils.isBlank(appName)) return;
+		client().getMap(appName).putAsync(id, object);
 	}
 
 	@Override
-	public <T> void put(String id, T object, Long ttl_seconds) {
-		if(StringUtils.isBlank(id) || object == null) return;
-		haze.getMap(MAP_NAME).putAsync(id, object, ttl_seconds, TimeUnit.SECONDS);
+	public <T> void put(String appName, String id, T object, Long ttl_seconds) {
+		if(StringUtils.isBlank(id) || object == null || StringUtils.isBlank(appName)) return;
+		client().getMap(appName).putAsync(id, object, ttl_seconds, TimeUnit.SECONDS);
 	}
 
 	@Override
-	public <T> void putAll(Map<String, T> objects) {
-		if(objects == null || objects.isEmpty()) return;
+	public <T> void putAll(String appName, Map<String, T> objects) {
+		if(objects == null || objects.isEmpty() || StringUtils.isBlank(appName)) return;
 		objects.remove(null);
 		objects.remove("");
-		haze.getMap(MAP_NAME).putAll(objects);
+		client().getMap(appName).putAll(objects);
+	}
+	
+	@Override
+	public <T> T get(String appName, String id) {
+		if(StringUtils.isBlank(id) || StringUtils.isBlank(appName)) return null;
+		return (T) client().getMap(appName).get(id);
 	}
 
 	@Override
-	public <T> T get(String id) {
-		if(StringUtils.isBlank(id)) return null;
-		return (T) haze.getMap(MAP_NAME).get(id);
-	}
-
-	@Override
-	public <T> Map<String, T> getAll(List<String> ids) {
+	public <T> Map<String, T> getAll(String appName, List<String> ids) {
 		Map<String, T> map = new TreeMap<String, T>();
-		if(ids == null) return map;
+		if(ids == null || StringUtils.isBlank(appName)) return map;
 		ids.remove(null);
-		for (Entry<Object, Object> entry : haze.getMap(MAP_NAME).getAll(new TreeSet<Object>(ids)).entrySet()) {
+		for (Entry<Object, Object> entry : client().getMap(appName).getAll(new TreeSet<Object>(ids)).entrySet()) {
 			map.put((String) entry.getKey(), (T) entry.getValue());
 		}
 		return map;
 	}
 	
 	@Override
-	public void remove(String id) {
-		if(StringUtils.isBlank(id)) return;
-		haze.getMap(MAP_NAME).delete(id);
+	public void remove(String appName, String id) {
+		if(StringUtils.isBlank(id) || StringUtils.isBlank(appName)) return;
+		client().getMap(appName).delete(id);
 	}
 
 	@Override
+	public void removeAll(String appName) {
+		if(StringUtils.isBlank(appName)) return;
+		client().getMap(appName).clear();
+	}
+	
+	@Override
+	public void removeAll(String appName, List<String> ids) {
+		if(ids == null || StringUtils.isBlank(appName)) return;
+		IMap<?,?> map = client().getMap(appName);
+		for (String id : ids) {
+			map.delete(id);
+		}
+	}
+	
+	////////////////////////////////////////////////////
+	
+	@Override
+	public boolean contains(String id) {
+		return contains(Config.APP_NAME_NS, id);
+	}
+
+	@Override
+	public <T> void put(String id, T object) {
+		put(Config.APP_NAME_NS, id, object);
+	}
+	
+	@Override
+	public <T> void putAll(Map<String, T> objects) {
+		putAll(Config.APP_NAME_NS, objects);
+	}
+	
+	@Override
+	public <T> T get(String id) {
+		return get(Config.APP_NAME_NS, id);
+	}
+	
+	@Override
+	public <T> Map<String, T> getAll(List<String> ids) {
+		return getAll(Config.APP_NAME_NS, ids);
+	}
+	
+	@Override
+	public void remove(String id) {
+		remove(Config.APP_NAME_NS, id);
+	}
+	
+	@Override
 	public void removeAll() {
-		haze.getMap(MAP_NAME).clear();
+		removeAll(Config.APP_NAME_NS);
 	}
 	
 	@Override
 	public void removeAll(List<String> ids) {
-		if(ids == null) return;
-		IMap<?,?> map = haze.getMap(MAP_NAME);
-		for (String id : ids) {
-			map.delete(id);
-		}
+		removeAll(Config.APP_NAME_NS, ids);
 	}
 	
 }

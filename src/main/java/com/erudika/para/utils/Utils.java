@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,9 +81,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.time.DateFormatUtils;
-import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.node.ObjectNode;
 import org.codehaus.jackson.type.TypeReference;
 import org.geonames.FeatureClass;
 import org.geonames.Style;
@@ -98,7 +96,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 @SuppressWarnings("unchecked")
 public final class Utils {
@@ -657,9 +655,6 @@ public final class Utils {
 	public static Class<? extends ParaObject> toClass(String classname, String scanPackageName){
 		String packagename = System.getProperty(Config.CORE_PACKAGE, Config.CORE_PACKAGE_NAME);
 		String corepackage = StringUtils.isBlank(scanPackageName) ? packagename : scanPackageName;
-		if(StringUtils.isBlank(corepackage)){
-			logger.warn("System property '{}' not set.", Config.CORE_PACKAGE);
-		}
 		if(StringUtils.isBlank(classname)) return null;
 		Class<? extends ParaObject> clazz = null;
 		try {
@@ -672,11 +667,32 @@ public final class Utils {
 						concat(StringUtils.capitalize(classname)));
 				} catch (Exception ex1) {
 					logger.error(ex1.toString());
+					if(StringUtils.isBlank(corepackage)){
+						logger.warn("Class '{}' not found! System property '{}' not set.", 
+								classname, Config.CORE_PACKAGE);
+					}					
 				}
 			}
 		}
-
 		return clazz;
+	}
+	
+	public static ParaObject fromJSON(String json){
+		try {
+			return jsonMapper.readValue(json, ParaObject.class);
+		} catch (Exception e) {
+			logger.error(null, e);
+		}
+		return null;
+	}
+	
+	public static String toJSON(ParaObject obj){
+		try {
+			return jsonMapper.writeValueAsString(obj);
+		} catch (Exception e) {
+			logger.error(null, e);
+		}
+		return "";
 	}
 	
 	/********************************************
@@ -898,28 +914,6 @@ public final class Utils {
 		}
 	}
 	
-	public static String toIndexableJSON(ParaObject so, String type, boolean hasData){
-		String json = "";
-		if(so == null || StringUtils.isBlank(type)) return json;
-		
-		JsonNode rootNode = jsonMapper.createObjectNode(); // will be of type ObjectNode
-		
-		try {
-			((ObjectNode) rootNode).put("_id", so.getId());
-			((ObjectNode) rootNode).put("_type", type);
-			((ObjectNode) rootNode).put("_index", Config.INDEX_ALIAS);
-			
-			if(hasData){
-				((ObjectNode) rootNode).putPOJO("_data", getAnnotatedFields(so, Stored.class, null));
-			}
-			json = jsonMapper.writeValueAsString(rootNode);
-		} catch (Exception ex) {
-			logger.error(null, ex);
-		}
-		
-		return json;
-	}
-		
 	public static Response getJSONResponse(final Status status, final String... errors){
 		String json = "{}";
 		try {

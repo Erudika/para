@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,33 @@ import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 public interface ParaObject extends Serializable {
 
+	public String getId();
+
+	public void setId(String id);
+	
+	public String getName();
+
+	public void setName(String name);
+	
+	public String getAppname();
+	
+	public void setAppname(String appname);
+	
+	public String getParentid();
+
+	public void setParentid(String parentid);
+	
 	public String getClassname();
+	
+	public void setClassname(String classname);
+	
+	public String getCreatorid();
+
+	public void setCreatorid(String creatorid);
 	
 	public String getPlural();
 
@@ -34,34 +56,16 @@ public interface ParaObject extends Serializable {
 
 	@JsonIgnore
 	public ParaObject getCreator();
-
-	public String getCreatorid();
-
-	public String getId();
-
-	public String getName();
-
+	
 	// one-to-many relationships (may return self)
 	@JsonIgnore
 	public ParaObject getParent();
-
-	public String getParentid();
-
+	
 	public Long getTimestamp();
 
-	public Long getUpdated();
-
-	public void setClassname(String classname);
-
-	public void setCreatorid(String creatorid);
-
-	public void setId(String id);
-
-	public void setName(String name);
-
-	public void setParentid(String parentid);
-
 	public void setTimestamp(Long timestamp);
+	
+	public Long getUpdated();
 
 	public void setUpdated(Long updated);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,80 +22,96 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.elasticsearch.search.SearchHits;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 public interface Search {
 
-	public void createIndex(String name);
-
-	public void deleteIndex(String name);
-
-	public boolean existsIndex(String name);
-
-	public <P extends ParaObject> P findById(String key, String type);
+	/********************************************
+	 *			   CORE METHODS
+	 ********************************************/
 	
-	public <P extends ParaObject> ArrayList<P> findNearbyObjects(String type, MutableLong page, MutableLong itemcount, String query, int radius, double lat, double lng, String sortby);
-
-	public <P extends ParaObject> ArrayList<P> findPrefix(String type, MutableLong page, MutableLong itemcount, String field, String prefix);
-
-	public <P extends ParaObject> ArrayList<P> findPrefix(String type, MutableLong page, MutableLong itemcount, String field, String prefix, String sortfield, boolean reverse, int max);
-
-	public <P extends ParaObject> ArrayList<P> findQuery(String type, MutableLong page, MutableLong itemcount, String query);
-
-	public <P extends ParaObject> ArrayList<P> findQuery(String type, MutableLong page, MutableLong itemcount, String query, String sortfield, boolean reverse, int max);
-
-	public <P extends ParaObject> ArrayList<P> findSimilar(String type, String filterKey, String[] fields, String liketext, int max);
-
-	public <P extends ParaObject> ArrayList<P> findTagged(String type, MutableLong page, MutableLong itemcount, ArrayList<String> tags);
-
-	public <P extends ParaObject> ArrayList<P> findTags(String keyword, int max);
-
-	public <P extends ParaObject> ArrayList<P> findTerm(String type, MutableLong page, MutableLong itemcount, String field, Object term);
-
-	public <P extends ParaObject> ArrayList<P> findTerm(String type, MutableLong page, MutableLong itemcount, String field, Object term, String sortfield, boolean reverse, int max);
-
-	public <P extends ParaObject> ArrayList<P> findTermInList(String type, MutableLong page, MutableLong itemcount, String field, List<?> terms, String sortfield, boolean reverse, int max);
-
-	public <P extends ParaObject> ArrayList<P> findTwoTerms(String type, MutableLong page, MutableLong itemcount, String field1, Object term1, String field2, Object term2);
-
-	public <P extends ParaObject> ArrayList<P> findTwoTerms(String type, MutableLong page, MutableLong itemcount, String field1, Object term1, String field2, Object term2, String sortfield, boolean reverse, int max);
-
-	public <P extends ParaObject> ArrayList<P> findTwoTerms(String type, MutableLong page, MutableLong itemcount, String field1, Object term1, String field2, Object term2, boolean mustMatchBoth, String sortfield, boolean reverse, int max);
-
-	public <P extends ParaObject> ArrayList<P> findWildcard(String type, MutableLong page, MutableLong itemcount, String field, String wildcard);
-
-	public <P extends ParaObject> ArrayList<P> findWildcard(String type, MutableLong page, MutableLong itemcount, String field, String wildcard, String sortfield, boolean reverse, int max);
-
-	public Long getBeanCount(String classtype);
-
-	public Long getCount(String classtype, String field, Object term);
-
-	public Long getCount(String classtype, String field1, Object term1, String field2, Object term2);
-
-	public String getIndexName();
-
-	public Map<String, String> getSearchClusterMetadata();
-
-	public Map<String, Object> getSource(String key, String type);
-
-	public void index(ParaObject so, String type);
-
-	public void index(ParaObject so, String type, long ttl);
+	public void index(ParaObject so);
+	public void index(String appName, ParaObject so);
+	public void index(String appName, ParaObject so, long ttl);
+	
+	public void unindex(ParaObject so);
+	public void unindex(String appName, ParaObject so);
 
 	public <P extends ParaObject> void indexAll(List<P> objects);
-
-	public boolean optimizeIndex(String name);
-
-	public void rebuildIndex(String newIndex);
-
-	public <P extends ParaObject> ArrayList<P> searchQuery(String type, MutableLong itemcount, SearchHits hits);
-
-	public void unindex(ParaObject so, String type);
+	public <P extends ParaObject> void indexAll(String appName, List<P> objects);
 
 	public <P extends ParaObject> void unindexAll(List<P> objects);
-		
+	public <P extends ParaObject> void unindexAll(String appName, List<P> objects);
+	
+	/********************************************
+	 *			    SEARCH METHODS
+	 ********************************************/
+
+	public <P extends ParaObject> P findById(String id, String type);
+	public <P extends ParaObject> P findById(String appName, String id, String type);
+	
+	public <P extends ParaObject> ArrayList<P> findNearbyObjects(String type, MutableLong page, MutableLong itemcount, String query, int radius, double lat, double lng, String sortby);
+	public <P extends ParaObject> ArrayList<P> findNearbyObjects(String appName, String type, MutableLong page, MutableLong itemcount, String query, int radius, double lat, double lng, String sortby);
+
+	public <P extends ParaObject> ArrayList<P> findPrefix(String type, MutableLong page, MutableLong itemcount, String field, String prefix);
+	public <P extends ParaObject> ArrayList<P> findPrefix(String appName, String type, MutableLong page, MutableLong itemcount, String field, String prefix);
+
+	public <P extends ParaObject> ArrayList<P> findPrefix(String type, MutableLong page, MutableLong itemcount, String field, String prefix, String sortfield, boolean reverse, int max);
+	public <P extends ParaObject> ArrayList<P> findPrefix(String appName, String type, MutableLong page, MutableLong itemcount, String field, String prefix, String sortfield, boolean reverse, int max);
+
+	public <P extends ParaObject> ArrayList<P> findQuery(String type, MutableLong page, MutableLong itemcount, String query);
+	public <P extends ParaObject> ArrayList<P> findQuery(String appName, String type, MutableLong page, MutableLong itemcount, String query);
+
+	public <P extends ParaObject> ArrayList<P> findQuery(String type, MutableLong page, MutableLong itemcount, String query, String sortfield, boolean reverse, int max);
+	public <P extends ParaObject> ArrayList<P> findQuery(String appName, String type, MutableLong page, MutableLong itemcount, String query, String sortfield, boolean reverse, int max);
+
+	public <P extends ParaObject> ArrayList<P> findSimilar(String type, String filterKey, String[] fields, String liketext, int max);
+	public <P extends ParaObject> ArrayList<P> findSimilar(String appName, String type, String filterKey, String[] fields, String liketext, int max);
+
+	public <P extends ParaObject> ArrayList<P> findTagged(String type, MutableLong page, MutableLong itemcount, ArrayList<String> tags);
+	public <P extends ParaObject> ArrayList<P> findTagged(String appName, String type, MutableLong page, MutableLong itemcount, ArrayList<String> tags);
+
+	public <P extends ParaObject> ArrayList<P> findTags(String keyword, int max);
+	public <P extends ParaObject> ArrayList<P> findTags(String appName, String keyword, int max);
+
+	public <P extends ParaObject> ArrayList<P> findTerm(String type, MutableLong page, MutableLong itemcount, String field, Object term);
+	public <P extends ParaObject> ArrayList<P> findTerm(String appName, String type, MutableLong page, MutableLong itemcount, String field, Object term);
+
+	public <P extends ParaObject> ArrayList<P> findTerm(String type, MutableLong page, MutableLong itemcount, String field, Object term, String sortfield, boolean reverse, int max);
+	public <P extends ParaObject> ArrayList<P> findTerm(String appName, String type, MutableLong page, MutableLong itemcount, String field, Object term, String sortfield, boolean reverse, int max);
+
+	public <P extends ParaObject> ArrayList<P> findTermInList(String type, MutableLong page, MutableLong itemcount, String field, List<?> terms, String sortfield, boolean reverse, int max);
+	public <P extends ParaObject> ArrayList<P> findTermInList(String appName, String type, MutableLong page, MutableLong itemcount, String field, List<?> terms, String sortfield, boolean reverse, int max);
+
+	public <P extends ParaObject> ArrayList<P> findTwoTerms(String type, MutableLong page, MutableLong itemcount, String field1, Object term1, String field2, Object term2);
+	public <P extends ParaObject> ArrayList<P> findTwoTerms(String appName, String type, MutableLong page, MutableLong itemcount, String field1, Object term1, String field2, Object term2);
+
+	public <P extends ParaObject> ArrayList<P> findTwoTerms(String type, MutableLong page, MutableLong itemcount, String field1, Object term1, String field2, Object term2, String sortfield, boolean reverse, int max);
+	public <P extends ParaObject> ArrayList<P> findTwoTerms(String appName, String type, MutableLong page, MutableLong itemcount, String field1, Object term1, String field2, Object term2, String sortfield, boolean reverse, int max);
+
+	public <P extends ParaObject> ArrayList<P> findTwoTerms(String type, MutableLong page, MutableLong itemcount, String field1, Object term1, String field2, Object term2, boolean mustMatchBoth, String sortfield, boolean reverse, int max);
+	public <P extends ParaObject> ArrayList<P> findTwoTerms(String appName, String type, MutableLong page, MutableLong itemcount, String field1, Object term1, String field2, Object term2, boolean mustMatchBoth, String sortfield, boolean reverse, int max);
+
+	public <P extends ParaObject> ArrayList<P> findWildcard(String type, MutableLong page, MutableLong itemcount, String field, String wildcard);
+	public <P extends ParaObject> ArrayList<P> findWildcard(String appName, String type, MutableLong page, MutableLong itemcount, String field, String wildcard);
+
+	public <P extends ParaObject> ArrayList<P> findWildcard(String type, MutableLong page, MutableLong itemcount, String field, String wildcard, String sortfield, boolean reverse, int max);
+	public <P extends ParaObject> ArrayList<P> findWildcard(String appName, String type, MutableLong page, MutableLong itemcount, String field, String wildcard, String sortfield, boolean reverse, int max);
+
+	/********************************************
+	 *			  HELPER METHODS
+	 ********************************************/
+	
+	public Long getBeanCount(String type);
+	public Long getBeanCount(String appName, String type);
+
+	public Long getCount(String type, String field, Object term);
+	public Long getCount(String appName, String type, String field, Object term);
+
+	public Long getCount(String type, String field1, Object term1, String field2, Object term2);
+	public Long getCount(String appName, String type, String field1, Object term1, String field2, Object term2);
+
 }

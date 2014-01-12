@@ -26,11 +26,11 @@
 			<artifactId>guice</artifactId>
 			<version>3.0</version>
 		</dependency>
-		<dependency>
+<!--		<dependency>
 			<groupId>com.google.inject.extensions</groupId>
 			<artifactId>guice-servlet</artifactId>
 			<version>3.0</version>
-		</dependency>
+		</dependency>-->
 		
 		<!-- JERSEY -->
 		<dependency>
@@ -48,22 +48,22 @@
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-core</artifactId>
-			<version>3.2.0.CI-SNAPSHOT</version>
+			<version>3.2.0.RELEASE</version>
 		</dependency> 
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-web</artifactId>
-			<version>3.2.0.CI-SNAPSHOT</version>
+			<version>3.2.0.RELEASE</version>
 		</dependency> 
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-openid</artifactId>
-			<version>3.2.0.CI-SNAPSHOT</version>
+			<version>3.2.0.RELEASE</version>
 		</dependency> 
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-config</artifactId>
-			<version>3.2.0.CI-SNAPSHOT</version>
+			<version>3.2.0.RELEASE</version>
 		</dependency>
 		
 		<!-- JACKSON -->
@@ -99,12 +99,12 @@
 		<dependency>
 			<groupId>com.hazelcast</groupId>
 			<artifactId>hazelcast</artifactId>
-			<version>3.1.1</version>
+			<version>3.1.2</version>
 		</dependency>
 		<dependency>
 			<groupId>com.hazelcast</groupId>
 			<artifactId>hazelcast-cloud</artifactId>
-			<version>3.1.1</version>
+			<version>3.1.2</version>
 		</dependency>
 		
 		<!-- CASSANDRA CLIENT -->
@@ -228,7 +228,14 @@
 			<version>4.11</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.elasticmq</groupId>
+			<artifactId>elasticmq-rest-sqs_2.10</artifactId>
+			<version>0.7.0</version>
+			<scope>test</scope>
+		</dependency>
     </dependencies>
+	
 
 	<build>
 		<plugins>
@@ -304,7 +311,7 @@
 				</executions>
 			</plugin>-->
 			
-			<!--			<plugin>
+<!--						<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<version>2.4</version>
 				<configuration>
@@ -338,7 +345,7 @@
 						</goals>
 						<configuration>
 							<scope>test</scope>
-							<skip>${skipITs}</skip>
+							<!--<skip>${skipITs}</skip>-->
 							<port>8000</port>
 							<dist>${project.build.directory}/dynamodb-dist</dist>
 						</configuration>
@@ -391,7 +398,11 @@
 			<id>sonatype</id>
 			<url>http://oss.sonatype.org/content/repositories/releases/</url>
 		</repository>
-
+		<repository>
+			<id>softwaremill-releases</id>
+			<url>https://nexus.softwaremill.com/content/repositories/releases</url>
+		</repository>
+<!--
 		<repository>
 			<id>spring-snapshots</id>
 			<name>Spring Snapshots</name>
@@ -399,7 +410,7 @@
 			<snapshots>
 				<enabled>true</enabled>
 			</snapshots>
-		</repository>
+		</repository>-->
 	</repositories>
 	
 </project>

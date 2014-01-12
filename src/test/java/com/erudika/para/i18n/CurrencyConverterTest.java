@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,20 @@
  */
 package com.erudika.para.i18n;
 
-import junit.framework.TestCase;
 import static org.junit.Assert.*;
 import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 @Ignore
-public abstract class CurrencyConverterTest extends TestCase{
+public abstract class CurrencyConverterTest {
 	
 	protected CurrencyConverter cc;
 
+	@Test
 	public void testConvertCurrency() {
 		assertTrue(cc.convertCurrency(null, null, null) == 0.0);
 		assertTrue(cc.convertCurrency(1, null, null) == 0.0);

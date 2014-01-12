@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import org.hibernate.validator.constraints.NotBlank;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 public abstract class PObject implements ParaObject, Linkable, Votable {
 	
@@ -44,6 +44,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	@Stored @Locked private Long timestamp;
 	@Stored @Locked private Long updated;
 	@Stored @Locked private String classname;
+	@Stored @Locked private String appname;
 	@Stored @Locked private String parentid;
 	@Stored @Locked private String creatorid;
 	@Stored @NotBlank @Size(min=2, max=255) private String name;
@@ -93,16 +94,18 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	@JsonIgnore
 	@Override
 	public PObject getParent(){
-		if(parent == null)
-			parent = getDao().read(parentid);
+		if(parent == null){
+			parent = getDao().read(getAppname(), parentid);
+		}
 		return parent;
 	}
 	
 	@JsonIgnore
 	@Override
 	public PObject getCreator(){
-		if(creator == null)
-			creator = getDao().read(creatorid);
+		if(creator == null){
+			creator = getDao().read(getAppname(), creatorid);
+		}
 		return creator;
 	}
 	
@@ -168,48 +171,64 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	
 	@Override
 	public String create() {
-		return getDao().create(this);
+		return getDao().create(getAppname(), this);
 	}
 
 	@Override
 	public void update() {
-		getDao().update(this);
+		getDao().update(getAppname(), this);
 	}
 
 	@Override
 	public void delete() {
-		getDao().delete(this);
+		getDao().delete(getAppname(), this);
 	}
 
 	@Override
 	public boolean exists() {
-		return getDao().existsColumn(id, DAO.OBJECTS, DAO.CN_ID);
+		return getDao().existsColumn(getAppname(), id, DAO.CN_ID);
 	}
 	
 	@Override
 	public String getClassname() {
-		return classname(this.getClass());
+		if(classname == null){
+			classname = classname(this.getClass());
+		}
+		return classname;
 	}
 	
 	@Override
 	public void setClassname(String classname) {
 		this.classname = classname;
 	}
+
+	@Override
+	public String getAppname() {
+		if(appname == null){
+			appname = Config.APP_NAME_NS;
+		}
+		return appname;
+	}
+
+	@Override
+	public void setAppname(String appname) {
+		this.appname = appname;
+	}
 	
 	@Override
 	public String link(Class<? extends ParaObject> c2, String id2){
-		return getDao().create(new Linker(this.getClass(), c2, getId(), id2));
+		return getDao().create(getAppname(), new Linker(this.getClass(), c2, getId(), id2));
 	}
 	
 	@Override
 	public void unlink(Class<? extends ParaObject> c2, String id2){
-		getDao().delete(new Linker(this.getClass(), c2, getId(), id2));
+		getDao().delete(getAppname(), new Linker(this.getClass(), c2, getId(), id2));
 	}
 	
 	@Override
 	public void unlinkAll(){
-		getDao().deleteAll(getSearch().findTwoTerms(classname(Linker.class), null, null, "id1", id, "id2", id, 
-				false, null, true, Config.DEFAULT_LIMIT));
+		getDao().deleteAll(getAppname(), getSearch().findTwoTerms(getAppname(), classname(Linker.class), 
+				null, null, "id1", id, "id2", id, false, null, true, Config.DEFAULT_LIMIT));
 	}
 	
 	@Override
@@ -223,14 +242,14 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		if(c2 == null) return new ArrayList<Linker>();
 		Linker link = new Linker(this.getClass(), c2, null, null);
 		String idField = link.getIdFieldNameFor(this.getClass());
-		return getSearch().findTwoTerms(link.getClassname(), pagenum, itemcount, 
+		return getSearch().findTwoTerms(getAppname(), link.getClassname(), pagenum, itemcount, 
 				DAO.CN_NAME, link.getName(), idField, id, null, reverse, maxItems);
 	}
 	
 	@Override
 	public boolean isLinked(Class<? extends ParaObject> c2, String toId){
 		if(c2 == null) return false;
-		return getDao().read(new Linker(this.getClass(), c2, getId(), toId).getId()) != null;
+		return getDao().read(getAppname(), new Linker(this.getClass(), c2, getId(), toId).getId()) != null;
 	}
 	
 	@Override
@@ -244,8 +263,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		if(id == null) return 0L;
 		Linker link = new Linker(this.getClass(), c2, null, null);
 		String idField = link.getIdFieldNameFor(this.getClass());
-		return getSearch().getCount(link.getClassname(), 
-				DAO.CN_NAME, link.getName(), idField, id);
+		return getSearch().getCount(getAppname(), link.getClassname(), DAO.CN_NAME, link.getName(), idField, id);
 	}
 	
 	public static String classname(Class<? extends ParaObject> clazz){
@@ -261,14 +279,21 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	@Override
     public <P extends ParaObject> ArrayList<P> getChildren(Class<? extends ParaObject> clazz, 
 			MutableLong page, MutableLong itemcount, String sortfield, int max){
-		return getSearch().findTerm(classname(clazz), page, itemcount, 
+		return getSearch().findTerm(getAppname(), classname(clazz), page, itemcount, 
 				DAO.CN_PARENTID, getId(), sortfield, true, max);
+    }
+	
+	@Override
+    public <P extends ParaObject> ArrayList<P> getChildren(Class<? extends ParaObject> clazz, String field, String term,
+			MutableLong page, MutableLong itemcount, String sortfield, int max, boolean reverse){
+		return getSearch().findTwoTerms(getAppname(), classname(clazz), page, itemcount, field, term, 
+				DAO.CN_PARENTID, getId(), true, sortfield, reverse, max);
     }
 	
 	@Override
 	public void deleteChildren(Class<? extends ParaObject> clazz){
 		if(StringUtils.isBlank(getId())) return ;
-		getDao().deleteAll(getSearch().findTerm(classname(clazz), 
+		getDao().deleteAll(getAppname(), getSearch().findTerm(getAppname(), classname(clazz), 
 				null, null, DAO.CN_PARENTID, getId()));
 	}
 	
@@ -285,7 +310,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 			}
 		}
 		
-		return new ArrayList<P>((Collection<? extends P>) getDao().readAll(keys, true).values());
+		return new ArrayList<P>((Collection<? extends P>) getDao().readAll(getAppname(), keys, true).values());
 //		return getSearch().findTermInList(classname(clazz), page, itemcount, DAO.CN_ID, keys, 
 //				null, true, Config.MAX_ITEMS_PER_PAGE);
 	}
@@ -300,7 +325,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		if(userid.equals(votable.getCreatorid()) || userid.equals(votable.getId())) return false;
 		
 		Vote v = new Vote(userid, votable.getId(), upDown.toString());
-		Vote saved = getDao().read(v.getId());
+		Vote saved = getDao().read(getAppname(), v.getId());
 		boolean done = false;
 		int vote = (upDown == VoteType.UP) ? 1 : -1;
 		
@@ -310,13 +335,13 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 			boolean voteHasChanged = BooleanUtils.xor(new boolean[]{isUpvote, wasUpvote});
 			
 			if(saved.isExpired()){
-				done = getDao().create(v) != null;
+				done = getDao().create(getAppname(), v) != null;
 			}else if(saved.isAmendable() && voteHasChanged){
-				getDao().delete(saved);
+				getDao().delete(getAppname(), saved);
 				done = true;
 			}
 		}else{
-			done = getDao().create(v) != null;
+			done = getDao().create(getAppname(), v) != null;
 		}
 		
 		if(done){

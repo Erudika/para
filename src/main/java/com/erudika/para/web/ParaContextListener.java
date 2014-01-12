@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class ParaContextListener implements ServletContextListener {
 
@@ -33,13 +33,13 @@ public class ParaContextListener implements ServletContextListener {
 	
 	@Override
 	public void contextInitialized(ServletContextEvent sce) {
-		logger.info("--- Para: initialize() ---");
+		logger.info("--- Para.initialize() ---");
 		Para.initialize();
 	}
 
 	@Override
 	public void contextDestroyed(ServletContextEvent sce) {
-		logger.info("--- Para: destroy() ---");
+		logger.info("--- Para.destroy() ---");
 		Para.destroy();
 	}
 	

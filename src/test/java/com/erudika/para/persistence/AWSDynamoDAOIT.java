@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,30 @@
  */
 package com.erudika.para.persistence;
 
+import com.erudika.para.utils.Config;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class AWSDynamoDAOIT extends DAOTest {
 
-	public AWSDynamoDAOIT() {
+	@BeforeClass
+	public static void setUpClass() throws InterruptedException {
 		dao = new AWSDynamoDAO();
+		AWSDynamoUtils.createTable(Config.APP_NAME_NS);
+		AWSDynamoUtils.createTable(appName1);
+		AWSDynamoUtils.createTable(appName2);
+	}
+	
+	@AfterClass
+	public static void tearDownClass() {
+		AWSDynamoUtils.deleteTable(Config.APP_NAME_NS);
+		AWSDynamoUtils.deleteTable(appName1);
+		AWSDynamoUtils.deleteTable(appName2);
+		AWSDynamoUtils.shutdownClient();
 	}
 	
 }

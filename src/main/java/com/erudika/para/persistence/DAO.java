@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,12 @@ package com.erudika.para.persistence;
 import com.erudika.para.annotations.Cached;
 import com.erudika.para.annotations.Indexed;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.utils.Config;
 import java.util.List;
 import java.util.Map;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 public interface DAO {
 	
@@ -45,39 +44,53 @@ public interface DAO {
 	public static final String CN_TIMESTAMP = "timestamp";
 	public static final String CN_UPDATED = "updated";
 	
-	//////////  DB CONFIG  //////////////
-	public static final String TABLE_PREFIX = Config.CLUSTER_NAME.concat("_");
-	//////////  DB TABLES  //////////////
-	public static final String OBJECTS = TABLE_PREFIX.concat("objects");
-
 	/********************************************
 	 *			CORE FUNCTIONS
 	 ********************************************/
 	@Indexed(action = Indexed.Action.ADD)
 	@Cached(action = Cached.Action.PUT)
 	public <P extends ParaObject> String create(P so);
+	
+	@Indexed(action = Indexed.Action.ADD)
+	@Cached(action = Cached.Action.PUT)
+	public <P extends ParaObject> String create(String appName, P so);
 
 	@Cached(action = Cached.Action.GET)
 	public <P extends ParaObject> P read(String key);
+	
+	@Cached(action = Cached.Action.GET)
+	public <P extends ParaObject> P read(String appName, String key);
 
 	@Indexed(action = Indexed.Action.ADD)
 	@Cached(action = Cached.Action.PUT)
 	public <P extends ParaObject> void update(P so);
 	
+	@Indexed(action = Indexed.Action.ADD)
+	@Cached(action = Cached.Action.PUT)
+	public <P extends ParaObject> void update(String appName, P so);
+	
 	@Indexed(action = Indexed.Action.REMOVE)
 	@Cached(action = Cached.Action.DELETE)
 	public <P extends ParaObject> void delete(P so);
+	
+	@Indexed(action = Indexed.Action.REMOVE)
+	@Cached(action = Cached.Action.DELETE)
+	public <P extends ParaObject> void delete(String appName, P so);
 
 	/********************************************
 	 *				COLUMN FUNCTIONS
 	 ********************************************/
-	public String getColumn(String key, String cf, String colName);
+	public String getColumn(String key, String colName);
+	public String getColumn(String appName, String key, String colName);
 	
-	public void putColumn(String key, String cf, String colName, String colValue);
+	public void putColumn(String key, String colName, String colValue);
+	public void putColumn(String appName, String key, String colName, String colValue);
 
-	public void removeColumn(String key, String cf, String colName);
+	public void removeColumn(String key, String colName);
+	public void removeColumn(String appName, String key, String colName);
 
-	public boolean existsColumn(String key, String cf, String columnName);
+	public boolean existsColumn(String key, String columnName);
+	public boolean existsColumn(String appName, String key, String columnName);
 	
 	/********************************************
 	 *				READ ALL FUNCTIONS
@@ -86,16 +99,32 @@ public interface DAO {
 	@Cached(action = Cached.Action.PUT_ALL)
 	public <P extends ParaObject> void createAll(List<P> objects);
 	
+	@Indexed(action = Indexed.Action.ADD_ALL)
+	@Cached(action = Cached.Action.PUT_ALL)
+	public <P extends ParaObject> void createAll(String appName, List<P> objects);
+	
 	@Cached(action = Cached.Action.GET_ALL)
 	public <P extends ParaObject> Map<String, P> readAll(List<String> keys, boolean getAllAtrributes);
+	
+	@Cached(action = Cached.Action.GET_ALL)
+	public <P extends ParaObject> Map<String, P> readAll(String appName, List<String> keys, boolean getAllAtrributes);
 
-	public <P extends ParaObject> List<P> readPage(String cf, String lastKey);
+	public <P extends ParaObject> List<P> readPage(String lastKey);
+	public <P extends ParaObject> List<P> readPage(String appName, String lastKey);
 
 	@Indexed(action = Indexed.Action.ADD_ALL)
 	@Cached(action = Cached.Action.PUT_ALL)
 	public <P extends ParaObject> void updateAll(List<P> objects);
 	
+	@Indexed(action = Indexed.Action.ADD_ALL)
+	@Cached(action = Cached.Action.PUT_ALL)
+	public <P extends ParaObject> void updateAll(String appName, List<P> objects);
+	
 	@Indexed(action = Indexed.Action.REMOVE_ALL)
 	@Cached(action = Cached.Action.DELETE_ALL)
 	public <P extends ParaObject> void deleteAll(List<P> objects);
+	
+	@Indexed(action = Indexed.Action.REMOVE_ALL)
+	@Cached(action = Cached.Action.DELETE_ALL)
+	public <P extends ParaObject> void deleteAll(String appName, List<P> objects);
 }

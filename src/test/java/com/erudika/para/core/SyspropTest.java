@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,16 +19,14 @@ package com.erudika.para.core;
 
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
-import org.junit.AfterClass;
+import com.erudika.para.utils.Config;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Before;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class SyspropTest {
 	

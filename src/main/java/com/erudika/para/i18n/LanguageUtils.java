@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,11 @@
  */
 package com.erudika.para.i18n;
 
+import com.erudika.para.core.PObject;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.search.Search;
 import com.erudika.para.core.Translation;
-import static com.erudika.para.core.PObject.classname;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.utils.Config;
 import java.util.ArrayList;
@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 @Singleton
 public class LanguageUtils {
@@ -75,15 +75,15 @@ public class LanguageUtils {
 		}
 	}
 	
-	public Map<String, String> readLanguage(String langCode){
+	public Map<String, String> readLanguage(String appName, String langCode){
 		if(StringUtils.isBlank(langCode) || !allLocales.containsKey(langCode)) return getDefaultLanguage();
 		if(search == null || dao == null) return getDefaultLanguage();
 		
-		Sysprop s = dao.read(keyPrefix.concat(langCode));
+		Sysprop s = dao.read(appName, keyPrefix.concat(langCode));
 		TreeMap<String, String> lang = new TreeMap<String, String>();
 		
 		if(s == null || s.getProperties().isEmpty()){
-			ArrayList<Translation> tlist = search.findTwoTerms(classname(Translation.class), 
+			ArrayList<Translation> tlist = search.findTwoTerms(appName, PObject.classname(Translation.class), 
 					null, null, "locale", langCode, "approved", true, 
 					null, true, getDefaultLanguage().size());
 
@@ -97,9 +97,9 @@ public class LanguageUtils {
 				approved++;
 			}
 			if(approved > 0){
-				updateTranslationProgressMap(langCode, approved);
+				updateTranslationProgressMap(appName, langCode, approved);
 			}			
-			dao.create(saved);
+			dao.create(appName, saved);
 		}else{
 			Map<String, Object> loaded = s.getProperties();
 			for (String key : loaded.keySet()) {
@@ -109,7 +109,7 @@ public class LanguageUtils {
 		return lang;
 	}
 	
-	public void writeLanguage(String langCode, Map<String, String> lang){
+	public void writeLanguage(String appName, String langCode, Map<String, String> lang){
 		if(lang == null || lang.isEmpty() || dao == null) return;
 		if(StringUtils.isBlank(langCode) || !allLocales.containsKey(langCode)) return;
 		
@@ -129,9 +129,9 @@ public class LanguageUtils {
 			}
 		}
 		if(approved > 0){
-			updateTranslationProgressMap(langCode, approved);
+			updateTranslationProgressMap(appName, langCode, approved);
 		}
-		dao.create(s);
+		dao.create(appName, s);
 	}
 
 	public Locale getProperLocale(String langname){
@@ -165,17 +165,17 @@ public class LanguageUtils {
 		this.deflangCode = langCode;
 	}	
 	
-	public ArrayList<ParaObject> readAllTranslationsForKey(String locale, String key,
+	public ArrayList<ParaObject> readAllTranslationsForKey(String appName, String locale, String key,
 			MutableLong pagenum, MutableLong itemcount){
-		return search.findTerm(classname(Translation.class), pagenum, itemcount, 
+		return search.findTerm(appName, PObject.classname(Translation.class), pagenum, itemcount, 
 				DAO.CN_PARENTID, key, null, true, Config.DEFAULT_LIMIT);
 	}
 	
-	public Set<String> getApprovedTransKeys(String langCode){
+	public Set<String> getApprovedTransKeys(String appName, String langCode){
 		HashSet<String> approvedTransKeys = new HashSet<String>();
 		if(StringUtils.isBlank(langCode)) return approvedTransKeys;
 		
-		for (Map.Entry<String, String> entry : readLanguage(langCode).entrySet()) {
+		for (Map.Entry<String, String> entry : readLanguage(appName, langCode).entrySet()) {
 			if(!getDefaultLanguage().get(entry.getKey()).equals(entry.getValue())){
 				approvedTransKeys.add(entry.getKey());
 			}
@@ -183,9 +183,9 @@ public class LanguageUtils {
 		return approvedTransKeys;
 	}
 
-	public Map<String, Integer> getTranslationProgressMap(){
+	public Map<String, Integer> getTranslationProgressMap(String appName){
 		if(dao == null) return progressMap;
-		Sysprop progress = getProgressMap();
+		Sysprop progress = getProgressMap(appName);
 		
 		Map<String, Object> props = progress.getProperties();
 		for (String key : props.keySet()) {
@@ -199,42 +199,42 @@ public class LanguageUtils {
 		return allLocales;
 	}
 	
-	public boolean approveTranslation(String langCode, String key, String value){
+	public boolean approveTranslation(String appName, String langCode, String key, String value){
 		if(langCode == null || key == null || value == null) return false;
 		if(getDefaultLanguageCode().equals(langCode)) return false;
-		Sysprop s = dao.read(keyPrefix.concat(langCode));
+		Sysprop s = dao.read(appName, keyPrefix.concat(langCode));
 		
 		if(s != null && !value.equals(s.getProperty(key))){
 			s.addProperty(key, value);
-			dao.update(s);
-			updateTranslationProgressMap(langCode, PLUS);
+			dao.update(appName, s);
+			updateTranslationProgressMap(appName, langCode, PLUS);
 			return true;
 		}
 		return false;
 	}
 	
-	public boolean disapproveTranslation(String langCode, String key){
+	public boolean disapproveTranslation(String appName, String langCode, String key){
 		if(langCode == null || key == null) return false;
 		if(getDefaultLanguageCode().equals(langCode)) return false;
-		Sysprop s = dao.read(keyPrefix.concat(langCode));
+		Sysprop s = dao.read(appName, keyPrefix.concat(langCode));
 		String defStr = getDefaultLanguage().get(key);
 		
 		if(s != null && !defStr.equals(s.getProperty(key))){
 			s.addProperty(key, defStr);
-			dao.update(s);
-			updateTranslationProgressMap(langCode, MINUS);
+			dao.update(appName, s);
+			updateTranslationProgressMap(appName, langCode, MINUS);
 			return true;
 		}
 		return false;
 	}
 	
-	private void updateTranslationProgressMap(String langCode, int value){
+	private void updateTranslationProgressMap(String appName, String langCode, int value){
 		if(dao == null || getDefaultLanguageCode().equals(langCode)) return;
 		
 		double defsize = getDefaultLanguage().size();
 		double approved = value;
 		
-		Sysprop progress = getProgressMap();
+		Sysprop progress = getProgressMap(appName);
 		
 		if(value == PLUS){
 			approved = Math.round((int) progress.getProperty(langCode) * (defsize / 100) + 1);
@@ -249,18 +249,18 @@ public class LanguageUtils {
 		}else{
 			progress.addProperty(langCode, (int) ((approved / defsize) * 100));
 		}
-		dao.update(progress);
+		dao.update(appName, progress);
 	}
 	
-	private Sysprop getProgressMap(){
-		Sysprop progress = dao.read(progressKey);
+	private Sysprop getProgressMap(String appName){
+		Sysprop progress = dao.read(appName, progressKey);
 		if(progress == null){
 			progress = new Sysprop(progressKey);
 			for (String key : progressMap.keySet()) {
 				progress.addProperty(key, progressMap.get(key));
 			}
 			progress.addProperty(getDefaultLanguageCode(), 100);
-			dao.create(progress);
+			dao.create(appName, progress);
 		}
 		return progress;
 	}

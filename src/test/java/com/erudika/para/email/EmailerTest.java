@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,16 @@ package com.erudika.para.email;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import junit.framework.TestCase;
 import static org.junit.Assert.*;
 import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 @Ignore
-public abstract class EmailerTest extends TestCase {
+public abstract class EmailerTest {
 	
 	protected Emailer e;
 

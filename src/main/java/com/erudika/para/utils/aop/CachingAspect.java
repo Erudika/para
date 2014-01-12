@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.erudika.para.cache.Cache;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.core.ParaObject;
 import static com.erudika.para.utils.aop.IndexingAspect.getArgOfListOfType;
+import static com.erudika.para.utils.aop.IndexingAspect.getFirstArgOfString;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +34,7 @@ import org.aopalliance.intercept.MethodInvocation;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class CachingAspect implements MethodInterceptor {
 	
@@ -52,29 +53,30 @@ public class CachingAspect implements MethodInterceptor {
 			Cached ano = superMethod.getAnnotation(Cached.class);
 			if(ano != null){
 				Object[] args = mi.getArguments();
+				String appName = getFirstArgOfString(args);
 				switch(ano.action()){
 					case GET:
 						String getMe = (String) args[0];
-						if(cache.contains(getMe)){
-							result = cache.get(getMe);
+						if(cache.contains(appName, getMe)){
+							result = cache.get(appName, getMe);
 						}else{
 							result = mi.proceed();
-							cache.put(getMe, result);
+							cache.put(appName, getMe, result);
 						}
 						break;
 					case PUT:
 						ParaObject putMe = IndexingAspect.getArgOfParaObject(args);
 						result = mi.proceed();
-						cache.put(putMe.getId(), putMe);
+						cache.put(appName, putMe.getId(), putMe);
 						break;
 					case DELETE:
 						ParaObject deleteMe = IndexingAspect.getArgOfParaObject(args);
 						result = mi.proceed();
-						cache.remove(deleteMe.getId());
+						cache.remove(appName, deleteMe.getId());
 						break;
 					case GET_ALL:
 						List<String> getUs = getArgOfListOfType(args, String.class);
-						result = cache.getAll(getUs);
+						result = cache.getAll(appName, getUs);
 						break;
 					case PUT_ALL:
 						List<ParaObject> putUs = IndexingAspect.getArgOfListOfType(args, ParaObject.class);
@@ -83,7 +85,7 @@ public class CachingAspect implements MethodInterceptor {
 						for (ParaObject paraObject : putUs) {
 							map1.put(paraObject.getId(), paraObject);
 						}
-						cache.putAll(map1);						
+						cache.putAll(appName, map1);						
 						break;
 					case DELETE_ALL:
 						List<ParaObject> deleteUs = IndexingAspect.getArgOfListOfType(args, ParaObject.class);
@@ -92,7 +94,7 @@ public class CachingAspect implements MethodInterceptor {
 						for (ParaObject paraObject : deleteUs) {
 							list.add(paraObject.getId());
 						}
-						cache.removeAll(list);
+						cache.removeAll(appName, list);
 						break;
 					default: break;
 				}

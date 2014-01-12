@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import org.apache.commons.lang3.mutable.MutableLong;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 public interface Linkable extends ParaObject{
 
@@ -37,6 +37,8 @@ public interface Linkable extends ParaObject{
 	public <P extends ParaObject> ArrayList<P> getChildren(Class<? extends ParaObject> clazz);
 
 	public <P extends ParaObject> ArrayList<P> getChildren(Class<? extends ParaObject> clazz, MutableLong page, MutableLong itemcount, String sortfield, int max);
+	
+	public <P extends ParaObject> ArrayList<P> getChildren(Class<? extends ParaObject> clazz, String field, String term, MutableLong page, MutableLong itemcount, String sortfield, int max, boolean reverse);
 
 	public <P extends ParaObject> ArrayList<P> getLinkedObjects(Class<? extends ParaObject> clazz, MutableLong page, MutableLong itemcount);
 

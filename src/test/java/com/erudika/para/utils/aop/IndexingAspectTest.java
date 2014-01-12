@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,19 +26,39 @@ import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.search.Search;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import static org.mockito.Mockito.*;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class IndexingAspectTest {
 	
 	public IndexingAspectTest() {
+	}
+
+	@BeforeClass
+	public static void setUpClass() throws Exception {
+	}
+
+	@AfterClass
+	public static void tearDownClass() throws Exception {
+	}
+
+	@Before
+	public void setUp() throws Exception {
+	}
+
+	@After
+	public void tearDown() throws Exception {
 	}
 
 	@Test
@@ -66,6 +86,10 @@ public class IndexingAspectTest {
 		assertEquals(list1, IndexingAspect.getArgOfListOfType(new Object[]{list1}, ParaObject.class));
 		assertEquals(list2, IndexingAspect.getArgOfListOfType(new Object[]{list2}, ParaObject.class));
 		assertNull(IndexingAspect.getArgOfListOfType(new Object[]{badList}, ParaObject.class));
+		
+		assertNull(IndexingAspect.getFirstArgOfString(new Object[]{list1}));
+		assertNotNull(IndexingAspect.getFirstArgOfString(new Object[]{new Integer(123), "asd"}));
+		assertEquals("asd", IndexingAspect.getFirstArgOfString(new Object[]{new Integer(123), "asd"}));
 		
 		DAO dao = new MockDAO();
 		Search search = getSearch(dao);
@@ -106,7 +130,7 @@ public class IndexingAspectTest {
 				}
 				return null;
 			}
-		}).when(search).index((ParaObject) anyObject(), anyString());
+		}).when(search).index((ParaObject) anyObject());
 		
 		doAnswer(new Answer<Boolean>() {
 			public Boolean answer(InvocationOnMock invocation) throws Throwable {
@@ -116,7 +140,7 @@ public class IndexingAspectTest {
 				}
 				return null;
 			}
-		}).when(search).unindex((ParaObject) anyObject(), anyString());
+		}).when(search).unindex((ParaObject) anyObject());
 		
 		when(search.findById(anyString(), anyString())).thenAnswer(new Answer<ParaObject>() {
 			public ParaObject answer(InvocationOnMock invocation) throws Throwable {
@@ -124,5 +148,17 @@ public class IndexingAspectTest {
 			}
 		});
 		return search;
+	}
+
+	@Test
+	public void testGetArgOfListOfType() {
+	}
+
+	@Test
+	public void testGetArgOfParaObject() {
+	}
+
+	@Test
+	public void testGetFirstArgOfString() {
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,26 +22,33 @@ import java.util.Map;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 public interface Cache {
 	
 	public boolean contains(String id);
+	public boolean contains(String appName, String id);
 	
 	public <T> void put(String id, T object);
-	
-	public <T> void put(String id, T object, Long ttl_seconds);
-	
+	public <T> void put(String appName, String id, T object);
+
+	public <T> void put(String appName, String id, T object, Long ttl_seconds);
 	public <T> void putAll(Map<String, T> objects);
+	public <T> void putAll(String appName, Map<String, T> objects);
 	
 	public <T> T get(String id);
+	public <T> T get(String appName, String id);
 	
 	public <T> Map<String, T> getAll(List<String> ids);
+	public <T> Map<String, T> getAll(String appName, List<String> ids);
 	
 	public void remove(String id);
+	public void remove(String appName, String id);
 	
 	public void removeAll();
+	public void removeAll(String appName);
 	
 	public void removeAll(List<String> ids);
+	public void removeAll(String appName, List<String> ids);
 	
 }

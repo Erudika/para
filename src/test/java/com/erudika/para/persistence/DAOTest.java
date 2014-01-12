@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,9 @@ package com.erudika.para.persistence;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
 import com.erudika.para.search.Search;
+import com.erudika.para.utils.Config;
 import java.util.Arrays;
 import java.util.Map;
-import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -31,13 +31,15 @@ import org.junit.Ignore;
 import static org.mockito.Mockito.*;
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 @Ignore
-public abstract class DAOTest extends TestCase {
+public abstract class DAOTest {
 	
-	protected DAO dao;
-	
+	protected static DAO dao;
+	protected static String appName1 = "testApp1";
+	protected static String appName2 = "testApp2";
+
 	private User u;
 	private Tag t;
 	
@@ -66,7 +68,7 @@ public abstract class DAOTest extends TestCase {
 		dao.delete(u);
 		dao.delete(t);
 	}
-
+	
 	@Test
 	public void testCreate() {
 		assertNull(dao.create(null));
@@ -79,6 +81,21 @@ public abstract class DAOTest extends TestCase {
 		assertNotNull(dao.create(x));
 		x = dao.read(u.getId());
 		assertNull(x.getEmail());
+		
+		// test multiapp support
+		u.setId(u.getId()+"-APP1");
+		u.setName("UserApp1");
+		dao.create(appName1, u);
+		assertNotNull(dao.read(appName1, u.getId()));
+		assertNull(dao.read(u.getId()));
+		assertNull(dao.read(appName2, u.getId()));
+		
+		t.setId(t.getId()+"-APP2");
+		t.setName("TagApp2");
+		dao.create(appName2, t);
+		assertNotNull(dao.read(appName2, t.getId()));
+		assertNull(dao.read(t.getId()));
+		assertNull(dao.read(appName1, t.getId()));
 	}
 
 	@Test
@@ -108,32 +125,32 @@ public abstract class DAOTest extends TestCase {
 
 	@Test
 	public void testPutGetRemoveColumn() {
-		dao.putColumn(u.getId(), DAO.OBJECTS, DAO.CN_NAME, "New Name");
+		dao.putColumn(u.getId(), DAO.CN_NAME, "New Name");
 		assertEquals("New Name", dao.read(u.getId()).getName());
-		dao.putColumn(u.getId(), DAO.OBJECTS, DAO.CN_NAME, null);
+		dao.putColumn(u.getId(), DAO.CN_NAME, null);
 		assertEquals("New Name", dao.read(u.getId()).getName());
-		dao.putColumn(u.getId(), DAO.OBJECTS, DAO.CN_NAME, "");
+		dao.putColumn(u.getId(), DAO.CN_NAME, "");
 		assertEquals("New Name", dao.read(u.getId()).getName());
 		
-		assertEquals(u.getId(), dao.getColumn(u.getId(), DAO.OBJECTS, DAO.CN_ID));
-		dao.putColumn(u.getId(), DAO.OBJECTS, DAO.CN_NAME, "xxx");
-		assertEquals("xxx", dao.getColumn(u.getId(), DAO.OBJECTS, DAO.CN_NAME));
-		assertNull(dao.getColumn(u.getId(), DAO.OBJECTS, null));
-		assertNull(dao.getColumn(u.getId(), DAO.OBJECTS, ""));
-		assertNull(dao.getColumn(null, DAO.OBJECTS, ""));
+		assertEquals(u.getId(), dao.getColumn(u.getId(), DAO.CN_ID));
+		dao.putColumn(u.getId(), DAO.CN_NAME, "xxx");
+		assertEquals("xxx", dao.getColumn(u.getId(), DAO.CN_NAME));
+		assertNull(dao.getColumn(u.getId(), null));
+		assertNull(dao.getColumn(u.getId(), ""));
+		assertNull(dao.getColumn(null, ""));
 		
-		dao.putColumn(u.getId(), DAO.OBJECTS, DAO.CN_UPDATED, "123");
-		assertEquals("123", dao.getColumn(u.getId(), DAO.OBJECTS, DAO.CN_UPDATED));
-		dao.removeColumn(u.getId(), DAO.OBJECTS, DAO.CN_UPDATED);
-		assertNull(dao.read(u.getId()).getUpdated());
+		dao.putColumn(u.getId(), DAO.CN_UPDATED, "123");
+		assertEquals("123", dao.getColumn(u.getId(), DAO.CN_UPDATED));
+		dao.removeColumn(u.getId(), DAO.CN_UPDATED);
+		assertNull(dao.getColumn(u.getId(), DAO.CN_UPDATED));
 	}
 
 	@Test
 	public void testExistsColumn() {
 		assertFalse(dao.existsColumn(null, null, null));
-		assertFalse(dao.existsColumn(u.getId(), DAO.OBJECTS, null));
-		assertTrue(dao.existsColumn(u.getId(), DAO.OBJECTS, DAO.CN_NAME));
-		assertFalse(dao.existsColumn(u.getId(), DAO.OBJECTS, "testcol"));
+		assertFalse(dao.existsColumn(u.getId(), null));
+		assertTrue(dao.existsColumn(u.getId(), DAO.CN_NAME));
+		assertFalse(dao.existsColumn(u.getId(), "testcol"));
 	}
 
 	@Test
@@ -160,9 +177,9 @@ public abstract class DAOTest extends TestCase {
 		t2.setCount(20);
 		t3.setCount(30);
 		dao.updateAll(Arrays.asList(t1, t2, t3));
-		assertEquals("10", dao.getColumn(t1.getId(), DAO.OBJECTS, "count"));
-		assertEquals("20", dao.getColumn(t2.getId(), DAO.OBJECTS, "count"));
-		assertEquals("30", dao.getColumn(t3.getId(), DAO.OBJECTS, "count"));
+		assertEquals("10", dao.getColumn(t1.getId(), "count"));
+		assertEquals("20", dao.getColumn(t2.getId(), "count"));
+		assertEquals("30", dao.getColumn(t3.getId(), "count"));
 		
 		dao.deleteAll(Arrays.asList(t1, t2, t3));
 		assertNull(dao.read(t1.getId()));

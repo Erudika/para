@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package com.erudika.para.persistence;
 
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.annotations.Locked;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.model.AttributeAction;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.BatchGetItemResult;
@@ -27,21 +26,15 @@ import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
 import com.amazonaws.services.dynamodbv2.model.GetItemResult;
 import com.amazonaws.services.dynamodbv2.model.KeysAndAttributes;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
 import com.amazonaws.services.dynamodbv2.model.AttributeValueUpdate;
 import com.amazonaws.services.dynamodbv2.model.BatchGetItemRequest;
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemRequest;
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemResult;
-import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.DeleteItemRequest;
 import com.amazonaws.services.dynamodbv2.model.DeleteRequest;
-import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
-import com.amazonaws.services.dynamodbv2.model.KeyType;
-import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.dynamodbv2.model.PutItemRequest;
 import com.amazonaws.services.dynamodbv2.model.PutRequest;
 import com.amazonaws.services.dynamodbv2.model.ReturnConsumedCapacity;
-import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.dynamodbv2.model.UpdateItemRequest;
@@ -59,34 +52,23 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 @Singleton
 public class AWSDynamoDAO implements DAO {
 		
 	private static final Logger logger = LoggerFactory.getLogger(AWSDynamoDAO.class);
-	private static AmazonDynamoDBClient ddb;
-//	private static AWSDynamoDAO dao;
-	private static final String ENDPOINT = "dynamodb.".concat(Config.AWS_REGION).concat(".amazonaws.com");
-	private static final String LOCAL_ENDPOINT = "http://localhost:8000";
 	private static final int MAX_ITEMS_PER_BATCH = 4; // Amazon DynamoDB limit ~= WRITE CAP
-	////////////////////////////////////
+	private static AmazonDynamoDBClient ddbClient;
 	
 	public AWSDynamoDAO() {
-		if(Config.IN_PRODUCTION){
-			ddb = new AmazonDynamoDBClient();
-			ddb.setEndpoint(ENDPOINT);
-		}else{
-			ddb = new AmazonDynamoDBClient(new BasicAWSCredentials("local", "null"));
-			ddb.setEndpoint(LOCAL_ENDPOINT);
-			if(!ddb.listTables().getTableNames().contains(DAO.OBJECTS)){
-				ddb.createTable(new CreateTableRequest().withTableName(DAO.OBJECTS).
-						withKeySchema(new KeySchemaElement(DAO.CN_KEY, KeyType.HASH)).
-						withAttributeDefinitions(new AttributeDefinition().withAttributeName(CN_KEY).
-						withAttributeType(ScalarAttributeType.S)).
-						withProvisionedThroughput(new ProvisionedThroughput(1L, 1L)));
-			}
-		}
+	}
+	
+	AmazonDynamoDBClient client(){
+		if(ddbClient == null){
+			ddbClient = AWSDynamoUtils.getClient();
+		}		
+		return ddbClient;
 	}
 		
 	/********************************************
@@ -94,42 +76,42 @@ public class AWSDynamoDAO implements DAO {
 	********************************************/
  
 	@Override
-	public <P extends ParaObject> String create(P so){
+	public <P extends ParaObject> String create(String appName, P so){
 		if(so == null) return null;
 		if(StringUtils.isBlank(so.getId())) so.setId(Utils.getNewId());
 		if(so.getTimestamp() == null) so.setTimestamp(Utils.timestamp());
 
-		createRow(so.getId(), OBJECTS, toRow(so, null));
+		createRow(so.getId(), appName, toRow(so, null));
 		
 		logger.debug("DAO.create() {}", so.getId());
 		return so.getId();
 	}
 	
 	@Override
-	public <P extends ParaObject> P read(String key) {
+	public <P extends ParaObject> P read(String appName, String key) {
 		if(StringUtils.isBlank(key)) return null;
 		
-		P so = fromRow(readRow(key, OBJECTS));
+		P so = fromRow(readRow(key, appName));
 		
 		logger.debug("DAO.read() {} -> {}", key, so);
 		return so != null ? so : null;
 	}
 
 	@Override
-	public <P extends ParaObject> void update(P so){
+	public <P extends ParaObject> void update(String appName, P so){
 		if(so == null || so.getId() == null) return;
 		so.setUpdated(System.currentTimeMillis());
 		
-		updateRow(so.getId(), OBJECTS, toRow(so, Locked.class));
+		updateRow(so.getId(), appName, toRow(so, Locked.class));
 		
 		logger.debug("DAO.update() {}", so.getId());
 	}
 
 	@Override
-	public <P extends ParaObject> void delete(P so){
+	public <P extends ParaObject> void delete(String appName, P so){
 		if(so == null || so.getId() == null) return ;
 		
-		deleteRow(so.getId(), OBJECTS);
+		deleteRow(so.getId(), appName);
 		
 		logger.debug("DAO.delete() {}", so.getId());
 	}
@@ -139,28 +121,28 @@ public class AWSDynamoDAO implements DAO {
 	********************************************/
 
 	@Override
-	public void putColumn(String key, String cf, String colName, String colValue){
-		if(StringUtils.isBlank(key) || StringUtils.isBlank(cf) || 
+	public void putColumn(String appName, String key, String colName, String colValue){
+		if(StringUtils.isBlank(key) || StringUtils.isBlank(appName) || 
 				StringUtils.isBlank(colName)|| StringUtils.isBlank(colValue)) return;
 		
 		Map<String, AttributeValueUpdate> row = new HashMap<String, AttributeValueUpdate>();
 		try {
 			row.put(colName, new AttributeValueUpdate(new AttributeValue(colValue), AttributeAction.PUT));
-			UpdateItemRequest updateItemRequest = new UpdateItemRequest(cf, Collections.singletonMap(CN_KEY, new AttributeValue(key)), row);
-			ddb.updateItem(updateItemRequest); 
+			UpdateItemRequest updateItemRequest = new UpdateItemRequest(appName, Collections.singletonMap(CN_KEY, new AttributeValue(key)), row);
+			client().updateItem(updateItemRequest); 
 		} catch (Exception e) {
 			logger.error(null, e);
 		}
 	}
 
 	@Override
-	public String getColumn(String key, String cf, String colName) {
-		if(StringUtils.isBlank(key) || StringUtils.isBlank(cf) || StringUtils.isBlank(colName)) return null;
+	public String getColumn(String appName, String key, String colName) {
+		if(StringUtils.isBlank(key) || StringUtils.isBlank(appName) || StringUtils.isBlank(colName)) return null;
 		String result = null;
 		try {
-			GetItemRequest getItemRequest = new GetItemRequest(cf, Collections.singletonMap(CN_KEY, new AttributeValue(key)))
+			GetItemRequest getItemRequest = new GetItemRequest(appName, Collections.singletonMap(CN_KEY, new AttributeValue(key)))
 					.withAttributesToGet(Collections.singletonList(colName));
-			GetItemResult res = ddb.getItem(getItemRequest);
+			GetItemResult res = client().getItem(getItemRequest);
 			if(res != null && res.getItem() != null && !res.getItem().isEmpty()){
 				result = res.getItem().get(colName).getS();
 			}
@@ -171,23 +153,27 @@ public class AWSDynamoDAO implements DAO {
 	}
 	
 	@Override
-	public void removeColumn(String key, String cf, String colName) {
-		if(StringUtils.isBlank(key) || StringUtils.isBlank(cf) || StringUtils.isBlank(colName)) return;
+	public void removeColumn(String appName, String key, String colName) {
+		if(StringUtils.isBlank(key) || StringUtils.isBlank(appName) || StringUtils.isBlank(colName)) return;
 
 		Map<String, AttributeValueUpdate> row = new HashMap<String, AttributeValueUpdate>();
 		try {
 			row.put(colName, new AttributeValueUpdate().withAction(AttributeAction.DELETE));
-			UpdateItemRequest updateItemRequest = new UpdateItemRequest(cf, Collections.singletonMap(CN_KEY, new AttributeValue(key)), row);
-			ddb.updateItem(updateItemRequest); 
+			UpdateItemRequest updateItemRequest = new UpdateItemRequest(appName, Collections.singletonMap(CN_KEY, new AttributeValue(key)), row);
+			client().updateItem(updateItemRequest); 
 		} catch (Exception e) {
 			logger.error(null, e);
 		}
 	}
 	
 	@Override
-	public boolean existsColumn(String key, String cf, String columnName){
+	public boolean existsColumn(String appName, String key, String columnName){
 		if(StringUtils.isBlank(key)) return false;
-		return getColumn(key, cf, columnName) != null;
+		try {
+			return getColumn(appName, key, columnName) != null;
+		} catch (Exception e) {
+			return false;
+		}
 	}
 
 	/********************************************
@@ -199,7 +185,7 @@ public class AWSDynamoDAO implements DAO {
 		try {
 			setRowKey(key, row);
 			PutItemRequest putItemRequest = new PutItemRequest(cf, row);
-			ddb.putItem(putItemRequest); 
+			client().putItem(putItemRequest); 
 		} catch (Exception e) {
 			logger.error(null, e);
 		}		
@@ -215,7 +201,7 @@ public class AWSDynamoDAO implements DAO {
 			}
 			UpdateItemRequest updateItemRequest = new UpdateItemRequest(cf, 
 					Collections.singletonMap(CN_KEY, new AttributeValue(key)), rou);
-			ddb.updateItem(updateItemRequest); 
+			client().updateItem(updateItemRequest); 
 		} catch (Exception e) {
 			logger.error(null, e);
 		}
@@ -227,7 +213,7 @@ public class AWSDynamoDAO implements DAO {
 		try {
 			GetItemRequest getItemRequest = new GetItemRequest(cf,
 					Collections.singletonMap(CN_KEY, new AttributeValue(key)));
-			GetItemResult res = ddb.getItem(getItemRequest);
+			GetItemResult res = client().getItem(getItemRequest);
 			if(res != null && res.getItem() != null && !res.getItem().isEmpty()){
 				row = res.getItem();
 			}
@@ -242,7 +228,7 @@ public class AWSDynamoDAO implements DAO {
 		try {
 			DeleteItemRequest delItemRequest = new DeleteItemRequest(cf, 
 					Collections.singletonMap(CN_KEY, new AttributeValue(key)));
-			ddb.deleteItem(delItemRequest);
+			client().deleteItem(delItemRequest);
 		} catch (Exception e) {
 			logger.error(null, e);
 		}
@@ -253,13 +239,13 @@ public class AWSDynamoDAO implements DAO {
 	********************************************/
 	
 	@Override
-	public <P extends ParaObject> void createAll(List<P> objects){
-		writeAll(objects, false);
+	public <P extends ParaObject> void createAll(String appName, List<P> objects){
+		writeAll(appName, objects, false);
 	}
 	
 	@Override
-	public <P extends ParaObject> Map<String, P> readAll(List<String> keys, boolean getAllAtrributes){
-		if(keys == null || keys.isEmpty()) return new LinkedHashMap<String, P>();
+	public <P extends ParaObject> Map<String, P> readAll(String appName, List<String> keys, boolean getAllAtrributes){
+		if(keys == null || keys.isEmpty() || StringUtils.isBlank(appName)) return new LinkedHashMap<String, P>();
 		
 		Map<String, P> results = new LinkedHashMap<String, P>();
 		ArrayList<Map<String, AttributeValue>> keyz = new ArrayList<Map<String, AttributeValue>>();
@@ -272,25 +258,25 @@ public class AWSDynamoDAO implements DAO {
 		KeysAndAttributes kna = new KeysAndAttributes().withKeys(keyz);
 		if(!getAllAtrributes) kna.setAttributesToGet(Arrays.asList(CN_KEY, CN_CLASSNAME));
 		
-		batchGet(Collections.singletonMap(OBJECTS, kna), results);
+		batchGet(Collections.singletonMap(appName, kna), results);
 		
 		return results;
 	}
 	
 	@Override
-	public <P extends ParaObject> List<P> readPage(String cf, String lastKey){
+	public <P extends ParaObject> List<P> readPage(String appName, String lastKey){
 		List<P> results = new LinkedList<P>();
-		if(StringUtils.isBlank(cf)) return results;
+		if(StringUtils.isBlank(appName)) return results;
 		
 		try {
-			ScanRequest scanRequest = new ScanRequest().withTableName(OBJECTS).withLimit(Config.MAX_ITEMS_PER_PAGE).
+			ScanRequest scanRequest = new ScanRequest().withTableName(appName).withLimit(Config.MAX_ITEMS_PER_PAGE).
 					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
 			
 			if(!StringUtils.isBlank(lastKey)){
 				scanRequest.setExclusiveStartKey(Collections.singletonMap(CN_KEY, new AttributeValue(lastKey)));
 			}
 			
-			ScanResult result = ddb.scan(scanRequest);
+			ScanResult result = client().scan(scanRequest);
 			logger.debug("readPage() CC: {}", result.getConsumedCapacity());
 			
 			for (Map<String, AttributeValue> item : result.getItems()) {
@@ -300,7 +286,7 @@ public class AWSDynamoDAO implements DAO {
 				}
 			}
 			if(result.getCount() > 0 && results.isEmpty() && result.getLastEvaluatedKey() != null){
-				return readPage(cf, result.getLastEvaluatedKey().get(CN_KEY).getS());
+				return readPage(appName, result.getLastEvaluatedKey().get(CN_KEY).getS());
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -310,13 +296,13 @@ public class AWSDynamoDAO implements DAO {
 	}
 	
 	@Override
-	public <P extends ParaObject> void updateAll(List<P> objects){
-		writeAll(objects, true);
+	public <P extends ParaObject> void updateAll(String appName, List<P> objects){
+		writeAll(appName, objects, true);
 	}
 	
 	@Override
-	public <P extends ParaObject> void deleteAll(List<P> objects){
-		if(objects == null || objects.isEmpty()) return;
+	public <P extends ParaObject> void deleteAll(String appName, List<P> objects){
+		if(objects == null || objects.isEmpty() || StringUtils.isBlank(appName)) return;
 		
 		List<WriteRequest> reqs = new ArrayList<WriteRequest>();
 		for (ParaObject object : objects) {
@@ -325,11 +311,11 @@ public class AWSDynamoDAO implements DAO {
 						withKey(Collections.singletonMap(CN_KEY, new AttributeValue(object.getId())))));
 			}
 		}
-		batchWrite(Collections.singletonMap(OBJECTS, reqs));
+		batchWrite(Collections.singletonMap(appName, reqs));
 	}
 	
-	private  <P extends ParaObject> void writeAll(List<P> objects, boolean isUpdate){
-		if(objects == null || objects.isEmpty()) return;
+	private <P extends ParaObject> void writeAll(String appName, List<P> objects, boolean isUpdate){
+		if(objects == null || objects.isEmpty() || StringUtils.isBlank(appName)) return;
 		
 		List<WriteRequest> reqs = new ArrayList<WriteRequest>();
 		int batchSteps = 1;
@@ -350,7 +336,7 @@ public class AWSDynamoDAO implements DAO {
 				reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(row)));
 				j++;
 			}
-			batchWrite(Collections.singletonMap(OBJECTS, reqs));
+			batchWrite(Collections.singletonMap(appName, reqs));
 			reqs.clear();
 		}
 	}
@@ -358,13 +344,15 @@ public class AWSDynamoDAO implements DAO {
 	private <P extends ParaObject> void batchGet(Map<String, KeysAndAttributes> kna, Map<String, P> results){
 		if(kna == null || kna.isEmpty() || results == null) return;
 		try{
-			BatchGetItemResult result = ddb.batchGetItem(new BatchGetItemRequest().
+			BatchGetItemResult result = client().batchGetItem(new BatchGetItemRequest().
 					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL).withRequestItems(kna));
 			if(result == null) return;
 			
-			List<Map<String, AttributeValue>> res = result.getResponses().get(OBJECTS);
+			List<Map<String, AttributeValue>> res = result.getResponses().get(kna.keySet().iterator().next());
 
-			for (Map<String, AttributeValue> item : res) results.put(item.get(CN_KEY).getS(), (P) fromRow(item));
+			for (Map<String, AttributeValue> item : res){
+				results.put(item.get(CN_KEY).getS(), (P) fromRow(item));
+			}
 			logger.debug("batchGet() CC: {}", result.getConsumedCapacity());
 			
 			if(result.getUnprocessedKeys() != null && !result.getUnprocessedKeys().isEmpty()){
@@ -380,7 +368,7 @@ public class AWSDynamoDAO implements DAO {
 	private void batchWrite(Map<String, List<WriteRequest>> items){
 		if(items == null || items.isEmpty()) return;
 		try{						
-			BatchWriteItemResult result = ddb.batchWriteItem(new BatchWriteItemRequest().
+			BatchWriteItemResult result = client().batchWriteItem(new BatchWriteItemRequest().
 					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL).withRequestItems(items));
 			if(result == null) return;
 			logger.debug("batchWrite() CC: {}", result.getConsumedCapacity());
@@ -425,6 +413,73 @@ public class AWSDynamoDAO implements DAO {
 		if(row.containsKey(CN_KEY)) logger.warn("Attribute name conflict:  "
 			+ "attribute '{}' will be overwritten! '{}' is a reserved keyword.", CN_KEY);
 		row.put(CN_KEY, new AttributeValue(key));
+	}
+	
+	//////////////////////////////////////////////////////
+	
+	@Override
+	public <P extends ParaObject> String create(P so) {
+		return create(Config.APP_NAME_NS, so);
+	}
+
+	@Override
+	public <P extends ParaObject> P read(String key) {
+		return read(Config.APP_NAME_NS, key);
+	}
+
+	@Override
+	public <P extends ParaObject> void update(P so) {
+		update(Config.APP_NAME_NS, so);
+	}
+
+	@Override
+	public <P extends ParaObject> void delete(P so) {
+		delete(Config.APP_NAME_NS, so);
+	}
+
+	@Override
+	public String getColumn(String key, String colName) {
+		return getColumn(Config.APP_NAME_NS, key, colName);
+	}
+
+	@Override
+	public void putColumn(String key, String colName, String colValue) {
+		putColumn(Config.APP_NAME_NS, key, colName, colValue);
+	}
+
+	@Override
+	public void removeColumn(String key, String colName) {
+		removeColumn(Config.APP_NAME_NS, key, colName);
+	}
+
+	@Override
+	public boolean existsColumn(String key, String columnName) {
+		return existsColumn(Config.APP_NAME_NS, key, columnName);
+	}
+
+	@Override
+	public <P extends ParaObject> void createAll(List<P> objects) {
+		createAll(Config.APP_NAME_NS, objects);
+	}
+
+	@Override
+	public <P extends ParaObject> Map<String, P> readAll(List<String> keys, boolean getAllAtrributes) {
+		return readAll(Config.APP_NAME_NS, keys, getAllAtrributes);
+	}
+
+	@Override
+	public <P extends ParaObject> List<P> readPage(String lastKey) {
+		return readPage(Config.APP_NAME_NS, lastKey);
+	}
+
+	@Override
+	public <P extends ParaObject> void updateAll(List<P> objects) {
+		updateAll(Config.APP_NAME_NS, objects);
+	}
+
+	@Override
+	public <P extends ParaObject> void deleteAll(List<P> objects) {
+		deleteAll(Config.APP_NAME_NS, objects);
 	}
 	
 }

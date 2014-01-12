@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.hibernate.validator.constraints.NotBlank;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  * 
  * This class represents a many-to-many relationship (link) between two objects.
  */
@@ -106,8 +106,7 @@ public class Linker extends PObject{
 //	}
 	
 	public boolean exists(){
-//		return search.getCount(getClassname(), DAO.CN_ID, getId()) > 0;
-		return getDao().read(getId()) != null;
+		return getDao().read(getAppname(), getId()) != null;
 	}
 	
 	private boolean isReversed(String s1, String s2){

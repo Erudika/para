@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.erudika.para.utils;
 
 //import static com.erudika.para.utils.Utils.MD5;
 
+import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueType;
@@ -33,7 +34,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 public final class Config {
 	
@@ -45,7 +46,9 @@ public final class Config {
 		init(null);
 	}
 	
-	// GLOBAL LIMITS	
+	// GLOBAL SETTINGS
+	public static final String PARA = "para";
+	
 	public static final int MAX_ITEMS_PER_PAGE = 30;
 	public static final int	DEFAULT_LIMIT = Integer.MAX_VALUE;
 	public static final int MAX_PAGES = 10000;
@@ -58,8 +61,8 @@ public final class Config {
 	public static final String FXRATES_KEY = "fxrates";
 	
 	//////////  INITIALIZATION PARAMETERS  //////////////
-	public static final String AWS_ACCESSKEY = getConfigParam("awsaccesskey", "");
-	public static final String AWS_SECRETKEY = getConfigParam("awssecretkey", "");
+	public static final String AWS_ACCESSKEY = getConfigParam("awsaccesskey", getAwsCredentials()[0]);
+	public static final String AWS_SECRETKEY = getConfigParam("awssecretkey", getAwsCredentials()[1]);
 	public static final String AWS_REGION = getConfigParam("awsregion", "eu-west-1");
 	public static final String FB_APP_ID = getConfigParam("fbappid", "");
 	public static final String FB_SECRET = getConfigParam("fbsecret", "");
@@ -67,12 +70,11 @@ public final class Config {
 	public static final String GM_API_KEY = getConfigParam("gmapskey", "");
 	public static final String ADMIN_IDENT = getConfigParam("adminident", "");
 	public static final String WORKER_ID = getConfigParam("workerid", "1");
-	public static final String PRODUCT_NAME = getConfigParam("productname", "MyApp");
-	public static final String PRODUCT_NAME_NS = PRODUCT_NAME.replaceAll("\\s", "-").toLowerCase();
+	public static final String APP_NAME = getConfigParam("appname", "MyApp");
+	public static final String APP_NAME_NS = APP_NAME.replaceAll("\\s", "-").toLowerCase();
 //	public static final String ES_HOSTS = getInitParam("eshosts", "localhost");
-	public static final String CLUSTER_NAME = getConfigParam("clustername", PRODUCT_NAME_NS);
-	public static final String AUTH_COOKIE = getConfigParam("authcookie", PRODUCT_NAME_NS.concat("-auth"));
-	public static final String RETURNTO_COOKIE = getConfigParam("returntocookie", PRODUCT_NAME_NS.concat("-returnto"));
+	public static final String AUTH_COOKIE = getConfigParam("authcookie", APP_NAME_NS.concat("-auth"));
+	public static final String RETURNTO_COOKIE = getConfigParam("returntocookie", APP_NAME_NS.concat("-returnto"));
 	public static final String SUPPORT_EMAIL = getConfigParam("supportemail", "support@myapp.co");
 	public static final String APP_SECRET_KEY = getConfigParam("appsecretkey", Utils.MD5("secret"));
 	public static final String CORE_PACKAGE_NAME = getConfigParam(CORE_PACKAGE, "");
@@ -85,7 +87,7 @@ public final class Config {
 	public static final boolean READ_FROM_INDEX = Boolean.parseBoolean(getConfigParam("readfromindex", "true")); 
 //	public static final int READ_CAPACITY = NumberUtils.toInt(getInitParam("readcapacity", "10"));
 	public static final boolean IN_PRODUCTION = Boolean.parseBoolean(getConfigParam("production", "false")); 
-	public static final String INDEX_ALIAS = PRODUCT_NAME_NS;
+	public static final String CLUSTER_NAME = getConfigParam("clustername", IN_PRODUCTION ? PARA + "-prod" : PARA + "-dev");
 	
 	public static void init(com.typesafe.config.Config conf){
 		try {
@@ -106,7 +108,7 @@ public final class Config {
 		}
 	}
 	
-	private static String getConfigParam(String key, String defaultValue){
+	public static String getConfigParam(String key, String defaultValue){
 		if(config == null) init(null);
 		return config.hasPath(key) ? config.getString(key) : defaultValue;
 	}
@@ -119,6 +121,16 @@ public final class Config {
 	public static com.typesafe.config.Config getConfig(){
 		if(config == null) init(null);
 		return config;
+	}
+
+	private static String[] getAwsCredentials(){
+		InstanceProfileCredentialsProvider ipcp = new InstanceProfileCredentialsProvider();
+		try {
+			ipcp.refresh();
+			return new String[]{ipcp.getCredentials().getAWSAccessKeyId(), ipcp.getCredentials().getAWSSecretKey()};
+		} catch (Exception e) {
+			return new String[]{"", ""};
+		}
 	}
 	
 }

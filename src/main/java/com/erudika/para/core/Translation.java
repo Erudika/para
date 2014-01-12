@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <albogdano@me.com>.
+ * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 
 /**
  *
- * @author Alex Bogdanovski <albogdano@me.com>
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class Translation extends PObject{
@@ -98,13 +98,13 @@ public class Translation extends PObject{
 
 	public void approve(){
 		this.approved = true;
-		getLangutils().approveTranslation(locale, thekey, value);
+		getLangutils().approveTranslation(getAppname(), locale, thekey, value);
 		update();
 	}
 
 	public void disapprove(){
 		this.approved = false;
-		getLangutils().disapproveTranslation(locale, thekey);
+		getLangutils().disapproveTranslation(getAppname(), locale, thekey);
 		update();
 	}
 	
