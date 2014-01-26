@@ -21,9 +21,11 @@ import com.erudika.para.utils.Config;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.LinkedHashMap;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -32,6 +34,7 @@ import org.apache.commons.lang3.StringUtils;
 @Singleton
 public class MockCache implements Cache {
 	
+	private static final Logger logger = LoggerFactory.getLogger(MockCache.class);
 	private Map<String, Map<String, Object>> maps = new HashMap<String, Map<String, Object>>();
 	
 	@Override
@@ -49,6 +52,7 @@ public class MockCache implements Cache {
 	public <T> void put(String appName, String id, T object) {
 		if(StringUtils.isBlank(id) || object == null || StringUtils.isBlank(appName)) return;
 		getMap(appName).put(id, object);
+		logger.debug("Cache.put() {} {}", appName, id);
 	}
 
 	@Override
@@ -56,6 +60,7 @@ public class MockCache implements Cache {
 		if(StringUtils.isBlank(id) || object == null || StringUtils.isBlank(appName)) return;
 		getMap(appName).put(id, object);
 		getMap(appName).put(id+":ttl", System.currentTimeMillis() + ttl_seconds*1000);
+		logger.debug("Cache.put() {} {} ttl {}", appName, id, ttl_seconds);
 	}
 
 	@Override
@@ -64,6 +69,7 @@ public class MockCache implements Cache {
 		objects.remove(null);
 		objects.remove("");
 		getMap(appName).putAll(objects);
+		logger.debug("Cache.putAll() {} {}", appName, objects.size());
 	}
 
 	@Override
@@ -71,15 +77,17 @@ public class MockCache implements Cache {
 		if(StringUtils.isBlank(id) || StringUtils.isBlank(appName)) return null;
 		if(isExpired((Long) getMap(appName).get(id+":ttl"))){
 			remove(appName, id);
+			logger.debug("Cache.get() {} {}", appName, null);
 			return null;
 		}else{
+			logger.debug("Cache.get() {} {}", appName, id);
 			return (T) getMap(appName).get(id);
-		}
+		}		
 	}
 
 	@Override
 	public <T> Map<String, T> getAll(String appName, List<String> ids) {
-		Map<String, T> map1 = new TreeMap<String, T>();
+		Map<String, T> map1 = new LinkedHashMap<String, T>();
 		if(ids == null || StringUtils.isBlank(appName)) return map1;
 		ids.remove(null);
 		for (String id : ids) {
@@ -90,18 +98,21 @@ public class MockCache implements Cache {
 				remove(appName, id);
 			}
 		}
+		logger.debug("Cache.getAll() {} {}", appName, ids.size());
 		return map1;
 	}
 	
 	@Override
 	public void remove(String appName, String id) {
 		if(StringUtils.isBlank(id) || StringUtils.isBlank(appName)) return;
+		logger.debug("Cache.remove() {} {}", appName, id);
 		getMap(appName).remove(id);
 	}
 
 	@Override
 	public void removeAll(String appName) {
 		if(StringUtils.isBlank(appName)) return;
+		logger.debug("Cache.removeAll() {}", appName);
 		getMap(appName).clear();
 	}
 	
@@ -111,6 +122,7 @@ public class MockCache implements Cache {
 		for (String id : ids) {
 			remove(appName, id);
 		}
+		logger.debug("Cache.removeAll() {} {}", appName, ids.size());
 	}
 	
 	private boolean isExpired(Long ttl){

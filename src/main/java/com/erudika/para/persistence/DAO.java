@@ -31,7 +31,6 @@ public interface DAO {
 	
 	public static final String CN_AUTHTOKEN = "authtoken";
 	public static final String CN_CLASSNAME = "classname";
-	public static final String CN_COUNTS_COUNT = "count";
 	public static final String CN_CREATORID = "creatorid";
 	public static final String CN_ID = "id";
 	public static final String CN_IDENTIFIER = "identifier";
@@ -43,39 +42,31 @@ public interface DAO {
 	public static final String CN_SALT = "salt";
 	public static final String CN_TIMESTAMP = "timestamp";
 	public static final String CN_UPDATED = "updated";
+	public static final String CN_TAGS = "tags";
+	public static final String CN_EMAIL = "email";
+	public static final String CN_GROUPS = "groups";
 	
 	/********************************************
 	 *			CORE FUNCTIONS
 	 ********************************************/
 	@Indexed(action = Indexed.Action.ADD)
 	@Cached(action = Cached.Action.PUT)
-	public <P extends ParaObject> String create(P so);
-	
-	@Indexed(action = Indexed.Action.ADD)
-	@Cached(action = Cached.Action.PUT)
 	public <P extends ParaObject> String create(String appName, P so);
-
-	@Cached(action = Cached.Action.GET)
-	public <P extends ParaObject> P read(String key);
+	public <P extends ParaObject> String create(P so);
 	
 	@Cached(action = Cached.Action.GET)
 	public <P extends ParaObject> P read(String appName, String key);
+	public <P extends ParaObject> P read(String key);
 
 	@Indexed(action = Indexed.Action.ADD)
 	@Cached(action = Cached.Action.PUT)
-	public <P extends ParaObject> void update(P so);
-	
-	@Indexed(action = Indexed.Action.ADD)
-	@Cached(action = Cached.Action.PUT)
 	public <P extends ParaObject> void update(String appName, P so);
-	
-	@Indexed(action = Indexed.Action.REMOVE)
-	@Cached(action = Cached.Action.DELETE)
-	public <P extends ParaObject> void delete(P so);
+	public <P extends ParaObject> void update(P so);
 	
 	@Indexed(action = Indexed.Action.REMOVE)
 	@Cached(action = Cached.Action.DELETE)
 	public <P extends ParaObject> void delete(String appName, P so);
+	public <P extends ParaObject> void delete(P so);
 
 	/********************************************
 	 *				COLUMN FUNCTIONS
@@ -97,34 +88,23 @@ public interface DAO {
 	 ********************************************/	
 	@Indexed(action = Indexed.Action.ADD_ALL)
 	@Cached(action = Cached.Action.PUT_ALL)
-	public <P extends ParaObject> void createAll(List<P> objects);
-	
-	@Indexed(action = Indexed.Action.ADD_ALL)
-	@Cached(action = Cached.Action.PUT_ALL)
 	public <P extends ParaObject> void createAll(String appName, List<P> objects);
-	
-	@Cached(action = Cached.Action.GET_ALL)
-	public <P extends ParaObject> Map<String, P> readAll(List<String> keys, boolean getAllAtrributes);
+	public <P extends ParaObject> void createAll(List<P> objects);
 	
 	@Cached(action = Cached.Action.GET_ALL)
 	public <P extends ParaObject> Map<String, P> readAll(String appName, List<String> keys, boolean getAllAtrributes);
+	public <P extends ParaObject> Map<String, P> readAll(List<String> keys, boolean getAllAtrributes);
 
-	public <P extends ParaObject> List<P> readPage(String lastKey);
 	public <P extends ParaObject> List<P> readPage(String appName, String lastKey);
+	public <P extends ParaObject> List<P> readPage(String lastKey);
 
-	@Indexed(action = Indexed.Action.ADD_ALL)
-	@Cached(action = Cached.Action.PUT_ALL)
-	public <P extends ParaObject> void updateAll(List<P> objects);
-	
 	@Indexed(action = Indexed.Action.ADD_ALL)
 	@Cached(action = Cached.Action.PUT_ALL)
 	public <P extends ParaObject> void updateAll(String appName, List<P> objects);
-	
-	@Indexed(action = Indexed.Action.REMOVE_ALL)
-	@Cached(action = Cached.Action.DELETE_ALL)
-	public <P extends ParaObject> void deleteAll(List<P> objects);
+	public <P extends ParaObject> void updateAll(List<P> objects);
 	
 	@Indexed(action = Indexed.Action.REMOVE_ALL)
 	@Cached(action = Cached.Action.DELETE_ALL)
 	public <P extends ParaObject> void deleteAll(String appName, List<P> objects);
+	public <P extends ParaObject> void deleteAll(List<P> objects);
 }

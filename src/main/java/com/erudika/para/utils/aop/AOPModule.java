@@ -29,14 +29,8 @@ public class AOPModule extends AbstractModule {
 
 	protected void configure() {
 		ValidationAspect va = new ValidationAspect();
-		
-		IndexingAspect ia = new IndexingAspect();
-		requestInjection(ia);
-		
-		CachingAspect ca = new CachingAspect();
-		requestInjection(ca);
-		
-		bindInterceptor(Matchers.subclassesOf(DAO.class), Matchers.any(), va, ia, ca);
+		requestInjection(va);
+		bindInterceptor(Matchers.subclassesOf(DAO.class), Matchers.any(), va);
 	}
 	
 }

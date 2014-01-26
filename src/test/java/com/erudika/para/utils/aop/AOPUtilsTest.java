@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2014 Alex Bogdanovski <alex@erudika.com>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,22 +17,23 @@
  */
 package com.erudika.para.utils.aop;
 
-import com.erudika.para.persistence.DAO;
-import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.PObject;
+import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
+import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.search.Search;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.After;
-import org.junit.AfterClass;
+import static com.erudika.para.utils.aop.AOPUtils.*;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import static org.mockito.Mockito.*;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -40,29 +41,13 @@ import org.mockito.stubbing.Answer;
  *
  * @author Alex Bogdanovski <alex@erudika.com>
  */
-public class IndexingAspectTest {
+public class AOPUtilsTest {
 	
-	public IndexingAspectTest() {
+	public AOPUtilsTest() {
 	}
-
-	@BeforeClass
-	public static void setUpClass() throws Exception {
-	}
-
-	@AfterClass
-	public static void tearDownClass() throws Exception {
-	}
-
-	@Before
-	public void setUp() throws Exception {
-	}
-
-	@After
-	public void tearDown() throws Exception {
-	}
-
+	
 	@Test
-	public void testInvoke() throws Exception {
+	public void testUtils() throws Exception {
 		IndexingAspect i = new IndexingAspect();
 		
 		Tag tag = new Tag("tag");
@@ -81,15 +66,15 @@ public class IndexingAspectTest {
 		List<String> badList = new ArrayList<String> ();
 		badList.add("XXXtagXXX");
 		
-		assertSame(tag, IndexingAspect.getArgOfParaObject(new Object[]{tag, "string"}));
-		assertNull(IndexingAspect.getArgOfParaObject(new Object[]{"string"}));
-		assertEquals(list1, IndexingAspect.getArgOfListOfType(new Object[]{list1}, ParaObject.class));
-		assertEquals(list2, IndexingAspect.getArgOfListOfType(new Object[]{list2}, ParaObject.class));
-		assertNull(IndexingAspect.getArgOfListOfType(new Object[]{badList}, ParaObject.class));
+		assertSame(tag, getArgOfParaObject(new Object[]{tag, "string"}));
+		assertNull(getArgOfParaObject(new Object[]{"string"}));
+		assertEquals(list1, getArgOfListOfType(new Object[]{list1}, ParaObject.class));
+		assertEquals(list2, getArgOfListOfType(new Object[]{list2}, ParaObject.class));
+		assertNull(getArgOfListOfType(new Object[]{badList}, ParaObject.class));
 		
-		assertNull(IndexingAspect.getFirstArgOfString(new Object[]{list1}));
-		assertNotNull(IndexingAspect.getFirstArgOfString(new Object[]{new Integer(123), "asd"}));
-		assertEquals("asd", IndexingAspect.getFirstArgOfString(new Object[]{new Integer(123), "asd"}));
+		assertNull(getFirstArgOfString(new Object[]{list1}));
+		assertNotNull(getFirstArgOfString(new Object[]{new Integer(123), "asd"}));
+		assertEquals("asd", getFirstArgOfString(new Object[]{new Integer(123), "asd"}));
 		
 		DAO dao = new MockDAO();
 		Search search = getSearch(dao);
@@ -148,17 +133,5 @@ public class IndexingAspectTest {
 			}
 		});
 		return search;
-	}
-
-	@Test
-	public void testGetArgOfListOfType() {
-	}
-
-	@Test
-	public void testGetArgOfParaObject() {
-	}
-
-	@Test
-	public void testGetFirstArgOfString() {
 	}
 }

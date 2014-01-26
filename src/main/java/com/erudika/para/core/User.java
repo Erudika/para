@@ -32,6 +32,7 @@ import javax.validation.constraints.Size;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.hibernate.validator.constraints.NotBlank;
 import org.springframework.security.core.GrantedAuthority;
@@ -71,16 +72,18 @@ public class User extends PObject implements UserDetails{
 	@Stored private Boolean pro;
 	@Stored private Integer plan;
 	
-	@NotBlank @Size(min=Config.MIN_PASS_LENGTH, max=255) 
+	@NotBlank @Size(min=Config.MIN_PASS_LENGTH, max=255)	
 	private transient String password;	// for validation purposes only? 
 	
 	private transient String authtoken;
 	
 	public User() {
+		this(null);
 	}
 
 	public User(String id) {
 		setId(id);
+		getName();
 	}
 	
 	public PObject getParent(){
@@ -95,12 +98,8 @@ public class User extends PObject implements UserDetails{
 		this.plan = plan;
 	}
 	
-	public boolean isPro(){
-		return pro != null && pro == true;
-	}
-	
 	public Boolean getPro() {
-		return pro;
+		return pro != null && pro;
 	}
 
 	public void setPro(Boolean pro) {
@@ -194,6 +193,7 @@ public class User extends PObject implements UserDetails{
 		}
 	}
 	
+	@JsonIgnore
 	public List<String> getIdentifiers(){
 		List<Sysprop> list = getSearch().findTerm(getAppname(), PObject.classname(Sysprop.class), 
 				null, null, DAO.CN_CREATORID, getId());
@@ -234,6 +234,7 @@ public class User extends PObject implements UserDetails{
 		return StringUtils.equalsIgnoreCase(this.groups, Groups.MODS.toString());
 	}
 	
+	@JsonIgnore
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 		if(isAdmin()){
 			return Collections.singleton(new SimpleGrantedAuthority(Roles.ADMIN.toString()));
@@ -244,26 +245,32 @@ public class User extends PObject implements UserDetails{
 		}
 	}
 
+	@JsonIgnore
 	public String getUsername() {
 		return getIdentifier();
 	}
 
+	@JsonIgnore
 	public boolean isAccountNonExpired() {
 		return true;
 	}
 
+	@JsonIgnore
 	public boolean isAccountNonLocked() {
 		return active != null && active == true;
 	}
 
+	@JsonIgnore
 	public boolean isCredentialsNonExpired() {
 		return active != null && active == true;
 	}
 
+	@JsonIgnore
 	public boolean isEnabled() {
 		return active != null && active == true;
 	}
 
+	@JsonIgnore
 	public String getPassword() {
 		return StringUtils.isBlank(password) ? authtoken : password;
 	}

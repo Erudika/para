@@ -18,6 +18,7 @@
 package com.erudika.para.core;
 
 import java.io.Serializable;
+import java.util.Set;
 import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
@@ -57,7 +58,6 @@ public interface ParaObject extends Serializable {
 	@JsonIgnore
 	public ParaObject getCreator();
 	
-	// one-to-many relationships (may return self)
 	@JsonIgnore
 	public ParaObject getParent();
 	
@@ -68,7 +68,11 @@ public interface ParaObject extends Serializable {
 	public Long getUpdated();
 
 	public void setUpdated(Long updated);
+	
+	public Set<String> getTags();
 
+	public void setTags(Set<String> tags);	
+	
 	public String create();
 
 	public void update();

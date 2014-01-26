@@ -20,14 +20,16 @@ package com.erudika.para.cache;
 import com.erudika.para.utils.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -36,6 +38,7 @@ import org.apache.commons.lang3.StringUtils;
 @Singleton
 public class HazelcastCache implements Cache {
 
+	private static final Logger logger = LoggerFactory.getLogger(HazelcastCache.class);
 	private HazelcastInstance hcInstance;
 
 	public HazelcastCache() {
@@ -57,12 +60,14 @@ public class HazelcastCache implements Cache {
 	@Override
 	public <T> void put(String appName, String id, T object) {
 		if(StringUtils.isBlank(id) || object == null || StringUtils.isBlank(appName)) return;
+		logger.debug("Cache.put() {} {}", appName, id);
 		client().getMap(appName).putAsync(id, object);
 	}
 
 	@Override
 	public <T> void put(String appName, String id, T object, Long ttl_seconds) {
 		if(StringUtils.isBlank(id) || object == null || StringUtils.isBlank(appName)) return;
+		logger.debug("Cache.put() {} {} ttl {}", appName, id, ttl_seconds);	
 		client().getMap(appName).putAsync(id, object, ttl_seconds, TimeUnit.SECONDS);
 	}
 
@@ -71,35 +76,41 @@ public class HazelcastCache implements Cache {
 		if(objects == null || objects.isEmpty() || StringUtils.isBlank(appName)) return;
 		objects.remove(null);
 		objects.remove("");
+		logger.debug("Cache.putAll() {} {}", appName, objects.size());		
 		client().getMap(appName).putAll(objects);
 	}
 	
 	@Override
 	public <T> T get(String appName, String id) {
 		if(StringUtils.isBlank(id) || StringUtils.isBlank(appName)) return null;
-		return (T) client().getMap(appName).get(id);
+		T obj = (T) client().getMap(appName).get(id); 
+		logger.debug("Cache.get() {} {}", appName, (obj == null) ? null : id);
+		return obj;
 	}
 
 	@Override
 	public <T> Map<String, T> getAll(String appName, List<String> ids) {
-		Map<String, T> map = new TreeMap<String, T>();
+		Map<String, T> map = new LinkedHashMap<String, T>();
 		if(ids == null || StringUtils.isBlank(appName)) return map;
 		ids.remove(null);
 		for (Entry<Object, Object> entry : client().getMap(appName).getAll(new TreeSet<Object>(ids)).entrySet()) {
 			map.put((String) entry.getKey(), (T) entry.getValue());
 		}
+		logger.debug("Cache.getAll() {} {}", appName, ids.size());
 		return map;
 	}
 	
 	@Override
 	public void remove(String appName, String id) {
 		if(StringUtils.isBlank(id) || StringUtils.isBlank(appName)) return;
+		logger.debug("Cache.remove() {} {}", appName, id);		
 		client().getMap(appName).delete(id);
 	}
 
 	@Override
 	public void removeAll(String appName) {
 		if(StringUtils.isBlank(appName)) return;
+		logger.debug("Cache.removeAll() {}", appName);
 		client().getMap(appName).clear();
 	}
 	
@@ -110,6 +121,7 @@ public class HazelcastCache implements Cache {
 		for (String id : ids) {
 			map.delete(id);
 		}
+		logger.debug("Cache.removeAll() {} {}", appName, ids.size());
 	}
 	
 	////////////////////////////////////////////////////

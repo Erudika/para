@@ -22,8 +22,8 @@ import com.erudika.para.annotations.Stored;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.core.PObject;
 import com.erudika.para.core.ParaObject;
+import com.erudika.para.core.Sysprop;
 import com.erudika.para.persistence.DAO;
-import static com.erudika.para.persistence.DAO.CN_CLASSNAME;
 import com.github.rjeschke.txtmark.Configuration;
 import com.github.rjeschke.txtmark.Processor;
 import java.io.UnsupportedEncodingException;
@@ -39,7 +39,6 @@ import java.security.SecureRandom;
 import java.text.DateFormatSymbols;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,7 +69,7 @@ import javax.validation.constraints.Size;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.UriBuilder;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.codec.binary.Base64;
@@ -79,10 +78,8 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
 import org.geonames.FeatureClass;
 import org.geonames.Style;
 import org.geonames.Toponym;
@@ -103,15 +100,15 @@ public final class Utils {
 	
 	//////////////////////////////////////////////
 	private static final Logger logger = LoggerFactory.getLogger(Utils.class);
-	private static final SecureRandom random = new SecureRandom();
-	private static final ObjectMapper jsonMapper = new ObjectMapper();
-	private static HumanTime humantime = new HumanTime();
 	private static ExecutorService exec = Executors.newSingleThreadExecutor();
+	private static final SecureRandom random = new SecureRandom();
+	private static ObjectMapper jsonMapper;
+	private static HumanTime humantime;
 
 	private static Utils instance;
 	
 	//////////  ID GEN VARS  ////////////// 	
-	private static final long TIMER_OFFSET = 1310084584692L;
+	private static final long TIMER_OFFSET = 1310084584692L; // ~July 2011
 	private static final long workerIdBits = 5L;
 	private static final long dataCenterIdBits = 5L;
 	private static final long maxWorkerId = -1L ^ (-1L << workerIdBits);
@@ -128,7 +125,7 @@ public final class Utils {
 	/////////////////////////////////////////////
 	
 	static {
-		initSnowflake();
+		initIdGenerator();
 		random.setSeed(random.generateSeed(8));
 	}
 	
@@ -136,15 +133,23 @@ public final class Utils {
 	}
 	
 	public static Utils getInstance(){
-		if(instance == null) instance = new Utils();
+		if(instance == null){
+			instance = new Utils();
+		}
 		return instance;
 	}
 	
-	public ObjectMapper getObjectMapper(){
+	public static ObjectMapper getObjectMapper(){
+		if(jsonMapper == null){
+			jsonMapper = new ObjectMapper();
+		}
 		return jsonMapper;
 	}
 	
-	public HumanTime getHumanTime(){
+	public static HumanTime getHumanTime(){
+		if(humantime == null){
+			humantime = new HumanTime();
+		}
 		return humantime;
 	}
 	
@@ -152,7 +157,7 @@ public final class Utils {
 	 *	    	   INIT FUNCTIONS
 	********************************************/
 	
-	private static void initSnowflake(){
+	private static void initIdGenerator(){
 		String workerID = Config.WORKER_ID;
 		workerId = NumberUtils.toLong(workerID, 1);
 				
@@ -160,9 +165,9 @@ public final class Utils {
 			workerId = new Random().nextInt((int) maxWorkerId + 1);
 		}
 
-//		if (dataCenterId > maxDataCenterId || dataCenterId < 0) {
-//			dataCenterId =  new Random().nextInt((int) maxDataCenterId+1);
-//		}
+		if (dataCenterId > maxDataCenterId || dataCenterId < 0) {
+			dataCenterId =  new Random().nextInt((int) maxDataCenterId+1);
+		}
 	}
 	
 	/********************************************
@@ -174,7 +179,7 @@ public final class Utils {
 	}
 	
 	public static String HMACSHA(String s, String key) {
-		if(StringUtils.isBlank(s) || StringUtils.isBlank(key)) return null;
+		if(StringUtils.isBlank(s) || StringUtils.isBlank(key)) return "";
 		try {
             // Get an hmac_sha1 key from the raw key bytes
             byte[] keyBytes = key.getBytes();           
@@ -208,6 +213,7 @@ public final class Utils {
 	********************************************/
 	
 	public static String escapeJavascript(String str){
+		if(str == null) return "";
 		return StringEscapeUtils.escapeEcmaScript(str);
 	}
 	
@@ -221,89 +227,28 @@ public final class Utils {
 		return Processor.process(markdownString, Configuration.DEFAULT_SAFE);
 	}
 	
-	public static String fixCSV(String s, int maxValues){
-		if(StringUtils.trimToNull(s) == null) return "";
-		String t = ",";
-		HashSet<String> tset = new HashSet<String>();
-		String[] split = s.split(",");
-		int max = (maxValues == 0) ? split.length : maxValues;
-		
-		if(max >= split.length) max = split.length;
-		
-		for(int i = 0; i < max; i++) {
-			String tag = split[i];
-			tag = tag.replaceAll("-", " ");
-			tag = stripAndTrim(tag);
-			tag = tag.replaceAll(" ", "-");
-			if(!tag.isEmpty() && !tset.contains(tag)){
-				tset.add(tag);
-				t = t.concat(tag).concat(",");
-			}
-		}
-		return t;
-	}
-
-	// turn ,badtag, badtag  into ,cleantag,cleantag,
-	public static String fixCSV(String s){
-		return fixCSV(s, 0);
-	}
-	
-	public static List<String> csvToKeys(String csv){
-		if(StringUtils.isBlank(csv)) return new ArrayList<String> ();
-		ArrayList<String> list = new ArrayList<String>();
-		
-		for (String str : csv.split(",")) {
-			list.add(str.trim());
-		}
-		
-		return list;
-	}	
-	
 	public static String abbreviate(String str, int max){
+		if (StringUtils.isBlank(str)) return "";
 		return StringUtils.abbreviate(str, max);
 	}
 	
-	public static String arrayJoin(ArrayList<String> arr, String separator){
+	public static String arrayJoin(List<String> arr, String separator){
+		if (arr == null || separator == null) return "";
 		return StringUtils.join(arr, separator);
-	}
-	
-	public static boolean isBadString(String s) {
-		if (StringUtils.isBlank(s)) {
-			return false;
-		} else if (s.contains("<") ||
-				s.contains(">") ||
-				s.contains("&") ||
-				s.contains("/")) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-	
-	public static String cleanString(String s){
-		if(StringUtils.isBlank(s)) return "";
-		return s.replaceAll("<", "").
-				replaceAll(">", "").
-				replaceAll("&", "").
-				replaceAll("/", "");
 	}
 	
 	public static String stripAndTrim(String str) {
 		if (StringUtils.isBlank(str)) return "";
-		
-		str = str.replaceAll("\\p{S}", "");
-		str = str.replaceAll("\\p{P}", "");
-		str = str.replaceAll("\\p{C}", "");
-
-		return str.trim();
+		return str.replaceAll("[\\p{S}\\p{P}\\p{C}]", "").replaceAll("\\p{Z}+", " ").trim();
 	}
 	
 	public static String spacesToDashes(String str) {
 		if (StringUtils.isBlank(str)) return "";
-		return stripAndTrim(str).replaceAll("\\p{Z}+","-").toLowerCase();
+		return str.replaceAll("[\\p{C}\\p{Z}]+","-").toLowerCase();
 	}
 
 	public static String formatMessage(String msg, Object... params){
+		if (StringUtils.isBlank(msg)) return "";
 		return MessageFormat.format(msg, params);
 	}
 	
@@ -312,11 +257,14 @@ public final class Utils {
 	********************************************/
 	
 	public static String formatDate(Long timestamp, String format, Locale loc) {
+		if(StringUtils.isBlank(format)) format = DateFormatUtils.ISO_DATETIME_FORMAT.getPattern();
+		if(timestamp == null) timestamp = System.currentTimeMillis();
+		if(loc == null) loc = Locale.US;
 		return DateFormatUtils.format(timestamp, format, loc);
 	}
 
 	public static String formatDate(String format, Locale loc) {
-		return DateFormatUtils.format(System.currentTimeMillis(), format, loc);
+		return formatDate(System.currentTimeMillis(), format, loc);
 	}
 		
 	public static int getCurrentYear() {
@@ -328,6 +276,7 @@ public final class Utils {
 	}
 
 	public static String[] getMonths(Locale locale) {
+		if(locale == null) locale = Locale.US;
 		DateFormatSymbols dfs = DateFormatSymbols.getInstance(locale);
 		return dfs.getMonths();
 	}
@@ -365,19 +314,13 @@ public final class Utils {
 		}
 		return abbrevn;
 	}
-	
-	public static Long toLong(MutableLong page){
-		return (page != null && page.longValue() > 1) ?	page.longValue() : null;
-	}
-	
+		
 	/********************************************
 	 *	    	   URL UTILS
 	********************************************/
 	
 	public static String urlDecode(String s) {
-		if (s == null) {
-			return "";
-		}
+		if (s == null) return "";
 		String decoded = s;
 		try {
 			decoded = URLDecoder.decode(s, Config.DEFAULT_ENCODING);
@@ -388,9 +331,7 @@ public final class Utils {
 	}
 
 	public static String urlEncode(String s) {
-		if (s == null) {
-			return "";
-		}
+		if (s == null) return "";
 		String encoded = s;
 		try {
 			encoded = URLEncoder.encode(s, Config.DEFAULT_ENCODING);
@@ -401,12 +342,12 @@ public final class Utils {
 	}
 
 	public static boolean isValidURL(String url){
-		return getHostFromURL(url) != null;
+		return !StringUtils.isBlank(getHostFromURL(url));
 	}
 
 	public static String getHostFromURL(String url){
 		URL u = toURL(url);
-		String host = (u == null) ? null : u.getHost();
+		String host = (u == null) ? "" : u.getHost();
 		return host;
 	}
 
@@ -453,8 +394,7 @@ public final class Utils {
 	}
 	
 	public static String getStateParam(String name, HttpServletRequest req){
-		String param = getCookieValue(req, name);
-		return param;
+		return getCookieValue(req, name);
 	}
 	
 	public static void removeStateParam(String name, HttpServletRequest req, 
@@ -464,7 +404,7 @@ public final class Utils {
 	
 	public static void setRawCookie(String name, String value, HttpServletRequest req, 
 			HttpServletResponse res, boolean httpOnly, int maxAge){
-		if(StringUtils.isBlank(name)) return;
+		if(StringUtils.isBlank(name) || StringUtils.isBlank(value) || req == null || res == null) return;
         Cookie cookie = new Cookie(name, value);
 		cookie.setHttpOnly(httpOnly);
 		cookie.setMaxAge(maxAge < 0 ? Config.SESSION_TIMEOUT_SEC.intValue() : maxAge);
@@ -474,6 +414,7 @@ public final class Utils {
 	}
 	
 	public static String getCookieValue(HttpServletRequest req, String name){
+		if(StringUtils.isBlank(name) || req == null) return null;
 		Cookie cookies[] = req.getCookies();
         if (cookies == null || name == null || name.length() == 0) return null;
         //Otherwise, we have to do a linear scan for the cookie.
@@ -496,7 +437,10 @@ public final class Utils {
 	public static int[] getMaxImgSize(int h, int w){
 		int[] size = {h, w};
 		int max = Config.MAX_IMG_SIZE_PX;
-		if(Math.max(h, w) > max){
+		if(w == h){
+			size[0] = Math.min(h, max);
+			size[1] = Math.min(w, max);
+		}else if(Math.max(h, w) > max){
 			int ratio = (100 * max) / Math.max(h, w);
 			if(h > w){
 				size[0] = max;
@@ -566,34 +510,32 @@ public final class Utils {
 	
 	
 	/********************************************
-	 *	     REFLECTION & CLASS UTILS 
+	 *	     OBJECT MAPPING & CLASS UTILS 
 	********************************************/
 	
 	public static <P extends ParaObject> void populate(P transObject, Map<String, String[]> paramMap) {
-		if (transObject == null || paramMap.isEmpty()) return;
-		Class<Locked> locked = (paramMap.containsKey("id")) ? Locked.class : null;
+		if (transObject == null || paramMap == null || paramMap.isEmpty()) return;
+		Class<Locked> locked = (paramMap.containsKey(DAO.CN_ID)) ? Locked.class : null;
 		Map<String, Object> fields = getAnnotatedFields(transObject, Stored.class, locked);
+		Map<String, Object> data = new HashMap<String, Object>();
 		// populate an object with converted param values from param map.
 		try {
 			for (Map.Entry<String, String[]> ks : paramMap.entrySet()) {
 				String param = ks.getKey();
 				String[] values = ks.getValue();
-				String value = values[0];
-				
-				// filter out any params that are different from the core params
-				if(fields.containsKey(param)){
-					//set property WITH CONVERSION
-					BeanUtils.setProperty(transObject, param, value);
+				String value = (values.length > 1) ? getObjectMapper().writeValueAsString(values) : values[0];
+				if (fields.containsKey(param)) {
+					data.put(param, value);
 				}
 			}
+			setAnnotatedFields(transObject, data);
 		} catch (Exception ex) {
 			logger.error(null, ex);
 		}
 	}
 	
-	public boolean typesMatch(ParaObject so){
-		return (so == null) ? false : so.getClass().equals(
-				Utils.toClass(so.getClassname()));
+	public static boolean typesMatch(ParaObject so){
+		return (so == null) ? false : so.getClass().equals(toClass(so.getClassname()));
 	}
 	
 	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P bean,
@@ -604,17 +546,16 @@ public final class Utils {
 			ArrayList<Field> fields = getAllDeclaredFields(bean.getClass());
 			// filter transient fields and those without annotations
 			for (Field field : fields) {
-				if(!Modifier.isTransient(field.getModifiers())){
-					if(field.isAnnotationPresent(anno) && ((filter == null) ? true : !field.isAnnotationPresent(filter))){
-						Object prop = PropertyUtils.getProperty(bean, field.getName());
-						if(prop instanceof Map){
-							map.put(field.getName(), jsonMapper.writeValueAsString(prop));
-						}else{
-							map.put(field.getName(), prop);
-						}
+				boolean dontSkip = ((filter == null) ? true : !field.isAnnotationPresent(filter));
+				if(anno != null && field.isAnnotationPresent(anno) && dontSkip){
+					Object prop = PropertyUtils.getProperty(bean, field.getName());
+					if(prop == null || isBasicType(field.getType())){
+						map.put(field.getName(), prop);
+					}else{
+						map.put(field.getName(), getObjectMapper().writeValueAsString(prop));
 					}
 				}
-			}
+			}			
 		} catch (Exception ex) {
 			logger.error(null, ex);
 		}
@@ -623,27 +564,37 @@ public final class Utils {
 	}
 	
 	public static <P extends ParaObject> P setAnnotatedFields(Map<String, Object> data){
-		if(data == null || data.isEmpty() || !data.containsKey(DAO.CN_CLASSNAME)) return null;
-		P bean = null;
+		return setAnnotatedFields(null, data);
+	}
+	
+	public static <P extends ParaObject> P setAnnotatedFields(P bean, Map<String, Object> data){
+		if(data == null || data.isEmpty()) return null;
 		try {
-			Class<P> clazz = (Class<P>) Utils.toClass((String) data.get(CN_CLASSNAME));
-			if(clazz != null){
-				bean = clazz.getConstructor().newInstance();
-				ArrayList<Field> fields = getAllDeclaredFields(clazz);
+			if(bean == null){
+				Class<P> clazz = (Class<P>) toClass((String) data.get(DAO.CN_CLASSNAME));
+				if(clazz != null){
+					 bean = clazz.getConstructor().newInstance();
+				}
+			}
+			if(bean != null){
+				ArrayList<Field> fields = getAllDeclaredFields(bean.getClass());
 				for (Field field : fields) {
 					String name = field.getName();
 					Object value = data.get(name);
-					if (value != null && Map.class.isAssignableFrom(field.getType())) {
-						Map<String, Object> map = jsonMapper.readValue(value.toString(), 
-								new TypeReference<Map<String, Object>>() {});
-						BeanUtils.setProperty(bean, name, map);
-					} else {
+					if(value == null && PropertyUtils.isReadable(bean, name)){
+						value = PropertyUtils.getProperty(bean, name);
+					}
+					if (value == null || isBasicType(field.getType())) {
 						BeanUtils.setProperty(bean, name, value);
-					}					
+					} else {
+						Object val = getObjectMapper().readValue(value.toString(), field.getType());
+						BeanUtils.setProperty(bean, name, val);
+					}
 				}
 			}
 		} catch (Exception ex) {
 			logger.error(null, ex);
+			bean = null;
 		}
 		return bean;
 	}
@@ -653,7 +604,7 @@ public final class Utils {
 	}
 	
 	public static Class<? extends ParaObject> toClass(String classname, String scanPackageName){
-		String packagename = System.getProperty(Config.CORE_PACKAGE, Config.CORE_PACKAGE_NAME);
+		String packagename = Config.CORE_PACKAGE_NAME;
 		String corepackage = StringUtils.isBlank(scanPackageName) ? packagename : scanPackageName;
 		if(StringUtils.isBlank(classname)) return null;
 		Class<? extends ParaObject> clazz = null;
@@ -665,34 +616,57 @@ public final class Utils {
 				try {
 					clazz = (Class<? extends ParaObject>) Class.forName(PObject.class.getPackage().getName().concat(".").
 						concat(StringUtils.capitalize(classname)));
-				} catch (Exception ex1) {
-					logger.error(ex1.toString());
-					if(StringUtils.isBlank(corepackage)){
-						logger.warn("Class '{}' not found! System property '{}' not set.", 
-								classname, Config.CORE_PACKAGE);
-					}					
-				}
+				} catch (Exception ex1) {}
 			}
 		}
 		return clazz;
 	}
 	
 	public static ParaObject fromJSON(String json){
+		if(StringUtils.isBlank(json)) return null;
 		try {
-			return jsonMapper.readValue(json, ParaObject.class);
+			Map<String, Object> map = getObjectMapper().readValue(json, Map.class);
+			ParaObject pObject = setAnnotatedFields(map);
+			if(pObject == null){
+				Sysprop s = new Sysprop(getNewId());
+				if(map.containsKey(DAO.CN_ID)){
+					s.setId((String) map.get(DAO.CN_ID));
+				}
+				if(map.containsKey(DAO.CN_NAME)){
+					s.setName((String) map.get(DAO.CN_NAME));
+				}
+				s.setProperties(map);
+				pObject = s;
+			}
+			return pObject;
 		} catch (Exception e) {
-			logger.error(null, e);
+			logger.error(null, e);			
 		}
 		return null;
 	}
 	
 	public static String toJSON(ParaObject obj){
+		if(obj == null) return "";
 		try {
-			return jsonMapper.writeValueAsString(obj);
+			return getObjectMapper().writeValueAsString(obj);
 		} catch (Exception e) {
 			logger.error(null, e);
 		}
 		return "";
+	}
+	
+	public static boolean isBasicType(Class<?> clazz){
+		if(clazz == null) return false;
+		return clazz.isPrimitive() ||
+				clazz.equals(String.class) ||
+				clazz.equals(Long.class) ||
+				clazz.equals(Integer.class) ||
+				clazz.equals(Boolean.class) ||
+				clazz.equals(Byte.class) ||
+				clazz.equals(Short.class) ||
+				clazz.equals(Float.class) ||
+				clazz.equals(Double.class) ||
+				clazz.equals(Character.class);				
 	}
 	
 	/********************************************
@@ -705,19 +679,23 @@ public final class Utils {
 	
 	public static String[] validateRequest(ParaObject content){
 		if(content == null) return new String[]{ "Object cannot be null." };
-		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-        Validator validator = factory.getValidator();
 		ArrayList<String> list = new ArrayList<String>();
-		for (ConstraintViolation<ParaObject> constraintViolation : validator.validate(content)) {
-			String prop = "'".concat(constraintViolation.getPropertyPath().toString()).concat("'");
-			list.add(prop.concat(" ").concat(constraintViolation.getMessage()));
+		try {
+			ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+			Validator validator = factory.getValidator();
+			for (ConstraintViolation<ParaObject> constraintViolation : validator.validate(content)) {
+				String prop = "'".concat(constraintViolation.getPropertyPath().toString()).concat("'");
+				list.add(prop.concat(" ").concat(constraintViolation.getMessage()));
+			}
+		} catch (Exception e) {
+			logger.error(null, e);
 		}
-		logger.debug("Invalid object. ", list);
-		return list.toArray(new String[list.size()]);
+		return list.toArray(new String[]{});
 	}
 	
 	public static String getJSONValidationObject(String classname, List<String> fields, Map<String, String> lang){
 		String root = "{}";
+		if(fields == null) fields = new ArrayList<String> ();
 		if (!StringUtils.isBlank(classname)) {
 			Class<? extends ParaObject> c = toClass(classname);
 			ArrayList<String> rules = new ArrayList<String>();
@@ -746,12 +724,12 @@ public final class Utils {
 		return root;
 	}
 	
-	private static Map<String, List<Annotation>> getAnnotationsMap(Class<? extends ParaObject> clazz, Set<String> fields){
+	static Map<String, List<Annotation>> getAnnotationsMap(Class<? extends ParaObject> clazz, Set<String> fields){
 		HashMap<String, List<Annotation>> map = new HashMap<String, List<Annotation>>();
 		try {
 			ArrayList<Field> fieldlist = getAllDeclaredFields(clazz);
 			
-			if (fields != null && fields.size() > 0) {
+			if (fields != null && !fields.isEmpty()) {
 				for (Iterator<Field> it = fieldlist.iterator(); it.hasNext();) {
 					Field field = it.next();
 					if(!fields.contains(field.getName())){
@@ -778,20 +756,25 @@ public final class Utils {
 		return map;
 	}
 	
-	private static ArrayList<Field> getAllDeclaredFields(Class<? extends ParaObject> clazz){
+	static ArrayList<Field> getAllDeclaredFields(Class<? extends ParaObject> clazz){
 		ArrayList<Field> fields = new ArrayList<Field>();
-		fields.addAll(Arrays.asList(ParaObject.class.getDeclaredFields()));
-		fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
-		Class<?> parent = clazz.getSuperclass();
-		// traverse back to superclass adding all the subclasses' declared fields 
-		while(!parent.equals(Object.class)){
-			fields.addAll(Arrays.asList(parent.getDeclaredFields()));
+		if(clazz == null) return fields;
+		Class<?> parent = clazz;
+		do {
+			for (Field field : parent.getDeclaredFields()) {
+				if(!Modifier.isTransient(field.getModifiers()) && 
+						!field.getName().equals("serialVersionUID")){
+					fields.add(field);
+				}
+			}
 			parent = parent.getSuperclass();
-		}
+		} while (!parent.equals(Object.class));
 		return fields;
 	}
 	
-	private static String[] annotationToValidation(Annotation ano,  Map<String, String> lang){
+	static String[] annotationToValidation(Annotation ano,  Map<String, String> lang){
+		if(ano == null) return new String[0];
+		if(lang == null) lang = new HashMap<String, String>();
 		Class<? extends Annotation> atype = ano.annotationType();
 		String rule = "";
 		String msg = "";
@@ -823,7 +806,7 @@ public final class Utils {
 	********************************************/
 
 	public static synchronized String getNewId() {
-		// NEW version - unique across JVMs as long as each has a different workerID
+		// unique across JVMs as long as each has a different workerID
 		// based on Twitter's Snowflake algorithm
 		long timestamp = System.currentTimeMillis();
 
@@ -867,24 +850,23 @@ public final class Utils {
 		if(content != null){
 			return Response.ok(content).build();
 		}else{
-			return Utils.getJSONResponse(Response.Status.NOT_FOUND);
+			return getJSONResponse(Response.Status.NOT_FOUND);
 		}
 	}
 		
-	public static <P extends ParaObject> Response getCreateResponse(P content, UriInfo context){
-		String[] errors = Utils.validateRequest(content);
-		if (errors.length == 0) {
+	public static <P extends ParaObject> Response getCreateResponse(P content, UriBuilder context){
+		String[] errors = validateRequest(content);
+		if (errors.length == 0 && context != null) {
 			String id = content.create();
-			return Response.created(context.getAbsolutePathBuilder().path(id).
-					build()).entity(content).build();
+			return Response.created(context.path(id).build()).entity(content).build();
 		}else{
-			return Utils.getJSONResponse(Response.Status.BAD_REQUEST, errors);
+			return getJSONResponse(Response.Status.BAD_REQUEST, errors);
 		}
 	}
 	
 	public static <P extends ParaObject> Response getUpdateResponse(P object, P newContent){
 		if(object != null){
-			Map<String, Object> propsMap = Utils.getAnnotatedFields(newContent, Stored.class, Locked.class);
+			Map<String, Object> propsMap = getAnnotatedFields(newContent, Stored.class, Locked.class);
 			try {
 				for (Map.Entry<String, Object> entry : propsMap.entrySet()) {
 					if(entry.getValue() != null){
@@ -893,15 +875,15 @@ public final class Utils {
 				}
 			} catch (Exception ex) { /* who cares? */ }
 			
-			String[] errors = Utils.validateRequest(object);
+			String[] errors = validateRequest(object);
 			if (errors.length == 0) {
 				object.update();
 				return Response.ok(object).build();
 			} else {
-				return Utils.getJSONResponse(Response.Status.BAD_REQUEST, errors);
+				return getJSONResponse(Response.Status.BAD_REQUEST, errors);
 			}
 		}else{
-			return Utils.getJSONResponse(Response.Status.NOT_FOUND);
+			return getJSONResponse(Response.Status.NOT_FOUND);
 		}
 	}
 	
@@ -910,12 +892,13 @@ public final class Utils {
 			content.delete();
 			return Response.ok().build();
 		}else{
-			return Utils.getJSONResponse(Response.Status.BAD_REQUEST);
+			return getJSONResponse(Response.Status.BAD_REQUEST);
 		}
 	}
 	
 	public static Response getJSONResponse(final Status status, final String... errors){
 		String json = "{}";
+		if(status == null) return Response.status(Status.BAD_REQUEST).build();
 		try {
 			LinkedHashMap<Object, Object> map = new LinkedHashMap<Object, Object>(){
 				private static final long serialVersionUID = 1L;{
@@ -923,7 +906,7 @@ public final class Utils {
 				put("message", status.getReasonPhrase().concat(". ").
 						concat(StringUtils.join(errors, "; ")));
 			}};
-			json = jsonMapper.writeValueAsString(map);
+			json = getObjectMapper().writeValueAsString(map);
 		} catch (Exception ex) {}
 		
 		return Response.status(status).entity(json).type(MediaType.APPLICATION_JSON).build();

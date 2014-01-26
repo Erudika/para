@@ -19,10 +19,7 @@ package com.erudika.para.search;
 
 import com.erudika.para.Para;
 import com.erudika.para.annotations.Stored;
-import com.erudika.para.core.Address;
-import com.erudika.para.core.PObject;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.core.Tag;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
@@ -65,7 +62,9 @@ public final class ElasticSearchUtils {
 	public static Client getClient(){
 		if(searchClient != null) return searchClient;
 		ImmutableSettings.Builder settings = ImmutableSettings.settingsBuilder();
-		settings.put("getClient().transport.sniff", true);
+		settings.put("client.transport.sniff", true);
+		settings.put("client.transport.sniff", true);
+		settings.put("action.disable_delete_all_indices", true);
 		
 		if (Config.IN_PRODUCTION) {
 			settings.put("cloud.aws.access_key", Config.AWS_ACCESSKEY);
@@ -134,8 +133,7 @@ public final class ElasticSearchUtils {
 					setSettings(nb.settings().build());
 
 			// special system mappings (all the rest are dynamic)
-			create.addMapping(PObject.classname(Address.class), getAddressMapping());
-			create.addMapping(PObject.classname(Tag.class), getTagMapping());
+			create.addMapping("_default_", getDefaultMapping());
 			create.execute().actionGet();
 			
 			getClient().admin().indices().prepareAliases().addAlias(name, appName).execute().actionGet();
@@ -266,29 +264,28 @@ public final class ElasticSearchUtils {
 		return null;
 	}
 	
-	private static XContentBuilder getAddressMapping() throws Exception{
+	private static XContentBuilder getDefaultMapping() throws Exception{
 		return XContentFactory.jsonBuilder().
 			startObject().
-				startObject(PObject.classname(Address.class)).
+				startObject("_default_").
 					startObject("properties").
-						startObject("latlng").
-							field("type", "geo_point").
-							field("lat_lon", true).
-						endObject().
-					endObject().
-				endObject().
-			endObject();
-	}
-	
-	private static XContentBuilder getTagMapping() throws Exception{
-		return XContentFactory.jsonBuilder().
-			startObject().
-				startObject(PObject.classname(Tag.class)).
-					startObject("properties").
-						startObject("tag").
-							field("type", "string").
-							field("index", "not_analyzed").
-						endObject().
+						startObject("latlng").field("type", "geo_point").field("lat_lon", true).endObject().
+						startObject("tag").field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(DAO.CN_ID).field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(DAO.CN_KEY).field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(DAO.CN_SALT).field("type", "string").field("index", "not_analyzed").endObject().
+//						startObject(DAO.CN_TAGS).field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(DAO.CN_EMAIL).field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(DAO.CN_GROUPS).field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(DAO.CN_UPDATED).field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(DAO.CN_PASSWORD).field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(DAO.CN_PARENTID).field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(DAO.CN_CREATORID).field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(DAO.CN_CLASSNAME).field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(DAO.CN_AUTHTOKEN).field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(DAO.CN_TIMESTAMP).field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(DAO.CN_IDENTIFIER).field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(DAO.CN_RESET_TOKEN).field("type", "string").field("index", "not_analyzed").endObject().
 					endObject().
 				endObject().
 			endObject();

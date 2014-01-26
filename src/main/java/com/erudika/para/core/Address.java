@@ -41,7 +41,7 @@ public class Address extends PObject{
 
 	public Address(String id) {
 		setId(id);
-		setName(getClassname());
+		getName();
 	}
 	
 	public String getLatlng() {

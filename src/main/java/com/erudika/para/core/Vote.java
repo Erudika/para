@@ -33,13 +33,14 @@ public class Vote extends PObject {
 	@Stored @NotNull private Long expiresAfter;	
 
 	public Vote() {
+		this(null, null, null);
 	}
 
 	public Vote(String voterid, String voteeid, String type) {
-		setName(getClassname());
 		setCreatorid(voterid);
 		setParentid(voteeid);
 		setTimestamp(System.currentTimeMillis());
+		getName();
 		this.type = type;
 		this.expiresAfter = Config.VOTE_EXPIRES_AFTER_SEC;
 	}

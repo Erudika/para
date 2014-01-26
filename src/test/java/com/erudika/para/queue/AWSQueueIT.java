@@ -32,8 +32,8 @@ public class AWSQueueIT extends QueueTest {
 	private static String endpoint = "http://localhost:9324";
 	
 	static {
-		System.setProperty("para.awsaccesskey", "x");
-		System.setProperty("para.awssecretkey", "x");
+		System.setProperty("para.aws_access_key", "x");
+		System.setProperty("para.aws_secret_key", "x");
 	}
 	
 	public AWSQueueIT() {

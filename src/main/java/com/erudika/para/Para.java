@@ -17,6 +17,7 @@
  */
 package com.erudika.para;
 
+import com.erudika.para.cache.Cache;
 import com.erudika.para.cache.CacheModule;
 import com.erudika.para.email.EmailModule;
 import com.erudika.para.i18n.I18nModule;
@@ -47,17 +48,20 @@ import org.slf4j.LoggerFactory;
  *
  * @author Alex Bogdanovski <alex@erudika.com>
  */
-public class Para {
+public final class Para {
 	
 	private static final Logger logger = LoggerFactory.getLogger(Para.class);
 	private static List<DestroyListener> destroyListeners = new ArrayList<DestroyListener>();
 	private static List<InitializeListener> initListeners = new ArrayList<InitializeListener>();
 	
 	private static Injector injector;
+
+	private Para() { }	
 	
 	public static void initialize(Module... modules){
 		if(injector == null){
 			try {
+				logger.info("--- Para.initialize() ---");
 				Stage stage = Config.IN_PRODUCTION ? Stage.PRODUCTION : Stage.DEVELOPMENT;
 				List<Module> coreModules = getCoreModules();
 				List<Module> externalModules = getExternalModules(modules);
@@ -79,6 +83,7 @@ public class Para {
 	
 	public static void destroy(){
 		try {
+			logger.info("--- Para.destroy() ---");
 			for (DestroyListener destroyListener : destroyListeners) {
 				destroyListener.onDestroy();
 			}
@@ -101,6 +106,11 @@ public class Para {
 	public static Search getSearch(){
 		if (injector == null) handleNotInitializedError();
 		return injector.getInstance(Search.class);
+	}
+	
+	public static Cache getCache(){
+		if (injector == null) handleNotInitializedError();
+		return injector.getInstance(Cache.class);
 	}
 	
 	public static Map<String, String> getConfig(){

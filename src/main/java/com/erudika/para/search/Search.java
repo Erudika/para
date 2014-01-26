@@ -20,7 +20,6 @@ package com.erudika.para.search;
 import com.erudika.para.core.ParaObject;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.apache.commons.lang3.mutable.MutableLong;
 
 /**
@@ -71,8 +70,8 @@ public interface Search {
 	public <P extends ParaObject> ArrayList<P> findSimilar(String type, String filterKey, String[] fields, String liketext, int max);
 	public <P extends ParaObject> ArrayList<P> findSimilar(String appName, String type, String filterKey, String[] fields, String liketext, int max);
 
-	public <P extends ParaObject> ArrayList<P> findTagged(String type, MutableLong page, MutableLong itemcount, ArrayList<String> tags);
-	public <P extends ParaObject> ArrayList<P> findTagged(String appName, String type, MutableLong page, MutableLong itemcount, ArrayList<String> tags);
+	public <P extends ParaObject> ArrayList<P> findTagged(String type, MutableLong page, MutableLong itemcount, String... tags);
+	public <P extends ParaObject> ArrayList<P> findTagged(String appName, String type, MutableLong page, MutableLong itemcount, String... tags);
 
 	public <P extends ParaObject> ArrayList<P> findTags(String keyword, int max);
 	public <P extends ParaObject> ArrayList<P> findTags(String appName, String keyword, int max);

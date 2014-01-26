@@ -20,7 +20,6 @@ package com.erudika.para.persistence;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
 import com.erudika.para.search.Search;
-import com.erudika.para.utils.Config;
 import java.util.Arrays;
 import java.util.Map;
 import org.junit.After;
@@ -37,8 +36,8 @@ import static org.mockito.Mockito.*;
 public abstract class DAOTest {
 	
 	protected static DAO dao;
-	protected static String appName1 = "testApp1";
-	protected static String appName2 = "testApp2";
+	protected static String appName1 = "testapp1";
+	protected static String appName2 = "testapp2";
 
 	private User u;
 	private Tag t;

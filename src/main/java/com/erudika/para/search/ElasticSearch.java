@@ -41,10 +41,9 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.DistanceUnit;
-import org.elasticsearch.index.query.AndFilterBuilder;
+import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
-import org.elasticsearch.index.query.OrFilterBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -92,6 +91,7 @@ public class ElasticSearch implements Search {
 					so.getClassname(), so.getId()).setSource(data);
 			if(ttl > 0) irb.setTTL(ttl);
 			irb.execute().actionGet();
+			logger.debug("Search.index() {}", so.getId());
 		} catch (Exception e) {
 			logger.warn(null, e);
 		}
@@ -102,6 +102,7 @@ public class ElasticSearch implements Search {
 		if(so == null || StringUtils.isBlank(so.getId()) || StringUtils.isBlank(appName)) return;
 		try{
 			client().prepareDelete(appName, so.getClassname(), so.getId()).execute().actionGet();
+			logger.debug("Search.unindex() {}", so.getId());
 		} catch (Exception e) {
 			logger.warn(null, e);
 		}
@@ -109,23 +110,35 @@ public class ElasticSearch implements Search {
 	
 	@Override
 	public <P extends ParaObject> void indexAll(String appName, List<P> objects){
-		if(objects == null) return ;
+		if(objects == null || StringUtils.isBlank(appName)) return ;
 		BulkRequestBuilder brb = client().prepareBulk();
 		for (ParaObject pObject : objects) {
 			brb.add(client().prepareIndex(appName, pObject.getClassname(), 
 						pObject.getId()).setSource(Utils.getAnnotatedFields(pObject, Stored.class, null)));
 		}
 		brb.execute().actionGet();
+		logger.debug("Search.indexAll() {}", objects.size());
 	}
 	
 	@Override
 	public <P extends ParaObject> void unindexAll(String appName, List<P> objects){
-		if(objects == null) return ;
+		if(objects == null || StringUtils.isBlank(appName)) return ;
 		BulkRequestBuilder brb = client().prepareBulk();
 		for (ParaObject pObject : objects) {
 			brb.add(client().prepareDelete(appName, pObject.getClassname(), pObject.getId()));
 		}
 		brb.execute().actionGet();
+		logger.debug("Search.unindexAll() {}", objects.size());
+	}
+	
+	@Override
+	public <P extends ParaObject> P findById(String appName, String id, String type){
+		try {
+			return Utils.setAnnotatedFields(getSource(appName, id, type));
+		} catch (Exception e) {
+			logger.warn(null, e);
+			return null;
+		}
 	}
 	
 	@Override
@@ -137,6 +150,7 @@ public class ElasticSearch implements Search {
 	@Override
 	public <P extends ParaObject> ArrayList<P> findTerm(String appName, String type, MutableLong page, MutableLong itemcount, 
 			String field, Object term, String sortfield, boolean reverse, int max){
+		if(StringUtils.isBlank(field) || term == null) return new ArrayList<P> ();
 		return searchQuery(appName, type, page, itemcount, null, FilterBuilders.termFilter(field, term), 
 				sortfield, reverse, max);
 	}
@@ -144,6 +158,7 @@ public class ElasticSearch implements Search {
 	@Override
 	public <P extends ParaObject> ArrayList<P> findTermInList(String appName, String type, MutableLong page, MutableLong itemcount, 
 			String field, List<?> terms, String sortfield, boolean reverse, int max){
+		if(StringUtils.isBlank(field) || terms == null) return new ArrayList<P> ();
 		return searchQuery(appName, type, page, itemcount, null, FilterBuilders.termsFilter(field, terms), sortfield, reverse, max);
 	}
 	
@@ -156,6 +171,7 @@ public class ElasticSearch implements Search {
 	@Override
 	public <P extends ParaObject> ArrayList<P> findPrefix(String appName, String type, MutableLong page, MutableLong itemcount, 
 			String field, String prefix, String sortfield, boolean reverse, int max){
+		if(StringUtils.isBlank(field) || StringUtils.isBlank(prefix)) return new ArrayList<P> ();
 		return searchQuery(appName, type, page, itemcount, QueryBuilders.prefixQuery(field, prefix), null, 
 				sortfield, reverse, max);
 	}
@@ -169,6 +185,7 @@ public class ElasticSearch implements Search {
 	@Override
 	public <P extends ParaObject> ArrayList<P> findQuery(String appName, String type, MutableLong page, MutableLong itemcount, 
 			String query, String sortfield, boolean reverse, int max){
+		if(StringUtils.isBlank(query)) return new ArrayList<P> ();
 		return searchQuery(appName, type, page, itemcount, QueryBuilders.queryString(query).allowLeadingWildcard(false), null, 
 				sortfield, reverse, max);
 	}
@@ -182,27 +199,23 @@ public class ElasticSearch implements Search {
 	@Override
 	public <P extends ParaObject> ArrayList<P> findWildcard(String appName, String type, MutableLong page, MutableLong itemcount, 
 			String field, String wildcard, String sortfield, boolean reverse, int max){
+		if(StringUtils.isBlank(field) || StringUtils.isBlank(wildcard)) return new ArrayList<P> ();
 		return searchQuery(appName, type, page, itemcount, QueryBuilders.wildcardQuery(field, wildcard), null,
 				sortfield, reverse, max);
 	}
 	
 	@Override
 	public <P extends ParaObject> ArrayList<P> findTagged(String appName, String type, MutableLong page, MutableLong itemcount, 
-			ArrayList<String> tags){
-		OrFilterBuilder tagFilter = FilterBuilders.orFilter(
-				FilterBuilders.termFilter("tags", tags.remove(0)));
-
-		if (!tags.isEmpty()) {
-			//assuming clean & safe tags here
-			for (String tag : tags) {
-				tagFilter.add(FilterBuilders.termFilter("tags", tag));
-			}
+			String... tags){
+		if(tags == null || tags.length == 0 || StringUtils.isBlank(appName)) return new ArrayList<P>();
+		
+		BoolFilterBuilder tagFilter = FilterBuilders.boolFilter();
+		//assuming clean & safe tags here
+		for (String tag : tags) {
+			tagFilter.must(FilterBuilders.termFilter(DAO.CN_TAGS, tag));
 		}
 		// The filter looks like this: ("tag1" OR "tag2" OR "tag3") AND "type"
-		AndFilterBuilder andFilter = FilterBuilders.andFilter(tagFilter);
-		andFilter.add(FilterBuilders.termFilter("type", type));
-
-		return searchQuery(appName, type, page, itemcount, null, andFilter, null, true, Config.MAX_ITEMS_PER_PAGE);
+		return searchQuery(appName, type, page, itemcount, null, tagFilter, null, true, Config.MAX_ITEMS_PER_PAGE);
 	}
 
 	@Override
@@ -221,6 +234,8 @@ public class ElasticSearch implements Search {
 	public <P extends ParaObject> ArrayList<P> findTwoTerms(String appName, String type, MutableLong page, MutableLong itemcount, 
 			String field1, Object term1, String field2, Object term2, boolean mustMatchBoth, 
 			String sortfield, boolean reverse, int max){
+		if(StringUtils.isBlank(field1) || StringUtils.isBlank(field2) || term1 == null || term2 == null) 
+			return new ArrayList<P> ();
 		FilterBuilder fb;
 		if (mustMatchBoth) {
 			fb = FilterBuilders.andFilter(
@@ -257,6 +272,7 @@ public class ElasticSearch implements Search {
 
 	@Override
 	public <P extends ParaObject> ArrayList<P> findTags(String appName, String keyword, int max){
+		if(StringUtils.isBlank(keyword)) return new ArrayList<P> ();
 		QueryBuilder qb = QueryBuilders.wildcardQuery(PObject.classname(Tag.class), keyword.concat("*"));
 //		SortBuilder sb = SortBuilders.fieldSort("count").order(SortOrder.DESC);
 		return searchQuery(appName, PObject.classname(Tag.class), null, null, qb, null, null, true, max);
@@ -319,7 +335,8 @@ public class ElasticSearch implements Search {
 				Map<String, P> fromDB = dao.readAll(appName, keys, true);
 				results.addAll(fromDB.values());
 //				unindexNulls(type, keys, fromDB);
-			}			
+			}
+			logger.debug("Search.searchQuery() {}", results.size());
 		} catch (Exception e) {
 			logger.warn(null, e);
 		}
@@ -329,8 +346,9 @@ public class ElasticSearch implements Search {
 	private SearchHits searchQueryRaw(String appName, String type, MutableLong page, MutableLong itemcount, 
 			QueryBuilder query, FilterBuilder filter, SortBuilder sort, int max){
 		if(StringUtils.isBlank(type) || StringUtils.isBlank(appName)) return null;
+		if(query == null) query = QueryBuilders.matchAllQuery();
+		if(filter == null) filter = FilterBuilders.matchAllFilter();
 		if(sort == null) sort = SortBuilders.scoreSort();
-//		if(query == null) query = QueryBuilders.matchAllQuery();
 		int start = (page == null || page.intValue() < 1 || 
 				page.intValue() > Config.MAX_PAGES) ? 0 : (page.intValue() - 1) * max;
 		
@@ -352,16 +370,6 @@ public class ElasticSearch implements Search {
 		return hits;
 	}
 		
-	@Override
-	public <P extends ParaObject> P findById(String appName, String id, String type){
-		try {
-			return Utils.setAnnotatedFields(getSource(appName, id, type));
-		} catch (Exception e) {
-			logger.warn(null, e);
-			return null;
-		}
-	}
-	
 	protected Map<String, Object> getSource(String appName, String key, String type){
 		Map<String, Object> map = new HashMap<String, Object>();
 		if(StringUtils.isBlank(key) || StringUtils.isBlank(type) || StringUtils.isBlank(appName)) return map;
@@ -379,12 +387,14 @@ public class ElasticSearch implements Search {
 	public Long getBeanCount(String appName, String type){
 		if(StringUtils.isBlank(type) || StringUtils.isBlank(appName)) return 0L;
 		return client().prepareCount(appName).
-				setTypes(type).execute().actionGet().getCount();
+				setTypes(type).setQuery(QueryBuilders.matchAllQuery()).
+				execute().actionGet().getCount();
 	}
 	
 	@Override
 	public Long getCount(String appName, String type, String field, Object term){
-		if(StringUtils.isBlank(type) || StringUtils.isBlank(appName) || StringUtils.isBlank(field)) return 0L;
+		if(StringUtils.isBlank(type) || StringUtils.isBlank(appName) || 
+				StringUtils.isBlank(field) || term == null) return 0L;
 		return client().prepareCount(appName).
 				setTypes(type).setQuery(QueryBuilders.termQuery(field, term)).
 				execute().actionGet().getCount();
@@ -464,7 +474,7 @@ public class ElasticSearch implements Search {
 
 	@Override
 	public <P extends ParaObject> ArrayList<P> findTagged(String type, MutableLong page, MutableLong itemcount, 
-			ArrayList<String> tags) {
+			String... tags) {
 		return findTagged(Config.APP_NAME_NS, type, page, itemcount, tags);
 	}
 

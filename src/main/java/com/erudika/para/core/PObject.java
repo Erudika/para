@@ -25,8 +25,11 @@ import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 import javax.validation.constraints.Size;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -47,7 +50,8 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	@Stored @Locked private String appname;
 	@Stored @Locked private String parentid;
 	@Stored @Locked private String creatorid;
-	@Stored @NotBlank @Size(min=2, max=255) private String name;
+	@Stored private String name;
+	@Stored private Set<String> tags;
 	@Stored private Integer votes;
 	
 	private transient PObject parent;
@@ -56,7 +60,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	private transient DAO dao;
 	private transient Search search;
 
-	
+	@JsonIgnore
 	public DAO getDao() {
 		if(dao == null){
 			dao = Para.getDAO();
@@ -68,6 +72,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		this.dao = dao;
 	}
 
+	@JsonIgnore
 	public Search getSearch() {
 		if(search == null){
 			search = Para.getSearch();
@@ -91,7 +96,6 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	}
 	
 	// one-to-many relationships (may return self)
-	@JsonIgnore
 	@Override
 	public PObject getParent(){
 		if(parent == null){
@@ -100,7 +104,6 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		return parent;
 	}
 	
-	@JsonIgnore
 	@Override
 	public PObject getCreator(){
 		if(creator == null){
@@ -130,12 +133,17 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	}
 	
 	@Override
+	@NotBlank @Size(min=2, max=255)
 	public String getName() {
+		if(StringUtils.isBlank(name)){
+			name = getClassname().concat(id != null ? " "+id : "");
+		}
 		return name;
 	}
 
 	@Override
 	public void setName(String name) {
+		if(name != null && name.isEmpty()) return;
 		this.name = name;
 	}
 		
@@ -208,6 +216,37 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 			appname = Config.APP_NAME_NS;
 		}
 		return appname;
+	}
+
+	@Override
+	public Set<String> getTags() {
+		if(tags == null){
+			tags = new LinkedHashSet<String> ();
+		}
+		return tags;
+	}
+
+	@Override
+	public void setTags(Set<String> tags) {
+		if(tags == null || tags.isEmpty()){
+			this.tags = tags;
+		}else{
+			addTags(tags.toArray(new String[]{}));
+		}
+	}
+	
+	public void addTags(String... tag){
+		if(tag == null || tag.length == 0) return;
+		for (String t : tag) {
+			if(!StringUtils.isBlank(t)){
+				getTags().add(t);
+			}
+		}
+	}
+	
+	public void removeTags(String... tag){
+		if(tag == null || tag.length == 0) return;
+		getTags().removeAll(Arrays.asList(tag));
 	}
 
 	@Override
@@ -399,4 +438,8 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		return true;
 	}
 	
+	@Override
+	public String toString() {
+		return Utils.toJSON(this);
+	}	
 }

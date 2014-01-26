@@ -47,6 +47,7 @@ public class Translation extends PObject{
 	public Translation(String id) {
 		this();
 		setId(id);
+		getName();
 	}
 
 	@Inject

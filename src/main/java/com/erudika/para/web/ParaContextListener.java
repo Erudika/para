@@ -33,13 +33,11 @@ public class ParaContextListener implements ServletContextListener {
 	
 	@Override
 	public void contextInitialized(ServletContextEvent sce) {
-		logger.info("--- Para.initialize() ---");
 		Para.initialize();
 	}
 
 	@Override
 	public void contextDestroyed(ServletContextEvent sce) {
-		logger.info("--- Para.destroy() ---");
 		Para.destroy();
 	}
 	

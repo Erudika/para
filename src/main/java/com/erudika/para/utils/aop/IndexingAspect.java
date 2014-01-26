@@ -26,6 +26,9 @@ import java.util.List;
 import javax.inject.Inject;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import static com.erudika.para.utils.aop.AOPUtils.*;
 
 /**
  *
@@ -33,87 +36,53 @@ import org.aopalliance.intercept.MethodInvocation;
  */
 public class IndexingAspect implements MethodInterceptor {
 
+	private static final Logger logger = LoggerFactory.getLogger(IndexingAspect.class);
+	
 	@Inject private Search search;
 	
 	public Object invoke(MethodInvocation mi) throws Throwable {
 		Object result = mi.proceed();
 		Method m = mi.getMethod();
-		
 		Method superMethod = null;
+		Indexed indexedAnno = null;
+		logger.debug("{}: intercepting {}()", getClass().getSimpleName(), m.getName());
+		
 		try {
 			superMethod = DAO.class.getMethod(m.getName(), m.getParameterTypes());
+			indexedAnno = superMethod.getAnnotation(Indexed.class);
 		} catch (Exception e) {}
 		
-		if(superMethod != null){
-			Indexed ano = superMethod.getAnnotation(Indexed.class);
-			if(ano != null){
-				Object[] args = mi.getArguments();
-				String appName = getFirstArgOfString(args);
-				switch(ano.action()){
-					case ADD:
-						ParaObject addMe = getArgOfParaObject(args);
-						search.index(appName, addMe);
-						break;
-					case REMOVE: 
-						ParaObject removeMe = getArgOfParaObject(args);
-						search.unindex(appName, removeMe);
-						break;
-					case ADD_ALL: 
-						List<ParaObject> addUs = getArgOfListOfType(args, ParaObject.class);
-						search.indexAll(appName, addUs);
-						break;
-					case REMOVE_ALL: 
-						List<ParaObject> removeUs = getArgOfListOfType(args, ParaObject.class);
-						search.unindexAll(appName, removeUs);
-						break;
-					default: break;
-				}
+		if(indexedAnno != null){
+			Object[] args = mi.getArguments();
+			String appName = getFirstArgOfString(args);
+			switch(indexedAnno.action()){
+				case ADD:
+					ParaObject addMe = getArgOfParaObject(args);
+					search.index(appName, addMe);
+					logger.debug("Indexed {} {}", appName, addMe.getId());
+					break;
+				case REMOVE: 
+					ParaObject removeMe = getArgOfParaObject(args);
+					search.unindex(appName, removeMe);
+					logger.debug("Unindexed {} {}", appName, removeMe.getId());
+					break;
+				case ADD_ALL: 
+					List<ParaObject> addUs = getArgOfListOfType(args, ParaObject.class);
+					search.indexAll(appName, addUs);
+					logger.debug("Indexed all {} {}", appName, addUs.size());
+					break;
+				case REMOVE_ALL: 
+					List<ParaObject> removeUs = getArgOfListOfType(args, ParaObject.class);
+					search.unindexAll(appName, removeUs);
+					logger.debug("Unindexed all {} {}", appName, removeUs.size());
+					break;
+				default: break;
 			}
+		}else{
+//			result = mi.proceed();
 		}
 		
 		return result;
-	}
-	
-	static <T> List<T> getArgOfListOfType(Object[] args, Class<T> type){
-		if(args != null){
-			for (Object arg : args) {
-				if(arg != null){
-					if(arg instanceof List){
-						List<T> list = (List) arg;
-						if(!list.isEmpty() && type.isAssignableFrom((list.get(0).getClass()))){
-							return (List<T>) list;
-						}
-					}
-				}
-			}
-		}
-		return null;
-	}
-	
-	static ParaObject getArgOfParaObject(Object[] args){
-		if(args != null){
-			for (Object arg : args) {
-				if(arg != null){
-					if(ParaObject.class.isAssignableFrom(arg.getClass())){
-						return (ParaObject) arg;
-					}
-				}
-			}
-		}
-		return null;
-	}
-	
-	static String getFirstArgOfString(Object[] args){
-		if(args != null){
-			for (Object arg : args) {
-				if(arg != null){
-					if(arg instanceof String){
-						return (String) arg;
-					}
-				}
-			}
-		}
-		return null;
 	}
 	
 }

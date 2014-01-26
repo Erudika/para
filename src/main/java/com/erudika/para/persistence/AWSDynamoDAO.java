@@ -185,7 +185,7 @@ public class AWSDynamoDAO implements DAO {
 		try {
 			setRowKey(key, row);
 			PutItemRequest putItemRequest = new PutItemRequest(cf, row);
-			client().putItem(putItemRequest); 
+			client().putItem(putItemRequest);
 		} catch (Exception e) {
 			logger.error(null, e);
 		}		
@@ -241,6 +241,7 @@ public class AWSDynamoDAO implements DAO {
 	@Override
 	public <P extends ParaObject> void createAll(String appName, List<P> objects){
 		writeAll(appName, objects, false);
+		logger.debug("DAO.createAll() {}", objects.size());
 	}
 	
 	@Override
@@ -260,6 +261,7 @@ public class AWSDynamoDAO implements DAO {
 		
 		batchGet(Collections.singletonMap(appName, kna), results);
 		
+		logger.debug("DAO.readAll() {}", results.size());
 		return results;
 	}
 	
@@ -298,6 +300,7 @@ public class AWSDynamoDAO implements DAO {
 	@Override
 	public <P extends ParaObject> void updateAll(String appName, List<P> objects){
 		writeAll(appName, objects, true);
+		logger.debug("DAO.updateAll() {}", objects.size());
 	}
 	
 	@Override
@@ -312,6 +315,7 @@ public class AWSDynamoDAO implements DAO {
 			}
 		}
 		batchWrite(Collections.singletonMap(appName, reqs));
+		logger.debug("DAO.deleteAll() {}", objects.size());
 	}
 	
 	private <P extends ParaObject> void writeAll(String appName, List<P> objects, boolean isUpdate){

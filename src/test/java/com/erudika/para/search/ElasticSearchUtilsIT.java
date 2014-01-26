@@ -74,5 +74,6 @@ public class ElasticSearchUtilsIT {
 		ElasticSearchUtils.createIndex("test-index");
 		assertNull(ElasticSearchUtils.getIndexNameForAlias(""));
 		assertEquals("test-index1", ElasticSearchUtils.getIndexNameForAlias("test-index"));
+		ElasticSearchUtils.deleteIndex("test-index");
 	}
 }

@@ -135,16 +135,16 @@ public class SecurityConfig {
 			http.sessionManagement().sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy());
 			http.securityContext().securityContextRepository(new NullSecurityContextRepository());
 			http.exceptionHandling().authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint(confMap.get("security.signin")));
-			http.exceptionHandling().accessDeniedPage(confMap.get("security.accessdenied"));
+			http.exceptionHandling().accessDeniedPage(confMap.get("security.access_denied"));
 			http.requestCache().requestCache(new SimpleRequestCache());
 			
 			SimpleAuthenticationSuccessHandler successHandler = new SimpleAuthenticationSuccessHandler();
-			successHandler.setDefaultTargetUrl(confMap.get("security.signinsuccess"));
+			successHandler.setDefaultTargetUrl(confMap.get("security.signin_success"));
 			successHandler.setTargetUrlParameter(confMap.get("security.returnto"));
 			successHandler.setUseReferer(true);
 			
 			SimpleUrlAuthenticationFailureHandler failureHandler = new SimpleUrlAuthenticationFailureHandler();
-			failureHandler.setDefaultFailureUrl(confMap.get("security.signinfailure"));
+			failureHandler.setDefaultFailureUrl(confMap.get("security.signin_failure"));
 			
 			TokenBasedRememberMeServices tbrms = new TokenBasedRememberMeServices(Config.APP_SECRET_KEY, new SimpleUserService());
 			tbrms.setAlwaysRemember(true);

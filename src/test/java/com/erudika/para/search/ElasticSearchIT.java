@@ -36,10 +36,12 @@ public class ElasticSearchIT extends SearchTest{
 		ElasticSearchUtils.createIndex(Config.APP_NAME_NS);
 		ElasticSearchUtils.createIndex(appName1);
 		ElasticSearchUtils.createIndex(appName2);
+		SearchTest.init();
 	}
 	
 	@AfterClass
 	public static void tearDownClass() {
+		ElasticSearchUtils.deleteIndex(Config.APP_NAME_NS);
 		ElasticSearchUtils.deleteIndex(appName1);
 		ElasticSearchUtils.deleteIndex(appName2);
 		ElasticSearchUtils.shutdownClient();

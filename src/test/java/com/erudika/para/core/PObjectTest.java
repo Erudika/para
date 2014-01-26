@@ -21,6 +21,8 @@ import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.search.Search;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -110,5 +112,40 @@ public class PObjectTest {
 		User u1 = new User("111");
 		User u2 = new User("111");
 		assertTrue(u1.equals(u2));
+	}
+	
+	@Test
+	public void testAddRemoveTags(){
+		User u1 = new User("111");
+		assertNotNull(u1.getTags());
+		assertTrue(u1.getTags().isEmpty());
+		Set<String> someTags = new HashSet<String>();
+		someTags.add("one");
+		someTags.add("two");
+		someTags.add("");
+		someTags.add(" ");
+		someTags.add(null);
+		Set<String> cleanTags = new HashSet<String>();
+		cleanTags.add("one");
+		cleanTags.add("two");
+		u1.setTags(someTags);
+		assertFalse(u1.getTags().contains(""));
+		assertFalse(u1.getTags().contains(" "));
+		assertFalse(u1.getTags().contains(null));
+		assertEquals(cleanTags, u1.getTags());
+		u1.addTags();
+		u1.addTags(null, null, null);
+		u1.addTags("two", "two", "two");
+		assertEquals(cleanTags, u1.getTags());
+		u1.addTags("three", "four", "five");
+		assertEquals(5, u1.getTags().size());
+		
+		u1.removeTags("two", "four");
+		assertEquals(3, u1.getTags().size());
+		assertFalse(u1.getTags().contains("two"));
+		assertFalse(u1.getTags().contains("four"));
+		
+		u1.setTags(null);
+		assertTrue(u1.getTags().isEmpty());
 	}
 }

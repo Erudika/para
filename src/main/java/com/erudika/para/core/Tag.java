@@ -38,8 +38,8 @@ public class Tag extends PObject{
 	}
 	
 	public Tag(String tag) {
-		setName(tag);
 		setId(id(tag));
+		getName();
 		this.count = 0;
 		this.tag = tag;
 	}
