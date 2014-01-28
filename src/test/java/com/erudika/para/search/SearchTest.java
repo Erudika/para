@@ -18,7 +18,6 @@
 package com.erudika.para.search;
 
 import com.erudika.para.core.Address;
-import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
@@ -26,11 +25,9 @@ import com.erudika.para.persistence.DAO;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Ignore;
-import static org.mockito.Mockito.mock;
 
 /**
  *
@@ -53,10 +50,8 @@ public abstract class SearchTest {
 	protected static Address a2;
 	
 	public static void init() {
-		DAO dao = mock(DAO.class);
 		u = new User("111");
 		u.setSearch(s);
-		u.setDao(dao);
 		u.setName("John Doe");
 		u.setGroups(User.Groups.USERS.toString());
 		u.setEmail("john@asd.com");
@@ -67,7 +62,6 @@ public abstract class SearchTest {
 		
 		u1 = new User("222");
 		u1.setSearch(s);
-		u1.setDao(dao);
 		u1.setName("Joe Black");
 		u1.setGroups(User.Groups.USERS.toString());
 		u1.setEmail("joe@asd.com");
@@ -78,7 +72,6 @@ public abstract class SearchTest {
 		
 		u2 = new User("333");
 		u2.setSearch(s);
-		u2.setDao(dao);
 		u2.setName("Ann Smith");
 		u2.setGroups(User.Groups.USERS.toString());
 		u2.setEmail("ann@asd.com");
@@ -89,7 +82,6 @@ public abstract class SearchTest {
 		
 		t = new Tag("test");
 		t.setSearch(s);
-		t.setDao(dao);
 		t.setCount(3);
 		t.setTimestamp(System.currentTimeMillis());
 		
@@ -123,9 +115,16 @@ public abstract class SearchTest {
 		} catch (InterruptedException ex) {}
 	}
 	
-	@After
-	public void tearDown() {
-//		s.unindexAll(Arrays.asList(u, u1, u2, t, s1, s2, a1, a2));
+	
+	public static void cleanup() {
+		u = null;
+		t = null;
+		u1 = null; 
+		u2 = null; 
+		s1 = null; 
+		s2 = null; 
+		a1 = null; 
+		a2 = null;
 	}
 
 	@Test

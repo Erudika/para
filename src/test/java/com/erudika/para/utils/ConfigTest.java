@@ -38,7 +38,7 @@ public class ConfigTest {
 	public void testGetConfigMap() {
 		assertFalse(Config.getConfigMap().isEmpty());
 		assertFalse(Config.getConfigMap().containsKey("null"));
-		assertTrue(Config.getConfigMap().containsKey("app_name"));
+		assertTrue(Config.getConfigMap().containsKey("env"));
 	}
 
 	@Test

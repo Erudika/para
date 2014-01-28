@@ -30,7 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.admin.cluster.node.info.NodeInfo;
 import org.elasticsearch.action.admin.cluster.node.info.NodesInfoRequest;
 import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
-import org.elasticsearch.action.admin.indices.alias.get.IndicesGetAliasesResponse;
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.optimize.OptimizeResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -38,6 +38,7 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -251,15 +252,13 @@ public final class ElasticSearchUtils {
 	
 	public static String getIndexNameForAlias(String appName){
 		if(StringUtils.isBlank(appName)) return null;
-		IndicesGetAliasesResponse get = getClient().admin().indices().
+		GetAliasesResponse get = getClient().admin().indices().
 				prepareGetAliases(appName).execute().actionGet();
-		Map<String, List<AliasMetaData>> aliases = get.getAliases();
+		ImmutableOpenMap<String, List<AliasMetaData>> aliases = get.getAliases();
 		if (aliases.size() > 1) {
 			logger.warn("More than one index for alias {}", appName);
 		} else {
-			for (Map.Entry<String, List<AliasMetaData>> entry : aliases.entrySet()) {
-				return entry.getKey();
-			}
+			return aliases.keysIt().next();
 		}
 		return null;
 	}

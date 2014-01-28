@@ -33,7 +33,7 @@ import org.junit.Ignore;
 @Ignore
 public abstract class CacheTest {
 		
-	protected Cache c;
+	protected static Cache c;
 	private String testApp1 = "testApp1";
 	private String testApp2 = "testApp2";
 	

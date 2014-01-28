@@ -59,16 +59,12 @@ public class AWSDynamoDAO implements DAO {
 		
 	private static final Logger logger = LoggerFactory.getLogger(AWSDynamoDAO.class);
 	private static final int MAX_ITEMS_PER_BATCH = 4; // Amazon DynamoDB limit ~= WRITE CAP
-	private static AmazonDynamoDBClient ddbClient;
 	
 	public AWSDynamoDAO() {
 	}
 	
 	AmazonDynamoDBClient client(){
-		if(ddbClient == null){
-			ddbClient = AWSDynamoUtils.getClient();
-		}		
-		return ddbClient;
+		return AWSDynamoUtils.getClient();
 	}
 		
 	/********************************************

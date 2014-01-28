@@ -43,9 +43,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Alex Bogdanovski <alex@erudika.com>
  */
-public class ValidationAspect implements MethodInterceptor {
+public class IndexAndCacheAspect implements MethodInterceptor {
 
-	private static final Logger logger = LoggerFactory.getLogger(ValidationAspect.class);
+	private static final Logger logger = LoggerFactory.getLogger(IndexAndCacheAspect.class);
 	
 	@Inject private Search search;
 	@Inject private Cache cache;

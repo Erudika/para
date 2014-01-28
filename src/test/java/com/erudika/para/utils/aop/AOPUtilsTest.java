@@ -48,8 +48,6 @@ public class AOPUtilsTest {
 	
 	@Test
 	public void testUtils() throws Exception {
-		IndexingAspect i = new IndexingAspect();
-		
 		Tag tag = new Tag("tag");
 		Tag tag1 = new Tag("tag1");
 		Tag tag2 = new Tag("tag2");

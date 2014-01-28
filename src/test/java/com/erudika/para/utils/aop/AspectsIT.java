@@ -23,18 +23,20 @@ import com.erudika.para.cache.MockCache;
 import com.erudika.para.core.User;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
+import com.erudika.para.search.ElasticSearchUtils;
 import com.erudika.para.search.Search;
+import com.erudika.para.utils.Config;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
-import org.junit.After;
 import org.junit.AfterClass;
 import static org.junit.Assert.*;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -42,13 +44,11 @@ import org.junit.Test;
  */
 public class AspectsIT {
 	
-	private User u;
-	private User u1;
-	private User u2;
+	private static final Logger logger = LoggerFactory.getLogger(AspectsIT.class);
+	private static User u;
+	private static User u1;
+	private static User u2;
 	
-	public AspectsIT() {
-	}
-
 	@BeforeClass
 	public static void setUpClass() throws Exception {
 		System.setProperty("esembedded", "true");
@@ -57,16 +57,10 @@ public class AspectsIT {
 				binder.bind(DAO.class).to(MockDAO.class);
 				binder.bind(Cache.class).to(MockCache.class);				
 			}
-		});		
-	}
-
-	@AfterClass
-	public static void tearDownClass() throws Exception {
-		Para.destroy();
-	}
-
-	@Before
-	public void setUp() throws Exception {
+		});
+		
+		ElasticSearchUtils.createIndex(Config.APP_NAME_NS);
+		
 		u = new User("111");
 		u.setName("John Doe");
 		u.setGroups(User.Groups.USERS.toString());
@@ -92,11 +86,14 @@ public class AspectsIT {
 		u2.setIdentifier(u2.getEmail());
 		u2.setTimestamp(System.currentTimeMillis());
 		u2.setPassword("123456");
-		u2.addTags("four", "five", "three");		
+		u2.addTags("four", "five", "three");
+		
 	}
 
-	@After
-	public void tearDown() throws Exception {
+	@AfterClass
+	public static void tearDownClass() throws Exception {
+		ElasticSearchUtils.deleteIndex(Config.APP_NAME_NS);
+		Para.destroy();
 		u = null;
 		u1 = null;
 		u2 = null;
@@ -125,11 +122,11 @@ public class AspectsIT {
 		assertNotNull(s.findById(uB.getId(), uB.getClassname()));
 		assertNotNull(c.get(uB.getId()));
 		
-		System.out.println("---- cache remove -----");
+		logger.debug("---- cache remove -----");
 		c.remove(uB.getId());
 		assertNotNull(d.read(uB.getId()));
 		assertTrue(c.contains(uB.getId()));
-		System.out.println("---------");
+		logger.debug("---------");
 		
 		uB.delete();
 		assertNull(d.read(uB.getId()));
@@ -154,20 +151,20 @@ public class AspectsIT {
 		assertNotNull(s.findById(u2.getId(), u2.getClassname()));
 		assertNotNull(c.get(u2.getId()));
 		
-		System.out.println("---- read all from cache ----");
+		logger.debug("---- read all from cache ----");
 		Map<String, User> map = d.readAll(Arrays.asList(u.getId(), u1.getId(), u2.getId()), true);
 		assertTrue(map.containsKey(u.getId()));
 		assertTrue(map.containsKey(u1.getId()));
 		assertTrue(map.containsKey(u2.getId()));
 		
-		System.out.println("---- cache remove ----");	
+		logger.debug("---- cache remove ----");	
 		c.remove(u1.getId());
 		c.remove(u2.getId());
 		d.readAll(Arrays.asList(u.getId(), u1.getId(), u2.getId()), true);
 		assertTrue(c.contains(u1.getId()));
 		assertTrue(c.contains(u2.getId()));
 		
-		System.out.println("---- delete all ----");	
+		logger.debug("---- delete all ----");	
 		d.deleteAll(list);
 		assertNull(d.read(u.getId()));
 		assertNull(s.findById(u.getId(), u.getClassname()));

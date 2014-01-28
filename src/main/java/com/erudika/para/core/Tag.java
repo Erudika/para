@@ -44,7 +44,7 @@ public class Tag extends PObject{
 		this.tag = tag;
 	}
 	
-	public static String id(String tag){
+	static String id(String tag){
 		if(StringUtils.isBlank(tag)) return null;
 		return PObject.classname(Tag.class).concat(Config.SEPARATOR).concat(StringUtils.trimToEmpty(tag));
 	}

@@ -70,6 +70,7 @@ public final class HazelcastUtils {
 				shutdownClient();
 			}
 		});
+		
 		return hcInstance;
 	}
 	

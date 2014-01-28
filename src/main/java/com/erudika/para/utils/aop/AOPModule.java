@@ -28,9 +28,9 @@ import com.google.inject.matcher.Matchers;
 public class AOPModule extends AbstractModule {
 
 	protected void configure() {
-		ValidationAspect va = new ValidationAspect();
-		requestInjection(va);
-		bindInterceptor(Matchers.subclassesOf(DAO.class), Matchers.any(), va);
+		IndexAndCacheAspect aspect = new IndexAndCacheAspect();
+		requestInjection(aspect);
+		bindInterceptor(Matchers.subclassesOf(DAO.class), Matchers.any(), aspect);
 	}
 	
 }

@@ -152,7 +152,7 @@ public class UtilsTest {
 	}
 
 	@Test
-	public void testFormatDate_3args() {
+	public void testFormatDate() {
 		assertNotNull(formatDate(null, null));
 		assertNotNull(formatDate(null, null, null));
 		assertEquals("2001", formatDate(1000000000000L, "yyyy", Locale.US));

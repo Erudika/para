@@ -18,11 +18,13 @@
 package com.erudika.para.i18n;
 
 import com.erudika.para.persistence.MockDAO;
+import org.junit.Ignore;
 
 /**
  *
  * @author Alex Bogdanovski <alex@erudika.com>
  */
+@Ignore
 public class OXRCurrencyConverterIT extends CurrencyConverterTest {
 
 	public OXRCurrencyConverterIT() {

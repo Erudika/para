@@ -17,11 +17,13 @@
  */
 package com.erudika.para.search;
 
-import com.erudika.para.persistence.MockDAO;
-import static com.erudika.para.search.SearchTest.s;
+import com.erudika.para.persistence.DAO;
 import com.erudika.para.utils.Config;
 import org.junit.AfterClass;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  *
@@ -32,7 +34,7 @@ public class ElasticSearchIT extends SearchTest{
 	@BeforeClass
 	public static void setUpClass() {
 		System.setProperty("esembedded", "true");
-		s = new ElasticSearch(new MockDAO());
+		s = new ElasticSearch(mock(DAO.class));
 		ElasticSearchUtils.createIndex(Config.APP_NAME_NS);
 		ElasticSearchUtils.createIndex(appName1);
 		ElasticSearchUtils.createIndex(appName2);
@@ -45,6 +47,46 @@ public class ElasticSearchIT extends SearchTest{
 		ElasticSearchUtils.deleteIndex(appName1);
 		ElasticSearchUtils.deleteIndex(appName2);
 		ElasticSearchUtils.shutdownClient();
+		SearchTest.cleanup();
 	}
 
+	@Test
+	public void testCreateDeleteExistsIndex() throws InterruptedException {
+		String appName3 = "test-index";
+		String badAppName = "test index 123";
+		
+		ElasticSearchUtils.createIndex("");
+		assertFalse(ElasticSearchUtils.existsIndex(""));
+		
+		ElasticSearchUtils.createIndex(appName3);
+		assertTrue(ElasticSearchUtils.existsIndex(appName3));
+		
+		assertTrue(ElasticSearchUtils.optimizeIndex(appName3));
+		
+		ElasticSearchUtils.deleteIndex(appName3);
+		assertFalse(ElasticSearchUtils.existsIndex(appName3));
+		
+		assertFalse(ElasticSearchUtils.createIndex(badAppName));
+		assertFalse(ElasticSearchUtils.existsIndex(badAppName));
+		assertFalse(ElasticSearchUtils.deleteIndex(appName3));
+		assertFalse(ElasticSearchUtils.deleteIndex(badAppName));
+	}
+
+	@Test
+	public void testRebuildIndex() {
+		// TODO
+	}
+
+	@Test
+	public void testGetSearchClusterMetadata() {
+		assertFalse(ElasticSearchUtils.getSearchClusterMetadata().isEmpty());
+	}
+
+	@Test
+	public void testGetIndexNameForAlias() throws InterruptedException {
+		ElasticSearchUtils.createIndex("test-index");
+		assertNull(ElasticSearchUtils.getIndexNameForAlias(""));
+		assertEquals("test-index1", ElasticSearchUtils.getIndexNameForAlias("test-index"));
+		ElasticSearchUtils.deleteIndex("test-index");
+	}
 }

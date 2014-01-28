@@ -62,7 +62,6 @@ public class ElasticSearch implements Search {
 	
 	private final Logger logger = LoggerFactory.getLogger(ElasticSearch.class);
 	private final String DEFAULT_SORT = DAO.CN_TIMESTAMP;
-	private static Client searchClient;
 	private DAO dao;
 
 	@Inject
@@ -71,10 +70,7 @@ public class ElasticSearch implements Search {
 	}
 
 	Client client(){
-		if(searchClient == null){
-			searchClient = ElasticSearchUtils.getClient();
-		}		
-		return searchClient;
+		return ElasticSearchUtils.getClient();
 	}
 	
 	@Override
@@ -151,15 +147,16 @@ public class ElasticSearch implements Search {
 	public <P extends ParaObject> ArrayList<P> findTerm(String appName, String type, MutableLong page, MutableLong itemcount, 
 			String field, Object term, String sortfield, boolean reverse, int max){
 		if(StringUtils.isBlank(field) || term == null) return new ArrayList<P> ();
-		return searchQuery(appName, type, page, itemcount, null, FilterBuilders.termFilter(field, term), 
-				sortfield, reverse, max);
+		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), FilterBuilders.termFilter(field, term));
+		return searchQuery(appName, type, page, itemcount, qb, sortfield, reverse, max);
 	}
 	
 	@Override
 	public <P extends ParaObject> ArrayList<P> findTermInList(String appName, String type, MutableLong page, MutableLong itemcount, 
 			String field, List<?> terms, String sortfield, boolean reverse, int max){
 		if(StringUtils.isBlank(field) || terms == null) return new ArrayList<P> ();
-		return searchQuery(appName, type, page, itemcount, null, FilterBuilders.termsFilter(field, terms), sortfield, reverse, max);
+		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), FilterBuilders.termsFilter(field, terms));
+		return searchQuery(appName, type, page, itemcount, qb, sortfield, reverse, max);
 	}
 	
 	@Override
@@ -172,8 +169,7 @@ public class ElasticSearch implements Search {
 	public <P extends ParaObject> ArrayList<P> findPrefix(String appName, String type, MutableLong page, MutableLong itemcount, 
 			String field, String prefix, String sortfield, boolean reverse, int max){
 		if(StringUtils.isBlank(field) || StringUtils.isBlank(prefix)) return new ArrayList<P> ();
-		return searchQuery(appName, type, page, itemcount, QueryBuilders.prefixQuery(field, prefix), null, 
-				sortfield, reverse, max);
+		return searchQuery(appName, type, page, itemcount, QueryBuilders.prefixQuery(field, prefix), sortfield, reverse, max);
 	}
 	
 	@Override
@@ -186,8 +182,8 @@ public class ElasticSearch implements Search {
 	public <P extends ParaObject> ArrayList<P> findQuery(String appName, String type, MutableLong page, MutableLong itemcount, 
 			String query, String sortfield, boolean reverse, int max){
 		if(StringUtils.isBlank(query)) return new ArrayList<P> ();
-		return searchQuery(appName, type, page, itemcount, QueryBuilders.queryString(query).allowLeadingWildcard(false), null, 
-				sortfield, reverse, max);
+		QueryBuilder qb = QueryBuilders.queryString(query).allowLeadingWildcard(false);
+		return searchQuery(appName, type, page, itemcount, qb, sortfield, reverse, max);
 	}
 	
 	@Override
@@ -200,8 +196,8 @@ public class ElasticSearch implements Search {
 	public <P extends ParaObject> ArrayList<P> findWildcard(String appName, String type, MutableLong page, MutableLong itemcount, 
 			String field, String wildcard, String sortfield, boolean reverse, int max){
 		if(StringUtils.isBlank(field) || StringUtils.isBlank(wildcard)) return new ArrayList<P> ();
-		return searchQuery(appName, type, page, itemcount, QueryBuilders.wildcardQuery(field, wildcard), null,
-				sortfield, reverse, max);
+		QueryBuilder qb = QueryBuilders.wildcardQuery(field, wildcard);
+		return searchQuery(appName, type, page, itemcount, qb, sortfield, reverse, max);
 	}
 	
 	@Override
@@ -214,8 +210,9 @@ public class ElasticSearch implements Search {
 		for (String tag : tags) {
 			tagFilter.must(FilterBuilders.termFilter(DAO.CN_TAGS, tag));
 		}
+		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), tagFilter);
 		// The filter looks like this: ("tag1" OR "tag2" OR "tag3") AND "type"
-		return searchQuery(appName, type, page, itemcount, null, tagFilter, null, true, Config.MAX_ITEMS_PER_PAGE);
+		return searchQuery(appName, type, page, itemcount, qb, null, true, Config.MAX_ITEMS_PER_PAGE);
 	}
 
 	@Override
@@ -246,7 +243,8 @@ public class ElasticSearch implements Search {
 					FilterBuilders.termFilter(field1, term1), 
 					FilterBuilders.termFilter(field2, term2));
 		}
-		return searchQuery(appName, type, page, itemcount, null, fb, sortfield, reverse, max);
+		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), fb);
+		return searchQuery(appName, type, page, itemcount, qb, sortfield, reverse, max);
 	}
 	
 	@Override
@@ -264,10 +262,11 @@ public class ElasticSearch implements Search {
 
 		if (!StringUtils.isBlank(filterKey)) {
 			fb = FilterBuilders.notFilter(FilterBuilders.inFilter(DAO.CN_ID, filterKey));
+			qb = QueryBuilders.filteredQuery(qb, fb);
 		}
 		
 		SortBuilder sb = SortBuilders.scoreSort().order(SortOrder.DESC);
-		return searchQuery(appName, searchQueryRaw(appName, type, null, null, qb, fb, sb, max));
+		return searchQuery(appName, searchQueryRaw(appName, type, null, null, qb, sb, max));
 	}
 
 	@Override
@@ -275,7 +274,7 @@ public class ElasticSearch implements Search {
 		if(StringUtils.isBlank(keyword)) return new ArrayList<P> ();
 		QueryBuilder qb = QueryBuilders.wildcardQuery(PObject.classname(Tag.class), keyword.concat("*"));
 //		SortBuilder sb = SortBuilders.fieldSort("count").order(SortOrder.DESC);
-		return searchQuery(appName, PObject.classname(Tag.class), null, null, qb, null, null, true, max);
+		return searchQuery(appName, PObject.classname(Tag.class), null, null, qb, null, true, max);
 	}
 	
 	@Override
@@ -290,8 +289,8 @@ public class ElasticSearch implements Search {
 				SortBuilders.fieldSort(sortby).order(SortOrder.DESC);
 		QueryBuilder qb1 = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(),
 				FilterBuilders.geoDistanceFilter("latlng").point(lat, lng).distance(radius, DistanceUnit.KILOMETERS));
-		SearchHits hits1 = searchQueryRaw(appName, PObject.classname(Address.class), null, null, qb1, 
-				null, sort, Config.MAX_ITEMS_PER_PAGE);
+		SearchHits hits1 = searchQueryRaw(appName, PObject.classname(Address.class), null, null, 
+				qb1, sort, Config.MAX_ITEMS_PER_PAGE);
 		
 		if(hits1 == null) return new ArrayList<P> ();
 			
@@ -304,16 +303,16 @@ public class ElasticSearch implements Search {
 
 		QueryBuilder qb2 = QueryBuilders.filteredQuery(QueryBuilders.queryString(query),
 				FilterBuilders.idsFilter(type).ids(ridsarr));
-		SearchHits hits2 = searchQueryRaw(appName, type, page, itemcount, qb2, null, sort, Config.MAX_ITEMS_PER_PAGE);
+		SearchHits hits2 = searchQueryRaw(appName, type, page, itemcount, qb2, sort, Config.MAX_ITEMS_PER_PAGE);
 
 		return searchQuery(appName, hits2);
 	}
 	
 	private <P extends ParaObject> ArrayList<P> searchQuery(String appName, String type, MutableLong page, MutableLong itemcount,
-			QueryBuilder query, FilterBuilder filter, String sortfield, boolean reverse, int max){
+			QueryBuilder query, String sortfield, boolean reverse, int max){
 		SortOrder order = reverse ? SortOrder.DESC : SortOrder.ASC;
 		SortBuilder sort = StringUtils.isBlank(sortfield) ? null : SortBuilders.fieldSort(sortfield).order(order);
-		return searchQuery(appName, searchQueryRaw(appName, type, page, itemcount, query, filter, sort, max));
+		return searchQuery(appName, searchQueryRaw(appName, type, page, itemcount, query, sort, max));
 	}
 	
 	private <P extends ParaObject> ArrayList<P> searchQuery(String appName, SearchHits hits){
@@ -334,7 +333,6 @@ public class ElasticSearch implements Search {
 			if (!Config.READ_FROM_INDEX) {
 				Map<String, P> fromDB = dao.readAll(appName, keys, true);
 				results.addAll(fromDB.values());
-//				unindexNulls(type, keys, fromDB);
 			}
 			logger.debug("Search.searchQuery() {}", results.size());
 		} catch (Exception e) {
@@ -344,10 +342,10 @@ public class ElasticSearch implements Search {
 	}
 		
 	private SearchHits searchQueryRaw(String appName, String type, MutableLong page, MutableLong itemcount, 
-			QueryBuilder query, FilterBuilder filter, SortBuilder sort, int max){
+			QueryBuilder query, SortBuilder sort, int max){
 		if(StringUtils.isBlank(type) || StringUtils.isBlank(appName)) return null;
 		if(query == null) query = QueryBuilders.matchAllQuery();
-		if(filter == null) filter = FilterBuilders.matchAllFilter();
+//		if(filter == null) filter = FilterBuilders.matchAllFilter();
 		if(sort == null) sort = SortBuilders.scoreSort();
 		int start = (page == null || page.intValue() < 1 || 
 				page.intValue() > Config.MAX_PAGES) ? 0 : (page.intValue() - 1) * max;
@@ -357,7 +355,7 @@ public class ElasticSearch implements Search {
 		try{
 			SearchResponse response = client().prepareSearch(appName).
 					setSearchType(SearchType.DFS_QUERY_THEN_FETCH).setTypes(type).
-					setQuery(query).setFilter(filter).addSort(sort).setFrom(start).setSize(max).
+					setQuery(query).addSort(sort).setFrom(start).setSize(max).
 					execute().actionGet();
 			
 			hits = response.getHits();

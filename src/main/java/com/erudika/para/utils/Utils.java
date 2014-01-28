@@ -40,6 +40,7 @@ import java.text.DateFormatSymbols;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -266,7 +267,7 @@ public final class Utils {
 	public static String formatDate(String format, Locale loc) {
 		return formatDate(System.currentTimeMillis(), format, loc);
 	}
-		
+	
 	public static int getCurrentYear() {
 		return Calendar.getInstance().get(Calendar.YEAR);
 	}
@@ -629,12 +630,12 @@ public final class Utils {
 			ParaObject pObject = setAnnotatedFields(map);
 			if(pObject == null){
 				Sysprop s = new Sysprop(getNewId());
-				if(map.containsKey(DAO.CN_ID)){
-					s.setId((String) map.get(DAO.CN_ID));
-				}
-				if(map.containsKey(DAO.CN_NAME)){
-					s.setName((String) map.get(DAO.CN_NAME));
-				}
+				if(map.containsKey(DAO.CN_ID)) s.setId((String) map.get(DAO.CN_ID));
+				if(map.containsKey(DAO.CN_NAME)) s.setName((String) map.get(DAO.CN_NAME));
+				if(map.containsKey(DAO.CN_CREATORID)) s.setCreatorid((String) map.get(DAO.CN_CREATORID));
+				if(map.containsKey(DAO.CN_TIMESTAMP)) s.setTimestamp((Long) map.get(DAO.CN_TIMESTAMP));
+				if(map.containsKey(DAO.CN_UPDATED)) s.setUpdated((Long) map.get(DAO.CN_UPDATED));
+				if(map.containsKey(DAO.CN_TAGS)) s.setTags(new HashSet<String>((Collection<String>) map.get(DAO.CN_TAGS)));
 				s.setProperties(map);
 				pObject = s;
 			}
@@ -858,7 +859,11 @@ public final class Utils {
 		String[] errors = validateRequest(content);
 		if (errors.length == 0 && context != null) {
 			String id = content.create();
-			return Response.created(context.path(id).build()).entity(content).build();
+			if(id == null){
+				return getJSONResponse(Status.BAD_REQUEST, "Failed to create object.");
+			}else{
+				return Response.created(context.path(id).build()).entity(content).build();
+			}
 		}else{
 			return getJSONResponse(Response.Status.BAD_REQUEST, errors);
 		}

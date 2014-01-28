@@ -39,16 +39,12 @@ import org.slf4j.LoggerFactory;
 public class HazelcastCache implements Cache {
 
 	private static final Logger logger = LoggerFactory.getLogger(HazelcastCache.class);
-	private HazelcastInstance hcInstance;
 
 	public HazelcastCache() {
 	}
 	
 	HazelcastInstance client(){
-		if(hcInstance == null){
-			hcInstance = HazelcastUtils.getClient();
-		}		
-		return hcInstance;
+		return HazelcastUtils.getClient();
 	}
 
 	@Override

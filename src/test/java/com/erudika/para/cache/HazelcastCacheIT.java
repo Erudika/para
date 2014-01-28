@@ -17,14 +17,23 @@
  */
 package com.erudika.para.cache;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+
 /**
  *
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class HazelcastCacheIT extends CacheTest {
 
-	public HazelcastCacheIT() {
+	@BeforeClass
+	public static void setUpClass() {
 		c = new HazelcastCache();
+	}
+	
+	@AfterClass
+	public static void tearDownClass() {
+		HazelcastUtils.shutdownClient();
 	}
 	
 }

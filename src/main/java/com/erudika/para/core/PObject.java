@@ -219,6 +219,11 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	}
 
 	@Override
+	public void setAppname(String appname) {
+		this.appname = appname;
+	}
+	
+	@Override
 	public Set<String> getTags() {
 		if(tags == null){
 			tags = new LinkedHashSet<String> ();
@@ -249,11 +254,6 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		getTags().removeAll(Arrays.asList(tag));
 	}
 
-	@Override
-	public void setAppname(String appname) {
-		this.appname = appname;
-	}
-	
 	@Override
 	public String link(Class<? extends ParaObject> c2, String id2){
 		return getDao().create(getAppname(), new Linker(this.getClass(), c2, getId(), id2));
