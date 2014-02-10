@@ -17,6 +17,7 @@
  */
 package com.erudika.para.core;
 
+import com.erudika.para.utils.Pager;
 import com.erudika.para.Para;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
@@ -27,22 +28,25 @@ import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import javax.validation.constraints.Size;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.hibernate.validator.constraints.NotBlank;
 
 /**
- *
+ * The basic implementation for {@link ParaObject}. Provides the basic functionality for DTOs.
  * @author Alex Bogdanovski <alex@erudika.com>
+ * @see ParaObject
  */
 public abstract class PObject implements ParaObject, Linkable, Votable {
-	
+
 	@Stored @Locked private String id;
 	@Stored @Locked private Long timestamp;
 	@Stored @Locked private Long updated;
@@ -53,33 +57,49 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	@Stored private String name;
 	@Stored private Set<String> tags;
 	@Stored private Integer votes;
-	
+
 	private transient PObject parent;
 	private transient PObject creator;
-	
+
 	private transient DAO dao;
 	private transient Search search;
 
+	/**
+	 * Returns the core persistence object.
+	 * @return a {@link com.erudika.para.persistence.DAO} instance
+	 */
 	@JsonIgnore
 	public DAO getDao() {
-		if(dao == null){
+		if (dao == null) {
 			dao = Para.getDAO();
 		}
 		return dao;
 	}
 
+	/**
+	 * Sets the core persistence object.
+	 * @param dao a {@link com.erudika.para.persistence.DAO} instance
+	 */
 	public void setDao(DAO dao) {
 		this.dao = dao;
 	}
 
+	/**
+	 * Returns the core search object.
+	 * @return a {@link com.erudika.para.search.Search} instance
+	 */
 	@JsonIgnore
 	public Search getSearch() {
-		if(search == null){
+		if (search == null) {
 			search = Para.getSearch();
 		}
 		return search;
 	}
 
+	/**
+	 * Sets the core search object.
+	 * @param search a {@link com.erudika.para.search.Search} instance
+	 */
 	public void setSearch(Search search) {
 		this.search = search;
 	}
@@ -88,40 +108,39 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	public String getPlural() {
 		return Utils.singularToPlural(getClassname());
 	}
-	
+
 	@Override
 	public String getObjectURL() {
 		String defurl = "/".concat(getPlural());
 		return (getId() != null) ? defurl.concat("/").concat(getId()) : defurl;
 	}
-	
-	// one-to-many relationships (may return self)
+
 	@Override
-	public PObject getParent(){
-		if(parent == null){
+	public PObject getParent() {
+		if (parent == null) {
 			parent = getDao().read(getAppname(), parentid);
 		}
 		return parent;
 	}
-	
+
 	@Override
-	public PObject getCreator(){
-		if(creator == null){
+	public PObject getCreator() {
+		if (creator == null) {
 			creator = getDao().read(getAppname(), creatorid);
 		}
 		return creator;
 	}
-	
+
 	@Override
-	public String getParentid(){
+	public String getParentid() {
 		return (parentid == null) ? this.id : parentid;
 	}
-	
+
 	@Override
 	public void setParentid(String parentid) {
 		this.parentid = parentid;
 	}
-	
+
 	@Override
 	public Long getUpdated() {
 		return updated;
@@ -131,22 +150,23 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	public void setUpdated(Long updated) {
 		this.updated = updated;
 	}
-	
+
 	@Override
-	@NotBlank @Size(min=2, max=255)
+	@NotBlank @Size(min = 2, max = 255)
 	public String getName() {
-		if(StringUtils.isBlank(name)){
-			name = getClassname().concat(id != null ? " "+id : "");
+		if (StringUtils.isBlank(name)) {
+			name = getClassname().concat(id != null ? " " + id : "");
 		}
 		return name;
 	}
 
 	@Override
 	public void setName(String name) {
-		if(name != null && name.isEmpty()) return;
-		this.name = name;
+		if (name == null || !name.isEmpty()) {
+			this.name = name;
+		}
 	}
-		
+
 	@Override
 	public String getId() {
 		return id;
@@ -166,17 +186,17 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	public void setTimestamp(Long timestamp) {
 		this.timestamp = timestamp;
 	}
-	
+
 	@Override
-	public String getCreatorid(){
+	public String getCreatorid() {
 		return creatorid;
 	}
-	
+
 	@Override
-	public void setCreatorid(String creatorid){
+	public void setCreatorid(String creatorid) {
 		this.creatorid = creatorid;
 	}
-	
+
 	@Override
 	public String create() {
 		return getDao().create(getAppname(), this);
@@ -194,17 +214,17 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 
 	@Override
 	public boolean exists() {
-		return getDao().existsColumn(getAppname(), id, DAO.CN_ID);
+		return getDao().existsColumn(getAppname(), id, Config._ID);
 	}
-	
+
 	@Override
 	public String getClassname() {
-		if(classname == null){
+		if (classname == null) {
 			classname = classname(this.getClass());
 		}
 		return classname;
 	}
-	
+
 	@Override
 	public void setClassname(String classname) {
 		this.classname = classname;
@@ -212,7 +232,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 
 	@Override
 	public String getAppname() {
-		if(appname == null){
+		if (appname == null) {
 			appname = Config.APP_NAME_NS;
 		}
 		return appname;
@@ -222,199 +242,235 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	public void setAppname(String appname) {
 		this.appname = appname;
 	}
-	
+
+	///////////////////////////////////////
+	//	    	TAGGING METHODS
+	///////////////////////////////////////
+
 	@Override
 	public Set<String> getTags() {
-		if(tags == null){
-			tags = new LinkedHashSet<String> ();
+		if (tags == null) {
+			tags = new LinkedHashSet<String>();
 		}
 		return tags;
 	}
 
 	@Override
 	public void setTags(Set<String> tags) {
-		if(tags == null || tags.isEmpty()){
+		if (tags == null || tags.isEmpty()) {
 			this.tags = tags;
-		}else{
-			addTags(tags.toArray(new String[]{}));
+		} else {
+			addTags(tags.toArray(new String[]{ }));
 		}
 	}
-	
-	public void addTags(String... tag){
-		if(tag == null || tag.length == 0) return;
-		for (String t : tag) {
-			if(!StringUtils.isBlank(t)){
-				getTags().add(t);
+
+	/**
+	 * Adds any number of tags to the set of tags.
+	 * @param tag a tag, must not be null or empty
+	 */
+	public void addTags(String... tag) {
+		if (tag != null && tag.length > 0) {
+			for (String t : tag) {
+				if (!StringUtils.isBlank(t)) {
+					getTags().add(t);
+				}
 			}
 		}
 	}
-	
-	public void removeTags(String... tag){
-		if(tag == null || tag.length == 0) return;
-		getTags().removeAll(Arrays.asList(tag));
+
+	/**
+	 * Removes a tag from the set of tags.
+	 * @param tag a tag, must not be null or empty
+	 */
+	public void removeTags(String... tag) {
+		if (tag != null && tag.length > 0) {
+			getTags().removeAll(Arrays.asList(tag));
+		}
+	}
+
+	///////////////////////////////////////
+	//			LINKER METHODS
+	///////////////////////////////////////
+
+	@Override
+	public String link(Class<? extends ParaObject> c2, String id2) {
+		return getDao().create(getAppname(), new Linker(this.getClass(), c2, getId(), id2));
 	}
 
 	@Override
-	public String link(Class<? extends ParaObject> c2, String id2){
-		return getDao().create(getAppname(), new Linker(this.getClass(), c2, getId(), id2));
-	}
-	
-	@Override
-	public void unlink(Class<? extends ParaObject> c2, String id2){
+	public void unlink(Class<? extends ParaObject> c2, String id2) {
 		getDao().delete(getAppname(), new Linker(this.getClass(), c2, getId(), id2));
 	}
-	
+
 	@Override
-	public void unlinkAll(){
-		getDao().deleteAll(getAppname(), getSearch().findTwoTerms(getAppname(), classname(Linker.class), 
-				null, null, "id1", id, "id2", id, false, null, true, Config.DEFAULT_LIMIT));
+	public void unlinkAll() {
+		Map<String, Object> terms = new HashMap<String, Object>();
+		terms.put("id1", id);
+		terms.put("id2", id);
+		getDao().deleteAll(getAppname(), getSearch().findTerms(getAppname(), classname(Linker.class), terms, false));
 	}
-	
+
 	@Override
-	public ArrayList<Linker> getAllLinks(Class<? extends ParaObject> c2){
-		return getAllLinks(c2, null, null, true, Config.DEFAULT_LIMIT);
-	}
-	
-	@Override
-	public ArrayList<Linker> getAllLinks(Class<? extends ParaObject> c2,  MutableLong pagenum,
-			MutableLong itemcount, boolean reverse, int maxItems){
-		if(c2 == null) return new ArrayList<Linker>();
+	public ArrayList<Linker> getLinks(Class<? extends ParaObject> c2, Pager... pager) {
+		if (c2 == null) {
+			return new ArrayList<Linker>();
+		}
 		Linker link = new Linker(this.getClass(), c2, null, null);
 		String idField = link.getIdFieldNameFor(this.getClass());
-		return getSearch().findTwoTerms(getAppname(), link.getClassname(), pagenum, itemcount, 
-				DAO.CN_NAME, link.getName(), idField, id, null, reverse, maxItems);
+		Map<String, Object> terms = new HashMap<String, Object>();
+		terms.put(Config._NAME, link.getName());
+		terms.put(idField, id);
+		return getSearch().findTerms(getAppname(), link.getClassname(), terms, true, pager);
 	}
-	
+
 	@Override
-	public boolean isLinked(Class<? extends ParaObject> c2, String toId){
-		if(c2 == null) return false;
+	public boolean isLinked(Class<? extends ParaObject> c2, String toId) {
+		if (c2 == null) {
+			return false;
+		}
 		return getDao().read(getAppname(), new Linker(this.getClass(), c2, getId(), toId).getId()) != null;
 	}
-	
+
 	@Override
-	public boolean isLinked(ParaObject toObj){
-		if(toObj == null) return false;
+	public boolean isLinked(ParaObject toObj) {
+		if (toObj == null) {
+			return false;
+		}
 		return isLinked(toObj.getClass(), toObj.getId());
 	}
-	
+
 	@Override
-	public Long countLinks(Class<? extends ParaObject> c2){
-		if(id == null) return 0L;
+	public Long countLinks(Class<? extends ParaObject> c2) {
+		if (id == null) {
+			return 0L;
+		}
 		Linker link = new Linker(this.getClass(), c2, null, null);
 		String idField = link.getIdFieldNameFor(this.getClass());
-		return getSearch().getCount(getAppname(), link.getClassname(), DAO.CN_NAME, link.getName(), idField, id);
+		Map<String, Object> terms = new HashMap<String, Object>();
+		terms.put(Config._NAME, link.getName());
+		terms.put(idField, id);
+		return getSearch().getCount(getAppname(), link.getClassname(), terms);
 	}
-	
-	public static String classname(Class<? extends ParaObject> clazz){
-		if(clazz == null) return "";
-		return clazz.getSimpleName().toLowerCase();
+
+	/**
+	 * Returns the simple name of a class in lowercase.
+	 * @param clazz a class
+	 * @return just the name in lowercase or an empty string if null
+	 */
+	public static String classname(Class<? extends ParaObject> clazz) {
+		return (clazz == null) ? "" : clazz.getSimpleName().toLowerCase();
 	}
-	
+
 	@Override
-	public <P extends ParaObject> ArrayList<P> getChildren(Class<? extends ParaObject> clazz){
-		return getChildren(clazz, null, null, null, Config.DEFAULT_LIMIT);
+	public Long countChildren(Class<? extends ParaObject> clazz) {
+		return getSearch().getCount(getAppname(), classname(clazz));
 	}
-	
+
 	@Override
-    public <P extends ParaObject> ArrayList<P> getChildren(Class<? extends ParaObject> clazz, 
-			MutableLong page, MutableLong itemcount, String sortfield, int max){
-		return getSearch().findTerm(getAppname(), classname(clazz), page, itemcount, 
-				DAO.CN_PARENTID, getId(), sortfield, true, max);
-    }
-	
-	@Override
-    public <P extends ParaObject> ArrayList<P> getChildren(Class<? extends ParaObject> clazz, String field, String term,
-			MutableLong page, MutableLong itemcount, String sortfield, int max, boolean reverse){
-		return getSearch().findTwoTerms(getAppname(), classname(clazz), page, itemcount, field, term, 
-				DAO.CN_PARENTID, getId(), true, sortfield, reverse, max);
-    }
-	
-	@Override
-	public void deleteChildren(Class<? extends ParaObject> clazz){
-		if(StringUtils.isBlank(getId())) return ;
-		getDao().deleteAll(getAppname(), getSearch().findTerm(getAppname(), classname(clazz), 
-				null, null, DAO.CN_PARENTID, getId()));
+	public <P extends ParaObject> ArrayList<P> getChildren(Class<P> clazz, Pager... pager) {
+		return getChildren(clazz, null, null, pager);
 	}
-	
+
 	@Override
-	public <P extends ParaObject> ArrayList<P> getLinkedObjects(Class<? extends ParaObject> clazz, MutableLong page,
-			MutableLong itemcount){
-		ArrayList<Linker> links = getAllLinks(clazz, null, null, true, Config.MAX_ITEMS_PER_PAGE);
+	public <P extends ParaObject> ArrayList<P> getChildren(Class<P> clazz, String field, String term, Pager... pager) {
+		Map<String, Object> terms = new HashMap<String, Object>();
+		if (StringUtils.isBlank(field) && StringUtils.isBlank(term)) {
+			terms.put(field, term);
+		}
+		terms.put(Config._PARENTID, getId());
+		return getSearch().findTerms(getAppname(), classname(clazz), terms, true, pager);
+	}
+
+	@Override
+	public void deleteChildren(Class<? extends ParaObject> clazz) {
+		if (!StringUtils.isBlank(getId())) {
+			getDao().deleteAll(getAppname(), getSearch().findTerms(getAppname(),
+					classname(clazz), Collections.singletonMap(Config._PARENTID, getId()), true));
+		}
+	}
+
+	@Override
+	public <P extends ParaObject> ArrayList<P> getLinkedObjects(Class<P> clazz, Pager... pager) {
+		ArrayList<Linker> links = getLinks(clazz, pager);
 		ArrayList<String> keys = new ArrayList<String>();
 		for (Linker link : links) {
-			if(link.isFirst(clazz)){
+			if (link.isFirst(clazz)) {
 				keys.add(link.getId1());
-			}else{
+			} else {
 				keys.add(link.getId2());
 			}
 		}
-		
-		return new ArrayList<P>((Collection<? extends P>) getDao().readAll(getAppname(), keys, true).values());
-//		return getSearch().findTermInList(classname(clazz), page, itemcount, DAO.CN_ID, keys, 
-//				null, true, Config.MAX_ITEMS_PER_PAGE);
+		return new ArrayList<P>((Collection<P>) getDao().readAll(getAppname(), keys, true).values());
 	}
-	
-	/********************************************
-	 *	    	VOTING FUNCTIONS
-	********************************************/
-	
+
+	///////////////////////////////////////
+	//	    	VOTING METHODS
+	///////////////////////////////////////
+
 	private boolean vote(String userid, Votable votable, VoteType upDown) {
-		if(StringUtils.isBlank(userid) || votable == null || votable.getId() == null || upDown == null) return false;
+		if (StringUtils.isBlank(userid) || votable == null || votable.getId() == null || upDown == null) {
+			return false;
+		}
 		//no voting on your own stuff!
-		if(userid.equals(votable.getCreatorid()) || userid.equals(votable.getId())) return false;
-		
+		if (userid.equals(votable.getCreatorid()) || userid.equals(votable.getId())) {
+			return false;
+		}
+
 		Vote v = new Vote(userid, votable.getId(), upDown.toString());
 		Vote saved = getDao().read(getAppname(), v.getId());
 		boolean done = false;
 		int vote = (upDown == VoteType.UP) ? 1 : -1;
-		
-		if(saved != null){
+
+		if (saved != null) {
 			boolean isUpvote = upDown.equals(VoteType.UP);
 			boolean wasUpvote = VoteType.UP.toString().equals(saved.getType());
 			boolean voteHasChanged = BooleanUtils.xor(new boolean[]{isUpvote, wasUpvote});
-			
-			if(saved.isExpired()){
+
+			if (saved.isExpired()) {
 				done = getDao().create(getAppname(), v) != null;
-			}else if(saved.isAmendable() && voteHasChanged){
+			} else if (saved.isAmendable() && voteHasChanged) {
 				getDao().delete(getAppname(), saved);
 				done = true;
 			}
-		}else{
+		} else {
 			done = getDao().create(getAppname(), v) != null;
 		}
-		
-		if(done){
-			synchronized(this){
+
+		if (done) {
+			synchronized (this) {
 				setVotes(getVotes() + vote);
 			}
 		}
-		
+
 		return done;
 	}
-	
+
 	@Override
-	public final boolean voteUp(String userid){
+	public final boolean voteUp(String userid) {
 		return vote(userid, this, VoteType.UP);
 	}
-	
+
 	@Override
-	public final boolean voteDown(String userid){
+	public final boolean voteDown(String userid) {
 		return vote(userid, this, VoteType.DOWN);
 	}
 
 	@Override
 	public final Integer getVotes() {
-		if(votes == null) votes = 0;
+		if (votes == null) {
+			votes = 0;
+		}
 		return votes;
 	}
-	
-	public final void setVotes(Integer votes){
+
+	@Override
+	public final void setVotes(Integer votes) {
 		this.votes = votes;
 	}
-	
-	/********************************************
-	 *	    	MISC FUNCTIONS
-	 ********************************************/
+
+	//////////////////////////////////////
+	//			OBJECT METHODS
+	//////////////////////////////////////
 
 	@Override
 	public int hashCode() {
@@ -437,9 +493,9 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		}
 		return true;
 	}
-	
+
 	@Override
 	public String toString() {
 		return Utils.toJSON(this);
-	}	
+	}
 }

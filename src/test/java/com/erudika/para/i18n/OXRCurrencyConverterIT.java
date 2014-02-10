@@ -30,5 +30,5 @@ public class OXRCurrencyConverterIT extends CurrencyConverterTest {
 	public OXRCurrencyConverterIT() {
 		cc = new OXRCurrencyConverter(new MockDAO());
 	}
-	
+
 }

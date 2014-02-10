@@ -37,7 +37,7 @@ public class AWSDynamoDAOIT extends DAOTest {
 		AWSDynamoUtils.createTable(appName1);
 		AWSDynamoUtils.createTable(appName2);
 	}
-	
+
 	@AfterClass
 	public static void tearDownClass() {
 		AWSDynamoUtils.deleteTable(Config.APP_NAME_NS);
@@ -45,24 +45,24 @@ public class AWSDynamoDAOIT extends DAOTest {
 		AWSDynamoUtils.deleteTable(appName2);
 		AWSDynamoUtils.shutdownClient();
 	}
-	
+
 	@Test
 	public void testCreateDeleteExistsTable() throws InterruptedException {
 		String appName1 = "test-index";
 		String badAppName = "test index 123";
-		
+
 		AWSDynamoUtils.createTable("");
 		assertFalse(AWSDynamoUtils.existsTable(""));
-		
+
 		AWSDynamoUtils.createTable(appName1);
 		assertTrue(AWSDynamoUtils.existsTable(appName1));
-		
+
 		AWSDynamoUtils.deleteTable(appName1);
 		assertFalse(AWSDynamoUtils.existsTable(appName1));
-		
+
 		assertFalse(AWSDynamoUtils.createTable(badAppName));
 		assertFalse(AWSDynamoUtils.existsTable(badAppName));
 		assertFalse(AWSDynamoUtils.deleteTable(badAppName));
 	}
-	
+
 }

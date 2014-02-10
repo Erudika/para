@@ -26,12 +26,12 @@ import static org.junit.Assert.*;
  */
 
 public class AddressTest {
-	
+
 	@Test
 	public void test() {
 		Address a = new Address();
 		assertNull(a.getId());
-		
+
 		Address b = new Address("123");
 		assertNotNull(b.getId());
 		assertEquals("123", b.getId());

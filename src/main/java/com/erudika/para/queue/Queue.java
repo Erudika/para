@@ -18,16 +18,32 @@
 package com.erudika.para.queue;
 
 /**
- *
+ * The core queue interface. Pushes messages to a queue and pulls them for processing.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public interface Queue {
 
-	public String pull();
+	/**
+	 * Pulls a message from a queue.
+	 * @return the message
+	 */
+	String pull();
 
-	public void push(String task);
+	/**
+	 * Pushes a message to a queue.
+	 * @param task the message
+	 */
+	void push(String task);
 
-	public String getName();
-	
-	public void setName(String name);
+	/**
+	 * Returns the name of the queue.
+	 * @return
+	 */
+	String getName();
+
+	/**
+	 * Sets the name of the queue.
+	 * @param name a name
+	 */
+	void setName(String name);
 }

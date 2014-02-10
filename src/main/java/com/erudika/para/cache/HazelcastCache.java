@@ -32,54 +32,72 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Hazelcast implementation of the {@link Cache} interface. 
+ * Each application uses a separate distributed map.
+ * 
  * @author Alex Bogdanovski <alex@erudika.com>
+ * @see Cache
+ * @see HazelcastUtils
  */
 @Singleton
 public class HazelcastCache implements Cache {
 
 	private static final Logger logger = LoggerFactory.getLogger(HazelcastCache.class);
 
+	/**
+	 * No-args constructor
+	 */
 	public HazelcastCache() {
 	}
-	
-	HazelcastInstance client(){
+
+	HazelcastInstance client() {
 		return HazelcastUtils.getClient();
 	}
 
 	@Override
 	public boolean contains(String appName, String id) {
-		if(StringUtils.isBlank(id) || StringUtils.isBlank(appName)) return false;
+		if (StringUtils.isBlank(id) || StringUtils.isBlank(appName)) {
+			return false;
+		}
 		return client().getMap(appName).containsKey(id);
-	}
-	
-	@Override
-	public <T> void put(String appName, String id, T object) {
-		if(StringUtils.isBlank(id) || object == null || StringUtils.isBlank(appName)) return;
-		logger.debug("Cache.put() {} {}", appName, id);
-		client().getMap(appName).putAsync(id, object);
 	}
 
 	@Override
-	public <T> void put(String appName, String id, T object, Long ttl_seconds) {
-		if(StringUtils.isBlank(id) || object == null || StringUtils.isBlank(appName)) return;
-		logger.debug("Cache.put() {} {} ttl {}", appName, id, ttl_seconds);	
-		client().getMap(appName).putAsync(id, object, ttl_seconds, TimeUnit.SECONDS);
+	public <T> void put(String appName, String id, T object) {
+		if (!StringUtils.isBlank(id) && object != null && !StringUtils.isBlank(appName)) {
+			logger.debug("Cache.put() {} {}", appName, id);
+			client().getMap(appName).putAsync(id, object);
+		}
+	}
+
+	@Override
+	public <T> void put(String appName, String id, T object, Long ttlSeconds) {
+		if (!StringUtils.isBlank(id) && object != null && !StringUtils.isBlank(appName)) {
+			logger.debug("Cache.put() {} {} ttl {}", appName, id, ttlSeconds);
+			client().getMap(appName).putAsync(id, object, ttlSeconds, TimeUnit.SECONDS);
+		}
 	}
 
 	@Override
 	public <T> void putAll(String appName, Map<String, T> objects) {
-		if(objects == null || objects.isEmpty() || StringUtils.isBlank(appName)) return;
-		objects.remove(null);
-		objects.remove("");
-		logger.debug("Cache.putAll() {} {}", appName, objects.size());		
-		client().getMap(appName).putAll(objects);
+		if (objects != null && !objects.isEmpty() && !StringUtils.isBlank(appName)) {
+			Map<String, T> cleanMap = new LinkedHashMap<String, T>();
+			for (Entry<String, T> entry : objects.entrySet()) {
+				if (!StringUtils.isBlank(entry.getKey()) && entry.getValue() != null) {
+					cleanMap.put(entry.getKey(), entry.getValue());
+				}
+			}
+			logger.debug("Cache.putAll() {} {}", appName, objects.size());
+			client().getMap(appName).putAll(cleanMap);
+		}
 	}
-	
+
 	@Override
 	public <T> T get(String appName, String id) {
-		if(StringUtils.isBlank(id) || StringUtils.isBlank(appName)) return null;
-		T obj = (T) client().getMap(appName).get(id); 
+		if (StringUtils.isBlank(id) || StringUtils.isBlank(appName)) {
+			return null;
+		}
+		T obj = (T) client().getMap(appName).get(id);
 		logger.debug("Cache.get() {} {}", appName, (obj == null) ? null : id);
 		return obj;
 	}
@@ -87,7 +105,9 @@ public class HazelcastCache implements Cache {
 	@Override
 	public <T> Map<String, T> getAll(String appName, List<String> ids) {
 		Map<String, T> map = new LinkedHashMap<String, T>();
-		if(ids == null || StringUtils.isBlank(appName)) return map;
+		if (ids == null || StringUtils.isBlank(appName)) {
+			return map;
+		}
 		ids.remove(null);
 		for (Entry<Object, Object> entry : client().getMap(appName).getAll(new TreeSet<Object>(ids)).entrySet()) {
 			map.put((String) entry.getKey(), (T) entry.getValue());
@@ -95,33 +115,38 @@ public class HazelcastCache implements Cache {
 		logger.debug("Cache.getAll() {} {}", appName, ids.size());
 		return map;
 	}
-	
+
 	@Override
 	public void remove(String appName, String id) {
-		if(StringUtils.isBlank(id) || StringUtils.isBlank(appName)) return;
-		logger.debug("Cache.remove() {} {}", appName, id);		
-		client().getMap(appName).delete(id);
+		if (!StringUtils.isBlank(id) && !StringUtils.isBlank(appName)) {
+			logger.debug("Cache.remove() {} {}", appName, id);
+			client().getMap(appName).delete(id);
+		}
 	}
 
 	@Override
 	public void removeAll(String appName) {
-		if(StringUtils.isBlank(appName)) return;
-		logger.debug("Cache.removeAll() {}", appName);
-		client().getMap(appName).clear();
+		if (!StringUtils.isBlank(appName)) {
+			logger.debug("Cache.removeAll() {}", appName);
+			client().getMap(appName).clear();
+		}
 	}
-	
+
 	@Override
 	public void removeAll(String appName, List<String> ids) {
-		if(ids == null || StringUtils.isBlank(appName)) return;
-		IMap<?,?> map = client().getMap(appName);
-		for (String id : ids) {
-			map.delete(id);
+		if (ids != null && !StringUtils.isBlank(appName)) {
+			IMap<?,?> map = client().getMap(appName);
+			for (String id : ids) {
+				if (!StringUtils.isBlank(id)) {
+					map.delete(id);
+				}
+			}
+			logger.debug("Cache.removeAll() {} {}", appName, ids.size());
 		}
-		logger.debug("Cache.removeAll() {} {}", appName, ids.size());
 	}
-	
+
 	////////////////////////////////////////////////////
-	
+
 	@Override
 	public boolean contains(String id) {
 		return contains(Config.APP_NAME_NS, id);
@@ -131,35 +156,35 @@ public class HazelcastCache implements Cache {
 	public <T> void put(String id, T object) {
 		put(Config.APP_NAME_NS, id, object);
 	}
-	
+
 	@Override
 	public <T> void putAll(Map<String, T> objects) {
 		putAll(Config.APP_NAME_NS, objects);
 	}
-	
+
 	@Override
 	public <T> T get(String id) {
 		return get(Config.APP_NAME_NS, id);
 	}
-	
+
 	@Override
 	public <T> Map<String, T> getAll(List<String> ids) {
 		return getAll(Config.APP_NAME_NS, ids);
 	}
-	
+
 	@Override
 	public void remove(String id) {
 		remove(Config.APP_NAME_NS, id);
 	}
-	
+
 	@Override
 	public void removeAll() {
 		removeAll(Config.APP_NAME_NS);
 	}
-	
+
 	@Override
 	public void removeAll(List<String> ids) {
 		removeAll(Config.APP_NAME_NS, ids);
 	}
-	
+
 }

@@ -21,13 +21,13 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
 /**
+ * Annotation that marks a field as 'locked' i.e. once stored it cannot be updated, only deleted.
  *
  * @author Alex Bogdanovski <alex@erudika.com>
- * 
- * Annotation that marks a field as 'locked' i.e. once stored it cannot be updated, only deleted.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-
-public @interface Locked {}
+public @interface Locked {
+}

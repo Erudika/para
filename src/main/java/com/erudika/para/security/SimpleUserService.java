@@ -29,13 +29,18 @@ import org.springframework.security.openid.OpenIDAttribute;
 import org.springframework.security.openid.OpenIDAuthenticationToken;
 
 /**
- *
+ * Simple user service. Looks up users in the data store.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
-public class SimpleUserService implements UserDetailsService, 
+public class SimpleUserService implements UserDetailsService,
 		AuthenticationUserDetailsService<OpenIDAuthenticationToken> {
-	
-	public UserDetails loadUserByUsername(String ident) throws UsernameNotFoundException {
+
+	/**
+	 * Loads a user from the data store. 
+	 * @param ident the user identifier
+	 * @return a user object or null if user is not found
+	 */
+	public UserDetails loadUserByUsername(String ident) {
 		User user = new User();
 		user.setIdentifier(ident);
 		user = loadUser(user);
@@ -47,11 +52,16 @@ public class SimpleUserService implements UserDetailsService,
 		return user;
 	}
 
+	/**
+	 * Loads a user from the data store or creates a new user from an OpenID profile
+	 * @param token the OpenID authentication token holding the user profile
+	 * @return a user object or null if user is not found
+	 */
 	public UserDetails loadUserDetails(OpenIDAuthenticationToken token) {
 		if (token == null) {
 			return null;
 		}
-		
+
 		User user = new User();
 		user.setIdentifier(token.getIdentityUrl());
 		user = loadUser(user);
@@ -100,8 +110,8 @@ public class SimpleUserService implements UserDetailsService,
 
 		return user;
 	}
-	
-	private User loadUser(User u){
+
+	private User loadUser(User u) {
 		return User.readUserForIdentifier(u);
 	}
 }

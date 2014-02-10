@@ -22,9 +22,10 @@ package com.erudika.para.queue;
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class MockQueueTest extends QueueTest {
-	
+
 	public MockQueueTest() {
+		super();
 		q = new MockQueue();
 	}
-	
+
 }

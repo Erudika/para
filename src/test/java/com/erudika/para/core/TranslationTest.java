@@ -30,10 +30,10 @@ import static org.mockito.Mockito.*;
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class TranslationTest {
-	
+
 	private DAO dao;
 	private Translation t;
-	
+
 	@Before
 	public void setUp() {
 		dao = new MockDAO();

@@ -27,20 +27,36 @@ import javax.validation.Payload;
 import javax.validation.constraints.Pattern;
 
 /**
+ * Annotation for email validation.
  *
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 @org.hibernate.validator.constraints.Email(message = "Please provide a valid email address")
 @Pattern(regexp = ".+@.+\\..+", message = "Please provide a valid email address")
-@Target({ElementType.METHOD, ElementType.FIELD, ElementType.ANNOTATION_TYPE})
+@Target({ ElementType.METHOD, ElementType.FIELD, ElementType.ANNOTATION_TYPE })
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = {})
+@Constraint(validatedBy = { })
 @Documented
 public @interface Email {
 
+	/**
+	 * Error for invalid email.
+	 *
+	 * @return the error message
+	 */
 	String message() default "Please provide a valid email address";
 
-	Class<?>[] groups() default {};
+	/**
+	 * Groups.
+	 *
+	 * @return the groups
+	 */
+	Class<?>[] groups() default { };
 
-	Class<? extends Payload>[] payload() default {};
+	/**
+	 * Payload.
+	 *
+	 * @return the payload
+	 */
+	Class<? extends Payload>[] payload() default { };
 }

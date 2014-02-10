@@ -23,12 +23,17 @@ import org.springframework.security.openid.AxFetchListFactory;
 import org.springframework.security.openid.OpenIDAttribute;
 
 /**
- *
+ * OpenID attributes list
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class SimpleAxFetchListFactory implements AxFetchListFactory {
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * A list of OpenID attributes to send in a request.
+	 * @param identifier a user identifier
+	 * @return a list of attributes
+	 */
 	public List<OpenIDAttribute> createAttributeList(String identifier) {
 		List<OpenIDAttribute> list = new ArrayList<OpenIDAttribute>();
 		if (identifier != null && identifier.matches("https://www.google.com/.*")) {

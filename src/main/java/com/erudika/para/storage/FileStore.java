@@ -20,13 +20,23 @@ package com.erudika.para.storage;
 import java.io.InputStream;
 
 /**
- *
+ * A file store interface. WORK IN PROGRESS.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public interface FileStore {
-	
-	public InputStream load(String url);
-	
-	public String store(InputStream data);
-	
+
+	/**
+	 * Loads a file from a storage service.
+	 * @param url the file's URL
+	 * @return the file or null if not found
+	 */
+	InputStream load(String url);
+
+	/**
+	 * Saves a file to a storage service.
+	 * @param data the file
+	 * @return the URL for the created file
+	 */
+	String store(InputStream data);
+
 }

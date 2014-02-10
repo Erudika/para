@@ -19,7 +19,6 @@ package com.erudika.para.web;
 
 import static com.erudika.para.core.User.Roles.*;
 import com.erudika.para.security.SecurityConfig;
-import com.erudika.para.security.SecurityFilter;
 import java.util.EnumSet;
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
@@ -30,26 +29,34 @@ import org.springframework.security.web.context.AbstractSecurityWebApplicationIn
 import org.tuckey.web.filters.urlrewrite.UrlRewriteFilter;
 
 /**
- * Web application lifecycle listener.
+ * The default web application lifecycle listener.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class ParaInitializer extends AbstractSecurityWebApplicationInitializer {
-	
+
+	/**
+	 * No-args constructor
+	 */
 	public ParaInitializer() {
 		super(SecurityConfig.class);
 	}
-	
+
+	/**
+	 * Executes this before Spring Security.
+	 * @param sc context
+	 */
 	@Override
 	protected void beforeSpringSecurityFilterChain(ServletContext sc) {
 		// Para init/destroy
 		sc.addListener(ParaContextListener.class);
-	}	
+	}
 
+	/**
+	 * Executes this after Spring Security.
+	 * @param sc context
+	 */
 	@Override
 	protected void afterSpringSecurityFilterChain(ServletContext sc) {
-		// Security Filter (Anti-CSRF, REST JSON checks, etc.)
-		sc.addFilter("securityFilter", SecurityFilter.class).
-				addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), false, "/*");
 		// UrlRewriteFilter (nice URLs)
 		FilterRegistration.Dynamic urf = sc.addFilter("urlRewriteFilter", UrlRewriteFilter.class);
 		urf.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD), false, "/*");
@@ -66,5 +73,5 @@ public class ParaInitializer extends AbstractSecurityWebApplicationInitializer {
 		sc.getSessionCookieConfig().setMaxAge(1);
 		sc.getSessionCookieConfig().setHttpOnly(true);
 	}
-	
+
 }

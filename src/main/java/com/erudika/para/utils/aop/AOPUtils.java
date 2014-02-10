@@ -25,16 +25,16 @@ import java.util.List;
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public final class AOPUtils {
-	
-	private AOPUtils(){}
-	
-	static <T> List<T> getArgOfListOfType(Object[] args, Class<T> type){
-		if(args != null){
+
+	private AOPUtils() { }
+
+	static <T> List<T> getArgOfListOfType(Object[] args, Class<T> type) {
+		if (args != null) {
 			for (Object arg : args) {
-				if(arg != null){
-					if(arg instanceof List){
+				if (arg != null) {
+					if (arg instanceof List) {
 						List<T> list = (List) arg;
-						if(!list.isEmpty() && type.isAssignableFrom((list.get(0).getClass()))){
+						if (!list.isEmpty() && type.isAssignableFrom((list.get(0).getClass()))) {
 							return (List<T>) list;
 						}
 					}
@@ -43,12 +43,12 @@ public final class AOPUtils {
 		}
 		return null;
 	}
-	
-	static ParaObject getArgOfParaObject(Object[] args){
-		if(args != null){
+
+	static ParaObject getArgOfParaObject(Object[] args) {
+		if (args != null) {
 			for (Object arg : args) {
-				if(arg != null){
-					if(ParaObject.class.isAssignableFrom(arg.getClass())){
+				if (arg != null) {
+					if (ParaObject.class.isAssignableFrom(arg.getClass())) {
 						return (ParaObject) arg;
 					}
 				}
@@ -56,12 +56,12 @@ public final class AOPUtils {
 		}
 		return null;
 	}
-	
-	static String getFirstArgOfString(Object[] args){
-		if(args != null){
+
+	static String getFirstArgOfString(Object[] args) {
+		if (args != null) {
 			for (Object arg : args) {
-				if(arg != null){
-					if(arg instanceof String){
+				if (arg != null) {
+					if (arg instanceof String) {
 						return (String) arg;
 					}
 				}
@@ -69,5 +69,5 @@ public final class AOPUtils {
 		}
 		return null;
 	}
-	
+
 }

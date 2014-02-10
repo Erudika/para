@@ -27,7 +27,7 @@ import org.junit.Test;
  */
 @Ignore
 public abstract class CurrencyConverterTest {
-	
+
 	protected CurrencyConverter cc;
 
 	@Test
@@ -37,7 +37,7 @@ public abstract class CurrencyConverterTest {
 		assertTrue(cc.convertCurrency(1, "USD", "USD") == 1.0);
 		assertTrue(cc.convertCurrency(1, "EUR", "EUR") == 1.0);
 		assertTrue(cc.convertCurrency(1, "EUR", "JPY") > 1.0);
-		assertTrue(cc.convertCurrency(-1, "xxx", "xxx") == -1.0);		
+		assertTrue(cc.convertCurrency(-1, "xxx", "xxx") == -1.0);
 	}
 
 }

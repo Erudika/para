@@ -29,7 +29,7 @@ import org.junit.Test;
  */
 @Ignore
 public abstract class EmailerTest {
-	
+
 	protected Emailer e;
 
 	@Test

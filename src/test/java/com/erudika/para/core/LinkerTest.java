@@ -34,12 +34,12 @@ public class LinkerTest {
 		assertEquals("id1", l1.getIdFieldNameFor(Tag.class));
 		assertEquals("id1", l2.getIdFieldNameFor(Tag.class));
 		assertEquals("id2", l2.getIdFieldNameFor(User.class));
-		
+
 		assertEquals(l1.getId1(), "222");
 		assertEquals(l1.getId2(), "111");
 		assertEquals(l2.getId1(), "222");
 		assertEquals(l2.getId2(), "111");
-		
+
 		assertTrue(!l1.isFirst(User.class));
 		assertTrue(l1.isFirst(Tag.class));
 		assertTrue(l2.isFirst(Tag.class));

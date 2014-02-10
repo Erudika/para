@@ -24,7 +24,8 @@ package com.erudika.para.email;
 public class MockEmailerTest extends EmailerTest {
 
 	public MockEmailerTest() {
+		super();
 		e = new MockEmailer();
 	}
-	
+
 }

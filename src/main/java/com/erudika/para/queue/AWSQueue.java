@@ -36,12 +36,12 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * An implementation of the {@link Queue} interface using the AWS Simple Queue Service.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 @Singleton
 public class AWSQueue implements Queue {
-	
+
 	private static final int MAX_MESSAGES = 1;  //max in bulk
 	private AmazonSQSAsyncClient sqs;
 	private static final String SQS_ENDPOINT = "https://sqs.".concat(Config.AWS_REGION).concat(".amazonaws.com");
@@ -51,12 +51,20 @@ public class AWSQueue implements Queue {
 	private String endpoint;
 	private String url;
 
+	/**
+	 * No-args constructor
+	 */
 	public AWSQueue() {
 		this("test123", SQS_ENDPOINT);
 	}
-	
-	// This queue contains only messages in JSON format!
-	public AWSQueue(String name, String endpoint){
+
+	/**
+	 * Default consturctor.
+	 * This queue contains only messages in JSON format.
+	 * @param name name of the queue
+	 * @param endpoint endpoint url
+	 */
+	public AWSQueue(String name, String endpoint) {
 		sqs = new AmazonSQSAsyncClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
 		if (StringUtils.isBlank(endpoint)) {
 			sqs.setEndpoint(SQS_ENDPOINT, name, Config.AWS_REGION);
@@ -69,16 +77,17 @@ public class AWSQueue implements Queue {
 		url = create(name);
 	}
 
+	@Override
 	public void push(String task) {
-		if(!StringUtils.isBlank(url) && task != null){
+		if (!StringUtils.isBlank(url) && task != null) {
 			// only allow strings - ie JSON
 			if (!StringUtils.isBlank(task)) {
 				// Send a message
 				try {
 					SendMessageRequest sendReq = new SendMessageRequest();
-					sendReq.setQueueUrl(url);					
+					sendReq.setQueueUrl(url);
 					sendReq.setMessageBody(task);
-					
+
 					sqs.sendMessage(sendReq);
 				} catch (AmazonServiceException ase) {
 					logException(ase);
@@ -89,14 +98,15 @@ public class AWSQueue implements Queue {
 		}
 	}
 
+	@Override
 	public String pull() {
 		String task = "[]";
-		if(!StringUtils.isBlank(url)){
+		if (!StringUtils.isBlank(url)) {
 			try {
 				ReceiveMessageRequest receiveReq = new ReceiveMessageRequest(url);
 				receiveReq.setMaxNumberOfMessages(MAX_MESSAGES);
 				List<Message> list = sqs.receiveMessage(receiveReq).getMessages();
-				
+
 				if (list != null && !list.isEmpty()) {
 					Message message = list.get(0);
 					sqs.deleteMessage(new DeleteMessageRequest(url, message.getReceiptHandle()));
@@ -110,28 +120,30 @@ public class AWSQueue implements Queue {
 		}
 		return task;
 	}
-	
+
+	@Override
 	public String getName() {
 		return name;
 	}
 
+	@Override
 	public void setName(String name) {
 		this.name = name;
 	}
-	
-	private String create(String name){
+
+	private String create(String name) {
 		String u = endpoint.concat("/").concat(name);
-		try{
+		try {
 			u = sqs.createQueue(new CreateQueueRequest(name)).getQueueUrl();
 		} catch (AmazonServiceException ase) {
 			logException(ase);
 		} catch (AmazonClientException ace) {
 			logger.error("Could not reach SQS. {0}", ace.getMessage());
-		}	
+		}
 		return u;
 	}
-//	
-//	public void delete(){
+//
+//	public void delete() {
 //		try {
 //			sqs.deleteQueue(new DeleteQueueRequest(QUEUE_URL));
 //		} catch (AmazonServiceException ase) {
@@ -140,8 +152,8 @@ public class AWSQueue implements Queue {
 //			logger.error("Could not reach SQS. {0}", ace.getMessage());
 //		}
 //	}
-//	
-//	public List<String> listQueues(){
+//
+//	public List<String> listQueues() {
 //		List<String> list = null;
 //		try {
 //			list = sqs.listQueues().getQueueUrls();
@@ -152,10 +164,10 @@ public class AWSQueue implements Queue {
 //		}
 //		return list;
 //	}
-	
-	private void logException(AmazonServiceException ase){
+
+	private void logException(AmazonServiceException ase) {
 		logger.error("AmazonServiceException: error={0}, statuscode={1}, "
-			+ "awserrcode={2}, errtype={3}, reqid={4}", ase.getMessage(), ase.getStatusCode(), 
+			+ "awserrcode={2}, errtype={3}, reqid={4}", ase.getMessage(), ase.getStatusCode(),
 			ase.getErrorCode(), ase.getErrorType(), ase.getRequestId());
 	}
 }

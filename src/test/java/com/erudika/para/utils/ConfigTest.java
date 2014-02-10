@@ -25,7 +25,7 @@ import static org.junit.Assert.*;
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class ConfigTest {
-	
+
 	@Test
 	public void testGetConfigParam() {
 		assertNull(Config.getConfigParam(null, null));

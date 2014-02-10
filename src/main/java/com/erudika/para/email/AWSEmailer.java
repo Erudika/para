@@ -32,20 +32,24 @@ import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- *
+ * An emailer that uses AWS Simple Email Service (SES).
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 @Singleton
-public class AWSEmailer implements Emailer{
+public class AWSEmailer implements Emailer {
 
 	private static AmazonSimpleEmailServiceClient sesclient;
-	
+
+	/**
+	 * No-args constructor
+	 */
 	public AWSEmailer() {
 		sesclient = new AmazonSimpleEmailServiceClient(
 				new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
 	}
-	
-	public boolean sendEmail(List<String> emails, String subject, String body){
+
+	@Override
+	public boolean sendEmail(List<String> emails, String subject, String body) {
 		if (emails != null && !emails.isEmpty() && !StringUtils.isBlank(body)) {
 			final SendEmailRequest request = new SendEmailRequest().withSource(Config.SUPPORT_EMAIL);
 			Destination dest = new Destination().withToAddresses(emails);
@@ -60,7 +64,7 @@ public class AWSEmailer implements Emailer{
 
 			request.setMessage(msg);
 
-			Utils.asyncExecute(new Callable<Object>(){
+			Utils.asyncExecute(new Callable<Object>() {
 				public Object call() throws Exception {
 					return sesclient.sendEmail(request);
 				}

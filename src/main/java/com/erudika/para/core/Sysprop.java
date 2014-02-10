@@ -23,55 +23,95 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- *
+ * A system property object. General purpose object for storing data.
+ * It is essentially a map of key/value pairs.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
-public class Sysprop extends PObject{
+public class Sysprop extends PObject {
 	private static final long serialVersionUID = 1L;
 
 	@Stored private Map<String, Object> properties;
-	
+
+	/**
+	 * The default constructor
+	 * @param id the object id
+	 */
 	public Sysprop(String id) {
 		setId(id);
 		getName();
 	}
-	
+
+	/**
+	 * No-args constructor
+	 */
 	public Sysprop() {
 		this(null);
 	}
 
-	public Sysprop addProperty(String name, Object value){
-		if(!StringUtils.isBlank(name) && value != null){
+	/**
+	 * Adds a new key/value pair to the map.
+	 * @param name a key
+	 * @param value a value
+	 * @return this
+	 */
+	public Sysprop addProperty(String name, Object value) {
+		if (!StringUtils.isBlank(name) && value != null) {
 			getProperties().put(name, value);
-		} 
+		}
 		return this;
 	}
-	
-	public Object getProperty(String name){
-		if(!StringUtils.isBlank(name)){
+
+	/**
+	 * Returns the value of a property for a given key
+	 * @param name the key
+	 * @return the value
+	 */
+	public Object getProperty(String name) {
+		if (!StringUtils.isBlank(name)) {
 			return getProperties().get(name);
 		}
 		return null;
 	}
-	
-	public Sysprop removeProperty(String name){
-		if(!StringUtils.isBlank(name)){
+
+	/**
+	 * Removes a property from the map
+	 * @param name the key
+	 * @return this
+	 */
+	public Sysprop removeProperty(String name) {
+		if (!StringUtils.isBlank(name)) {
 			getProperties().remove(name);
 		}
 		return this;
 	}
-	
-	public boolean hasProperty(String name){
-		if(StringUtils.isBlank(name)) return false;
+
+	/**
+	 * Checks for the existence of a property
+	 * @param name the key
+	 * @return true if a property with this key exists
+	 */
+	public boolean hasProperty(String name) {
+		if (StringUtils.isBlank(name)) {
+			return false;
+		}
 		return getProperties().containsKey(name);
 	}
-	
+
+	/**
+	 * A map of all properties (key/values)
+	 * @return a map
+	 */
 	public Map<String, Object> getProperties() {
-		if(properties == null) 
+		if (properties == null) {
 			properties = new HashMap<String, Object>();
+		}
 		return properties;
 	}
 
+	/**
+	 * Overwrites the map.
+	 * @param properties a new map
+	 */
 	public void setProperties(Map<String, Object> properties) {
 		this.properties = properties;
 	}

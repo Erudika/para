@@ -23,25 +23,51 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * Annotation that marks methods that can modify the cache. Mainly used for weaving through AOP.
  *
  * @author Alex Bogdanovski <alex@erudika.com>
- * 
- * Annotation that marks methods that can modify the cache. Mainly used for weaving through AOP.
  */
-@Retention(RetentionPolicy.RUNTIME) 
+@Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-
 public @interface Cached {
 
-	public enum Action {
+	/**
+	 * The type of cache operation.
+	 */
+	enum Action {
+
+		/**
+		 * No operation. Do nothing.
+		 */
 		NOOP,
-		PUT,	// put in cache
-		GET,	// get from cache
-		DELETE,	// delete from cache
+		/**
+		 * Put an object in cache.
+		 */
+		PUT,
+		/**
+		 * Get an object from cache.
+		 */
+		GET,
+		/**
+		 * Delete an object from cache.
+		 */
+		DELETE,
+		/**
+		 * Get all objects from cache.
+		 */
 		GET_ALL,
+		/**
+		 * Put all objects in cache.
+		 */
 		PUT_ALL,
-		DELETE_ALL;	
+		/**
+		 * Delete all objects from cache.
+		 */
+		DELETE_ALL;
 	}
-	
+
+	/**
+	 * @return the type of operation
+	 */
 	Action action() default Action.NOOP;
 }

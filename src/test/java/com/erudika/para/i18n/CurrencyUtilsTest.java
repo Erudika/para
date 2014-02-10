@@ -26,9 +26,9 @@ import static org.junit.Assert.*;
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class CurrencyUtilsTest {
-	
+
 	private CurrencyUtils cu;
-	
+
 	public CurrencyUtilsTest() {
 		cu = CurrencyUtils.getInstance();
 	}
@@ -43,7 +43,7 @@ public class CurrencyUtilsTest {
 		assertNotNull(cu.formatPrice(Double.NaN, null));
 		assertNotNull(cu.formatPrice(null, "USD"));
 		assertEquals("$5.00", cu.formatPrice(5.0, "USD"));
-		assertEquals("5,00 €", cu.formatPrice(5.0, "EUR"));		
+		assertEquals("5,00 €", cu.formatPrice(5.0, "EUR"));
 	}
 
 	@Test

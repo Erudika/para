@@ -20,6 +20,7 @@ package com.erudika.para.persistence;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
 import com.erudika.para.search.Search;
+import com.erudika.para.utils.Config;
 import java.util.Arrays;
 import java.util.Map;
 import org.junit.After;
@@ -34,14 +35,14 @@ import static org.mockito.Mockito.*;
  */
 @Ignore
 public abstract class DAOTest {
-	
+
 	protected static DAO dao;
 	protected static String appName1 = "testapp1";
 	protected static String appName2 = "testapp2";
 
 	private User u;
 	private Tag t;
-	
+
 	@Before
 	public void setUp() {
 		u = new User("111");
@@ -52,35 +53,35 @@ public abstract class DAOTest {
 		u.setEmail("asd@asd.com");
 		u.setIdentifier(u.getEmail());
 		u.setPassword("123456");
-		
+
 		t = new Tag("test");
 		t.setSearch(mock(Search.class));
 		t.setDao(dao);
 		t.setCount(3);
-		
+
 		dao.create(u);
 		dao.create(t);
 	}
-	
+
 	@After
-	public void tearDown(){
+	public void tearDown() {
 		dao.delete(u);
 		dao.delete(t);
 	}
-	
+
 	@Test
 	public void testCreate() {
 		assertNull(dao.create(null));
 		assertEquals(u.getId(), dao.create(u));
 		assertNotNull(u.getTimestamp());
-		
+
 		User x = dao.read(u.getId());
 		assertEquals(u.getEmail(), x.getEmail());
 		x.setEmail(null);
 		assertNotNull(dao.create(x));
 		x = dao.read(u.getId());
 		assertNull(x.getEmail());
-		
+
 		// test multiapp support
 		u.setId(u.getId()+"-APP1");
 		u.setName("UserApp1");
@@ -88,7 +89,7 @@ public abstract class DAOTest {
 		assertNotNull(dao.read(appName1, u.getId()));
 		assertNull(dao.read(u.getId()));
 		assertNull(dao.read(appName2, u.getId()));
-		
+
 		t.setId(t.getId()+"-APP2");
 		t.setName("TagApp2");
 		dao.create(appName2, t);
@@ -124,31 +125,31 @@ public abstract class DAOTest {
 
 	@Test
 	public void testPutGetRemoveColumn() {
-		dao.putColumn(u.getId(), DAO.CN_NAME, "New Name");
+		dao.putColumn(u.getId(), Config._NAME, "New Name");
 		assertEquals("New Name", dao.read(u.getId()).getName());
-		dao.putColumn(u.getId(), DAO.CN_NAME, null);
+		dao.putColumn(u.getId(), Config._NAME, null);
 		assertEquals("New Name", dao.read(u.getId()).getName());
-		dao.putColumn(u.getId(), DAO.CN_NAME, "");
+		dao.putColumn(u.getId(), Config._NAME, "");
 		assertEquals("New Name", dao.read(u.getId()).getName());
-		
-		assertEquals(u.getId(), dao.getColumn(u.getId(), DAO.CN_ID));
-		dao.putColumn(u.getId(), DAO.CN_NAME, "xxx");
-		assertEquals("xxx", dao.getColumn(u.getId(), DAO.CN_NAME));
+
+		assertEquals(u.getId(), dao.getColumn(u.getId(), Config._ID));
+		dao.putColumn(u.getId(), Config._NAME, "xxx");
+		assertEquals("xxx", dao.getColumn(u.getId(), Config._NAME));
 		assertNull(dao.getColumn(u.getId(), null));
 		assertNull(dao.getColumn(u.getId(), ""));
 		assertNull(dao.getColumn(null, ""));
-		
-		dao.putColumn(u.getId(), DAO.CN_UPDATED, "123");
-		assertEquals("123", dao.getColumn(u.getId(), DAO.CN_UPDATED));
-		dao.removeColumn(u.getId(), DAO.CN_UPDATED);
-		assertNull(dao.getColumn(u.getId(), DAO.CN_UPDATED));
+
+		dao.putColumn(u.getId(), Config._UPDATED, "123");
+		assertEquals("123", dao.getColumn(u.getId(), Config._UPDATED));
+		dao.removeColumn(u.getId(), Config._UPDATED);
+		assertNull(dao.getColumn(u.getId(), Config._UPDATED));
 	}
 
 	@Test
 	public void testExistsColumn() {
 		assertFalse(dao.existsColumn(null, null, null));
 		assertFalse(dao.existsColumn(u.getId(), null));
-		assertTrue(dao.existsColumn(u.getId(), DAO.CN_NAME));
+		assertTrue(dao.existsColumn(u.getId(), Config._NAME));
 		assertFalse(dao.existsColumn(u.getId(), "testcol"));
 	}
 
@@ -161,17 +162,17 @@ public abstract class DAOTest {
 		assertNotNull(dao.read(t1.getId()));
 		assertNotNull(dao.read(t2.getId()));
 		assertNotNull(dao.read(t3.getId()));
-		
+
 		Map<String, Tag> tags = dao.readAll(Arrays.asList(t1.getId(), t2.getId(), t3.getId()), true);
 		assertFalse(tags.isEmpty());
 		assertTrue(tags.containsKey(t1.getId()));
 		assertTrue(tags.containsKey(t2.getId()));
 		assertTrue(tags.containsKey(t3.getId()));
-		
+
 		assertTrue(t1.equals(tags.get(t1.getId())));
 		assertTrue(t2.equals(tags.get(t2.getId())));
 		assertTrue(t3.equals(tags.get(t3.getId())));
-		
+
 		t1.setCount(10);
 		t2.setCount(20);
 		t3.setCount(30);
@@ -179,7 +180,7 @@ public abstract class DAOTest {
 		assertEquals("10", dao.getColumn(t1.getId(), "count"));
 		assertEquals("20", dao.getColumn(t2.getId(), "count"));
 		assertEquals("30", dao.getColumn(t3.getId(), "count"));
-		
+
 		dao.deleteAll(Arrays.asList(t1, t2, t3));
 		assertNull(dao.read(t1.getId()));
 		assertNull(dao.read(t2.getId()));

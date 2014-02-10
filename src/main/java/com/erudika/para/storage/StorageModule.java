@@ -20,7 +20,7 @@ package com.erudika.para.storage;
 import com.google.inject.AbstractModule;
 
 /**
- *
+ * The default storage module.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class StorageModule extends AbstractModule {
@@ -28,5 +28,5 @@ public class StorageModule extends AbstractModule {
 	protected void configure() {
 		bind(FileStore.class).to(AWSFileStore.class);
 	}
-	
+
 }

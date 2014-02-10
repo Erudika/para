@@ -28,19 +28,20 @@ import org.apache.commons.lang3.StringUtils;
  */
 @Singleton
 public class MockCurrencyConverter implements CurrencyConverter {
-	
+
 	@Override
 	public Double convertCurrency(Number amount, String from, String to) {
-		if(amount == null || StringUtils.isBlank(from) || StringUtils.isBlank(to)) return 0.0;
-		
+		if (amount == null || StringUtils.isBlank(from) || StringUtils.isBlank(to)) {
+			return 0.0;
+		}
 		Double f = rates.containsKey(from) ? rates.get(from) : 1.0;
 		Double t = rates.containsKey(to) ? rates.get(to) : 1.0;
 		double ratio = t / f;
-		
+
 		return amount.doubleValue() * ratio;
 	}
-	
-	private Map<String, Double> rates = new HashMap<String, Double>(){
+
+	private Map<String, Double> rates = new HashMap<String, Double>() {
 		private static final long serialVersionUID = 1L;
 		{
 		// base: USD
@@ -209,7 +210,7 @@ public class MockCurrencyConverter implements CurrencyConverter {
 		put("ZAR", 10.36873);
 		put("ZMK", 5253.075255);
 		put("ZMW", 5.596537);
-		put("ZWL", 322.355006);	
+		put("ZWL", 322.355006);
 	}};
-	
+
 }

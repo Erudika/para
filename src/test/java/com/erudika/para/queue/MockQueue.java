@@ -29,9 +29,9 @@ import org.apache.commons.lang3.StringUtils;
 public class MockQueue implements Queue {
 
 	private ConcurrentLinkedQueue<String> q = new ConcurrentLinkedQueue<String>();
-	
+
 	private String name;
-	
+
 	public MockQueue() {
 		this("queue");
 	}
@@ -39,7 +39,7 @@ public class MockQueue implements Queue {
 	public MockQueue(String name) {
 		this.name = name;
 	}
-	
+
 	@Override
 	public String pull() {
 		String s = q.poll();
@@ -48,8 +48,9 @@ public class MockQueue implements Queue {
 
 	@Override
 	public void push(String task) {
-		if(StringUtils.isBlank(task)) return;
-		q.add(task);
+		if (!StringUtils.isBlank(task)) {
+			q.add(task);
+		}
 	}
 
 	@Override
@@ -61,5 +62,5 @@ public class MockQueue implements Queue {
 	public void setName(String name) {
 		this.name = name;
 	}
-	
+
 }

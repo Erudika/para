@@ -20,7 +20,7 @@ package com.erudika.para.storage;
 import java.io.InputStream;
 
 /**
- *
+ * An implementation of the {@link FileStore} interface using AWS S3. WORK IN PROGRESS.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class AWSFileStore implements FileStore {
@@ -34,5 +34,5 @@ public class AWSFileStore implements FileStore {
 	public String store(InputStream data) {
 		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
 	}
-	
+
 }

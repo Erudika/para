@@ -26,30 +26,44 @@ import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 
 /**
- *
+ * A translation is a key/value pair which holds a single translated string.
+ * For example: hello = "Hola"
  * @author Alex Bogdanovski <alex@erudika.com>
  */
-@JsonIgnoreProperties(ignoreUnknown=true)
-public class Translation extends PObject{
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class Translation extends PObject {
 	private static final long serialVersionUID = 1L;
-	
+
 	@Stored @Locked private String locale;
 	@Stored @Locked private String thekey;
 	@Stored private String value;
 	@Stored private Boolean approved;
-	
+
 	private LanguageUtils langutils;
-	
+
+	/**
+	 * No-args constructor
+	 */
 	public Translation() {
 		this(null, null, null);
 	}
 
+	/**
+	 * Default constructor
+	 * @param id the id
+	 */
 	public Translation(String id) {
 		this();
 		setId(id);
 		getName();
 	}
 
+	/**
+	 * Full constructor.
+	 * @param locale a locale
+	 * @param thekey the key
+	 * @param value the value
+	 */
 	@Inject
 	public Translation(String locale, String thekey, String value) {
 		this.locale = locale;
@@ -59,67 +73,118 @@ public class Translation extends PObject{
 		setName(value);
 	}
 
+	/**
+	 * An instance of LanguageUtils
+	 * @return instance of {@link com.erudika.para.i18n.LanguageUtils}
+	 */
 	public LanguageUtils getLangutils() {
-		if(langutils == null)
+		if (langutils == null) {
 			langutils = new LanguageUtils(getSearch(), getDao());
+		}
 		return langutils;
 	}
-	
+
+	/**
+	 * Is this an approved translation?
+	 * @return true if approved by admin
+	 */
 	public Boolean getApproved() {
 		return approved;
 	}
 
+	/**
+	 * Sets approved.
+	 * @param approved true if approved
+	 */
 	public void setApproved(Boolean approved) {
 		this.approved = approved;
 	}
-	
+
+	/**
+	 * The translated string.
+	 * @return the translation
+	 */
 	public String getValue() {
 		return value;
 	}
 
+	/**
+	 * Sets the translated string
+	 * @param value the translation
+	 */
 	public void setValue(String value) {
 		this.value = value;
 	}
 
+	/**
+	 * The locale
+	 * @return the locale
+	 */
 	public String getLocale() {
 		return locale;
 	}
 
+	/**
+	 * Sets the locale
+	 * @param locale the locale
+	 */
 	public void setLocale(String locale) {
 		this.locale = locale;
 	}
 
+	/**
+	 * The translation key
+	 * @return the key
+	 */
 	public String getThekey() {
 		return thekey;
 	}
 
+	/**
+	 * Sets the key
+	 * @param thekey the key
+	 */
 	public void setThekey(String thekey) {
 		this.thekey = thekey;
 	}
 
-	public void approve(){
+	/**
+	 * Approves the translation.
+	 */
+	public void approve() {
 		this.approved = true;
 		getLangutils().approveTranslation(getAppname(), locale, thekey, value);
 		update();
 	}
 
-	public void disapprove(){
+	/**
+	 * Disapproves the translation.
+	 */
+	public void disapprove() {
 		this.approved = false;
 		getLangutils().disapproveTranslation(getAppname(), locale, thekey);
 		update();
 	}
-	
-	public boolean isApproved(){
+
+	/**
+	 * Approved check
+	 * @return true if approved
+	 */
+	public boolean isApproved() {
 		return (approved != null) ? approved : false;
 	}
 
+	@Override
 	public String getName() {
 		return this.value;
 	}
 
+	@Override
 	public String getParentid() {
-		if(StringUtils.isBlank(locale) && StringUtils.isBlank(thekey)) return null;
+		if (StringUtils.isBlank(locale) && StringUtils.isBlank(thekey)) {
+			return null;
+		}
 		return locale.concat(Config.SEPARATOR).concat(thekey);
 	}
-	
+
 }

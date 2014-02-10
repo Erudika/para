@@ -28,16 +28,16 @@ import static org.mockito.Mockito.*;
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class VoteTest {
-	
+
 	@Test
 	public void testVotes() {
 		DAO dao = new MockDAO();
 		User u = new User("111");
 		User u2 = spy(new User("222"));
-		
+
 		u.setDao(dao);
 		u2.setDao(dao);
-		
+
 		assertEquals(0, u.getVotes().intValue());
 		u.voteUp(u2.getId());
 		assertEquals(1, u.getVotes().intValue());
@@ -45,55 +45,55 @@ public class VoteTest {
 		assertEquals(1, u.getVotes().intValue());
 		u.voteUp(u2.getId());
 		assertEquals(1, u.getVotes().intValue());
-		
+
 		u.voteDown(u2.getId());
 		assertEquals(0, u.getVotes().intValue());
-		
-		u.voteDown(u2.getId());
-		assertEquals(-1, u.getVotes().intValue());
+
 		u.voteDown(u2.getId());
 		assertEquals(-1, u.getVotes().intValue());
-		
+		u.voteDown(u2.getId());
+		assertEquals(-1, u.getVotes().intValue());
+
 		u.voteUp(u2.getId());
 		assertEquals(0, u.getVotes().intValue());
-		
+
 		// test expirations and locks
 		u2.voteUp(u.getId());
 		assertEquals(1, u2.getVotes().intValue());
-		
+
 		// isExpired() = true
 		Vote v = dao.read("vote:111:222");
 		v.setTimestamp(-1234L);
 		dao.create(v);
-		
+
 		u2.voteUp(u.getId());
 		assertEquals(2, u2.getVotes().intValue());
-		
+
 		// isExpired() = true
 		v = dao.read("vote:111:222");
 		v.setTimestamp(-1234L);
 		dao.create(v);
-		
+
 		u2.voteUp(u.getId());
 		assertEquals(3, u2.getVotes().intValue());
-		
+
 		// clear
 		dao.delete(v);
 		u2.setVotes(0);
-		
+
 		u2.voteUp(u.getId());
 		assertEquals(1, u2.getVotes().intValue());
-		
+
 		// isAmendable() = false
 		v = dao.read("vote:111:222");
 		v.setExpiresAfter(0L);
-		v.setTimestamp(-1234L); 
+		v.setTimestamp(-1234L);
 		dao.create(v);
-		
+
 		u2.voteDown(u.getId());
 		assertEquals(1, u2.getVotes().intValue());
-		
-		// voting on self 
+
+		// voting on self
 		u.setVotes(0);
 		u.voteDown(u.getId());
 		assertEquals(0, u.getVotes().intValue());
@@ -103,10 +103,10 @@ public class VoteTest {
 		assertEquals(0, u.getVotes().intValue());
 		u.voteUp(u.getId());
 		assertEquals(0, u.getVotes().intValue());
-		
+
 		Tag t = new Tag("test");
 		t.setDao(dao);
 		t.voteUp(t.getId());
-		assertEquals(0, t.getVotes().intValue());		
+		assertEquals(0, t.getVotes().intValue());
 	}
 }

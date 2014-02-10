@@ -40,12 +40,18 @@ public class MockDAO implements DAO {
 
 	private static final Logger logger = LoggerFactory.getLogger(MockDAO.class);
 	private Map<String, Map<String, ParaObject>> maps = new HashMap<String, Map<String, ParaObject>>();
-	
+
 	@Override
 	public <P extends ParaObject> String create(String appName, P so) {
-		if(so == null) return null;
-		if(StringUtils.isBlank(so.getId())) so.setId(Utils.getNewId());
-		if(so.getTimestamp() == null) so.setTimestamp(Utils.timestamp());
+		if (so == null) {
+			return null;
+		}
+		if (StringUtils.isBlank(so.getId())) {
+			so.setId(Utils.getNewId());
+		}
+		if (so.getTimestamp() == null) {
+			so.setTimestamp(Utils.timestamp());
+		}
 		getMap(appName).put(so.getId(), so);
 		logger.debug("DAO.create() {}", so.getId());
 		return so.getId();
@@ -53,7 +59,9 @@ public class MockDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> P read(String appName, String key) {
-		if(key == null || StringUtils.isBlank(appName)) return null;
+		if (key == null || StringUtils.isBlank(appName)) {
+			return null;
+		}
 		P so = (P) getMap(appName).get(key);
 		logger.debug("DAO.read() {} -> {}", key, so);
 		return so;
@@ -61,22 +69,26 @@ public class MockDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> void update(String appName, P so) {
-		if(so == null || StringUtils.isBlank(appName)) return;
-		so.setUpdated(System.currentTimeMillis());
-		getMap(appName).put(so.getId(), so);
-		logger.debug("DAO.update() {}", so.getId());
+		if (so != null && !StringUtils.isBlank(appName)) {
+			so.setUpdated(Utils.timestamp());
+			getMap(appName).put(so.getId(), so);
+			logger.debug("DAO.update() {}", so.getId());
+		}
 	}
 
 	@Override
 	public <P extends ParaObject> void delete(String appName, P so) {
-		if(so == null || StringUtils.isBlank(appName)) return;
-		getMap(appName).remove(so.getId());
-		logger.debug("DAO.delete() {}", so.getId());
+		if (so != null && !StringUtils.isBlank(appName)) {
+			getMap(appName).remove(so.getId());
+			logger.debug("DAO.delete() {}", so.getId());
+		}
 	}
 
 	@Override
 	public String getColumn(String appName, String key, String colName) {
-		if(StringUtils.isBlank(key) || StringUtils.isBlank(appName) || StringUtils.isBlank(colName)) return null;
+		if (StringUtils.isBlank(key) || StringUtils.isBlank(appName) || StringUtils.isBlank(colName)) {
+			return null;
+		}
 		try {
 			return BeanUtils.getProperty(read(appName, key), colName);
 		} catch (Exception e) {
@@ -86,30 +98,36 @@ public class MockDAO implements DAO {
 
 	@Override
 	public void putColumn(String appName, String key, String colName, String colValue) {
-		if(key == null || StringUtils.isBlank(colName) || StringUtils.isBlank(colValue) 
+		if (key == null || StringUtils.isBlank(colName) || StringUtils.isBlank(colValue)
 				|| StringUtils.isBlank(appName)) return;
 		ParaObject p = getMap(appName).get(key);
-		if(p == null) return;
-		try {
-			BeanUtils.setProperty(p, colName, colValue);
-			getMap(appName).put(key, p);
-		} catch (Exception ex) {}
+		if (p != null) {
+			try {
+				BeanUtils.setProperty(p, colName, colValue);
+				getMap(appName).put(key, p);
+			} catch (Exception ex) { }
+		}
 	}
 
 	@Override
 	public void removeColumn(String appName, String key, String colName) {
-		if(key == null || StringUtils.isBlank(colName) || StringUtils.isBlank(appName)) return;
+		if (key == null || StringUtils.isBlank(colName) || StringUtils.isBlank(appName)) {
+			return;
+		}
 		ParaObject p = getMap(appName).get(key);
-		if(p == null) return;
-		try {
-			PropertyUtils.setProperty(p, colName, null);
-			getMap(appName).put(key, p);
-		} catch (Exception ex) {}
+		if (p != null) {
+			try {
+				PropertyUtils.setProperty(p, colName, null);
+				getMap(appName).put(key, p);
+			} catch (Exception ex) { }
+		}
 	}
 
 	@Override
 	public boolean existsColumn(String appName, String key, String columnName) {
-		if(StringUtils.isBlank(key)) return false;
+		if (StringUtils.isBlank(key)) {
+			return false;
+		}
 		try {
 			return getColumn(appName, key, columnName) != null;
 		} catch (Exception ex) {
@@ -119,7 +137,9 @@ public class MockDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> void createAll(String appName, List<P> objects) {
-		if(StringUtils.isBlank(appName)) return;
+		if (StringUtils.isBlank(appName)) {
+			return;
+		}
 		for (P p : objects) {
 			create(p);
 		}
@@ -127,11 +147,13 @@ public class MockDAO implements DAO {
 	}
 
 	@Override
-	public <P extends ParaObject> Map<String, P> readAll(String appName, List<String> keys, boolean getAllAtrributes) {
+	public <P extends ParaObject> Map<String, P> readAll(String appName, List<String> keys, boolean getAllColumns) {
 		Map<String, P> results = new HashMap<String, P>();
-		if(keys == null || StringUtils.isBlank(appName)) return results;
+		if (keys == null || StringUtils.isBlank(appName)) {
+			return results;
+		}
 		for (String key : keys) {
-			if(getMap(appName).containsKey(key)){
+			if (getMap(appName).containsKey(key)) {
 				results.put(key, (P) getMap(appName).get(key));
 			}
 		}
@@ -141,36 +163,38 @@ public class MockDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> List<P> readPage(String appName, String lastKey) {
-		return new ArrayList<P> ();
+		return new ArrayList<P>();
 	}
 
 	@Override
 	public <P extends ParaObject> void updateAll(String appName, List<P> objects) {
-		if(StringUtils.isBlank(appName)) return;
-		for (P obj : objects) {
-			if(obj != null) getMap(appName).put(obj.getId(), obj);
+		if (!StringUtils.isBlank(appName)) {
+			for (P obj : objects) {
+				if (obj != null) getMap(appName).put(obj.getId(), obj);
+			}
+			logger.debug("DAO.updateAll() {}", objects.size());
 		}
-		logger.debug("DAO.updateAll() {}", objects.size());
 	}
 
 	@Override
 	public <P extends ParaObject> void deleteAll(String appName, List<P> objects) {
-		if(StringUtils.isBlank(appName)) return;
-		for (P obj : objects) {
-			if(obj != null && getMap(appName).containsKey(obj.getId())) getMap(appName).remove(obj.getId());
+		if (!StringUtils.isBlank(appName)) {
+			for (P obj : objects) {
+				if (obj != null && getMap(appName).containsKey(obj.getId())) getMap(appName).remove(obj.getId());
+			}
+			logger.debug("DAO.deleteAll() {}", objects.size());
 		}
-		logger.debug("DAO.deleteAll() {}", objects.size());
 	}
-	
-	private Map<String, ParaObject> getMap(String appName){
-		if(!maps.containsKey(appName)){
+
+	private Map<String, ParaObject> getMap(String appName) {
+		if (!maps.containsKey(appName)) {
 			maps.put(appName, new  HashMap<String, ParaObject>());
 		}
 		return maps.get(appName);
 	}
 
 	////////////////////////////////////////////////////////////////////
-	
+
 	@Override
 	public <P extends ParaObject> String create(P so) {
 		return create(Config.APP_NAME_NS, so);
@@ -217,8 +241,8 @@ public class MockDAO implements DAO {
 	}
 
 	@Override
-	public <P extends ParaObject> Map<String, P> readAll(List<String> keys, boolean getAllAtrributes) {
-		return readAll(Config.APP_NAME_NS, keys, getAllAtrributes);
+	public <P extends ParaObject> Map<String, P> readAll(List<String> keys, boolean getAllColumns) {
+		return readAll(Config.APP_NAME_NS, keys, getAllColumns);
 	}
 
 	@Override
@@ -235,5 +259,5 @@ public class MockDAO implements DAO {
 	public <P extends ParaObject> void deleteAll(List<P> objects) {
 		deleteAll(Config.APP_NAME_NS, objects);
 	}
-		
+
 }

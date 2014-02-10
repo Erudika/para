@@ -24,7 +24,9 @@ import com.erudika.para.search.Search;
 import com.erudika.para.core.Translation;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Pager;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
@@ -36,31 +38,36 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Utility class for language operations.
  * @author Alex Bogdanovski <alex@erudika.com>
+ * @see Translation
  */
 @Singleton
 public class LanguageUtils {
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(LanguageUtils.class);
-	
+
 	private HashMap<String, Locale> allLocales = new HashMap<String, Locale>();
 	private HashMap<String, Integer> progressMap = new HashMap<String, Integer>();
 	private Map<String, String> deflang;
 	private String deflangCode;
 	private String keyPrefix = "language".concat(Config.SEPARATOR);
 	private String progressKey = keyPrefix.concat("progress");
-	
-	private static final int PLUS = -1;	
+
+	private static final int PLUS = -1;
 	private static final int MINUS = -2;
-	
+
 	private Search search;
 	private DAO dao;
 
+	/**
+	 * Default constructor.
+	 * @param search a core search instance
+	 * @param dao a core persistence instance
+	 */
 	@Inject
 	public LanguageUtils(Search search, DAO dao) {
 		this.search = search;
@@ -74,33 +81,45 @@ public class LanguageUtils {
 			}
 		}
 	}
-	
-	public Map<String, String> readLanguage(String appName, String langCode){
-		if(StringUtils.isBlank(langCode) || !allLocales.containsKey(langCode)) return getDefaultLanguage();
-		if(search == null || dao == null) return getDefaultLanguage();
-		
+
+	/**
+	 * Returns a map of all translations for a given language.
+	 * Defaults to the default language which must be set.
+	 * @param appName appName name of the {@link com.erudika.para.core.App}
+	 * @param langCode the 2-letter language code
+	 * @return the language map
+	 */
+	public Map<String, String> readLanguage(String appName, String langCode) {
+		if (StringUtils.isBlank(langCode) || !allLocales.containsKey(langCode)) {
+			return getDefaultLanguage();
+		}
+		if (search == null || dao == null) {
+			return getDefaultLanguage();
+		}
+
 		Sysprop s = dao.read(appName, keyPrefix.concat(langCode));
 		TreeMap<String, String> lang = new TreeMap<String, String>();
-		
-		if(s == null || s.getProperties().isEmpty()){
-			ArrayList<Translation> tlist = search.findTwoTerms(appName, PObject.classname(Translation.class), 
-					null, null, "locale", langCode, "approved", true, 
-					null, true, getDefaultLanguage().size());
+
+		if (s == null || s.getProperties().isEmpty()) {
+			Map<String, Object> terms = new HashMap<String, Object>();
+			terms.put("locale", langCode);
+			terms.put("approved", true);
+			ArrayList<Translation> tlist = search.findTerms(appName, PObject.classname(Translation.class), terms, true);
 
 			Sysprop saved = new Sysprop(keyPrefix.concat(langCode));
 			lang.putAll(getDefaultLanguage());	// copy default langmap
 			int approved = 0;
-			
+
 			for (Translation trans : tlist) {
 				lang.put(trans.getThekey(), trans.getValue());
 				saved.addProperty(trans.getThekey(), trans.getValue());
 				approved++;
 			}
-			if(approved > 0){
+			if (approved > 0) {
 				updateTranslationProgressMap(appName, langCode, approved);
-			}			
+			}
 			dao.create(appName, saved);
-		}else{
+		} else {
 			Map<String, Object> loaded = s.getProperties();
 			for (String key : loaded.keySet()) {
 				lang.put(key, loaded.get(key).toString());
@@ -108,103 +127,167 @@ public class LanguageUtils {
 		}
 		return lang;
 	}
-	
-	public void writeLanguage(String appName, String langCode, Map<String, String> lang){
-		if(lang == null || lang.isEmpty() || dao == null) return;
-		if(StringUtils.isBlank(langCode) || !allLocales.containsKey(langCode)) return;
-		
+
+	/**
+	 * Persists the language map in the data store. Overwrites any existing maps.
+	 * @param appName appName name of the {@link com.erudika.para.core.App}
+	 * @param langCode the 2-letter language code
+	 * @param lang the language map
+	 */
+	public void writeLanguage(String appName, String langCode, Map<String, String> lang) {
+		if (lang == null || lang.isEmpty() || dao == null ||
+				StringUtils.isBlank(langCode) || !allLocales.containsKey(langCode)) {
+			return;
+		}
+
 		// this will overwrite a saved language map!
 		Sysprop s = new Sysprop(keyPrefix.concat(langCode));
 		Map<String, String> dlang = getDefaultLanguage();
 		int approved = 0;
-		
+
 		for (String key : dlang.keySet()) {
 			if (lang.containsKey(key)) {
 				s.addProperty(key, lang.get(key));
-				if(!dlang.get(key).equals(lang.get(key))){
+				if (!dlang.get(key).equals(lang.get(key))) {
 					approved++;
-				}			
+				}
 			} else {
 				s.addProperty(key, dlang.get(key));
 			}
 		}
-		if(approved > 0){
+		if (approved > 0) {
 			updateTranslationProgressMap(appName, langCode, approved);
 		}
 		dao.create(appName, s);
 	}
 
-	public Locale getProperLocale(String langname){
-		langname = StringUtils.substring(langname, 0, 2);
-		langname = (StringUtils.isBlank(langname) || !allLocales.containsKey(langname)) ?
-				"en" : langname.trim().toLowerCase();
-		return allLocales.get(langname);
+	/**
+	 * Returns a non-null locale for a given language code.
+	 * @param langCode the 2-letter language code
+	 * @return a locale. default is English
+	 */
+	public Locale getProperLocale(String langCode) {
+		langCode = StringUtils.substring(langCode, 0, 2);
+		langCode = (StringUtils.isBlank(langCode) || !allLocales.containsKey(langCode)) ?
+				"en" : langCode.trim().toLowerCase();
+		return allLocales.get(langCode);
 	}
 
-	public Map<String, String> getDefaultLanguage(){
-		if(deflang == null){
+	/**
+	 * Returns the default language map.
+	 * @return the default language map or an empty map if the default isn't set.
+	 */
+	public Map<String, String> getDefaultLanguage() {
+		if (deflang == null) {
 			logger.warn("Default language not set.");
 			deflang = new HashMap<String, String>();
 			getDefaultLanguageCode();
 		}
 		return deflang;
 	}
-	
-	public void setDefaultLanguage(Map<String, String> deflang){
+
+	/**
+	 * Sets the default language map. It is the basis language template which is to be translated.
+	 * @param deflang the default language map
+	 */
+	public void setDefaultLanguage(Map<String, String> deflang) {
 		this.deflang = deflang;
 	}
-	
-	public String getDefaultLanguageCode(){
-		if(deflangCode == null){
+
+	/**
+	 * Returns the default language code
+	 * @return the 2-letter language code
+	 */
+	public String getDefaultLanguageCode() {
+		if (deflangCode == null) {
 			deflangCode = "en";
 		}
 		return deflangCode;
 	}
-	
-	public void setDefaultLanguageCode(String langCode){
+
+	/**
+	 * Sets the default language code.
+	 * @param langCode the 2-letter language code
+	 */
+	public void setDefaultLanguageCode(String langCode) {
 		this.deflangCode = langCode;
-	}	
-	
-	public ArrayList<ParaObject> readAllTranslationsForKey(String appName, String locale, String key,
-			MutableLong pagenum, MutableLong itemcount){
-		return search.findTerm(appName, PObject.classname(Translation.class), pagenum, itemcount, 
-				DAO.CN_PARENTID, key, null, true, Config.DEFAULT_LIMIT);
 	}
-	
-	public Set<String> getApprovedTransKeys(String appName, String langCode){
+
+	/**
+	 * Returns a list of translations for a specific string.
+	 * @param appName appName name of the {@link com.erudika.para.core.App}
+	 * @param locale a locale
+	 * @param key the string key
+	 * @param pager the pager object
+	 * @return a list of translations
+	 */
+	public ArrayList<ParaObject> readAllTranslationsForKey(String appName, String locale, String key, Pager pager) {
+		return search.findTerms(appName, PObject.classname(Translation.class),
+				Collections.singletonMap(Config._PARENTID, key), true, pager);
+	}
+
+	/**
+	 * Returns the set of all approved translations.
+	 * @param appName appName name of the {@link com.erudika.para.core.App}
+	 * @param langCode the 2-letter language code
+	 * @return a set of keys for approved translations
+	 */
+	public Set<String> getApprovedTransKeys(String appName, String langCode) {
 		HashSet<String> approvedTransKeys = new HashSet<String>();
-		if(StringUtils.isBlank(langCode)) return approvedTransKeys;
-		
+		if (StringUtils.isBlank(langCode)) {
+			return approvedTransKeys;
+		}
+
 		for (Map.Entry<String, String> entry : readLanguage(appName, langCode).entrySet()) {
-			if(!getDefaultLanguage().get(entry.getKey()).equals(entry.getValue())){
+			if (!getDefaultLanguage().get(entry.getKey()).equals(entry.getValue())) {
 				approvedTransKeys.add(entry.getKey());
 			}
 		}
 		return approvedTransKeys;
 	}
 
-	public Map<String, Integer> getTranslationProgressMap(String appName){
-		if(dao == null) return progressMap;
+	/**
+	 * Returns a map of language codes and the percentage of translated string for that language.
+	 * @param appName appName name of the {@link com.erudika.para.core.App}
+	 * @return a map indicating translation progress
+	 */
+	public Map<String, Integer> getTranslationProgressMap(String appName) {
+		if (dao == null) { 
+			return progressMap;
+		}
 		Sysprop progress = getProgressMap(appName);
-		
+
 		Map<String, Object> props = progress.getProperties();
 		for (String key : props.keySet()) {
 			progressMap.put(key, (Integer) props.get(key));
 		}
-		
+
 		return progressMap;
 	}
-	
-	public Map<String, Locale> getAllLocales(){
+
+	/**
+	 * Returns a map of all language codes and their locales
+	 * @return a map of language codes to locales
+	 */
+	public Map<String, Locale> getAllLocales() {
 		return allLocales;
 	}
-	
-	public boolean approveTranslation(String appName, String langCode, String key, String value){
-		if(langCode == null || key == null || value == null) return false;
-		if(getDefaultLanguageCode().equals(langCode)) return false;
+
+	/**
+	 * Approves a translation for a given language.
+	 * @param appName appName name of the {@link com.erudika.para.core.App}
+	 * @param langCode the 2-letter language code
+	 * @param key the translation key
+	 * @param value the translated string
+	 * @return true if the operation was successful
+	 */
+	public boolean approveTranslation(String appName, String langCode, String key, String value) {
+		if (langCode == null || key == null || value == null || getDefaultLanguageCode().equals(langCode)) {
+			return false;
+		}
 		Sysprop s = dao.read(appName, keyPrefix.concat(langCode));
-		
-		if(s != null && !value.equals(s.getProperty(key))){
+
+		if (s != null && !value.equals(s.getProperty(key))) {
 			s.addProperty(key, value);
 			dao.update(appName, s);
 			updateTranslationProgressMap(appName, langCode, PLUS);
@@ -212,14 +295,22 @@ public class LanguageUtils {
 		}
 		return false;
 	}
-	
-	public boolean disapproveTranslation(String appName, String langCode, String key){
-		if(langCode == null || key == null) return false;
-		if(getDefaultLanguageCode().equals(langCode)) return false;
+
+	/**
+	 * Disapproves a translation for a given language.
+	 * @param appName appName name of the {@link com.erudika.para.core.App}
+	 * @param langCode the 2-letter language code
+	 * @param key the translation key
+	 * @return true if the operation was successful
+	 */
+	public boolean disapproveTranslation(String appName, String langCode, String key) {
+		if (langCode == null || key == null || getDefaultLanguageCode().equals(langCode)) {
+			return false;
+		}
 		Sysprop s = dao.read(appName, keyPrefix.concat(langCode));
 		String defStr = getDefaultLanguage().get(key);
-		
-		if(s != null && !defStr.equals(s.getProperty(key))){
+
+		if (s != null && !defStr.equals(s.getProperty(key))) {
 			s.addProperty(key, defStr);
 			dao.update(appName, s);
 			updateTranslationProgressMap(appName, langCode, MINUS);
@@ -227,34 +318,44 @@ public class LanguageUtils {
 		}
 		return false;
 	}
-	
-	private void updateTranslationProgressMap(String appName, String langCode, int value){
-		if(dao == null || getDefaultLanguageCode().equals(langCode)) return;
-		
+
+	/**
+	 * Updates the progress for all languages.
+	 * @param appName appName name of the {@link com.erudika.para.core.App}
+	 * @param langCode the 2-letter language code
+	 * @param value {@link #PLUS}, {@link #MINUS} or the total percent of completion (0-100)
+	 */
+	private void updateTranslationProgressMap(String appName, String langCode, int value) {
+		if (dao == null || getDefaultLanguageCode().equals(langCode)) {
+			return;
+		}
+
 		double defsize = getDefaultLanguage().size();
 		double approved = value;
-		
+
 		Sysprop progress = getProgressMap(appName);
-		
-		if(value == PLUS){
+
+		if (value == PLUS) {
 			approved = Math.round((int) progress.getProperty(langCode) * (defsize / 100) + 1);
-		}else if(value == MINUS){
+		} else if (value == MINUS) {
 			approved = Math.round((int) progress.getProperty(langCode) * (defsize / 100) - 1);
 		}
-		
-		if(approved > defsize) approved = defsize;
-				
-		if(defsize == 0){
+
+		if (approved > defsize) {
+			approved = defsize;
+		}
+
+		if (defsize == 0) {
 			progress.addProperty(langCode, 0);
-		}else{
+		} else {
 			progress.addProperty(langCode, (int) ((approved / defsize) * 100));
 		}
 		dao.update(appName, progress);
 	}
-	
-	private Sysprop getProgressMap(String appName){
+
+	private Sysprop getProgressMap(String appName) {
 		Sysprop progress = dao.read(appName, progressKey);
-		if(progress == null){
+		if (progress == null) {
 			progress = new Sysprop(progressKey);
 			for (String key : progressMap.keySet()) {
 				progress.addProperty(key, progressMap.get(key));

@@ -31,36 +31,58 @@ import org.springframework.security.web.util.matcher.AnyRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 /**
- *
+ * Simple cache implementation for saving authentication request.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class SimpleRequestCache implements RequestCache {
 
 	private RequestMatcher requestMatcher = AnyRequestMatcher.INSTANCE;
 	private PortResolver portResolver = new PortResolverImpl();
-	
+
+	/**
+	 * Saves a request in cache.
+	 * @param request HTTP request
+	 * @param response HTTP response
+	 */
 	@Override
 	public void saveRequest(HttpServletRequest request, HttpServletResponse response) {
 		if (requestMatcher.matches(request)) {
 			DefaultSavedRequest savedRequest = new DefaultSavedRequest(request, portResolver);
-			Utils.setStateParam(Config.RETURNTO_COOKIE, 
+			Utils.setStateParam(Config.RETURNTO_COOKIE,
 					Base64.encodeBase64String(savedRequest.getRedirectUrl().getBytes()), request, response);
 		}
 	}
 
+	/**
+	 * Returns a cached request. NOT USED!
+	 * @param request HTTP request
+	 * @param response HTTP response
+	 * @return null
+	 */
 	@Override
 	public SavedRequest getRequest(HttpServletRequest request, HttpServletResponse response) {
 		return null;
 	}
 
+	/**
+	 * Returns a matching request. NOT USED!
+	 * @param request HTTP request
+	 * @param response HTTP response
+	 * @return null
+	 */
 	@Override
 	public HttpServletRequest getMatchingRequest(HttpServletRequest request, HttpServletResponse response) {
 		return null;
 	}
 
+	/**
+	 * Removes a saved request from cache.
+	 * @param request HTTP request
+	 * @param response HTTP response
+	 */
 	@Override
 	public void removeRequest(HttpServletRequest request, HttpServletResponse response) {
 		Utils.removeStateParam(Config.RETURNTO_COOKIE, request, response);
 	}
-	
+
 }

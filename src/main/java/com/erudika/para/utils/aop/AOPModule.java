@@ -32,5 +32,5 @@ public class AOPModule extends AbstractModule {
 		requestInjection(aspect);
 		bindInterceptor(Matchers.subclassesOf(DAO.class), Matchers.any(), aspect);
 	}
-	
+
 }

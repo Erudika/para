@@ -35,46 +35,59 @@ import org.springframework.security.web.csrf.DefaultCsrfToken;
 import org.springframework.util.Assert;
 
 /**
- * A {@link CsrfTokenRepository} that stores the {@link CsrfToken} in the {@link Cache}.
- * 
+ * A {@link CsrfTokenRepository} that stores the {@link CsrfToken} in {@link Cache}.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class CachedCsrfTokenRepository implements CsrfTokenRepository {
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(CachedCsrfTokenRepository.class);
-	
+
 	private static final String DEFAULT_CSRF_PARAMETER_NAME = "_csrf";
 	private static final String DEFAULT_CSRF_HEADER_NAME = "X-CSRF-TOKEN";
 
 	private String parameterName = DEFAULT_CSRF_PARAMETER_NAME;
 	private String headerName = DEFAULT_CSRF_HEADER_NAME;
-	
+
 	private Cache cache;
 
+	/**
+	 * Returns the cache object.
+	 * @return
+	 */
 	public Cache getCache() {
 		return cache;
 	}
 
+	/**
+	 * Sets the cache object
+	 * @param cache
+	 */
 	@Inject
 	public void setCache(Cache cache) {
 		this.cache = cache;
 	}
-	
-	/*
-	 * (non-Javadoc)
+
+	/**
+	 * Saves a CSRF token in cache.
+	 * @param token the token
+	 * @param request HTTP request
+	 * @param response HTTP response
 	 * @see org.springframework.security.web.csrf.CsrfTokenRepository#saveToken(org.springframework.security.web.csrf.CsrfToken, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
 	 */
 	public void saveToken(CsrfToken token, HttpServletRequest request,
 			HttpServletResponse response) {
 		if (token != null) {
 			User u = SecurityUtils.getAuthenticatedUser();
-			if(u != null && !cache.contains(Config.APP_NAME_NS, u.getIdentifier().concat(parameterName))){
+			if (u != null && !cache.contains(Config.APP_NAME_NS, u.getIdentifier().concat(parameterName))) {
 				cache.put(Config.APP_NAME_NS, u.getIdentifier().concat(parameterName), token, Config.SESSION_TIMEOUT_SEC);
 			}
 		}
 	}
 
-	/* (non-Javadoc)
+	/**
+	 * Loads a CSRF token from cache.
+	 * @param request HTTP request
+	 * @return the token
 	 * @see org.springframework.security.web.csrf.CsrfTokenRepository#loadToken(javax.servlet.http.HttpServletRequest)
 	 */
 	public CsrfToken loadToken(HttpServletRequest request) {
@@ -85,19 +98,21 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 			String[] ctokens = new String(Base64.decodeBase64(cookie)).split(":");
 			if (StringUtils.startsWithAny(ctokens[0], "http", "https") && ctokens[1].startsWith("//")) {
 				ident = ctokens[0].concat(":").concat(ctokens[1]);
-			}else{
+			} else {
 				ident = ctokens[0];
 			}
 			token = cache.get(Config.APP_NAME_NS, ident.concat(parameterName));
-		}else{
+		} else {
 			String t = request.getParameter(parameterName);
 			token = (t == null) ? null : new DefaultCsrfToken(headerName, parameterName, t);
 		}
 		return token;
 	}
 
-	/*
-	 * (non-Javadoc)
+	/**
+	 * Generates a CSRF token string.
+	 * @param request HTTP request
+	 * @return a new token
 	 * @see org.springframework.security.web.csrf.CsrfTokenRepository#generateToken(javax.servlet.http.HttpServletRequest)
 	 */
 	public CsrfToken generateToken(HttpServletRequest request) {
@@ -106,7 +121,6 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 
 	/**
 	 * Sets the {@link HttpServletRequest} parameter name that the {@link CsrfToken} is expected to appear on
-	 *
 	 * @param parameterName the new parameter name to use
 	 */
 	public void setParameterName(String parameterName) {

@@ -34,29 +34,35 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Helper utilities for connecting to AWS DynamoDB.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public final class AWSDynamoUtils {
-	
+
 	private static AmazonDynamoDBClient ddbClient;
 	private static final String LOCAL_ENDPOINT = "http://localhost:8000";
 	private static final String ENDPOINT = "dynamodb.".concat(Config.AWS_REGION).concat(".amazonaws.com");
 	private static final Logger logger = LoggerFactory.getLogger(AWSDynamoUtils.class);
 
-	private AWSDynamoUtils() {}
-	
-	public static AmazonDynamoDBClient getClient(){
-		if(ddbClient != null) return ddbClient;
-		
-		if(Config.IN_PRODUCTION){
+	private AWSDynamoUtils() { }
+
+	/**
+	 * Returns a client instance for AWS DynamoDB
+	 * @return a client that talks to DynamoDB
+	 */
+	public static AmazonDynamoDBClient getClient() {
+		if (ddbClient != null) {
+			return ddbClient;
+		}
+
+		if (Config.IN_PRODUCTION) {
 			ddbClient = new AmazonDynamoDBClient();
 			ddbClient.setEndpoint(ENDPOINT);
-		}else{
+		} else {
 			ddbClient = new AmazonDynamoDBClient(new BasicAWSCredentials("local", "null"));
 			ddbClient.setEndpoint(LOCAL_ENDPOINT);
 		}
-		
+
 		Para.addDestroyListener(new Para.DestroyListener() {
 			public void onDestroy() {
 				shutdownClient();
@@ -65,14 +71,27 @@ public final class AWSDynamoUtils {
 
 		return ddbClient;
 	}
-	
-	public static void shutdownClient(){
-		if(ddbClient != null) ddbClient.shutdown();
-		ddbClient = null;
+
+	/**
+	 * Stops the client and releases resources.
+	 * <b>There's no need to call this explicitly!</b>
+	 */
+	public static void shutdownClient() {
+		if (ddbClient != null) {
+			ddbClient.shutdown();
+			ddbClient = null;
+		}
 	}
-	
-	public static boolean existsTable(String appName){
-		if(StringUtils.isBlank(appName)) return false;
+
+	/**
+	 * Checks if the main table exists in the database.
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @return true if the table exists
+	 */
+	public static boolean existsTable(String appName) {
+		if (StringUtils.isBlank(appName)) {
+			return false;
+		}
 		try {
 			List<String> tables = getClient().listTables().getTableNames();
 			return tables != null && tables.contains(appName);
@@ -80,35 +99,56 @@ public final class AWSDynamoUtils {
 			return false;
 		}
 	}
-	
-	public static boolean createTable(String appName){
+
+	/**
+	 * Creates the main table.
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @return true if created
+	 */
+	public static boolean createTable(String appName) {
 		return createTable(appName, 2L, 1L);
 	}
-	
-	public static boolean createTable(String appName, Long readCapacity, Long writeCapacity){
-		if(StringUtils.isBlank(appName) || StringUtils.containsWhitespace(appName) || existsTable(appName)) return false;
+
+	/**
+	 * Creates a table in AWS DynamoDB.
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param readCapacity read capacity
+	 * @param writeCapacity write capacity
+	 * @return true if created
+	 */
+	public static boolean createTable(String appName, Long readCapacity, Long writeCapacity) {
+		if (StringUtils.isBlank(appName) || StringUtils.containsWhitespace(appName) || existsTable(appName)) {
+			return false;
+		}
 		try {
 			getClient().createTable(new CreateTableRequest().withTableName(appName).
-					withKeySchema(new KeySchemaElement(DAO.CN_KEY, KeyType.HASH)).
-					withAttributeDefinitions(new AttributeDefinition().withAttributeName(DAO.CN_KEY).
+					withKeySchema(new KeySchemaElement(Config._KEY, KeyType.HASH)).
+					withAttributeDefinitions(new AttributeDefinition().withAttributeName(Config._KEY).
 					withAttributeType(ScalarAttributeType.S)).
 					withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;
-		}		
+		}
 		return true;
 	}
-	
-	public static boolean deleteTable(String appName){
-		if(StringUtils.isBlank(appName) || !existsTable(appName)) return false;
+
+	/**
+	 * Deletes the main table from AWS DynamoDB.
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @return true if deleted
+	 */
+	public static boolean deleteTable(String appName) {
+		if (StringUtils.isBlank(appName) || !existsTable(appName)) {
+			return false;
+		}
 		try {
 			getClient().deleteTable(new DeleteTableRequest().withTableName(appName));
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;
-		}		
+		}
 		return true;
 	}
-	
+
 }

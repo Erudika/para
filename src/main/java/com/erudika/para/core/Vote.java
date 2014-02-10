@@ -20,6 +20,7 @@ package com.erudika.para.core;
 import com.erudika.para.annotations.Stored;
 import static com.erudika.para.core.Votable.VoteType.*;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Utils;
 import javax.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -30,69 +31,115 @@ import org.hibernate.validator.constraints.NotBlank;
 public class Vote extends PObject {
 
 	@Stored @NotBlank private String type;
-	@Stored @NotNull private Long expiresAfter;	
+	@Stored @NotNull private Long expiresAfter;
 
+	/**
+	 *
+	 */
 	public Vote() {
 		this(null, null, null);
 	}
 
+	/**
+	 *
+	 * @param voterid
+	 * @param voteeid
+	 * @param type
+	 */
 	public Vote(String voterid, String voteeid, String type) {
 		setCreatorid(voterid);
 		setParentid(voteeid);
-		setTimestamp(System.currentTimeMillis());
+		setTimestamp(Utils.timestamp());
 		getName();
 		this.type = type;
 		this.expiresAfter = Config.VOTE_EXPIRES_AFTER_SEC;
 	}
-	
+
 	@Override
 	public final String getId() {
-		if(getCreatorid() != null && getParentid() != null && super.getId() == null){
+		if (getCreatorid() != null && getParentid() != null && super.getId() == null) {
 			setId(getClassname().concat(Config.SEPARATOR).concat(getCreatorid()).concat(Config.SEPARATOR).concat(getParentid()));
 		}
 		return super.getId();
 	}
-		
-	public Vote up(){
+
+	/**
+	 *
+	 * @return
+	 */
+	public Vote up() {
 		this.type = UP.toString();
 		return this;
 	}
-	
-	public Vote down(){
+
+	/**
+	 *
+	 * @return
+	 */
+	public Vote down() {
 		this.type = DOWN.toString();
 		return this;
 	}
-	
+
+	/**
+	 *
+	 * @return
+	 */
 	public String getType() {
 		return type;
 	}
 
+	/**
+	 *
+	 * @param type
+	 */
 	public void setType(String type) {
 		this.type = type;
 	}
 
+	/**
+	 *
+	 * @return
+	 */
 	public Long getExpiresAfter() {
-		if(expiresAfter == null) 
+		if (expiresAfter == null) {
 			expiresAfter = Config.VOTE_EXPIRES_AFTER_SEC;
+		}
 		return expiresAfter;
 	}
 
+	/**
+	 *
+	 * @param expiresAfter
+	 */
 	public void setExpiresAfter(Long expiresAfter) {
 		this.expiresAfter = expiresAfter;
 	}
-	
-	public boolean isExpired(){
-		if(getTimestamp() == null || getExpiresAfter() == 0) return false;
+
+	/**
+	 *
+	 * @return
+	 */
+	public boolean isExpired() {
+		if (getTimestamp() == null || getExpiresAfter() == 0) {
+			return false;
+		}
 		long timestamp = getTimestamp();
 		long expires = (getExpiresAfter() * 1000);
-		long now = System.currentTimeMillis();
+		long now = Utils.timestamp();
 		return (timestamp + expires) <= now;
 	}
-	
-	public boolean isAmendable(){
-		if(getTimestamp() == null) return false;
+
+	/**
+	 *
+	 * @return
+	 */
+	public boolean isAmendable() {
+		if (getTimestamp() == null) {
+			return false;
+		}
 		long timestamp = getTimestamp();
-		long now = System.currentTimeMillis();
+		long now = Utils.timestamp();
 		// check timestamp for recent correction,
 		return (timestamp + (Config.VOTE_LOCKED_AFTER_SEC * 1000)) > now;
 	}

@@ -24,7 +24,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
 /**
- *
+ * A simple wrapper for the authentication object
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class UserAuthentication implements Authentication {
@@ -34,36 +34,68 @@ public class UserAuthentication implements Authentication {
 	private final Object details;
 	private boolean authenticated;
 
+	/**
+	 * Default constructor
+	 * @param principal the user object
+	 */
 	public UserAuthentication(User principal) {
 		this.principal = principal;
 		this.details = principal;
 		this.authenticated = true;
 	}
 
+	/**
+	 * A list of roles for the authenticated user
+	 * @return a list of roles
+	 */
 	public Collection<GrantedAuthority> getAuthorities() {
 		return new HashSet<GrantedAuthority>(principal.getAuthorities());
 	}
 
+	/**
+	 * The password/credentials/authtoken of a user
+	 * @return credentials string
+	 */
 	public Object getCredentials() {
 		return principal.getAuthtoken();
 	}
 
+	/**
+	 * The user object
+	 * @return the user
+	 */
 	public Object getDetails() {
 		return details;
 	}
 
+	/**
+	 * The user object
+	 * @return the user
+	 */
 	public Object getPrincipal() {
 		return principal;
 	}
 
+	/**
+	 * Checks if the user is authenticated
+	 * @return true if authenticated
+	 */
 	public boolean isAuthenticated() {
 		return authenticated;
 	}
 
+	/**
+	 * Sets the authentication status
+	 * @param isAuthenticated true if authenticated
+	 */
 	public void setAuthenticated(boolean isAuthenticated) {
 		throw new UnsupportedOperationException();
 	}
-
+	
+	/**
+	 * The user identifier
+	 * @return the identifier
+	 */
 	public String getName() {
 		return principal.getIdentifier();
 	}

@@ -32,16 +32,16 @@ import org.junit.Ignore;
  */
 @Ignore
 public abstract class CacheTest {
-		
+
 	protected static Cache c;
 	private String testApp1 = "testApp1";
 	private String testApp2 = "testApp2";
-	
+
 	@Before
-	public void setUp(){
+	public void setUp() {
 		c.removeAll();
 	}
-	
+
 	@Test
 	public void testContains() {
 		assertFalse(c.contains(null));
@@ -52,15 +52,20 @@ public abstract class CacheTest {
 	@Test
 	public void testPut() throws InterruptedException {
 		c.put("", "empty");
-		assertFalse(c.contains(""));
+		c.put("1", "");
+		c.put("2", null);
 		c.put("123", new Integer(123));
 		c.put("1234", new User("111"));
+		assertFalse(c.contains(""));
+		assertTrue(c.contains("1"));
+		assertFalse(c.contains("2"));
 		assertTrue(c.contains("123"));
 		assertTrue(c.get("123") instanceof Integer);
 		assertTrue(c.get("1234") instanceof User);
+		
 		c.remove("123");
 		assertFalse(c.contains("123"));
-		
+
 		// test multiapp support
 		c.put(testApp1, "123", "123");
 		c.put(testApp2, "456", "456");
@@ -69,7 +74,7 @@ public abstract class CacheTest {
 		assertFalse(c.contains(testApp2, "123"));
 		c.put(testApp2, "123", "456");
 		assertEquals("456", c.get(testApp2, "123"));
-		
+
 		c.put(testApp1, "test", "test", 1L);
 		assertTrue(c.contains(testApp1, "test"));
 		assertFalse(c.contains("test"));
@@ -85,11 +90,21 @@ public abstract class CacheTest {
 		map.put("123", "test1");
 		map.put("1234", "test");
 		map.put("", "test");
-//		map.put("", null);
+		map.put("1", "");
+		map.put("2", null);
 		map.put(null, "");
+		
 		c.putAll(map);
+		assertFalse(c.contains(""));
+		assertTrue(c.contains("1"));
+		assertFalse(c.contains("2"));
+		assertTrue(c.contains("1234"));
+		assertTrue(c.contains("123"));
 		assertEquals("test1", c.get("123"));
+		
 		c.removeAll(new ArrayList<String>(map.keySet()));
+		assertFalse(c.contains("1"));
+		assertFalse(c.contains("2"));
 		assertFalse(c.contains("1234"));
 		assertFalse(c.contains("123"));
 	}
@@ -112,7 +127,7 @@ public abstract class CacheTest {
 		list.add("null");
 		list.add("");
 		list.add(null);
-		
+
 		Map<String, ?> map = c.getAll(list);
 		assertEquals(1, map.size());
 		c.put("456", "456");

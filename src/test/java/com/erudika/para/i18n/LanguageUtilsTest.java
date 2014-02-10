@@ -32,31 +32,31 @@ import static org.mockito.Mockito.*;
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class LanguageUtilsTest {
-	
+
 	private LanguageUtils lu;
 	private String appName = "para-test";
-	
-	private Map<String, String> deflang = new HashMap<String, String>(){
+
+	private Map<String, String> deflang = new HashMap<String, String>() {
 		private static final long serialVersionUID = 1L;{
 		put("hello", "hello");
 		put("yes", "yes");
 		put("what", "what");
 	}};
-	
-	private Map<String, String> es = new HashMap<String, String>(){
+
+	private Map<String, String> es = new HashMap<String, String>() {
 		private static final long serialVersionUID = 1L;{
 		put("hello", "hola");
 		put("yes", "si");
 		put("what", "que");
 	}};
-	
-	private Map<String, String> de = new HashMap<String, String>(){
+
+	private Map<String, String> de = new HashMap<String, String>() {
 		private static final long serialVersionUID = 1L;{
 		put("hello", "hello");
 		put("yes", "ja");
 		put("what", "was");
 	}};
-	
+
 	@Before
 	public void setUp() {
 		DAO dao = new MockDAO();
@@ -68,16 +68,16 @@ public class LanguageUtilsTest {
 	public void testReadWriteLanguage() {
 		assertNotNull(lu.readLanguage(appName, null));
 		assertNotNull(lu.readLanguage(appName, ""));
-		assertTrue(lu.readLanguage(appName, "").containsKey("hello"));		
-		assertEquals("hello", lu.readLanguage(appName, "").get("hello"));		
-		
+		assertTrue(lu.readLanguage(appName, "").containsKey("hello"));
+		assertEquals("hello", lu.readLanguage(appName, "").get("hello"));
+
 		lu.writeLanguage(appName, "", es);
 		assertEquals("hello", lu.readLanguage(appName, "es").get("hello"));
-		
+
 		lu.writeLanguage(appName, "es", es);
 		assertEquals(es.get("hello"), lu.readLanguage(appName, "es").get("hello"));
 	}
-	
+
 	@Test
 	public void testGetProperLocale() {
 		assertNotNull(lu.getProperLocale("en"));
@@ -103,7 +103,7 @@ public class LanguageUtilsTest {
 
 	@Test
 	public void testReadAllTranslationsForKey() {
-		assertTrue(lu.readAllTranslationsForKey(appName, null, null, null, null).isEmpty());
+		assertTrue(lu.readAllTranslationsForKey(appName, null, null, null).isEmpty());
 	}
 
 	@Test
@@ -117,7 +117,7 @@ public class LanguageUtilsTest {
 	@Test
 	public void testGetTranslationProgressMap() {
 		lu.writeLanguage(appName, "es", es);
-		lu.writeLanguage(appName, "de", de);	
+		lu.writeLanguage(appName, "de", de);
 		assertEquals("66", lu.getTranslationProgressMap(appName).get("de").toString());
 		assertEquals("100", lu.getTranslationProgressMap(appName).get("es").toString());
 		assertEquals("100", lu.getTranslationProgressMap(appName).get("en").toString());
@@ -133,15 +133,15 @@ public class LanguageUtilsTest {
 	@Test
 	public void testApproveTranslation() {
 		lu.writeLanguage(appName, "es", es);
-		lu.writeLanguage(appName, "de", de);	
+		lu.writeLanguage(appName, "de", de);
 		assertEquals("66", lu.getTranslationProgressMap(appName).get("de").toString());
 		assertEquals("100", lu.getTranslationProgressMap(appName).get("es").toString());
-		
+
 		assertFalse(lu.approveTranslation(appName, null, null, null));
 		assertFalse(lu.approveTranslation(appName, "", "", ""));
 		assertFalse(lu.approveTranslation(appName, "en", "asd", "asd"));
 		assertFalse(lu.approveTranslation(appName, "en", "asd", "asd"));
-		
+
 		assertTrue(lu.approveTranslation(appName, "de", "hello", "hallo"));
 		assertEquals("100", lu.getTranslationProgressMap(appName).get("de").toString());
 	}
@@ -149,31 +149,31 @@ public class LanguageUtilsTest {
 	@Test
 	public void testDisapproveTranslation() {
 		lu.writeLanguage(appName, "es", es);
-		lu.writeLanguage(appName, "de", de);	
+		lu.writeLanguage(appName, "de", de);
 		assertEquals("66", lu.getTranslationProgressMap(appName).get("de").toString());
 		assertEquals("100", lu.getTranslationProgressMap(appName).get("es").toString());
-		
+
 		assertFalse(lu.disapproveTranslation(appName, null, null));
 		assertFalse(lu.disapproveTranslation(appName, "", ""));
 		assertFalse(lu.disapproveTranslation(appName, "en", "asd"));
 		assertFalse(lu.disapproveTranslation(appName, "en", "asd"));
-		
+
 		assertFalse(lu.disapproveTranslation(appName, "de", "hello"));
-		
+
 		assertTrue(lu.disapproveTranslation(appName, "de", "yes"));
 		assertEquals("33", lu.getTranslationProgressMap(appName).get("de").toString());
-		
+
 		assertTrue(lu.disapproveTranslation(appName, "de", "what"));
 		assertEquals("0", lu.getTranslationProgressMap(appName).get("de").toString());
-		
+
 		// one more time
 		assertTrue(lu.approveTranslation(appName, "de", "hello", "hallooo"));
-		assertEquals("33", lu.getTranslationProgressMap(appName).get("de").toString());	
-		
+		assertEquals("33", lu.getTranslationProgressMap(appName).get("de").toString());
+
 		assertTrue(lu.approveTranslation(appName, "de", "yes", "yaa"));
 		assertEquals("66", lu.getTranslationProgressMap(appName).get("de").toString());
-		
+
 		assertTrue(lu.approveTranslation(appName, "de", "what", "waas"));
-		assertEquals("100", lu.getTranslationProgressMap(appName).get("de").toString());	
+		assertEquals("100", lu.getTranslationProgressMap(appName).get("de").toString());
 	}
 }

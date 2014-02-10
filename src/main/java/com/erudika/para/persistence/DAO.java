@@ -24,87 +24,245 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
+ * The core persistence interface. Stores and retrieves DTO objects to/from a data store.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public interface DAO {
-	
-	public static final String CN_AUTHTOKEN = "authtoken";
-	public static final String CN_CLASSNAME = "classname";
-	public static final String CN_CREATORID = "creatorid";
-	public static final String CN_ID = "id";
-	public static final String CN_IDENTIFIER = "identifier";
-	public static final String CN_KEY = "key";
-	public static final String CN_NAME = "name";
-	public static final String CN_PARENTID = "parentid";
-	public static final String CN_PASSWORD = "password";
-	public static final String CN_RESET_TOKEN = "token";
-	public static final String CN_SALT = "salt";
-	public static final String CN_TIMESTAMP = "timestamp";
-	public static final String CN_UPDATED = "updated";
-	public static final String CN_TAGS = "tags";
-	public static final String CN_EMAIL = "email";
-	public static final String CN_GROUPS = "groups";
-	
-	/********************************************
-	 *			CORE FUNCTIONS
-	 ********************************************/
-	@Indexed(action = Indexed.Action.ADD)
-	@Cached(action = Cached.Action.PUT)
-	public <P extends ParaObject> String create(String appName, P so);
-	public <P extends ParaObject> String create(P so);
-	
-	@Cached(action = Cached.Action.GET)
-	public <P extends ParaObject> P read(String appName, String key);
-	public <P extends ParaObject> P read(String key);
 
+	/////////////////////////////////////////////
+	//				CORE FUNCTIONS
+	/////////////////////////////////////////////
+	
+	/**
+	 * Persists an object to the data store.
+	 * @param <P> the type of object
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param so the domain object
+	 * @return the object's id or null if not created.
+	 */
 	@Indexed(action = Indexed.Action.ADD)
 	@Cached(action = Cached.Action.PUT)
-	public <P extends ParaObject> void update(String appName, P so);
-	public <P extends ParaObject> void update(P so);
+	<P extends ParaObject> String create(String appName, P so);
 	
+	/**
+	 * Persists an object to the data store.
+	 * @param <P> the type of object
+	 * @param so the domain object
+	 * @return the object's id or null if not created.
+	 */
+	<P extends ParaObject> String create(P so);
+
+	/**
+	 * Retrieves an object from the data store.
+	 * @param <P> the type of object
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param key an object id
+	 * @return the object or null if not found
+	 */
+	@Cached(action = Cached.Action.GET)
+	<P extends ParaObject> P read(String appName, String key);
+	
+	/**
+	 * Retrieves an object from the data store.
+	 * @param <P> the type of object
+	 * @param key an object id
+	 * @return the object or null if not found
+	 */
+	<P extends ParaObject> P read(String key);
+
+	/**
+	 * Updates an object persistently.
+	 * @param <P> the type of object
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param so the domain object
+	 */
+	@Indexed(action = Indexed.Action.ADD)
+	@Cached(action = Cached.Action.PUT)
+	<P extends ParaObject> void update(String appName, P so);
+	
+	/**
+	 * Updates an object persistently.
+	 * @param <P> the type of object
+	 * @param so the domain object
+	 */
+	<P extends ParaObject> void update(P so);
+
+	/**
+	 * Deletes an object persistently.
+	 * @param <P> the type of object
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param so the domain object
+	 */
 	@Indexed(action = Indexed.Action.REMOVE)
 	@Cached(action = Cached.Action.DELETE)
-	public <P extends ParaObject> void delete(String appName, P so);
-	public <P extends ParaObject> void delete(P so);
-
-	/********************************************
-	 *				COLUMN FUNCTIONS
-	 ********************************************/
-	public String getColumn(String key, String colName);
-	public String getColumn(String appName, String key, String colName);
+	<P extends ParaObject> void delete(String appName, P so);
 	
-	public void putColumn(String key, String colName, String colValue);
-	public void putColumn(String appName, String key, String colName, String colValue);
+	/**
+	 * Deletes an object persistently.
+	 * @param <P> the type of object
+	 * @param so the domain object
+	 */
+	<P extends ParaObject> void delete(P so);
 
-	public void removeColumn(String key, String colName);
-	public void removeColumn(String appName, String key, String colName);
-
-	public boolean existsColumn(String key, String columnName);
-	public boolean existsColumn(String appName, String key, String columnName);
+	/////////////////////////////////////////////
+	//				COLUMN FUNCTIONS
+	/////////////////////////////////////////////
 	
-	/********************************************
-	 *				READ ALL FUNCTIONS
-	 ********************************************/	
+	/**
+	 * Returns the value of a column (field) for an object id.
+	 * @param key an object id
+	 * @param colName the name of the column
+	 * @return the value of the column
+	 */
+	String getColumn(String key, String colName);
+	
+	/**
+	 * Returns the value of a column (field) for an object id.
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param key an object id
+	 * @param colName the name of the column
+	 * @return the value of the column
+	 */
+	String getColumn(String appName, String key, String colName);
+
+	/**
+	 * Sets the value of a single column for an object id.
+	 * @param key an object id
+	 * @param colName the name of the column
+	 * @param colValue the new value
+	 */
+	void putColumn(String key, String colName, String colValue);
+	
+	/**
+	 * Sets the value of a single column for an object id.
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param key an object id
+	 * @param colName the name of the column
+	 * @param colValue the new value
+	 */
+	void putColumn(String appName, String key, String colName, String colValue);
+
+	/**
+	 * Removes a column (sets it to null).
+	 * @param key an object id
+	 * @param colName the name of the column
+	 */
+	void removeColumn(String key, String colName);
+	
+	/**
+	 * Removes a column (sets it to null).
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param key an object id
+	 * @param colName the name of the column
+	 */
+	void removeColumn(String appName, String key, String colName);
+
+	/**
+	 * Checks if a column exists.
+	 * @param key an object id
+	 * @param colName the name of the column
+	 * @return true if the column exists
+	 */
+	boolean existsColumn(String key, String colName);
+	
+	/**
+	 * Checks if a column exists.
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param key an object id
+	 * @param colName the name of the column
+	 * @return
+	 */
+	boolean existsColumn(String appName, String key, String colName);
+
+	/////////////////////////////////////////////
+	//				READ ALL FUNCTIONS
+	/////////////////////////////////////////////
+	
+	/**
+	 * Saves multiple objects to the data store.
+	 * @param <P> the type of object
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param objects the list of objects to save
+	 */
 	@Indexed(action = Indexed.Action.ADD_ALL)
 	@Cached(action = Cached.Action.PUT_ALL)
-	public <P extends ParaObject> void createAll(String appName, List<P> objects);
-	public <P extends ParaObject> void createAll(List<P> objects);
+	<P extends ParaObject> void createAll(String appName, List<P> objects);
 	
+	/**
+	 * Saves multiple objects to the data store.
+	 * @param <P> the type of object
+	 * @param objects the list of objects to save
+	 */
+	<P extends ParaObject> void createAll(List<P> objects);
+
+	/**
+	 * Retrieves multiple objects from the data store.
+	 * @param <P> the type of object
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param keys a list of object ids
+	 * @param getAllColumns true if all columns must be retrieved. used to save bandwidth.
+	 * @return a map of ids to objects
+	 */
 	@Cached(action = Cached.Action.GET_ALL)
-	public <P extends ParaObject> Map<String, P> readAll(String appName, List<String> keys, boolean getAllAtrributes);
-	public <P extends ParaObject> Map<String, P> readAll(List<String> keys, boolean getAllAtrributes);
+	<P extends ParaObject> Map<String, P> readAll(String appName, List<String> keys, boolean getAllColumns);
+	
+	/**
+	 * Retrieves multiple objects from the data store.
+	 * @param <P> the type of object
+	 * @param keys a list of object ids
+	 * @param getAllColumns true if all columns must be retrieved. used to save bandwidth.
+	 * @return a map of ids to objects
+	 */
+	<P extends ParaObject> Map<String, P> readAll(List<String> keys, boolean getAllColumns);
 
-	public <P extends ParaObject> List<P> readPage(String appName, String lastKey);
-	public <P extends ParaObject> List<P> readPage(String lastKey);
+	/**
+	 * Reads a fixed number of objects. Used for scanning a data store page by page.
+	 * @param <P> the type of object
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param lastKey the last id of the previous page.
+	 * @return a list of objects
+	 */
+	<P extends ParaObject> List<P> readPage(String appName, String lastKey);
+	
+	/**
+	 * Reads a fixed number of objects. Used for scanning a data store page by page.
+	 * @param <P> the type of object
+	 * @param lastKey the last id of the previous page.
+	 * @return a list of objects
+	 */
+	<P extends ParaObject> List<P> readPage(String lastKey);
 
+	/**
+	 * Updates multiple objects.
+	 * @param <P> the type of object
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param objects a list of objects to update
+	 */
 	@Indexed(action = Indexed.Action.ADD_ALL)
 	@Cached(action = Cached.Action.PUT_ALL)
-	public <P extends ParaObject> void updateAll(String appName, List<P> objects);
-	public <P extends ParaObject> void updateAll(List<P> objects);
+	<P extends ParaObject> void updateAll(String appName, List<P> objects);
 	
+	/**
+	 * Updates multiple objects.
+	 * @param <P> the type of object
+	 * @param objects a list of objects to update
+	 */
+	<P extends ParaObject> void updateAll(List<P> objects);
+
+	/**
+	 * Deletes multiple objects.
+	 * @param <P> the type of object
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param objects a list of objects to delete
+	 */
 	@Indexed(action = Indexed.Action.REMOVE_ALL)
 	@Cached(action = Cached.Action.DELETE_ALL)
-	public <P extends ParaObject> void deleteAll(String appName, List<P> objects);
-	public <P extends ParaObject> void deleteAll(List<P> objects);
+	<P extends ParaObject> void deleteAll(String appName, List<P> objects);
+	
+	/**
+	 * Deletes multiple objects.
+	 * @param <P> the type of object
+	 * @param objects a list of objects to delete
+	 */
+	<P extends ParaObject> void deleteAll(List<P> objects);
 }

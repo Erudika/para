@@ -55,7 +55,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * A converter that uses http://openexchangerates.org
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 @Singleton
@@ -65,20 +65,27 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 	private static final long REFRESH_AFTER = 24 * 60 * 60 * 1000; // 24 hours in ms
 	private static final String SERVICE_URL = "http://openexchangerates.org/api/latest.json?app_id=".
 			concat(Config.OPENX_API_KEY);
-	
+
 	private DAO dao;
-	
+
+	/**
+	 * Default constructor
+	 * @param dao
+	 */
 	@Inject
 	public OXRCurrencyConverter(DAO dao) {
 		this.dao = dao;
 	}
-	
-	public Double convertCurrency(Number amount, String from, String to){
-		if(amount == null || StringUtils.isBlank(from) || StringUtils.isBlank(to)) return 0.0;
+
+	@Override
+	public Double convertCurrency(Number amount, String from, String to) {
+		if (amount == null || StringUtils.isBlank(from) || StringUtils.isBlank(to)) {
+			return 0.0;
+		}
 		Sysprop s = dao.read(Config.FXRATES_KEY);
-		if(s == null){
+		if (s == null) {
 			s = fetchFxRatesJSON();
-		}else if((System.currentTimeMillis() - s.getTimestamp()) > REFRESH_AFTER){
+		} else if ((Utils.timestamp() - s.getTimestamp()) > REFRESH_AFTER) {
 			// lazy refresh fx rates
 			Utils.asyncExecute(new Callable<Boolean>() {
 				public Boolean call() throws Exception {
@@ -87,35 +94,35 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 				}
 			});
 		}
-		
+
 		double ratio = 1.0;
-		
-		if(s.hasProperty(from) && s.hasProperty(to)){
+
+		if (s.hasProperty(from) && s.hasProperty(to)) {
 			Double f = NumberUtils.toDouble(s.getProperty(from).toString(), 1.0);
 			Double t = NumberUtils.toDouble(s.getProperty(to).toString(), 1.0);
 			ratio = t / f;
 		}
 		return amount.doubleValue() * ratio;
 	}
-	
-	private Sysprop fetchFxRatesJSON(){
+
+	private Sysprop fetchFxRatesJSON() {
 		Map<String, Object> map = new HashMap<String, Object>();
 		Sysprop s = new Sysprop();
-		ObjectMapper mapper = Utils.getInstance().getObjectMapper();
-		
+		ObjectMapper mapper = Utils.getObjectMapper();
+
 		try {
-			final HttpClient http = getHttpClient(new DefaultHttpClient());
-			final HttpGet httpGet = new HttpGet(SERVICE_URL);
+			HttpClient http = getHttpClient(new DefaultHttpClient());
+			HttpGet httpGet = new HttpGet(SERVICE_URL);
 			HttpResponse res = http.execute(httpGet);
 			HttpEntity entity = res.getEntity();
-			
+
 			if (entity != null && isJSON(entity.getContentType().getValue())) {
 				JsonNode jsonNode = mapper.readTree(entity.getContent());
-				if(jsonNode != null){
+				if (jsonNode != null) {
 					JsonNode rates = jsonNode.get("rates");
-					if(rates != null){
+					if (rates != null) {
 						map = mapper.treeToValue(rates, map.getClass());
-						
+
 						s.setId(Config.FXRATES_KEY);
 						s.setProperties(map);
 //						s.addProperty("fetched", Utils.formatDate("dd MM yyyy HH:mm", Locale.UK));
@@ -130,26 +137,32 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 		}
 		return s;
 	}
-	
-	private boolean isJSON(String type){
-		return StringUtils.startsWith(type, "application/json") || 
+
+	private boolean isJSON(String type) {
+		return StringUtils.startsWith(type, "application/json") ||
 				StringUtils.startsWith(type, "application/javascript");
 	}
-	
-	public static HttpClient getHttpClient(HttpClient base) {
-		if(Config.IN_PRODUCTION) return base;
+
+	private static HttpClient getHttpClient(HttpClient base) {
+		if (Config.IN_PRODUCTION) {
+			return base;
+		}
 		try {
 			SSLContext ctx = SSLContext.getInstance("TLS");
 			X509TrustManager tm = new X509TrustManager() {
-				public void checkClientTrusted(X509Certificate[] xcs, String string) throws CertificateException {}
-				public void checkServerTrusted(X509Certificate[] xcs, String string) throws CertificateException {}
-				public X509Certificate[] getAcceptedIssuers() {return null;}
+				public void checkClientTrusted(X509Certificate[] xcs, String string) throws CertificateException { }
+				public void checkServerTrusted(X509Certificate[] xcs, String string) throws CertificateException { }
+				public X509Certificate[] getAcceptedIssuers() {
+					return null;
+				}
 			};
 			X509HostnameVerifier verifier = new X509HostnameVerifier() {
-				public void verify(String string, SSLSocket ssls) throws IOException {}
-				public void verify(String string, X509Certificate xc) throws SSLException {}
-				public void verify(String string, String[] strings, String[] strings1) throws SSLException {}
-				public boolean verify(String string, SSLSession ssls) {return true;}
+				public void verify(String string, SSLSocket ssls) throws IOException { }
+				public void verify(String string, X509Certificate xc) throws SSLException { }
+				public void verify(String string, String[] strings, String[] strings1) throws SSLException { }
+				public boolean verify(String string, SSLSession ssls) {
+					return true;
+				}
 			};
 			ctx.init(null, new TrustManager[]{tm}, null);
 			SSLSocketFactory ssf = new SSLSocketFactory(ctx, verifier);

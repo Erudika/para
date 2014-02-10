@@ -20,13 +20,13 @@ package com.erudika.para.queue;
 import com.google.inject.AbstractModule;
 
 /**
- *
+ * The default queue module.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
-public class QueueModule extends AbstractModule{
+public class QueueModule extends AbstractModule {
 
 	protected void configure() {
 		bind(Queue.class).to(AWSQueue.class);
 	}
-	
+
 }

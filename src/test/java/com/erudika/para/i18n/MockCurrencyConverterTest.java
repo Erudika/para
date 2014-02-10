@@ -24,6 +24,7 @@ package com.erudika.para.i18n;
 public class MockCurrencyConverterTest extends CurrencyConverterTest {
 
 	public MockCurrencyConverterTest() {
+		super();
 		cc = new MockCurrencyConverter();
 	}
 

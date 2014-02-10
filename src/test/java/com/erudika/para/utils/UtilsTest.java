@@ -24,7 +24,6 @@ import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
-import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -47,22 +46,22 @@ import org.apache.commons.lang3.StringUtils;
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class UtilsTest {
-	
+
 	public UtilsTest() {
 	}
-	
+
 	@BeforeClass
 	public static void setUpClass() {
 	}
-	
+
 	@AfterClass
 	public static void tearDownClass() {
 	}
-	
+
 	@Before
 	public void setUp() {
 	}
-	
+
 	@After
 	public void tearDown() {
 	}
@@ -232,8 +231,8 @@ public class UtilsTest {
 	@Test
 	public void testGetObjectLink() {
 		User u = new User("123");
-		assertNotNull(getObjectLink(null, false, false));
-		assertEquals(u.getObjectURL(), getObjectLink(u, false, true));
+		assertNotNull(getObjectURL(null, false, false));
+		assertEquals(u.getObjectURL(), getObjectURL(u, false, true));
 	}
 
 	@Test
@@ -247,11 +246,11 @@ public class UtilsTest {
 	public void testPopulate() {
 		Map<String, String[]> map = new HashMap<String, String[]>();
 		long timestamp = 1390052381000L;
-		map.put(DAO.CN_EMAIL, new String[]{"u@test.co"});
-		map.put(DAO.CN_NAME, new String[]{"User Name"});
-		map.put(DAO.CN_TAGS, new String[]{"tag1", "tag2", "tag3"});
-		map.put(DAO.CN_TIMESTAMP, new String[]{Long.toString(timestamp)});
-		
+		map.put(Config._EMAIL, new String[]{"u@test.co"});
+		map.put(Config._NAME, new String[]{"User Name"});
+		map.put(Config._TAGS, new String[]{"tag1", "tag2", "tag3"});
+		map.put(Config._TIMESTAMP, new String[]{Long.toString(timestamp)});
+
 		User u = new User();
 		u.setActive(true);
 		populate(u, null);
@@ -259,9 +258,9 @@ public class UtilsTest {
 		populate(u, new HashMap<String, String[]>());
 		assertNull(u.getEmail());
 		populate(u, map);
-		assertEquals(map.get(DAO.CN_EMAIL)[0], u.getEmail());
-		assertEquals(map.get(DAO.CN_NAME)[0], u.getName());
-		assertTrue(u.getTags().contains(map.get(DAO.CN_TAGS)[0]));
+		assertEquals(map.get(Config._EMAIL)[0], u.getEmail());
+		assertEquals(map.get(Config._NAME)[0], u.getName());
+		assertTrue(u.getTags().contains(map.get(Config._TAGS)[0]));
 		assertEquals(timestamp, u.getTimestamp().longValue());
 		assertEquals(true, u.getActive());
 	}
@@ -284,42 +283,42 @@ public class UtilsTest {
 		Map<String, Object> fm2 = getAnnotatedFields(u, Stored.class, Locked.class);
 		assertFalse(fm1.isEmpty());
 		assertFalse(fm2.isEmpty());
-		assertTrue(fm1.containsKey(DAO.CN_ID));
-		assertFalse(fm2.containsKey(DAO.CN_ID));
-		assertTrue(fm1.containsKey(DAO.CN_TAGS));
-		assertTrue(fm2.containsKey(DAO.CN_TAGS));
-		assertTrue(fm1.containsKey(DAO.CN_EMAIL));
-		assertTrue(fm2.containsKey(DAO.CN_EMAIL));
+		assertTrue(fm1.containsKey(Config._ID));
+		assertFalse(fm2.containsKey(Config._ID));
+		assertTrue(fm1.containsKey(Config._TAGS));
+		assertTrue(fm2.containsKey(Config._TAGS));
+		assertTrue(fm1.containsKey(Config._EMAIL));
+		assertTrue(fm2.containsKey(Config._EMAIL));
 	}
 
 	@Test
 	public void testSetAnnotatedFields() {
 		assertNull(setAnnotatedFields(null));
 		assertNull(setAnnotatedFields(new HashMap<String, Object>()));
-		
+
 		Map<String, Object> map = new HashMap<String, Object>();
 		long timestamp = 1390052381000L;
-		map.put(DAO.CN_ID, "123");
-		map.put(DAO.CN_CLASSNAME, PObject.classname(User.class));
-		map.put(DAO.CN_EMAIL, "u@test.co");
-		map.put(DAO.CN_NAME, "User Name");
-		map.put(DAO.CN_TAGS, "[\"tag1\",\"tag2\"]");
-		map.put(DAO.CN_TIMESTAMP, Long.toString(timestamp));
-		
+		map.put(Config._ID, "123");
+		map.put(Config._CLASSNAME, PObject.classname(User.class));
+		map.put(Config._EMAIL, "u@test.co");
+		map.put(Config._NAME, "User Name");
+		map.put(Config._TAGS, "[\"tag1\",\"tag2\"]");
+		map.put(Config._TIMESTAMP, Long.toString(timestamp));
+
 		User obj = setAnnotatedFields(map);
 		assertNotNull(obj);
-		assertEquals(map.get(DAO.CN_ID), obj.getId());
-		assertEquals(map.get(DAO.CN_NAME), obj.getName());
-		assertEquals(map.get(DAO.CN_EMAIL), obj.getEmail());
+		assertEquals(map.get(Config._ID), obj.getId());
+		assertEquals(map.get(Config._NAME), obj.getName());
+		assertEquals(map.get(Config._EMAIL), obj.getEmail());
 		assertEquals(timestamp, obj.getTimestamp().longValue());
-		assertTrue(obj.getTags().contains("tag1") && obj.getTags().contains("tag2"));		
-		
+		assertTrue(obj.getTags().contains("tag1") && obj.getTags().contains("tag2"));
+
 		User obj2 = new User("234");
 		obj2.setActive(true);
 		setAnnotatedFields(obj2, map);
-		assertEquals(map.get(DAO.CN_ID), obj2.getId());
-		assertEquals(map.get(DAO.CN_NAME), obj2.getName());
-		assertEquals(map.get(DAO.CN_EMAIL), obj2.getEmail());
+		assertEquals(map.get(Config._ID), obj2.getId());
+		assertEquals(map.get(Config._NAME), obj2.getName());
+		assertEquals(map.get(Config._EMAIL), obj2.getEmail());
 		assertEquals(timestamp, obj2.getTimestamp().longValue());
 		assertEquals(true, obj2.getActive());
 	}
@@ -337,21 +336,21 @@ public class UtilsTest {
 		assertNull(fromJSON(null));
 		assertNull(fromJSON(""));
 		assertNotNull(fromJSON("{}"));
-		
+
 		ParaObject obj1 = Utils.fromJSON("{\"classname\":\"testtype\", \"name\":\"testname\", \"id\":\"123\"}");
 		ParaObject obj2 = Utils.fromJSON("{\"classname\":\"user\", \"name\":\"user name\", \"id\":\"111\"}");
 		ParaObject obj3 = Utils.fromJSON("{\"user\":\"one\", \"alias\":\"user1\", \"id\":\"456\", \"name\":\"name\"}");
-		
+
 		assertNotNull(obj1);
 		assertEquals(Sysprop.class, obj1.getClass());
 		assertEquals("123", obj1.getId());
 		assertEquals("testname", obj1.getName());
-		
+
 		assertNotNull(obj2);
 		assertEquals(User.class, obj2.getClass());
 		assertEquals("111", obj2.getId());
 		assertEquals("user name", obj2.getName());
-		
+
 		assertNotNull(obj3);
 		assertEquals(Sysprop.class, obj3.getClass());
 		assertEquals("456", obj3.getId());
@@ -363,7 +362,7 @@ public class UtilsTest {
 		assertNotNull(toJSON(null));
 		assertFalse(toJSON(new User()).isEmpty());
 	}
-	
+
 	@Test
 	public void testIsBasicType() {
 		assertFalse(isBasicType(null));
@@ -373,7 +372,7 @@ public class UtilsTest {
 		assertFalse(isBasicType(PObject.class));
 		// etc.
 	}
-	
+
 	@Test
 	public void testIsValidObject() {
 		assertFalse(isValidObject(null));
@@ -388,7 +387,7 @@ public class UtilsTest {
 		u.setName("asd");
 		assertFalse(isValidObject(u));
 	}
-	
+
 	@Test
 	public void testValidateRequest() {
 		assertTrue(validateRequest(null).length > 0);
@@ -399,15 +398,15 @@ public class UtilsTest {
 	public void testGetJSONValidationObject() {
 		assertEquals("{}", getJSONValidationObject(null, null, null));
 		assertNotEquals("{}", getJSONValidationObject("tag", null, null));
-		
+
 		assertNotNull(getAnnotationsMap(null, null));
 		assertTrue(getAnnotationsMap(null, null).isEmpty());
 		assertFalse(getAnnotationsMap(User.class, null).isEmpty());
-		
+
 		assertTrue(getAllDeclaredFields(null).isEmpty());
 		assertTrue(getAllDeclaredFields(null).isEmpty());
 		assertFalse(getAllDeclaredFields(User.class).isEmpty());
-		
+
 		assertNotNull(annotationToValidation(null, null));
 		assertTrue(annotationToValidation(null, null).length == 0);
 	}
@@ -430,11 +429,11 @@ public class UtilsTest {
 		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(null, null).getStatus());
 		assertEquals(Status.CREATED.getStatusCode(), getCreateResponse(t, UriBuilder.fromPath("/")).getStatus());
 		assertNotNull(t.getDao().read(t.getId()));
-		
+
 		assertEquals(Status.NOT_FOUND.getStatusCode(), getUpdateResponse(null, null).getStatus());
 		assertEquals(Status.OK.getStatusCode(), getUpdateResponse(t, null).getStatus());
 		assertNotNull(t.getDao().read(t.getId()));
-		
+
 		assertEquals(Status.BAD_REQUEST.getStatusCode(), getDeleteResponse(null).getStatus());
 		assertEquals(Status.OK.getStatusCode(), getDeleteResponse(t).getStatus());
 		assertNull(t.getDao().read(t.getId()));

@@ -18,22 +18,56 @@
 package com.erudika.para.core;
 
 /**
- *
+ * This interface enables voting on an object. 
+ * All core objects implement this and can be voted for.
  * @author Alex Bogdanovski <alex@erudika.com>
+ * @see Vote
  */
-public interface Votable extends ParaObject{
-	
-	public enum VoteType{
-		UP, DOWN;
+public interface Votable extends ParaObject {
+
+	/**
+	 * The type of vote (negative or positive)
+	 */
+	enum VoteType {
+		/**
+		 * Positive vote +
+		 */
+		UP,
+		/**
+		 * Negative vote -
+		 */
+		DOWN;
+
 		public String toString() {
 			return name().toLowerCase();
 		}
 	}
-	
-	public <P extends ParaObject> boolean voteUp(String userid);
-	
-	public <P extends ParaObject> boolean voteDown(String userid);
-	
-	public Integer getVotes();
-	
+
+	/**
+	 * Upvotes the object.
+	 * @param userid id of voter
+	 * @return true if successful
+	 */
+	boolean voteUp(String userid);
+
+	/**
+	 * Downvotes the object.
+	 * @param userid id of voter
+	 * @return true if successful
+	 */
+	boolean voteDown(String userid);
+
+	/**
+	 * Returns the total sum of all votes for this object.
+	 * For example: (+6) + (-4) = 2
+	 * @return the total sum of votes
+	 */
+	Integer getVotes();
+
+	/**
+	 * Sets the total votes for this object.
+	 * @param votes the number of votes
+	 */
+	void setVotes(Integer votes);
+
 }

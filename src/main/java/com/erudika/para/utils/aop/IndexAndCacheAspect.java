@@ -27,7 +27,6 @@ import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
-import static com.erudika.para.utils.aop.AOPUtils.*;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -40,16 +39,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * This is the core method interceptor which enables caching and indexing.
+ * It listens for calls to annotated {@link com.erudika.para.persistence.DAO} methods 
+ * and adds searching and caching functionality to them. This technique allows us to control
+ * the caching and searching centrally for all implementations 
+ * of the {@link com.erudika.para.persistence.DAO} interface.
  * @author Alex Bogdanovski <alex@erudika.com>
+ * @see com.erudika.para.persistence.DAO
  */
 public class IndexAndCacheAspect implements MethodInterceptor {
 
 	private static final Logger logger = LoggerFactory.getLogger(IndexAndCacheAspect.class);
-	
+
 	@Inject private Search search;
 	@Inject private Cache cache;
-	
+
+	/**
+	 * Executes code when a method is invoked. A big switch statement.
+	 * @param mi method invocation
+	 * @return the returned value of the method invoked or something else (decided here)
+	 * @throws Throwable
+	 */
 	public Object invoke(MethodInvocation mi) throws Throwable {
 		Object result = null;
 		Method m = mi.getMethod();
@@ -57,21 +67,23 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		Indexed indexedAnno = null;
 		Cached cachedAnno = null;
 		String cn = getClass().getSimpleName();
-		
+
 		try {
 			superMethod = DAO.class.getMethod(m.getName(), m.getParameterTypes());
 			indexedAnno = Config.SEARCH_ENABLED ? superMethod.getAnnotation(Indexed.class) : null;
 			cachedAnno = Config.CACHE_ENABLED ? superMethod.getAnnotation(Cached.class) : null;
-		} catch (Exception e) {}
-		
+		} catch (Exception e) {
+			logger.error(null, e);
+		}
+
 //			result = indexingAction(mi, indexedAnno);
 		Object[] args = mi.getArguments();
-		String appName = getFirstArgOfString(args);
-		
-		if(indexedAnno != null){
+		String appName = AOPUtils.getFirstArgOfString(args);
+
+		if (indexedAnno != null) {
 			switch (indexedAnno.action()) {
 				case ADD:
-					ParaObject addMe = getArgOfParaObject(args);
+					ParaObject addMe = AOPUtils.getArgOfParaObject(args);
 					if (Utils.isValidObject(addMe)) {
 						result = mi.proceed();
 						search.index(appName, addMe);
@@ -82,19 +94,19 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					break;
 				case REMOVE:
 					result = mi.proceed();
-					ParaObject removeMe = getArgOfParaObject(args);
+					ParaObject removeMe = AOPUtils.getArgOfParaObject(args);
 					search.unindex(appName, removeMe);
 					logger.debug("{}: Unindexed {}->{}", cn, appName, removeMe.getId());
 					break;
 				case ADD_ALL:
 					result = mi.proceed();
-					List<ParaObject> addUs = getArgOfListOfType(args, ParaObject.class);
+					List<ParaObject> addUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
 					search.indexAll(appName, addUs);
 					logger.debug("{}: Indexed all {}->#{}", cn, appName, addUs.size());
 					break;
 				case REMOVE_ALL:
 					result = mi.proceed();
-					List<ParaObject> removeUs = getArgOfListOfType(args, ParaObject.class);
+					List<ParaObject> removeUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
 					search.unindexAll(appName, removeUs);
 					logger.debug("{}: Unindexed all {}->#{}", cn, appName, removeUs.size());
 					break;
@@ -102,7 +114,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					break;
 			}
 		}
-		if(cachedAnno != null){
+		if (cachedAnno != null) {
 			switch (cachedAnno.action()) {
 				case GET:
 					String getMe = (String) args[1];
@@ -110,42 +122,48 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 						result = cache.get(appName, getMe);
 						logger.debug("{}: Cache hit: {}->{}", cn, appName, getMe);
 					} else {
-						if(result == null) result = mi.proceed();
-						if(result != null){
+						if (result == null) {
+							result = mi.proceed();
+						}
+						if (result != null) {
 							cache.put(appName, getMe, result);
 							logger.debug("{}: Cache miss: {}->{}", cn, appName, getMe);
 						}
 					}
 					break;
 				case PUT:
-					ParaObject putMe = getArgOfParaObject(args);
-					if(result != null){
+					ParaObject putMe = AOPUtils.getArgOfParaObject(args);
+					if (result != null) {
 						cache.put(appName, putMe.getId(), putMe);
 						logger.debug("{}: Cache put: {}->{}", cn, appName, putMe.getId());
 					}
 					break;
 				case DELETE:
-					ParaObject deleteMe = getArgOfParaObject(args);
+					ParaObject deleteMe = AOPUtils.getArgOfParaObject(args);
 					cache.remove(appName, deleteMe.getId());
 					logger.debug("{}: Cache delete: {}->{}", cn, appName, deleteMe.getId());
 					break;
 				case GET_ALL:
-					List<String> getUs = getArgOfListOfType(args, String.class);
+					List<String> getUs = AOPUtils.getArgOfListOfType(args, String.class);
 					Map<String, ParaObject> cached = cache.getAll(appName, getUs);
 					logger.debug("{}: Cache get page: {}->{}", cn, appName, getUs);
 					for (String id : getUs) {
 						if (!cached.containsKey(id)) {
-							if(result == null) result = mi.proceed();
+							if (result == null) {
+								result = mi.proceed();
+							}
 							cache.putAll(appName, (Map<String, ParaObject>) result);
 							logger.debug("{}: Cache get page reload: {}->{}", cn, appName, id);
 							break;
 						}
 					}
-					if(result == null) result = cached;
+					if (result == null) {
+						result = cached;
+					}
 					break;
 				case PUT_ALL:
-					List<ParaObject> putUs = getArgOfListOfType(args, ParaObject.class);
-					if(result != null){
+					List<ParaObject> putUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
+					if (result != null) {
 						Map<String, ParaObject> map1 = new LinkedHashMap<String, ParaObject>();
 						for (ParaObject paraObject : putUs) {
 							map1.put(paraObject.getId(), paraObject);
@@ -155,7 +173,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					}
 					break;
 				case DELETE_ALL:
-					List<ParaObject> deleteUs = getArgOfListOfType(args, ParaObject.class);
+					List<ParaObject> deleteUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
 					List<String> list = new ArrayList<String>();
 					for (ParaObject paraObject : deleteUs) {
 						list.add(paraObject.getId());
@@ -167,12 +185,12 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					break;
 			}
 		}
-		
-		if(indexedAnno == null && cachedAnno == null){
+
+		if (indexedAnno == null && cachedAnno == null) {
 			result = mi.proceed();
 		}
-		
+
 		return result;
 	}
-	
+
 }

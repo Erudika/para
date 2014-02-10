@@ -25,37 +25,54 @@ import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
 
 /**
- *
+ * This is a representation of an application within Para. <b>This functionality is WORK IN PROGRESS!</b>
+ * <br>
+ * It allows the user to create separate apps running on the same infrastructure.
+ * The apps are separated by name and each {@link ParaObject} belongs to an app.
+ * There can be two ways to separate apps - dedicated and shared.
+ * Shared apps use the same data store table, same search index and the same cache map. 
+ * Partitioning is done by key prefixes.
+ * Dedicated apps have their own separate data stores, indexes and caches. 
+ * <b>Only dedicated apps are currently supported.</b>
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class App extends PObject {
 	private static final long serialVersionUID = 1L;
-	
-	@Stored @Locked @NotBlank @Size(min=3, max=50) private String appname;
 
+	@Stored @Locked @NotBlank @Size(min = 3, max = 50) private String appname;
+
+	/**
+	 * No-args constructor
+	 */
 	public App() {
 		this(null);
 	}
-	
+
+	/**
+	 * Default constructor
+	 * @param appname the name of the app
+	 */
 	public App(String appname) {
 		this.appname = appname;
 		setId(id(appname));
 		setName(appname);
 	}
-	
-	static String id(String appname){
-		if(StringUtils.isBlank(appname)) return null;
+
+	static String id(String appname) {
+		if (StringUtils.isBlank(appname)) {
+			return null;
+		}
 		return PObject.classname(App.class).concat(Config.SEPARATOR).concat(StringUtils.trimToEmpty(appname));
 	}
-	
+
 	@Override
 	public String getAppname() {
-		if(appname == null){
+		if (appname == null) {
 			appname = Config.APP_NAME_NS;
 		}
 		return appname;
 	}
-	
+
 	@Override
 	public void setAppname(String appname) {
 		this.appname = appname;
@@ -63,8 +80,10 @@ public class App extends PObject {
 
 	@Override
 	public String create() {
-		if(getId() != null && this.exists()) return null;
+		if (getId() != null && this.exists()) {
+			return null;
+		}
 		return getDao().create(this);
 	}
-		
+
 }

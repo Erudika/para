@@ -20,11 +20,18 @@ package com.erudika.para.email;
 import java.util.List;
 
 /**
- *
+ * An email service. Used for sending emails.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public interface Emailer {
-	
-	public boolean sendEmail(List<String> emails, String subject, String body);
-	
+
+	/**
+	 * Sends an email.
+	 * @param emails a list of email addresses (recipients)
+	 * @param subject the subject of the message
+	 * @param body the body of the message
+	 * @return true if the message was sent
+	 */
+	boolean sendEmail(List<String> emails, String subject, String body);
+
 }

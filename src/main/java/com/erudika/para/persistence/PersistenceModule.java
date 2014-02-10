@@ -20,13 +20,13 @@ package com.erudika.para.persistence;
 import com.google.inject.AbstractModule;
 
 /**
- *
+ * The default persistence module.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class PersistenceModule extends AbstractModule {
-	
+
 	protected void configure() {
 		bind(DAO.class).to(AWSDynamoDAO.class).asEagerSingleton();
 	}
-	
+
 }

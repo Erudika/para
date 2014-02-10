@@ -24,28 +24,37 @@ import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
 
 /**
- *
+ * A tag. Must not be null or empty.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
-public class Tag extends PObject{
+public class Tag extends PObject {
 	private static final long serialVersionUID = 1L;
 
 	@Stored @NotBlank @Locked private String tag;
 	@Stored private Integer count;
 
-	public Tag(){
+	/**
+	 * No-args constructor
+	 */
+	public Tag() {
 		this(null);
 	}
-	
+
+	/**
+	 * Default constructor
+	 * @param tag the tag
+	 */
 	public Tag(String tag) {
 		setId(id(tag));
 		getName();
 		this.count = 0;
 		this.tag = tag;
 	}
-	
-	static String id(String tag){
-		if(StringUtils.isBlank(tag)) return null;
+
+	static String id(String tag) {
+		if (StringUtils.isBlank(tag)) {
+			return null;
+		}
 		return PObject.classname(Tag.class).concat(Config.SEPARATOR).concat(StringUtils.trimToEmpty(tag));
 	}
 
@@ -57,32 +66,55 @@ public class Tag extends PObject{
 		setId(realid);
 		return url;
 	}
-			
+
+	/**
+	 * The number of objects tagged with this tag.
+	 * @return
+	 */
 	public Integer getCount() {
 		return count;
 	}
 
+	/**
+	 * Sets the number of objects tagged with this tag.
+	 * @param count a new count
+	 */
 	public void setCount(Integer count) {
 		this.count = count;
 	}
 
+	/**
+	 * The tag value.
+	 * @return the tag itself
+	 */
 	public String getTag() {
 		return tag;
 	}
 
+	/**
+	 * Sets the tag value. 
+	 * @param tag a tag. Must not be null or empty.
+	 */
 	public void setTag(String tag) {
-		if(tag == null) return;
-		setId(id(tag));
-		this.tag = tag;
+		if (!StringUtils.isBlank(tag)) {
+			setId(id(tag));
+			this.tag = tag;
+		}
 	}
 
-	public void incrementCount(){
+	/**
+	 * Increments the count when a new object is tagged.
+	 */
+	public void incrementCount() {
 		this.count++;
 	}
 
-	public void decrementCount(){
+	/**
+	 * Decrements the count when a new object is untagged.
+	 */
+	public void decrementCount() {
 		this.count--;
-		if(this.count < 1 && exists()){
+		if (this.count < 1 && exists()) {
 			delete();
 		}
 	}

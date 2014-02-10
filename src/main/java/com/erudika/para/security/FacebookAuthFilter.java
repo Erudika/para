@@ -38,42 +38,57 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
 /**
- *
+ * A filter that handles authentication requests to Facebook.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private static final Logger log = LoggerFactory.getLogger(FacebookAuthFilter.class);
-	private final ObjectMapper mapper = new ObjectMapper();	
+	private final ObjectMapper mapper = new ObjectMapper();
+
+	/**
+	 * The default filter mapping
+	 */
 	public static final String FACEBOOK_ACTION = "facebook_auth";
 
+	/**
+	 * Default constructor.
+	 * @param defaultFilterProcessesUrl the url of the filter
+	 */
 	public FacebookAuthFilter(String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
 	}
 
+	/**
+	 * Handles an authentication request.
+	 * @param request HTTP request
+	 * @param response HTTP response
+	 * @return an authentication object that contains the principal object if successful.
+	 * @throws IOException
+	 * @throws ServletException
+	 */
 	@Override
-	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) 
-			throws AuthenticationException, IOException, ServletException {
+	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
+			throws IOException, ServletException {
 		String requestURI = request.getRequestURI();
 		Authentication userAuth = null;
 		User user = new User();
-		
-		if(requestURI.endsWith(FACEBOOK_ACTION)){
-			//Facebook Connect Authentication 
+
+		if (requestURI.endsWith(FACEBOOK_ACTION)) {
+			//Facebook Connect Authentication
 			String fbSig = request.getParameter("fbsig");
 			String fbEmail = request.getParameter("fbemail");
 			String fbName = request.getParameter("fbname");
 			String fbID = verifiedFacebookID(fbSig);
-			
+
 			if (fbID != null) {
 				//success!
 				user.setIdentifier(Config.FB_PREFIX.concat(fbID));
 				user = User.readUserForIdentifier(user);
-				if(user == null){
+				if (user == null) {
 					//user is new
 					user = new User();
 					user.setEmail(StringUtils.isBlank(fbEmail) ? "email@domain.com" : fbEmail);
@@ -81,28 +96,30 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 					user.setPassword(new UUID().toString());
 					user.setIdentifier(Config.FB_PREFIX.concat(fbID));
 					String id = user.create();
-					if(id == null){
+					if (id == null) {
 						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 					}
 				}
 				userAuth = new UserAuthentication(user);
 			}
 		}
-		
-		if(userAuth == null || user == null || user.getIdentifier() == null) {
+
+		if (userAuth == null || user == null || user.getIdentifier() == null) {
 			throw new BadCredentialsException("Bad credentials.");
-		} else if(!user.isEnabled()) {
+		} else if (!user.isEnabled()) {
 			throw new LockedException("Account is locked.");
 //		} else {
 //			SecurityUtils.setAuthCookie(user, request, response);
 		}
 		return userAuth;
 	}
-	
-	private String verifiedFacebookID(String fbSig){
-		if(!StringUtils.contains(fbSig, ".")) return null;
+
+	private String verifiedFacebookID(String fbSig) {
+		if (!StringUtils.contains(fbSig, ".")) {
+			return null;
+		}
 		String fbid = null;
-		
+
 		try {
 			String[] parts = fbSig.split("\\.");
 			byte[] sig = Base64.decodeBase64(parts[0]);
@@ -110,13 +127,13 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 			byte[] encodedJSON = parts[1].getBytes();	// careful, we compute against the base64 encoded version
 			String decodedJSON = new String(json);
 			JsonNode root = mapper.readTree(decodedJSON);
-			
-			if(StringUtils.contains(decodedJSON, "HMAC-SHA256")){
+
+			if (StringUtils.contains(decodedJSON, "HMAC-SHA256")) {
 				SecretKey secret = new SecretKeySpec(Config.FB_SECRET.getBytes(), "HMACSHA256");
 				Mac mac = Mac.getInstance("HMACSHA256");
 				mac.init(secret);
 				byte[] digested = mac.doFinal(encodedJSON);
-				if(Arrays.equals(sig, digested)){
+				if (Arrays.equals(sig, digested)) {
 					fbid = root.get("user_id").getTextValue();
 				}
 			}
@@ -126,5 +143,5 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 		return fbid;
 	}
-	
+
 }

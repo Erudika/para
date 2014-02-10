@@ -19,7 +19,6 @@ package com.erudika.para.core;
 
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
-import com.erudika.para.utils.Config;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Before;
@@ -29,10 +28,10 @@ import org.junit.Before;
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class SyspropTest {
-	
+
 	private static DAO dao;
 	private static Sysprop s;
-	
+
 	@Before
 	public void setUp() {
 		dao = new MockDAO();
@@ -42,7 +41,7 @@ public class SyspropTest {
 		s.addProperty("test2", "nope");
 		s.addProperty("test3", "sure");
 		s.addProperty("test4", false);
-		s.addProperty("test5", 42);		
+		s.addProperty("test5", 42);
 	}
 
 	@Test
@@ -58,7 +57,7 @@ public class SyspropTest {
 		assertFalse(s.hasProperty("141"));
 		assertTrue(s.hasProperty("123"));
 		s.removeProperty("123");
-		assertTrue(s.getProperties().isEmpty());		
+		assertTrue(s.getProperties().isEmpty());
 	}
 
 	@Test

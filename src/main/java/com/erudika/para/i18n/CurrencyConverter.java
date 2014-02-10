@@ -18,11 +18,19 @@
 package com.erudika.para.i18n;
 
 /**
- *
+ * A currency converter service. Used for converting between currencies.
+ * Requires data about current exchange rates.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public interface CurrencyConverter {
-	
-	public Double convertCurrency(Number amount, String from, String to);
-	
+
+	/**
+	 * Convert from one currency to another.
+	 * @param amount the amount to convert
+	 * @param from currency 3-letter code
+	 * @param to currency 3-letter code
+	 * @return the converted amount
+	 */
+	Double convertCurrency(Number amount, String from, String to);
+
 }

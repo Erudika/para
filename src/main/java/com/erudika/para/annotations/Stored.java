@@ -21,14 +21,13 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
 /**
+ * Annotation indicates that this field will be stored in the database.
  *
  * @author Alex Bogdanovski <alex@erudika.com>
- * 
- * Annotation indicates that this field will be stored in the database.
- * 
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-	
-public @interface Stored {}
+public @interface Stored {
+}

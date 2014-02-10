@@ -26,7 +26,6 @@ import com.erudika.para.persistence.PersistenceModule;
 import com.erudika.para.queue.QueueModule;
 import com.erudika.para.search.Search;
 import com.erudika.para.search.SearchModule;
-import com.erudika.para.security.SecurityModule;
 import com.erudika.para.storage.StorageModule;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.aop.AOPModule;
@@ -45,33 +44,39 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * This is the main utility class and entry point. Para modules are initialized and destroyed from here.
  *
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public final class Para {
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(Para.class);
 	private static List<DestroyListener> destroyListeners = new ArrayList<DestroyListener>();
 	private static List<InitializeListener> initListeners = new ArrayList<InitializeListener>();
-	
 	private static Injector injector;
 
-	private Para() { }	
-	
-	public static void initialize(Module... modules){
-		if(injector == null){
+	private Para() {
+	}
+
+	/**
+	 * Initializes the Para core modules and allows the user to override them. Call this method first.
+	 *
+	 * @param modules a list of modules that override the main modules
+	 */
+	public static void initialize(Module... modules) {
+		if (injector == null) {
 			try {
 				logger.info("--- Para.initialize() ---");
 				Stage stage = Config.IN_PRODUCTION ? Stage.PRODUCTION : Stage.DEVELOPMENT;
 				List<Module> coreModules = getCoreModules();
 				List<Module> externalModules = getExternalModules(modules);
-				
-				if(!externalModules.isEmpty()){
+
+				if (!externalModules.isEmpty()) {
 					injector = Guice.createInjector(stage, Modules.override(coreModules).with(externalModules));
-				}else{
+				} else {
 					injector = Guice.createInjector(stage, coreModules);
 				}
-				
+
 				for (InitializeListener destroyListener : initListeners) {
 					destroyListener.onInitialize();
 				}
@@ -80,60 +85,118 @@ public final class Para {
 			}
 		}
 	}
-	
-	public static void destroy(){
+
+	/**
+	 * Calls all registered listeners on exit. Call this method last.
+	 */
+	public static void destroy() {
 		try {
 			logger.info("--- Para.destroy() ---");
 			for (DestroyListener destroyListener : destroyListeners) {
 				destroyListener.onDestroy();
 			}
-		}catch (Exception e) {
+		} catch (Exception e) {
 			logger.error(null, e);
 		}
 	}
-	
+
+	/**
+	 * Inject dependencies into a given object.
+	 *
+	 * @param obj the object we inject into
+	 */
 	public static void injectInto(Object obj) {
-		if (obj == null) return;
-		if (injector == null) handleNotInitializedError();
+		if (obj == null) {
+			return;
+		}
+		if (injector == null) {
+			handleNotInitializedError();
+		}
 		injector.injectMembers(obj);
 	}
-	
-	public static DAO getDAO(){
-		if (injector == null) handleNotInitializedError();
+
+	/**
+	 * @return an instance of the core persistence class.
+	 * @see DAO
+	 */
+	public static DAO getDAO() {
+		if (injector == null) {
+			handleNotInitializedError();
+		}
 		return injector.getInstance(DAO.class);
 	}
-	
-	public static Search getSearch(){
-		if (injector == null) handleNotInitializedError();
+
+	/**
+	 * @return an instance of the core search class.
+	 * @see Search
+	 */
+	public static Search getSearch() {
+		if (injector == null) {
+			handleNotInitializedError();
+		}
 		return injector.getInstance(Search.class);
 	}
-	
-	public static Cache getCache(){
-		if (injector == null) handleNotInitializedError();
+
+	/**
+	 * @return an instance of the core cache class.
+	 * @see Cache
+	 */
+	public static Cache getCache() {
+		if (injector == null) {
+			handleNotInitializedError();
+		}
 		return injector.getInstance(Cache.class);
 	}
-	
-	public static Map<String, String> getConfig(){
+
+	/**
+	 * @return an instance of the configuration map.
+	 * @see Config
+	 */
+	public static Map<String, String> getConfig() {
 		return Config.getConfigMap();
 	}
-	
-	public static void addInitListener(InitializeListener il){
+
+	/**
+	 * Registers a new initialization listener.
+	 *
+	 * @param il the listener
+	 */
+	public static void addInitListener(InitializeListener il) {
 		initListeners.add(il);
 	}
 
-	public static void addDestroyListener(DestroyListener dl){
+	/**
+	 * Registers a new destruction listener.
+	 *
+	 * @param dl the listener
+	 */
+	public static void addDestroyListener(DestroyListener dl) {
 		destroyListeners.add(dl);
 	}
-	
-	public static interface InitializeListener extends EventListener {
-		public abstract void onInitialize();
+
+	/**
+	 * This listener is exectuted when the Para runtime starts.
+	 */
+	public interface InitializeListener extends EventListener {
+
+		/**
+		 * Code to execute on start.
+		 */
+		void onInitialize();
 	}
-	
-	public static interface DestroyListener extends EventListener {
-		public abstract void onDestroy();
+
+	/**
+	 * This listener is exectuted when the Para runtime stops.
+	 */
+	public interface DestroyListener extends EventListener {
+
+		/**
+		 * Code to execute on stop.
+		 */
+		void onDestroy();
 	}
-		
-	private static List<Module> getCoreModules(){
+
+	private static List<Module> getCoreModules() {
 		List<Module> coreModules = new ArrayList<Module>();
 		coreModules.add(new AOPModule());
 		coreModules.add(new CacheModule());
@@ -142,12 +205,11 @@ public final class Para {
 		coreModules.add(new PersistenceModule());
 		coreModules.add(new QueueModule());
 		coreModules.add(new SearchModule());
-		coreModules.add(new SecurityModule());
 		coreModules.add(new StorageModule());
 		return coreModules;
 	}
-	
-	private static List<Module> getExternalModules(Module... modules){
+
+	private static List<Module> getExternalModules(Module... modules) {
 		ServiceLoader<Module> moduleLoader = ServiceLoader.load(Module.class);
 		List<Module> externalModules = new ArrayList<Module>();
 		for (Module module : moduleLoader) {
@@ -158,8 +220,8 @@ public final class Para {
 		}
 		return externalModules;
 	}
-	
-	private static void handleNotInitializedError(){
+
+	private static void handleNotInitializedError() {
 		throw new IllegalStateException("Call Para.initialize() first!");
 	}
 }

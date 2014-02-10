@@ -20,7 +20,7 @@ package com.erudika.para.email;
 import com.google.inject.AbstractModule;
 
 /**
- *
+ * The default email module.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class EmailModule extends AbstractModule {
@@ -28,5 +28,5 @@ public class EmailModule extends AbstractModule {
 	protected void configure() {
 		bind(Emailer.class).to(AWSEmailer.class);
 	}
-	
+
 }

@@ -21,9 +21,10 @@ import com.erudika.para.core.User.Groups;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.search.Search;
+import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -34,10 +35,10 @@ import org.junit.Before;
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class UserTest {
-	
+
 	private static DAO dao;
 	private static User u;
-		
+
 	@Before
 	public void setUp() {
 		dao = new MockDAO();
@@ -68,9 +69,9 @@ public class UserTest {
 		assertEquals("EUR", u.getCurrency());
 		u.setCurrency("");
 		assertEquals("EUR", u.getCurrency());
-		
+
 	}
-	
+
 	@Test
 	public void testCreate() {
 		u.setIdentifier(null);
@@ -80,31 +81,31 @@ public class UserTest {
 		u.setPassword("123456");
 		u.setIdentifier("fb:1");
 		assertNotNull(u.create());
-		assertNotNull(dao.read(u.getIdentifier()));	
+		assertNotNull(dao.read(u.getIdentifier()));
 	}
 
 	@Test
 	public void testDelete() {
 		u.create();
-		
+
 		String secIdent = "t:1";
 		ArrayList<ParaObject> list = new ArrayList<ParaObject>();
 		list.add(new Sysprop(u.getIdentifier()));
 		list.add(new Sysprop(secIdent));
-		
-		when(u.getSearch().findTerm(anyString(), anyString(), any(MutableLong.class), any(MutableLong.class), 
-				anyString(), any())).thenReturn(list);
-		
+
+		when(u.getSearch().findTerms(anyString(), anyString(), anyMapOf(String.class, Object.class), 
+				anyBoolean())).thenReturn(list);
+
 		u.attachIdentifier(secIdent);
 		assertNotNull(dao.read(secIdent));
-		
+
 		u.setId(null);
 		u.delete();
 		u.setId("111");
-		assertNotNull(dao.read(u.getId()));	
+		assertNotNull(dao.read(u.getId()));
 		assertNotNull(dao.read(u.getIdentifier()));
 		assertNotNull(dao.read(secIdent));
-		
+
 		u.delete();
 		assertNull(dao.read(u.getId()));
 		assertNull(dao.read(u.getIdentifier()));
@@ -117,7 +118,7 @@ public class UserTest {
 		u.attachIdentifier(secIdent);
 		assertNull(dao.read(u.getId()));
 		assertNull(dao.read(secIdent));
-		
+
 		u.create();
 		u.attachIdentifier(secIdent);
 		assertNotNull(dao.read(u.getId()));
@@ -130,11 +131,11 @@ public class UserTest {
 		assertNotNull(dao.read(u.getIdentifier()));
 		u.detachIdentifier(u.getIdentifier());
 		assertNotNull(dao.read(u.getIdentifier()));
-		
+
 		String secIdent = "t:1";
 		u.attachIdentifier(secIdent);
 		assertNotNull(dao.read(secIdent));
-		
+
 		u.detachIdentifier(secIdent);
 		assertNull(dao.read(secIdent));
 	}
@@ -143,7 +144,7 @@ public class UserTest {
 	public void testIsFacebookUser() {
 		assertFalse(u.isFacebookUser());
 		u.setIdentifier("fb:1");
-		assertTrue(u.isFacebookUser());		
+		assertTrue(u.isFacebookUser());
 	}
 
 	@Test
@@ -156,39 +157,39 @@ public class UserTest {
 	@Test
 	public void testIsModerator() {
 		assertFalse(u.isModerator());
-		
+
 		u.setGroups(Groups.ADMINS.toString());
 		assertTrue(u.isAdmin());
 		assertTrue(u.isModerator());
-		
+
 		u.setGroups(Groups.MODS.toString());
 		assertTrue(u.isModerator());
 	}
-	
+
 	@Test
 	public void testReadUserForIdentifier() {
 		String secIdent = "fb:1";
 		u.create();
 		u.attachIdentifier(secIdent);
-		
+
 		u.setIdentifier(secIdent);
 		assertNotNull(User.readUserForIdentifier(u));
-				
+
 		u.setIdentifier("1");
 		assertNotNull(User.readUserForIdentifier(u));
-		
+
 		u.setIdentifier(u.getEmail());
 		assertNotNull(User.readUserForIdentifier(u));
-		
+
 		u.setIdentifier("1234");
 		assertNull(User.readUserForIdentifier(u));
-		
+
 		u.delete();
-		
-		u.setIdentifier(secIdent);	
+
+		u.setIdentifier(secIdent);
 		assertNull(User.readUserForIdentifier(u));
-		
-		u.setIdentifier(u.getEmail());		
+
+		u.setIdentifier(u.getEmail());
 		assertNull(User.readUserForIdentifier(u));
 	}
 
@@ -196,23 +197,23 @@ public class UserTest {
 	public void testPasswordMatches() {
 		u.create();
 		assertTrue(User.passwordMatches(u));
-		
+
 		User u1 = new User();
 		u1.setDao(dao);
 		u1.setIdentifier(u.getIdentifier());
-		
+
 		u1.setPassword("1234");
 		assertFalse(User.passwordMatches(u1));
-		
+
 		u1.setPassword("");
 		assertFalse(User.passwordMatches(u1));
-		
+
 		u1.setPassword(null);
-		assertFalse(User.passwordMatches(u1));	
-		
+		assertFalse(User.passwordMatches(u1));
+
 		u1.setPassword(u.getPassword());
 		u1.setIdentifier(null);
-		assertFalse(User.passwordMatches(u1));		
+		assertFalse(User.passwordMatches(u1));
 	}
 
 	@Test
@@ -220,19 +221,19 @@ public class UserTest {
 		u.generatePasswordResetToken();
 		Sysprop s = dao.read(u.getIdentifier());
 		assertNull(s);
-		
+
 		u.create();
-		
+
 		String token1 = u.generatePasswordResetToken();
-		s = dao.read(u.getIdentifier());		
+		s = dao.read(u.getIdentifier());
 		assertNotNull(s);
-		assertEquals(token1, s.getProperty(DAO.CN_RESET_TOKEN));
-		
+		assertEquals(token1, s.getProperty(Config._RESET_TOKEN));
+
 		String token2 = u.generatePasswordResetToken();
 		s = dao.read(u.getIdentifier());
 		assertNotNull(s);
-		assertEquals(token2, s.getProperty(DAO.CN_RESET_TOKEN));
-		assertNotEquals(token1, s.getProperty(DAO.CN_RESET_TOKEN));
+		assertEquals(token2, s.getProperty(Config._RESET_TOKEN));
+		assertNotEquals(token1, s.getProperty(Config._RESET_TOKEN));
 	}
 
 	@Test
@@ -241,20 +242,20 @@ public class UserTest {
 		String token = u.generatePasswordResetToken();
 		String newpass = "1234567890";
 		assertTrue(u.resetPassword(token, newpass));
-		
+
 		User u1 = new User();
 		u1.setIdentifier(u.getIdentifier());
 		u1.setDao(dao);
 		u1.setPassword(newpass);
 		assertTrue(User.passwordMatches(u1));
-		
+
 		assertFalse(u.resetPassword(token, "654321"));
 		assertFalse(u.resetPassword(u.generatePasswordResetToken(), "1234"));
 		assertFalse(u.resetPassword(u.generatePasswordResetToken(), "                  "));
-		
+
 		u.delete();
 		dao.delete(new Sysprop(u.getIdentifier()));
-		assertFalse(u.resetPassword(u.generatePasswordResetToken(), "654321"));				
+		assertFalse(u.resetPassword(u.generatePasswordResetToken(), "654321"));
 	}
 
 }

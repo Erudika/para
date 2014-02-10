@@ -23,23 +23,41 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- *
- * @author Alex Bogdanovski <alex@erudika.com>
- * 
  * Annotation that marks methods that can modify the search index. Mainly used for weaving through AOP.
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
-@Retention(RetentionPolicy.RUNTIME) 
+@Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-
 public @interface Indexed {
 
-	public enum Action {
+	/**
+	 * The search action performed.
+	 */
+	enum Action {
+		/**
+		 * No operation. Do nothing.
+		 */
 		NOOP,
-		ADD,	// add to index 
-		REMOVE,	// remove from index
+		/**
+		 * Adds an object to index.
+		 */
+		ADD,
+		/**
+		 * Removes object from index.
+		 */
+		REMOVE,
+		/**
+		 * Adds many objects to index.
+		 */
 		ADD_ALL,
-		REMOVE_ALL;	
+		/**
+		 * Removes many objects from index.
+		 */
+		REMOVE_ALL;
 	}
-	
+
+	/**
+	 * @return the action
+	 */
 	Action action() default Action.NOOP;
 }

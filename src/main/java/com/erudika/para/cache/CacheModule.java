@@ -20,7 +20,7 @@ package com.erudika.para.cache;
 import com.google.inject.AbstractModule;
 
 /**
- *
+ * The default cache module.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class CacheModule extends AbstractModule {
@@ -28,5 +28,5 @@ public class CacheModule extends AbstractModule {
 	protected void configure() {
 		bind(Cache.class).to(HazelcastCache.class);
 	}
-	
+
 }

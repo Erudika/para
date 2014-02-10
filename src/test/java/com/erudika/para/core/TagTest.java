@@ -28,10 +28,10 @@ import org.junit.Before;
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class TagTest {
-	
+
 	private DAO dao;
 	private Tag t;
-	
+
 	@Before
 	public void setUp() {
 		dao = new MockDAO();
@@ -39,7 +39,7 @@ public class TagTest {
 		t.setCreatorid("111");
 		t.setDao(dao);
 	}
-	
+
 	@Test
 	public void testId() {
 		assertEquals("tag:test", t.getId());
@@ -69,7 +69,7 @@ public class TagTest {
 	@Test
 	public void testSetCount() {
 		t.setCount(999);
-		assertTrue(t.getCount() == 999);		
+		assertTrue(t.getCount() == 999);
 	}
 
 	@Test
@@ -84,19 +84,19 @@ public class TagTest {
 	}
 
 	@Test
-	public void testIncrementCount() {		
+	public void testIncrementCount() {
 	}
 
 	@Test
 	public void testDecrementCount() {
 		t.create();
 		assertTrue(t.exists());
-		
+
 		t.setCount(2);
 		t.decrementCount();
 		assertEquals(1, t.getCount().intValue());
 		t.decrementCount();
-		
+
 		assertFalse(t.exists());
 	}
 
@@ -104,7 +104,7 @@ public class TagTest {
 	public void testEquals() {
 		Tag t1 = new Tag("tag1");
 		Tag t2 = new Tag("tag2");
-		
+
 		assertFalse(t1.equals(t2));
 		t1.setId("tag2");
 		assertFalse(t1.equals(t2));

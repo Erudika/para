@@ -30,10 +30,10 @@ public class HazelcastCacheIT extends CacheTest {
 	public static void setUpClass() {
 		c = new HazelcastCache();
 	}
-	
+
 	@AfterClass
 	public static void tearDownClass() {
 		HazelcastUtils.shutdownClient();
 	}
-	
+
 }

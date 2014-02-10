@@ -24,12 +24,10 @@ import com.erudika.para.utils.Config;
 import org.hibernate.validator.constraints.NotBlank;
 
 /**
- *
- * @author Alex Bogdanovski <alex@erudika.com>
- * 
  * This class represents a many-to-many relationship (link) between two objects.
+ * @author Alex Bogdanovski <alex@erudika.com>
  */
-public class Linker extends PObject{
+public class Linker extends PObject {
 	private static final long serialVersionUID = 1L;
 
 	@Stored @Locked @NotBlank private String id1;
@@ -37,17 +35,26 @@ public class Linker extends PObject{
 	@Stored @Locked @NotBlank private String classname1;
 	@Stored @Locked @NotBlank private String classname2;
 	@Stored private String metadata;
-	
-	public Linker() {
-	}
 
+	/**
+	 * No-args constructor
+	 */
+	public Linker() { }
+
+	/**
+	 * A link. The names of the objects are compared and sorted alphabetically.
+	 * @param c1 the type of the first object
+	 * @param c2 the type of the second object
+	 * @param i1 the id of the first object
+	 * @param i2 the id of the second object
+	 */
 	public Linker(Class<? extends ParaObject> c1, Class<? extends ParaObject> c2, String i1, String i2) {
-		if(isReversed(classname(c1), classname(c2))){
+		if (isReversed(classname(c1), classname(c2))) {
 			classname1 = classname(c2);
 			classname2 = classname(c1);
 			this.id1 = i2;
 			this.id2 = i1;
-		}else{
+		} else {
 			classname1 = classname(c1);
 			classname2 = classname(c2);
 			this.id1 = i1;
@@ -56,70 +63,130 @@ public class Linker extends PObject{
 		setName(classname1 + Config.SEPARATOR + classname2);
 		setId(classname1 + Config.SEPARATOR + id1 + Config.SEPARATOR + classname2 + Config.SEPARATOR + id2);
 	}
-	
+
+	/**
+	 * Returns the id of the second object in the link.
+	 * @return the id
+	 */
 	public String getId2() {
 		return id2;
 	}
 
+	/**
+	 * Sets the id of the second object in the link.
+	 * @param id2 a new id
+	 */
 	public void setId2(String id2) {
 		this.id2 = id2;
 	}
 
+	/**
+	 * Returns the id of the first object in the link.
+	 * @return the id
+	 */
 	public String getId1() {
 		return id1;
 	}
 
+	/**
+	 * Sets the id of the first object in the link.
+	 * @param id1 a new id
+	 */
 	public void setId1(String id1) {
 		this.id1 = id1;
 	}
 
+	/**
+	 * Returns the type of the first object in the link.
+	 * @return the type
+	 */
 	public String getClassname1() {
 		return classname1;
 	}
 
+	/**
+	 * Sets the type of the first object in the link.
+	 * @param classname1 the type
+	 */
 	public void setClassname1(String classname1) {
 		this.classname1 = classname1;
 	}
 
+	/**
+	 * Returns the type of the second object in the link.
+	 * @return the type
+	 */
 	public String getClassname2() {
 		return classname2;
 	}
 
+	/**
+	 * Sets the type of the second object in the link.
+	 * @param classname2
+	 */
 	public void setClassname2(String classname2) {
 		this.classname2 = classname2;
 	}
-	
+
+	/**
+	 * Returns the additional information about the link
+	 * @return some info
+	 */
 	public String getMetadata() {
 		return metadata;
 	}
 
+	/**
+	 * Sets additional information about the link
+	 * @param metadata some info
+	 */
 	public void setMetadata(String metadata) {
 		this.metadata = metadata;
 	}
 
 //	public void delete() {
 //		ArrayList<String> keys = new ArrayList<String>();
-//		for (PObject link : search.findTwoTerms(getClassname(), null, null, "id1", id1, "id2", id2)) {
+//		for (PObject link : search.findTerms(getClassname(), null, null, "id1", id1, "id2", id2)) {
 //			keys.add(link.getId());
 //		}
 //		AWSDynamoDAO.getInstance().deleteAll(keys);
 //	}
-	
-	public boolean exists(){
+
+	@Override
+	public boolean exists() {
 		return getDao().read(getAppname(), getId()) != null;
 	}
-	
-	private boolean isReversed(String s1, String s2){
-		if(s1 == null || s2 == null) return false;
+
+	/**
+	 * Compare the names of the two linkable objects 
+	 * and decide if we need to swap their positions. 
+	 * For example: isReversed(user, tag) -> true; isReversed(tag, user) -> false
+	 */
+	private boolean isReversed(String s1, String s2) {
+		if (s1 == null || s2 == null) {
+			return false;
+		}
 		return s1.compareToIgnoreCase(s2) > 0;
 	}
-	
-	public boolean isFirst(Class<? extends ParaObject> c1){
-		if(c1 == null) return false;
+
+	/**
+	 * Checks if the position of a given object is first or second.
+	 * @param c1 the given class of object
+	 * @return true if the object's type is equal to {@link #getClassname1()}
+	 */
+	public boolean isFirst(Class<? extends ParaObject> c1) {
+		if (c1 == null) {
+			return false;
+		}
 		return classname(c1).equals(classname1);
 	}
-//	
-	public String getIdFieldNameFor(Class<? extends ParaObject> c){
+//
+	/**
+	 * Returns the name of the id field (id1 or id2) for a given type.
+	 * @param c the type to check
+	 * @return "id1" if the given type is first in the link, otherwise "id2"
+	 */
+	public String getIdFieldNameFor(Class<? extends ParaObject> c) {
 		return isFirst(c) ? "id1" : "id2";
 	}
 }

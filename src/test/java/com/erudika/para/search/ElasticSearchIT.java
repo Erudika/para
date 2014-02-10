@@ -29,8 +29,8 @@ import org.junit.Test;
  *
  * @author Alex Bogdanovski <alex@erudika.com>
  */
-public class ElasticSearchIT extends SearchTest{
-	
+public class ElasticSearchIT extends SearchTest {
+
 	@BeforeClass
 	public static void setUpClass() {
 		System.setProperty("esembedded", "true");
@@ -40,7 +40,7 @@ public class ElasticSearchIT extends SearchTest{
 		ElasticSearchUtils.createIndex(appName2);
 		SearchTest.init();
 	}
-	
+
 	@AfterClass
 	public static void tearDownClass() {
 		ElasticSearchUtils.deleteIndex(Config.APP_NAME_NS);
@@ -54,18 +54,18 @@ public class ElasticSearchIT extends SearchTest{
 	public void testCreateDeleteExistsIndex() throws InterruptedException {
 		String appName3 = "test-index";
 		String badAppName = "test index 123";
-		
+
 		ElasticSearchUtils.createIndex("");
 		assertFalse(ElasticSearchUtils.existsIndex(""));
-		
+
 		ElasticSearchUtils.createIndex(appName3);
 		assertTrue(ElasticSearchUtils.existsIndex(appName3));
-		
+
 		assertTrue(ElasticSearchUtils.optimizeIndex(appName3));
-		
+
 		ElasticSearchUtils.deleteIndex(appName3);
 		assertFalse(ElasticSearchUtils.existsIndex(appName3));
-		
+
 		assertFalse(ElasticSearchUtils.createIndex(badAppName));
 		assertFalse(ElasticSearchUtils.existsIndex(badAppName));
 		assertFalse(ElasticSearchUtils.deleteIndex(appName3));

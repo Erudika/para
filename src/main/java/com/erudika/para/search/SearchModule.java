@@ -20,7 +20,7 @@ package com.erudika.para.search;
 import com.google.inject.AbstractModule;
 
 /**
- *
+ * The default search module.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class SearchModule extends AbstractModule {
@@ -28,5 +28,5 @@ public class SearchModule extends AbstractModule {
 	protected void configure() {
 		bind(Search.class).to(ElasticSearch.class).asEagerSingleton();
 	}
-	
+
 }

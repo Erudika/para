@@ -27,24 +27,36 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
- *
+ * Utility class with helper methods for authentication.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public final class SecurityUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
-	
-	public static User getAuthenticatedUser(){
-		if(SecurityContextHolder.getContext().getAuthentication() == null) return null;
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		if(auth.isAuthenticated() && auth.getPrincipal() instanceof User){
-			return (User) auth.getPrincipal();
-		}else{
-			return null;
+
+	private SecurityUtils() { }
+
+	/**
+	 * Extracts a User object from the security context
+	 * @return an authenticated user or null if a user is not authenticated
+	 */
+	public static User getAuthenticatedUser() {
+		User u = null;
+		if (SecurityContextHolder.getContext().getAuthentication() != null) {
+			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+			if (auth.isAuthenticated() && auth.getPrincipal() instanceof User) {
+				u = (User) auth.getPrincipal();
+			}
 		}
+		return u;
 	}
-	
-	public static void clearSession(HttpServletRequest req, HttpServletResponse res){
+
+	/**
+	 * Clears the session. Deletes cookies and clears the security context.
+	 * @param req HTTP request
+	 * @param res HTTP response
+	 */
+	public static void clearSession(HttpServletRequest req, HttpServletResponse res) {
 //		Utils.removeStateParam(Config.AUTH_COOKIE, req, res);
 		try {
 			SecurityContextHolder.clearContext();
@@ -52,5 +64,5 @@ public final class SecurityUtils {
 		} catch (ServletException ex) {
 			logger.warn(null, ex);
 		}
-	}	
+	}
 }

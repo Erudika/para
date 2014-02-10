@@ -27,27 +27,27 @@ import org.junit.BeforeClass;
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class AWSQueueIT extends QueueTest {
-	
+
 	private static SQSRestServer sqsServer;
 	private static String endpoint = "http://localhost:9324";
-	
+
 	static {
 		System.setProperty("para.aws_access_key", "x");
 		System.setProperty("para.aws_secret_key", "x");
 	}
-	
+
 	public AWSQueueIT() {
 		q = new AWSQueue("testq", endpoint);
 	}
-	
+
 	@BeforeClass
 	public static void setUpClass() {
 		sqsServer = SQSRestServerBuilder.start();
 	}
-	
+
 	@AfterClass
 	public static void tearDownClass() {
 		sqsServer.stopAndWait();
 	}
-	
+
 }

@@ -24,21 +24,29 @@ import javax.servlet.ServletContextListener;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * The default context listener.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class ParaContextListener implements ServletContextListener {
 
 	private static final Logger logger = LoggerFactory.getLogger(ParaContextListener.class);
-	
+
+	/**
+	 * Initialization.
+	 * @param sce context
+	 */
 	@Override
 	public void contextInitialized(ServletContextEvent sce) {
 		Para.initialize();
 	}
 
+	/**
+	 * Clean up.
+	 * @param sce context
+	 */
 	@Override
 	public void contextDestroyed(ServletContextEvent sce) {
 		Para.destroy();
 	}
-	
+
 }

@@ -25,21 +25,27 @@ import org.apache.commons.codec.binary.Base64;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 
 /**
- *
+ * Simple handler for successful authentication requests.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
+	/**
+	 * Returns the URL to redirect to on success
+	 * @param request HTTP request
+	 * @param response HTTP response
+	 * @return the URL to redirect to
+	 */
 	@Override
 	protected String determineTargetUrl(HttpServletRequest request, HttpServletResponse response) {
 		String cookie = Utils.getStateParam(Config.RETURNTO_COOKIE, request);
-		if(cookie != null){
+		if (cookie != null) {
 			cookie = new String(Base64.decodeBase64(cookie));
 			Utils.removeStateParam(Config.RETURNTO_COOKIE, request, response);
 			return cookie;
-		}else{
+		} else {
 			return super.determineTargetUrl(request, response);
 		}
 	}
-	
+
 }
