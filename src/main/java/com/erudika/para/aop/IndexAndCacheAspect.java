@@ -15,7 +15,7 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.utils.aop;
+package com.erudika.para.aop;
 
 import com.erudika.para.annotations.Cached;
 import static com.erudika.para.annotations.Cached.Action.*;
@@ -60,6 +60,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	 * @return the returned value of the method invoked or something else (decided here)
 	 * @throws Throwable
 	 */
+	@SuppressWarnings("unchecked")
 	public Object invoke(MethodInvocation mi) throws Throwable {
 		Object result = null;
 		Method m = mi.getMethod();

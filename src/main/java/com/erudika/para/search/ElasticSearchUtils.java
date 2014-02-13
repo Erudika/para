@@ -91,7 +91,7 @@ public final class ElasticSearchUtils {
 			searchNode = NodeBuilder.nodeBuilder().settings(settings).
 					clusterName(Config.CLUSTER_NAME).client(true).data(false).node();
 			searchClient = searchNode.client();
-		} else if ("true".equals(System.getProperty("esembedded"))) {
+		} else if ("embedded".equals(Config.ENVIRONMENT)) {
 			// for testing only
 			settings.put("path.data", "target/elasticsearch/data");
 			settings.put("path.work", "target/elasticsearch/work");
@@ -206,7 +206,7 @@ public final class ElasticSearchUtils {
 	 * Rebuilds an index. Reads objects from the data store and indexes them in batches.
 	 * @param appName the index name (alias)
 	 * @param dao an instance of the persistence class
-	 * @return
+	 * @return true if successful
 	 */
 	public static boolean rebuildIndex(String appName, DAO dao) {
 		if (StringUtils.isBlank(appName) || dao == null) {
@@ -310,7 +310,7 @@ public final class ElasticSearchUtils {
 	/**
 	 * Returns the real index name for a given alias.
 	 * @param appName the index name (alias)
-	 * @return
+	 * @return the real index name (not alias)
 	 */
 	public static String getIndexNameForAlias(String appName) {
 		if (StringUtils.isBlank(appName)) {

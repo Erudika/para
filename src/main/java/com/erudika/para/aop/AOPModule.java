@@ -15,7 +15,7 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.utils.aop;
+package com.erudika.para.aop;
 
 import com.erudika.para.persistence.DAO;
 import com.google.inject.AbstractModule;

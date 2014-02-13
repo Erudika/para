@@ -906,14 +906,13 @@ public final class Utils {
 		}
 		Class<? extends ParaObject> clazz = null;
 		try {
-			clazz = (Class<? extends ParaObject>) Class.forName(corepackage.concat(".").
-					concat(StringUtils.capitalize(classname)));
+			clazz = (Class<? extends ParaObject>) Class.forName(PObject.class.getPackage().getName().
+					concat(".").concat(StringUtils.capitalize(classname)));
 		} catch (Exception ex) {
 			if (ex instanceof ClassNotFoundException) {
 				try {
-					clazz = (Class<? extends ParaObject>)
-							Class.forName(PObject.class.getPackage().getName().concat(".").
-						concat(StringUtils.capitalize(classname)));
+					clazz = (Class<? extends ParaObject>) Class.forName(corepackage.concat(".").
+							concat(StringUtils.capitalize(classname)));
 				} catch (Exception ex1) {
 					logger.warn(ex1.getMessage());
 				}

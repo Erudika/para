@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2014 Erudika.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,20 +12,18 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * You can reach the author at: https://github.com/albogdano
  */
 package com.erudika.para.persistence;
 
 import com.erudika.para.core.ParaObject;
+import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import javax.inject.Singleton;
+import javax.inject.Inject;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -33,14 +31,34 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * An implementation of the {@link DAO} interface used for local development only.
+ * It uses is based on the {@link com.erudika.para.search.Search} implementation.
+ * Objects are stored in the index rather than in a data store.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
-@Singleton
-public class MockDAO implements DAO {
+public class IndexBasedDAO implements DAO {
 
-	private static final Logger logger = LoggerFactory.getLogger(MockDAO.class);
+	private static final Logger logger = LoggerFactory.getLogger(IndexBasedDAO.class);
 	private Map<String, Map<String, ParaObject>> maps = new HashMap<String, Map<String, ParaObject>>();
+	private Search search;
+
+	/**
+	 * No-args constructor
+	 */
+	public IndexBasedDAO() { }
+
+	/**
+	 * Default constructor.
+	 * @param search the search object
+	 */
+	@Inject
+	public IndexBasedDAO(Search search) {
+		this.search = search;
+	}
+
+	public void setSearch(Search search) {
+		this.search = search;
+	}
 
 	@Override
 	public <P extends ParaObject> String create(String appName, P so) {
@@ -61,10 +79,13 @@ public class MockDAO implements DAO {
 	@Override
 	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> P read(String appName, String key) {
-		if (key == null || StringUtils.isBlank(appName)) {
+		if (key == null || StringUtils.isBlank(appName) || search == null) {
 			return null;
 		}
-		P so = (P) getMap(appName).get(key);
+		P so = search.findById(appName, key);
+		if(so == null) {
+			so = (P) getMap(appName).get(key);
+		}
 		logger.debug("DAO.read() {} -> {}", key, so);
 		return so;
 	}
@@ -151,7 +172,7 @@ public class MockDAO implements DAO {
 	@Override
 	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> Map<String, P> readAll(String appName, List<String> keys, boolean getAllColumns) {
-		Map<String, P> results = new LinkedHashMap<String, P>();
+		Map<String, P> results = new HashMap<String, P>();
 		if (keys == null || StringUtils.isBlank(appName)) {
 			return results;
 		}
@@ -192,7 +213,7 @@ public class MockDAO implements DAO {
 			logger.debug("DAO.deleteAll() {}", objects.size());
 		}
 	}
-
+	
 	private Map<String, ParaObject> getMap(String appName) {
 		if (!maps.containsKey(appName)) {
 			maps.put(appName, new  HashMap<String, ParaObject>());
@@ -266,5 +287,5 @@ public class MockDAO implements DAO {
 	public <P extends ParaObject> void deleteAll(List<P> objects) {
 		deleteAll(Config.APP_NAME_NS, objects);
 	}
-
+	
 }

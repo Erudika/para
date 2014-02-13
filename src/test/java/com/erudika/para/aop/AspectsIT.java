@@ -15,7 +15,7 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.utils.aop;
+package com.erudika.para.aop;
 
 import com.erudika.para.Para;
 import com.erudika.para.cache.Cache;
@@ -52,7 +52,7 @@ public class AspectsIT {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		System.setProperty("esembedded", "true");
+		System.setProperty("para.env", "embedded");
 		Para.initialize(new Module() {
 			public void configure(Binder binder) {
 				binder.bind(DAO.class).to(MockDAO.class);
@@ -120,7 +120,7 @@ public class AspectsIT {
 
 		uB.create();
 		assertNotNull(d.read(uB.getId()));
-		assertNotNull(s.findById(uB.getId(), uB.getClassname()));
+		assertNotNull(s.findById(uB.getId()));
 		assertNotNull(c.get(uB.getId()));
 
 		logger.debug("---- cache remove -----");
@@ -131,7 +131,7 @@ public class AspectsIT {
 
 		uB.delete();
 		assertNull(d.read(uB.getId()));
-		assertNull(s.findById(uB.getId(), uB.getClassname()));
+		assertNull(s.findById(uB.getId()));
 		assertNull(c.get(uB.getId()));
 
 		ArrayList<User> list = new ArrayList<User>();
@@ -141,15 +141,15 @@ public class AspectsIT {
 
 		d.createAll(list);
 		assertNotNull(d.read(u.getId()));
-		assertNotNull(s.findById(u.getId(), u.getClassname()));
+		assertNotNull(s.findById(u.getId()));
 		assertNotNull(c.get(u.getId()));
 
 		assertNotNull(d.read(u1.getId()));
-		assertNotNull(s.findById(u1.getId(), u1.getClassname()));
+		assertNotNull(s.findById(u1.getId()));
 		assertNotNull(c.get(u1.getId()));
 
 		assertNotNull(d.read(u2.getId()));
-		assertNotNull(s.findById(u2.getId(), u2.getClassname()));
+		assertNotNull(s.findById(u2.getId()));
 		assertNotNull(c.get(u2.getId()));
 
 		logger.debug("---- read all from cache ----");
@@ -168,15 +168,15 @@ public class AspectsIT {
 		logger.debug("---- delete all ----");
 		d.deleteAll(list);
 		assertNull(d.read(u.getId()));
-		assertNull(s.findById(u.getId(), u.getClassname()));
+		assertNull(s.findById(u.getId()));
 		assertNull(c.get(u.getId()));
 
 		assertNull(d.read(u1.getId()));
-		assertNull(s.findById(u1.getId(), u1.getClassname()));
+		assertNull(s.findById(u1.getId()));
 		assertNull(c.get(u1.getId()));
 
 		assertNull(d.read(u2.getId()));
-		assertNull(s.findById(u2.getId(), u2.getClassname()));
+		assertNull(s.findById(u2.getId()));
 		assertNull(c.get(u2.getId()));
 	}
 

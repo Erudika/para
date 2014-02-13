@@ -25,7 +25,10 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.NotBlank;
 
 /**
- *
+ * When a user votes on an object the vote is saved as positive or negative. 
+ * The user has a short amount of time to amend that vote and then it's locked.
+ * Votes can expire after X seconds and they get deleted. 
+ * This allows the voter to vote again on the same object.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class Vote extends PObject {
@@ -34,17 +37,17 @@ public class Vote extends PObject {
 	@Stored @NotNull private Long expiresAfter;
 
 	/**
-	 *
+	 * No-args constructor
 	 */
 	public Vote() {
 		this(null, null, null);
 	}
 
 	/**
-	 *
-	 * @param voterid
-	 * @param voteeid
-	 * @param type
+	 * Default constructor
+	 * @param voterid the user id of the voter
+	 * @param voteeid the id of the object that will receive the vote
+	 * @param type up + or down -
 	 */
 	public Vote(String voterid, String voteeid, String type) {
 		setCreatorid(voterid);
@@ -64,8 +67,8 @@ public class Vote extends PObject {
 	}
 
 	/**
-	 *
-	 * @return
+	 * Set the vote positive.
+	 * @return this
 	 */
 	public Vote up() {
 		this.type = UP.toString();
@@ -73,8 +76,8 @@ public class Vote extends PObject {
 	}
 
 	/**
-	 *
-	 * @return
+	 * Set the vote negative.
+	 * @return this
 	 */
 	public Vote down() {
 		this.type = DOWN.toString();
@@ -82,24 +85,24 @@ public class Vote extends PObject {
 	}
 
 	/**
-	 *
-	 * @return
+	 * Returns the type of the vote.
+	 * @return UP or DOWN
 	 */
 	public String getType() {
 		return type;
 	}
 
 	/**
-	 *
-	 * @param type
+	 * Sets the type
+	 * @param type UP or DOWN
 	 */
 	public void setType(String type) {
 		this.type = type;
 	}
 
 	/**
-	 *
-	 * @return
+	 * Returns the expiration period
+	 * @return time in seconds
 	 */
 	public Long getExpiresAfter() {
 		if (expiresAfter == null) {
@@ -109,16 +112,16 @@ public class Vote extends PObject {
 	}
 
 	/**
-	 *
-	 * @param expiresAfter
+	 * Sets the expiration period
+	 * @param expiresAfter time in seconds
 	 */
 	public void setExpiresAfter(Long expiresAfter) {
 		this.expiresAfter = expiresAfter;
 	}
 
 	/**
-	 *
-	 * @return
+	 * Checks if expired
+	 * @return true if expired
 	 */
 	public boolean isExpired() {
 		if (getTimestamp() == null || getExpiresAfter() == 0) {
@@ -131,8 +134,8 @@ public class Vote extends PObject {
 	}
 
 	/**
-	 *
-	 * @return
+	 * Checks if vote can still be amended.
+	 * @return true if vote can still be changed
 	 */
 	public boolean isAmendable() {
 		if (getTimestamp() == null) {

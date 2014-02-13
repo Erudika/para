@@ -38,14 +38,14 @@ public interface Search {
 	 * @param so the domain object the object to index
 	 */
 	void index(ParaObject so);
-	
+
 	/**
 	 * Indexes an object. Only fields marked with {@link com.erudika.para.annotations.Stored} are indexed.
 	 * @param appName name of the {@link com.erudika.para.core.App}
 	 * @param so the domain object
 	 */
 	void index(String appName, ParaObject so);
-	
+
 	/**
 	 * Indexes an object. Only fields marked with {@link com.erudika.para.annotations.Stored} are indexed.
 	 * Automatically removes the object from the index after TTL milliseconds.
@@ -60,7 +60,7 @@ public interface Search {
 	 * @param so the domain object
 	 */
 	void unindex(ParaObject so);
-	
+
 	/**
 	 * Removes an object from the index.
 	 * @param appName name of the {@link com.erudika.para.core.App}
@@ -106,20 +106,18 @@ public interface Search {
 	 * Simple id search.
 	 * @param <P> type of the object
 	 * @param id the id
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
 	 * @return the object if found or null
 	 */
-	<P extends ParaObject> P findById(String id, String type);
+	<P extends ParaObject> P findById(String id);
 
 	/**
 	 * Simple id search.
 	 * @param <P> type of the object
 	 * @param appName name of the {@link com.erudika.para.core.App}
 	 * @param id the id
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
 	 * @return the object if found or null
 	 */
-	<P extends ParaObject> P findById(String appName, String id, String type);
+	<P extends ParaObject> P findById(String appName, String id);
 
 	/**
 	 * Search for {@link com.erudika.para.core.Address} objects in a radius of X km from a given point.

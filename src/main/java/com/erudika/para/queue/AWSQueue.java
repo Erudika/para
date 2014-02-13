@@ -26,6 +26,7 @@ import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
+import com.erudika.para.Para;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.util.List;
@@ -75,6 +76,12 @@ public class AWSQueue implements Queue {
 		}
 		this.name = name;
 		url = create(name);
+
+		Para.addDestroyListener(new Para.DestroyListener() {
+			public void onDestroy() {
+				sqs.shutdown();
+			}
+		});
 	}
 
 	@Override

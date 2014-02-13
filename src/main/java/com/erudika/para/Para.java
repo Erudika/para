@@ -28,7 +28,7 @@ import com.erudika.para.search.Search;
 import com.erudika.para.search.SearchModule;
 import com.erudika.para.storage.StorageModule;
 import com.erudika.para.utils.Config;
-import com.erudika.para.utils.aop.AOPModule;
+import com.erudika.para.aop.AOPModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
@@ -55,8 +55,7 @@ public final class Para {
 	private static List<InitializeListener> initListeners = new ArrayList<InitializeListener>();
 	private static Injector injector;
 
-	private Para() {
-	}
+	private Para() { }
 
 	/**
 	 * Initializes the Para core modules and allows the user to override them. Call this method first.
@@ -180,7 +179,7 @@ public final class Para {
 	public interface InitializeListener extends EventListener {
 
 		/**
-		 * Code to execute on start.
+		 * Code to execute right after initialization.
 		 */
 		void onInitialize();
 	}
@@ -191,7 +190,7 @@ public final class Para {
 	public interface DestroyListener extends EventListener {
 
 		/**
-		 * Code to execute on stop.
+		 * Code to execute on exit.
 		 */
 		void onDestroy();
 	}

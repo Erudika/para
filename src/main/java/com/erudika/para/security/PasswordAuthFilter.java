@@ -41,7 +41,7 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * The default filter mapping
 	 */
 	public static final String PASSWORD_ACTION = "password_auth";
-	
+
 	/**
 	 * Default constructor.
 	 * @param defaultFilterProcessesUrl the url of the filter

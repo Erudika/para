@@ -252,7 +252,7 @@ public class LanguageUtils {
 	 * @return a map indicating translation progress
 	 */
 	public Map<String, Integer> getTranslationProgressMap(String appName) {
-		if (dao == null) { 
+		if (dao == null) {
 			return progressMap;
 		}
 		Sysprop progress = getProgressMap(appName);

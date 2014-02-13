@@ -15,7 +15,7 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.utils.aop;
+package com.erudika.para.aop;
 
 import com.erudika.para.core.ParaObject;
 import java.util.List;
@@ -28,6 +28,7 @@ public final class AOPUtils {
 
 	private AOPUtils() { }
 
+	@SuppressWarnings("unchecked")
 	static <T> List<T> getArgOfListOfType(Object[] args, Class<T> type) {
 		if (args != null) {
 			for (Object arg : args) {
@@ -35,7 +36,7 @@ public final class AOPUtils {
 					if (arg instanceof List) {
 						List<T> list = (List) arg;
 						if (!list.isEmpty() && type.isAssignableFrom((list.get(0).getClass()))) {
-							return (List<T>) list;
+							return list;
 						}
 					}
 				}

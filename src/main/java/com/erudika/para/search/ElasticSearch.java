@@ -144,9 +144,9 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public <P extends ParaObject> P findById(String appName, String id, String type) {
+	public <P extends ParaObject> P findById(String appName, String id) {
 		try {
-			return Utils.setAnnotatedFields(getSource(appName, id, type));
+			return Utils.setAnnotatedFields(getSource(appName, id, null));
 		} catch (Exception e) {
 			logger.warn(null, e);
 			return null;
@@ -325,6 +325,13 @@ public class ElasticSearch implements Search {
 		return searchQuery(appName, searchQueryRaw(appName, type, query, pager));
 	}
 
+	/**
+	 * Processes the results of searcQueryRaw() and fetches the results from the data store (can be disabled).
+	 * @param <P> type of object
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param hits the search results from a query
+	 * @return the list of object found
+	 */
 	private <P extends ParaObject> ArrayList<P> searchQuery(String appName, SearchHits hits) {
 		ArrayList<P> results = new ArrayList<P>();
 		ArrayList<String> keys = new ArrayList<String>();
@@ -352,8 +359,16 @@ public class ElasticSearch implements Search {
 		return results;
 	}
 
+	/**
+	 * Executes an ElasticSearch query. This is the core method of the class. 
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param type type of object
+	 * @param query the search query builder
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of search results
+	 */
 	private SearchHits searchQueryRaw(String appName, String type, QueryBuilder query, Pager... pager) {
-		if (StringUtils.isBlank(type) || StringUtils.isBlank(appName)) {
+		if (StringUtils.isBlank(appName)) {
 			return null;
 		}
 		Pager page = (pager != null && pager.length > 0) ? pager[0] : new Pager();
@@ -371,9 +386,12 @@ public class ElasticSearch implements Search {
 		if (sort == null) {
 			sort = SortBuilders.scoreSort();
 		}
+		if (type == null) {
+			type = "_all";
+		}
 
 		SearchHits hits = null;
-
+		
 		try {
 			SearchResponse response = client().prepareSearch(appName).
 					setSearchType(SearchType.DFS_QUERY_THEN_FETCH).setTypes(type).
@@ -390,16 +408,20 @@ public class ElasticSearch implements Search {
 	}
 
 	/**
-	 *
-	 * @param appName
-	 * @param key
-	 * @param type
-	 * @return
+	 * Returns the source (a map of fields and values) for and object. 
+	 * The source is extracted from the index directly not the data store.
+	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param key the object id
+	 * @param type type of object
+	 * @return a map representation of the object
 	 */
 	protected Map<String, Object> getSource(String appName, String key, String type) {
 		Map<String, Object> map = new HashMap<String, Object>();
-		if (StringUtils.isBlank(key) || StringUtils.isBlank(type) || StringUtils.isBlank(appName)) {
+		if (StringUtils.isBlank(key) || StringUtils.isBlank(appName)) {
 			return map;
+		}
+		if (StringUtils.isBlank(type)) {
+			type = "_all";
 		}
 		try {
 			GetResponse resp = client().prepareGet().setIndex(appName).
@@ -466,8 +488,8 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public <P extends ParaObject> P findById(String id, String type) {
-		return findById(Config.APP_NAME_NS, id, type);
+	public <P extends ParaObject> P findById(String id) {
+		return findById(Config.APP_NAME_NS, id);
 	}
 
 	@Override

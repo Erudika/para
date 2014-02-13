@@ -105,6 +105,7 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 		return amount.doubleValue() * ratio;
 	}
 
+	@SuppressWarnings("unchecked")
 	private Sysprop fetchFxRatesJSON() {
 		Map<String, Object> map = new HashMap<String, Object>();
 		Sysprop s = new Sysprop();
@@ -121,7 +122,7 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 				if (jsonNode != null) {
 					JsonNode rates = jsonNode.get("rates");
 					if (rates != null) {
-						map = mapper.treeToValue(rates, map.getClass());
+						map = mapper.treeToValue(rates, Map.class);
 
 						s.setId(Config.FXRATES_KEY);
 						s.setProperties(map);

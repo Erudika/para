@@ -15,7 +15,7 @@
  *
  * You can reach the author at: https://github.com/albogdano
  */
-package com.erudika.para.utils.aop;
+package com.erudika.para.aop;
 
 import com.erudika.para.core.PObject;
 import com.erudika.para.core.ParaObject;
@@ -26,7 +26,7 @@ import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.search.Search;
 import java.util.ArrayList;
 import java.util.List;
-import static com.erudika.para.utils.aop.AOPUtils.*;
+import static com.erudika.para.aop.AOPUtils.*;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyObject;
@@ -79,27 +79,27 @@ public class AOPUtilsTest {
 
 		assertNotNull(dao.create(tag));
 		assertNotNull(dao.read(tag.getId()));
-		assertNotNull(search.findById(tag.getId(), tag.getClassname()));
+		assertNotNull(search.findById(tag.getId()));
 
 		dao.delete(tag);
 		assertNull(dao.read(tag.getId()));
-		assertNull(search.findById(tag.getId(), tag.getClassname()));
+		assertNull(search.findById(tag.getId()));
 
 		dao.createAll(list1);
 		assertNotNull(dao.read(tag1.getId()));
 		assertNotNull(dao.read(tag2.getId()));
 		assertNotNull(dao.read(tag3.getId()));
-		assertNotNull(search.findById(tag1.getId(), tag.getClassname()));
-		assertNotNull(search.findById(tag2.getId(), tag.getClassname()));
-		assertNotNull(search.findById(tag3.getId(), tag.getClassname()));
+		assertNotNull(search.findById(tag1.getId()));
+		assertNotNull(search.findById(tag2.getId()));
+		assertNotNull(search.findById(tag3.getId()));
 
 		dao.deleteAll(list1);
 		assertNull(dao.read(tag1.getId()));
 		assertNull(dao.read(tag2.getId()));
 		assertNull(dao.read(tag3.getId()));
-		assertNull(search.findById(tag1.getId(), tag.getClassname()));
-		assertNull(search.findById(tag2.getId(), tag.getClassname()));
-		assertNull(search.findById(tag3.getId(), tag.getClassname()));
+		assertNull(search.findById(tag1.getId()));
+		assertNull(search.findById(tag2.getId()));
+		assertNull(search.findById(tag3.getId()));
 	}
 
 	private Search getSearch(final DAO dao) {

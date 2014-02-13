@@ -33,19 +33,19 @@ public class Sysprop extends PObject {
 	@Stored private Map<String, Object> properties;
 
 	/**
+	 * No-args constructor
+	 */
+	public Sysprop() {
+		this(null);
+	}
+	
+	/**
 	 * The default constructor
 	 * @param id the object id
 	 */
 	public Sysprop(String id) {
 		setId(id);
 		getName();
-	}
-
-	/**
-	 * No-args constructor
-	 */
-	public Sysprop() {
-		this(null);
 	}
 
 	/**

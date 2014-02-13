@@ -18,6 +18,7 @@
 package com.erudika.para.web;
 
 import static com.erudika.para.core.User.Roles.*;
+import com.erudika.para.rest.Api1;
 import com.erudika.para.security.SecurityConfig;
 import java.util.EnumSet;
 import javax.servlet.DispatcherType;
@@ -63,10 +64,11 @@ public class ParaInitializer extends AbstractSecurityWebApplicationInitializer {
 //		urf.setInitParameter("confPath", "/WEB-INF/urlrewrite.xml");
 		urf.setInitParameter("statusEnabled", "false");
 		urf.setInitParameter("logLevel", "slf4j");
-		// Jersey REST service (XML, JSON APIs)
-		ServletRegistration.Dynamic jersey = sc.addServlet("servletAdaptor", ServletContainer.class);
-		jersey.setLoadOnStartup(1);
-		jersey.addMapping("/api/*");
+		// Jersey REST API service
+		ServletRegistration.Dynamic jersey1 = sc.addServlet("servletAdaptor1", ServletContainer.class);
+		jersey1.setLoadOnStartup(1);
+		jersey1.addMapping("/v1/*");
+		jersey1.setInitParameter("javax.ws.rs.Application", Api1.class.getCanonicalName());
 		// roles, rename JSESSIONID amd make it dissappear quickly (not used)
 		sc.declareRoles(USER.toString(), MOD.toString(), ADMIN.toString());
 		sc.getSessionCookieConfig().setName("sess");

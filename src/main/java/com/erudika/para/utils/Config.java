@@ -168,7 +168,7 @@ public final class Config {
 	 */
 	public static final String APP_SECRET_KEY = getConfigParam("app_secret_key", Utils.MD5("paraseckey"));
 	/**
-	 * The package path (e.g. org.company.app.core) where all DTOs are defined.
+	 * The package path (e.g. org.company.app.core) where all domain objects are defined.
 	 */
 	public static final String CORE_PACKAGE_NAME = getConfigParam("core_package_name", "");
 	/**

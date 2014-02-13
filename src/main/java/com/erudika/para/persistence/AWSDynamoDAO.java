@@ -401,7 +401,8 @@ public class AWSDynamoDAO implements DAO {
 			List<Map<String, AttributeValue>> res = result.getResponses().get(kna.keySet().iterator().next());
 
 			for (Map<String, AttributeValue> item : res) {
-				results.put(item.get(Config._KEY).getS(), (P) fromRow(item));
+				P obj = fromRow(item);
+				results.put(item.get(Config._KEY).getS(), obj);
 			}
 			logger.debug("batchGet() CC: {}", result.getConsumedCapacity());
 

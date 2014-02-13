@@ -139,10 +139,10 @@ public abstract class DAOTest {
 		assertNull(dao.getColumn(u.getId(), ""));
 		assertNull(dao.getColumn(null, ""));
 
-		dao.putColumn(u.getId(), Config._UPDATED, "123");
-		assertEquals("123", dao.getColumn(u.getId(), Config._UPDATED));
-		dao.removeColumn(u.getId(), Config._UPDATED);
-		assertNull(dao.getColumn(u.getId(), Config._UPDATED));
+		dao.putColumn(u.getId(), Config._IDENTIFIER, "123");
+		assertEquals("123", dao.getColumn(u.getId(), Config._IDENTIFIER));
+		dao.removeColumn(u.getId(), Config._IDENTIFIER);
+		assertNull(dao.getColumn(u.getId(), Config._IDENTIFIER));
 	}
 
 	@Test

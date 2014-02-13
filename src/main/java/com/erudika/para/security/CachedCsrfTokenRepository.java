@@ -52,7 +52,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 
 	/**
 	 * Returns the cache object.
-	 * @return
+	 * @return the cache object
 	 */
 	public Cache getCache() {
 		return cache;
@@ -60,7 +60,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 
 	/**
 	 * Sets the cache object
-	 * @param cache
+	 * @param cache a cache object
 	 */
 	@Inject
 	public void setCache(Cache cache) {

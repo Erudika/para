@@ -17,6 +17,7 @@
  */
 package com.erudika.para.persistence;
 
+import com.erudika.para.utils.Config;
 import com.google.inject.AbstractModule;
 
 /**
@@ -26,7 +27,11 @@ import com.google.inject.AbstractModule;
 public class PersistenceModule extends AbstractModule {
 
 	protected void configure() {
-		bind(DAO.class).to(AWSDynamoDAO.class).asEagerSingleton();
+		if ("embedded".equals(Config.ENVIRONMENT)) {
+			bind(DAO.class).to(IndexBasedDAO.class).asEagerSingleton();
+		} else {
+			bind(DAO.class).to(AWSDynamoDAO.class).asEagerSingleton();
+		}
 	}
 
 }

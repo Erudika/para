@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The core persistence interface. Stores and retrieves DTO objects to/from a data store.
+ * The core persistence interface. Stores and retrieves domain objects to/from a data store.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public interface DAO {
@@ -32,7 +32,7 @@ public interface DAO {
 	/////////////////////////////////////////////
 	//				CORE FUNCTIONS
 	/////////////////////////////////////////////
-	
+
 	/**
 	 * Persists an object to the data store.
 	 * @param <P> the type of object
@@ -43,7 +43,7 @@ public interface DAO {
 	@Indexed(action = Indexed.Action.ADD)
 	@Cached(action = Cached.Action.PUT)
 	<P extends ParaObject> String create(String appName, P so);
-	
+
 	/**
 	 * Persists an object to the data store.
 	 * @param <P> the type of object
@@ -61,7 +61,7 @@ public interface DAO {
 	 */
 	@Cached(action = Cached.Action.GET)
 	<P extends ParaObject> P read(String appName, String key);
-	
+
 	/**
 	 * Retrieves an object from the data store.
 	 * @param <P> the type of object
@@ -79,7 +79,7 @@ public interface DAO {
 	@Indexed(action = Indexed.Action.ADD)
 	@Cached(action = Cached.Action.PUT)
 	<P extends ParaObject> void update(String appName, P so);
-	
+
 	/**
 	 * Updates an object persistently.
 	 * @param <P> the type of object
@@ -96,7 +96,7 @@ public interface DAO {
 	@Indexed(action = Indexed.Action.REMOVE)
 	@Cached(action = Cached.Action.DELETE)
 	<P extends ParaObject> void delete(String appName, P so);
-	
+
 	/**
 	 * Deletes an object persistently.
 	 * @param <P> the type of object
@@ -107,7 +107,7 @@ public interface DAO {
 	/////////////////////////////////////////////
 	//				COLUMN FUNCTIONS
 	/////////////////////////////////////////////
-	
+
 	/**
 	 * Returns the value of a column (field) for an object id.
 	 * @param key an object id
@@ -115,7 +115,7 @@ public interface DAO {
 	 * @return the value of the column
 	 */
 	String getColumn(String key, String colName);
-	
+
 	/**
 	 * Returns the value of a column (field) for an object id.
 	 * @param appName name of the {@link com.erudika.para.core.App}
@@ -132,7 +132,7 @@ public interface DAO {
 	 * @param colValue the new value
 	 */
 	void putColumn(String key, String colName, String colValue);
-	
+
 	/**
 	 * Sets the value of a single column for an object id.
 	 * @param appName name of the {@link com.erudika.para.core.App}
@@ -148,7 +148,7 @@ public interface DAO {
 	 * @param colName the name of the column
 	 */
 	void removeColumn(String key, String colName);
-	
+
 	/**
 	 * Removes a column (sets it to null).
 	 * @param appName name of the {@link com.erudika.para.core.App}
@@ -164,20 +164,20 @@ public interface DAO {
 	 * @return true if the column exists
 	 */
 	boolean existsColumn(String key, String colName);
-	
+
 	/**
 	 * Checks if a column exists.
 	 * @param appName name of the {@link com.erudika.para.core.App}
 	 * @param key an object id
 	 * @param colName the name of the column
-	 * @return
+	 * @return true if the column exists
 	 */
 	boolean existsColumn(String appName, String key, String colName);
 
 	/////////////////////////////////////////////
 	//				READ ALL FUNCTIONS
 	/////////////////////////////////////////////
-	
+
 	/**
 	 * Saves multiple objects to the data store.
 	 * @param <P> the type of object
@@ -187,7 +187,7 @@ public interface DAO {
 	@Indexed(action = Indexed.Action.ADD_ALL)
 	@Cached(action = Cached.Action.PUT_ALL)
 	<P extends ParaObject> void createAll(String appName, List<P> objects);
-	
+
 	/**
 	 * Saves multiple objects to the data store.
 	 * @param <P> the type of object
@@ -205,7 +205,7 @@ public interface DAO {
 	 */
 	@Cached(action = Cached.Action.GET_ALL)
 	<P extends ParaObject> Map<String, P> readAll(String appName, List<String> keys, boolean getAllColumns);
-	
+
 	/**
 	 * Retrieves multiple objects from the data store.
 	 * @param <P> the type of object
@@ -223,7 +223,7 @@ public interface DAO {
 	 * @return a list of objects
 	 */
 	<P extends ParaObject> List<P> readPage(String appName, String lastKey);
-	
+
 	/**
 	 * Reads a fixed number of objects. Used for scanning a data store page by page.
 	 * @param <P> the type of object
@@ -241,7 +241,7 @@ public interface DAO {
 	@Indexed(action = Indexed.Action.ADD_ALL)
 	@Cached(action = Cached.Action.PUT_ALL)
 	<P extends ParaObject> void updateAll(String appName, List<P> objects);
-	
+
 	/**
 	 * Updates multiple objects.
 	 * @param <P> the type of object
@@ -258,7 +258,7 @@ public interface DAO {
 	@Indexed(action = Indexed.Action.REMOVE_ALL)
 	@Cached(action = Cached.Action.DELETE_ALL)
 	<P extends ParaObject> void deleteAll(String appName, List<P> objects);
-	
+
 	/**
 	 * Deletes multiple objects.
 	 * @param <P> the type of object

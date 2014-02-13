@@ -97,23 +97,25 @@ public class HazelcastCache implements Cache {
 		if (StringUtils.isBlank(id) || StringUtils.isBlank(appName)) {
 			return null;
 		}
-		T obj = (T) client().getMap(appName).get(id);
+		Map<String, T> map = client().getMap(appName);
+		T obj = map.get(id);
 		logger.debug("Cache.get() {} {}", appName, (obj == null) ? null : id);
 		return obj;
 	}
 
 	@Override
 	public <T> Map<String, T> getAll(String appName, List<String> ids) {
-		Map<String, T> map = new LinkedHashMap<String, T>();
+		Map<String, T> result = new LinkedHashMap<String, T>();
 		if (ids == null || StringUtils.isBlank(appName)) {
-			return map;
+			return result;
 		}
 		ids.remove(null);
-		for (Entry<Object, Object> entry : client().getMap(appName).getAll(new TreeSet<Object>(ids)).entrySet()) {
-			map.put((String) entry.getKey(), (T) entry.getValue());
+		IMap<String, T> imap = client().getMap(appName);
+		for (Entry<String, T> entry : imap.getAll(new TreeSet<String>(ids)).entrySet()) {
+			result.put(entry.getKey(), entry.getValue());
 		}
 		logger.debug("Cache.getAll() {} {}", appName, ids.size());
-		return map;
+		return result;
 	}
 
 	@Override

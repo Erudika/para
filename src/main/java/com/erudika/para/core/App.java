@@ -20,6 +20,8 @@ package com.erudika.para.core;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Utils;
+import java.util.Set;
 import javax.validation.constraints.Size;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
@@ -29,17 +31,21 @@ import org.hibernate.validator.constraints.NotBlank;
  * <br>
  * It allows the user to create separate apps running on the same infrastructure.
  * The apps are separated by name and each {@link ParaObject} belongs to an app.
+ * </br>
  * There can be two ways to separate apps - dedicated and shared.
  * Shared apps use the same data store table, same search index and the same cache map. 
- * Partitioning is done by key prefixes.
+ * Partitioning is done by key prefixes which are the same as the name of the app.
  * Dedicated apps have their own separate data stores, indexes and caches. 
- * <b>Only dedicated apps are currently supported.</b>
+ * </br>
+ * <b>Only shared apps are currently supported.</b>
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class App extends PObject {
 	private static final long serialVersionUID = 1L;
 
 	@Stored @Locked @NotBlank @Size(min = 3, max = 50) private String appname;
+	@Stored @Locked private boolean isShared;
+	@Stored private Set<String> datatypes;
 
 	/**
 	 * No-args constructor
@@ -54,15 +60,32 @@ public class App extends PObject {
 	 */
 	public App(String appname) {
 		this.appname = appname;
+		this.isShared = true;
 		setId(id(appname));
 		setName(appname);
 	}
 
 	static String id(String appname) {
 		if (StringUtils.isBlank(appname)) {
-			return null;
+			appname = Utils.getNewId();
 		}
 		return PObject.classname(App.class).concat(Config.SEPARATOR).concat(StringUtils.trimToEmpty(appname));
+	}
+
+	public Set<String> getDatatypes() {
+		return datatypes;
+	}
+
+	public void setDatatypes(Set<String> datatypes) {
+		this.datatypes = datatypes;
+	}
+
+	public boolean isIsShared() {
+		return isShared;
+	}
+
+	public void setIsShared(boolean isShared) {
+		this.isShared = isShared;
 	}
 
 	@Override

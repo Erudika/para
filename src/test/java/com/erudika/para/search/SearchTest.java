@@ -135,10 +135,9 @@ public abstract class SearchTest {
 	@Test
 	public void testFindById() {
 		assertNull(s.findById(null, null));
-		assertNull(s.findById("", u.getClassname()));
-		assertNull(s.findById(u.getId(), "wrongtype"));
-		assertNotNull(s.findById(u.getId(), u.getClassname()));
-		assertNotNull(s.findById(t.getId(), t.getClassname()));
+		assertNull(s.findById(""));
+		assertNotNull(s.findById(u.getId()));
+		assertNotNull(s.findById(t.getId()));
 	}
 
 	@Test
@@ -280,34 +279,34 @@ public abstract class SearchTest {
 		s.index(null);
 		User ux = new User("test-xxx");
 		s.index(ux);
-		assertNotNull(s.findById(ux.getId(), u.getClassname()));
-		assertNotNull(s.findById(u.getId(), u.getClassname()));
-		assertNotNull(s.findById(t.getId(), t.getClassname()));
+		assertNotNull(s.findById(ux.getId()));
+		assertNotNull(s.findById(u.getId()));
+		assertNotNull(s.findById(t.getId()));
 		s.unindex(ux);
 
 		// test multiapp support
 		ux.setId(u.getId()+"-APP1");
 		ux.setName("UserApp1");
 		s.index(appName1, ux);
-		assertNotNull(s.findById(appName1, ux.getId(), ux.getClassname()));
-		assertNull(s.findById(ux.getId(), ux.getClassname()));
-		assertNull(s.findById(appName2, ux.getId(), ux.getClassname()));
+		assertNotNull(s.findById(appName1, ux.getId()));
+		assertNull(s.findById(ux.getId()));
+		assertNull(s.findById(appName2, ux.getId()));
 
 		Tag tx = new Tag(t.getId()+"-APP2");
 		tx.setName("TagApp2");
 		s.index(appName2, tx);
-		assertNotNull(s.findById(appName2, tx.getId(), tx.getClassname()));
-		assertNull(s.findById(tx.getId(), tx.getClassname()));
-		assertNull(s.findById(appName1, tx.getId(), tx.getClassname()));
+		assertNotNull(s.findById(appName2, tx.getId()));
+		assertNull(s.findById(tx.getId()));
+		assertNull(s.findById(appName1, tx.getId()));
 	}
 
 	@Test
 	public void testUnindex() {
 		Tag tu = new Tag("test-unindex");
 		s.index(tu);
-		assertNotNull(s.findById(tu.getId(), tu.getClassname()));
+		assertNotNull(s.findById(tu.getId()));
 		s.unindex(tu);
-		assertNull(s.findById(tu.getId(), tu.getClassname()));
+		assertNull(s.findById(tu.getId()));
 	}
 
 	@Test
@@ -325,15 +324,15 @@ public abstract class SearchTest {
 
 		s.indexAll(tags);
 
-		assertNotNull(s.findById(tt1.getId(), t.getClassname()));
-		assertNotNull(s.findById(tt2.getId(), t.getClassname()));
-		assertNotNull(s.findById(tt3.getId(), t.getClassname()));
+		assertNotNull(s.findById(tt1.getId()));
+		assertNotNull(s.findById(tt2.getId()));
+		assertNotNull(s.findById(tt3.getId()));
 
 		s.unindexAll(tags);
 
-		assertNull(s.findById(tt1.getId(), t.getClassname()));
-		assertNull(s.findById(tt2.getId(), t.getClassname()));
-		assertNull(s.findById(tt3.getId(), t.getClassname()));
+		assertNull(s.findById(tt1.getId()));
+		assertNull(s.findById(tt2.getId()));
+		assertNull(s.findById(tt3.getId()));
 	}
 
 }

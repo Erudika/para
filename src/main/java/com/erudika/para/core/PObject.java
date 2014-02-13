@@ -41,7 +41,7 @@ import org.codehaus.jackson.annotate.JsonIgnore;
 import org.hibernate.validator.constraints.NotBlank;
 
 /**
- * The basic implementation for {@link ParaObject}. Provides the basic functionality for DTOs.
+ * The basic implementation for {@link ParaObject}. Provides the basic functionality for domain objects.
  * @author Alex Bogdanovski <alex@erudika.com>
  * @see ParaObject
  */
@@ -390,7 +390,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> getLinkedObjects(Class<P> clazz, Pager... pager) {
+	public ArrayList<? extends ParaObject> getLinkedObjects(Class<? extends ParaObject> clazz, Pager... pager) {
 		ArrayList<Linker> links = getLinks(clazz, pager);
 		ArrayList<String> keys = new ArrayList<String>();
 		for (Linker link : links) {
@@ -400,7 +400,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 				keys.add(link.getId2());
 			}
 		}
-		return new ArrayList<P>((Collection<P>) getDao().readAll(getAppname(), keys, true).values());
+		return new ArrayList<ParaObject>(getDao().readAll(getAppname(), keys, true).values());
 	}
 
 	///////////////////////////////////////

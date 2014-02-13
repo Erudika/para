@@ -91,7 +91,7 @@ public class UserAuthentication implements Authentication {
 	public void setAuthenticated(boolean isAuthenticated) {
 		throw new UnsupportedOperationException();
 	}
-	
+
 	/**
 	 * The user identifier
 	 * @return the identifier

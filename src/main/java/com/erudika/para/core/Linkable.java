@@ -52,7 +52,7 @@ public interface Linkable extends ParaObject {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of linked objects
 	 */
-	<P extends ParaObject> ArrayList<P> getLinkedObjects(Class<P> clazz, Pager... pager);
+	ArrayList<? extends ParaObject> getLinkedObjects(Class<? extends ParaObject> clazz, Pager... pager);
 
 	/**
 	 * Checks if this object is linked to another.

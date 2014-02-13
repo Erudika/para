@@ -33,7 +33,7 @@ public class ElasticSearchIT extends SearchTest {
 
 	@BeforeClass
 	public static void setUpClass() {
-		System.setProperty("esembedded", "true");
+		System.setProperty("para.env", "embedded");
 		s = new ElasticSearch(mock(DAO.class));
 		ElasticSearchUtils.createIndex(Config.APP_NAME_NS);
 		ElasticSearchUtils.createIndex(appName1);

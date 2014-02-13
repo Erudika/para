@@ -22,7 +22,7 @@ import java.util.Set;
 import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
- * The core DTO interface. All Para objects implement it.
+ * The core domain interface. All Para objects implement it.
  * @author Alex Bogdanovski <alex@erudika.com>
  * @see PObject
  */

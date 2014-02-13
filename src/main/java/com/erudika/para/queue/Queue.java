@@ -37,7 +37,7 @@ public interface Queue {
 
 	/**
 	 * Returns the name of the queue.
-	 * @return
+	 * @return the queue name
 	 */
 	String getName();
 

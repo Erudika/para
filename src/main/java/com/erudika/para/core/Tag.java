@@ -69,7 +69,7 @@ public class Tag extends PObject {
 
 	/**
 	 * The number of objects tagged with this tag.
-	 * @return
+	 * @return the number of times this tag is used
 	 */
 	public Integer getCount() {
 		return count;
