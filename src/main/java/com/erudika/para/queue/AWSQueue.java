@@ -29,11 +29,11 @@ import com.amazonaws.services.sqs.model.SendMessageRequest;
 import com.erudika.para.Para;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.slf4j.Logger;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -47,7 +47,6 @@ public class AWSQueue implements Queue {
 	private AmazonSQSAsyncClient sqs;
 	private static final String SQS_ENDPOINT = "https://sqs.".concat(Config.AWS_REGION).concat(".amazonaws.com");
 	private static final Logger logger = LoggerFactory.getLogger(AWSQueue.class);
-	private ObjectMapper mapper = Utils.getInstance().getObjectMapper();
 	private String name;
 	private String endpoint;
 	private String url;
@@ -99,7 +98,7 @@ public class AWSQueue implements Queue {
 				} catch (AmazonServiceException ase) {
 					logException(ase);
 				} catch (AmazonClientException ace) {
-					logger.error("Could not reach SQS. {}", ace.getMessage());
+					logger.error("Could not reach SQS. {}", ace.toString());
 				}
 			}
 		}
@@ -122,7 +121,7 @@ public class AWSQueue implements Queue {
 			} catch (AmazonServiceException ase) {
 				logException(ase);
 			} catch (AmazonClientException ace) {
-				logger.error("Could not reach SQS. {}", ace.getMessage());
+				logger.error("Could not reach SQS. {}", ace.toString());
 			}
 		}
 		return task;
@@ -145,7 +144,7 @@ public class AWSQueue implements Queue {
 		} catch (AmazonServiceException ase) {
 			logException(ase);
 		} catch (AmazonClientException ace) {
-			logger.error("Could not reach SQS. {0}", ace.getMessage());
+			logger.error("Could not reach SQS. {0}", ace.toString());
 		}
 		return u;
 	}
@@ -156,7 +155,7 @@ public class AWSQueue implements Queue {
 //		} catch (AmazonServiceException ase) {
 //			logException(ase);
 //		} catch (AmazonClientException ace) {
-//			logger.error("Could not reach SQS. {0}", ace.getMessage());
+//			logger.error("Could not reach SQS. {0}", ace.toString());
 //		}
 //	}
 //
@@ -167,14 +166,14 @@ public class AWSQueue implements Queue {
 //		} catch (AmazonServiceException ase) {
 //			logException(ase);
 //		} catch (AmazonClientException ace) {
-//			logger.error("Could not reach SQS. {0}", ace.getMessage());
+//			logger.error("Could not reach SQS. {0}", ace.toString());
 //		}
 //		return list;
 //	}
 
 	private void logException(AmazonServiceException ase) {
 		logger.error("AmazonServiceException: error={0}, statuscode={1}, "
-			+ "awserrcode={2}, errtype={3}, reqid={4}", ase.getMessage(), ase.getStatusCode(),
+			+ "awserrcode={2}, errtype={3}, reqid={4}", ase.toString(), ase.getStatusCode(),
 			ase.getErrorCode(), ase.getErrorType(), ase.getRequestId());
 	}
 }

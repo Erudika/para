@@ -21,16 +21,15 @@ import com.erudika.para.i18n.LanguageUtils;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.utils.Config;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import javax.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 
 /**
  * A translation is a key/value pair which holds a single translated string.
  * For example: hello = "Hola"
  * @author Alex Bogdanovski <alex@erudika.com>
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class Translation extends PObject {
 	private static final long serialVersionUID = 1L;
 
@@ -54,8 +53,6 @@ public class Translation extends PObject {
 	 */
 	public Translation(String id) {
 		this();
-		setId(id);
-		getName();
 	}
 
 	/**
@@ -71,12 +68,14 @@ public class Translation extends PObject {
 		this.value = value;
 		this.approved = false;
 		setName(value);
+		setName(getName());
 	}
 
 	/**
 	 * An instance of LanguageUtils
 	 * @return instance of {@link com.erudika.para.i18n.LanguageUtils}
 	 */
+	@JsonIgnore
 	public LanguageUtils getLangutils() {
 		if (langutils == null) {
 			langutils = new LanguageUtils(getSearch(), getDao());
@@ -172,11 +171,6 @@ public class Translation extends PObject {
 	 */
 	public boolean isApproved() {
 		return (approved != null) ? approved : false;
-	}
-
-	@Override
-	public String getName() {
-		return this.value;
 	}
 
 	@Override

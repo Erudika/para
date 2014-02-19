@@ -20,6 +20,7 @@ package com.erudika.para.utils;
 //import static com.erudika.para.utils.Utils.MD5;
 
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
+import com.erudika.para.web.ParaContextListener;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueType;
@@ -150,7 +151,7 @@ public final class Config {
 	/**
 	 * The name of the default application without any spaces.
 	 */
-	public static final String APP_NAME_NS = Utils.spacesToDashes(APP_NAME);
+	public static final String APP_NAME_NS = Utils.noSpaces(APP_NAME, "-");
 	/**
 	 * The name of the authentication cookie.
 	 */

@@ -45,7 +45,7 @@ public class Sysprop extends PObject {
 	 */
 	public Sysprop(String id) {
 		setId(id);
-		getName();
+		setName(getName());
 	}
 
 	/**

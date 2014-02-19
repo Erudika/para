@@ -20,9 +20,13 @@ package com.erudika.para.utils;
 import com.erudika.para.annotations.Email;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.annotations.Locked;
-import com.erudika.para.core.PObject;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.rjeschke.txtmark.Configuration;
 import com.github.rjeschke.txtmark.Processor;
 import java.io.UnsupportedEncodingException;
@@ -30,6 +34,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -39,7 +44,6 @@ import java.text.DateFormatSymbols;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -79,7 +83,6 @@ import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.geonames.FeatureClass;
 import org.geonames.Style;
 import org.geonames.Toponym;
@@ -99,9 +102,11 @@ import org.slf4j.LoggerFactory;
 public final class Utils {
 
 	private static final Logger logger = LoggerFactory.getLogger(Utils.class);
-	private static ExecutorService exec = Executors.newSingleThreadExecutor();
+	private static final ExecutorService exec = Executors.newSingleThreadExecutor();
 	private static final SecureRandom random = new SecureRandom();
-	private static ObjectMapper jsonMapper;
+	private static final ObjectMapper jsonMapper = new ObjectMapper();
+	private static final ObjectReader jsonReader = jsonMapper.reader();
+	private static final ObjectWriter jsonWriter = jsonMapper.writer();
 	private static HumanTime humantime;
 	private static Utils instance;
 
@@ -124,10 +129,11 @@ public final class Utils {
 	static {
 		initIdGenerator();
 		random.setSeed(random.generateSeed(8));
+		jsonMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+		jsonMapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
 	}
 
-	private Utils() {
-	}
+	private Utils() { }
 
 	/**
 	 * Returns an instance of this class.
@@ -141,14 +147,19 @@ public final class Utils {
 	}
 
 	/**
-	 * Jackson JSON mapper
-	 * @return json object mapper
+	 * A Jackson JSON reader.
+	 * @return JSON object reader
 	 */
-	public static ObjectMapper getObjectMapper() {
-		if (jsonMapper == null) {
-			jsonMapper = new ObjectMapper();
-		}
-		return jsonMapper;
+	public static ObjectReader getJsonReader(Class<?> type) {
+		return jsonReader.withType(type);
+	}
+	
+	/**
+	 * A Jackson JSON writer.
+	 * @return JSON object writer
+	 */
+	public static ObjectWriter getJsonWriter(SerializationFeature... sfs) {
+		return jsonWriter.withFeatures(sfs);
 	}
 
 	/**
@@ -295,10 +306,12 @@ public final class Utils {
 	/**
 	 * Converts spaces to dashes.
 	 * @param str a string with spaces
+	 * @param replaceWith a string to replace spaces with
 	 * @return a string with dashes
 	 */
-	public static String spacesToDashes(String str) {
-		return StringUtils.isBlank(str) ? "" : str.replaceAll("[\\p{C}\\p{Z}]+","-").toLowerCase();
+	public static String noSpaces(String str, String replaceWith) {
+		return StringUtils.isBlank(str) ? "" : str.trim().replaceAll("[\\p{C}\\p{Z}]+", 
+				StringUtils.trimToEmpty(replaceWith)).toLowerCase();
 	}
 
 	/**
@@ -521,15 +534,15 @@ public final class Utils {
 	 * @param includeId true if we want to include the ID of the object in the URL
 	 * @return the object's URL - e.g. /users/123-name, /users/, /users/123
 	 */
-	public static String getObjectURL(ParaObject obj, boolean includeName, boolean includeId) {
+	public static String getObjectURI(ParaObject obj, boolean includeName, boolean includeId) {
 		if (obj == null) {
 			return "/";
 		}
 		if (includeId && obj.getId() != null) {
-			return (includeName && !StringUtils.isBlank(obj.getName())) ? obj.getObjectURL().concat("-").
-					concat(urlEncode(spacesToDashes(obj.getName()))) : obj.getObjectURL();
+			return (includeName && !StringUtils.isBlank(obj.getName())) ? obj.getObjectURI().concat("-").
+					concat(urlEncode(noSpaces(obj.getName(), "-"))) : obj.getObjectURI();
 		} else {
-			return obj.getObjectURL();
+			return obj.getObjectURI();
 		}
 	}
 
@@ -755,19 +768,19 @@ public final class Utils {
 			return;
 		}
 		Class<Locked> locked = (paramMap.containsKey(Config._ID)) ? Locked.class : null;
-		Map<String, Object> fields = getAnnotatedFields(transObject, Stored.class, locked);
+		Map<String, Object> fields = getAnnotatedFields(transObject, locked);
 		Map<String, Object> data = new HashMap<String, Object>();
 		// populate an object with converted param values from param map.
 		try {
 			for (Map.Entry<String, String[]> ks : paramMap.entrySet()) {
 				String param = ks.getKey();
 				String[] values = ks.getValue();
-				String value = (values.length > 1) ? getObjectMapper().writeValueAsString(values) : values[0];
+				String value = (values.length > 1) ? getJsonWriter().writeValueAsString(values) : values[0];
 				if (fields.containsKey(param)) {
 					data.put(param, value);
 				}
 			}
-			setAnnotatedFields(transObject, data);
+			setAnnotatedFields(transObject, data, locked);
 		} catch (Exception ex) {
 			logger.error(null, ex);
 		}
@@ -792,11 +805,27 @@ public final class Utils {
 	 * @param <P> the object type
 	 * @param bean the object to convert to a map
 	 * @param anno annotation that's used on fields
+	 * @return a map of fields and their values
+	 */
+	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P bean) {
+		return getAnnotatedFields(bean, null);
+	}
+	
+	/**
+	 * Returns a map of annotated fields of a domain object. Only annotated fields are returned.
+	 * This method forms the basis of an Object/Grid Mapper. It converts an object 
+	 * to a map of key/value pairs. That map can later be persisted to a data store.
+	 * </br>
+	 * Field values that are objects (i.e. not primitive types or wrappers) are converted to JSON.
+	 * Null is considered a primitive type. Transient fields and serialVersionUID are skipped.
+	 * @param <P> the object type
+	 * @param bean the object to convert to a map
+	 * @param anno annotation that's used on fields
 	 * @param filter a filter annotation. fields that have it will be skipped
 	 * @return a map of fields and their values
 	 */
-	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P bean,
-			Class<? extends Annotation> anno, Class<? extends Annotation> filter) {
+	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P bean, 
+			Class<? extends Annotation> filter) {
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		if (bean == null) {
 			return map;
@@ -806,12 +835,12 @@ public final class Utils {
 			// filter transient fields and those without annotations
 			for (Field field : fields) {
 				boolean dontSkip = ((filter == null) ? true : !field.isAnnotationPresent(filter));
-				if (anno != null && field.isAnnotationPresent(anno) && dontSkip) {
+				if (field.isAnnotationPresent(Stored.class) && dontSkip) {
 					Object prop = PropertyUtils.getProperty(bean, field.getName());
 					if (prop == null || isBasicType(field.getType())) {
 						map.put(field.getName(), prop);
 					} else {
-						map.put(field.getName(), getObjectMapper().writeValueAsString(prop));
+						map.put(field.getName(), getJsonWriter().writeValueAsString(prop));
 					}
 				}
 			}
@@ -833,7 +862,7 @@ public final class Utils {
 	 * @return the populated object
 	 */
 	public static <P extends ParaObject> P setAnnotatedFields(Map<String, Object> data) {
-		return setAnnotatedFields(null, data);
+		return setAnnotatedFields(null, data, null);
 	}
 
 	/**
@@ -845,22 +874,24 @@ public final class Utils {
 	 * @param <P> the object type
 	 * @param bean the object to populate with data
 	 * @param data the map of fields/values
+	 * @param filter a filter annotation. fields that have it will be skipped
 	 * @return the populated object
 	 */
-	public static <P extends ParaObject> P setAnnotatedFields(P bean, Map<String, Object> data) {
+	public static <P extends ParaObject> P setAnnotatedFields(P bean, Map<String, Object> data, 
+			Class<? extends Annotation> filter) {
 		if (data == null || data.isEmpty()) {
 			return null;
 		}
 		try {
 			if (bean == null) {
-				Class<P> clazz = (Class<P>) toClass((String) data.get(Config._CLASSNAME));
-				if (clazz != null) {
-					bean = clazz.getConstructor().newInstance();
-				}
+				// try to find a declared class in the core package
+				bean = (P) toClass((String) data.get(Config._CLASSNAME)).getConstructor().newInstance();
 			}
-			if (bean != null) {
-				ArrayList<Field> fields = getAllDeclaredFields(bean.getClass());
-				for (Field field : fields) {
+			ArrayList<Field> fields = getAllDeclaredFields(bean.getClass());
+			Map<String, Object> props = new HashMap<String, Object>(data);
+			for (Field field : fields) {
+				boolean dontSkip = ((filter == null) ? true : !field.isAnnotationPresent(filter));
+				if (field.isAnnotationPresent(Stored.class) && dontSkip) {
 					String name = field.getName();
 					Object value = data.get(name);
 					if (value == null && PropertyUtils.isReadable(bean, name)) {
@@ -869,10 +900,14 @@ public final class Utils {
 					if (value == null || isBasicType(field.getType())) {
 						BeanUtils.setProperty(bean, name, value);
 					} else {
-						Object val = getObjectMapper().readValue(value.toString(), field.getType());
+						Object val = getJsonReader(field.getType()).readValue(value.toString());
 						BeanUtils.setProperty(bean, name, val);
 					}
+					props.remove(name);
 				}
+			}
+			if(bean instanceof Sysprop) {
+				((Sysprop) bean).setProperties(props);
 			}
 		} catch (Exception ex) {
 			logger.error(null, ex);
@@ -882,43 +917,62 @@ public final class Utils {
 	}
 
 	/**
-	 * Converts a class name to a real Class object.
+	 * Constructs a new instance of a core object.
+	 * @param <P> the object type
 	 * @param classname the simple name of a class
-	 * @return the Class object or null if the class was not found
-	 * @see java.lang.Class#forName(java.lang.String) 
+	 * @return a new instance of a core class. Defaults to {@link com.erudika.para.core.Sysprop}.
+	 * @see #toClass(java.lang.String, java.lang.String) 
 	 */
-	public static Class<? extends ParaObject> toClass(String classname) {
-		return toClass(classname, null);
+	public static <P extends ParaObject> P toObject(String classname) {
+		try {
+			return (P) toClass(classname).getConstructor().newInstance();
+		} catch (Exception ex) {
+			logger.error(null, ex);
+			return null;
+		}
 	}
-
+	
 	/**
 	 * Converts a class name to a real Class object.
 	 * @param classname the simple name of a class
-	 * @param scanPackageName the package path of the class
-	 * @return the Class object or null if the class was not found
+	 * @return the Class object or {@link com.erudika.para.core.Sysprop} if the class was not found.
 	 * @see java.lang.Class#forName(java.lang.String) 
 	 */
-	public static Class<? extends ParaObject> toClass(String classname, String scanPackageName) {
+	public static Class<? extends ParaObject> toClass(String classname) {
+		return toClass(classname, null, Sysprop.class);
+	}
+
+	/**
+	 * Converts a class name to a real {@link com.erudika.para.core.ParaObject} subclass.
+	 * Defaults to {@link com.erudika.para.core.Sysprop} if the class was not found in the core package path.
+	 * @param classname the simple name of a class
+	 * @param scanPackagePath the package path of the class
+	 * @param defaultClass returns this type if the requested class was not found on the classpath.
+	 * @return the Class object. Returns null if defaultClass is null. 
+	 * @see java.lang.Class#forName(java.lang.String) 
+	 * @see com.erudika.para.core.Sysprop
+	 */
+	public static Class<? extends ParaObject> toClass(String classname, String scanPackagePath, 
+			Class<? extends ParaObject> defaultClass) {
 		String packagename = Config.CORE_PACKAGE_NAME;
-		String corepackage = StringUtils.isBlank(scanPackageName) ? packagename : scanPackageName;
+		String corepackage = StringUtils.isBlank(scanPackagePath) ? packagename : scanPackagePath;
+		Class<? extends ParaObject> returnClass = defaultClass;
 		if (StringUtils.isBlank(classname)) {
-			return null;
+			return returnClass;
 		}
-		Class<? extends ParaObject> clazz = null;
 		try {
-			clazz = (Class<? extends ParaObject>) Class.forName(PObject.class.getPackage().getName().
+			returnClass = (Class<? extends ParaObject>) Class.forName(ParaObject.class.getPackage().getName().
 					concat(".").concat(StringUtils.capitalize(classname)));
-		} catch (Exception ex) {
-			if (ex instanceof ClassNotFoundException) {
-				try {
-					clazz = (Class<? extends ParaObject>) Class.forName(corepackage.concat(".").
-							concat(StringUtils.capitalize(classname)));
-				} catch (Exception ex1) {
-					logger.warn(ex1.getMessage());
-				}
+		} catch (ClassNotFoundException ex) {
+			try {
+				returnClass = (Class<? extends ParaObject>) Class.forName(corepackage.concat(".").
+						concat(StringUtils.capitalize(classname)));
+			} catch (ClassNotFoundException ex1) {
+				// unknown type - fall back to Sysprop
+				returnClass = defaultClass;
 			}
 		}
-		return clazz;
+		return returnClass;
 	}
 
 	/**
@@ -927,62 +981,38 @@ public final class Utils {
 	 * @param json the JSON string
 	 * @return a core domain object or null if the string was blank
 	 */
-	public static ParaObject fromJSON(String json) {
+	public static <P extends ParaObject> P fromJSON(String json) {
 		if (StringUtils.isBlank(json)) {
 			return null;
 		}
 		try {
-			Map<String, Object> map = getObjectMapper().readValue(json, Map.class);
-			ParaObject pObject = setAnnotatedFields(map);
-			if (pObject == null) {
-				Sysprop s = new Sysprop(getNewId());
-				if (map.containsKey(Config._ID)) {
-					s.setId((String) map.get(Config._ID));
-				}
-				if (map.containsKey(Config._NAME)) {
-					s.setName((String) map.get(Config._NAME));
-				}
-				if (map.containsKey(Config._CREATORID)) {
-					s.setCreatorid((String) map.get(Config._CREATORID));
-				}
-				if (map.containsKey(Config._TIMESTAMP)) {
-					s.setTimestamp((Long) map.get(Config._TIMESTAMP));
-				}
-				if (map.containsKey(Config._UPDATED)) {
-					s.setUpdated((Long) map.get(Config._UPDATED));
-				}
-				if (map.containsKey(Config._TAGS)) {
-					s.setTags(new HashSet<String>((Collection<String>) map.get(Config._TAGS)));
-				}
-				s.setProperties(map);
-				pObject = s;
-			}
-			return pObject;
+			Map<String, Object> map = getJsonReader(Map.class).readValue(json);
+			return setAnnotatedFields(map);
 		} catch (Exception e) {
 			logger.error(null, e);
 		}
 		return null;
 	}
-
+	
 	/**
 	 * Converts a domain object to JSON.
 	 * @param obj a domain object
 	 * @return the JSON representation of that object
 	 */
-	public static String toJSON(ParaObject obj) {
+	public static <P extends ParaObject> String toJSON(P obj) {
 		if (obj == null) {
-			return "";
+			return "{}";
 		}
 		try {
-			return getObjectMapper().writeValueAsString(obj);
+			return getJsonWriter().writeValueAsString(obj);
 		} catch (Exception e) {
 			logger.error(null, e);
 		}
-		return "";
+		return "{}";
 	}
 
 	/**
-	 * Checks if a class is primitive or a primitive wrapper.
+	 * Checks if a class is primitive, String or a primitive wrapper.
 	 * @param clazz a class
 	 * @return true if primitive or wrapper
 	 */
@@ -997,6 +1027,15 @@ public final class Utils {
 				clazz.equals(Float.class) ||
 				clazz.equals(Double.class) ||
 				clazz.equals(Character.class));
+	}
+	
+	/**
+	 * Returns the simple name of a class in lowercase.
+	 * @param clazz a class
+	 * @return just the name in lowercase or an empty string if null
+	 */
+	public static String classname(Class<? extends ParaObject> clazz) {
+		return (clazz == null) ? "" : clazz.getSimpleName().toLowerCase();
 	}
 
 	/////////////////////////////////////////////
@@ -1253,13 +1292,16 @@ public final class Utils {
 	 * @return a status code 201 or 400
 	 */
 	public static <P extends ParaObject> Response getCreateResponse(P content, UriBuilder context) {
+		if (content != null && content.getId() != null && content.exists()) {
+			return Response.ok().build();
+		}
 		String[] errors = validateRequest(content);
 		if (errors.length == 0 && context != null) {
 			String id = content.create();
 			if (id == null) {
 				return getJSONResponse(Status.BAD_REQUEST, "Failed to create object.");
 			} else {
-				return Response.created(context.path(id).build()).entity(content).build();
+				return Response.created(URI.create(content.getObjectURI())).entity(content).build();
 			}
 		} else {
 			return getJSONResponse(Response.Status.BAD_REQUEST, errors);
@@ -1273,19 +1315,9 @@ public final class Utils {
 	 * @param newContent new updated content
 	 * @return a status code 200 or 400 or 404
 	 */
-	public static <P extends ParaObject> Response getUpdateResponse(P object, P newContent) {
+	public static <P extends ParaObject> Response getUpdateResponse(P object, Map<String, Object> newContent) {
 		if (object != null) {
-			Map<String, Object> propsMap = getAnnotatedFields(newContent, Stored.class, Locked.class);
-			try {
-				for (Map.Entry<String, Object> entry : propsMap.entrySet()) {
-					if (entry.getValue() != null) {
-						BeanUtils.setProperty(object, entry.getKey(), entry.getValue());
-					}
-				}
-			} catch (Exception ex) {
-				logger.error(null, ex);
-			}
-
+			setAnnotatedFields(object, newContent, Locked.class);
 			String[] errors = validateRequest(object);
 			if (errors.length == 0) {
 				object.update();
@@ -1332,7 +1364,7 @@ public final class Utils {
 					put("message", status.getReasonPhrase().concat(". ").concat(StringUtils.join(errors, "; ")));
 				}
 			};
-			json = getObjectMapper().writeValueAsString(map);
+			json = getJsonWriter().writeValueAsString(map);
 		} catch (Exception ex) {
 			logger.error(null, ex);
 		}

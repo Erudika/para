@@ -83,6 +83,7 @@ public class MockCache implements Cache {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <T> T get(String appName, String id) {
 		if (StringUtils.isBlank(id) || StringUtils.isBlank(appName)) {
 			return null;
@@ -98,6 +99,7 @@ public class MockCache implements Cache {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <T> Map<String, T> getAll(String appName, List<String> ids) {
 		Map<String, T> map1 = new LinkedHashMap<String, T>();
 		if (ids == null || StringUtils.isBlank(appName)) {

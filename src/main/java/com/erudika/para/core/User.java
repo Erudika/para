@@ -23,6 +23,7 @@ import com.erudika.para.annotations.Stored;
 import com.erudika.para.i18n.CurrencyUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,8 +32,6 @@ import javax.validation.constraints.Size;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.codehaus.jackson.annotate.JsonIgnore;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.hibernate.validator.constraints.NotBlank;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -42,7 +41,6 @@ import org.springframework.security.core.userdetails.UserDetails;
  * The core user object. Stores information about users.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class User extends PObject implements UserDetails {
 	private static final long serialVersionUID = 1L;
 
@@ -71,7 +69,7 @@ public class User extends PObject implements UserDetails {
 	 */
 	public User(String id) {
 		setId(id);
-		getName();
+		setName(getName());
 	}
 
 	@Override
@@ -256,7 +254,7 @@ public class User extends PObject implements UserDetails {
 	 */
 	@JsonIgnore
 	public List<String> getIdentifiers() {
-		List<Sysprop> list = getSearch().findTerms(getAppname(), classname(Sysprop.class),
+		List<Sysprop> list = getSearch().findTerms(getAppname(), Utils.classname(Sysprop.class),
 				Collections.singletonMap(Config._CREATORID, getId()), true);
 		ArrayList<String> idents = new ArrayList<String>();
 		for (Sysprop s : list) {
@@ -294,11 +292,6 @@ public class User extends PObject implements UserDetails {
 	 */
 	public boolean isFacebookUser() {
 		return StringUtils.startsWithIgnoreCase(identifier, Config.FB_PREFIX);
-	}
-
-	@Override
-	public String getCreatorid() {
-		return getId();
 	}
 
 	/**

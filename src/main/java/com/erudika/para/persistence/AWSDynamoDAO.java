@@ -17,7 +17,6 @@
  */
 package com.erudika.para.persistence;
 
-import com.erudika.para.annotations.Stored;
 import com.erudika.para.annotations.Locked;
 import com.amazonaws.services.dynamodbv2.model.AttributeAction;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
@@ -448,7 +447,7 @@ public class AWSDynamoDAO implements DAO {
 		if (so == null) {
 			return row;
 		}
-		for (Entry<String, Object> entry : Utils.getAnnotatedFields(so, Stored.class, filter).entrySet()) {
+		for (Entry<String, Object> entry : Utils.getAnnotatedFields(so, filter).entrySet()) {
 			Object value = entry.getValue();
 			if (value != null && !StringUtils.isBlank(value.toString())) {
 				row.put(entry.getKey(), new AttributeValue(value.toString()));

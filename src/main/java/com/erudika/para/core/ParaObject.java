@@ -17,9 +17,9 @@
  */
 package com.erudika.para.core;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.Serializable;
 import java.util.Set;
-import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  * The core domain interface. All Para objects implement it.
@@ -66,8 +66,8 @@ public interface ParaObject extends Serializable {
 	void setAppname(String appname);
 
 	/**
-	 * The id of the parent object. If the object has no parent then this is equivalent of {@link #getId()}
-	 * @return the id of the parent or own id if no parent.
+	 * The id of the parent object.
+	 * @return the id of the parent or null
 	 */
 	String getParentid();
 
@@ -90,8 +90,8 @@ public interface ParaObject extends Serializable {
 	void setClassname(String classname);
 
 	/**
-	 * The id of the user who created this. Should point to a {@link User}
-	 * @return the id
+	 * The id of the user who created this. Should point to a {@link User} id.
+	 * @return the id or null
 	 */
 	String getCreatorid();
 
@@ -108,23 +108,23 @@ public interface ParaObject extends Serializable {
 	String getPlural();
 
 	/**
-	 * The URL of this object. For example: /users/123
-	 * @return the URL
-	 * @see com.erudika.para.utils.Utils#getObjectURL(com.erudika.para.core.ParaObject, boolean, boolean) 
+	 * The URI of this object. For example: /users/123
+	 * @return the URI
+	 * @see com.erudika.para.utils.Utils#getObjectURI(com.erudika.para.core.ParaObject, boolean, boolean) 
 	 */
-	String getObjectURL();
+	String getObjectURI();
 
 	/**
 	 * The user object of the creator.
-	 * @return the user who created this
+	 * @return the user who created this or null if {@link #getCreatorid()} is null
 	 * @see User
 	 */
 	@JsonIgnore
 	ParaObject getCreator();
 
 	/**
-	 * The parent object. Can be any object or {@code this}.
-	 * @return the parent
+	 * The parent object..
+	 * @return the parent or null if {@link #getParentid()} is null
 	 */
 	@JsonIgnore
 	ParaObject getParent();

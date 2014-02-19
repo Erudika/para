@@ -19,7 +19,6 @@ package com.erudika.para.core;
 
 import com.erudika.para.annotations.Stored;
 import javax.validation.constraints.Size;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.hibernate.validator.constraints.NotBlank;
 
 /**
@@ -28,7 +27,6 @@ import org.hibernate.validator.constraints.NotBlank;
  * @author Alex Bogdanovski <alex@erudika.com>
  * @see Linker
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class Address extends PObject {
 	private static final long serialVersionUID = 1L;
 
@@ -51,7 +49,7 @@ public class Address extends PObject {
 	 */
 	public Address(String id) {
 		setId(id);
-		getName();
+		setName(getName());
 	}
 
 	/**

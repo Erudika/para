@@ -46,10 +46,10 @@ public class PObjectTest {
 	}
 
 	@Test
-	public void testGetObjectURL() {
-		assertEquals("/tags/tag", new Tag("tag").getObjectURL());
-		assertEquals("/users/1", new User("1").getObjectURL());
-		assertEquals("/votes", new Vote(null,null,null).getObjectURL());
+	public void testGetObjectURI() {
+		assertEquals("/tags/tag", new Tag("tag").getObjectURI());
+		assertEquals("/users/1", new User("1").getObjectURI());
+		assertEquals("/votes", new Vote(null,null,null).getObjectURI());
 	}
 
 	@Test
@@ -91,11 +91,11 @@ public class PObjectTest {
 
 	@Test
 	public void testClassname() {
-		assertEquals("user", PObject.classname(User.class));
-		assertEquals("tag", PObject.classname(Tag.class));
-		assertEquals("paraobject", PObject.classname(ParaObject.class));
-		assertEquals("vote", PObject.classname(Vote.class));
-		assertEquals("", PObject.classname(null));
+		assertEquals("user", Utils.classname(User.class));
+		assertEquals("tag", Utils.classname(Tag.class));
+		assertEquals("paraobject", Utils.classname(ParaObject.class));
+		assertEquals("vote", Utils.classname(Vote.class));
+		assertEquals("", Utils.classname(null));
 	}
 
 	@Test

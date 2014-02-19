@@ -135,10 +135,10 @@ public class UtilsTest {
 	}
 
 	@Test
-	public void testSpacesToDashes() {
-		assertNotNull(spacesToDashes(null));
-		assertNotNull(spacesToDashes(""));
-		assertEquals("test-123-456-789-000", spacesToDashes("test 123 456      789	000"));
+	public void testNoSpaces() {
+		assertNotNull(noSpaces(null, "-"));
+		assertNotNull(noSpaces("", "-"));
+		assertEquals("test-123-456-789-000", noSpaces("test 123 456      789	000", "-"));
 	}
 
 	@Test
@@ -229,10 +229,10 @@ public class UtilsTest {
 	}
 
 	@Test
-	public void testGetObjectLink() {
+	public void testGetObjectURI() {
 		User u = new User("123");
-		assertNotNull(getObjectURL(null, false, false));
-		assertEquals(u.getObjectURL(), getObjectURL(u, false, true));
+		assertNotNull(getObjectURI(null, false, false));
+		assertEquals(u.getObjectURI(), getObjectURI(u, false, true));
 	}
 
 	@Test
@@ -277,10 +277,10 @@ public class UtilsTest {
 	@Test
 	public void testGetAnnotatedFields() {
 		User u = new User();
-		assertTrue(getAnnotatedFields(null, null, null).isEmpty());
-		assertTrue(getAnnotatedFields(u, null, null).isEmpty());
-		Map<String, Object> fm1 = getAnnotatedFields(u, Stored.class, null);
-		Map<String, Object> fm2 = getAnnotatedFields(u, Stored.class, Locked.class);
+		assertTrue(getAnnotatedFields(null).isEmpty());
+		assertTrue(getAnnotatedFields(u).isEmpty());
+		Map<String, Object> fm1 = getAnnotatedFields(u);
+		Map<String, Object> fm2 = getAnnotatedFields(u, Locked.class);
 		assertFalse(fm1.isEmpty());
 		assertFalse(fm2.isEmpty());
 		assertTrue(fm1.containsKey(Config._ID));
@@ -299,7 +299,7 @@ public class UtilsTest {
 		Map<String, Object> map = new HashMap<String, Object>();
 		long timestamp = 1390052381000L;
 		map.put(Config._ID, "123");
-		map.put(Config._CLASSNAME, PObject.classname(User.class));
+		map.put(Config._CLASSNAME, Utils.classname(User.class));
 		map.put(Config._EMAIL, "u@test.co");
 		map.put(Config._NAME, "User Name");
 		map.put(Config._TAGS, "[\"tag1\",\"tag2\"]");
@@ -315,7 +315,7 @@ public class UtilsTest {
 
 		User obj2 = new User("234");
 		obj2.setActive(true);
-		setAnnotatedFields(obj2, map);
+		setAnnotatedFields(obj2, map, null);
 		assertEquals(map.get(Config._ID), obj2.getId());
 		assertEquals(map.get(Config._NAME), obj2.getName());
 		assertEquals(map.get(Config._EMAIL), obj2.getEmail());
@@ -324,16 +324,25 @@ public class UtilsTest {
 	}
 
 	@Test
+	public void testToObject() {
+		assertNotNull(toObject(null));
+		assertNotNull(toObject(""));
+		assertEquals(Sysprop.class, toObject("test123").getClass());
+		assertEquals(User.class, toObject(Utils.classname(User.class)));
+		assertEquals(Tag.class, toObject(Utils.classname(Tag.class)));
+	}
+	
+	@Test
 	public void testToClass() {
-		assertNull(toClass(null));
-		assertNull(toClass(""));
-		assertEquals(User.class, toClass(PObject.classname(User.class)));
-		assertEquals(Tag.class, toClass(PObject.classname(Tag.class)));
+		assertNotNull(toClass(null));
+		assertNotNull(toClass(""));
+		assertEquals(Sysprop.class, toClass("test123"));
+		assertEquals(User.class, toClass(Utils.classname(User.class)));
+		assertEquals(Tag.class, toClass(Utils.classname(Tag.class)));
 	}
 
 	@Test
 	public void testFromJSON() {
-		assertNull(fromJSON(null));
 		assertNull(fromJSON(""));
 		assertNotNull(fromJSON("{}"));
 

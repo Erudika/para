@@ -19,15 +19,15 @@ package com.erudika.para.core;
 
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
-import static com.erudika.para.core.PObject.classname;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Utils;
 import org.hibernate.validator.constraints.NotBlank;
 
 /**
  * This class represents a many-to-many relationship (link) between two objects.
  * @author Alex Bogdanovski <alex@erudika.com>
  */
-public class Linker extends PObject {
+public final class Linker extends PObject {
 	private static final long serialVersionUID = 1L;
 
 	@Stored @Locked @NotBlank private String id1;
@@ -49,14 +49,14 @@ public class Linker extends PObject {
 	 * @param i2 the id of the second object
 	 */
 	public Linker(Class<? extends ParaObject> c1, Class<? extends ParaObject> c2, String i1, String i2) {
-		if (isReversed(classname(c1), classname(c2))) {
-			classname1 = classname(c2);
-			classname2 = classname(c1);
+		if (isReversed(Utils.classname(c1), Utils.classname(c2))) {
+			classname1 = Utils.classname(c2);
+			classname2 = Utils.classname(c1);
 			this.id1 = i2;
 			this.id2 = i1;
 		} else {
-			classname1 = classname(c1);
-			classname2 = classname(c2);
+			classname1 = Utils.classname(c1);
+			classname2 = Utils.classname(c2);
 			this.id1 = i1;
 			this.id2 = i2;
 		}
@@ -178,7 +178,7 @@ public class Linker extends PObject {
 		if (c1 == null) {
 			return false;
 		}
-		return classname(c1).equals(classname1);
+		return Utils.classname(c1).equals(classname1);
 	}
 //
 	/**

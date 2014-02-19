@@ -118,53 +118,57 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		if (cachedAnno != null) {
 			switch (cachedAnno.action()) {
 				case GET:
-					String getMe = (String) args[1];
-					if (cache.contains(appName, getMe)) {
-						result = cache.get(appName, getMe);
-						logger.debug("{}: Cache hit: {}->{}", cn, appName, getMe);
-					} else {
+					String getMeId = (String) args[1];
+					if (cache.contains(appName, getMeId)) {
+						result = cache.get(appName, getMeId);
+						logger.debug("{}: Cache hit: {}->{}", cn, appName, getMeId);
+					} else if (getMeId != null) {
 						if (result == null) {
 							result = mi.proceed();
 						}
 						if (result != null) {
-							cache.put(appName, getMe, result);
-							logger.debug("{}: Cache miss: {}->{}", cn, appName, getMe);
+							cache.put(appName, getMeId, result);
+							logger.debug("{}: Cache miss: {}->{}", cn, appName, getMeId);
 						}
 					}
 					break;
 				case PUT:
 					ParaObject putMe = AOPUtils.getArgOfParaObject(args);
-					if (result != null) {
+					if (putMe != null) {
 						cache.put(appName, putMe.getId(), putMe);
 						logger.debug("{}: Cache put: {}->{}", cn, appName, putMe.getId());
 					}
 					break;
 				case DELETE:
 					ParaObject deleteMe = AOPUtils.getArgOfParaObject(args);
-					cache.remove(appName, deleteMe.getId());
-					logger.debug("{}: Cache delete: {}->{}", cn, appName, deleteMe.getId());
+					if (deleteMe != null) {
+						cache.remove(appName, deleteMe.getId());
+						logger.debug("{}: Cache delete: {}->{}", cn, appName, deleteMe.getId());
+					}
 					break;
 				case GET_ALL:
 					List<String> getUs = AOPUtils.getArgOfListOfType(args, String.class);
-					Map<String, ParaObject> cached = cache.getAll(appName, getUs);
-					logger.debug("{}: Cache get page: {}->{}", cn, appName, getUs);
-					for (String id : getUs) {
-						if (!cached.containsKey(id)) {
-							if (result == null) {
-								result = mi.proceed();
+					if (getUs != null) {
+						Map<String, ParaObject> cached = cache.getAll(appName, getUs);
+						logger.debug("{}: Cache get page: {}->{}", cn, appName, getUs);
+						for (String id : getUs) {
+							if (!cached.containsKey(id)) {
+								if (result == null) {
+									result = mi.proceed();
+								}
+								cache.putAll(appName, (Map<String, ParaObject>) result);
+								logger.debug("{}: Cache get page reload: {}->{}", cn, appName, id);
+								break;
 							}
-							cache.putAll(appName, (Map<String, ParaObject>) result);
-							logger.debug("{}: Cache get page reload: {}->{}", cn, appName, id);
-							break;
 						}
-					}
-					if (result == null) {
-						result = cached;
+						if (result == null) {
+							result = cached;
+						}
 					}
 					break;
 				case PUT_ALL:
 					List<ParaObject> putUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
-					if (result != null) {
+					if (putUs != null) {
 						Map<String, ParaObject> map1 = new LinkedHashMap<String, ParaObject>();
 						for (ParaObject paraObject : putUs) {
 							map1.put(paraObject.getId(), paraObject);
@@ -175,12 +179,14 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					break;
 				case DELETE_ALL:
 					List<ParaObject> deleteUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
-					List<String> list = new ArrayList<String>();
-					for (ParaObject paraObject : deleteUs) {
-						list.add(paraObject.getId());
+					if (deleteUs != null) {
+						List<String> list = new ArrayList<String>();
+						for (ParaObject paraObject : deleteUs) {
+							list.add(paraObject.getId());
+						}
+						cache.removeAll(appName, list);
+						logger.debug("{}: Cache delete page: {}->{}", cn, appName, list);
 					}
-					cache.removeAll(appName, list);
-					logger.debug("{}: Cache delete page: {}->{}", cn, appName, list);
 					break;
 				default:
 					break;

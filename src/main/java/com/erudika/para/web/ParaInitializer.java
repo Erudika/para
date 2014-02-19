@@ -18,14 +18,13 @@
 package com.erudika.para.web;
 
 import static com.erudika.para.core.User.Roles.*;
-import com.erudika.para.rest.Api1;
 import com.erudika.para.security.SecurityConfig;
 import java.util.EnumSet;
+import java.util.ServiceLoader;
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
 import javax.servlet.ServletContext;
-import javax.servlet.ServletRegistration;
-import org.glassfish.jersey.servlet.ServletContainer;
+import javax.servlet.ServletContextListener;
 import org.springframework.security.web.context.AbstractSecurityWebApplicationInitializer;
 import org.tuckey.web.filters.urlrewrite.UrlRewriteFilter;
 
@@ -48,8 +47,8 @@ public class ParaInitializer extends AbstractSecurityWebApplicationInitializer {
 	 */
 	@Override
 	protected void beforeSpringSecurityFilterChain(ServletContext sc) {
-		// Para init/destroy
-		sc.addListener(ParaContextListener.class);
+		// init/destroy
+		sc.addListener(getContextListener());
 	}
 
 	/**
@@ -64,16 +63,28 @@ public class ParaInitializer extends AbstractSecurityWebApplicationInitializer {
 //		urf.setInitParameter("confPath", "/WEB-INF/urlrewrite.xml");
 		urf.setInitParameter("statusEnabled", "false");
 		urf.setInitParameter("logLevel", "slf4j");
-		// Jersey REST API service
-		ServletRegistration.Dynamic jersey1 = sc.addServlet("servletAdaptor1", ServletContainer.class);
-		jersey1.setLoadOnStartup(1);
-		jersey1.addMapping("/v1/*");
-		jersey1.setInitParameter("javax.ws.rs.Application", Api1.class.getCanonicalName());
 		// roles, rename JSESSIONID amd make it dissappear quickly (not used)
 		sc.declareRoles(USER.toString(), MOD.toString(), ADMIN.toString());
 		sc.getSessionCookieConfig().setName("sess");
 		sc.getSessionCookieConfig().setMaxAge(1);
 		sc.getSessionCookieConfig().setHttpOnly(true);
 	}
-
+	
+	/**
+	 * Try loading an external {@link javax.servlet.ServletContextListener} class 
+	 * via {@link java.util.ServiceLoader#load(java.lang.Class)}.
+	 * @return a loaded ServletContextListener class. 
+	 * Defaults to {@link com.erudika.para.web.ParaContextListener}.
+	 */
+	private static Class<? extends ServletContextListener> getContextListener() {
+		Class<? extends ServletContextListener> scl = ParaContextListener.class;
+		ServiceLoader<ServletContextListener> loader = ServiceLoader.load(ServletContextListener.class);
+		for (ServletContextListener module : loader) {
+			if (module != null) {
+				scl = module.getClass();
+				break;
+			}
+		}
+		return scl;
+	}
 }

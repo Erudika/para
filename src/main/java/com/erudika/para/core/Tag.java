@@ -20,6 +20,7 @@ package com.erudika.para.core;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -29,7 +30,8 @@ import org.hibernate.validator.constraints.NotBlank;
  */
 public class Tag extends PObject {
 	private static final long serialVersionUID = 1L;
-
+	private static final String prefix = Utils.classname(Tag.class).concat(Config.SEPARATOR);
+	
 	@Stored @NotBlank @Locked private String tag;
 	@Stored private Integer count;
 
@@ -45,26 +47,25 @@ public class Tag extends PObject {
 	 * @param tag the tag
 	 */
 	public Tag(String tag) {
-		setId(id(tag));
-		getName();
 		this.count = 0;
-		this.tag = tag;
-	}
-
-	static String id(String tag) {
-		if (StringUtils.isBlank(tag)) {
-			return null;
-		}
-		return PObject.classname(Tag.class).concat(Config.SEPARATOR).concat(StringUtils.trimToEmpty(tag));
+		setTag(tag);
+		setName(getName());
 	}
 
 	@Override
-	public String getObjectURL() {
-		String realid = getId();
-		setId(tag);
-		String url = super.getObjectURL();
-		setId(realid);
-		return url;
+	public void setId(String id) {
+		if (StringUtils.isBlank(id) || StringUtils.startsWith(id, prefix)) {
+			super.setId(id);
+		} else {
+			setTag(id);
+			super.setId(prefix.concat(getTag()));
+		}
+	}
+	
+	@Override
+	public String getObjectURI() {
+		String defurl = "/".concat(getPlural());
+		return (getTag() != null) ? defurl.concat("/").concat(getTag()) : defurl;
 	}
 
 	/**
@@ -87,7 +88,7 @@ public class Tag extends PObject {
 	 * The tag value.
 	 * @return the tag itself
 	 */
-	public String getTag() {
+	public final String getTag() {
 		return tag;
 	}
 
@@ -95,10 +96,10 @@ public class Tag extends PObject {
 	 * Sets the tag value. 
 	 * @param tag a tag. Must not be null or empty.
 	 */
-	public void setTag(String tag) {
-		if (!StringUtils.isBlank(tag)) {
-			setId(id(tag));
-			this.tag = tag;
+	public final void setTag(String tag) {
+		this.tag = Utils.noSpaces(tag, "-");
+		if (!this.tag.isEmpty()) {
+			setId(prefix.concat(getTag()));
 		}
 	}
 

@@ -17,7 +17,6 @@
  */
 package com.erudika.para.search;
 
-import com.erudika.para.annotations.Stored;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Address;
@@ -89,7 +88,7 @@ public class ElasticSearch implements Search {
 		if (so == null || StringUtils.isBlank(appName)) {
 			return;
 		}
-		Map<String, Object> data = Utils.getAnnotatedFields(so, Stored.class, null);
+		Map<String, Object> data = Utils.getAnnotatedFields(so);
 		try {
 			IndexRequestBuilder irb = client().prepareIndex(appName,
 					so.getClassname(), so.getId()).setSource(data);
@@ -124,7 +123,7 @@ public class ElasticSearch implements Search {
 		BulkRequestBuilder brb = client().prepareBulk();
 		for (ParaObject pObject : objects) {
 			brb.add(client().prepareIndex(appName, pObject.getClassname(),
-						pObject.getId()).setSource(Utils.getAnnotatedFields(pObject, Stored.class, null)));
+						pObject.getId()).setSource(Utils.getAnnotatedFields(pObject)));
 		}
 		brb.execute().actionGet();
 		logger.debug("Search.indexAll() {}", objects.size());
@@ -278,9 +277,9 @@ public class ElasticSearch implements Search {
 		if (StringUtils.isBlank(keyword)) {
 			return new ArrayList<P>();
 		}
-		QueryBuilder qb = QueryBuilders.wildcardQuery(PObject.classname(Tag.class), keyword.concat("*"));
+		QueryBuilder qb = QueryBuilders.wildcardQuery(Utils.classname(Tag.class), keyword.concat("*"));
 //		SortBuilder sb = SortBuilders.fieldSort("count").order(SortOrder.DESC);
-		return searchQuery(appName, PObject.classname(Tag.class), qb, pager);
+		return searchQuery(appName, Utils.classname(Tag.class), qb, pager);
 	}
 
 	@Override
@@ -298,7 +297,7 @@ public class ElasticSearch implements Search {
 				FilterBuilders.geoDistanceFilter("latlng").point(lat, lng).
 				distance(radius, DistanceUnit.KILOMETERS));
 
-		SearchHits hits1 = searchQueryRaw(appName, PObject.classname(Address.class), qb1, pager);
+		SearchHits hits1 = searchQueryRaw(appName, Utils.classname(Address.class), qb1, pager);
 
 		if (hits1 == null) {
 			return new ArrayList<P>();

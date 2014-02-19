@@ -18,7 +18,6 @@
 package com.erudika.para.search;
 
 import com.erudika.para.Para;
-import com.erudika.para.annotations.Stored;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.utils.Config;
@@ -98,6 +97,9 @@ public final class ElasticSearchUtils {
 			searchNode = NodeBuilder.nodeBuilder().settings(settings).
 					clusterName(Config.CLUSTER_NAME).local(true).data(true).node();
 			searchClient = searchNode.client();
+			if (!existsIndex(Config.APP_NAME_NS)) {
+				createIndex(Config.APP_NAME_NS);
+			}
 		} else {
 			searchClient = new TransportClient(settings.put("cluster.name", Config.CLUSTER_NAME).build());
 				((TransportClient) searchClient).addTransportAddress(
@@ -234,7 +236,7 @@ public final class ElasticSearchUtils {
 				do {
 					for (ParaObject obj : list) {
 						brb.add(getClient().prepareIndex(appName, obj.getClassname(), obj.getId()).
-								setSource(Utils.getAnnotatedFields(obj, Stored.class, null)));
+								setSource(Utils.getAnnotatedFields(obj)));
 						lastKey = obj.getId();
 					}
 					// bulk index 1000 objects

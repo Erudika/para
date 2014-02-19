@@ -17,7 +17,6 @@
  */
 package com.erudika.para.i18n;
 
-import com.erudika.para.core.PObject;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.search.Search;
@@ -25,6 +24,7 @@ import com.erudika.para.core.Translation;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
+import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -104,7 +104,8 @@ public class LanguageUtils {
 			Map<String, Object> terms = new HashMap<String, Object>();
 			terms.put("locale", langCode);
 			terms.put("approved", true);
-			ArrayList<Translation> tlist = search.findTerms(appName, PObject.classname(Translation.class), terms, true);
+			ArrayList<Translation> tlist = search.
+					findTerms(appName, Utils.classname(Translation.class), terms, true);
 
 			Sysprop saved = new Sysprop(keyPrefix.concat(langCode));
 			lang.putAll(getDefaultLanguage());	// copy default langmap
@@ -222,7 +223,7 @@ public class LanguageUtils {
 	 * @return a list of translations
 	 */
 	public ArrayList<ParaObject> readAllTranslationsForKey(String appName, String locale, String key, Pager pager) {
-		return search.findTerms(appName, PObject.classname(Translation.class),
+		return search.findTerms(appName, Utils.classname(Translation.class),
 				Collections.singletonMap(Config._PARENTID, key), true, pager);
 	}
 

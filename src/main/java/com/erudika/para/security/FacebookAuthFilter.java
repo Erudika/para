@@ -20,8 +20,11 @@ package com.erudika.para.security;
 import com.eaio.uuid.UUID;
 import com.erudika.para.core.User;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Utils;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -30,8 +33,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationServiceException;
@@ -47,7 +48,6 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
 public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private static final Logger log = LoggerFactory.getLogger(FacebookAuthFilter.class);
-	private final ObjectMapper mapper = new ObjectMapper();
 
 	/**
 	 * The default filter mapping
@@ -126,7 +126,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 			byte[] json = Base64.decodeBase64(parts[1]);
 			byte[] encodedJSON = parts[1].getBytes();	// careful, we compute against the base64 encoded version
 			String decodedJSON = new String(json);
-			JsonNode root = mapper.readTree(decodedJSON);
+			Map<String, String> root = Utils.getJsonReader(Map.class).readValue(decodedJSON);
 
 			if (StringUtils.contains(decodedJSON, "HMAC-SHA256")) {
 				SecretKey secret = new SecretKeySpec(Config.FB_SECRET.getBytes(), "HMACSHA256");
@@ -134,11 +134,11 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 				mac.init(secret);
 				byte[] digested = mac.doFinal(encodedJSON);
 				if (Arrays.equals(sig, digested)) {
-					fbid = root.get("user_id").getTextValue();
+					fbid = root.get("user_id");
 				}
 			}
 		} catch (Exception ex) {
-			log.warn("Failed to decode FB sig: {0}", ex);
+			log.warn("Failed to decode FB signature: {0}", ex);
 		}
 
 		return fbid;

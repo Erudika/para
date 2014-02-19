@@ -21,6 +21,8 @@ import com.erudika.para.persistence.DAO;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -50,8 +52,6 @@ import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.conn.ssl.X509HostnameVerifier;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -109,7 +109,7 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 	private Sysprop fetchFxRatesJSON() {
 		Map<String, Object> map = new HashMap<String, Object>();
 		Sysprop s = new Sysprop();
-		ObjectMapper mapper = Utils.getObjectMapper();
+		ObjectReader reader = Utils.getJsonReader(Map.class);
 
 		try {
 			HttpClient http = getHttpClient(new DefaultHttpClient());
@@ -118,12 +118,11 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 			HttpEntity entity = res.getEntity();
 
 			if (entity != null && isJSON(entity.getContentType().getValue())) {
-				JsonNode jsonNode = mapper.readTree(entity.getContent());
+				JsonNode jsonNode = reader.readTree(entity.getContent());
 				if (jsonNode != null) {
 					JsonNode rates = jsonNode.get("rates");
 					if (rates != null) {
-						map = mapper.treeToValue(rates, Map.class);
-
+						map = reader.treeToValue(rates, Map.class);
 						s.setId(Config.FXRATES_KEY);
 						s.setProperties(map);
 //						s.addProperty("fetched", Utils.formatDate("dd MM yyyy HH:mm", Locale.UK));

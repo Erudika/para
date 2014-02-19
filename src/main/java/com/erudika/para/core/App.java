@@ -22,7 +22,6 @@ import com.erudika.para.annotations.Stored;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.util.Set;
-import javax.validation.constraints.Size;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -42,9 +41,10 @@ import org.hibernate.validator.constraints.NotBlank;
  */
 public class App extends PObject {
 	private static final long serialVersionUID = 1L;
-
-	@Stored @Locked @NotBlank @Size(min = 3, max = 50) private String appname;
-	@Stored @Locked private boolean isShared;
+	private static final String prefix = Utils.classname(App.class).concat(Config.SEPARATOR);
+	
+	@Stored @Locked private boolean shared;
+	@Stored @Locked @NotBlank private String appid;
 	@Stored private Set<String> datatypes;
 
 	/**
@@ -56,20 +56,39 @@ public class App extends PObject {
 
 	/**
 	 * Default constructor
-	 * @param appname the name of the app
+	 * @param appid the name of the app
 	 */
-	public App(String appname) {
-		this.appname = appname;
-		this.isShared = true;
-		setId(id(appname));
-		setName(appname);
+	public App(String appid) {
+		this.shared = true;
+		setAppid(appid);
+		setName(getName());
 	}
 
-	static String id(String appname) {
-		if (StringUtils.isBlank(appname)) {
-			appname = Utils.getNewId();
+	@Override
+	public void setId(String id) {
+		if (StringUtils.isBlank(id) || StringUtils.startsWith(id, prefix)) {
+			super.setId(id);
+		} else {
+			setAppid(id);
+			super.setId(prefix.concat(getAppid()));
 		}
-		return PObject.classname(App.class).concat(Config.SEPARATOR).concat(StringUtils.trimToEmpty(appname));
+	}
+	
+	@Override
+	public String getObjectURI() {
+		String defurl = "/".concat(getPlural());
+		return (getAppid() != null) ? defurl.concat("/").concat(getAppid()) : defurl;
+	}
+
+	public final String getAppid() {
+		return appid;
+	}
+
+	public final void setAppid(String appid) {
+		this.appid = Utils.stripAndTrim(Utils.noSpaces(appid, ""));
+		if (!this.appid.isEmpty()) {
+			setId(prefix.concat(appid));
+		}
 	}
 
 	public Set<String> getDatatypes() {
@@ -80,25 +99,12 @@ public class App extends PObject {
 		this.datatypes = datatypes;
 	}
 
-	public boolean isIsShared() {
-		return isShared;
+	public boolean isShared() {
+		return shared;
 	}
 
-	public void setIsShared(boolean isShared) {
-		this.isShared = isShared;
-	}
-
-	@Override
-	public String getAppname() {
-		if (appname == null) {
-			appname = Config.APP_NAME_NS;
-		}
-		return appname;
-	}
-
-	@Override
-	public void setAppname(String appname) {
-		this.appname = appname;
+	public void setShared(boolean shared) {
+		this.shared = shared;
 	}
 
 	@Override

@@ -32,6 +32,7 @@ import org.hibernate.validator.constraints.NotBlank;
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class Vote extends PObject {
+	private static final long serialVersionUID = 1L;
 
 	@Stored @NotBlank private String type;
 	@Stored @NotNull private Long expiresAfter;
@@ -53,7 +54,7 @@ public class Vote extends PObject {
 		setCreatorid(voterid);
 		setParentid(voteeid);
 		setTimestamp(Utils.timestamp());
-		getName();
+		setName(getName());
 		this.type = type;
 		this.expiresAfter = Config.VOTE_EXPIRES_AFTER_SEC;
 	}
