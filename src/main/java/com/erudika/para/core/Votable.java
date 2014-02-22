@@ -28,7 +28,7 @@ public interface Votable extends ParaObject {
 	/**
 	 * The type of vote (negative or positive)
 	 */
-	enum VoteType {
+	enum VoteValue {
 		/**
 		 * Positive vote +
 		 */

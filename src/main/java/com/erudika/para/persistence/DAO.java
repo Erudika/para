@@ -20,6 +20,7 @@ package com.erudika.para.persistence;
 import com.erudika.para.annotations.Cached;
 import com.erudika.para.annotations.Indexed;
 import com.erudika.para.core.ParaObject;
+import com.erudika.para.utils.Pager;
 import java.util.List;
 import java.util.Map;
 
@@ -219,18 +220,18 @@ public interface DAO {
 	 * Reads a fixed number of objects. Used for scanning a data store page by page.
 	 * @param <P> the type of object
 	 * @param appName name of the {@link com.erudika.para.core.App}
-	 * @param lastKey the last id of the previous page.
+	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects
 	 */
-	<P extends ParaObject> List<P> readPage(String appName, String lastKey);
+	<P extends ParaObject> List<P> readPage(String appName, Pager pager);
 
 	/**
 	 * Reads a fixed number of objects. Used for scanning a data store page by page.
 	 * @param <P> the type of object
-	 * @param lastKey the last id of the previous page.
+	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects
 	 */
-	<P extends ParaObject> List<P> readPage(String lastKey);
+	<P extends ParaObject> List<P> readPage(Pager pager);
 
 	/**
 	 * Updates multiple objects.

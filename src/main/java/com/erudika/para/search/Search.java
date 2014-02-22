@@ -19,7 +19,6 @@ package com.erudika.para.search;
 
 import com.erudika.para.utils.Pager;
 import com.erudika.para.core.ParaObject;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -122,7 +121,7 @@ public interface Search {
 	/**
 	 * Search for {@link com.erudika.para.core.Address} objects in a radius of X km from a given point.
 	 * @param <P> type of the object
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param query the query string
 	 * @param radius the radius of the search circle
 	 * @param lat latitude
@@ -130,13 +129,13 @@ public interface Search {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	<P extends ParaObject> ArrayList<P> findNearby(String type, String query, int radius, double lat, double lng, Pager... pager);
+	<P extends ParaObject> List<P> findNearby(String type, String query, int radius, double lat, double lng, Pager... pager);
 
 	/**
 	 * Search for {@link com.erudika.para.core.Address} objects in a radius of X km from a given point.
 	 * @param <P> type of the object
 	 * @param appName name of the {@link com.erudika.para.core.App}
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param query the query string
 	 * @param radius the radius of the search circle
 	 * @param lat latitude
@@ -144,97 +143,97 @@ public interface Search {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	<P extends ParaObject> ArrayList<P> findNearby(String appName, String type, String query, int radius, double lat, double lng, Pager... pager);
+	<P extends ParaObject> List<P> findNearby(String appName, String type, String query, int radius, double lat, double lng, Pager... pager);
 
 	/**
 	 * Searches for objects that have a property which value starts with a given prefix.
 	 * @param <P> type of the object
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param field the property name of an object
 	 * @param prefix the prefix
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	<P extends ParaObject> ArrayList<P> findPrefix(String type, String field, String prefix, Pager... pager);
+	<P extends ParaObject> List<P> findPrefix(String type, String field, String prefix, Pager... pager);
 
 	/**
 	 * Searches for objects that have a property which value starts with a given prefix.
 	 * @param <P> type of the object
 	 * @param appName name of the {@link com.erudika.para.core.App}
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param field the property name of an object
 	 * @param prefix the prefix
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	<P extends ParaObject> ArrayList<P> findPrefix(String appName, String type, String field, String prefix, Pager... pager);
+	<P extends ParaObject> List<P> findPrefix(String appName, String type, String field, String prefix, Pager... pager);
 
 	/**
 	 * Simple query string search. A general purpose search method.
 	 * @param <P> type of the object
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param query the query string
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	<P extends ParaObject> ArrayList<P> findQuery(String type, String query, Pager... pager);
+	<P extends ParaObject> List<P> findQuery(String type, String query, Pager... pager);
 
 	/**
 	 * Simple query string search. A general purpose search method.
 	 * @param <P> type of the object
 	 * @param appName name of the {@link com.erudika.para.core.App}
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param query the query string
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	<P extends ParaObject> ArrayList<P> findQuery(String appName, String type, String query, Pager... pager);
+	<P extends ParaObject> List<P> findQuery(String appName, String type, String query, Pager... pager);
 
 	/**
 	 * Searches for objects that have similar property values to a given text. A "find like this" query.
 	 * @param <P> type of the object
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param filterKey exclude an object with this key from the results (optional)
 	 * @param fields a list of property names
 	 * @param liketext text to compare to
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	<P extends ParaObject> ArrayList<P> findSimilar(String type, String filterKey, String[] fields, String liketext, Pager... pager);
+	<P extends ParaObject> List<P> findSimilar(String type, String filterKey, String[] fields, String liketext, Pager... pager);
 
 	/**
 	 * Searches for objects that have similar property values to a given text. A "find like this" query.
 	 * @param <P> type of the object
 	 * @param appName name of the {@link com.erudika.para.core.App}
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param filterKey exclude an object with this key from the results (optional)
 	 * @param fields a list of property names
 	 * @param liketext text to compare to
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	<P extends ParaObject> ArrayList<P> findSimilar(String appName, String type, String filterKey, String[] fields, String liketext, Pager... pager);
+	<P extends ParaObject> List<P> findSimilar(String appName, String type, String filterKey, String[] fields, String liketext, Pager... pager);
 
 	/**
 	 * Searches for objects tagged with one or more tags.
 	 * @param <P> type of the object
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param tags the list of tags
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	<P extends ParaObject> ArrayList<P> findTagged(String type, String[] tags, Pager... pager);
+	<P extends ParaObject> List<P> findTagged(String type, String[] tags, Pager... pager);
 
 	/**
 	 * Searches for objects tagged with one or more tags.
 	 * @param <P> type of the object
 	 * @param appName name of the {@link com.erudika.para.core.App}
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param tags the list of tags
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	<P extends ParaObject> ArrayList<P> findTagged(String appName, String type, String[] tags, Pager... pager);
+	<P extends ParaObject> List<P> findTagged(String appName, String type, String[] tags, Pager... pager);
 
 	/**
 	 * Searches for {@link com.erudika.para.core.Tag} objects. 
@@ -244,7 +243,7 @@ public interface Search {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	<P extends ParaObject> ArrayList<P> findTags(String keyword, Pager... pager);
+	<P extends ParaObject> List<P> findTags(String keyword, Pager... pager);
 
 	/**
 	 * Searches for {@link com.erudika.para.core.Tag} objects. 
@@ -255,84 +254,84 @@ public interface Search {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	<P extends ParaObject> ArrayList<P> findTags(String appName, String keyword, Pager... pager);
+	<P extends ParaObject> List<P> findTags(String appName, String keyword, Pager... pager);
 
 	/**
 	 * Searches for objects having a property value that is in list of possible values.
 	 * @param <P> type of the object
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param field the property name of an object
 	 * @param terms a list of terms (property values)
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	<P extends ParaObject> ArrayList<P> findTermInList(String type, String field, List<?> terms, Pager... pager);
+	<P extends ParaObject> List<P> findTermInList(String type, String field, List<?> terms, Pager... pager);
 
 	/**
 	 * Searches for objects having a property value that is in list of possible values.
 	 * @param <P> type of the object
 	 * @param appName name of the {@link com.erudika.para.core.App}
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param field the property name of an object
 	 * @param terms a list of terms (property values)
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	<P extends ParaObject> ArrayList<P> findTermInList(String appName, String type, String field, List<?> terms, Pager... pager);
+	<P extends ParaObject> List<P> findTermInList(String appName, String type, String field, List<?> terms, Pager... pager);
 
 	/**
 	 * Searches for objects that have properties matching some given values. A terms query.
 	 * @param <P> type of the object
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param terms a map of fields (property names) to terms (property values)
 	 * @param matchAll match all terms. If true - AND search, if false - OR search
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	<P extends ParaObject> ArrayList<P> findTerms(String type, Map<String, ?> terms, boolean matchAll, Pager... pager);
+	<P extends ParaObject> List<P> findTerms(String type, Map<String, ?> terms, boolean matchAll, Pager... pager);
 
 	/**
 	 * Searches for objects that have properties matching some given values. A terms query.
 	 * @param <P> type of the object
 	 * @param appName name of the {@link com.erudika.para.core.App}
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param terms a map of fields (property names) to terms (property values)
 	 * @param matchAll match all terms. If true - AND search, if false - OR search
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	<P extends ParaObject> ArrayList<P> findTerms(String appName, String type, Map<String, ?> terms, boolean matchAll, Pager... pager);
+	<P extends ParaObject> List<P> findTerms(String appName, String type, Map<String, ?> terms, boolean matchAll, Pager... pager);
 
 	/**
 	 * Searches for objects that have a property with a value matching a wildcard query.
 	 * @param <P> type of the object
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param field the property name of an object
 	 * @param wildcard wildcard query string. For example "cat*".
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	<P extends ParaObject> ArrayList<P> findWildcard(String type, String field, String wildcard, Pager... pager);
+	<P extends ParaObject> List<P> findWildcard(String type, String field, String wildcard, Pager... pager);
 
 	/**
 	 * Searches for objects that have a property with a value matching a wildcard query.
 	 * @param <P> type of the object
 	 * @param appName name of the {@link com.erudika.para.core.App}
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param field the property name of an object
 	 * @param wildcard wildcard query string. For example "cat*".
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	<P extends ParaObject> ArrayList<P> findWildcard(String appName, String type, String field, String wildcard, Pager... pager);
+	<P extends ParaObject> List<P> findWildcard(String appName, String type, String field, String wildcard, Pager... pager);
 
 	/////////////////////////////////////////////
-	//			  HELPER METHODS
+	//			  COUNTING METHODS
 	/////////////////////////////////////////////
 
 	/**
 	 * Counts indexed objects.
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @return the number of results found
 	 */
 	Long getCount(String type);
@@ -340,14 +339,14 @@ public interface Search {
 	/**
 	 * Counts indexed objects.
 	 * @param appName name of the {@link com.erudika.para.core.App}
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @return the number of results found
 	 */
 	Long getCount(String appName, String type);
 
 	/**
 	 * Counts indexed objects matching a set of terms/values.
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param terms a list of terms (property values)
 	 * @return the number of results found
 	 */
@@ -356,7 +355,7 @@ public interface Search {
 	/**
 	 * Counts indexed objects matching a set of terms/values.
 	 * @param appName name of the {@link com.erudika.para.core.App}
-	 * @param type the type of object. See {@link com.erudika.para.core.ParaObject#getClassname()}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param terms a map of fields (property names) to terms (property values)
 	 * @return the number of results found
 	 */

@@ -21,6 +21,7 @@ import com.erudika.para.Para;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import java.util.HashMap;
 import java.util.List;
@@ -68,10 +69,12 @@ public final class ElasticSearchUtils {
 			return searchClient;
 		}
 		ImmutableSettings.Builder settings = ImmutableSettings.settingsBuilder();
+		settings.put("node.name", getNodeName());
 		settings.put("client.transport.sniff", true);
 		settings.put("client.transport.sniff", true);
 		settings.put("action.disable_delete_all_indices", true);
-
+		settings.put("cluster.name", Config.CLUSTER_NAME);
+				
 		if (Config.IN_PRODUCTION) {
 			settings.put("cloud.aws.access_key", Config.AWS_ACCESSKEY);
 			settings.put("cloud.aws.secret_key", Config.AWS_SECRETKEY);
@@ -87,21 +90,19 @@ public final class ElasticSearchUtils {
 			settings.put("discovery.type", "ec2");
 			settings.put("discovery.ec2.groups", "elasticsearch");
 //			settings.put("discovery.ec2.availability_zones", "eu-west-1a");
-			searchNode = NodeBuilder.nodeBuilder().settings(settings).
-					clusterName(Config.CLUSTER_NAME).client(true).data(false).node();
+			searchNode = NodeBuilder.nodeBuilder().settings(settings).client(true).data(false).node();
 			searchClient = searchNode.client();
 		} else if ("embedded".equals(Config.ENVIRONMENT)) {
 			// for testing only
 			settings.put("path.data", "target/elasticsearch/data");
 			settings.put("path.work", "target/elasticsearch/work");
-			searchNode = NodeBuilder.nodeBuilder().settings(settings).
-					clusterName(Config.CLUSTER_NAME).local(true).data(true).node();
+			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(true).data(true).node();
 			searchClient = searchNode.client();
 			if (!existsIndex(Config.APP_NAME_NS)) {
 				createIndex(Config.APP_NAME_NS);
 			}
 		} else {
-			searchClient = new TransportClient(settings.put("cluster.name", Config.CLUSTER_NAME).build());
+			searchClient = new TransportClient();
 				((TransportClient) searchClient).addTransportAddress(
 						new InetSocketTransportAddress("localhost", 9300));
 		}
@@ -127,6 +128,10 @@ public final class ElasticSearchUtils {
 			searchNode.close();
 			searchNode = null;
 		}
+	}
+	
+	private static String getNodeName() {
+		return Config.PARA.concat("-es-").concat(Config.WORKER_ID);
 	}
 
 	/**
@@ -228,16 +233,16 @@ public final class ElasticSearchUtils {
 
 			BulkRequestBuilder brb = getClient().prepareBulk();
 			BulkResponse resp = null;
-			String lastKey = null;
+			Pager pager = new Pager();
 
 			List<ParaObject> list = dao.readPage(appName, null);
 
 			if (!list.isEmpty()) {
 				do {
 					for (ParaObject obj : list) {
-						brb.add(getClient().prepareIndex(appName, obj.getClassname(), obj.getId()).
+						brb.add(getClient().prepareIndex(appName, obj.getType(), obj.getId()).
 								setSource(Utils.getAnnotatedFields(obj)));
-						lastKey = obj.getId();
+						pager.setLastKey(obj.getId());
 					}
 					// bulk index 1000 objects
 					if (brb.numberOfActions() > 100) {
@@ -245,7 +250,7 @@ public final class ElasticSearchUtils {
 						logger.info("rebuildIndex(): indexed {}, hasFailures: {}",
 								brb.numberOfActions(), resp.hasFailures());
 					}
-				} while(!(list = dao.readPage(appName, lastKey)).isEmpty());
+				} while(!(list = dao.readPage(appName, pager)).isEmpty());
 			}
 
 			// anything left after loop? index that too
@@ -351,7 +356,7 @@ public final class ElasticSearchUtils {
 						startObject(Config._PASSWORD).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._PARENTID).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._CREATORID).field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._CLASSNAME).field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(Config._TYPE).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._AUTHTOKEN).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._TIMESTAMP).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._IDENTIFIER).field("type", "string").field("index", "not_analyzed").endObject().

@@ -18,7 +18,6 @@
 package com.erudika.para.utils;
 
 import com.erudika.para.annotations.Locked;
-import com.erudika.para.annotations.Stored;
 import com.erudika.para.core.PObject;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
@@ -269,7 +268,7 @@ public class UtilsTest {
 	public void testTypesMatch() {
 		User u = new User();
 		assertTrue(typesMatch(u));
-		u.setClassname("usr");
+		u.setType("usr");
 		assertFalse(typesMatch(u));
 		assertFalse(typesMatch(null));
 	}
@@ -299,7 +298,7 @@ public class UtilsTest {
 		Map<String, Object> map = new HashMap<String, Object>();
 		long timestamp = 1390052381000L;
 		map.put(Config._ID, "123");
-		map.put(Config._CLASSNAME, Utils.classname(User.class));
+		map.put(Config._TYPE, Utils.type(User.class));
 		map.put(Config._EMAIL, "u@test.co");
 		map.put(Config._NAME, "User Name");
 		map.put(Config._TAGS, "[\"tag1\",\"tag2\"]");
@@ -328,8 +327,8 @@ public class UtilsTest {
 		assertNotNull(toObject(null));
 		assertNotNull(toObject(""));
 		assertEquals(Sysprop.class, toObject("test123").getClass());
-		assertEquals(User.class, toObject(Utils.classname(User.class)));
-		assertEquals(Tag.class, toObject(Utils.classname(Tag.class)));
+		assertEquals(User.class, toObject(Utils.type(User.class)));
+		assertEquals(Tag.class, toObject(Utils.type(Tag.class)));
 	}
 	
 	@Test
@@ -337,8 +336,8 @@ public class UtilsTest {
 		assertNotNull(toClass(null));
 		assertNotNull(toClass(""));
 		assertEquals(Sysprop.class, toClass("test123"));
-		assertEquals(User.class, toClass(Utils.classname(User.class)));
-		assertEquals(Tag.class, toClass(Utils.classname(Tag.class)));
+		assertEquals(User.class, toClass(Utils.type(User.class)));
+		assertEquals(Tag.class, toClass(Utils.type(Tag.class)));
 	}
 
 	@Test
@@ -346,8 +345,8 @@ public class UtilsTest {
 		assertNull(fromJSON(""));
 		assertNotNull(fromJSON("{}"));
 
-		ParaObject obj1 = Utils.fromJSON("{\"classname\":\"testtype\", \"name\":\"testname\", \"id\":\"123\"}");
-		ParaObject obj2 = Utils.fromJSON("{\"classname\":\"user\", \"name\":\"user name\", \"id\":\"111\"}");
+		ParaObject obj1 = Utils.fromJSON("{\"type\":\"testtype\", \"name\":\"testname\", \"id\":\"123\"}");
+		ParaObject obj2 = Utils.fromJSON("{\"type\":\"user\", \"name\":\"user name\", \"id\":\"111\"}");
 		ParaObject obj3 = Utils.fromJSON("{\"user\":\"one\", \"alias\":\"user1\", \"id\":\"456\", \"name\":\"name\"}");
 
 		assertNotNull(obj1);

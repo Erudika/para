@@ -38,6 +38,7 @@ import javax.validation.constraints.Size;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.List;
 import org.hibernate.validator.constraints.NotBlank;
 
 /**
@@ -50,7 +51,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	@Stored @Locked private String id;
 	@Stored @Locked private Long timestamp;
 	@Stored @Locked private Long updated;
-	@Stored @Locked private String classname;
+	@Stored @Locked private String type;
 	@Stored @Locked private String appname;
 	@Stored @Locked private String parentid;
 	@Stored @Locked private String creatorid;
@@ -108,7 +109,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 
 	@Override
 	public String getPlural() {
-		return Utils.singularToPlural(getClassname());
+		return Utils.singularToPlural(getType());
 	}
 
 	@Override
@@ -157,7 +158,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	@NotBlank @Size(min = 2, max = 255)
 	public final String getName() {
 		if (name == null && id != null) {
-			name = getClassname().concat(id);
+			name = getType().concat(id);
 		}
 		return name;
 	}
@@ -220,16 +221,16 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	}
 
 	@Override
-	public final String getClassname() {
-		if (classname == null) {
-			classname = Utils.classname(this.getClass());
+	public final String getType() {
+		if (type == null) {
+			type = Utils.type(this.getClass());
 		}
-		return classname;
+		return type;
 	}
 
 	@Override
-	public final void setClassname(String classname) {
-		this.classname = classname;
+	public final void setType(String type) {
+		this.type = type;
 	}
 
 	@Override
@@ -309,11 +310,11 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		Map<String, Object> terms = new HashMap<String, Object>();
 		terms.put("id1", id);
 		terms.put("id2", id);
-		getDao().deleteAll(getAppname(), getSearch().findTerms(getAppname(), Utils.classname(Linker.class), terms, false));
+		getDao().deleteAll(getAppname(), getSearch().findTerms(getAppname(), Utils.type(Linker.class), terms, false));
 	}
 
 	@Override
-	public ArrayList<Linker> getLinks(Class<? extends ParaObject> c2, Pager... pager) {
+	public List<Linker> getLinks(Class<? extends ParaObject> c2, Pager... pager) {
 		if (c2 == null) {
 			return new ArrayList<Linker>();
 		}
@@ -322,7 +323,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		Map<String, Object> terms = new HashMap<String, Object>();
 		terms.put(Config._NAME, link.getName());
 		terms.put(idField, id);
-		return getSearch().findTerms(getAppname(), link.getClassname(), terms, true, pager);
+		return getSearch().findTerms(getAppname(), link.getType(), terms, true, pager);
 	}
 
 	@Override
@@ -351,41 +352,41 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		Map<String, Object> terms = new HashMap<String, Object>();
 		terms.put(Config._NAME, link.getName());
 		terms.put(idField, id);
-		return getSearch().getCount(getAppname(), link.getClassname(), terms);
+		return getSearch().getCount(getAppname(), link.getType(), terms);
 	}
 
 	@Override
 	public Long countChildren(Class<? extends ParaObject> clazz) {
-		return getSearch().getCount(getAppname(), Utils.classname(clazz));
+		return getSearch().getCount(getAppname(), Utils.type(clazz));
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> getChildren(Class<P> clazz, Pager... pager) {
+	public <P extends ParaObject> List<P> getChildren(Class<P> clazz, Pager... pager) {
 		return getChildren(clazz, null, null, pager);
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> getChildren(Class<P> clazz, String field, String term, Pager... pager) {
+	public <P extends ParaObject> List<P> getChildren(Class<P> clazz, String field, String term, Pager... pager) {
 		Map<String, Object> terms = new HashMap<String, Object>();
 		if (StringUtils.isBlank(field) && StringUtils.isBlank(term)) {
 			terms.put(field, term);
 		}
 		terms.put(Config._PARENTID, getId());
-		return getSearch().findTerms(getAppname(), Utils.classname(clazz), terms, true, pager);
+		return getSearch().findTerms(getAppname(), Utils.type(clazz), terms, true, pager);
 	}
 
 	@Override
 	public void deleteChildren(Class<? extends ParaObject> clazz) {
 		if (!StringUtils.isBlank(getId())) {
 			getDao().deleteAll(getAppname(), getSearch().findTerms(getAppname(),
-					Utils.classname(clazz), Collections.singletonMap(Config._PARENTID, getId()), true));
+					Utils.type(clazz), Collections.singletonMap(Config._PARENTID, getId()), true));
 		}
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <P extends ParaObject> ArrayList<P> getLinkedObjects(Class<P> clazz, Pager... pager) {
-		ArrayList<Linker> links = getLinks(clazz, pager);
+	public <P extends ParaObject> List<P> getLinkedObjects(Class<P> clazz, Pager... pager) {
+		List<Linker> links = getLinks(clazz, pager);
 		ArrayList<String> keys = new ArrayList<String>();
 		for (Linker link : links) {
 			if (link.isFirst(clazz)) {
@@ -401,7 +402,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	//	    	VOTING METHODS
 	///////////////////////////////////////
 
-	private boolean vote(String userid, Votable votable, VoteType upDown) {
+	private boolean vote(String userid, Votable votable, VoteValue upDown) {
 		if (StringUtils.isBlank(userid) || votable == null || votable.getId() == null || upDown == null) {
 			return false;
 		}
@@ -413,11 +414,11 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		Vote v = new Vote(userid, votable.getId(), upDown.toString());
 		Vote saved = getDao().read(getAppname(), v.getId());
 		boolean done = false;
-		int vote = (upDown == VoteType.UP) ? 1 : -1;
+		int vote = (upDown == VoteValue.UP) ? 1 : -1;
 
 		if (saved != null) {
-			boolean isUpvote = upDown.equals(VoteType.UP);
-			boolean wasUpvote = VoteType.UP.toString().equals(saved.getType());
+			boolean isUpvote = upDown.equals(VoteValue.UP);
+			boolean wasUpvote = VoteValue.UP.toString().equals(saved.getValue());
 			boolean voteHasChanged = BooleanUtils.xor(new boolean[]{isUpvote, wasUpvote});
 
 			if (saved.isExpired()) {
@@ -441,12 +442,12 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 
 	@Override
 	public final boolean voteUp(String userid) {
-		return vote(userid, this, VoteType.UP);
+		return vote(userid, this, VoteValue.UP);
 	}
 
 	@Override
 	public final boolean voteDown(String userid) {
-		return vote(userid, this, VoteType.DOWN);
+		return vote(userid, this, VoteValue.DOWN);
 	}
 
 	@Override

@@ -33,7 +33,7 @@ import org.hibernate.validator.constraints.NotBlank;
  * </br>
  * There can be two ways to separate apps - dedicated and shared.
  * Shared apps use the same data store table, same search index and the same cache map. 
- * Partitioning is done by key prefixes which are the same as the name of the app.
+ * Object separation is done by key prefixes which are the same as the appid.
  * Dedicated apps have their own separate data stores, indexes and caches. 
  * </br>
  * <b>Only shared apps are currently supported.</b>
@@ -41,7 +41,7 @@ import org.hibernate.validator.constraints.NotBlank;
  */
 public class App extends PObject {
 	private static final long serialVersionUID = 1L;
-	private static final String prefix = Utils.classname(App.class).concat(Config.SEPARATOR);
+	private static final String prefix = Utils.type(App.class).concat(Config.SEPARATOR);
 	
 	@Stored @Locked private boolean shared;
 	@Stored @Locked @NotBlank private String appid;

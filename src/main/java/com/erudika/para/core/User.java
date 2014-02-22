@@ -53,7 +53,7 @@ public class User extends PObject implements UserDetails {
 	@Stored private Integer plan;
 
 	@NotBlank @Size(min = Config.MIN_PASS_LENGTH, max = 255)
-	private transient String password;	// for validation purposes only?
+	private transient String password;	// for validation purposes only
 	private transient String authtoken;
 
 	/**
@@ -254,7 +254,7 @@ public class User extends PObject implements UserDetails {
 	 */
 	@JsonIgnore
 	public List<String> getIdentifiers() {
-		List<Sysprop> list = getSearch().findTerms(getAppname(), Utils.classname(Sysprop.class),
+		List<Sysprop> list = getSearch().findTerms(getAppname(), Utils.type(Sysprop.class),
 				Collections.singletonMap(Config._CREATORID, getId()), true);
 		ArrayList<String> idents = new ArrayList<String>();
 		for (Sysprop s : list) {

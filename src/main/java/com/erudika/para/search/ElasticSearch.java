@@ -20,7 +20,6 @@ package com.erudika.para.search;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Address;
-import com.erudika.para.core.PObject;
 import com.erudika.para.core.Tag;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
@@ -62,7 +61,6 @@ import org.slf4j.LoggerFactory;
 public class ElasticSearch implements Search {
 
 	private static final Logger logger = LoggerFactory.getLogger(ElasticSearch.class);
-	private static final String DEFAULT_SORT = Config._TIMESTAMP;
 	private DAO dao;
 
 	/**
@@ -91,7 +89,7 @@ public class ElasticSearch implements Search {
 		Map<String, Object> data = Utils.getAnnotatedFields(so);
 		try {
 			IndexRequestBuilder irb = client().prepareIndex(appName,
-					so.getClassname(), so.getId()).setSource(data);
+					so.getType(), so.getId()).setSource(data);
 			if (ttl > 0) {
 				irb.setTTL(ttl);
 			}
@@ -108,7 +106,7 @@ public class ElasticSearch implements Search {
 			return;
 		}
 		try {
-			client().prepareDelete(appName, so.getClassname(), so.getId()).execute().actionGet();
+			client().prepareDelete(appName, so.getType(), so.getId()).execute().actionGet();
 			logger.debug("Search.unindex() {}", so.getId());
 		} catch (Exception e) {
 			logger.warn(null, e);
@@ -122,7 +120,7 @@ public class ElasticSearch implements Search {
 		}
 		BulkRequestBuilder brb = client().prepareBulk();
 		for (ParaObject pObject : objects) {
-			brb.add(client().prepareIndex(appName, pObject.getClassname(),
+			brb.add(client().prepareIndex(appName, pObject.getType(),
 						pObject.getId()).setSource(Utils.getAnnotatedFields(pObject)));
 		}
 		brb.execute().actionGet();
@@ -136,7 +134,7 @@ public class ElasticSearch implements Search {
 		}
 		BulkRequestBuilder brb = client().prepareBulk();
 		for (ParaObject pObject : objects) {
-			brb.add(client().prepareDelete(appName, pObject.getClassname(), pObject.getId()));
+			brb.add(client().prepareDelete(appName, pObject.getType(), pObject.getId()));
 		}
 		brb.execute().actionGet();
 		logger.debug("Search.unindexAll() {}", objects.size());
@@ -153,7 +151,7 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> findTermInList(String appName, String type,
+	public <P extends ParaObject> List<P> findTermInList(String appName, String type,
 			String field, List<?> terms, Pager... pager) {
 		if (StringUtils.isBlank(field) || terms == null) {
 			return new ArrayList<P>();
@@ -164,7 +162,7 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> findPrefix(String appName, String type,
+	public <P extends ParaObject> List<P> findPrefix(String appName, String type,
 			String field, String prefix, Pager... pager) {
 		if (StringUtils.isBlank(field) || StringUtils.isBlank(prefix)) {
 			return new ArrayList<P>();
@@ -173,7 +171,7 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> findQuery(String appName, String type,
+	public <P extends ParaObject> List<P> findQuery(String appName, String type,
 			String query, Pager... pager) {
 		if (StringUtils.isBlank(query)) {
 			return new ArrayList<P>();
@@ -183,7 +181,7 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> findWildcard(String appName, String type,
+	public <P extends ParaObject> List<P> findWildcard(String appName, String type,
 			String field, String wildcard, Pager... pager) {
 		if (StringUtils.isBlank(field) || StringUtils.isBlank(wildcard)) {
 			return new ArrayList<P>();
@@ -193,7 +191,7 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> findTagged(String appName, String type,
+	public <P extends ParaObject> List<P> findTagged(String appName, String type,
 			String[] tags, Pager... pager) {
 		if (tags == null || tags.length == 0 || StringUtils.isBlank(appName)) {
 			return new ArrayList<P>();
@@ -210,7 +208,7 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> findTerms(String appName, String type,
+	public <P extends ParaObject> List<P> findTerms(String appName, String type,
 			Map<String, ?> terms, boolean mustMatchAll, Pager... pager) {
 		if (terms == null || terms.isEmpty()) {
 			return new ArrayList<P>();
@@ -251,7 +249,7 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> findSimilar(String appName, String type, String filterKey,
+	public <P extends ParaObject> List<P> findSimilar(String appName, String type, String filterKey,
 			String[] fields, String liketext, Pager... pager) {
 		if (StringUtils.isBlank(liketext)) {
 			return new ArrayList<P>();
@@ -273,17 +271,17 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> findTags(String appName, String keyword, Pager... pager) {
+	public <P extends ParaObject> List<P> findTags(String appName, String keyword, Pager... pager) {
 		if (StringUtils.isBlank(keyword)) {
 			return new ArrayList<P>();
 		}
-		QueryBuilder qb = QueryBuilders.wildcardQuery(Utils.classname(Tag.class), keyword.concat("*"));
+		QueryBuilder qb = QueryBuilders.wildcardQuery(Utils.type(Tag.class), keyword.concat("*"));
 //		SortBuilder sb = SortBuilders.fieldSort("count").order(SortOrder.DESC);
-		return searchQuery(appName, Utils.classname(Tag.class), qb, pager);
+		return searchQuery(appName, Utils.type(Tag.class), qb, pager);
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> findNearby(String appName, String type,
+	public <P extends ParaObject> List<P> findNearby(String appName, String type,
 		String query, int radius, double lat, double lng, Pager... pager) {
 
 		if (StringUtils.isBlank(type) || StringUtils.isBlank(appName)) {
@@ -297,7 +295,7 @@ public class ElasticSearch implements Search {
 				FilterBuilders.geoDistanceFilter("latlng").point(lat, lng).
 				distance(radius, DistanceUnit.KILOMETERS));
 
-		SearchHits hits1 = searchQueryRaw(appName, Utils.classname(Address.class), qb1, pager);
+		SearchHits hits1 = searchQueryRaw(appName, Utils.type(Address.class), qb1, pager);
 
 		if (hits1 == null) {
 			return new ArrayList<P>();
@@ -319,7 +317,7 @@ public class ElasticSearch implements Search {
 		return searchQuery(appName, hits2);
 	}
 
-	private <P extends ParaObject> ArrayList<P> searchQuery(String appName, String type,
+	private <P extends ParaObject> List<P> searchQuery(String appName, String type,
 			QueryBuilder query, Pager... pager) {
 		return searchQuery(appName, searchQueryRaw(appName, type, query, pager));
 	}
@@ -331,7 +329,7 @@ public class ElasticSearch implements Search {
 	 * @param hits the search results from a query
 	 * @return the list of object found
 	 */
-	private <P extends ParaObject> ArrayList<P> searchQuery(String appName, SearchHits hits) {
+	private <P extends ParaObject> List<P> searchQuery(String appName, SearchHits hits) {
 		ArrayList<P> results = new ArrayList<P>();
 		ArrayList<String> keys = new ArrayList<String>();
 
@@ -492,51 +490,51 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> findNearby(String type,
+	public <P extends ParaObject> List<P> findNearby(String type,
 			String query, int radius, double lat, double lng, Pager... pager) {
 		return findNearby(Config.APP_NAME_NS, type, query, radius, lat, lng, pager);
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> findPrefix(String type, String field, String prefix, Pager... pager) {
+	public <P extends ParaObject> List<P> findPrefix(String type, String field, String prefix, Pager... pager) {
 		return findPrefix(Config.APP_NAME_NS, type, field, prefix, pager);
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> findQuery(String type, String query, Pager... pager) {
+	public <P extends ParaObject> List<P> findQuery(String type, String query, Pager... pager) {
 		return findQuery(Config.APP_NAME_NS, type, query, pager);
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> findSimilar(String type, String filterKey, String[] fields,
+	public <P extends ParaObject> List<P> findSimilar(String type, String filterKey, String[] fields,
 			String liketext, Pager... pager) {
 		return findSimilar(Config.APP_NAME_NS, type, filterKey, fields, liketext, pager);
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> findTagged(String type, String[] tags, Pager... pager) {
+	public <P extends ParaObject> List<P> findTagged(String type, String[] tags, Pager... pager) {
 		return findTagged(Config.APP_NAME_NS, type, tags, pager);
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> findTags(String keyword, Pager... pager) {
+	public <P extends ParaObject> List<P> findTags(String keyword, Pager... pager) {
 		return findTags(Config.APP_NAME_NS, keyword, pager);
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> findTermInList(String type, String field,
+	public <P extends ParaObject> List<P> findTermInList(String type, String field,
 			List<?> terms, Pager... pager) {
 		return findTermInList(Config.APP_NAME_NS, type, field, terms, pager);
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> findTerms(String type, Map<String, ?> terms,
+	public <P extends ParaObject> List<P> findTerms(String type, Map<String, ?> terms,
 			boolean mustMatchBoth, Pager... pager) {
 		return findTerms(Config.APP_NAME_NS, type, terms, mustMatchBoth, pager);
 	}
 
 	@Override
-	public <P extends ParaObject> ArrayList<P> findWildcard(String type, String field, String wildcard,
+	public <P extends ParaObject> List<P> findWildcard(String type, String field, String wildcard,
 			Pager... pager) {
 		return findWildcard(Config.APP_NAME_NS, type, field, wildcard, pager);
 	}

@@ -143,50 +143,49 @@ public abstract class SearchTest {
 	@Test
 	public void testfindNearby() {
 		assertTrue(s.findNearby(null, null, 100, 1, 1).isEmpty());
-		ArrayList<User> l1 = s.findNearby(u.getClassname(), "*", 10, 40.60, -73.90);
+		List<User> l1 = s.findNearby(u.getType(), "*", 10, 40.60, -73.90);
 		assertFalse(l1.isEmpty());
 	}
 
 	@Test
 	public void testFindPrefix() {
 		assertTrue(s.findPrefix("", "null", "xx").isEmpty());
-		assertFalse(s.findPrefix(u.getClassname(), Config._NAME, "ann").isEmpty());
+		assertFalse(s.findPrefix(u.getType(), Config._NAME, "ann").isEmpty());
 	}
 
 	@Test
 	public void testFindQuery() {
 		assertTrue(s.findQuery(null, null).isEmpty());
 		assertTrue(s.findQuery("", "*").isEmpty());
-		assertTrue(s.findQuery(u.getClassname(), "_type:user").size() >= 3);
-		assertFalse(s.findQuery(u.getClassname(), "ann").isEmpty());
-		assertFalse(s.findQuery(u.getClassname(), "Ann").isEmpty());
+		assertTrue(s.findQuery(u.getType(), "_type:user").size() >= 3);
+		assertFalse(s.findQuery(u.getType(), "ann").isEmpty());
+		assertFalse(s.findQuery(u.getType(), "Ann").isEmpty());
 		
 		Pager p = new Pager();
 		assertEquals(0, p.getCount());
-		ArrayList<?> res = s.findQuery(u.getClassname(), "*", p);
+		List<?> res = s.findQuery(u.getType(), "*", p);
 		assertEquals(res.size(), p.getCount());
 		assertTrue(p.getCount() > 0);
 	}
 
 	@Test
 	public void testFindSimilar() {
-		assertTrue(s.findSimilar(t.getClassname(), "", null, null).isEmpty());
-		assertTrue(s.findSimilar(t.getClassname(), "", new String[0], "").isEmpty());
-		ArrayList<Sysprop> res = s.findSimilar(s1.getClassname(), s1.getId(),
-				new String[]{Config._NAME}, s1.getName());
+		assertTrue(s.findSimilar(t.getType(), "", null, null).isEmpty());
+		assertTrue(s.findSimilar(t.getType(), "", new String[0], "").isEmpty());
+		List<Sysprop> res = s.findSimilar(s1.getType(), s1.getId(), new String[]{Config._NAME}, s1.getName());
 		assertFalse(res.isEmpty());
 		assertEquals(s2, res.get(0));
 	}
 
 	@Test
 	public void testFindTagged() {
-		int i0 = s.findTagged(u.getClassname(), null).size();
-		int i1 = s.findTagged(u.getClassname(), new String[]{"two"}).size();
-		int i2 = s.findTagged(u.getClassname(), new String[]{"one", "two"}).size();
-		int i3 = s.findTagged(u.getClassname(), new String[]{"three"}).size();
-		int i4 = s.findTagged(u.getClassname(), new String[]{"four", "three"}).size();
-		int i5 = s.findTagged(u.getClassname(), new String[]{"five", "three"}).size();
-		int i6 = s.findTagged(t.getClassname(), new String[]{"four", "three"}).size();
+		int i0 = s.findTagged(u.getType(), null).size();
+		int i1 = s.findTagged(u.getType(), new String[]{"two"}).size();
+		int i2 = s.findTagged(u.getType(), new String[]{"one", "two"}).size();
+		int i3 = s.findTagged(u.getType(), new String[]{"three"}).size();
+		int i4 = s.findTagged(u.getType(), new String[]{"four", "three"}).size();
+		int i5 = s.findTagged(u.getType(), new String[]{"five", "three"}).size();
+		int i6 = s.findTagged(t.getType(), new String[]{"four", "three"}).size();
 
 		assertEquals(0, i0);
 		assertEquals(2, i1);
@@ -208,10 +207,10 @@ public abstract class SearchTest {
 
 	@Test
 	public void testFindTermInList() {
-		assertTrue(s.findTermInList(u.getClassname(), Config._EMAIL, Arrays.asList(new String[0])).isEmpty());
-		assertEquals(1, s.findTermInList(u.getClassname(), Config._EMAIL, 
+		assertTrue(s.findTermInList(u.getType(), Config._EMAIL, Arrays.asList(new String[0])).isEmpty());
+		assertEquals(1, s.findTermInList(u.getType(), Config._EMAIL, 
 				Arrays.asList("email@test.com", u1.getEmail())).size());
-		assertEquals(3, s.findTermInList(u.getClassname(), Config._ID,
+		assertEquals(3, s.findTermInList(u.getType(), Config._ID,
 				Arrays.asList(u.getId(), u1.getId(), u2.getId(), "xxx", "yyy")).size());
 	}
 
@@ -219,40 +218,40 @@ public abstract class SearchTest {
 	public void testFindTerms() {
 		// many terms
 		Map<String, Object> terms = new HashMap<String, Object>();
-//		terms.put(Config._CLASSNAME, u.getClassname());
+//		terms.put(Config._TYPE, u.getType());
 		terms.put(Config._ID, u.getId());
 		
 		Map<String, Object> terms1 = new HashMap<String, Object>();
-		terms1.put(Config._CLASSNAME, null);
+		terms1.put(Config._TYPE, null);
 		terms1.put(Config._ID, "");
 		
 		Map<String, Object> terms2 = new HashMap<String, Object>();
 		terms2.put(" ", "bad");
 		terms2.put("", "");
 		
-		assertEquals(1, s.findTerms(u.getClassname(), terms, true).size());
-		assertTrue(s.findTerms(u.getClassname(), terms1, true).isEmpty());
-		assertTrue(s.findTerms(u.getClassname(), terms2, true).isEmpty());
+		assertEquals(1, s.findTerms(u.getType(), terms, true).size());
+		assertTrue(s.findTerms(u.getType(), terms1, true).isEmpty());
+		assertTrue(s.findTerms(u.getType(), terms2, true).isEmpty());
 		
 		// single term
 		assertTrue(s.findTerms(null, null, true).isEmpty());
-		assertTrue(s.findTerms(u.getClassname(), Collections.singletonMap("", null), true).isEmpty());
-		assertTrue(s.findTerms(u.getClassname(), Collections.singletonMap("", ""), true).isEmpty());
-		assertTrue(s.findTerms(u.getClassname(), Collections.singletonMap("term", null), true).isEmpty());
-		assertEquals(1L, s.findTerms(u.getClassname(), 
+		assertTrue(s.findTerms(u.getType(), Collections.singletonMap("", null), true).isEmpty());
+		assertTrue(s.findTerms(u.getType(), Collections.singletonMap("", ""), true).isEmpty());
+		assertTrue(s.findTerms(u.getType(), Collections.singletonMap("term", null), true).isEmpty());
+		assertEquals(1L, s.findTerms(u.getType(), 
 				Collections.singletonMap(Config._IDENTIFIER, u2.getIdentifier()), true).size());
-		assertEquals(1L, s.findTerms(u.getClassname(), 
+		assertEquals(1L, s.findTerms(u.getType(), 
 				Collections.singletonMap(Config._EMAIL, u.getEmail()), true).size());
-		assertTrue(s.findTerms(u.getClassname(), 
-				Collections.singletonMap(Config._CLASSNAME, u.getClassname()), true).size() >= 2);
+		assertTrue(s.findTerms(u.getType(), 
+				Collections.singletonMap(Config._TYPE, u.getType()), true).size() >= 2);
 	}
 
 	@Test
 	public void testFindWildcard() {
-		assertTrue(s.findWildcard(u.getClassname(), null, null).isEmpty());
-		assertTrue(s.findWildcard(u.getClassname(), "", "").isEmpty());
-		assertFalse(s.findWildcard(u.getClassname(), Config._EMAIL, "ann*").isEmpty());
-		assertFalse(s.findWildcard(u.getClassname(), Config._NAME, "an*").isEmpty());
+		assertTrue(s.findWildcard(u.getType(), null, null).isEmpty());
+		assertTrue(s.findWildcard(u.getType(), "", "").isEmpty());
+		assertFalse(s.findWildcard(u.getType(), Config._EMAIL, "ann*").isEmpty());
+		assertFalse(s.findWildcard(u.getType(), Config._NAME, "an*").isEmpty());
 	}
 
 	@Test
@@ -260,18 +259,18 @@ public abstract class SearchTest {
 		assertEquals(0, s.getCount(null).intValue());
 		assertEquals(0, s.getCount("").intValue());
 		assertEquals(0, s.getCount("test").intValue());
-		assertTrue(s.getCount(u.getClassname()).intValue() >= 3);
+		assertTrue(s.getCount(u.getType()).intValue() >= 3);
 	}
 
 	@Test
 	public void testGetCount() throws InterruptedException {
-		assertEquals(0L, s.getCount(u.getClassname(), null, null).intValue());
+		assertEquals(0L, s.getCount(u.getType(), null, null).intValue());
 //		Thread.sleep(500);
-		assertEquals(0L, s.getCount(u.getClassname(), Collections.singletonMap(Config._ID, "")).intValue());
+		assertEquals(0L, s.getCount(u.getType(), Collections.singletonMap(Config._ID, "")).intValue());
 //		Thread.sleep(500);
-		assertEquals(1L, s.getCount(u.getClassname(), Collections.singletonMap(Config._ID, u.getId())).intValue());
+		assertEquals(1L, s.getCount(u.getType(), Collections.singletonMap(Config._ID, u.getId())).intValue());
 //		Thread.sleep(500);
-		assertEquals(0L, s.getCount(appName1, u.getClassname(), Collections.singletonMap(Config._ID, u.getId())).intValue());
+		assertEquals(0L, s.getCount(appName1, u.getType(), Collections.singletonMap(Config._ID, u.getId())).intValue());
 	}
 
 	@Test

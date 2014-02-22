@@ -42,7 +42,7 @@ public interface ParaObject extends Serializable {
 
 	/**
 	 * The name of the object. Can be anything. 
-	 * @return the name. default: [classname id]
+	 * @return the name. default: [type id]
 	 */
 	String getName();
 
@@ -81,13 +81,13 @@ public interface ParaObject extends Serializable {
 	 * The name of the object's class. This is equivalent to {@link Class#getSimpleName()}.toLowerCase()
 	 * @return the simple name of the class
 	 */
-	String getClassname();
+	String getType();
 
 	/**
-	 * Sets a new class name. Must not be null or empty.
-	 * @param classname a new classname
+	 * Sets a new object type. Must not be null or empty.
+	 * @param type a new type
 	 */
-	void setClassname(String classname);
+	void setType(String type);
 
 	/**
 	 * The id of the user who created this. Should point to a {@link User} id.

@@ -30,12 +30,13 @@ public class Pager {
 	private boolean desc;
 	private int limit;
 	private String name;
+	private String lastKey;
 
 	/**
 	 * No-args constructor
 	 */
 	public Pager() {
-		this(1, 0, null, true, Config.MAX_ITEMS_PER_PAGE, null);
+		this(1, 0, null, true, Config.MAX_ITEMS_PER_PAGE);
 	}
 
 	/**
@@ -43,7 +44,7 @@ public class Pager {
 	 * @param limit the results limit
 	 */
 	public Pager(int limit) {
-		this(1, 0, null, true, limit, null);
+		this(1, 0, null, true, limit);
 	}
 
 	/**
@@ -52,7 +53,7 @@ public class Pager {
 	 * @param count the starting results count
 	 */
 	public Pager(long page, long count) {
-		this(page, count, null, true, Config.MAX_ITEMS_PER_PAGE, null);
+		this(page, count, null, true, Config.MAX_ITEMS_PER_PAGE);
 	}
 
 	/**
@@ -64,25 +65,27 @@ public class Pager {
 	 * @param limit the results limit
 	 */
 	public Pager(long page, long count, String sortby, boolean desc, int limit) {
-		this(page, count, sortby, desc, limit, null);
-	}
-
-	/**
-	 * Default constructor with all arguments.
-	 * @param page the page number
-	 * @param count the starting results count
-	 * @param sortby name of property to sort by
-	 * @param desc sort order
-	 * @param limit the results limit
-	 * @param name the name of this Pager (optional)
-	 */
-	public Pager(long page, long count, String sortby, boolean desc, int limit, String name) {
 		this.page = page;
 		this.count = count;
 		this.sortby = sortby;
 		this.desc = desc;
 		this.limit = limit;
-		this.name = name;
+	}
+
+	/**
+	 * Returns the last key from last page. Used for scanning and pagination.
+	 * @return the last key to continue from
+	 */
+	public String getLastKey() {
+		return lastKey;
+	}
+
+	/**
+	 * Sets the last key from last page. Used for scanning and pagination.
+	 * @param lastKey 
+	 */
+	public void setLastKey(String lastKey) {
+		this.lastKey = lastKey;
 	}
 
 	/**
@@ -177,7 +180,7 @@ public class Pager {
 	 * Set the value of page
 	 * @param page the page number
 	 */
-	public void setPagenum(long page) {
+	public void setPage(long page) {
 		this.page = page;
 	}
 }

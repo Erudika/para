@@ -18,7 +18,7 @@
 package com.erudika.para.core;
 
 import com.erudika.para.utils.Pager;
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Applied to all {@link ParaObject}s by default. Allows an object to be linked to another object.
@@ -42,7 +42,7 @@ public interface Linkable extends ParaObject {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of {@code Linker} objects in a many-to-many relationship with this object.
 	 */
-	ArrayList<Linker> getLinks(Class<? extends ParaObject> c2, Pager... pager);
+	List<Linker> getLinks(Class<? extends ParaObject> c2, Pager... pager);
 
 	/**
 	 * Similar to {@link #getChildren(java.lang.Class, com.erudika.para.utils.Pager[])} 
@@ -52,7 +52,7 @@ public interface Linkable extends ParaObject {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of linked objects
 	 */
-	<P extends ParaObject> ArrayList<P> getLinkedObjects(Class<P> clazz, Pager... pager);
+	<P extends ParaObject> List<P> getLinkedObjects(Class<P> clazz, Pager... pager);
 
 	/**
 	 * Checks if this object is linked to another.
@@ -106,7 +106,7 @@ public interface Linkable extends ParaObject {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
-	<P extends ParaObject> ArrayList<P> getChildren(Class<P> clazz, Pager... pager);
+	<P extends ParaObject> List<P> getChildren(Class<P> clazz, Pager... pager);
 
 	/**
 	 * Returns all child objects linked to this object.
@@ -117,7 +117,7 @@ public interface Linkable extends ParaObject {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
-	<P extends ParaObject> ArrayList<P> getChildren(Class<P> clazz, String field, String term, Pager... pager);
+	<P extends ParaObject> List<P> getChildren(Class<P> clazz, String field, String term, Pager... pager);
 
 	/**
 	 * Deletes all child objects persistently.

@@ -20,7 +20,7 @@ package com.erudika.para.core;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.search.Search;
-import com.erudika.para.utils.Pager;
+import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -35,14 +35,14 @@ import static org.mockito.Mockito.*;
 public class PObjectTest {
 
 	@Test
-	public void testGetClassname() {
+	public void testGetType() {
 		Tag tag = new Tag();
 		PObject p = new PObject() { };
-		assertNotNull(tag.getClassname());
-		assertNotNull(p.getClassname());
-		assertEquals("", p.getClassname());
-		assertEquals("tag", tag.getClassname());
-		assertEquals("", p.getClassname());
+		assertNotNull(tag.getType());
+		assertNotNull(p.getType());
+		assertEquals("", p.getType());
+		assertEquals("tag", tag.getType());
+		assertEquals("", p.getType());
 	}
 
 	@Test
@@ -90,12 +90,12 @@ public class PObjectTest {
 	}
 
 	@Test
-	public void testClassname() {
-		assertEquals("user", Utils.classname(User.class));
-		assertEquals("tag", Utils.classname(Tag.class));
-		assertEquals("paraobject", Utils.classname(ParaObject.class));
-		assertEquals("vote", Utils.classname(Vote.class));
-		assertEquals("", Utils.classname(null));
+	public void testType() {
+		assertEquals("user", Utils.type(User.class));
+		assertEquals("tag", Utils.type(Tag.class));
+		assertEquals("paraobject", Utils.type(ParaObject.class));
+		assertEquals("vote", Utils.type(Vote.class));
+		assertEquals("", Utils.type(null));
 	}
 
 	@Test

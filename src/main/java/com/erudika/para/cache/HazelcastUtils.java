@@ -47,37 +47,40 @@ public final class HazelcastUtils {
 	 * @return a Hazelcast instance
 	 */
 	public static HazelcastInstance getClient() {
-		if (hcInstance != null) {
-			return hcInstance;
-		}
-
-		com.hazelcast.config.Config cfg = new com.hazelcast.config.Config();
-		MapConfig mapcfg = new MapConfig(Config.PARA);
-		mapcfg.setEvictionPercentage(25);
-		mapcfg.setEvictionPolicy(MapConfig.EvictionPolicy.LRU);
-//			mapcfg.setMapStoreConfig(new MapStoreConfig().setEnabled(false).setClassName(NODE_NAME));
-		mapcfg.setMaxSizeConfig(new MaxSizeConfig().setSize(25).setMaxSizePolicy(USED_HEAP_PERCENTAGE));
-		cfg.addMapConfig(mapcfg);
-		cfg.setProperty("hazelcast.jmx", "true");
-		cfg.setProperty("hazelcast.logging.type", "slf4j");
-		if (Config.IN_PRODUCTION) {
-			cfg.setNetworkConfig(new NetworkConfig().setJoin(new JoinConfig().
-				setMulticastConfig(new MulticastConfig().setEnabled(false)).
-					setTcpIpConfig(new TcpIpConfig().setEnabled(false)).
-					setAwsConfig(new AwsConfig().setEnabled(true).
-						setAccessKey(Config.AWS_ACCESSKEY).
-						setSecretKey(Config.AWS_SECRETKEY).
-						setRegion(Config.AWS_REGION).
-						setSecurityGroupName(Config.APP_NAME_NS))));
-		}
-
-		hcInstance = Hazelcast.newHazelcastInstance(cfg);
-
-		Para.addDestroyListener(new Para.DestroyListener() {
-			public void onDestroy() {
-				shutdownClient();
+		if (hcInstance == null) {
+			hcInstance = Hazelcast.getHazelcastInstanceByName(getNodeName());
+			if (hcInstance != null) {
+				return hcInstance;
 			}
-		});
+			com.hazelcast.config.Config cfg = new com.hazelcast.config.Config();
+			cfg.setInstanceName(getNodeName());
+			MapConfig mapcfg = new MapConfig("default");
+			mapcfg.setEvictionPercentage(25);
+			mapcfg.setEvictionPolicy(MapConfig.EvictionPolicy.LRU);
+	//			mapcfg.setMapStoreConfig(new MapStoreConfig().setEnabled(false).setClassName(NODE_NAME));
+			mapcfg.setMaxSizeConfig(new MaxSizeConfig().setSize(25).setMaxSizePolicy(USED_HEAP_PERCENTAGE));
+			cfg.addMapConfig(mapcfg);
+			cfg.setProperty("hazelcast.jmx", "true");
+			cfg.setProperty("hazelcast.logging.type", "slf4j");
+			if (Config.IN_PRODUCTION) {
+				cfg.setNetworkConfig(new NetworkConfig().setJoin(new JoinConfig().
+					setMulticastConfig(new MulticastConfig().setEnabled(false)).
+						setTcpIpConfig(new TcpIpConfig().setEnabled(false)).
+						setAwsConfig(new AwsConfig().setEnabled(true).
+							setAccessKey(Config.AWS_ACCESSKEY).
+							setSecretKey(Config.AWS_SECRETKEY).
+							setRegion(Config.AWS_REGION).
+							setSecurityGroupName(Config.APP_NAME_NS))));
+			}
+
+			hcInstance = Hazelcast.newHazelcastInstance(cfg);
+
+			Para.addDestroyListener(new Para.DestroyListener() {
+				public void onDestroy() {
+					shutdownClient();
+				}
+			});
+		}
 
 		return hcInstance;
 	}
@@ -88,9 +91,13 @@ public final class HazelcastUtils {
 	 */
 	public static void shutdownClient() {
 		if (hcInstance != null) {
-			hcInstance.getLifecycleService().shutdown();
+			hcInstance.shutdown();
 			hcInstance = null;
 		}
 	}
 
+	private static String getNodeName() {
+		return Config.PARA.concat("-hc-").concat(Config.WORKER_ID);
+	}
+	
 }

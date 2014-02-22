@@ -131,6 +131,7 @@ public final class Utils {
 		random.setSeed(random.generateSeed(8));
 		jsonMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 		jsonMapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
+		jsonMapper.enable(SerializationFeature.INDENT_OUTPUT);
 	}
 
 	private Utils() { }
@@ -147,6 +148,25 @@ public final class Utils {
 	}
 
 	/**
+	 * HumanTime - a relative time formatter
+	 * @return humantime instance
+	 */
+	public static HumanTime getHumanTime() {
+		if (humantime == null) {
+			humantime = new HumanTime();
+		}
+		return humantime;
+	}
+	
+	/**
+	 * A Jackson {@code ObjectMapper}.
+	 * @return JSON object mapper
+	 */
+	public static ObjectMapper getJsonMapper() {
+		return jsonMapper;
+	}
+	
+	/**
 	 * A Jackson JSON reader.
 	 * @return JSON object reader
 	 */
@@ -160,17 +180,6 @@ public final class Utils {
 	 */
 	public static ObjectWriter getJsonWriter(SerializationFeature... sfs) {
 		return jsonWriter.withFeatures(sfs);
-	}
-
-	/**
-	 * HumanTime - a relative time formatter
-	 * @return humantime instance
-	 */
-	public static HumanTime getHumanTime() {
-		if (humantime == null) {
-			humantime = new HumanTime();
-		}
-		return humantime;
 	}
 
 	/////////////////////////////////////////////
@@ -787,12 +796,12 @@ public final class Utils {
 	}
 
 	/**
-	 * Checks if the classname of an object matches its real Class name.
+	 * Checks if the type of an object matches its real Class name.
 	 * @param so an object
 	 * @return true if the types match
 	 */
 	public static boolean typesMatch(ParaObject so) {
-		return (so == null) ? false : so.getClass().equals(toClass(so.getClassname()));
+		return (so == null) ? false : so.getClass().equals(toClass(so.getType()));
 	}
 
 	/**
@@ -831,7 +840,7 @@ public final class Utils {
 			return map;
 		}
 		try {
-			ArrayList<Field> fields = getAllDeclaredFields(bean.getClass());
+			List<Field> fields = getAllDeclaredFields(bean.getClass());
 			// filter transient fields and those without annotations
 			for (Field field : fields) {
 				boolean dontSkip = ((filter == null) ? true : !field.isAnnotationPresent(filter));
@@ -885,9 +894,9 @@ public final class Utils {
 		try {
 			if (bean == null) {
 				// try to find a declared class in the core package
-				bean = (P) toClass((String) data.get(Config._CLASSNAME)).getConstructor().newInstance();
+				bean = (P) toClass((String) data.get(Config._TYPE)).getConstructor().newInstance();
 			}
-			ArrayList<Field> fields = getAllDeclaredFields(bean.getClass());
+			List<Field> fields = getAllDeclaredFields(bean.getClass());
 			Map<String, Object> props = new HashMap<String, Object>(data);
 			for (Field field : fields) {
 				boolean dontSkip = ((filter == null) ? true : !field.isAnnotationPresent(filter));
@@ -919,13 +928,13 @@ public final class Utils {
 	/**
 	 * Constructs a new instance of a core object.
 	 * @param <P> the object type
-	 * @param classname the simple name of a class
+	 * @param type the simple name of a class
 	 * @return a new instance of a core class. Defaults to {@link com.erudika.para.core.Sysprop}.
 	 * @see #toClass(java.lang.String, java.lang.String) 
 	 */
-	public static <P extends ParaObject> P toObject(String classname) {
+	public static <P extends ParaObject> P toObject(String type) {
 		try {
-			return (P) toClass(classname).getConstructor().newInstance();
+			return (P) toClass(type).getConstructor().newInstance();
 		} catch (Exception ex) {
 			logger.error(null, ex);
 			return null;
@@ -934,39 +943,39 @@ public final class Utils {
 	
 	/**
 	 * Converts a class name to a real Class object.
-	 * @param classname the simple name of a class
+	 * @param type the simple name of a class
 	 * @return the Class object or {@link com.erudika.para.core.Sysprop} if the class was not found.
 	 * @see java.lang.Class#forName(java.lang.String) 
 	 */
-	public static Class<? extends ParaObject> toClass(String classname) {
-		return toClass(classname, null, Sysprop.class);
+	public static Class<? extends ParaObject> toClass(String type) {
+		return toClass(type, null, Sysprop.class);
 	}
 
 	/**
 	 * Converts a class name to a real {@link com.erudika.para.core.ParaObject} subclass.
 	 * Defaults to {@link com.erudika.para.core.Sysprop} if the class was not found in the core package path.
-	 * @param classname the simple name of a class
+	 * @param type the simple name of a class
 	 * @param scanPackagePath the package path of the class
 	 * @param defaultClass returns this type if the requested class was not found on the classpath.
 	 * @return the Class object. Returns null if defaultClass is null. 
 	 * @see java.lang.Class#forName(java.lang.String) 
 	 * @see com.erudika.para.core.Sysprop
 	 */
-	public static Class<? extends ParaObject> toClass(String classname, String scanPackagePath, 
+	public static Class<? extends ParaObject> toClass(String type, String scanPackagePath, 
 			Class<? extends ParaObject> defaultClass) {
 		String packagename = Config.CORE_PACKAGE_NAME;
 		String corepackage = StringUtils.isBlank(scanPackagePath) ? packagename : scanPackagePath;
 		Class<? extends ParaObject> returnClass = defaultClass;
-		if (StringUtils.isBlank(classname)) {
+		if (StringUtils.isBlank(type)) {
 			return returnClass;
 		}
 		try {
 			returnClass = (Class<? extends ParaObject>) Class.forName(ParaObject.class.getPackage().getName().
-					concat(".").concat(StringUtils.capitalize(classname)));
+					concat(".").concat(StringUtils.capitalize(type)));
 		} catch (ClassNotFoundException ex) {
 			try {
 				returnClass = (Class<? extends ParaObject>) Class.forName(corepackage.concat(".").
-						concat(StringUtils.capitalize(classname)));
+						concat(StringUtils.capitalize(type)));
 			} catch (ClassNotFoundException ex1) {
 				// unknown type - fall back to Sysprop
 				returnClass = defaultClass;
@@ -1030,11 +1039,11 @@ public final class Utils {
 	}
 	
 	/**
-	 * Returns the simple name of a class in lowercase.
-	 * @param clazz a class
-	 * @return just the name in lowercase or an empty string if null
+	 * Returns the simple name of a class in lowercase (AKA the type).
+	 * @param clazz a core class
+	 * @return just the name in lowercase or an empty string if clazz is null
 	 */
-	public static String classname(Class<? extends ParaObject> clazz) {
+	public static String type(Class<? extends ParaObject> clazz) {
 		return (clazz == null) ? "" : clazz.getSimpleName().toLowerCase();
 	}
 
@@ -1077,18 +1086,18 @@ public final class Utils {
 	/**
 	 * A JSON object used for JavaScript validation. It maps Hibernate Validator annotations to JavaScript.
 	 * This method WILL change in the future.
-	 * @param classname a class name
+	 * @param type the type of object that will be validated
 	 * @param fields list of fields to map
 	 * @param lang language map
 	 * @return the JSON validation object
 	 */
-	public static String getJSONValidationObject(String classname, List<String> fields, Map<String, String> lang) {
+	public static String getJSONValidationObject(String type, List<String> fields, Map<String, String> lang) {
 		String root = "{}";
 		if (fields == null) {
 			fields = new ArrayList<String>();
 		}
-		if (!StringUtils.isBlank(classname)) {
-			Class<? extends ParaObject> c = toClass(classname);
+		if (!StringUtils.isBlank(type)) {
+			Class<? extends ParaObject> c = toClass(type);
 			ArrayList<String> rules = new ArrayList<String>();
 			ArrayList<String> messages = new ArrayList<String>();
 			for (Entry<String, List<Annotation>> entry : getAnnotationsMap(c, new HashSet<String>(fields)).entrySet()) {
@@ -1128,7 +1137,7 @@ public final class Utils {
 	static Map<String, List<Annotation>> getAnnotationsMap(Class<? extends ParaObject> clazz, Set<String> fields) {
 		HashMap<String, List<Annotation>> map = new HashMap<String, List<Annotation>>();
 		try {
-			ArrayList<Field> fieldlist = getAllDeclaredFields(clazz);
+			List<Field> fieldlist = getAllDeclaredFields(clazz);
 
 			if (fields != null && !fields.isEmpty()) {
 				for (Iterator<Field> it = fieldlist.iterator(); it.hasNext();) {
@@ -1163,7 +1172,7 @@ public final class Utils {
 	 * @param clazz a class to scan
 	 * @return a list of fields including those of the parent classes excluding the Object class.
 	 */
-	static ArrayList<Field> getAllDeclaredFields(Class<? extends ParaObject> clazz) {
+	static List<Field> getAllDeclaredFields(Class<? extends ParaObject> clazz) {
 		ArrayList<Field> fields = new ArrayList<Field>();
 		if (clazz == null) {
 			return fields;

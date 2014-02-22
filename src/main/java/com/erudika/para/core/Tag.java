@@ -30,7 +30,7 @@ import org.hibernate.validator.constraints.NotBlank;
  */
 public class Tag extends PObject {
 	private static final long serialVersionUID = 1L;
-	private static final String prefix = Utils.classname(Tag.class).concat(Config.SEPARATOR);
+	private static final String prefix = Utils.type(Tag.class).concat(Config.SEPARATOR);
 	
 	@Stored @NotBlank @Locked private String tag;
 	@Stored private Integer count;

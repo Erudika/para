@@ -40,6 +40,7 @@ import com.amazonaws.services.dynamodbv2.model.UpdateItemRequest;
 import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -70,8 +71,7 @@ public class AWSDynamoDAO implements DAO {
 	/**
 	 * No-args constructor
 	 */
-	public AWSDynamoDAO() {
-	}
+	public AWSDynamoDAO() { }
 
 	AmazonDynamoDBClient client() {
 		return AWSDynamoUtils.getClient();
@@ -285,7 +285,7 @@ public class AWSDynamoDAO implements DAO {
 
 		KeysAndAttributes kna = new KeysAndAttributes().withKeys(keyz);
 		if (!getAllColumns) {
-			kna.setAttributesToGet(Arrays.asList(Config._KEY, Config._CLASSNAME));
+			kna.setAttributesToGet(Arrays.asList(Config._KEY, Config._TYPE));
 		}
 
 		batchGet(Collections.singletonMap(appName, kna), results);
@@ -295,20 +295,23 @@ public class AWSDynamoDAO implements DAO {
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> readPage(String appName, String lastKey) {
+	public <P extends ParaObject> List<P> readPage(String appName, Pager pager) {
 		List<P> results = new LinkedList<P>();
 		if (StringUtils.isBlank(appName)) {
 			return results;
 		}
-
+		if (pager == null) {
+			pager = new Pager();
+		}
 		try {
 			ScanRequest scanRequest = new ScanRequest().
 					withTableName(appName).
-					withLimit(Config.MAX_ITEMS_PER_PAGE).
+					withLimit(pager.getLimit()).
 					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
 
-			if (!StringUtils.isBlank(lastKey)) {
-				scanRequest.setExclusiveStartKey(Collections.singletonMap(Config._KEY, new AttributeValue(lastKey)));
+			if (!StringUtils.isBlank(pager.getLastKey())) {
+				scanRequest.setExclusiveStartKey(Collections.singletonMap(Config._KEY, 
+						new AttributeValue(pager.getLastKey())));
 			}
 
 			ScanResult result = client().scan(scanRequest);
@@ -321,7 +324,8 @@ public class AWSDynamoDAO implements DAO {
 				}
 			}
 			if (result.getCount() > 0 && results.isEmpty() && result.getLastEvaluatedKey() != null) {
-				return readPage(appName, result.getLastEvaluatedKey().get(Config._KEY).getS());
+				pager.setLastKey(result.getLastEvaluatedKey().get(Config._KEY).getS());
+				return readPage(appName, pager);
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -528,8 +532,8 @@ public class AWSDynamoDAO implements DAO {
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> readPage(String lastKey) {
-		return readPage(Config.APP_NAME_NS, lastKey);
+	public <P extends ParaObject> List<P> readPage(Pager pager) {
+		return readPage(Config.APP_NAME_NS, pager);
 	}
 
 	@Override

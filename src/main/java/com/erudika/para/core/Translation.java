@@ -20,10 +20,8 @@ package com.erudika.para.core;
 import com.erudika.para.i18n.LanguageUtils;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
-import com.erudika.para.utils.Config;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import javax.inject.Inject;
-import org.apache.commons.lang3.StringUtils;
+import org.hibernate.validator.constraints.NotBlank;
 
 /**
  * A translation is a key/value pair which holds a single translated string.
@@ -33,12 +31,12 @@ import org.apache.commons.lang3.StringUtils;
 public class Translation extends PObject {
 	private static final long serialVersionUID = 1L;
 
-	@Stored @Locked private String locale;
-	@Stored @Locked private String thekey;
-	@Stored private String value;
+	@Stored @Locked @NotBlank private String locale;
+	@Stored @Locked @NotBlank private String thekey;
+	@Stored @NotBlank private String value;
 	@Stored private Boolean approved;
 
-	private LanguageUtils langutils;
+	private transient LanguageUtils langutils;
 
 	/**
 	 * No-args constructor
@@ -67,16 +65,14 @@ public class Translation extends PObject {
 		this.thekey = thekey;
 		this.value = value;
 		this.approved = false;
-		setName(value);
-		setName(getName());
+		setName(getType());
 	}
 
 	/**
 	 * An instance of LanguageUtils
 	 * @return instance of {@link com.erudika.para.i18n.LanguageUtils}
 	 */
-	@JsonIgnore
-	public LanguageUtils getLangutils() {
+	private LanguageUtils getLangutils() {
 		if (langutils == null) {
 			langutils = new LanguageUtils(getSearch(), getDao());
 		}
@@ -171,14 +167,6 @@ public class Translation extends PObject {
 	 */
 	public boolean isApproved() {
 		return (approved != null) ? approved : false;
-	}
-
-	@Override
-	public String getParentid() {
-		if (StringUtils.isBlank(locale) && StringUtils.isBlank(thekey)) {
-			return null;
-		}
-		return locale.concat(Config.SEPARATOR).concat(thekey);
 	}
 
 }

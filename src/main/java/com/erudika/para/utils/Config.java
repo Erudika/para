@@ -53,8 +53,8 @@ public final class Config {
 	public static final String PARA = "para";
 	/** {@value #_AUTHTOKEN} */
 	public static final String _AUTHTOKEN = "authtoken";
-	/** {@value #_CLASSNAME} */
-	public static final String _CLASSNAME = "classname";
+	/** {@value #_TYPE} */
+	public static final String _TYPE = "type";
 	/** {@value #_CREATORID} */
 	public static final String _CREATORID = "creatorid";
 	/** {@value #_ID} */

@@ -32,8 +32,8 @@ public final class Linker extends PObject {
 
 	@Stored @Locked @NotBlank private String id1;
 	@Stored @Locked @NotBlank private String id2;
-	@Stored @Locked @NotBlank private String classname1;
-	@Stored @Locked @NotBlank private String classname2;
+	@Stored @Locked @NotBlank private String type1;
+	@Stored @Locked @NotBlank private String type2;
 	@Stored private String metadata;
 
 	/**
@@ -49,19 +49,19 @@ public final class Linker extends PObject {
 	 * @param i2 the id of the second object
 	 */
 	public Linker(Class<? extends ParaObject> c1, Class<? extends ParaObject> c2, String i1, String i2) {
-		if (isReversed(Utils.classname(c1), Utils.classname(c2))) {
-			classname1 = Utils.classname(c2);
-			classname2 = Utils.classname(c1);
+		if (isReversed(Utils.type(c1), Utils.type(c2))) {
+			type1 = Utils.type(c2);
+			type2 = Utils.type(c1);
 			this.id1 = i2;
 			this.id2 = i1;
 		} else {
-			classname1 = Utils.classname(c1);
-			classname2 = Utils.classname(c2);
+			type1 = Utils.type(c1);
+			type2 = Utils.type(c2);
 			this.id1 = i1;
 			this.id2 = i2;
 		}
-		setName(classname1 + Config.SEPARATOR + classname2);
-		setId(classname1 + Config.SEPARATOR + id1 + Config.SEPARATOR + classname2 + Config.SEPARATOR + id2);
+		setName(type1 + Config.SEPARATOR + type2);
+		setId(type1 + Config.SEPARATOR + id1 + Config.SEPARATOR + type2 + Config.SEPARATOR + id2);
 	}
 
 	/**
@@ -100,32 +100,32 @@ public final class Linker extends PObject {
 	 * Returns the type of the first object in the link.
 	 * @return the type
 	 */
-	public String getClassname1() {
-		return classname1;
+	public String getType1() {
+		return type1;
 	}
 
 	/**
 	 * Sets the type of the first object in the link.
-	 * @param classname1 the type
+	 * @param type1 the type
 	 */
-	public void setClassname1(String classname1) {
-		this.classname1 = classname1;
+	public void setType1(String type1) {
+		this.type1 = type1;
 	}
 
 	/**
 	 * Returns the type of the second object in the link.
 	 * @return the type
 	 */
-	public String getClassname2() {
-		return classname2;
+	public String getType2() {
+		return type2;
 	}
 
 	/**
 	 * Sets the type of the second object in the link.
-	 * @param classname2
+	 * @param type2
 	 */
-	public void setClassname2(String classname2) {
-		this.classname2 = classname2;
+	public void setType2(String type2) {
+		this.type2 = type2;
 	}
 
 	/**
@@ -146,7 +146,7 @@ public final class Linker extends PObject {
 
 //	public void delete() {
 //		ArrayList<String> keys = new ArrayList<String>();
-//		for (PObject link : search.findTerms(getClassname(), null, null, "id1", id1, "id2", id2)) {
+//		for (PObject link : search.findTerms(getType(), null, null, "id1", id1, "id2", id2)) {
 //			keys.add(link.getId());
 //		}
 //		AWSDynamoDAO.getInstance().deleteAll(keys);
@@ -172,13 +172,13 @@ public final class Linker extends PObject {
 	/**
 	 * Checks if the position of a given object is first or second.
 	 * @param c1 the given class of object
-	 * @return true if the object's type is equal to {@link #getClassname1()}
+	 * @return true if the object's type is equal to {@link #getType1()}
 	 */
 	public boolean isFirst(Class<? extends ParaObject> c1) {
 		if (c1 == null) {
 			return false;
 		}
-		return Utils.classname(c1).equals(classname1);
+		return Utils.type(c1).equals(type1);
 	}
 //
 	/**

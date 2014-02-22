@@ -18,6 +18,7 @@ package com.erudika.para.persistence;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -186,7 +187,7 @@ public class IndexBasedDAO implements DAO {
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> readPage(String appName, String lastKey) {
+	public <P extends ParaObject> List<P> readPage(String appName, Pager pager) {
 		return new ArrayList<P>();
 	}
 
@@ -274,8 +275,8 @@ public class IndexBasedDAO implements DAO {
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> readPage(String lastKey) {
-		return readPage(Config.APP_NAME_NS, lastKey);
+	public <P extends ParaObject> List<P> readPage(Pager pager) {
+		return readPage(Config.APP_NAME_NS, pager);
 	}
 
 	@Override

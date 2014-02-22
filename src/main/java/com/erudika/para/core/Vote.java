@@ -18,7 +18,7 @@
 package com.erudika.para.core;
 
 import com.erudika.para.annotations.Stored;
-import static com.erudika.para.core.Votable.VoteType.*;
+import static com.erudika.para.core.Votable.VoteValue.*;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import javax.validation.constraints.NotNull;
@@ -34,7 +34,7 @@ import org.hibernate.validator.constraints.NotBlank;
 public class Vote extends PObject {
 	private static final long serialVersionUID = 1L;
 
-	@Stored @NotBlank private String type;
+	@Stored @NotBlank private String value;
 	@Stored @NotNull private Long expiresAfter;
 
 	/**
@@ -48,21 +48,21 @@ public class Vote extends PObject {
 	 * Default constructor
 	 * @param voterid the user id of the voter
 	 * @param voteeid the id of the object that will receive the vote
-	 * @param type up + or down -
+	 * @param value up + or down -
 	 */
-	public Vote(String voterid, String voteeid, String type) {
+	public Vote(String voterid, String voteeid, String value) {
 		setCreatorid(voterid);
 		setParentid(voteeid);
 		setTimestamp(Utils.timestamp());
-		setName(getName());
-		this.type = type;
+		setName(getType());
+		this.value = value;
 		this.expiresAfter = Config.VOTE_EXPIRES_AFTER_SEC;
 	}
 
 	@Override
 	public final String getId() {
 		if (getCreatorid() != null && getParentid() != null && super.getId() == null) {
-			setId(getClassname().concat(Config.SEPARATOR).concat(getCreatorid()).concat(Config.SEPARATOR).concat(getParentid()));
+			setId(getType().concat(Config.SEPARATOR).concat(getCreatorid()).concat(Config.SEPARATOR).concat(getParentid()));
 		}
 		return super.getId();
 	}
@@ -72,7 +72,7 @@ public class Vote extends PObject {
 	 * @return this
 	 */
 	public Vote up() {
-		this.type = UP.toString();
+		this.value = UP.toString();
 		return this;
 	}
 
@@ -81,24 +81,24 @@ public class Vote extends PObject {
 	 * @return this
 	 */
 	public Vote down() {
-		this.type = DOWN.toString();
+		this.value = DOWN.toString();
 		return this;
 	}
 
 	/**
-	 * Returns the type of the vote.
+	 * Returns the value of the vote.
 	 * @return UP or DOWN
 	 */
-	public String getType() {
-		return type;
+	public String getValue() {
+		return value;
 	}
 
 	/**
-	 * Sets the type
-	 * @param type UP or DOWN
+	 * Sets the value of the vote
+	 * @param value UP or DOWN
 	 */
-	public void setType(String type) {
-		this.type = type;
+	public void setValue(String value) {
+		this.value = value;
 	}
 
 	/**

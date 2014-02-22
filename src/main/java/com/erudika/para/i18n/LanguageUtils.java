@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -104,8 +105,7 @@ public class LanguageUtils {
 			Map<String, Object> terms = new HashMap<String, Object>();
 			terms.put("locale", langCode);
 			terms.put("approved", true);
-			ArrayList<Translation> tlist = search.
-					findTerms(appName, Utils.classname(Translation.class), terms, true);
+			List<Translation> tlist = search.findTerms(appName, Utils.type(Translation.class), terms, true);
 
 			Sysprop saved = new Sysprop(keyPrefix.concat(langCode));
 			lang.putAll(getDefaultLanguage());	// copy default langmap
@@ -222,8 +222,8 @@ public class LanguageUtils {
 	 * @param pager the pager object
 	 * @return a list of translations
 	 */
-	public ArrayList<ParaObject> readAllTranslationsForKey(String appName, String locale, String key, Pager pager) {
-		return search.findTerms(appName, Utils.classname(Translation.class),
+	public List<Translation> readAllTranslationsForKey(String appName, String locale, String key, Pager pager) {
+		return search.findTerms(appName, Utils.type(Translation.class),
 				Collections.singletonMap(Config._PARENTID, key), true, pager);
 	}
 

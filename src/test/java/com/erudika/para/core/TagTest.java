@@ -48,9 +48,9 @@ public class TagTest {
 	}
 
 	@Test
-	public void testGetClassname() {
-		t.setClassname("asd");
-		assertEquals("asd", t.getClassname());
+	public void testGetType() {
+		t.setType("asd");
+		assertEquals("asd", t.getType());
 	}
 
 	@Test
