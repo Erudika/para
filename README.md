@@ -59,7 +59,7 @@ See the configuration file `src/main/resources/reference.conf` and modify it if 
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
 
-For more information see [CONTRIBUTING.md](http://github.com/erudika/para/CONTRIBUTING.md)
+For more information see [CONTRIBUTING.md](https://github.com/Erudika/para/blob/master/CONTRIBUTING.md)
 
 ## License
 <pre>
