@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.core;
 
@@ -44,7 +44,7 @@ public class TagTest {
 	public void testId() {
 		assertEquals("tag:test", t.getId());
 		t.setId("test1");
-		assertEquals("test1", t.getId());
+		assertEquals("tag:test1", t.getId());
 	}
 
 	@Test
@@ -107,6 +107,6 @@ public class TagTest {
 
 		assertFalse(t1.equals(t2));
 		t1.setId("tag2");
-		assertFalse(t1.equals(t2));
+		assertTrue(t1.equals(t2));
 	}
 }

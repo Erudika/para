@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.core;
 
@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import javax.validation.constraints.Size;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.hibernate.validator.constraints.NotBlank;
@@ -54,7 +53,6 @@ public class User extends PObject implements UserDetails {
 
 	@NotBlank @Size(min = Config.MIN_PASS_LENGTH, max = 255)
 	private transient String password;	// for validation purposes only
-	private transient String authtoken;
 
 	/**
 	 * No-args constructor
@@ -107,22 +105,6 @@ public class User extends PObject implements UserDetails {
 	 */
 	public void setPro(Boolean pro) {
 		this.pro = pro;
-	}
-
-	/**
-	 * Returns a unique security token that is created when a user is authenticated.
-	 * @return a security token
-	 */
-	public String getAuthtoken() {
-		return authtoken;
-	}
-
-	/**
-	 * Sets a unique security token that is created when a user is authenticated.
-	 * @param authtoken
-	 */
-	public void setAuthtoken(String authtoken) {
-		this.authtoken = authtoken;
 	}
 
 	/**
@@ -231,7 +213,7 @@ public class User extends PObject implements UserDetails {
 
 		setActive(true);
 
-		if (getDao().create(getAppname(), this) != null) {
+		if (getDao().create(getAppid(), this) != null) {
 			createIdentifier(getId(), getIdentifier(), getPassword());
 		}
 
@@ -241,7 +223,7 @@ public class User extends PObject implements UserDetails {
 	@Override
 	public void delete() {
 		if (getId() != null) {
-			getDao().delete(getAppname(), this);
+			getDao().delete(getAppid(), this);
 			for (String ident1 : getIdentifiers()) {
 				deleteIdentifier(ident1);
 			}
@@ -254,7 +236,7 @@ public class User extends PObject implements UserDetails {
 	 */
 	@JsonIgnore
 	public List<String> getIdentifiers() {
-		List<Sysprop> list = getSearch().findTerms(getAppname(), Utils.type(Sysprop.class),
+		List<Sysprop> list = getSearch().findTerms(getAppid(), Utils.type(Sysprop.class),
 				Collections.singletonMap(Config._CREATORID, getId()), true);
 		ArrayList<String> idents = new ArrayList<String>();
 		for (Sysprop s : list) {
@@ -279,7 +261,7 @@ public class User extends PObject implements UserDetails {
 	 */
 	public void detachIdentifier(String identifier) {
 		if (!StringUtils.equals(identifier, getIdentifier())) {
-			Sysprop s = getDao().read(getAppname(), identifier);
+			Sysprop s = getDao().read(getAppid(), identifier);
 			if (s != null && StringUtils.equals(getId(), s.getCreatorid())) {
 				deleteIdentifier(identifier);
 			}
@@ -377,12 +359,14 @@ public class User extends PObject implements UserDetails {
 
 	/**
 	 * The password. A transient field used for validation.
-	 * @return the password or authtoken.
-	 * @see #getAuthtoken() 
+	 * @return the password.
 	 */
 	@JsonIgnore
 	public String getPassword() {
-		return StringUtils.isBlank(password) ? authtoken : password;
+		if (StringUtils.isBlank(password)) {
+			password = Utils.generateSecurityToken();
+		}
+		return password;
 	}
 
 	/**
@@ -395,7 +379,7 @@ public class User extends PObject implements UserDetails {
 
 	/**
 	 * Returns a user object for a given identifier.
-	 * @param u a user with an identifier.
+	 * @param u a user having a valid identifier set.
 	 * @return a user or null if no user is found for this identifier
 	 */
 	public static User readUserForIdentifier(User u) {
@@ -406,15 +390,14 @@ public class User extends PObject implements UserDetails {
 		if (NumberUtils.isDigits(identifier)) {
 			identifier = Config.FB_PREFIX + u.getIdentifier();
 		}
-		Sysprop s = u.getDao().read(u.getAppname(), identifier);
+		Sysprop s = u.getDao().read(u.getAppid(), identifier);
 		if (s != null && s.getCreatorid() != null) {
-			User user = u.getDao().read(u.getAppname(), s.getCreatorid());
+			User user = u.getDao().read(u.getAppid(), s.getCreatorid());
 			if (user != null) {
 				if (!identifier.equals(user.getIdentifier())) {
 					user.setIdentifier(identifier);
 					user.update();
 				}
-				user.setAuthtoken((String) s.getProperty(Config._AUTHTOKEN));
 				return user;
 			}
 		}
@@ -436,12 +419,10 @@ public class User extends PObject implements UserDetails {
 		if (StringUtils.isBlank(password) || StringUtils.isBlank(identifier)) {
 			return false;
 		}
-		Sysprop s = u.getDao().read(u.getAppname(), identifier);
+		Sysprop s = u.getDao().read(u.getAppid(), identifier);
 		if (s != null) {
-			String salt = (String) s.getProperty(Config._SALT);
 			String storedHash = (String) s.getProperty(Config._PASSWORD);
-			String givenHash = Utils.HMACSHA(password, salt);
-			return StringUtils.equals(givenHash, storedHash);
+			return Utils.bcryptMatches(password, storedHash);
 		}
 		return false;
 	}
@@ -454,12 +435,11 @@ public class User extends PObject implements UserDetails {
 		if (StringUtils.isBlank(identifier)) {
 			return "";
 		}
-		Sysprop s = getDao().read(getAppname(), identifier);
+		Sysprop s = getDao().read(getAppid(), identifier);
 		if (s != null) {
-			String salt = (String) s.getProperty(Config._SALT);
-			String token = Utils.HMACSHA(Utils.getNewId(), salt);
+			String token = Utils.MD5(Utils.getNewId() + Config.SEPARATOR + Utils.generateSecurityToken());
 			s.addProperty(Config._RESET_TOKEN, token);
-			getDao().update(getAppname(), s);
+			getDao().update(getAppid(), s);
 			return token;
 		}
 		return "";
@@ -478,17 +458,15 @@ public class User extends PObject implements UserDetails {
 		if (newpass.length() < Config.MIN_PASS_LENGTH) {
 			return false;
 		}
-		Sysprop s = getDao().read(getAppname(), identifier);
+		Sysprop s = getDao().read(getAppid(), identifier);
 		if (s != null && s.hasProperty(Config._RESET_TOKEN)) {
 			String storedToken = (String) s.getProperty(Config._RESET_TOKEN);
 			long now = Utils.timestamp();
 			long timeout = Config.PASSRESET_TIMEOUT_SEC * 1000;
-			if (StringUtils.equals(storedToken, token) && (s.getTimestamp() + timeout) > now) {
+			if (StringUtils.equals(storedToken, token) && (s.getUpdated() + timeout) > now) {
 				s.removeProperty(Config._RESET_TOKEN);
-				String salt = getPassSalt();
-				s.addProperty(Config._SALT, salt);
-				s.addProperty(Config._PASSWORD, getPassHash(newpass, salt));
-				getDao().update(getAppname(), s);
+				s.addProperty(Config._PASSWORD, Utils.bcrypt(newpass));
+				getDao().update(getAppid(), s);
 				return true;
 			}
 		}
@@ -518,13 +496,10 @@ public class User extends PObject implements UserDetails {
 		s.setId(newIdent);
 		s.setName(Config._IDENTIFIER);
 		s.setCreatorid(userid);
-		s.addProperty(Config._AUTHTOKEN, Utils.generateAuthToken());
 		if (!StringUtils.isBlank(password)) {
-			String salt = getPassSalt();
-			s.addProperty(Config._SALT, salt);
-			s.addProperty(Config._PASSWORD, getPassHash(password, salt));
+			s.addProperty(Config._PASSWORD, Utils.bcrypt(password));
 		}
-		return getDao().create(getAppname(), s) != null;
+		return getDao().create(getAppid(), s) != null;
 	}
 
 	/**
@@ -536,20 +511,8 @@ public class User extends PObject implements UserDetails {
 			if (NumberUtils.isDigits(ident)) {
 				ident = Config.FB_PREFIX + ident;
 			}
-			getDao().delete(getAppname(), new Sysprop(ident));
+			getDao().delete(getAppid(), new Sysprop(ident));
 		}
-	}
-
-	/**
-	 * Randomly generated password salt.
-	 * @return the salt - 20 alphanumeric characters long
-	 */
-	private String getPassSalt() {
-		return RandomStringUtils.randomAlphanumeric(20);
-	}
-
-	private String getPassHash(String pass, String salt) {
-		return Utils.HMACSHA(pass, salt);
 	}
 
 	/**

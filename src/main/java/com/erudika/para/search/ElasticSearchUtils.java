@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.search;
 
@@ -74,7 +74,7 @@ public final class ElasticSearchUtils {
 		settings.put("client.transport.sniff", true);
 		settings.put("action.disable_delete_all_indices", true);
 		settings.put("cluster.name", Config.CLUSTER_NAME);
-				
+
 		if (Config.IN_PRODUCTION) {
 			settings.put("cloud.aws.access_key", Config.AWS_ACCESSKEY);
 			settings.put("cloud.aws.secret_key", Config.AWS_SECRETKEY);
@@ -129,24 +129,24 @@ public final class ElasticSearchUtils {
 			searchNode = null;
 		}
 	}
-	
+
 	private static String getNodeName() {
 		return Config.PARA.concat("-es-").concat(Config.WORKER_ID);
 	}
 
 	/**
 	 * Creates a new search index.
-	 * @param appName the index name (alias)
+	 * @param appid the index name (alias)
 	 * @return true if created
 	 */
-	public static boolean createIndex(String appName) {
-		if (StringUtils.isBlank(appName) || StringUtils.containsWhitespace(appName) || existsIndex(appName)) {
+	public static boolean createIndex(String appid) {
+		if (StringUtils.isBlank(appid) || StringUtils.containsWhitespace(appid) || existsIndex(appid)) {
 			return false;
 		}
 		try {
 			NodeBuilder nb = NodeBuilder.nodeBuilder();
-			nb.settings().put("number_of_shards", "5");
-			nb.settings().put("number_of_replicas", "0");
+			nb.settings().put("number_of_shards", Config.getConfigParam("para.es.shards", "5"));
+			nb.settings().put("number_of_replicas", Config.getConfigParam("para.es.replicas", "0"));
 			nb.settings().put("auto_expand_replicas", "0-all");
 			nb.settings().put("analysis.analyzer.default.type", "standard");
 			nb.settings().putArray("analysis.analyzer.default.stopwords",
@@ -156,15 +156,15 @@ public final class ElasticSearchUtils {
 					"norwegian", "persian", "portuguese", "romanian", "russian", "spanish",
 					"swedish", "turkish");
 
-			String name = appName + "1";
+			String name = appid + "1";
 			CreateIndexRequestBuilder create = getClient().admin().indices().prepareCreate(name).
 					setSettings(nb.settings().build());
 
-			// special system mappings (all the rest are dynamic)
+			// default system mapping (all the rest are dynamic)
 			create.addMapping("_default_", getDefaultMapping());
 			create.execute().actionGet();
 
-			getClient().admin().indices().prepareAliases().addAlias(name, appName).execute().actionGet();
+			getClient().admin().indices().prepareAliases().addAlias(name, appid).execute().actionGet();
 		} catch (Exception e) {
 			logger.warn(null, e);
 			return false;
@@ -174,15 +174,15 @@ public final class ElasticSearchUtils {
 
 	/**
 	 * Deletes an existing search index.
-	 * @param appName the index name (alias)
+	 * @param appid the index name (alias)
 	 * @return true if deleted
 	 */
-	public static boolean deleteIndex(String appName) {
-		if (StringUtils.isBlank(appName) || !existsIndex(appName)) {
+	public static boolean deleteIndex(String appid) {
+		if (StringUtils.isBlank(appid) || !existsIndex(appid)) {
 			return false;
 		}
 		try {
-			getClient().admin().indices().prepareDelete(appName).execute().actionGet();
+			getClient().admin().indices().prepareDelete(appid).execute().actionGet();
 		} catch (Exception e) {
 			logger.warn(null, e);
 			return false;
@@ -192,16 +192,16 @@ public final class ElasticSearchUtils {
 
 	/**
 	 * Checks if the index exists.
-	 * @param appName the index name (alias)
+	 * @param appid the index name (alias)
 	 * @return true if exists
 	 */
-	public static boolean existsIndex(String appName) {
-		if (StringUtils.isBlank(appName)) {
+	public static boolean existsIndex(String appid) {
+		if (StringUtils.isBlank(appid)) {
 			return false;
 		}
 		boolean exists = false;
 		try {
-			exists = getClient().admin().indices().prepareExists(appName).execute().
+			exists = getClient().admin().indices().prepareExists(appid).execute().
 					actionGet().isExists();
 		} catch (Exception e) {
 			logger.warn(null, e);
@@ -211,36 +211,36 @@ public final class ElasticSearchUtils {
 
 	/**
 	 * Rebuilds an index. Reads objects from the data store and indexes them in batches.
-	 * @param appName the index name (alias)
+	 * @param appid the index name (alias)
 	 * @param dao an instance of the persistence class
 	 * @return true if successful
 	 */
-	public static boolean rebuildIndex(String appName, DAO dao) {
-		if (StringUtils.isBlank(appName) || dao == null) {
+	public static boolean rebuildIndex(String appid, DAO dao) {
+		if (StringUtils.isBlank(appid) || dao == null) {
 			return false;
 		}
 		try {
-			if (!existsIndex(appName)) {
+			if (!existsIndex(appid)) {
 				return false;
 			}
-			String oldName = getIndexNameForAlias(appName);
+			String oldName = getIndexNameForAlias(appid);
 			if (oldName == null) {
 				return false;
 			}
 			String newName = oldName + "_" + Utils.timestamp();
 
-			logger.info("rebuildIndex(): {}", appName);
+			logger.info("rebuildIndex(): {}", appid);
 
 			BulkRequestBuilder brb = getClient().prepareBulk();
 			BulkResponse resp = null;
 			Pager pager = new Pager();
 
-			List<ParaObject> list = dao.readPage(appName, null);
+			List<ParaObject> list = dao.readPage(appid, null);
 
 			if (!list.isEmpty()) {
 				do {
 					for (ParaObject obj : list) {
-						brb.add(getClient().prepareIndex(appName, obj.getType(), obj.getId()).
+						brb.add(getClient().prepareIndex(appid, obj.getType(), obj.getId()).
 								setSource(Utils.getAnnotatedFields(obj)));
 						pager.setLastKey(obj.getId());
 					}
@@ -250,7 +250,7 @@ public final class ElasticSearchUtils {
 						logger.info("rebuildIndex(): indexed {}, hasFailures: {}",
 								brb.numberOfActions(), resp.hasFailures());
 					}
-				} while(!(list = dao.readPage(appName, pager)).isEmpty());
+				} while(!(list = dao.readPage(appid, pager)).isEmpty());
 			}
 
 			// anything left after loop? index that too
@@ -262,8 +262,8 @@ public final class ElasticSearchUtils {
 
 			// switch to alias NEW_INDEX -> ALIAS, OLD_INDEX -> X
 			getClient().admin().indices().prepareAliases().
-					addAlias(newName, appName).
-					removeAlias(oldName, appName).execute().actionGet();
+					addAlias(newName, appid).
+					removeAlias(oldName, appid).execute().actionGet();
 
 			// delete the old index
 			deleteIndex(oldName);
@@ -276,17 +276,17 @@ public final class ElasticSearchUtils {
 
 	/**
 	 * Optimizes an index. This method might be deprecated in the future.
-	 * @param appName the index name (alias)
+	 * @param appid the index name (alias)
 	 * @return true if successful
 	 */
-	public static boolean optimizeIndex(String appName) {
-		if (StringUtils.isBlank(appName)) {
+	public static boolean optimizeIndex(String appid) {
+		if (StringUtils.isBlank(appid)) {
 			return false;
 		}
 		boolean result = false;
 		try {
 			OptimizeResponse resp = getClient().admin().indices().
-					prepareOptimize(appName).execute().actionGet();
+					prepareOptimize(appid).execute().actionGet();
 
 			result = resp.getFailedShards() == 0;
 		} catch (Exception e) {
@@ -316,18 +316,18 @@ public final class ElasticSearchUtils {
 
 	/**
 	 * Returns the real index name for a given alias.
-	 * @param appName the index name (alias)
+	 * @param appid the index name (alias)
 	 * @return the real index name (not alias)
 	 */
-	public static String getIndexNameForAlias(String appName) {
-		if (StringUtils.isBlank(appName)) {
+	public static String getIndexNameForAlias(String appid) {
+		if (StringUtils.isBlank(appid)) {
 			return null;
 		}
 		GetAliasesResponse get = getClient().admin().indices().
-				prepareGetAliases(appName).execute().actionGet();
+				prepareGetAliases(appid).execute().actionGet();
 		ImmutableOpenMap<String, List<AliasMetaData>> aliases = get.getAliases();
 		if (aliases.size() > 1) {
-			logger.warn("More than one index for alias {}", appName);
+			logger.warn("More than one index for alias {}", appid);
 		} else {
 			return aliases.keysIt().next();
 		}
@@ -348,7 +348,6 @@ public final class ElasticSearchUtils {
 						startObject("tag").field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._ID).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._KEY).field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._SALT).field("type", "string").field("index", "not_analyzed").endObject().
 //						startObject(Config._TAGS).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._EMAIL).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._GROUPS).field("type", "string").field("index", "not_analyzed").endObject().
@@ -357,7 +356,6 @@ public final class ElasticSearchUtils {
 						startObject(Config._PARENTID).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._CREATORID).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._TYPE).field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._AUTHTOKEN).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._TIMESTAMP).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._IDENTIFIER).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._RESET_TOKEN).field("type", "string").field("index", "not_analyzed").endObject().

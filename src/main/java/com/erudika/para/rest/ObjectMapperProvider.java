@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Erudika.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,6 +12,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.rest;
 
@@ -27,9 +29,14 @@ import javax.ws.rs.ext.Provider;
 @Provider
 public class ObjectMapperProvider implements ContextResolver<ObjectMapper> {
 
+	/**
+	 * Returns the JSON mapper
+	 * @param type --- (not used)
+	 * @return the default JSON mapper
+	 */
 	@Override
 	public ObjectMapper getContext(Class<?> type) {
 		return Utils.getJsonMapper();
 	}
-	
+
 }

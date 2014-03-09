@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Erudika.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,6 +12,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.persistence;
 
@@ -27,7 +29,7 @@ import org.junit.BeforeClass;
  * @author Alex Bogdanovski <alex@erudika.com>
  */
 public class IndexBasedDAOIT extends DAOTest {
-	
+
 	@BeforeClass
 	public static void setUpClass() {
 		System.setProperty("para.env", "embedded");
@@ -36,16 +38,16 @@ public class IndexBasedDAOIT extends DAOTest {
 		Search search = new ElasticSearch(dao);
 		((IndexBasedDAO) dao).setSearch(search);
 		ElasticSearchUtils.createIndex(Config.APP_NAME_NS);
-		ElasticSearchUtils.createIndex(appName1);
-		ElasticSearchUtils.createIndex(appName2);
+		ElasticSearchUtils.createIndex(appid1);
+		ElasticSearchUtils.createIndex(appid2);
 	}
-	
+
 	@AfterClass
 	public static void tearDownClass() {
 		ElasticSearchUtils.deleteIndex(Config.APP_NAME_NS);
-		ElasticSearchUtils.deleteIndex(appName1);
-		ElasticSearchUtils.deleteIndex(appName2);
+		ElasticSearchUtils.deleteIndex(appid1);
+		ElasticSearchUtils.deleteIndex(appid2);
 		ElasticSearchUtils.shutdownClient();
 	}
-	
+
 }

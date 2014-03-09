@@ -4,11 +4,27 @@
 <urlrewrite>
     <rule>
         <from>^/$</from>
-        <to>/index.html</to>
+        <to last="true">/index.html</to>
     </rule>
+    <rule>
+        <from>^/(\d+)$</from>
+        <to last="true">/error.html?e=$1</to>
+    </rule>    
 	<rule>
         <from>^/favicon.ico$</from>
-        <to>/images/favicon.ico</to>
+        <to last="true">/images/favicon.ico</to>
+    </rule>
+<!--	<rule>
+        <from>^/index.html$</from>
+        <to last="true" type="redirect">/</to>
+    </rule>
+	<rule>
+        <from>^/error.html$</from>
+        <to last="true" type="redirect">/</to>
+    </rule>-->
+    <rule>
+		<from>^/(?!v\d+.*)(?!index\.html)(?!error\.html)(?!images/)(?!styles/)(?!scripts/).+$</from>
+        <to type="redirect">/</to>
     </rule>
 </urlrewrite>
 

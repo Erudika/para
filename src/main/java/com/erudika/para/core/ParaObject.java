@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.core;
 
@@ -55,15 +55,15 @@ public interface ParaObject extends Serializable {
 	/**
 	 * The application name. Added to support multiple separate apps.
 	 * Every object must belong to an app. 
-	 * @return the app's name. default: para
+	 * @return the app id (name). default: para
 	 */
-	String getAppname();
+	String getAppid();
 
 	/**
 	 * Sets a new app name. Must not be null or empty.
-	 * @param appname the new app name
+	 * @param appid the new app id (name)
 	 */
-	void setAppname(String appname);
+	void setAppid(String appid);
 
 	/**
 	 * The id of the parent object.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.core;
 
@@ -50,14 +50,16 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 
 	@Stored @Locked private String id;
 	@Stored @Locked private Long timestamp;
-	@Stored @Locked private Long updated;
 	@Stored @Locked private String type;
-	@Stored @Locked private String appname;
+	@Stored @Locked private String appid;
 	@Stored @Locked private String parentid;
 	@Stored @Locked private String creatorid;
+
+	@Stored private Long updated;
 	@Stored private String name;
 	@Stored private Set<String> tags;
 	@Stored private Integer votes;
+
 	@Stored @Locked private String plural;
 	@Stored @Locked private String objectURI;
 
@@ -121,7 +123,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	@Override
 	public PObject getParent() {
 		if (parent == null && parentid != null) {
-			parent = getDao().read(getAppname(), parentid);
+			parent = getDao().read(getAppid(), parentid);
 		}
 		return parent;
 	}
@@ -129,7 +131,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	@Override
 	public PObject getCreator() {
 		if (creator == null && creatorid != null) {
-			creator = getDao().read(getAppname(), creatorid);
+			creator = getDao().read(getAppid(), creatorid);
 		}
 		return creator;
 	}
@@ -202,22 +204,22 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 
 	@Override
 	public String create() {
-		return getDao().create(getAppname(), this);
+		return getDao().create(getAppid(), this);
 	}
 
 	@Override
 	public void update() {
-		getDao().update(getAppname(), this);
+		getDao().update(getAppid(), this);
 	}
 
 	@Override
 	public void delete() {
-		getDao().delete(getAppname(), this);
+		getDao().delete(getAppid(), this);
 	}
 
 	@Override
 	public boolean exists() {
-		return getDao().existsColumn(getAppname(), id, Config._ID);
+		return getDao().existsColumn(getAppid(), id, Config._ID);
 	}
 
 	@Override
@@ -234,16 +236,16 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	}
 
 	@Override
-	public String getAppname() {
-		if (appname == null) {
-			appname = Config.APP_NAME_NS;
+	public String getAppid() {
+		if (appid == null) {
+			appid = Config.APP_NAME_NS;
 		}
-		return appname;
+		return appid;
 	}
 
 	@Override
-	public void setAppname(String appname) {
-		this.appname = appname;
+	public void setAppid(String appid) {
+		this.appid = appid;
 	}
 
 	///////////////////////////////////////
@@ -297,12 +299,12 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 
 	@Override
 	public String link(Class<? extends ParaObject> c2, String id2) {
-		return getDao().create(getAppname(), new Linker(this.getClass(), c2, getId(), id2));
+		return getDao().create(getAppid(), new Linker(this.getClass(), c2, getId(), id2));
 	}
 
 	@Override
 	public void unlink(Class<? extends ParaObject> c2, String id2) {
-		getDao().delete(getAppname(), new Linker(this.getClass(), c2, getId(), id2));
+		getDao().delete(getAppid(), new Linker(this.getClass(), c2, getId(), id2));
 	}
 
 	@Override
@@ -310,7 +312,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		Map<String, Object> terms = new HashMap<String, Object>();
 		terms.put("id1", id);
 		terms.put("id2", id);
-		getDao().deleteAll(getAppname(), getSearch().findTerms(getAppname(), Utils.type(Linker.class), terms, false));
+		getDao().deleteAll(getAppid(), getSearch().findTerms(getAppid(), Utils.type(Linker.class), terms, false));
 	}
 
 	@Override
@@ -323,7 +325,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		Map<String, Object> terms = new HashMap<String, Object>();
 		terms.put(Config._NAME, link.getName());
 		terms.put(idField, id);
-		return getSearch().findTerms(getAppname(), link.getType(), terms, true, pager);
+		return getSearch().findTerms(getAppid(), link.getType(), terms, true, pager);
 	}
 
 	@Override
@@ -331,7 +333,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		if (c2 == null) {
 			return false;
 		}
-		return getDao().read(getAppname(), new Linker(this.getClass(), c2, getId(), toId).getId()) != null;
+		return getDao().read(getAppid(), new Linker(this.getClass(), c2, getId(), toId).getId()) != null;
 	}
 
 	@Override
@@ -352,12 +354,12 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		Map<String, Object> terms = new HashMap<String, Object>();
 		terms.put(Config._NAME, link.getName());
 		terms.put(idField, id);
-		return getSearch().getCount(getAppname(), link.getType(), terms);
+		return getSearch().getCount(getAppid(), link.getType(), terms);
 	}
 
 	@Override
 	public Long countChildren(Class<? extends ParaObject> clazz) {
-		return getSearch().getCount(getAppname(), Utils.type(clazz));
+		return getSearch().getCount(getAppid(), Utils.type(clazz));
 	}
 
 	@Override
@@ -372,13 +374,13 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 			terms.put(field, term);
 		}
 		terms.put(Config._PARENTID, getId());
-		return getSearch().findTerms(getAppname(), Utils.type(clazz), terms, true, pager);
+		return getSearch().findTerms(getAppid(), Utils.type(clazz), terms, true, pager);
 	}
 
 	@Override
 	public void deleteChildren(Class<? extends ParaObject> clazz) {
 		if (!StringUtils.isBlank(getId())) {
-			getDao().deleteAll(getAppname(), getSearch().findTerms(getAppname(),
+			getDao().deleteAll(getAppid(), getSearch().findTerms(getAppid(),
 					Utils.type(clazz), Collections.singletonMap(Config._PARENTID, getId()), true));
 		}
 	}
@@ -395,7 +397,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 				keys.add(link.getId2());
 			}
 		}
-		return new ArrayList<P>((Collection<? extends P>) getDao().readAll(getAppname(), keys, true).values());
+		return new ArrayList<P>((Collection<? extends P>) getDao().readAll(getAppid(), keys, true).values());
 	}
 
 	///////////////////////////////////////
@@ -412,7 +414,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 		}
 
 		Vote v = new Vote(userid, votable.getId(), upDown.toString());
-		Vote saved = getDao().read(getAppname(), v.getId());
+		Vote saved = getDao().read(getAppid(), v.getId());
 		boolean done = false;
 		int vote = (upDown == VoteValue.UP) ? 1 : -1;
 
@@ -422,13 +424,13 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 			boolean voteHasChanged = BooleanUtils.xor(new boolean[]{isUpvote, wasUpvote});
 
 			if (saved.isExpired()) {
-				done = getDao().create(getAppname(), v) != null;
+				done = getDao().create(getAppid(), v) != null;
 			} else if (saved.isAmendable() && voteHasChanged) {
-				getDao().delete(getAppname(), saved);
+				getDao().delete(getAppid(), saved);
 				done = true;
 			}
 		} else {
-			done = getDao().create(getAppname(), v) != null;
+			done = getDao().create(getAppid(), v) != null;
 		}
 
 		if (done) {

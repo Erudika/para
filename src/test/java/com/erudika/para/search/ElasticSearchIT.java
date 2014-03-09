@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.search;
 
@@ -36,40 +36,40 @@ public class ElasticSearchIT extends SearchTest {
 		System.setProperty("para.env", "embedded");
 		s = new ElasticSearch(mock(DAO.class));
 		ElasticSearchUtils.createIndex(Config.APP_NAME_NS);
-		ElasticSearchUtils.createIndex(appName1);
-		ElasticSearchUtils.createIndex(appName2);
+		ElasticSearchUtils.createIndex(appid1);
+		ElasticSearchUtils.createIndex(appid2);
 		SearchTest.init();
 	}
 
 	@AfterClass
 	public static void tearDownClass() {
 		ElasticSearchUtils.deleteIndex(Config.APP_NAME_NS);
-		ElasticSearchUtils.deleteIndex(appName1);
-		ElasticSearchUtils.deleteIndex(appName2);
+		ElasticSearchUtils.deleteIndex(appid1);
+		ElasticSearchUtils.deleteIndex(appid2);
 		ElasticSearchUtils.shutdownClient();
 		SearchTest.cleanup();
 	}
 
 	@Test
 	public void testCreateDeleteExistsIndex() throws InterruptedException {
-		String appName3 = "test-index";
-		String badAppName = "test index 123";
+		String appid3 = "test-index";
+		String badAppid = "test index 123";
 
 		ElasticSearchUtils.createIndex("");
 		assertFalse(ElasticSearchUtils.existsIndex(""));
 
-		ElasticSearchUtils.createIndex(appName3);
-		assertTrue(ElasticSearchUtils.existsIndex(appName3));
+		ElasticSearchUtils.createIndex(appid3);
+		assertTrue(ElasticSearchUtils.existsIndex(appid3));
 
-		assertTrue(ElasticSearchUtils.optimizeIndex(appName3));
+		assertTrue(ElasticSearchUtils.optimizeIndex(appid3));
 
-		ElasticSearchUtils.deleteIndex(appName3);
-		assertFalse(ElasticSearchUtils.existsIndex(appName3));
+		ElasticSearchUtils.deleteIndex(appid3);
+		assertFalse(ElasticSearchUtils.existsIndex(appid3));
 
-		assertFalse(ElasticSearchUtils.createIndex(badAppName));
-		assertFalse(ElasticSearchUtils.existsIndex(badAppName));
-		assertFalse(ElasticSearchUtils.deleteIndex(appName3));
-		assertFalse(ElasticSearchUtils.deleteIndex(badAppName));
+		assertFalse(ElasticSearchUtils.createIndex(badAppid));
+		assertFalse(ElasticSearchUtils.existsIndex(badAppid));
+		assertFalse(ElasticSearchUtils.deleteIndex(appid3));
+		assertFalse(ElasticSearchUtils.deleteIndex(badAppid));
 	}
 
 	@Test

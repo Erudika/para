@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.persistence;
 
@@ -37,13 +37,13 @@ public interface DAO {
 	/**
 	 * Persists an object to the data store.
 	 * @param <P> the type of object
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param so the domain object
 	 * @return the object's id or null if not created.
 	 */
 	@Indexed(action = Indexed.Action.ADD)
 	@Cached(action = Cached.Action.PUT)
-	<P extends ParaObject> String create(String appName, P so);
+	<P extends ParaObject> String create(String appid, P so);
 
 	/**
 	 * Persists an object to the data store.
@@ -56,12 +56,12 @@ public interface DAO {
 	/**
 	 * Retrieves an object from the data store.
 	 * @param <P> the type of object
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param key an object id
 	 * @return the object or null if not found
 	 */
 	@Cached(action = Cached.Action.GET)
-	<P extends ParaObject> P read(String appName, String key);
+	<P extends ParaObject> P read(String appid, String key);
 
 	/**
 	 * Retrieves an object from the data store.
@@ -74,12 +74,12 @@ public interface DAO {
 	/**
 	 * Updates an object persistently.
 	 * @param <P> the type of object
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param so the domain object
 	 */
 	@Indexed(action = Indexed.Action.ADD)
 	@Cached(action = Cached.Action.PUT)
-	<P extends ParaObject> void update(String appName, P so);
+	<P extends ParaObject> void update(String appid, P so);
 
 	/**
 	 * Updates an object persistently.
@@ -91,12 +91,12 @@ public interface DAO {
 	/**
 	 * Deletes an object persistently.
 	 * @param <P> the type of object
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param so the domain object
 	 */
 	@Indexed(action = Indexed.Action.REMOVE)
 	@Cached(action = Cached.Action.DELETE)
-	<P extends ParaObject> void delete(String appName, P so);
+	<P extends ParaObject> void delete(String appid, P so);
 
 	/**
 	 * Deletes an object persistently.
@@ -114,66 +114,82 @@ public interface DAO {
 	 * @param key an object id
 	 * @param colName the name of the column
 	 * @return the value of the column
+	 * @deprecated -
 	 */
+	@Deprecated
 	String getColumn(String key, String colName);
 
 	/**
 	 * Returns the value of a column (field) for an object id.
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param key an object id
 	 * @param colName the name of the column
 	 * @return the value of the column
+	 * @deprecated -
 	 */
-	String getColumn(String appName, String key, String colName);
+	@Deprecated
+	String getColumn(String appid, String key, String colName);
 
 	/**
 	 * Sets the value of a single column for an object id.
 	 * @param key an object id
 	 * @param colName the name of the column
 	 * @param colValue the new value
+	 * @deprecated -
 	 */
+	@Deprecated
 	void putColumn(String key, String colName, String colValue);
 
 	/**
 	 * Sets the value of a single column for an object id.
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param key an object id
 	 * @param colName the name of the column
 	 * @param colValue the new value
+	 * @deprecated -
 	 */
-	void putColumn(String appName, String key, String colName, String colValue);
+	@Deprecated
+	void putColumn(String appid, String key, String colName, String colValue);
 
 	/**
 	 * Removes a column (sets it to null).
 	 * @param key an object id
 	 * @param colName the name of the column
+	 * @deprecated -
 	 */
+	@Deprecated
 	void removeColumn(String key, String colName);
 
 	/**
 	 * Removes a column (sets it to null).
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param key an object id
 	 * @param colName the name of the column
+	 * @deprecated -
 	 */
-	void removeColumn(String appName, String key, String colName);
+	@Deprecated
+	void removeColumn(String appid, String key, String colName);
 
 	/**
 	 * Checks if a column exists.
 	 * @param key an object id
 	 * @param colName the name of the column
 	 * @return true if the column exists
+	 * @deprecated -
 	 */
+	@Deprecated
 	boolean existsColumn(String key, String colName);
 
 	/**
 	 * Checks if a column exists.
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param key an object id
 	 * @param colName the name of the column
 	 * @return true if the column exists
+	 * @deprecated -
 	 */
-	boolean existsColumn(String appName, String key, String colName);
+	@Deprecated
+	boolean existsColumn(String appid, String key, String colName);
 
 	/////////////////////////////////////////////
 	//				READ ALL FUNCTIONS
@@ -182,12 +198,12 @@ public interface DAO {
 	/**
 	 * Saves multiple objects to the data store.
 	 * @param <P> the type of object
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param objects the list of objects to save
 	 */
 	@Indexed(action = Indexed.Action.ADD_ALL)
 	@Cached(action = Cached.Action.PUT_ALL)
-	<P extends ParaObject> void createAll(String appName, List<P> objects);
+	<P extends ParaObject> void createAll(String appid, List<P> objects);
 
 	/**
 	 * Saves multiple objects to the data store.
@@ -199,13 +215,13 @@ public interface DAO {
 	/**
 	 * Retrieves multiple objects from the data store.
 	 * @param <P> the type of object
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param keys a list of object ids
 	 * @param getAllColumns true if all columns must be retrieved. used to save bandwidth.
 	 * @return a map of ids to objects
 	 */
 	@Cached(action = Cached.Action.GET_ALL)
-	<P extends ParaObject> Map<String, P> readAll(String appName, List<String> keys, boolean getAllColumns);
+	<P extends ParaObject> Map<String, P> readAll(String appid, List<String> keys, boolean getAllColumns);
 
 	/**
 	 * Retrieves multiple objects from the data store.
@@ -219,11 +235,11 @@ public interface DAO {
 	/**
 	 * Reads a fixed number of objects. Used for scanning a data store page by page.
 	 * @param <P> the type of object
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects
 	 */
-	<P extends ParaObject> List<P> readPage(String appName, Pager pager);
+	<P extends ParaObject> List<P> readPage(String appid, Pager pager);
 
 	/**
 	 * Reads a fixed number of objects. Used for scanning a data store page by page.
@@ -236,12 +252,12 @@ public interface DAO {
 	/**
 	 * Updates multiple objects.
 	 * @param <P> the type of object
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param objects a list of objects to update
 	 */
 	@Indexed(action = Indexed.Action.ADD_ALL)
 	@Cached(action = Cached.Action.PUT_ALL)
-	<P extends ParaObject> void updateAll(String appName, List<P> objects);
+	<P extends ParaObject> void updateAll(String appid, List<P> objects);
 
 	/**
 	 * Updates multiple objects.
@@ -253,12 +269,12 @@ public interface DAO {
 	/**
 	 * Deletes multiple objects.
 	 * @param <P> the type of object
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param objects a list of objects to delete
 	 */
 	@Indexed(action = Indexed.Action.REMOVE_ALL)
 	@Cached(action = Cached.Action.DELETE_ALL)
-	<P extends ParaObject> void deleteAll(String appName, List<P> objects);
+	<P extends ParaObject> void deleteAll(String appid, List<P> objects);
 
 	/**
 	 * Deletes multiple objects.

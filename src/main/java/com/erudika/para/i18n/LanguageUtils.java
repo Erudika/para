@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.i18n;
 
 import com.erudika.para.persistence.DAO;
-import com.erudika.para.core.ParaObject;
 import com.erudika.para.search.Search;
 import com.erudika.para.core.Translation;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -86,11 +84,11 @@ public class LanguageUtils {
 	/**
 	 * Returns a map of all translations for a given language.
 	 * Defaults to the default language which must be set.
-	 * @param appName appName name of the {@link com.erudika.para.core.App}
+	 * @param appid appid name of the {@link com.erudika.para.core.App}
 	 * @param langCode the 2-letter language code
 	 * @return the language map
 	 */
-	public Map<String, String> readLanguage(String appName, String langCode) {
+	public Map<String, String> readLanguage(String appid, String langCode) {
 		if (StringUtils.isBlank(langCode) || !allLocales.containsKey(langCode)) {
 			return getDefaultLanguage();
 		}
@@ -98,14 +96,14 @@ public class LanguageUtils {
 			return getDefaultLanguage();
 		}
 
-		Sysprop s = dao.read(appName, keyPrefix.concat(langCode));
+		Sysprop s = dao.read(appid, keyPrefix.concat(langCode));
 		TreeMap<String, String> lang = new TreeMap<String, String>();
 
 		if (s == null || s.getProperties().isEmpty()) {
 			Map<String, Object> terms = new HashMap<String, Object>();
 			terms.put("locale", langCode);
 			terms.put("approved", true);
-			List<Translation> tlist = search.findTerms(appName, Utils.type(Translation.class), terms, true);
+			List<Translation> tlist = search.findTerms(appid, Utils.type(Translation.class), terms, true);
 
 			Sysprop saved = new Sysprop(keyPrefix.concat(langCode));
 			lang.putAll(getDefaultLanguage());	// copy default langmap
@@ -117,9 +115,9 @@ public class LanguageUtils {
 				approved++;
 			}
 			if (approved > 0) {
-				updateTranslationProgressMap(appName, langCode, approved);
+				updateTranslationProgressMap(appid, langCode, approved);
 			}
-			dao.create(appName, saved);
+			dao.create(appid, saved);
 		} else {
 			Map<String, Object> loaded = s.getProperties();
 			for (String key : loaded.keySet()) {
@@ -131,11 +129,11 @@ public class LanguageUtils {
 
 	/**
 	 * Persists the language map in the data store. Overwrites any existing maps.
-	 * @param appName appName name of the {@link com.erudika.para.core.App}
+	 * @param appid appid name of the {@link com.erudika.para.core.App}
 	 * @param langCode the 2-letter language code
 	 * @param lang the language map
 	 */
-	public void writeLanguage(String appName, String langCode, Map<String, String> lang) {
+	public void writeLanguage(String appid, String langCode, Map<String, String> lang) {
 		if (lang == null || lang.isEmpty() || dao == null ||
 				StringUtils.isBlank(langCode) || !allLocales.containsKey(langCode)) {
 			return;
@@ -157,9 +155,9 @@ public class LanguageUtils {
 			}
 		}
 		if (approved > 0) {
-			updateTranslationProgressMap(appName, langCode, approved);
+			updateTranslationProgressMap(appid, langCode, approved);
 		}
-		dao.create(appName, s);
+		dao.create(appid, s);
 	}
 
 	/**
@@ -216,30 +214,30 @@ public class LanguageUtils {
 
 	/**
 	 * Returns a list of translations for a specific string.
-	 * @param appName appName name of the {@link com.erudika.para.core.App}
+	 * @param appid appid name of the {@link com.erudika.para.core.App}
 	 * @param locale a locale
 	 * @param key the string key
 	 * @param pager the pager object
 	 * @return a list of translations
 	 */
-	public List<Translation> readAllTranslationsForKey(String appName, String locale, String key, Pager pager) {
-		return search.findTerms(appName, Utils.type(Translation.class),
+	public List<Translation> readAllTranslationsForKey(String appid, String locale, String key, Pager pager) {
+		return search.findTerms(appid, Utils.type(Translation.class),
 				Collections.singletonMap(Config._PARENTID, key), true, pager);
 	}
 
 	/**
 	 * Returns the set of all approved translations.
-	 * @param appName appName name of the {@link com.erudika.para.core.App}
+	 * @param appid appid name of the {@link com.erudika.para.core.App}
 	 * @param langCode the 2-letter language code
 	 * @return a set of keys for approved translations
 	 */
-	public Set<String> getApprovedTransKeys(String appName, String langCode) {
+	public Set<String> getApprovedTransKeys(String appid, String langCode) {
 		HashSet<String> approvedTransKeys = new HashSet<String>();
 		if (StringUtils.isBlank(langCode)) {
 			return approvedTransKeys;
 		}
 
-		for (Map.Entry<String, String> entry : readLanguage(appName, langCode).entrySet()) {
+		for (Map.Entry<String, String> entry : readLanguage(appid, langCode).entrySet()) {
 			if (!getDefaultLanguage().get(entry.getKey()).equals(entry.getValue())) {
 				approvedTransKeys.add(entry.getKey());
 			}
@@ -249,14 +247,14 @@ public class LanguageUtils {
 
 	/**
 	 * Returns a map of language codes and the percentage of translated string for that language.
-	 * @param appName appName name of the {@link com.erudika.para.core.App}
+	 * @param appid appid name of the {@link com.erudika.para.core.App}
 	 * @return a map indicating translation progress
 	 */
-	public Map<String, Integer> getTranslationProgressMap(String appName) {
+	public Map<String, Integer> getTranslationProgressMap(String appid) {
 		if (dao == null) {
 			return progressMap;
 		}
-		Sysprop progress = getProgressMap(appName);
+		Sysprop progress = getProgressMap(appid);
 
 		Map<String, Object> props = progress.getProperties();
 		for (String key : props.keySet()) {
@@ -276,22 +274,22 @@ public class LanguageUtils {
 
 	/**
 	 * Approves a translation for a given language.
-	 * @param appName appName name of the {@link com.erudika.para.core.App}
+	 * @param appid appid name of the {@link com.erudika.para.core.App}
 	 * @param langCode the 2-letter language code
 	 * @param key the translation key
 	 * @param value the translated string
 	 * @return true if the operation was successful
 	 */
-	public boolean approveTranslation(String appName, String langCode, String key, String value) {
+	public boolean approveTranslation(String appid, String langCode, String key, String value) {
 		if (langCode == null || key == null || value == null || getDefaultLanguageCode().equals(langCode)) {
 			return false;
 		}
-		Sysprop s = dao.read(appName, keyPrefix.concat(langCode));
+		Sysprop s = dao.read(appid, keyPrefix.concat(langCode));
 
 		if (s != null && !value.equals(s.getProperty(key))) {
 			s.addProperty(key, value);
-			dao.update(appName, s);
-			updateTranslationProgressMap(appName, langCode, PLUS);
+			dao.update(appid, s);
+			updateTranslationProgressMap(appid, langCode, PLUS);
 			return true;
 		}
 		return false;
@@ -299,22 +297,22 @@ public class LanguageUtils {
 
 	/**
 	 * Disapproves a translation for a given language.
-	 * @param appName appName name of the {@link com.erudika.para.core.App}
+	 * @param appid appid name of the {@link com.erudika.para.core.App}
 	 * @param langCode the 2-letter language code
 	 * @param key the translation key
 	 * @return true if the operation was successful
 	 */
-	public boolean disapproveTranslation(String appName, String langCode, String key) {
+	public boolean disapproveTranslation(String appid, String langCode, String key) {
 		if (langCode == null || key == null || getDefaultLanguageCode().equals(langCode)) {
 			return false;
 		}
-		Sysprop s = dao.read(appName, keyPrefix.concat(langCode));
+		Sysprop s = dao.read(appid, keyPrefix.concat(langCode));
 		String defStr = getDefaultLanguage().get(key);
 
 		if (s != null && !defStr.equals(s.getProperty(key))) {
 			s.addProperty(key, defStr);
-			dao.update(appName, s);
-			updateTranslationProgressMap(appName, langCode, MINUS);
+			dao.update(appid, s);
+			updateTranslationProgressMap(appid, langCode, MINUS);
 			return true;
 		}
 		return false;
@@ -322,11 +320,11 @@ public class LanguageUtils {
 
 	/**
 	 * Updates the progress for all languages.
-	 * @param appName appName name of the {@link com.erudika.para.core.App}
+	 * @param appid appid name of the {@link com.erudika.para.core.App}
 	 * @param langCode the 2-letter language code
 	 * @param value {@link #PLUS}, {@link #MINUS} or the total percent of completion (0-100)
 	 */
-	private void updateTranslationProgressMap(String appName, String langCode, int value) {
+	private void updateTranslationProgressMap(String appid, String langCode, int value) {
 		if (dao == null || getDefaultLanguageCode().equals(langCode)) {
 			return;
 		}
@@ -334,7 +332,7 @@ public class LanguageUtils {
 		double defsize = getDefaultLanguage().size();
 		double approved = value;
 
-		Sysprop progress = getProgressMap(appName);
+		Sysprop progress = getProgressMap(appid);
 
 		if (value == PLUS) {
 			approved = Math.round((int) progress.getProperty(langCode) * (defsize / 100) + 1);
@@ -351,18 +349,18 @@ public class LanguageUtils {
 		} else {
 			progress.addProperty(langCode, (int) ((approved / defsize) * 100));
 		}
-		dao.update(appName, progress);
+		dao.update(appid, progress);
 	}
 
-	private Sysprop getProgressMap(String appName) {
-		Sysprop progress = dao.read(appName, progressKey);
+	private Sysprop getProgressMap(String appid) {
+		Sysprop progress = dao.read(appid, progressKey);
 		if (progress == null) {
 			progress = new Sysprop(progressKey);
 			for (String key : progressMap.keySet()) {
 				progress.addProperty(key, progressMap.get(key));
 			}
 			progress.addProperty(getDefaultLanguageCode(), 100);
-			dao.create(appName, progress);
+			dao.create(appid, progress);
 		}
 		return progress;
 	}

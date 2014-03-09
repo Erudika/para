@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.queue;
 
@@ -36,13 +36,10 @@ public class AWSQueueIT extends QueueTest {
 		System.setProperty("para.aws_secret_key", "x");
 	}
 
-	public AWSQueueIT() {
-		q = new AWSQueue("testq", endpoint);
-	}
-
 	@BeforeClass
 	public static void setUpClass() {
 		sqsServer = SQSRestServerBuilder.start();
+		q = new AWSQueue("testq", endpoint);
 	}
 
 	@AfterClass

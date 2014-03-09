@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.utils;
 
 //import static com.erudika.para.utils.Utils.MD5;
 
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
-import com.erudika.para.web.ParaContextListener;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueType;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,8 +50,6 @@ public final class Config {
 	// GLOBAL SETTINGS
 	/** {@value #PARA} */
 	public static final String PARA = "para";
-	/** {@value #_AUTHTOKEN} */
-	public static final String _AUTHTOKEN = "authtoken";
 	/** {@value #_TYPE} */
 	public static final String _TYPE = "type";
 	/** {@value #_CREATORID} */
@@ -71,8 +68,6 @@ public final class Config {
 	public static final String _PASSWORD = "password";
 	/** {@value #_RESET_TOKEN} */
 	public static final String _RESET_TOKEN = "token";
-	/** {@value #_SALT} */
-	public static final String _SALT = "salt";
 	/** {@value #_TIMESTAMP} */
 	public static final String _TIMESTAMP = "timestamp";
 	/** {@value #_UPDATED} */
@@ -173,21 +168,25 @@ public final class Config {
 	 */
 	public static final String CORE_PACKAGE_NAME = getConfigParam("core_package_name", "");
 	/**
+	 * Request expiration in seconds. Default: 15 minutes
+	 */
+	public static final Long REQUEST_EXPIRES_AFTER_SEC = NumberUtils.toLong(getConfigParam("request_expires_after", ""), 15 * 60);
+	/**
 	 * Session timeout in seconds. Default: 24 hours
 	 */
 	public static final Long SESSION_TIMEOUT_SEC = NumberUtils.toLong(getConfigParam("session_timeout", ""), 24 * 60 * 60);
 	/**
 	 * Votes expire after X seconds. Default: 30 days
 	 */
-	public static final Long VOTE_EXPIRES_AFTER_SEC = NumberUtils.toLong(getConfigParam("vote_expires_after", ""), 30 * 24 * 60 * 60); //1 month in seconds
+	public static final Long VOTE_EXPIRES_AFTER_SEC = NumberUtils.toLong(getConfigParam("vote_expires_after", ""), 30 * 24 * 60 * 60);
 	/**
 	 * A vote can be changed within X seconds of casting. Default: 30 seconds
 	 */
-	public static final Long VOTE_LOCKED_AFTER_SEC = NumberUtils.toLong(getConfigParam("vote_locked_after", ""), 30); // 30 sec
+	public static final Long VOTE_LOCKED_AFTER_SEC = NumberUtils.toLong(getConfigParam("vote_locked_after", ""), 30);
 	/**
 	 * Password reset window in seconds. Default: 30 minutes
 	 */
-	public static final Long PASSRESET_TIMEOUT_SEC = NumberUtils.toLong(getConfigParam("pass_reset_timeout", ""), 30 * 60); // 30 MIN
+	public static final Long PASSRESET_TIMEOUT_SEC = NumberUtils.toLong(getConfigParam("pass_reset_timeout", ""), 30 * 60);
 	/**
 	 * Enable object caching. Default: true
 	 */
@@ -196,6 +195,10 @@ public final class Config {
 	 * Enable object indexing. Default: true
 	 */
 	public static final boolean SEARCH_ENABLED = Boolean.parseBoolean(getConfigParam("search_enabled", "true"));
+	/**
+	 * Enable REST API. Default: true
+	 */
+	public static final boolean REST_ENABLED = Boolean.parseBoolean(getConfigParam("rest_enabled", "true"));
 	/**
 	 * Read objects from index, not the data store. This WILL override the cache.
 	 */
@@ -219,7 +222,7 @@ public final class Config {
 	 */
 	public static void init(com.typesafe.config.Config conf) {
 		try {
-			config = ConfigFactory.load().getConfig("para");
+			config = ConfigFactory.load().getConfig(PARA);
 
 			if (conf != null) {
 				config = conf.withFallback(config);
@@ -238,6 +241,7 @@ public final class Config {
 
 	/**
 	 * Returns the value of a configuration parameter or its default value.
+	 * System.setProperty has precedence.
 	 * @param key the param key
 	 * @param defaultValue the default param value
 	 * @return the value of a param
@@ -246,7 +250,15 @@ public final class Config {
 		if (config == null) {
 			init(null);
 		}
-		return (!StringUtils.isBlank(key) && config.hasPath(key)) ? config.getString(key) : defaultValue;
+		if (StringUtils.isBlank(key)) {
+			return null;
+		}
+		String sys = System.getProperty(key, System.getProperty(PARA + "." + key));
+		if (!StringUtils.isBlank(sys)) {
+			return sys;
+		} else {
+			return (!StringUtils.isBlank(key) && config.hasPath(key)) ? config.getString(key) : defaultValue;
+		}
 	}
 
 	/**

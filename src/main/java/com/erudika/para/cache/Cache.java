@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.cache;
 
@@ -37,12 +37,12 @@ public interface Cache {
 
 	/**
 	 * Do we have this object in the cache?
-	 * @param appName the name of the application
+	 * @param appid the name of the application
 	 * @param id the object's id
 	 * @return true if in cache
 	 * @see #contains(java.lang.String)
 	 */
-	boolean contains(String appName, String id);
+	boolean contains(String appid, String id);
 
 	/**
 	 * Store an object in the cache.
@@ -54,24 +54,24 @@ public interface Cache {
 
 	/**
 	 * Store an object in the cache.
-	 * @param appName the name of the application
+	 * @param appid the name of the application
 	 * @param <T> the type of object to be cached
 	 * @param id the object's id, not null or empty
 	 * @param object the object itself, not null
 	 * @see #put(java.lang.String, java.lang.Object)
 	 */
-	<T> void put(String appName, String id, T object);
+	<T> void put(String appid, String id, T object);
 
 	/**
 	 * Store an object in the cache.
-	 * @param appName the name of the application
+	 * @param appid the name of the application
 	 * @param <T> the type of object to be cached
 	 * @param id the object's id, not null or empty
 	 * @param object the object itself, not null
 	 * @param ttlSeconds the time to live for an object before it is evicted from the cache.
 	 * @see #put(java.lang.String, java.lang.Object)
 	 */
-	<T> void put(String appName, String id, T object, Long ttlSeconds);
+	<T> void put(String appid, String id, T object, Long ttlSeconds);
 
 	/**
 	 * Store all objects in cache, except those which are null.
@@ -82,12 +82,12 @@ public interface Cache {
 
 	/**
 	 * Store all objects in cache, except those which are null.
-	 * @param appName the name of the application
+	 * @param appid the name of the application
 	 * @param <T> any object, not null
 	 * @param objects map of id->object
 	 * @see #putAll(java.util.Map)
 	 */
-	<T> void putAll(String appName, Map<String, T> objects);
+	<T> void putAll(String appid, Map<String, T> objects);
 
 	/**
 	 * Read an object from cache.
@@ -99,13 +99,13 @@ public interface Cache {
 
 	/**
 	 * Read an object from cache.
-	 * @param appName the name of the application
+	 * @param appid the name of the application
 	 * @param <T> the type of object to be cached
 	 * @param id the object's id, not null or empty
 	 * @return the object from cache or null if not found
 	 * @see #get(java.lang.String)
 	 */
-	<T> T get(String appName, String id);
+	<T> T get(String appid, String id);
 
 	/**
 	 * Read a number of objects given a list of their ids.
@@ -117,13 +117,13 @@ public interface Cache {
 
 	/**
 	 * Read a number of objects given a list of their ids.
-	 * @param appName the name of the application
+	 * @param appid the name of the application
 	 * @param <T> the type of object to be cached
 	 * @param ids the ids, not null or empty
 	 * @return a map of the objects that are contained in cache (may be empty)
 	 * @see #getAll(java.util.List) 
 	 */
-	<T> Map<String, T> getAll(String appName, List<String> ids);
+	<T> Map<String, T> getAll(String appid, List<String> ids);
 
 	/**
 	 * Remove an object from cache.
@@ -133,11 +133,11 @@ public interface Cache {
 
 	/**
 	 * Remove an object from cache.
-	 * @param appName the name of the application
+	 * @param appid the name of the application
 	 * @param id the object's id, not null or empty
 	 * @see #remove(java.lang.String) 
 	 */
-	void remove(String appName, String id);
+	void remove(String appid, String id);
 
 	/**
 	 * Clears the cache.
@@ -146,10 +146,10 @@ public interface Cache {
 
 	/**
 	 * Clears the cache.
-	 * @param appName the name of the application
+	 * @param appid the name of the application
 	 * @see #removeAll() 
 	 */
-	void removeAll(String appName);
+	void removeAll(String appid);
 
 	/**
 	 * Remove a number of objects from cache given a list of their ids.
@@ -160,8 +160,8 @@ public interface Cache {
 	/**
 	 * Remove a number of objects from cache given a list of their ids.
 	 * @param ids the ids, not null or empty
-	 * @param appName the name of the application
+	 * @param appid the name of the application
 	 * @see #removeAll(java.util.List) 
 	 */
-	void removeAll(String appName, List<String> ids);
+	void removeAll(String appid, List<String> ids);
 }

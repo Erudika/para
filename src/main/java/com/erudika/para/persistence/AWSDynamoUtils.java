@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.persistence;
 
@@ -85,16 +85,16 @@ public final class AWSDynamoUtils {
 
 	/**
 	 * Checks if the main table exists in the database.
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @return true if the table exists
 	 */
-	public static boolean existsTable(String appName) {
-		if (StringUtils.isBlank(appName)) {
+	public static boolean existsTable(String appid) {
+		if (StringUtils.isBlank(appid)) {
 			return false;
 		}
 		try {
 			List<String> tables = getClient().listTables().getTableNames();
-			return tables != null && tables.contains(appName);
+			return tables != null && tables.contains(appid);
 		} catch (Exception e) {
 			return false;
 		}
@@ -102,26 +102,26 @@ public final class AWSDynamoUtils {
 
 	/**
 	 * Creates the main table.
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @return true if created
 	 */
-	public static boolean createTable(String appName) {
-		return createTable(appName, 2L, 1L);
+	public static boolean createTable(String appid) {
+		return createTable(appid, 2L, 1L);
 	}
 
 	/**
 	 * Creates a table in AWS DynamoDB.
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param readCapacity read capacity
 	 * @param writeCapacity write capacity
 	 * @return true if created
 	 */
-	public static boolean createTable(String appName, Long readCapacity, Long writeCapacity) {
-		if (StringUtils.isBlank(appName) || StringUtils.containsWhitespace(appName) || existsTable(appName)) {
+	public static boolean createTable(String appid, Long readCapacity, Long writeCapacity) {
+		if (StringUtils.isBlank(appid) || StringUtils.containsWhitespace(appid) || existsTable(appid)) {
 			return false;
 		}
 		try {
-			getClient().createTable(new CreateTableRequest().withTableName(appName).
+			getClient().createTable(new CreateTableRequest().withTableName(appid).
 					withKeySchema(new KeySchemaElement(Config._KEY, KeyType.HASH)).
 					withAttributeDefinitions(new AttributeDefinition().withAttributeName(Config._KEY).
 					withAttributeType(ScalarAttributeType.S)).
@@ -135,15 +135,15 @@ public final class AWSDynamoUtils {
 
 	/**
 	 * Deletes the main table from AWS DynamoDB.
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @return true if deleted
 	 */
-	public static boolean deleteTable(String appName) {
-		if (StringUtils.isBlank(appName) || !existsTable(appName)) {
+	public static boolean deleteTable(String appid) {
+		if (StringUtils.isBlank(appid) || !existsTable(appid)) {
 			return false;
 		}
 		try {
-			getClient().deleteTable(new DeleteTableRequest().withTableName(appName));
+			getClient().deleteTable(new DeleteTableRequest().withTableName(appid));
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;

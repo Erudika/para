@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.cache;
 
@@ -62,7 +62,7 @@ public abstract class CacheTest {
 		assertTrue(c.contains("123"));
 		assertTrue(c.get("123") instanceof Integer);
 		assertTrue(c.get("1234") instanceof User);
-		
+
 		c.remove("123");
 		assertFalse(c.contains("123"));
 
@@ -93,7 +93,7 @@ public abstract class CacheTest {
 		map.put("1", "");
 		map.put("2", null);
 		map.put(null, "");
-		
+
 		c.putAll(map);
 		assertFalse(c.contains(""));
 		assertTrue(c.contains("1"));
@@ -101,7 +101,7 @@ public abstract class CacheTest {
 		assertTrue(c.contains("1234"));
 		assertTrue(c.contains("123"));
 		assertEquals("test1", c.get("123"));
-		
+
 		c.removeAll(new ArrayList<String>(map.keySet()));
 		assertFalse(c.contains("1"));
 		assertFalse(c.contains("2"));

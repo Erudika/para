@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.search;
 
@@ -77,18 +77,18 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public void index(String appName, ParaObject so) {
-		index(appName, so, 0);
+	public void index(String appid, ParaObject so) {
+		index(appid, so, 0);
 	}
 
 	@Override
-	public void index(String appName, ParaObject so, long ttl) {
-		if (so == null || StringUtils.isBlank(appName)) {
+	public void index(String appid, ParaObject so, long ttl) {
+		if (so == null || StringUtils.isBlank(appid)) {
 			return;
 		}
 		Map<String, Object> data = Utils.getAnnotatedFields(so);
 		try {
-			IndexRequestBuilder irb = client().prepareIndex(appName,
+			IndexRequestBuilder irb = client().prepareIndex(appid,
 					so.getType(), so.getId()).setSource(data);
 			if (ttl > 0) {
 				irb.setTTL(ttl);
@@ -101,12 +101,12 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public void unindex(String appName, ParaObject so) {
-		if (so == null || StringUtils.isBlank(so.getId()) || StringUtils.isBlank(appName)) {
+	public void unindex(String appid, ParaObject so) {
+		if (so == null || StringUtils.isBlank(so.getId()) || StringUtils.isBlank(appid)) {
 			return;
 		}
 		try {
-			client().prepareDelete(appName, so.getType(), so.getId()).execute().actionGet();
+			client().prepareDelete(appid, so.getType(), so.getId()).execute().actionGet();
 			logger.debug("Search.unindex() {}", so.getId());
 		} catch (Exception e) {
 			logger.warn(null, e);
@@ -114,13 +114,13 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public <P extends ParaObject> void indexAll(String appName, List<P> objects) {
-		if (objects == null || StringUtils.isBlank(appName)) {
+	public <P extends ParaObject> void indexAll(String appid, List<P> objects) {
+		if (objects == null || StringUtils.isBlank(appid)) {
 			return ;
 		}
 		BulkRequestBuilder brb = client().prepareBulk();
 		for (ParaObject pObject : objects) {
-			brb.add(client().prepareIndex(appName, pObject.getType(),
+			brb.add(client().prepareIndex(appid, pObject.getType(),
 						pObject.getId()).setSource(Utils.getAnnotatedFields(pObject)));
 		}
 		brb.execute().actionGet();
@@ -128,22 +128,22 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public <P extends ParaObject> void unindexAll(String appName, List<P> objects) {
-		if (objects == null || StringUtils.isBlank(appName)) {
+	public <P extends ParaObject> void unindexAll(String appid, List<P> objects) {
+		if (objects == null || StringUtils.isBlank(appid)) {
 			return ;
 		}
 		BulkRequestBuilder brb = client().prepareBulk();
 		for (ParaObject pObject : objects) {
-			brb.add(client().prepareDelete(appName, pObject.getType(), pObject.getId()));
+			brb.add(client().prepareDelete(appid, pObject.getType(), pObject.getId()));
 		}
 		brb.execute().actionGet();
 		logger.debug("Search.unindexAll() {}", objects.size());
 	}
 
 	@Override
-	public <P extends ParaObject> P findById(String appName, String id) {
+	public <P extends ParaObject> P findById(String appid, String id) {
 		try {
-			return Utils.setAnnotatedFields(getSource(appName, id, null));
+			return Utils.setAnnotatedFields(getSource(appid, id, null));
 		} catch (Exception e) {
 			logger.warn(null, e);
 			return null;
@@ -151,49 +151,49 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> findTermInList(String appName, String type,
+	public <P extends ParaObject> List<P> findTermInList(String appid, String type,
 			String field, List<?> terms, Pager... pager) {
 		if (StringUtils.isBlank(field) || terms == null) {
 			return new ArrayList<P>();
 		}
 		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(),
 				FilterBuilders.termsFilter(field, terms));
-		return searchQuery(appName, type, qb, pager);
+		return searchQuery(appid, type, qb, pager);
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> findPrefix(String appName, String type,
+	public <P extends ParaObject> List<P> findPrefix(String appid, String type,
 			String field, String prefix, Pager... pager) {
 		if (StringUtils.isBlank(field) || StringUtils.isBlank(prefix)) {
 			return new ArrayList<P>();
 		}
-		return searchQuery(appName, type, QueryBuilders.prefixQuery(field, prefix), pager);
+		return searchQuery(appid, type, QueryBuilders.prefixQuery(field, prefix), pager);
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> findQuery(String appName, String type,
+	public <P extends ParaObject> List<P> findQuery(String appid, String type,
 			String query, Pager... pager) {
 		if (StringUtils.isBlank(query)) {
 			return new ArrayList<P>();
 		}
 		QueryBuilder qb = QueryBuilders.queryString(query).allowLeadingWildcard(false);
-		return searchQuery(appName, type, qb, pager);
+		return searchQuery(appid, type, qb, pager);
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> findWildcard(String appName, String type,
+	public <P extends ParaObject> List<P> findWildcard(String appid, String type,
 			String field, String wildcard, Pager... pager) {
 		if (StringUtils.isBlank(field) || StringUtils.isBlank(wildcard)) {
 			return new ArrayList<P>();
 		}
 		QueryBuilder qb = QueryBuilders.wildcardQuery(field, wildcard);
-		return searchQuery(appName, type, qb, pager);
+		return searchQuery(appid, type, qb, pager);
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> findTagged(String appName, String type,
+	public <P extends ParaObject> List<P> findTagged(String appid, String type,
 			String[] tags, Pager... pager) {
-		if (tags == null || tags.length == 0 || StringUtils.isBlank(appName)) {
+		if (tags == null || tags.length == 0 || StringUtils.isBlank(appid)) {
 			return new ArrayList<P>();
 		}
 
@@ -204,11 +204,11 @@ public class ElasticSearch implements Search {
 		}
 		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), tagFilter);
 		// The filter looks like this: ("tag1" OR "tag2" OR "tag3") AND "type"
-		return searchQuery(appName, type, qb, pager);
+		return searchQuery(appid, type, qb, pager);
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> findTerms(String appName, String type,
+	public <P extends ParaObject> List<P> findTerms(String appid, String type,
 			Map<String, ?> terms, boolean mustMatchAll, Pager... pager) {
 		if (terms == null || terms.isEmpty()) {
 			return new ArrayList<P>();
@@ -244,12 +244,12 @@ public class ElasticSearch implements Search {
 			return new ArrayList<P>();
 		} else {
 			QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), fb);
-			return searchQuery(appName, type, qb, pager);
+			return searchQuery(appid, type, qb, pager);
 		}
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> findSimilar(String appName, String type, String filterKey,
+	public <P extends ParaObject> List<P> findSimilar(String appid, String type, String filterKey,
 			String[] fields, String liketext, Pager... pager) {
 		if (StringUtils.isBlank(liketext)) {
 			return new ArrayList<P>();
@@ -267,24 +267,24 @@ public class ElasticSearch implements Search {
 			fb = FilterBuilders.notFilter(FilterBuilders.inFilter(Config._ID, filterKey));
 			qb = QueryBuilders.filteredQuery(qb, fb);
 		}
-		return searchQuery(appName, searchQueryRaw(appName, type, qb, pager));
+		return searchQuery(appid, searchQueryRaw(appid, type, qb, pager));
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> findTags(String appName, String keyword, Pager... pager) {
+	public <P extends ParaObject> List<P> findTags(String appid, String keyword, Pager... pager) {
 		if (StringUtils.isBlank(keyword)) {
 			return new ArrayList<P>();
 		}
 		QueryBuilder qb = QueryBuilders.wildcardQuery(Utils.type(Tag.class), keyword.concat("*"));
 //		SortBuilder sb = SortBuilders.fieldSort("count").order(SortOrder.DESC);
-		return searchQuery(appName, Utils.type(Tag.class), qb, pager);
+		return searchQuery(appid, Utils.type(Tag.class), qb, pager);
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> findNearby(String appName, String type,
+	public <P extends ParaObject> List<P> findNearby(String appid, String type,
 		String query, int radius, double lat, double lng, Pager... pager) {
 
-		if (StringUtils.isBlank(type) || StringUtils.isBlank(appName)) {
+		if (StringUtils.isBlank(type) || StringUtils.isBlank(appid)) {
 			return new ArrayList<P>();
 		}
 		if (StringUtils.isBlank(query)) {
@@ -295,7 +295,7 @@ public class ElasticSearch implements Search {
 				FilterBuilders.geoDistanceFilter("latlng").point(lat, lng).
 				distance(radius, DistanceUnit.KILOMETERS));
 
-		SearchHits hits1 = searchQueryRaw(appName, Utils.type(Address.class), qb1, pager);
+		SearchHits hits1 = searchQueryRaw(appid, Utils.type(Address.class), qb1, pager);
 
 		if (hits1 == null) {
 			return new ArrayList<P>();
@@ -312,24 +312,24 @@ public class ElasticSearch implements Search {
 
 		QueryBuilder qb2 = QueryBuilders.filteredQuery(QueryBuilders.queryString(query),
 				FilterBuilders.idsFilter(type).ids(ridsarr));
-		SearchHits hits2 = searchQueryRaw(appName, type, qb2, pager);
+		SearchHits hits2 = searchQueryRaw(appid, type, qb2, pager);
 
-		return searchQuery(appName, hits2);
+		return searchQuery(appid, hits2);
 	}
 
-	private <P extends ParaObject> List<P> searchQuery(String appName, String type,
+	private <P extends ParaObject> List<P> searchQuery(String appid, String type,
 			QueryBuilder query, Pager... pager) {
-		return searchQuery(appName, searchQueryRaw(appName, type, query, pager));
+		return searchQuery(appid, searchQueryRaw(appid, type, query, pager));
 	}
 
 	/**
 	 * Processes the results of searcQueryRaw() and fetches the results from the data store (can be disabled).
 	 * @param <P> type of object
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param hits the search results from a query
 	 * @return the list of object found
 	 */
-	private <P extends ParaObject> List<P> searchQuery(String appName, SearchHits hits) {
+	private <P extends ParaObject> List<P> searchQuery(String appid, SearchHits hits) {
 		ArrayList<P> results = new ArrayList<P>();
 		ArrayList<String> keys = new ArrayList<String>();
 
@@ -346,7 +346,7 @@ public class ElasticSearch implements Search {
 			}
 
 			if (!Config.READ_FROM_INDEX) {
-				Map<String, P> fromDB = dao.readAll(appName, keys, true);
+				Map<String, P> fromDB = dao.readAll(appid, keys, true);
 				results.addAll(fromDB.values());
 			}
 			logger.debug("Search.searchQuery() {}", results.size());
@@ -358,14 +358,14 @@ public class ElasticSearch implements Search {
 
 	/**
 	 * Executes an ElasticSearch query. This is the core method of the class. 
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param type type of object
 	 * @param query the search query builder
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of search results
 	 */
-	private SearchHits searchQueryRaw(String appName, String type, QueryBuilder query, Pager... pager) {
-		if (StringUtils.isBlank(appName)) {
+	private SearchHits searchQueryRaw(String appid, String type, QueryBuilder query, Pager... pager) {
+		if (StringUtils.isBlank(appid)) {
 			return null;
 		}
 		Pager page = (pager != null && pager.length > 0) ? pager[0] : new Pager();
@@ -388,9 +388,9 @@ public class ElasticSearch implements Search {
 		}
 
 		SearchHits hits = null;
-		
+
 		try {
-			SearchResponse response = client().prepareSearch(appName).
+			SearchResponse response = client().prepareSearch(appid).
 					setSearchType(SearchType.DFS_QUERY_THEN_FETCH).setTypes(type).
 					setQuery(query).addSort(sort).setFrom(start).setSize(max).
 					execute().actionGet();
@@ -407,21 +407,21 @@ public class ElasticSearch implements Search {
 	/**
 	 * Returns the source (a map of fields and values) for and object. 
 	 * The source is extracted from the index directly not the data store.
-	 * @param appName name of the {@link com.erudika.para.core.App}
+	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param key the object id
 	 * @param type type of object
 	 * @return a map representation of the object
 	 */
-	protected Map<String, Object> getSource(String appName, String key, String type) {
+	protected Map<String, Object> getSource(String appid, String key, String type) {
 		Map<String, Object> map = new HashMap<String, Object>();
-		if (StringUtils.isBlank(key) || StringUtils.isBlank(appName)) {
+		if (StringUtils.isBlank(key) || StringUtils.isBlank(appid)) {
 			return map;
 		}
 		if (StringUtils.isBlank(type)) {
 			type = "_all";
 		}
 		try {
-			GetResponse resp = client().prepareGet().setIndex(appName).
+			GetResponse resp = client().prepareGet().setIndex(appid).
 					setId(key).setType(type).execute().actionGet();
 			map = resp.getSource();
 		} catch (Exception e) {
@@ -431,18 +431,18 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public Long getCount(String appName, String type) {
-		if (StringUtils.isBlank(type) || StringUtils.isBlank(appName)) {
+	public Long getCount(String appid, String type) {
+		if (StringUtils.isBlank(type) || StringUtils.isBlank(appid)) {
 			return 0L;
 		}
-		return client().prepareCount(appName).
+		return client().prepareCount(appid).
 				setTypes(type).setQuery(QueryBuilders.matchAllQuery()).
 				execute().actionGet().getCount();
 	}
 
 	@Override
-	public Long getCount(String appName, String type, Map<String, ?> terms) {
-		if (StringUtils.isBlank(type) || StringUtils.isBlank(appName) || terms == null || terms.isEmpty()) {
+	public Long getCount(String appid, String type, Map<String, ?> terms) {
+		if (StringUtils.isBlank(type) || StringUtils.isBlank(appid) || terms == null || terms.isEmpty()) {
 			return 0L;
 		}
 		FilterBuilder fb;
@@ -459,7 +459,7 @@ public class ElasticSearch implements Search {
 			}
 		}
 		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), fb);
-		return client().prepareCount(appName).setTypes(type).setQuery(qb).execute().actionGet().getCount();
+		return client().prepareCount(appid).setTypes(type).setQuery(qb).execute().actionGet().getCount();
 	}
 
 	//////////////////////////////////////////////////////////////

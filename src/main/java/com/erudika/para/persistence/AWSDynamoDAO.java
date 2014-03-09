@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.persistence;
 
@@ -82,7 +82,7 @@ public class AWSDynamoDAO implements DAO {
 	/////////////////////////////////////////////
 
 	@Override
-	public <P extends ParaObject> String create(String appName, P so) {
+	public <P extends ParaObject> String create(String appid, P so) {
 		if (so == null) {
 			return null;
 		}
@@ -92,34 +92,34 @@ public class AWSDynamoDAO implements DAO {
 		if (so.getTimestamp() == null) {
 			so.setTimestamp(Utils.timestamp());
 		}
-		createRow(so.getId(), appName, toRow(so, null));
+		createRow(so.getId(), appid, toRow(so, null));
 		logger.debug("DAO.create() {}", so.getId());
 		return so.getId();
 	}
 
 	@Override
-	public <P extends ParaObject> P read(String appName, String key) {
+	public <P extends ParaObject> P read(String appid, String key) {
 		if (StringUtils.isBlank(key)) {
 			return null;
 		}
-		P so = fromRow(readRow(key, appName));
+		P so = fromRow(readRow(key, appid));
 		logger.debug("DAO.read() {} -> {}", key, so);
 		return so != null ? so : null;
 	}
 
 	@Override
-	public <P extends ParaObject> void update(String appName, P so) {
+	public <P extends ParaObject> void update(String appid, P so) {
 		if (so != null && so.getId() != null) {
 			so.setUpdated(Utils.timestamp());
-			updateRow(so.getId(), appName, toRow(so, Locked.class));
+			updateRow(so.getId(), appid, toRow(so, Locked.class));
 			logger.debug("DAO.update() {}", so.getId());
 		}
 	}
 
 	@Override
-	public <P extends ParaObject> void delete(String appName, P so) {
+	public <P extends ParaObject> void delete(String appid, P so) {
 		if (so != null && so.getId() != null) {
-			deleteRow(so.getId(), appName);
+			deleteRow(so.getId(), appid);
 			logger.debug("DAO.delete() {}", so.getId());
 		}
 	}
@@ -129,15 +129,15 @@ public class AWSDynamoDAO implements DAO {
 	/////////////////////////////////////////////
 
 	@Override
-	public void putColumn(String appName, String key, String colName, String colValue) {
-		if (StringUtils.isBlank(key) || StringUtils.isBlank(appName) ||
+	public void putColumn(String appid, String key, String colName, String colValue) {
+		if (StringUtils.isBlank(key) || StringUtils.isBlank(appid) ||
 				StringUtils.isBlank(colName) || StringUtils.isBlank(colValue)) {
 			return;
 		}
 		Map<String, AttributeValueUpdate> row = new HashMap<String, AttributeValueUpdate>();
 		try {
 			row.put(colName, new AttributeValueUpdate(new AttributeValue(colValue), AttributeAction.PUT));
-			UpdateItemRequest updateItemRequest = new UpdateItemRequest(appName,
+			UpdateItemRequest updateItemRequest = new UpdateItemRequest(appid,
 					Collections.singletonMap(Config._KEY, new AttributeValue(key)), row);
 			client().updateItem(updateItemRequest);
 		} catch (Exception e) {
@@ -146,13 +146,13 @@ public class AWSDynamoDAO implements DAO {
 	}
 
 	@Override
-	public String getColumn(String appName, String key, String colName) {
-		if (StringUtils.isBlank(key) || StringUtils.isBlank(appName) || StringUtils.isBlank(colName)) {
+	public String getColumn(String appid, String key, String colName) {
+		if (StringUtils.isBlank(key) || StringUtils.isBlank(appid) || StringUtils.isBlank(colName)) {
 			return null;
 		}
 		String result = null;
 		try {
-			GetItemRequest getItemRequest = new GetItemRequest(appName,
+			GetItemRequest getItemRequest = new GetItemRequest(appid,
 					Collections.singletonMap(Config._KEY, new AttributeValue(key)))
 					.withAttributesToGet(Collections.singletonList(colName));
 			GetItemResult res = client().getItem(getItemRequest);
@@ -166,14 +166,14 @@ public class AWSDynamoDAO implements DAO {
 	}
 
 	@Override
-	public void removeColumn(String appName, String key, String colName) {
-		if (StringUtils.isBlank(key) || StringUtils.isBlank(appName) || StringUtils.isBlank(colName)) {
+	public void removeColumn(String appid, String key, String colName) {
+		if (StringUtils.isBlank(key) || StringUtils.isBlank(appid) || StringUtils.isBlank(colName)) {
 			return;
 		}
 		Map<String, AttributeValueUpdate> row = new HashMap<String, AttributeValueUpdate>();
 		try {
 			row.put(colName, new AttributeValueUpdate().withAction(AttributeAction.DELETE));
-			UpdateItemRequest updateItemRequest = new UpdateItemRequest(appName,
+			UpdateItemRequest updateItemRequest = new UpdateItemRequest(appid,
 					Collections.singletonMap(Config._KEY, new AttributeValue(key)), row);
 			client().updateItem(updateItemRequest);
 		} catch (Exception e) {
@@ -182,12 +182,12 @@ public class AWSDynamoDAO implements DAO {
 	}
 
 	@Override
-	public boolean existsColumn(String appName, String key, String columnName) {
+	public boolean existsColumn(String appid, String key, String columnName) {
 		if (StringUtils.isBlank(key)) {
 			return false;
 		}
 		try {
-			return getColumn(appName, key, columnName) != null;
+			return getColumn(appid, key, columnName) != null;
 		} catch (Exception e) {
 			return false;
 		}
@@ -264,14 +264,14 @@ public class AWSDynamoDAO implements DAO {
 	/////////////////////////////////////////////
 
 	@Override
-	public <P extends ParaObject> void createAll(String appName, List<P> objects) {
-		writeAll(appName, objects, false);
+	public <P extends ParaObject> void createAll(String appid, List<P> objects) {
+		writeAll(appid, objects, false);
 		logger.debug("DAO.createAll() {}", objects.size());
 	}
 
 	@Override
-	public <P extends ParaObject> Map<String, P> readAll(String appName, List<String> keys, boolean getAllColumns) {
-		if (keys == null || keys.isEmpty() || StringUtils.isBlank(appName)) {
+	public <P extends ParaObject> Map<String, P> readAll(String appid, List<String> keys, boolean getAllColumns) {
+		if (keys == null || keys.isEmpty() || StringUtils.isBlank(appid)) {
 			return new LinkedHashMap<String, P>();
 		}
 
@@ -288,16 +288,16 @@ public class AWSDynamoDAO implements DAO {
 			kna.setAttributesToGet(Arrays.asList(Config._KEY, Config._TYPE));
 		}
 
-		batchGet(Collections.singletonMap(appName, kna), results);
+		batchGet(Collections.singletonMap(appid, kna), results);
 
 		logger.debug("DAO.readAll() {}", results.size());
 		return results;
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> readPage(String appName, Pager pager) {
+	public <P extends ParaObject> List<P> readPage(String appid, Pager pager) {
 		List<P> results = new LinkedList<P>();
-		if (StringUtils.isBlank(appName)) {
+		if (StringUtils.isBlank(appid)) {
 			return results;
 		}
 		if (pager == null) {
@@ -305,12 +305,12 @@ public class AWSDynamoDAO implements DAO {
 		}
 		try {
 			ScanRequest scanRequest = new ScanRequest().
-					withTableName(appName).
+					withTableName(appid).
 					withLimit(pager.getLimit()).
 					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
 
 			if (!StringUtils.isBlank(pager.getLastKey())) {
-				scanRequest.setExclusiveStartKey(Collections.singletonMap(Config._KEY, 
+				scanRequest.setExclusiveStartKey(Collections.singletonMap(Config._KEY,
 						new AttributeValue(pager.getLastKey())));
 			}
 
@@ -325,7 +325,7 @@ public class AWSDynamoDAO implements DAO {
 			}
 			if (result.getCount() > 0 && results.isEmpty() && result.getLastEvaluatedKey() != null) {
 				pager.setLastKey(result.getLastEvaluatedKey().get(Config._KEY).getS());
-				return readPage(appName, pager);
+				return readPage(appid, pager);
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -335,14 +335,14 @@ public class AWSDynamoDAO implements DAO {
 	}
 
 	@Override
-	public <P extends ParaObject> void updateAll(String appName, List<P> objects) {
-		writeAll(appName, objects, true);
+	public <P extends ParaObject> void updateAll(String appid, List<P> objects) {
+		writeAll(appid, objects, true);
 		logger.debug("DAO.updateAll() {}", objects.size());
 	}
 
 	@Override
-	public <P extends ParaObject> void deleteAll(String appName, List<P> objects) {
-		if (objects == null || objects.isEmpty() || StringUtils.isBlank(appName)) {
+	public <P extends ParaObject> void deleteAll(String appid, List<P> objects) {
+		if (objects == null || objects.isEmpty() || StringUtils.isBlank(appid)) {
 			return;
 		}
 
@@ -353,12 +353,12 @@ public class AWSDynamoDAO implements DAO {
 						withKey(Collections.singletonMap(Config._KEY, new AttributeValue(object.getId())))));
 			}
 		}
-		batchWrite(Collections.singletonMap(appName, reqs));
+		batchWrite(Collections.singletonMap(appid, reqs));
 		logger.debug("DAO.deleteAll() {}", objects.size());
 	}
 
-	private <P extends ParaObject> void writeAll(String appName, List<P> objects, boolean isUpdate) {
-		if (objects == null || objects.isEmpty() || StringUtils.isBlank(appName)) {
+	private <P extends ParaObject> void writeAll(String appid, List<P> objects, boolean isUpdate) {
+		if (objects == null || objects.isEmpty() || StringUtils.isBlank(appid)) {
 			return;
 		}
 
@@ -384,7 +384,7 @@ public class AWSDynamoDAO implements DAO {
 				reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(row)));
 				j++;
 			}
-			batchWrite(Collections.singletonMap(appName, reqs));
+			batchWrite(Collections.singletonMap(appid, reqs));
 			reqs.clear();
 			j = 0;
 		}

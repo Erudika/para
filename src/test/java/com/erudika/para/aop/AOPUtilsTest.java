@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.aop;
 
@@ -125,7 +125,7 @@ public class AOPUtilsTest {
 			}
 		}).when(search).unindex((ParaObject) anyObject());
 
-		when(search.findById(anyString(), anyString())).thenAnswer(new Answer<ParaObject>() {
+		when(search.findById(anyString())).thenAnswer(new Answer<ParaObject>() {
 			public ParaObject answer(InvocationOnMock invocation) throws Throwable {
 				return dao.read((String) invocation.getArguments()[0]);
 			}

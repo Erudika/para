@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.utils;
 
@@ -34,11 +34,11 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.text.DateFormatSymbols;
 import java.text.MessageFormat;
@@ -47,7 +47,6 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -59,8 +58,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import org.slf4j.Logger;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -70,14 +67,9 @@ import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriBuilder;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -93,6 +85,7 @@ import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.jsoup.Jsoup;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 
 /**
  * The core utility class. 
@@ -103,7 +96,6 @@ public final class Utils {
 
 	private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 	private static final ExecutorService exec = Executors.newSingleThreadExecutor();
-	private static final SecureRandom random = new SecureRandom();
 	private static final ObjectMapper jsonMapper = new ObjectMapper();
 	private static final ObjectReader jsonReader = jsonMapper.reader();
 	private static final ObjectWriter jsonWriter = jsonMapper.writer();
@@ -128,7 +120,7 @@ public final class Utils {
 
 	static {
 		initIdGenerator();
-		random.setSeed(random.generateSeed(8));
+		jsonMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
 		jsonMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 		jsonMapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
 		jsonMapper.enable(SerializationFeature.INDENT_OUTPUT);
@@ -157,7 +149,7 @@ public final class Utils {
 		}
 		return humantime;
 	}
-	
+
 	/**
 	 * A Jackson {@code ObjectMapper}.
 	 * @return JSON object mapper
@@ -165,21 +157,22 @@ public final class Utils {
 	public static ObjectMapper getJsonMapper() {
 		return jsonMapper;
 	}
-	
+
 	/**
 	 * A Jackson JSON reader.
+	 * @param type the type to read
 	 * @return JSON object reader
 	 */
 	public static ObjectReader getJsonReader(Class<?> type) {
 		return jsonReader.withType(type);
 	}
-	
+
 	/**
 	 * A Jackson JSON writer.
 	 * @return JSON object writer
 	 */
-	public static ObjectWriter getJsonWriter(SerializationFeature... sfs) {
-		return jsonWriter.withFeatures(sfs);
+	public static ObjectWriter getJsonWriter() {
+		return jsonWriter.withFeatures(SerializationFeature.INDENT_OUTPUT);
 	}
 
 	/////////////////////////////////////////////
@@ -213,41 +206,55 @@ public final class Utils {
 	}
 
 	/**
-	 * HMAC-SHA 256 hash function
+	 * bcrypt hash function implemented by Spring Security
 	 * @param s the string to be hashed
-	 * @param key a pass phrase
 	 * @return the hash
 	 */
-	public static String HMACSHA(String s, String key) {
-		if (StringUtils.isBlank(s) || StringUtils.isBlank(key)) {
-			return "";
+	public static String bcrypt(String s) {
+		return (s == null) ? s : BCrypt.hashpw(s, BCrypt.gensalt(12));
+	}
+
+	/**
+	 * Checks if a hash matches a string.
+	 * @param plain plain text string
+	 * @param storedHash hashed string
+	 * @return true if the hash matches
+	 */
+	public static boolean bcryptMatches(String plain, String storedHash) {
+		if (StringUtils.isBlank(plain) || StringUtils.isBlank(storedHash)) {
+			return false;
 		}
 		try {
-			// Get an hmac_sha1 key from the raw key bytes
-			byte[] keyBytes = key.getBytes();
-			SecretKeySpec signingKey = new SecretKeySpec(keyBytes, "HmacSHA256");
-			// Get an hmac_sha1 Mac instance and initialize with the signing key
-			Mac mac = Mac.getInstance("HmacSHA256");
-			mac.init(signingKey);
-			// Compute the hmac on input data bytes
-			byte[] rawHmac = mac.doFinal(s.getBytes());
-			// Convert raw bytes to Hex
-			byte[] hexBytes = new Hex().encode(rawHmac);
-			//  Covert array of Hex bytes to a String
-			return new String(hexBytes, Config.DEFAULT_ENCODING);
+			return BCrypt.checkpw(plain, storedHash);
 		} catch (Exception e) {
-			throw new RuntimeException(e);
+			return false;
 		}
+	}
+
+	/**
+	 * Generates an authentication token - a random string encoded in Base64.
+	 * @param length the length of the generated token
+	 * @return a random string
+	 */
+	public static String generateSecurityToken(int length) {
+		final byte[] bytes = new byte[length];
+		SecureRandom rand;
+		try {
+			rand = SecureRandom.getInstance("SHA1PRNG");
+		} catch (NoSuchAlgorithmException ex) {
+			logger.error(null, ex);
+			rand = new SecureRandom();
+		}
+		rand.nextBytes(bytes);
+		return Base64.encodeBase64URLSafeString(bytes);
 	}
 
 	/**
 	 * Generates an authentication token - a random 32 byte string encoded in Base64.
 	 * @return a random string
 	 */
-	public static String generateAuthToken() {
-		final byte[] bytes = new byte[32];
-		random.nextBytes(bytes);
-		return Base64.encodeBase64URLSafeString(bytes);
+	public static String generateSecurityToken() {
+		return generateSecurityToken(32);
 	}
 
 	/////////////////////////////////////////////
@@ -319,7 +326,7 @@ public final class Utils {
 	 * @return a string with dashes
 	 */
 	public static String noSpaces(String str, String replaceWith) {
-		return StringUtils.isBlank(str) ? "" : str.trim().replaceAll("[\\p{C}\\p{Z}]+", 
+		return StringUtils.isBlank(str) ? "" : str.trim().replaceAll("[\\p{C}\\p{Z}]+",
 				StringUtils.trimToEmpty(replaceWith)).toLowerCase();
 	}
 
@@ -330,7 +337,11 @@ public final class Utils {
 	 * @return a formatted message
 	 */
 	public static String formatMessage(String msg, Object... params) {
-		return StringUtils.isBlank(msg) ? "" : MessageFormat.format(msg, params);
+		try {
+			return StringUtils.isBlank(msg) ? "" : MessageFormat.format(msg, params);
+		} catch (IllegalArgumentException e) {
+			return msg;
+		}
 	}
 
 	/////////////////////////////////////////////
@@ -813,13 +824,12 @@ public final class Utils {
 	 * Null is considered a primitive type. Transient fields and serialVersionUID are skipped.
 	 * @param <P> the object type
 	 * @param bean the object to convert to a map
-	 * @param anno annotation that's used on fields
 	 * @return a map of fields and their values
 	 */
 	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P bean) {
 		return getAnnotatedFields(bean, null);
 	}
-	
+
 	/**
 	 * Returns a map of annotated fields of a domain object. Only annotated fields are returned.
 	 * This method forms the basis of an Object/Grid Mapper. It converts an object 
@@ -829,11 +839,10 @@ public final class Utils {
 	 * Null is considered a primitive type. Transient fields and serialVersionUID are skipped.
 	 * @param <P> the object type
 	 * @param bean the object to convert to a map
-	 * @param anno annotation that's used on fields
 	 * @param filter a filter annotation. fields that have it will be skipped
 	 * @return a map of fields and their values
 	 */
-	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P bean, 
+	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P bean,
 			Class<? extends Annotation> filter) {
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		if (bean == null) {
@@ -886,7 +895,7 @@ public final class Utils {
 	 * @param filter a filter annotation. fields that have it will be skipped
 	 * @return the populated object
 	 */
-	public static <P extends ParaObject> P setAnnotatedFields(P bean, Map<String, Object> data, 
+	public static <P extends ParaObject> P setAnnotatedFields(P bean, Map<String, Object> data,
 			Class<? extends Annotation> filter) {
 		if (data == null || data.isEmpty()) {
 			return null;
@@ -915,7 +924,7 @@ public final class Utils {
 					props.remove(name);
 				}
 			}
-			if(bean instanceof Sysprop) {
+			if (bean instanceof Sysprop) {
 				((Sysprop) bean).setProperties(props);
 			}
 		} catch (Exception ex) {
@@ -940,7 +949,7 @@ public final class Utils {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * Converts a class name to a real Class object.
 	 * @param type the simple name of a class
@@ -961,7 +970,7 @@ public final class Utils {
 	 * @see java.lang.Class#forName(java.lang.String) 
 	 * @see com.erudika.para.core.Sysprop
 	 */
-	public static Class<? extends ParaObject> toClass(String type, String scanPackagePath, 
+	public static Class<? extends ParaObject> toClass(String type, String scanPackagePath,
 			Class<? extends ParaObject> defaultClass) {
 		String packagename = Config.CORE_PACKAGE_NAME;
 		String corepackage = StringUtils.isBlank(scanPackagePath) ? packagename : scanPackagePath;
@@ -987,6 +996,7 @@ public final class Utils {
 	/**
 	 * Converts a JSON string to a domain object.
 	 * If we can't match the JSON to a core object, we fall back to {@link com.erudika.para.core.Sysprop}.
+	 * @param <P> type of object to convert
 	 * @param json the JSON string
 	 * @return a core domain object or null if the string was blank
 	 */
@@ -1002,9 +1012,10 @@ public final class Utils {
 		}
 		return null;
 	}
-	
+
 	/**
 	 * Converts a domain object to JSON.
+	 * @param <P> type of object to convert
 	 * @param obj a domain object
 	 * @return the JSON representation of that object
 	 */
@@ -1037,7 +1048,7 @@ public final class Utils {
 				clazz.equals(Double.class) ||
 				clazz.equals(Character.class));
 	}
-	
+
 	/**
 	 * Returns the simple name of a class in lowercase (AKA the type).
 	 * @param clazz a core class
@@ -1057,7 +1068,7 @@ public final class Utils {
 	 * @return true if the object is valid (all fields are populated properly)
 	 */
 	public static boolean isValidObject(ParaObject obj) {
-		return validateRequest(obj).length == 0;
+		return validateObject(obj).length == 0;
 	}
 
 	/**
@@ -1065,7 +1076,7 @@ public final class Utils {
 	 * @param content an object to be validated
 	 * @return a list of error messages or empty if object is valid
 	 */
-	public static String[] validateRequest(ParaObject content) {
+	public static String[] validateObject(ParaObject content) {
 		if (content == null) {
 			return new String[]{ "Object cannot be null." };
 		}
@@ -1275,109 +1286,4 @@ public final class Utils {
 		return timestamp;
 	}
 
-	/////////////////////////////////////////////
-	//	    	 REST HANDLERS
-	/////////////////////////////////////////////
-
-	/**
-	 * Read response as JSON
-	 * @param <P> type of object
-	 * @param content the object that was read
-	 * @return status code 200 or 404
-	 */
-	public static <P extends ParaObject> Response getReadResponse(ParaObject content) {
-		if (content != null) {
-			return Response.ok(content).build();
-		} else {
-			return getJSONResponse(Response.Status.NOT_FOUND);
-		}
-	}
-
-	/**
-	 * Create response as JSON
-	 * @param <P> type of object
-	 * @param content the object to create
-	 * @param context context
-	 * @return a status code 201 or 400
-	 */
-	public static <P extends ParaObject> Response getCreateResponse(P content, UriBuilder context) {
-		if (content != null && content.getId() != null && content.exists()) {
-			return Response.ok().build();
-		}
-		String[] errors = validateRequest(content);
-		if (errors.length == 0 && context != null) {
-			String id = content.create();
-			if (id == null) {
-				return getJSONResponse(Status.BAD_REQUEST, "Failed to create object.");
-			} else {
-				return Response.created(URI.create(content.getObjectURI())).entity(content).build();
-			}
-		} else {
-			return getJSONResponse(Response.Status.BAD_REQUEST, errors);
-		}
-	}
-
-	/**
-	 * Update response as JSON
-	 * @param <P> type of object
-	 * @param object object to validate and update
-	 * @param newContent new updated content
-	 * @return a status code 200 or 400 or 404
-	 */
-	public static <P extends ParaObject> Response getUpdateResponse(P object, Map<String, Object> newContent) {
-		if (object != null) {
-			setAnnotatedFields(object, newContent, Locked.class);
-			String[] errors = validateRequest(object);
-			if (errors.length == 0) {
-				object.update();
-				return Response.ok(object).build();
-			} else {
-				return getJSONResponse(Response.Status.BAD_REQUEST, errors);
-			}
-		} else {
-			return getJSONResponse(Response.Status.NOT_FOUND);
-		}
-	}
-
-	/**
-	 * Delete response as JSON
-	 * @param <P> type of object
-	 * @param content the object to delete
-	 * @return a status code 200 or 400
-	 */
-	public static <P extends ParaObject> Response getDeleteResponse(ParaObject content) {
-		if (content != null && content.getId() != null) {
-			content.delete();
-			return Response.ok().build();
-		} else {
-			return getJSONResponse(Response.Status.BAD_REQUEST);
-		}
-	}
-
-	/**
-	 * A generic JSON response handler
-	 * @param status status code
-	 * @param errors zero or more errors
-	 * @return a response as JSON
-	 */
-	public static Response getJSONResponse(final Status status, final String... errors) {
-		String json = "{}";
-		if (status == null) {
-			return Response.status(Status.BAD_REQUEST).build();
-		}
-		try {
-			LinkedHashMap<Object, Object> map = new LinkedHashMap<Object, Object>() {
-				private static final long serialVersionUID = 1L;
-				{
-					put("code", status.getStatusCode());
-					put("message", status.getReasonPhrase().concat(". ").concat(StringUtils.join(errors, "; ")));
-				}
-			};
-			json = getJsonWriter().writeValueAsString(map);
-		} catch (Exception ex) {
-			logger.error(null, ex);
-		}
-
-		return Response.status(status).entity(json).type(MediaType.APPLICATION_JSON).build();
-	}
 }

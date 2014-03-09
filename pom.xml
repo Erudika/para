@@ -13,7 +13,7 @@
 	</organization>
 	
     <name>Para</name>
-	<description>Para - general purpose back end framework for the cloud.</description>
+	<description>Para - general purpose back-end framework for the cloud.</description>
 	
 	<licenses>
 		<license>
@@ -47,6 +47,11 @@
 		<skipTests>false</skipTests>
 		<skipITs>${skipTests}</skipITs>
 		<skipUTs>${skipTests}</skipUTs>
+		<jerseyVer>2.6</jerseyVer>
+		<springVer>3.2.1.RELEASE</springVer>
+		<jacksonVer>2.3.1</jacksonVer>
+		<hazelcastVer>3.1.6</hazelcastVer>
+		<slf4jVer>1.7.6</slf4jVer>
     </properties>
 
 	<dependencies>
@@ -61,34 +66,34 @@
 		<dependency>
 			<groupId>org.glassfish.jersey.core</groupId>
 			<artifactId>jersey-server</artifactId>
-			<version>2.5.1</version>
+			<version>${jerseyVer}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.glassfish.jersey.containers</groupId>
 			<artifactId>jersey-container-servlet</artifactId>
-			<version>2.5.1</version>
+			<version>${jerseyVer}</version>
 		</dependency>
 <!--		<dependency>
 			<groupId>org.glassfish.jersey.containers</groupId>
 			<artifactId>jersey-container-jetty-http</artifactId>
-			<version>2.5.1</version>
+			<version>${jerseyVer}</version>
 		</dependency>-->
 		
 		<!-- SPRING -->
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-core</artifactId>
-			<version>3.2.0.RELEASE</version>
+			<version>${springVer}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-web</artifactId>
-			<version>3.2.0.RELEASE</version>
+			<version>${springVer}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-openid</artifactId>
-			<version>3.2.0.RELEASE</version>
+			<version>${springVer}</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>commons-logging</artifactId>
@@ -99,41 +104,41 @@
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-config</artifactId>
-			<version>3.2.0.RELEASE</version>
+			<version>${springVer}</version>
 		</dependency>
 
 		<!-- JACKSON -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-core</artifactId>
-			<version>2.3.1</version>
+			<version>${jacksonVer}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-annotations</artifactId>
-			<version>2.3.1</version>
+			<version>${jacksonVer}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.jaxrs</groupId>
 			<artifactId>jackson-jaxrs-base</artifactId>
-			<version>2.3.1</version>
+			<version>${jacksonVer}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.jaxrs</groupId>
 			<artifactId>jackson-jaxrs-json-provider</artifactId>
-			<version>2.3.1</version>
+			<version>${jacksonVer}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
-			<version>2.3.1</version>
+			<version>${jacksonVer}</version>
 		</dependency>
 
 		<!-- ELASTICSEARCH -->
 		<dependency>
 			<groupId>org.elasticsearch</groupId>
 			<artifactId>elasticsearch</artifactId>
-			<version>1.0.0</version>
+			<version>1.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.elasticsearch</groupId>
@@ -145,16 +150,16 @@
 		<dependency>
 			<groupId>com.hazelcast</groupId>
 			<artifactId>hazelcast</artifactId>
-			<version>3.1.5</version>
+			<version>${hazelcastVer}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.hazelcast</groupId>
 			<artifactId>hazelcast-cloud</artifactId>
-			<version>3.1.5</version>
+			<version>${hazelcastVer}</version>
 		</dependency>
 
 		<!-- CASSANDRA CLIENT -->
-		<dependency>
+<!--		<dependency>
 			<groupId>org.hectorclient</groupId>
 			<artifactId>hector-core</artifactId>
 			<version>1.1-4</version>
@@ -168,31 +173,53 @@
 					<groupId>org.slf4j</groupId>
 				</exclusion>
 			</exclusions>
+		</dependency>-->
+		
+		<!-- JETTY -->
+		<dependency>
+			<groupId>org.eclipse.jetty</groupId>
+			<artifactId>jetty-webapp</artifactId>
+			<version>9.1.3.v20140225</version>
 		</dependency>
 
 		<!-- LOGGING -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>1.7.6</version>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-log4j12</artifactId>
-			<version>1.7.6</version>
+			<version>${slf4jVer}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>jcl-over-slf4j</artifactId>
-			<version>1.7.6</version>
+			<version>${slf4jVer}</version>
 		</dependency>
-<!--		<dependency>
-			<groupId>log4j</groupId>
-			<artifactId>log4j</artifactId>
-			<version>1.2.17</version>
-		</dependency>-->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>jul-to-slf4j</artifactId>
+			<version>${slf4jVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>log4j-over-slf4j</artifactId>
+			<version>${slf4jVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<version>1.1.1</version>
+		</dependency>
 
 		<!-- OTHER -->
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>16.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.eaio.uuid</groupId>
+			<artifactId>uuid</artifactId>
+			<version>3.2</version>
+		</dependency>
 		<dependency>
 			<groupId>com.typesafe</groupId>
 			<artifactId>config</artifactId>
@@ -260,7 +287,7 @@
 			<groupId>javax</groupId>
 			<artifactId>javaee-web-api</artifactId>
 			<version>7.0</version>
-			<scope>provided</scope>
+			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.jsoup</groupId>
@@ -283,7 +310,6 @@
 			<version>4.0.4</version>
 		</dependency>
 
-
 		<!-- TESTING -->
 		<dependency>
 			<groupId>org.mockito</groupId>
@@ -303,8 +329,12 @@
 			<version>0.7.0</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.glassfish.jersey.test-framework.providers</groupId>
+			<artifactId>jersey-test-framework-provider-inmemory</artifactId>
+			<version>${jerseyVer}</version>
+		</dependency>
     </dependencies>
-
 
 	<build>
 		<plugins>
@@ -378,7 +408,7 @@
 			<plugin>
 				<groupId>com.jcabi</groupId>
 				<artifactId>jcabi-dynamodb-maven-plugin</artifactId>
-				<version>0.4</version>
+				<version>0.5</version>
 				<executions>
 					<execution>
 						<id>dynamodb-integration-test</id>
@@ -449,12 +479,38 @@
 					<!--<topSiteURL>http://paraio.org</topSiteURL>-->
 				</configuration>
 			</plugin>
+			
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>2.11</version>
+				<executions>
+					<execution>
+						<id>validate</id>
+						<phase>install</phase>
+						<configuration>
+							<!--<skip>${skipTests}</skip>-->
+							<configLocation>${basedir}/src/main/resources/checkstyle.xml</configLocation>
+							<encoding>UTF-8</encoding>
+							<consoleOutput>true</consoleOutput>
+							<failsOnError>true</failsOnError>
+							<linkXRef>false</linkXRef>
+						</configuration>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 	
+	
+	
+	
 	<reporting>
 		<plugins>
-			<plugin>
+<!--			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-checkstyle-plugin</artifactId>
 				<version>2.11</version>
@@ -465,15 +521,12 @@
 						</reports>
 					</reportSet>
 				</reportSets>
-				<configuration>
-					<configLocation>${basedir}/src/main/resources/checkstyle.xml</configLocation>
-					<encoding>UTF-8</encoding>
-					<consoleOutput>true</consoleOutput>
-					<failsOnError>true</failsOnError>
-					<linkXRef>false</linkXRef>
-				</configuration>
+			</plugin>-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jxr-plugin</artifactId>
+				<version>2.4</version>
 			</plugin>
-			
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
@@ -489,9 +542,8 @@
 
 	<pluginRepositories>
 		<pluginRepository>
-			<name>oss.sonatype.org</name>
-			<id>oss.sonatype.org</id>
-			<url>http://oss.sonatype.org/content/groups/public</url>
+			<id>sonatype</id>
+			<url>http://oss.sonatype.org/content/repositories/releases/</url>
 		</pluginRepository>
 	</pluginRepositories>
 

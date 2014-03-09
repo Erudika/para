@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.aop;
 
@@ -79,7 +79,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 
 //			result = indexingAction(mi, indexedAnno);
 		Object[] args = mi.getArguments();
-		String appName = AOPUtils.getFirstArgOfString(args);
+		String appid = AOPUtils.getFirstArgOfString(args);
 
 		if (indexedAnno != null) {
 			switch (indexedAnno.action()) {
@@ -87,29 +87,29 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					ParaObject addMe = AOPUtils.getArgOfParaObject(args);
 					if (Utils.isValidObject(addMe)) {
 						result = mi.proceed();
-						search.index(appName, addMe);
-						logger.debug("{}: Indexed {}->{}", cn, appName, addMe.getId());
+						search.index(appid, addMe);
+						logger.debug("{}: Indexed {}->{}", cn, appid, addMe.getId());
 					} else {
-						logger.debug("{}: Invalid object {}->{}", cn, appName, addMe);
+						logger.debug("{}: Invalid object {}->{}", cn, appid, addMe);
 					}
 					break;
 				case REMOVE:
 					result = mi.proceed();
 					ParaObject removeMe = AOPUtils.getArgOfParaObject(args);
-					search.unindex(appName, removeMe);
-					logger.debug("{}: Unindexed {}->{}", cn, appName, removeMe.getId());
+					search.unindex(appid, removeMe);
+					logger.debug("{}: Unindexed {}->{}", cn, appid, removeMe.getId());
 					break;
 				case ADD_ALL:
 					result = mi.proceed();
 					List<ParaObject> addUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
-					search.indexAll(appName, addUs);
-					logger.debug("{}: Indexed all {}->#{}", cn, appName, addUs.size());
+					search.indexAll(appid, addUs);
+					logger.debug("{}: Indexed all {}->#{}", cn, appid, addUs.size());
 					break;
 				case REMOVE_ALL:
 					result = mi.proceed();
 					List<ParaObject> removeUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
-					search.unindexAll(appName, removeUs);
-					logger.debug("{}: Unindexed all {}->#{}", cn, appName, removeUs.size());
+					search.unindexAll(appid, removeUs);
+					logger.debug("{}: Unindexed all {}->#{}", cn, appid, removeUs.size());
 					break;
 				default:
 					break;
@@ -119,45 +119,45 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 			switch (cachedAnno.action()) {
 				case GET:
 					String getMeId = (String) args[1];
-					if (cache.contains(appName, getMeId)) {
-						result = cache.get(appName, getMeId);
-						logger.debug("{}: Cache hit: {}->{}", cn, appName, getMeId);
+					if (cache.contains(appid, getMeId)) {
+						result = cache.get(appid, getMeId);
+						logger.debug("{}: Cache hit: {}->{}", cn, appid, getMeId);
 					} else if (getMeId != null) {
 						if (result == null) {
 							result = mi.proceed();
 						}
 						if (result != null) {
-							cache.put(appName, getMeId, result);
-							logger.debug("{}: Cache miss: {}->{}", cn, appName, getMeId);
+							cache.put(appid, getMeId, result);
+							logger.debug("{}: Cache miss: {}->{}", cn, appid, getMeId);
 						}
 					}
 					break;
 				case PUT:
 					ParaObject putMe = AOPUtils.getArgOfParaObject(args);
 					if (putMe != null) {
-						cache.put(appName, putMe.getId(), putMe);
-						logger.debug("{}: Cache put: {}->{}", cn, appName, putMe.getId());
+						cache.put(appid, putMe.getId(), putMe);
+						logger.debug("{}: Cache put: {}->{}", cn, appid, putMe.getId());
 					}
 					break;
 				case DELETE:
 					ParaObject deleteMe = AOPUtils.getArgOfParaObject(args);
 					if (deleteMe != null) {
-						cache.remove(appName, deleteMe.getId());
-						logger.debug("{}: Cache delete: {}->{}", cn, appName, deleteMe.getId());
+						cache.remove(appid, deleteMe.getId());
+						logger.debug("{}: Cache delete: {}->{}", cn, appid, deleteMe.getId());
 					}
 					break;
 				case GET_ALL:
 					List<String> getUs = AOPUtils.getArgOfListOfType(args, String.class);
 					if (getUs != null) {
-						Map<String, ParaObject> cached = cache.getAll(appName, getUs);
-						logger.debug("{}: Cache get page: {}->{}", cn, appName, getUs);
+						Map<String, ParaObject> cached = cache.getAll(appid, getUs);
+						logger.debug("{}: Cache get page: {}->{}", cn, appid, getUs);
 						for (String id : getUs) {
 							if (!cached.containsKey(id)) {
 								if (result == null) {
 									result = mi.proceed();
 								}
-								cache.putAll(appName, (Map<String, ParaObject>) result);
-								logger.debug("{}: Cache get page reload: {}->{}", cn, appName, id);
+								cache.putAll(appid, (Map<String, ParaObject>) result);
+								logger.debug("{}: Cache get page reload: {}->{}", cn, appid, id);
 								break;
 							}
 						}
@@ -173,8 +173,8 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 						for (ParaObject paraObject : putUs) {
 							map1.put(paraObject.getId(), paraObject);
 						}
-						cache.putAll(appName, map1);
-						logger.debug("{}: Cache put page: {}->{}", cn, appName, map1.keySet());
+						cache.putAll(appid, map1);
+						logger.debug("{}: Cache put page: {}->{}", cn, appid, map1.keySet());
 					}
 					break;
 				case DELETE_ALL:
@@ -184,8 +184,8 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 						for (ParaObject paraObject : deleteUs) {
 							list.add(paraObject.getId());
 						}
-						cache.removeAll(appName, list);
-						logger.debug("{}: Cache delete page: {}->{}", cn, appName, list);
+						cache.removeAll(appid, list);
+						logger.debug("{}: Cache delete page: {}->{}", cn, appid, list);
 					}
 					break;
 				default:

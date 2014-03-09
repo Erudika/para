@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.search;
 
@@ -42,8 +42,8 @@ import org.junit.Ignore;
 public abstract class SearchTest {
 
 	protected static Search s;
-	protected static String appName1 = "testapp1";
-	protected static String appName2 = "testapp2";
+	protected static String appid1 = "testapp1";
+	protected static String appid2 = "testapp2";
 
 	protected static User u;
 	protected static User u1;
@@ -160,7 +160,7 @@ public abstract class SearchTest {
 		assertTrue(s.findQuery(u.getType(), "_type:user").size() >= 3);
 		assertFalse(s.findQuery(u.getType(), "ann").isEmpty());
 		assertFalse(s.findQuery(u.getType(), "Ann").isEmpty());
-		
+
 		Pager p = new Pager();
 		assertEquals(0, p.getCount());
 		List<?> res = s.findQuery(u.getType(), "*", p);
@@ -220,19 +220,19 @@ public abstract class SearchTest {
 		Map<String, Object> terms = new HashMap<String, Object>();
 //		terms.put(Config._TYPE, u.getType());
 		terms.put(Config._ID, u.getId());
-		
+
 		Map<String, Object> terms1 = new HashMap<String, Object>();
 		terms1.put(Config._TYPE, null);
 		terms1.put(Config._ID, "");
-		
+
 		Map<String, Object> terms2 = new HashMap<String, Object>();
 		terms2.put(" ", "bad");
 		terms2.put("", "");
-		
+
 		assertEquals(1, s.findTerms(u.getType(), terms, true).size());
 		assertTrue(s.findTerms(u.getType(), terms1, true).isEmpty());
 		assertTrue(s.findTerms(u.getType(), terms2, true).isEmpty());
-		
+
 		// single term
 		assertTrue(s.findTerms(null, null, true).isEmpty());
 		assertTrue(s.findTerms(u.getType(), Collections.singletonMap("", null), true).isEmpty());
@@ -270,7 +270,7 @@ public abstract class SearchTest {
 //		Thread.sleep(500);
 		assertEquals(1L, s.getCount(u.getType(), Collections.singletonMap(Config._ID, u.getId())).intValue());
 //		Thread.sleep(500);
-		assertEquals(0L, s.getCount(appName1, u.getType(), Collections.singletonMap(Config._ID, u.getId())).intValue());
+		assertEquals(0L, s.getCount(appid1, u.getType(), Collections.singletonMap(Config._ID, u.getId())).intValue());
 	}
 
 	@Test
@@ -286,17 +286,17 @@ public abstract class SearchTest {
 		// test multiapp support
 		ux.setId(u.getId()+"-APP1");
 		ux.setName("UserApp1");
-		s.index(appName1, ux);
-		assertNotNull(s.findById(appName1, ux.getId()));
+		s.index(appid1, ux);
+		assertNotNull(s.findById(appid1, ux.getId()));
 		assertNull(s.findById(ux.getId()));
-		assertNull(s.findById(appName2, ux.getId()));
+		assertNull(s.findById(appid2, ux.getId()));
 
 		Tag tx = new Tag(t.getId()+"-APP2");
 		tx.setName("TagApp2");
-		s.index(appName2, tx);
-		assertNotNull(s.findById(appName2, tx.getId()));
+		s.index(appid2, tx);
+		assertNotNull(s.findById(appid2, tx.getId()));
 		assertNull(s.findById(tx.getId()));
-		assertNull(s.findById(appName1, tx.getId()));
+		assertNull(s.findById(appid1, tx.getId()));
 	}
 
 	@Test

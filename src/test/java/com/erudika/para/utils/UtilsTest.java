@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.utils;
 
@@ -23,7 +23,6 @@ import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
-import com.erudika.para.persistence.MockDAO;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -36,8 +35,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriBuilder;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -74,17 +71,25 @@ public class UtilsTest {
 	}
 
 	@Test
-	public void testHMACSHA() {
-		assertNotNull(HMACSHA(null, null));
-		assertEquals("", HMACSHA("", ""));
-		assertTrue(!HMACSHA("test", "key").isEmpty());
-		assertEquals("16af7fce99086e154ee21e9e987cc780f10b53e84d19d40999eb8a450b20b621", HMACSHA("test123", "key123"));
+	public void testBcrypt() {
+		assertNull(bcrypt(null));
+		assertFalse(bcrypt("").isEmpty());
+		assertFalse(bcrypt("test").isEmpty());
+		assertNotEquals(bcrypt("testpass"), bcrypt("testpass")); // bcrypt hashes are salted i.e. !=
+	}
+	@Test
+	public void testBcryptMatches() {
+		assertFalse(bcryptMatches(null, null));
+		assertFalse(bcryptMatches(null, "test"));
+		assertFalse(bcryptMatches("", "test"));
+		assertFalse(bcryptMatches("test", "test"));
+		assertTrue(bcryptMatches("testpass", "$2a$12$OQXURSOiBPvDHZc0xzSn.erVlBGChnY8hi.OLLZVBczquUaOTJTg."));
 	}
 
 	@Test
-	public void testGenerateAuthToken() {
-		String tok1 = generateAuthToken();
-		String tok2 = generateAuthToken();
+	public void testGenerateSecurityToken() {
+		String tok1 = generateSecurityToken();
+		String tok2 = generateSecurityToken();
 		assertFalse(StringUtils.isBlank(tok1));
 		assertFalse(StringUtils.isBlank(tok2));
 		assertNotEquals(tok1, tok2);
@@ -277,7 +282,7 @@ public class UtilsTest {
 	public void testGetAnnotatedFields() {
 		User u = new User();
 		assertTrue(getAnnotatedFields(null).isEmpty());
-		assertTrue(getAnnotatedFields(u).isEmpty());
+		assertFalse(getAnnotatedFields(u).isEmpty());
 		Map<String, Object> fm1 = getAnnotatedFields(u);
 		Map<String, Object> fm2 = getAnnotatedFields(u, Locked.class);
 		assertFalse(fm1.isEmpty());
@@ -326,11 +331,12 @@ public class UtilsTest {
 	public void testToObject() {
 		assertNotNull(toObject(null));
 		assertNotNull(toObject(""));
+		assertNotNull(toObject("test123"));
 		assertEquals(Sysprop.class, toObject("test123").getClass());
-		assertEquals(User.class, toObject(Utils.type(User.class)));
-		assertEquals(Tag.class, toObject(Utils.type(Tag.class)));
+		assertEquals(User.class, toObject(Utils.type(User.class)).getClass());
+		assertEquals(Tag.class, toObject(Utils.type(Tag.class)).getClass());
 	}
-	
+
 	@Test
 	public void testToClass() {
 		assertNotNull(toClass(null));
@@ -343,7 +349,7 @@ public class UtilsTest {
 	@Test
 	public void testFromJSON() {
 		assertNull(fromJSON(""));
-		assertNotNull(fromJSON("{}"));
+		assertNull(fromJSON("{}")); // depending on how Jackson is configured this may be null or not
 
 		ParaObject obj1 = Utils.fromJSON("{\"type\":\"testtype\", \"name\":\"testname\", \"id\":\"123\"}");
 		ParaObject obj2 = Utils.fromJSON("{\"type\":\"user\", \"name\":\"user name\", \"id\":\"111\"}");
@@ -398,8 +404,8 @@ public class UtilsTest {
 
 	@Test
 	public void testValidateRequest() {
-		assertTrue(validateRequest(null).length > 0);
-		assertEquals(0, validateRequest(new Tag("test")).length);
+		assertTrue(validateObject(null).length > 0);
+		assertEquals(0, validateObject(new Tag("test")).length);
 	}
 
 	@Test
@@ -422,34 +428,5 @@ public class UtilsTest {
 	@Test
 	public void testGetNewId() {
 		assertFalse(getNewId().isEmpty());
-	}
-
-	@Test
-	public void testGetReadResponse() {
-		assertEquals(Status.NOT_FOUND.getStatusCode(), getReadResponse(null).getStatus());
-		assertEquals(Status.OK.getStatusCode(), getReadResponse(new Tag("tag")).getStatus());
-	}
-
-	@Test
-	public void testGetCreateUpdateDeleteResponse() {
-		Tag t = new Tag("tag");
-		t.setDao(new MockDAO());
-		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(null, null).getStatus());
-		assertEquals(Status.CREATED.getStatusCode(), getCreateResponse(t, UriBuilder.fromPath("/")).getStatus());
-		assertNotNull(t.getDao().read(t.getId()));
-
-		assertEquals(Status.NOT_FOUND.getStatusCode(), getUpdateResponse(null, null).getStatus());
-		assertEquals(Status.OK.getStatusCode(), getUpdateResponse(t, null).getStatus());
-		assertNotNull(t.getDao().read(t.getId()));
-
-		assertEquals(Status.BAD_REQUEST.getStatusCode(), getDeleteResponse(null).getStatus());
-		assertEquals(Status.OK.getStatusCode(), getDeleteResponse(t).getStatus());
-		assertNull(t.getDao().read(t.getId()));
-	}
-
-	@Test
-	public void testGetJSONResponse() {
-		assertEquals(Status.BAD_REQUEST.getStatusCode(), getJSONResponse(null).getStatus());
-		assertEquals(Status.OK.getStatusCode(), getJSONResponse(Status.OK).getStatus());
 	}
 }

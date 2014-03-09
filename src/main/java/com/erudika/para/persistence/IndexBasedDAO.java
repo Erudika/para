@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Erudika.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,6 +12,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.persistence;
 
@@ -57,12 +59,16 @@ public class IndexBasedDAO implements DAO {
 		this.search = search;
 	}
 
+	/**
+	 * Sets the search instance
+	 * @param search a serch instance
+	 */
 	public void setSearch(Search search) {
 		this.search = search;
 	}
 
 	@Override
-	public <P extends ParaObject> String create(String appName, P so) {
+	public <P extends ParaObject> String create(String appid, P so) {
 		if (so == null) {
 			return null;
 		}
@@ -72,96 +78,102 @@ public class IndexBasedDAO implements DAO {
 		if (so.getTimestamp() == null) {
 			so.setTimestamp(Utils.timestamp());
 		}
-		getMap(appName).put(so.getId(), so);
+		getMap(appid).put(so.getId(), so);
 		logger.debug("DAO.create() {}", so.getId());
 		return so.getId();
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <P extends ParaObject> P read(String appName, String key) {
-		if (key == null || StringUtils.isBlank(appName) || search == null) {
+	public <P extends ParaObject> P read(String appid, String key) {
+		if (key == null || StringUtils.isBlank(appid) || search == null) {
 			return null;
 		}
-		P so = search.findById(appName, key);
-		if(so == null) {
-			so = (P) getMap(appName).get(key);
+		P so = search.findById(appid, key);
+		if (so == null) {
+			so = (P) getMap(appid).get(key);
 		}
 		logger.debug("DAO.read() {} -> {}", key, so);
 		return so;
 	}
 
 	@Override
-	public <P extends ParaObject> void update(String appName, P so) {
-		if (so != null && !StringUtils.isBlank(appName)) {
+	public <P extends ParaObject> void update(String appid, P so) {
+		if (so != null && !StringUtils.isBlank(appid)) {
 			so.setUpdated(Utils.timestamp());
-			getMap(appName).put(so.getId(), so);
+			getMap(appid).put(so.getId(), so);
 			logger.debug("DAO.update() {}", so.getId());
 		}
 	}
 
 	@Override
-	public <P extends ParaObject> void delete(String appName, P so) {
-		if (so != null && !StringUtils.isBlank(appName)) {
-			getMap(appName).remove(so.getId());
+	public <P extends ParaObject> void delete(String appid, P so) {
+		if (so != null && !StringUtils.isBlank(appid)) {
+			getMap(appid).remove(so.getId());
 			logger.debug("DAO.delete() {}", so.getId());
 		}
 	}
 
 	@Override
-	public String getColumn(String appName, String key, String colName) {
-		if (StringUtils.isBlank(key) || StringUtils.isBlank(appName) || StringUtils.isBlank(colName)) {
+	public String getColumn(String appid, String key, String colName) {
+		if (StringUtils.isBlank(key) || StringUtils.isBlank(appid) || StringUtils.isBlank(colName)) {
 			return null;
 		}
 		try {
-			return BeanUtils.getProperty(read(appName, key), colName);
+			return BeanUtils.getProperty(read(appid, key), colName);
 		} catch (Exception e) {
 			return null;
 		}
 	}
 
 	@Override
-	public void putColumn(String appName, String key, String colName, String colValue) {
+	public void putColumn(String appid, String key, String colName, String colValue) {
 		if (key == null || StringUtils.isBlank(colName) || StringUtils.isBlank(colValue)
-				|| StringUtils.isBlank(appName)) return;
-		ParaObject p = read(appName, key);
+				|| StringUtils.isBlank(appid)) {
+			return;
+		}
+		ParaObject p = read(appid, key);
 		if (p != null) {
 			try {
 				BeanUtils.setProperty(p, colName, colValue);
-				update(appName, p);
-			} catch (Exception ex) { }
+				update(appid, p);
+			} catch (Exception ex) {
+				logger.info(null, ex);
+			}
 		}
 	}
 
 	@Override
-	public void removeColumn(String appName, String key, String colName) {
-		if (key == null || StringUtils.isBlank(colName) || StringUtils.isBlank(appName)) {
+	public void removeColumn(String appid, String key, String colName) {
+		if (key == null || StringUtils.isBlank(colName) || StringUtils.isBlank(appid)) {
 			return;
 		}
-		ParaObject p = read(appName, key);
+		ParaObject p = read(appid, key);
 		if (p != null) {
 			try {
 				PropertyUtils.setProperty(p, colName, null);
-				update(appName, p);
-			} catch (Exception ex) { }
+				update(appid, p);
+			} catch (Exception ex) {
+				logger.info(null, ex);
+			}
 		}
 	}
 
 	@Override
-	public boolean existsColumn(String appName, String key, String colName) {
+	public boolean existsColumn(String appid, String key, String colName) {
 		if (StringUtils.isBlank(key)) {
 			return false;
 		}
 		try {
-			return getColumn(appName, key, colName) != null;
+			return getColumn(appid, key, colName) != null;
 		} catch (Exception ex) {
 			return false;
 		}
 	}
 
 	@Override
-	public <P extends ParaObject> void createAll(String appName, List<P> objects) {
-		if (StringUtils.isBlank(appName)) {
+	public <P extends ParaObject> void createAll(String appid, List<P> objects) {
+		if (StringUtils.isBlank(appid)) {
 			return;
 		}
 		for (P p : objects) {
@@ -172,13 +184,13 @@ public class IndexBasedDAO implements DAO {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <P extends ParaObject> Map<String, P> readAll(String appName, List<String> keys, boolean getAllColumns) {
+	public <P extends ParaObject> Map<String, P> readAll(String appid, List<String> keys, boolean getAllColumns) {
 		Map<String, P> results = new HashMap<String, P>();
-		if (keys == null || StringUtils.isBlank(appName)) {
+		if (keys == null || StringUtils.isBlank(appid)) {
 			return results;
 		}
 		for (String key : keys) {
-			if (getMap(appName).containsKey(key)) {
+			if (getMap(appid).containsKey(key)) {
 				results.put(key, (P) read(key));
 			}
 		}
@@ -187,16 +199,16 @@ public class IndexBasedDAO implements DAO {
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> readPage(String appName, Pager pager) {
+	public <P extends ParaObject> List<P> readPage(String appid, Pager pager) {
 		return new ArrayList<P>();
 	}
 
 	@Override
-	public <P extends ParaObject> void updateAll(String appName, List<P> objects) {
-		if (!StringUtils.isBlank(appName)) {
+	public <P extends ParaObject> void updateAll(String appid, List<P> objects) {
+		if (!StringUtils.isBlank(appid)) {
 			for (P obj : objects) {
 				if (obj != null) {
-					update(appName, obj);
+					update(appid, obj);
 				}
 			}
 			logger.debug("DAO.updateAll() {}", objects.size());
@@ -204,22 +216,22 @@ public class IndexBasedDAO implements DAO {
 	}
 
 	@Override
-	public <P extends ParaObject> void deleteAll(String appName, List<P> objects) {
-		if (!StringUtils.isBlank(appName)) {
+	public <P extends ParaObject> void deleteAll(String appid, List<P> objects) {
+		if (!StringUtils.isBlank(appid)) {
 			for (P obj : objects) {
-				if (obj != null && getMap(appName).containsKey(obj.getId())) {
+				if (obj != null && getMap(appid).containsKey(obj.getId())) {
 					delete(obj);
 				}
 			}
 			logger.debug("DAO.deleteAll() {}", objects.size());
 		}
 	}
-	
-	private Map<String, ParaObject> getMap(String appName) {
-		if (!maps.containsKey(appName)) {
-			maps.put(appName, new  HashMap<String, ParaObject>());
+
+	private Map<String, ParaObject> getMap(String appid) {
+		if (!maps.containsKey(appid)) {
+			maps.put(appid, new  HashMap<String, ParaObject>());
 		}
-		return maps.get(appName);
+		return maps.get(appid);
 	}
 
 	////////////////////////////////////////////////////////////////////
@@ -288,5 +300,5 @@ public class IndexBasedDAO implements DAO {
 	public <P extends ParaObject> void deleteAll(List<P> objects) {
 		deleteAll(Config.APP_NAME_NS, objects);
 	}
-	
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.persistence;
 
@@ -37,8 +37,8 @@ import static org.mockito.Mockito.*;
 public abstract class DAOTest {
 
 	protected static DAO dao;
-	protected static String appName1 = "testapp1";
-	protected static String appName2 = "testapp2";
+	protected static String appid1 = "testapp1";
+	protected static String appid2 = "testapp2";
 
 	private User u;
 	private Tag t;
@@ -85,17 +85,17 @@ public abstract class DAOTest {
 		// test multiapp support
 		u.setId(u.getId()+"-APP1");
 		u.setName("UserApp1");
-		dao.create(appName1, u);
-		assertNotNull(dao.read(appName1, u.getId()));
+		dao.create(appid1, u);
+		assertNotNull(dao.read(appid1, u.getId()));
 		assertNull(dao.read(u.getId()));
-		assertNull(dao.read(appName2, u.getId()));
+		assertNull(dao.read(appid2, u.getId()));
 
 		t.setId(t.getId()+"-APP2");
 		t.setName("TagApp2");
-		dao.create(appName2, t);
-		assertNotNull(dao.read(appName2, t.getId()));
+		dao.create(appid2, t);
+		assertNotNull(dao.read(appid2, t.getId()));
 		assertNull(dao.read(t.getId()));
-		assertNull(dao.read(appName1, t.getId()));
+		assertNull(dao.read(appid1, t.getId()));
 	}
 
 	@Test

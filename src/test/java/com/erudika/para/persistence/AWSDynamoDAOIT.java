@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.persistence;
 
@@ -34,35 +34,35 @@ public class AWSDynamoDAOIT extends DAOTest {
 	public static void setUpClass() throws InterruptedException {
 		dao = new AWSDynamoDAO();
 		AWSDynamoUtils.createTable(Config.APP_NAME_NS);
-		AWSDynamoUtils.createTable(appName1);
-		AWSDynamoUtils.createTable(appName2);
+		AWSDynamoUtils.createTable(appid1);
+		AWSDynamoUtils.createTable(appid2);
 	}
 
 	@AfterClass
 	public static void tearDownClass() {
 		AWSDynamoUtils.deleteTable(Config.APP_NAME_NS);
-		AWSDynamoUtils.deleteTable(appName1);
-		AWSDynamoUtils.deleteTable(appName2);
+		AWSDynamoUtils.deleteTable(appid1);
+		AWSDynamoUtils.deleteTable(appid2);
 		AWSDynamoUtils.shutdownClient();
 	}
 
 	@Test
 	public void testCreateDeleteExistsTable() throws InterruptedException {
-		String appName1 = "test-index";
-		String badAppName = "test index 123";
+		String appid1 = "test-index";
+		String badAppid = "test index 123";
 
 		AWSDynamoUtils.createTable("");
 		assertFalse(AWSDynamoUtils.existsTable(""));
 
-		AWSDynamoUtils.createTable(appName1);
-		assertTrue(AWSDynamoUtils.existsTable(appName1));
+		AWSDynamoUtils.createTable(appid1);
+		assertTrue(AWSDynamoUtils.existsTable(appid1));
 
-		AWSDynamoUtils.deleteTable(appName1);
-		assertFalse(AWSDynamoUtils.existsTable(appName1));
+		AWSDynamoUtils.deleteTable(appid1);
+		assertFalse(AWSDynamoUtils.existsTable(appid1));
 
-		assertFalse(AWSDynamoUtils.createTable(badAppName));
-		assertFalse(AWSDynamoUtils.existsTable(badAppName));
-		assertFalse(AWSDynamoUtils.deleteTable(badAppName));
+		assertFalse(AWSDynamoUtils.createTable(badAppid));
+		assertFalse(AWSDynamoUtils.existsTable(badAppid));
+		assertFalse(AWSDynamoUtils.deleteTable(badAppid));
 	}
 
 }

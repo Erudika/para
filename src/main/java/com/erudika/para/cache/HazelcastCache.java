@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Alex Bogdanovski <alex@erudika.com>.
+ * Copyright 2013-2014 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * You can reach the author at: https://github.com/albogdano
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.cache;
 
@@ -55,95 +55,95 @@ public class HazelcastCache implements Cache {
 	}
 
 	@Override
-	public boolean contains(String appName, String id) {
-		if (StringUtils.isBlank(id) || StringUtils.isBlank(appName)) {
+	public boolean contains(String appid, String id) {
+		if (StringUtils.isBlank(id) || StringUtils.isBlank(appid)) {
 			return false;
 		}
-		return client().getMap(appName).containsKey(id);
+		return client().getMap(appid).containsKey(id);
 	}
 
 	@Override
-	public <T> void put(String appName, String id, T object) {
-		if (!StringUtils.isBlank(id) && object != null && !StringUtils.isBlank(appName)) {
-			logger.debug("Cache.put() {} {}", appName, id);
-			client().getMap(appName).putAsync(id, object);
+	public <T> void put(String appid, String id, T object) {
+		if (!StringUtils.isBlank(id) && object != null && !StringUtils.isBlank(appid)) {
+			logger.debug("Cache.put() {} {}", appid, id);
+			client().getMap(appid).putAsync(id, object);
 		}
 	}
 
 	@Override
-	public <T> void put(String appName, String id, T object, Long ttlSeconds) {
-		if (!StringUtils.isBlank(id) && object != null && !StringUtils.isBlank(appName)) {
-			logger.debug("Cache.put() {} {} ttl {}", appName, id, ttlSeconds);
-			client().getMap(appName).putAsync(id, object, ttlSeconds, TimeUnit.SECONDS);
+	public <T> void put(String appid, String id, T object, Long ttlSeconds) {
+		if (!StringUtils.isBlank(id) && object != null && !StringUtils.isBlank(appid)) {
+			logger.debug("Cache.put() {} {} ttl {}", appid, id, ttlSeconds);
+			client().getMap(appid).putAsync(id, object, ttlSeconds, TimeUnit.SECONDS);
 		}
 	}
 
 	@Override
-	public <T> void putAll(String appName, Map<String, T> objects) {
-		if (objects != null && !objects.isEmpty() && !StringUtils.isBlank(appName)) {
+	public <T> void putAll(String appid, Map<String, T> objects) {
+		if (objects != null && !objects.isEmpty() && !StringUtils.isBlank(appid)) {
 			Map<String, T> cleanMap = new LinkedHashMap<String, T>();
 			for (Entry<String, T> entry : objects.entrySet()) {
 				if (!StringUtils.isBlank(entry.getKey()) && entry.getValue() != null) {
 					cleanMap.put(entry.getKey(), entry.getValue());
 				}
 			}
-			logger.debug("Cache.putAll() {} {}", appName, objects.size());
-			client().getMap(appName).putAll(cleanMap);
+			logger.debug("Cache.putAll() {} {}", appid, objects.size());
+			client().getMap(appid).putAll(cleanMap);
 		}
 	}
 
 	@Override
-	public <T> T get(String appName, String id) {
-		if (StringUtils.isBlank(id) || StringUtils.isBlank(appName)) {
+	public <T> T get(String appid, String id) {
+		if (StringUtils.isBlank(id) || StringUtils.isBlank(appid)) {
 			return null;
 		}
-		Map<String, T> map = client().getMap(appName);
+		Map<String, T> map = client().getMap(appid);
 		T obj = map.get(id);
-		logger.debug("Cache.get() {} {}", appName, (obj == null) ? null : id);
+		logger.debug("Cache.get() {} {}", appid, (obj == null) ? null : id);
 		return obj;
 	}
 
 	@Override
-	public <T> Map<String, T> getAll(String appName, List<String> ids) {
+	public <T> Map<String, T> getAll(String appid, List<String> ids) {
 		Map<String, T> result = new LinkedHashMap<String, T>();
-		if (ids == null || StringUtils.isBlank(appName)) {
+		if (ids == null || StringUtils.isBlank(appid)) {
 			return result;
 		}
 		ids.remove(null);
-		IMap<String, T> imap = client().getMap(appName);
+		IMap<String, T> imap = client().getMap(appid);
 		for (Entry<String, T> entry : imap.getAll(new TreeSet<String>(ids)).entrySet()) {
 			result.put(entry.getKey(), entry.getValue());
 		}
-		logger.debug("Cache.getAll() {} {}", appName, ids.size());
+		logger.debug("Cache.getAll() {} {}", appid, ids.size());
 		return result;
 	}
 
 	@Override
-	public void remove(String appName, String id) {
-		if (!StringUtils.isBlank(id) && !StringUtils.isBlank(appName)) {
-			logger.debug("Cache.remove() {} {}", appName, id);
-			client().getMap(appName).delete(id);
+	public void remove(String appid, String id) {
+		if (!StringUtils.isBlank(id) && !StringUtils.isBlank(appid)) {
+			logger.debug("Cache.remove() {} {}", appid, id);
+			client().getMap(appid).delete(id);
 		}
 	}
 
 	@Override
-	public void removeAll(String appName) {
-		if (!StringUtils.isBlank(appName)) {
-			logger.debug("Cache.removeAll() {}", appName);
-			client().getMap(appName).clear();
+	public void removeAll(String appid) {
+		if (!StringUtils.isBlank(appid)) {
+			logger.debug("Cache.removeAll() {}", appid);
+			client().getMap(appid).clear();
 		}
 	}
 
 	@Override
-	public void removeAll(String appName, List<String> ids) {
-		if (ids != null && !StringUtils.isBlank(appName)) {
-			IMap<?,?> map = client().getMap(appName);
+	public void removeAll(String appid, List<String> ids) {
+		if (ids != null && !StringUtils.isBlank(appid)) {
+			IMap<?,?> map = client().getMap(appid);
 			for (String id : ids) {
 				if (!StringUtils.isBlank(id)) {
 					map.delete(id);
 				}
 			}
-			logger.debug("Cache.removeAll() {} {}", appName, ids.size());
+			logger.debug("Cache.removeAll() {} {}", appid, ids.size());
 		}
 	}
 
