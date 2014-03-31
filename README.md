@@ -1,7 +1,7 @@
 ![Logo](https://s3-eu-west-1.amazonaws.com/org.paraio/para.png)
 ============================
 
-**Para** - general purpose back-end framework for the cloud.
+#### **Para** - general purpose back-end framework for the cloud.
 
 ## What is this?
 
@@ -27,14 +27,14 @@ applications.
 ### Standalone
 Run the following command to install it:
 
-```console
+```sh
 git clone https://github.com/erudika/para.git para
 cd para
 mvn jetty:run
 ```
 
 In your browser open:
-```console
+```sh
 open http://localhost:8080
 ```
 ### Maven
@@ -62,18 +62,4 @@ See the configuration file `src/main/resources/reference.conf` and modify it if 
 For more information see [CONTRIBUTING.md](https://github.com/Erudika/para/blob/master/CONTRIBUTING.md)
 
 ## License
-<pre>
-Copyright 2013-2014 Erudika. http://erudika.com
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-</pre>
+[Apache 2.0](LICENSE)

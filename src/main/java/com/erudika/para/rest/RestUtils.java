@@ -345,8 +345,8 @@ public final class RestUtils {
 	public static class GenericExceptionMapper implements ExceptionMapper<Exception> {
 		/**
 		 *
-		 * @param ex
-		 * @return
+		 * @param ex exception
+		 * @return a response
 		 */
 		public Response toResponse(final Exception ex) {
 			return getExceptionResponse(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), ex.getMessage());
@@ -360,8 +360,8 @@ public final class RestUtils {
 	public static class ForbiddenExceptionMapper implements ExceptionMapper<ForbiddenException> {
 		/**
 		 *
-		 * @param ex
-		 * @return
+		 * @param ex exception
+		 * @return a response
 		 */
 		public Response toResponse(final ForbiddenException ex) {
 			return getExceptionResponse(Response.Status.FORBIDDEN.getStatusCode(), ex.getMessage());
@@ -390,8 +390,8 @@ public final class RestUtils {
 	public static class InternalExceptionMapper implements ExceptionMapper<InternalServerErrorException> {
 		/**
 		 *
-		 * @param ex
-		 * @return
+		 * @param ex exception
+		 * @return a response
 		 */
 		public Response toResponse(InternalServerErrorException ex) {
 			return getExceptionResponse(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), ex.getMessage());
@@ -405,8 +405,8 @@ public final class RestUtils {
 	public static class UnavailableExceptionMapper implements ExceptionMapper<ServiceUnavailableException> {
 		/**
 		 *
-		 * @param ex
-		 * @return
+		 * @param ex exception
+		 * @return a response
 		 */
 		public Response toResponse(ServiceUnavailableException ex) {
 			return getExceptionResponse(Response.Status.SERVICE_UNAVAILABLE.getStatusCode(), ex.getMessage());

@@ -939,7 +939,7 @@ public final class Utils {
 	 * @param <P> the object type
 	 * @param type the simple name of a class
 	 * @return a new instance of a core class. Defaults to {@link com.erudika.para.core.Sysprop}.
-	 * @see #toClass(java.lang.String, java.lang.String) 
+	 * @see #toClass(java.lang.String)
 	 */
 	public static <P extends ParaObject> P toObject(String type) {
 		try {

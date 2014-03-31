@@ -51,8 +51,8 @@ import org.slf4j.LoggerFactory;
 public final class Para {
 
 	private static final Logger logger = LoggerFactory.getLogger(Para.class);
-	private static List<DestroyListener> destroyListeners = new ArrayList<DestroyListener>();
-	private static List<InitializeListener> initListeners = new ArrayList<InitializeListener>();
+	private static final List<DestroyListener> destroyListeners = new ArrayList<DestroyListener>();
+	private static final List<InitializeListener> initListeners = new ArrayList<InitializeListener>();
 	private static Injector injector;
 
 	private Para() { }
