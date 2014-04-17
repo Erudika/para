@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE urlrewrite PUBLIC "-//tuckey.org//DTD UrlRewrite 4.0//EN"
+        "http://www.tuckey.org/res/dtds/urlrewrite4.0.dtd">
+<urlrewrite>
+    <rule>
+        <from>^/$</from>
+        <to last="true">/index.html</to>
+    </rule>
+    <rule>
+        <from>^/(\d+)$</from>
+        <to last="true">/error.html?e=$1</to>
+    </rule>
+	<rule>
+        <from>^/favicon.ico$</from>
+        <to last="true">/images/favicon.ico</to>
+    </rule>
+<!--	<rule>
+        <from>^/index.html$</from>
+        <to last="true" type="redirect">/</to>
+    </rule>
+	<rule>
+        <from>^/error.html$</from>
+        <to last="true" type="redirect">/</to>
+    </rule>-->
+    <rule>
+		<from>^/(?!v\d+.*)(?!index\.html)(?!error\.html)(?!images/)(?!styles/)(?!scripts/).+$</from>
+        <to type="redirect">/</to>
+    </rule>
+</urlrewrite>
+

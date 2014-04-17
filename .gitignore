@@ -19,3 +19,5 @@ onemenu-puppet/onemenu/files/admin-keyfile
 onemenu-puppet/onemenu/files/adminpass.txt
 onemenu-invalidator/target/
 /target/
+/para/target/
+/para-web/target/
