@@ -23,8 +23,8 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * A system property object. General purpose object for storing data.
- * It is essentially a map of key/value pairs.
+ * A system property object. Generic object for storing data.
+ * It is essentially a map of keys and values.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class Sysprop extends PObject {

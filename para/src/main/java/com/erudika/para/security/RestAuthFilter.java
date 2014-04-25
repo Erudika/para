@@ -21,6 +21,7 @@ import com.erudika.para.core.App;
 import com.erudika.para.rest.RestUtils;
 import com.erudika.para.rest.Signer;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Utils;
 import java.io.IOException;
 import java.util.Date;
 import javax.servlet.FilterChain;
@@ -29,7 +30,6 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -41,7 +41,7 @@ import org.springframework.web.filter.GenericFilterBean;
  */
 public class RestAuthFilter extends GenericFilterBean implements InitializingBean {
 
-	private Signer signer;
+	private final Signer signer;
 
 	/**
 	 * Default constructor
@@ -73,7 +73,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 
 		if (req.isSecure()) {
 			if (!StringUtils.isBlank(key)) {
-				String id = new String(Base64.decodeBase64(key), Config.DEFAULT_ENCODING);
+				String id = Utils.base64dec(key);
 
 				if (StringUtils.isBlank(date)) {
 					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,

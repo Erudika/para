@@ -20,6 +20,8 @@ package com.erudika.para.queue;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.DeleteMessageRequest;
@@ -64,11 +66,10 @@ public class AWSQueue implements Queue {
 	 */
 	public AWSQueue(String name, String endpoint) {
 		sqs = new AmazonSQSAsyncClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
+		sqs.setRegion(Region.getRegion(Regions.fromName(Config.AWS_REGION)));
 		if (StringUtils.isBlank(endpoint)) {
-			sqs.setEndpoint(SQS_ENDPOINT, name, Config.AWS_REGION);
 			this.endpoint = SQS_ENDPOINT;
 		} else {
-			sqs.setEndpoint(endpoint, name, Config.AWS_REGION);
 			this.endpoint = endpoint;
 		}
 		this.name = name;

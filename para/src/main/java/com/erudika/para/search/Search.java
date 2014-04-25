@@ -169,7 +169,7 @@ public interface Search {
 	<P extends ParaObject> List<P> findPrefix(String appid, String type, String field, String prefix, Pager... pager);
 
 	/**
-	 * Simple query string search. A general purpose search method.
+	 * Simple query string search. This is the basic search method.
 	 * @param <P> type of the object
 	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param query the query string
@@ -179,7 +179,7 @@ public interface Search {
 	<P extends ParaObject> List<P> findQuery(String type, String query, Pager... pager);
 
 	/**
-	 * Simple query string search. A general purpose search method.
+	 * Simple query string search. This is the basic search method.
 	 * @param <P> type of the object
 	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
@@ -236,7 +236,7 @@ public interface Search {
 	<P extends ParaObject> List<P> findTagged(String appid, String type, String[] tags, Pager... pager);
 
 	/**
-	 * Searches for {@link com.erudika.para.core.Tag} objects. 
+	 * Searches for {@link com.erudika.para.core.Tag} objects.
 	 * This method might be deprecated in the future.
 	 * @param <P> type of the object
 	 * @param keyword the tag keyword to search for
@@ -246,7 +246,7 @@ public interface Search {
 	<P extends ParaObject> List<P> findTags(String keyword, Pager... pager);
 
 	/**
-	 * Searches for {@link com.erudika.para.core.Tag} objects. 
+	 * Searches for {@link com.erudika.para.core.Tag} objects.
 	 * This method might be deprecated in the future.
 	 * @param <P> type of the object
 	 * @param appid name of the {@link com.erudika.para.core.App}

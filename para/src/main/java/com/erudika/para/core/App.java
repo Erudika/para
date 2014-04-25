@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -221,9 +220,9 @@ public class App extends PObject {
 	 */
 	public Map<String, String> credentialsMap() {
 		Map<String, String> creds = new HashMap<String, String>();
-		creds.put("accessKey", Base64.encodeBase64URLSafeString(getId().getBytes()));
+		creds.put("accessKey", Utils.base64enc(getId().getBytes()));
 		creds.put("secretKey", getSecret());
-		creds.put("info", "Save your secret key as it is showed only once!");
+		creds.put("info", "Save the secret key! It is showed only once!");
 		return creds;
 	}
 

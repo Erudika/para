@@ -30,7 +30,6 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,10 +120,9 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 		try {
 			String[] parts = fbSig.split("\\.");
-			byte[] sig = Base64.decodeBase64(parts[0]);
-			byte[] json = Base64.decodeBase64(parts[1]);
+			byte[] sig = Utils.base64dec(parts[0]).getBytes();
 			byte[] encodedJSON = parts[1].getBytes();	// careful, we compute against the base64 encoded version
-			String decodedJSON = new String(json);
+			String decodedJSON = Utils.base64dec(parts[1]);
 			Map<String, String> root = Utils.getJsonReader(Map.class).readValue(decodedJSON);
 
 			if (StringUtils.contains(decodedJSON, "HMAC-SHA256")) {

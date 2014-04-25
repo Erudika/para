@@ -147,16 +147,34 @@ public abstract class DAOTest {
 		t3.setCount(30);
 		dao.updateAll(Arrays.asList(t1, t2, t3));
 		Tag tr1 = dao.read(t1.getId());
-		Tag tr2 = dao.read(t1.getId());
-		Tag tr3 = dao.read(t1.getId());
-		assertEquals("10", tr1.getCount());
-		assertEquals("20", tr2.getCount());
-		assertEquals("30", tr3.getCount());
+		Tag tr2 = dao.read(t2.getId());
+		Tag tr3 = dao.read(t3.getId());
+
+		assertEquals(t1.getId(), tr1.getId());
+		assertEquals(t2.getId(), tr2.getId());
+		assertEquals(t3.getId(), tr3.getId());
+		assertEquals(t1.getType(), tr1.getType());
+		assertEquals(t2.getType(), tr2.getType());
+		assertEquals(t3.getType(), tr3.getType());
+		assertEquals(t1.getCount(), tr1.getCount());
+		assertEquals(t2.getCount(), tr2.getCount());
+		assertEquals(t3.getCount(), tr3.getCount());
 
 		dao.deleteAll(Arrays.asList(t1, t2, t3));
 		assertNull(dao.read(t1.getId()));
 		assertNull(dao.read(t2.getId()));
 		assertNull(dao.read(t3.getId()));
+
+		// update locked field test
+		Tag t4 = new Tag("t4");
+		t4.setParentid("123");
+		dao.create(t4);
+		t4.setParentid("321");
+		dao.update(t4);
+		Tag tr4 = dao.read(t4.getId());
+		assertEquals(t4.getId(), tr4.getId());
+		assertEquals(t4.getType(), tr4.getType());
+		assertEquals("123", tr4.getParentid());
 	}
 
 	@Test

@@ -5,12 +5,17 @@
 	<parent>
 		<groupId>com.erudika</groupId>
 		<artifactId>para-parent</artifactId>
-		<version>1.1.0</version>
+		<version>1.1.1</version>
 	</parent>
 
 	<artifactId>para-web</artifactId>
 	<packaging>war</packaging>
 	<name>Para Web</name>
+
+	<properties>
+		<slf4jVer>1.7.7</slf4jVer>
+		<logbackVer>1.1.2</logbackVer>
+	</properties>
 
 	<dependencies>
 		<dependency>
@@ -19,4 +24,30 @@
 			<version>${project.version}</version>
 		</dependency>
 	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.eclipse.jetty</groupId>
+				<artifactId>jetty-maven-plugin</artifactId>
+				<version>9.2.0.M0</version>
+				<configuration>
+					<systemProperties>
+						<systemProperty>
+							<name>para.env</name>
+							<value>embedded</value>
+						</systemProperty>
+					</systemProperties>
+					<war>${basedir}/target/${project.artifactId}-${project.version}.war</war>
+				</configuration>
+				<dependencies>
+					<dependency>
+						<groupId>org.slf4j</groupId>
+						<artifactId>slf4j-api</artifactId>
+						<version>${slf4jVer}</version>
+					</dependency>
+				</dependencies>
+			</plugin>
+		</plugins>
+	</build>
 </project>

@@ -60,7 +60,6 @@ public class ParaInitializer extends AbstractSecurityWebApplicationInitializer {
 		// UrlRewriteFilter (nice URLs)
 		FilterRegistration.Dynamic urf = sc.addFilter("urlRewriteFilter", UrlRewriteFilter.class);
 		urf.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD), false, "/*");
-//		urf.setInitParameter("confPath", "/WEB-INF/urlrewrite.xml");
 		urf.setInitParameter("statusEnabled", "false");
 		urf.setInitParameter("logLevel", "slf4j");
 		// roles, rename JSESSIONID amd make it dissappear quickly (not used)
@@ -71,9 +70,9 @@ public class ParaInitializer extends AbstractSecurityWebApplicationInitializer {
 	}
 
 	/**
-	 * Try loading an external {@link javax.servlet.ServletContextListener} class 
+	 * Try loading an external {@link javax.servlet.ServletContextListener} class
 	 * via {@link java.util.ServiceLoader#load(java.lang.Class)}.
-	 * @return a loaded ServletContextListener class. 
+	 * @return a loaded ServletContextListener class.
 	 * Defaults to {@link com.erudika.para.web.ParaContextListener}.
 	 */
 	private static Class<? extends ServletContextListener> getContextListener() {

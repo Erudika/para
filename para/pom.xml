@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>com.erudika</groupId>
 		<artifactId>para-parent</artifactId>
-		<version>1.1.0</version>
+		<version>1.1.1</version>
 	</parent>
 
 	<artifactId>para</artifactId>
@@ -13,12 +13,13 @@
 	<name>Para</name>
 
 	<properties>
-		<jerseyVer>2.6</jerseyVer>
-		<springVer>3.2.1.RELEASE</springVer>
-		<jacksonVer>2.3.1</jacksonVer>
-		<hazelcastVer>3.1.6</hazelcastVer>
-		<slf4jVer>1.7.6</slf4jVer>
-		<jettyVer>9.1.4.v20140401</jettyVer>
+		<jerseyVer>2.7</jerseyVer>
+		<springVer>3.2.3.RELEASE</springVer>
+		<jacksonVer>2.3.3</jacksonVer>
+		<hazelcastVer>3.2</hazelcastVer>
+		<slf4jVer>1.7.7</slf4jVer>
+		<!--<jettyVer>9.1.4.v20140401</jettyVer>-->
+		<logbackVer>1.1.2</logbackVer>
 	</properties>
 
 	<dependencies>
@@ -105,12 +106,12 @@
 		<dependency>
 			<groupId>org.elasticsearch</groupId>
 			<artifactId>elasticsearch</artifactId>
-			<version>1.0.1</version>
+			<version>1.1.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.elasticsearch</groupId>
 			<artifactId>elasticsearch-cloud-aws</artifactId>
-			<version>2.0.0.RC1</version>
+			<version>2.1.1</version>
 		</dependency>
 
 		<!-- HAZELCAST -->
@@ -172,8 +173,13 @@
 		</dependency>
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-core</artifactId>
+			<version>${logbackVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<version>1.1.1</version>
+			<version>${logbackVer}</version>
 		</dependency>
 
 		<!-- OTHER -->
@@ -193,14 +199,9 @@
 			<version>1.2.0</version>
 		</dependency>
 		<dependency>
-			<groupId>com.ibm.icu</groupId>
-			<artifactId>icu4j</artifactId>
-			<version>3.4.4</version>
-		</dependency>
-		<dependency>
 			<groupId>commons-beanutils</groupId>
 			<artifactId>commons-beanutils</artifactId>
-			<version>1.8.3</version>
+			<version>1.9.1</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>commons-logging</artifactId>
@@ -211,12 +212,12 @@
 		<dependency>
 			<groupId>org.hibernate</groupId>
 			<artifactId>hibernate-validator</artifactId>
-			<version>5.0.2.Final</version>
+			<version>5.1.0.Final</version>
 		</dependency>
 		<dependency>
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk</artifactId>
-			<version>1.7.1</version>
+			<version>1.7.6</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>commons-logging</artifactId>
@@ -230,27 +231,6 @@
 			<version>3.1</version>
 		</dependency>
 		<dependency>
-			<groupId>commons-codec</groupId>
-			<artifactId>commons-codec</artifactId>
-			<version>1.8</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpclient</artifactId>
-			<version>4.2.5</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>commons-logging</artifactId>
-					<groupId>commons-logging</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpcore</artifactId>
-			<version>4.2.5</version>
-		</dependency>
-		<dependency>
 			<groupId>javax</groupId>
 			<artifactId>javaee-web-api</artifactId>
 			<version>7.0</version>
@@ -259,17 +239,22 @@
 		<dependency>
 			<groupId>org.jsoup</groupId>
 			<artifactId>jsoup</artifactId>
-			<version>1.7.2</version>
+			<version>1.7.3</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.rjeschke</groupId>
 			<artifactId>txtmark</artifactId>
-			<version>0.10</version>
+			<version>0.11</version>
 		</dependency>
 		<dependency>
 			<groupId>org.geonames</groupId>
 			<artifactId>geonames-ws-client</artifactId>
 			<version>1.1.9</version>
+		</dependency>
+		<dependency>
+			<groupId>org.tuckey</groupId>
+			<artifactId>urlrewritefilter</artifactId>
+			<version>4.0.4</version>
 		</dependency>
 
 		<!-- TESTING -->
@@ -285,4 +270,67 @@
 			<version>${jerseyVer}</version>
 		</dependency>
 	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.eclipse.jetty</groupId>
+				<artifactId>jetty-maven-plugin</artifactId>
+				<version>9.2.0.M0</version>
+				<configuration>
+					<systemProperties>
+						<systemProperty>
+							<name>para.env</name>
+							<value>embedded</value>
+						</systemProperty>
+						<systemProperty>
+							<name>org.eclipse.jetty.util.log.Log</name>
+							<value>org.eclipse.jetty.util.log.Slf4jLog</value>
+						</systemProperty>
+						<systemProperty>
+							<name>logback.configurationFile</name>
+							<value>src/main/resources/logback.xml</value>
+						</systemProperty>
+					</systemProperties>
+					<webApp>
+						<contextPath>/</contextPath>
+					</webApp>
+					<reload>manual</reload>
+				</configuration>
+				<dependencies>
+					<dependency>
+						<groupId>org.slf4j</groupId>
+						<artifactId>slf4j-api</artifactId>
+						<version>${slf4jVer}</version>
+					</dependency>
+				</dependencies>
+			</plugin>
+
+		</plugins>
+	</build>
+
+	<reporting>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.9.1</version>
+				<configuration>
+					<stylesheetfile>src/main/javadoc/stylesheet.css</stylesheetfile>
+					<show>public</show>
+					<aggregate>true</aggregate>
+					<quiet>true</quiet>
+					<docfilessubdirs>true</docfilessubdirs>
+				</configuration>
+				<reportSets>
+					<reportSet>
+						<id>default</id>
+						<reports>
+							<report>javadoc</report>
+						</reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+		</plugins>
+	</reporting>
 </project>

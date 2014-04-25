@@ -21,7 +21,6 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.codec.binary.Base64;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 
 /**
@@ -40,7 +39,7 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 	protected String determineTargetUrl(HttpServletRequest request, HttpServletResponse response) {
 		String cookie = Utils.getStateParam(Config.RETURNTO_COOKIE, request);
 		if (cookie != null) {
-			cookie = new String(Base64.decodeBase64(cookie));
+			cookie = Utils.base64dec(cookie);
 			Utils.removeStateParam(Config.RETURNTO_COOKIE, request, response);
 			return cookie;
 		} else {

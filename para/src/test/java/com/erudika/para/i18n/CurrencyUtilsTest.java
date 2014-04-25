@@ -68,8 +68,8 @@ public class CurrencyUtilsTest {
 
 	@Test
 	public void testGetCurrency() {
-		assertNull(cu.getCurrency(null));
-		assertNull(cu.getCurrency(""));
+		assertNotNull(cu.getCurrency(null));
+		assertNotNull(cu.getCurrency(""));
 		assertNotNull(cu.getCurrency("."));
 		assertNotNull(cu.getCurrency("USD"));
 		assertEquals(cu.getCurrency("usd"), cu.getCurrency("USD"));

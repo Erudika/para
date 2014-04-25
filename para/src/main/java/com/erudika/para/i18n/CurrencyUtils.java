@@ -17,8 +17,8 @@
  */
 package com.erudika.para.i18n;
 
-import com.ibm.icu.text.NumberFormat;
-import com.ibm.icu.util.Currency;
+import java.text.NumberFormat;
+import java.util.Currency;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -47,17 +47,17 @@ public final class CurrencyUtils {
 			for (Locale l : locales) {
 				if (!StringUtils.isBlank(l.getCountry())) {
 					COUNTRY_TO_LOCALE_MAP.put(l.getCountry(), l);
+					Currency c = Currency.getInstance(l);
+					if (c != null) {
+						CURRENCY_TO_LOCALE_MAP.put(c.getCurrencyCode(), l);
+						CURRENCIES_MAP.put(c.getCurrencyCode(), getCurrencyName(c.getCurrencyCode(),
+								Locale.US).concat(" ").concat(c.getSymbol(l)));
+					}
 				}
-				Currency c = Currency.getInstance(l);
-				if (c != null) {
-					CURRENCY_TO_LOCALE_MAP.put(c.getCurrencyCode(), l);
-					CURRENCIES_MAP.put(c.getCurrencyCode(), getCurrencyName(c.getCurrencyCode(),
-							Locale.US).concat(" ").concat(c.getSymbol(l)));
-				}
-				// overwrite main locales
-				CURRENCY_TO_LOCALE_MAP.put("USD", Locale.US);
-				CURRENCY_TO_LOCALE_MAP.put("EUR", Locale.FRANCE);
 			}
+			// overwrite main locales
+			CURRENCY_TO_LOCALE_MAP.put("USD", Locale.US);
+			CURRENCY_TO_LOCALE_MAP.put("EUR", Locale.FRANCE);
 		} catch (Exception e) {
 			logger.error(null, e);
 		}
@@ -101,8 +101,7 @@ public final class CurrencyUtils {
 	 */
 	public String getCurrencyName(String cur, Locale locale) {
 		if (cur != null && CURRENCY_TO_LOCALE_MAP.containsKey(cur.toUpperCase())) {
-			return com.ibm.icu.util.Currency.getInstance(cur.toUpperCase()).
-					getName((locale == null ? Locale.US : locale), 1, new boolean[1]);
+			return Currency.getInstance(cur.toUpperCase()).getDisplayName((locale == null ? Locale.US : locale));
 		} else {
 			return "";
 		}
@@ -126,10 +125,10 @@ public final class CurrencyUtils {
 	 * @return the currency
 	 */
 	public Currency getCurrency(String cur) {
-		if (StringUtils.isBlank(cur)) {
-			return null;
+		Currency currency = Currency.getInstance("EUR");
+		if (StringUtils.isBlank(cur) || cur.length() != 3) {
+			return currency;
 		}
-		Currency currency = null;
 		try {
 			currency = Currency.getInstance(cur.toUpperCase());
 		} catch (Exception e) {

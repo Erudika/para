@@ -1,11 +1,11 @@
 ![Logo](https://s3-eu-west-1.amazonaws.com/org.paraio/para.png)
 ============================
 
-#### **Para** - general purpose back-end framework for the cloud.
+> ### Para - a general-purpose back-end framework for the cloud.
 
 ## What is this?
 
-Para was designed as a simple and modular back-end framework for object persistence and retrieval.
+**Para** was designed as a simple and modular back-end framework for object persistence and retrieval.
 It enables your application to store its objects to a datastore (SQL or NoSQL based) and then it 
 automatically indexes those objects and makes them searchable.
 

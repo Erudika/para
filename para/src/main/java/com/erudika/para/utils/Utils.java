@@ -18,8 +18,8 @@
 package com.erudika.para.utils;
 
 import com.erudika.para.annotations.Email;
-import com.erudika.para.annotations.Stored;
 import com.erudika.para.annotations.Locked;
+import com.erudika.para.annotations.Stored;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -38,11 +38,13 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.text.DateFormatSymbols;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -57,7 +59,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import org.slf4j.Logger;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -69,8 +70,6 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -84,6 +83,7 @@ import org.geonames.WebService;
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.jsoup.Jsoup;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 
@@ -202,7 +202,24 @@ public final class Utils {
 	 * @return an md5 hash
 	 */
 	public static String MD5(String s) {
-		return (s == null) ? "" : DigestUtils.md5Hex(s);
+		if (s == null) {
+			return "";
+		}
+		try {
+			MessageDigest md = MessageDigest.getInstance("MD5");
+			md.update(s.getBytes());
+
+			byte byteData[] = md.digest();
+
+			//convert the byte to hex format method 1
+			StringBuilder sb = new StringBuilder();
+			for (int i = 0; i < byteData.length; i++) {
+				sb.append(Integer.toString((byteData[i] & 0xff) + 0x100, 16).substring(1));
+			}
+			return sb.toString();
+		} catch (NoSuchAlgorithmException ex) {
+			return "";
+		}
 	}
 
 	/**
@@ -246,7 +263,7 @@ public final class Utils {
 			rand = new SecureRandom();
 		}
 		rand.nextBytes(bytes);
-		return Base64.encodeBase64URLSafeString(bytes);
+		return base64enc(bytes);
 	}
 
 	/**
@@ -341,6 +358,34 @@ public final class Utils {
 			return StringUtils.isBlank(msg) ? "" : MessageFormat.format(msg, params);
 		} catch (IllegalArgumentException e) {
 			return msg;
+		}
+	}
+
+	/**
+	 * Encodes a byte array to Base64
+	 * @param str the byte array
+	 * @return an encoded string
+	 */
+	public static String base64enc(byte[] str) {
+		if (str == null) {
+			return "";
+		}
+		return new String(Base64.getEncoder().encode(str));
+	}
+
+	/**
+	 * Decodes a string from Base64
+	 * @param str the encoded string
+	 * @return a decoded string
+	 */
+	public static String base64dec(String str) {
+		if (str == null) {
+			return "";
+		}
+		try {
+			return new String(Base64.getDecoder().decode(str), Config.DEFAULT_ENCODING);
+		} catch (UnsupportedEncodingException ex) {
+			return "";
 		}
 	}
 

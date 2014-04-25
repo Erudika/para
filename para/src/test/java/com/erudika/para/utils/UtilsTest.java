@@ -155,6 +155,24 @@ public class UtilsTest {
 	}
 
 	@Test
+	public void testBase64enc() {
+		assertNotNull(base64enc(null));
+		assertNotNull(base64enc(new byte[0]));
+		assertEquals("dGVzdDEyMyBzdHJpbmc=", base64enc("test123 string".getBytes()));
+		assertEquals("ICAg", base64enc("   ".getBytes()));
+		assertEquals("MTIz", base64enc(base64dec("MTIz").getBytes()));
+	}
+
+	@Test
+	public void testBase64dec() {
+		assertNotNull(base64dec(null));
+		assertNotNull(base64dec(""));
+		assertEquals("test123 string", base64dec("dGVzdDEyMyBzdHJpbmc="));
+		assertEquals("   ", base64dec("ICAg"));
+		assertEquals("123", base64dec(base64enc("123".getBytes())));
+	}
+
+	@Test
 	public void testFormatDate() {
 		assertNotNull(formatDate(null, null));
 		assertNotNull(formatDate(null, null, null));

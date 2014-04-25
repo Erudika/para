@@ -4,7 +4,7 @@
 
 	<groupId>com.erudika</groupId>
 	<artifactId>para-parent</artifactId>
-	<version>1.1.0</version>
+	<version>1.1.1</version>
 	<packaging>pom</packaging>
 
 	<organization>
@@ -13,7 +13,7 @@
 	</organization>
 
 	<name>Para Project</name>
-	<description>Para - general purpose back-end framework for the cloud.</description>
+	<description>Para - a general-purpose back-end framework for the cloud.</description>
 	<url>http://paraio.org</url>
 
 	<modules>
@@ -72,12 +72,6 @@
 	</properties>
 
 	<dependencies>
-		<dependency>
-			<groupId>org.tuckey</groupId>
-			<artifactId>urlrewritefilter</artifactId>
-			<version>4.0.4</version>
-		</dependency>
-
 		<!-- TESTING -->
 		<dependency>
 			<groupId>org.mockito</groupId>
@@ -130,14 +124,15 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.1</version>
 				<configuration>
-					<source>1.7</source>
-					<target>1.7</target>
+					<source>1.8</source>
+					<target>1.8</target>
 					<compilerArguments>
 						<endorseddirs>${endorsed.dir}</endorseddirs>
 					</compilerArguments>
 					<encoding>UTF-8</encoding>
 					<showWarnings>true</showWarnings>
 					<showDeprecation>true</showDeprecation>
+				 <debug>true</debug>
 				</configuration>
 			</plugin>
 
@@ -199,24 +194,6 @@
 			</plugin>
 
 			<plugin>
-				<groupId>org.eclipse.jetty</groupId>
-				<artifactId>jetty-maven-plugin</artifactId>
-				<version>9.1.0.v20131115</version>
-				<configuration>
-					<systemProperties>
-						<systemProperty>
-							<name>para.env</name>
-							<value>embedded</value>
-						</systemProperty>
-					</systemProperties>
-					<webApp>
-						<contextPath>/</contextPath>
-					</webApp>
-					<reload>manual</reload>
-				</configuration>
-			</plugin>
-
-			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-checkstyle-plugin</artifactId>
 				<version>2.11</version>
@@ -226,7 +203,7 @@
 						<phase>install</phase>
 						<configuration>
 							<skip>${skipTests}</skip>
-							<configLocation>${basedir}/src/main/resources/checkstyle.xml</configLocation>
+							<configLocation>checkstyle.xml</configLocation>
 							<encoding>UTF-8</encoding>
 							<consoleOutput>true</consoleOutput>
 							<failsOnError>true</failsOnError>
@@ -240,31 +217,6 @@
 			</plugin>
 		</plugins>
 	</build>
-
-	<reporting>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>2.9.1</version>
-				<configuration>
-					<stylesheetfile>${basedir}/src/main/javadoc/stylesheet.css</stylesheetfile>
-					<show>public</show>
-					<aggregate>true</aggregate>
-					<quiet>true</quiet>
-					<docfilessubdirs>true</docfilessubdirs>
-				</configuration>
-				<reportSets>
-					<reportSet>
-						<id>default</id>
-						<reports>
-							<report>javadoc</report>
-						</reports>
-					</reportSet>
-				</reportSets>
-			</plugin>
-		</plugins>
-	</reporting>
 
 	<distributionManagement>
 		<snapshotRepository>

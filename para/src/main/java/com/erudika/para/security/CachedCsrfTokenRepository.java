@@ -25,7 +25,6 @@ import com.erudika.para.utils.Utils;
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +94,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 		CsrfToken token;
 		if (cookie != null) {
 			String ident;
-			String[] ctokens = new String(Base64.decodeBase64(cookie)).split(":");
+			String[] ctokens = Utils.base64dec(cookie).split(":");
 			if (StringUtils.startsWithAny(ctokens[0], "http", "https") && ctokens[1].startsWith("//")) {
 				ident = ctokens[0].concat(":").concat(ctokens[1]);
 			} else {

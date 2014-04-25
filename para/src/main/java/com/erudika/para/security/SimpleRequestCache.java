@@ -21,7 +21,6 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.codec.binary.Base64;
 import org.springframework.security.web.PortResolver;
 import org.springframework.security.web.PortResolverImpl;
 import org.springframework.security.web.savedrequest.DefaultSavedRequest;
@@ -36,8 +35,8 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
  */
 public class SimpleRequestCache implements RequestCache {
 
-	private RequestMatcher requestMatcher = AnyRequestMatcher.INSTANCE;
-	private PortResolver portResolver = new PortResolverImpl();
+	private final RequestMatcher requestMatcher = AnyRequestMatcher.INSTANCE;
+	private final PortResolver portResolver = new PortResolverImpl();
 
 	/**
 	 * Saves a request in cache.
@@ -49,7 +48,7 @@ public class SimpleRequestCache implements RequestCache {
 		if (requestMatcher.matches(request)) {
 			DefaultSavedRequest savedRequest = new DefaultSavedRequest(request, portResolver);
 			Utils.setStateParam(Config.RETURNTO_COOKIE,
-					Base64.encodeBase64String(savedRequest.getRedirectUrl().getBytes()), request, response);
+					Utils.base64enc(savedRequest.getRedirectUrl().getBytes()), request, response);
 		}
 	}
 
