@@ -20,6 +20,7 @@ package com.erudika.para.persistence;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
 import com.erudika.para.search.Search;
+import com.erudika.para.utils.Utils;
 import java.util.Arrays;
 import java.util.Map;
 import org.junit.After;
@@ -145,7 +146,14 @@ public abstract class DAOTest {
 		t1.setCount(10);
 		t2.setCount(20);
 		t3.setCount(30);
+
+		// these shouldn't go through
+		t1.setType("type1");
+		t2.setType("type2");
+		t3.setType("type3");
+
 		dao.updateAll(Arrays.asList(t1, t2, t3));
+
 		Tag tr1 = dao.read(t1.getId());
 		Tag tr2 = dao.read(t2.getId());
 		Tag tr3 = dao.read(t3.getId());
@@ -153,9 +161,9 @@ public abstract class DAOTest {
 		assertEquals(t1.getId(), tr1.getId());
 		assertEquals(t2.getId(), tr2.getId());
 		assertEquals(t3.getId(), tr3.getId());
-		assertEquals(t1.getType(), tr1.getType());
-		assertEquals(t2.getType(), tr2.getType());
-		assertEquals(t3.getType(), tr3.getType());
+		assertEquals(Utils.type(Tag.class), tr1.getType());
+		assertEquals(Utils.type(Tag.class), tr2.getType());
+		assertEquals(Utils.type(Tag.class), tr3.getType());
 		assertEquals(t1.getCount(), tr1.getCount());
 		assertEquals(t2.getCount(), tr2.getCount());
 		assertEquals(t3.getCount(), tr3.getCount());
@@ -170,10 +178,11 @@ public abstract class DAOTest {
 		t4.setParentid("123");
 		dao.create(t4);
 		t4.setParentid("321");
+		t4.setType("type4");
 		dao.update(t4);
 		Tag tr4 = dao.read(t4.getId());
 		assertEquals(t4.getId(), tr4.getId());
-		assertEquals(t4.getType(), tr4.getType());
+		assertEquals(Utils.type(Tag.class), tr4.getType());
 		assertEquals("123", tr4.getParentid());
 	}
 

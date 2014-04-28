@@ -396,7 +396,7 @@ public class User extends PObject implements UserDetails {
 			if (user != null) {
 				if (!identifier.equals(user.getIdentifier())) {
 					user.setIdentifier(identifier);
-					user.update();
+					u.getDao().update(user);
 				}
 				return user;
 			}

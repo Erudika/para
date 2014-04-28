@@ -17,6 +17,7 @@
  */
 package com.erudika.para.persistence;
 
+import com.erudika.para.annotations.Locked;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
@@ -52,7 +53,8 @@ public class MockDAO implements DAO {
 		if (so.getTimestamp() == null) {
 			so.setTimestamp(Utils.timestamp());
 		}
-		getMap(appid).put(so.getId(), so);
+		getMap(appid).put(so.getId(), Utils.setAnnotatedFields(Utils.toObject(so.getType()),
+				Utils.getAnnotatedFields(so), null));
 		logger.debug("DAO.create() {}", so.getId());
 		return so.getId();
 	}
@@ -72,7 +74,9 @@ public class MockDAO implements DAO {
 	public <P extends ParaObject> void update(String appid, P so) {
 		if (so != null && !StringUtils.isBlank(appid)) {
 			so.setUpdated(Utils.timestamp());
-			getMap(appid).put(so.getId(), so);
+			ParaObject soUpdated = getMap(appid).get(so.getId());
+			Utils.setAnnotatedFields(soUpdated, Utils.getAnnotatedFields(so), Locked.class);
+			getMap(appid).put(so.getId(), soUpdated);
 			logger.debug("DAO.update() {}", so.getId());
 		}
 	}

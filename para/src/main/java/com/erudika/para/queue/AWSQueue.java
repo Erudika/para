@@ -65,14 +65,11 @@ public class AWSQueue implements Queue {
 	 * @param endpoint endpoint url
 	 */
 	public AWSQueue(String name, String endpoint) {
+		this.endpoint = StringUtils.isBlank(endpoint) ? SQS_ENDPOINT : endpoint;
+		this.name = name;
 		sqs = new AmazonSQSAsyncClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
 		sqs.setRegion(Region.getRegion(Regions.fromName(Config.AWS_REGION)));
-		if (StringUtils.isBlank(endpoint)) {
-			this.endpoint = SQS_ENDPOINT;
-		} else {
-			this.endpoint = endpoint;
-		}
-		this.name = name;
+		sqs.setEndpoint(this.endpoint);
 		url = create(name);
 
 		Para.addDestroyListener(new Para.DestroyListener() {
@@ -171,8 +168,8 @@ public class AWSQueue implements Queue {
 //	}
 
 	private void logException(AmazonServiceException ase) {
-		logger.error("AmazonServiceException: error={0}, statuscode={1}, "
-			+ "awserrcode={2}, errtype={3}, reqid={4}", ase.toString(), ase.getStatusCode(),
+		logger.error("AmazonServiceException: error={}, statuscode={}, "
+			+ "awserrcode={}, errtype={}, reqid={}", ase.toString(), ase.getStatusCode(),
 			ase.getErrorCode(), ase.getErrorType(), ase.getRequestId());
 	}
 }

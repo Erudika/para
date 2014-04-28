@@ -254,9 +254,6 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 
 	@Override
 	public Set<String> getTags() {
-		if (tags == null) {
-			tags = new LinkedHashSet<String>();
-		}
 		return tags;
 	}
 
@@ -275,9 +272,12 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	 */
 	public void addTags(String... tag) {
 		if (tag != null && tag.length > 0) {
+			if (tags == null) {
+				tags = new LinkedHashSet<String>();
+			}
 			for (String t : tag) {
 				if (!StringUtils.isBlank(t)) {
-					getTags().add(t);
+					tags.add(t);
 				}
 			}
 		}
@@ -288,8 +288,8 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	 * @param tag a tag, must not be null or empty
 	 */
 	public void removeTags(String... tag) {
-		if (tag != null && tag.length > 0) {
-			getTags().removeAll(Arrays.asList(tag));
+		if (tags != null && tag != null && tag.length > 0) {
+			tags.removeAll(Arrays.asList(tag));
 		}
 	}
 

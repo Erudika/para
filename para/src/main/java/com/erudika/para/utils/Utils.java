@@ -168,11 +168,19 @@ public final class Utils {
 	}
 
 	/**
-	 * A Jackson JSON writer.
+	 * A Jackson JSON writer. Pretty print is on.
 	 * @return JSON object writer
 	 */
 	public static ObjectWriter getJsonWriter() {
 		return jsonWriter.withFeatures(SerializationFeature.INDENT_OUTPUT);
+	}
+
+	/**
+	 * A Jackson JSON writer. Pretty print is off.
+	 * @return JSON object writer with indentation disabled
+	 */
+	public static ObjectWriter getJsonWriterNoIdent() {
+		return jsonWriter;
 	}
 
 	/////////////////////////////////////////////
@@ -903,7 +911,7 @@ public final class Utils {
 					if (prop == null || isBasicType(field.getType())) {
 						map.put(field.getName(), prop);
 					} else {
-						map.put(field.getName(), getJsonWriter().writeValueAsString(prop));
+						map.put(field.getName(), getJsonWriterNoIdent().writeValueAsString(prop));
 					}
 				}
 			}
@@ -957,6 +965,7 @@ public final class Utils {
 				if (field.isAnnotationPresent(Stored.class) && dontSkip) {
 					String name = field.getName();
 					Object value = data.get(name);
+					// try to read a default value from the bean if any
 					if (value == null && PropertyUtils.isReadable(bean, name)) {
 						value = PropertyUtils.getProperty(bean, name);
 					}
@@ -968,9 +977,6 @@ public final class Utils {
 					}
 					props.remove(name);
 				}
-			}
-			if (bean instanceof Sysprop) {
-				((Sysprop) bean).setProperties(props);
 			}
 		} catch (Exception ex) {
 			logger.error(null, ex);

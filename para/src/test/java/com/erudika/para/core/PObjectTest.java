@@ -77,7 +77,7 @@ public class PObjectTest {
 		list.add(l1);
 		list.add(l2);
 
-		when(search.findTerms(anyString(), anyString(), anyMapOf(String.class, Object.class), 
+		when(search.findTerms(anyString(), anyString(), anyMapOf(String.class, Object.class),
 				anyBoolean())).thenReturn(list);
 
 		assertEquals(0, u.getLinkedObjects(Tag.class, null, null).size());
@@ -116,8 +116,6 @@ public class PObjectTest {
 	@Test
 	public void testAddRemoveTags() {
 		User u1 = new User("111");
-		assertNotNull(u1.getTags());
-		assertTrue(u1.getTags().isEmpty());
 		Set<String> someTags = new HashSet<String>();
 		someTags.add("one");
 		someTags.add("two");
@@ -145,6 +143,6 @@ public class PObjectTest {
 		assertFalse(u1.getTags().contains("four"));
 
 		u1.setTags(null);
-		assertTrue(u1.getTags().isEmpty());
+		assertNull(u1.getTags());
 	}
 }

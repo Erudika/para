@@ -196,7 +196,32 @@ public class AWSDynamoDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> void createAll(String appid, List<P> objects) {
-		writeAll(appid, objects, false);
+		if (objects == null || objects.isEmpty() || StringUtils.isBlank(appid)) {
+			return;
+		}
+
+		List<WriteRequest> reqs = new ArrayList<WriteRequest>();
+		int batchSteps = 1;
+		if ((objects.size() > MAX_ITEMS_PER_BATCH)) {
+			batchSteps = (objects.size() / MAX_ITEMS_PER_BATCH) +
+					((objects.size() % MAX_ITEMS_PER_BATCH > 0) ? 1 : 0);
+		}
+
+		Iterator<P> it = objects.iterator();
+		int j = 0;
+
+		for (int i = 0; i < batchSteps; i++) {
+			while (it.hasNext() && j < MAX_ITEMS_PER_BATCH) {
+				ParaObject object = it.next();
+				Map<String, AttributeValue> row = toRow(object, null);
+				setRowKey(object.getId(), row);
+				reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(row)));
+				j++;
+			}
+			batchWrite(Collections.singletonMap(appid, reqs));
+			reqs.clear();
+			j = 0;
+		}
 		logger.debug("DAO.createAll() {}", objects.size());
 	}
 
@@ -267,7 +292,12 @@ public class AWSDynamoDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> void updateAll(String appid, List<P> objects) {
-		writeAll(appid, objects, true);
+		// DynamoDB doesn't have a BatchUpdate API yet so we have to do one of the following:
+		// - read items from db then recreate them with changes applied
+		// - update items one by one (chosen for simplicity)
+		for (P object : objects) {
+			update(appid, object);
+		}
 		logger.debug("DAO.updateAll() {}", objects.size());
 	}
 
@@ -286,39 +316,6 @@ public class AWSDynamoDAO implements DAO {
 		}
 		batchWrite(Collections.singletonMap(appid, reqs));
 		logger.debug("DAO.deleteAll() {}", objects.size());
-	}
-
-	private <P extends ParaObject> void writeAll(String appid, List<P> objects, boolean isUpdate) {
-		if (objects == null || objects.isEmpty() || StringUtils.isBlank(appid)) {
-			return;
-		}
-
-		List<WriteRequest> reqs = new ArrayList<WriteRequest>();
-		int batchSteps = 1;
-		long now = Utils.timestamp();
-		if ((objects.size() > MAX_ITEMS_PER_BATCH)) {
-			batchSteps = (objects.size() / MAX_ITEMS_PER_BATCH) +
-					((objects.size() % MAX_ITEMS_PER_BATCH > 0) ? 1 : 0);
-		}
-
-		Iterator<P> it = objects.iterator();
-		int j = 0;
-
-		for (int i = 0; i < batchSteps; i++) {
-			while (it.hasNext() && j < MAX_ITEMS_PER_BATCH) {
-				ParaObject object = it.next();
-				if (isUpdate) {
-					object.setUpdated(now);
-				}
-				Map<String, AttributeValue> row = toRow(object, (isUpdate ? Locked.class : null));
-				setRowKey(object.getId(), row);
-				reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(row)));
-				j++;
-			}
-			batchWrite(Collections.singletonMap(appid, reqs));
-			reqs.clear();
-			j = 0;
-		}
 	}
 
 	private <P extends ParaObject> void batchGet(Map<String, KeysAndAttributes> kna, Map<String, P> results) {
