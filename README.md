@@ -24,7 +24,7 @@ applications.
 
 ## Getting started
 
-### Standalone
+### Standalone & WAR
 Run the following command to install it:
 
 ```sh
@@ -32,11 +32,12 @@ git clone https://github.com/erudika/para.git para
 cd para
 mvn jetty:run
 ```
+And in your browser open `http://localhost:8080`.
 
-In your browser open:
-```sh
-open http://localhost:8080
-```
+Alternatively, you can grab the WAR file and deploy it to your your servlet container.
+
+####[Download WAR](https://github.com/Erudika/para/releases/download/v1.1.2/para-web-1.1.2.war)
+
 ### Maven
 
 Para is hosted on Maven Central - just add it to your `pom.xml`:
