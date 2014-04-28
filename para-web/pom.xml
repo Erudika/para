@@ -12,11 +12,6 @@
 	<packaging>war</packaging>
 	<name>Para Web</name>
 
-	<properties>
-		<slf4jVer>1.7.7</slf4jVer>
-		<logbackVer>1.1.2</logbackVer>
-	</properties>
-
 	<dependencies>
 		<dependency>
 			<groupId>com.erudika</groupId>
@@ -55,6 +50,15 @@
 				<version>2.4</version>
 				<configuration>
 					<failOnMissingWebXml>false</failOnMissingWebXml>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<version>${deployPluginVer}</version>
+				<configuration>
+					<skip>true</skip>
 				</configuration>
 			</plugin>
 		</plugins>

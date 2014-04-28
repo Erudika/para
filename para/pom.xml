@@ -17,9 +17,6 @@
 		<springVer>3.2.3.RELEASE</springVer>
 		<jacksonVer>2.3.3</jacksonVer>
 		<hazelcastVer>3.2</hazelcastVer>
-		<slf4jVer>1.7.7</slf4jVer>
-		<!--<jettyVer>9.1.4.v20140401</jettyVer>-->
-		<logbackVer>1.1.2</logbackVer>
 	</properties>
 
 	<dependencies>
@@ -141,13 +138,6 @@
 					<groupId>org.slf4j</groupId>
 				</exclusion>
 			</exclusions>
-		</dependency>-->
-
-		<!-- JETTY -->
-<!--		<dependency>
-			<groupId>org.eclipse.jetty</groupId>
-			<artifactId>jetty-webapp</artifactId>
-			<version>${jettyVer}</version>
 		</dependency>-->
 
 		<!-- LOGGING -->
@@ -353,15 +343,19 @@
 					</execution>
 				</executions>
 			</plugin>
-		</plugins>
-	</build>
 
-	<reporting>
-		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>2.9.1</version>
+				<executions>
+					<execution>
+						<id>javadocs</id>
+						<goals>
+							<goal>javadoc</goal>
+						</goals>
+					</execution>
+				</executions>
 				<configuration>
 					<stylesheetfile>src/main/javadoc/stylesheet.css</stylesheetfile>
 					<show>public</show>
@@ -369,15 +363,12 @@
 					<quiet>true</quiet>
 					<docfilessubdirs>true</docfilessubdirs>
 				</configuration>
-				<reportSets>
-					<reportSet>
-						<id>default</id>
-						<reports>
-							<report>javadoc</report>
-						</reports>
-					</reportSet>
-				</reportSets>
 			</plugin>
+		</plugins>
+	</build>
+
+	<reporting>
+		<plugins>
 		</plugins>
 	</reporting>
 </project>

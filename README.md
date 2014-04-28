@@ -39,7 +39,15 @@ open http://localhost:8080
 ```
 ### Maven
 
-Para will be uploaded to a Maven repo very soon. - TODO
+Para is hosted on Maven Central - just add it to your `pom.xml`:
+
+```xml
+<dependency>
+  <groupId>com.erudika</groupId>
+  <artifactId>para</artifactId>
+  <version>1.1.2</version>
+</dependency>
+```
 
 ## Usage
 
@@ -53,11 +61,12 @@ See the configuration file `src/main/resources/reference.conf` and modify it if 
 
 ## Contributing
 
-1. Fork it and clone that to your machine
+1. Fork this repository and clone the fork to your machine
 2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
+3. Implement a new feature or fix a bug and add some tests
+4. Commit your changes (`git commit -am 'Add some feature'`)
+5. Push to the branch (`git push origin my-new-feature`)
+6. Create new Pull Request
 
 For more information see [CONTRIBUTING.md](https://github.com/Erudika/para/blob/master/CONTRIBUTING.md)
 

@@ -69,6 +69,9 @@
 		<skipTests>false</skipTests>
 		<skipITs>${skipTests}</skipITs>
 		<skipUTs>${skipTests}</skipUTs>
+		<deployPluginVer>2.8.1</deployPluginVer>
+		<slf4jVer>1.7.7</slf4jVer>
+		<logbackVer>1.1.2</logbackVer>
 	</properties>
 
 	<dependencies>
@@ -172,6 +175,12 @@
 					<releaseProfiles>release</releaseProfiles>
 				</configuration>
 			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<version>${deployPluginVer}</version>
+			</plugin>
 		</plugins>
 	</build>
 
@@ -210,6 +219,13 @@
 								<goals>
 									<goal>jar</goal>
 								</goals>
+								<configuration>
+									<stylesheetfile>para/src/main/javadoc/stylesheet.css</stylesheetfile>
+									<show>public</show>
+									<aggregate>true</aggregate>
+									<quiet>true</quiet>
+									<docfilessubdirs>true</docfilessubdirs>
+								</configuration>
 							</execution>
 						</executions>
 					</plugin>
@@ -256,7 +272,7 @@
 			</snapshots>
 		</repository>
 		<repository>
-			<id>sonatype</id>
+			<id>ossrh</id>
 			<url>http://oss.sonatype.org/content/repositories/releases/</url>
 		</repository>
 		<repository>
