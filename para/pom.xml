@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>com.erudika</groupId>
 		<artifactId>para-parent</artifactId>
-		<version>1.1.3</version>
+		<version>1.1.3-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>para</artifactId>
@@ -351,6 +351,29 @@
 								</artifactItem>
 							</artifactItems>
 						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>2.11</version>
+				<executions>
+					<execution>
+						<id>validate</id>
+						<phase>install</phase>
+						<configuration>
+							<skip>${skipTests}</skip>
+							<configLocation>${basedir}/src/main/resources/checkstyle.xml</configLocation>
+							<encoding>UTF-8</encoding>
+							<consoleOutput>true</consoleOutput>
+							<failsOnError>true</failsOnError>
+							<linkXRef>false</linkXRef>
+						</configuration>
+						<goals>
+							<goal>check</goal>
+						</goals>
 					</execution>
 				</executions>
 			</plugin>
