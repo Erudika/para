@@ -23,6 +23,7 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
+import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.Message;
@@ -67,16 +68,23 @@ public class AWSQueue implements Queue {
 	public AWSQueue(String name, String endpoint) {
 		this.endpoint = StringUtils.isBlank(endpoint) ? SQS_ENDPOINT : endpoint;
 		this.name = name;
+		this.url = create(name);
+	}
+
+	AmazonSQSClient client() {
+		if (sqs != null) {
+			return sqs;
+		}
 		sqs = new AmazonSQSAsyncClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
 		sqs.setRegion(Region.getRegion(Regions.fromName(Config.AWS_REGION)));
 		sqs.setEndpoint(this.endpoint);
-		url = create(name);
 
 		Para.addDestroyListener(new Para.DestroyListener() {
 			public void onDestroy() {
 				sqs.shutdown();
 			}
 		});
+		return sqs;
 	}
 
 	@Override
@@ -90,7 +98,7 @@ public class AWSQueue implements Queue {
 					sendReq.setQueueUrl(url);
 					sendReq.setMessageBody(task);
 
-					sqs.sendMessage(sendReq);
+					client().sendMessage(sendReq);
 				} catch (AmazonServiceException ase) {
 					logException(ase);
 				} catch (AmazonClientException ace) {
@@ -107,11 +115,11 @@ public class AWSQueue implements Queue {
 			try {
 				ReceiveMessageRequest receiveReq = new ReceiveMessageRequest(url);
 				receiveReq.setMaxNumberOfMessages(MAX_MESSAGES);
-				List<Message> list = sqs.receiveMessage(receiveReq).getMessages();
+				List<Message> list = client().receiveMessage(receiveReq).getMessages();
 
 				if (list != null && !list.isEmpty()) {
 					Message message = list.get(0);
-					sqs.deleteMessage(new DeleteMessageRequest(url, message.getReceiptHandle()));
+					client().deleteMessage(new DeleteMessageRequest(url, message.getReceiptHandle()));
 					task = message.getBody();
 				}
 			} catch (AmazonServiceException ase) {
@@ -136,7 +144,7 @@ public class AWSQueue implements Queue {
 	private String create(String name) {
 		String u = endpoint.concat("/").concat(name);
 		try {
-			u = sqs.createQueue(new CreateQueueRequest(name)).getQueueUrl();
+			u = client().createQueue(new CreateQueueRequest(name)).getQueueUrl();
 		} catch (AmazonServiceException ase) {
 			logException(ase);
 		} catch (AmazonClientException ace) {
@@ -147,7 +155,7 @@ public class AWSQueue implements Queue {
 //
 //	public void delete() {
 //		try {
-//			sqs.deleteQueue(new DeleteQueueRequest(QUEUE_URL));
+//			client().deleteQueue(new DeleteQueueRequest(QUEUE_URL));
 //		} catch (AmazonServiceException ase) {
 //			logException(ase);
 //		} catch (AmazonClientException ace) {
@@ -158,7 +166,7 @@ public class AWSQueue implements Queue {
 //	public List<String> listQueues() {
 //		List<String> list = null;
 //		try {
-//			list = sqs.listQueues().getQueueUrls();
+//			list = client().listQueues().getQueueUrls();
 //		} catch (AmazonServiceException ase) {
 //			logException(ase);
 //		} catch (AmazonClientException ace) {

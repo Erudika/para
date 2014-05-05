@@ -70,8 +70,8 @@ public final class Api1 extends ResourceConfig {
 	private static final String POST = HttpMethod.POST;
 	private static final String DELETE = HttpMethod.DELETE;
 
-	private static Set<Class<? extends ParaObject>> coreClasses = new HashSet<Class<? extends ParaObject>>();
-	private static Set<String> allTypes = new LinkedHashSet<String>();
+	private static final Set<Class<? extends ParaObject>> coreClasses = new HashSet<Class<? extends ParaObject>>();
+	private static final Set<String> allTypes = new LinkedHashSet<String>();
 
 	private final DAO dao;
 	private final Search search;

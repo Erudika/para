@@ -15,6 +15,7 @@
   <logger name="com.amazonaws" level="INFO"/>
   <logger name="org.tuckey" level="WARN"/>
   <logger name="org.openid4java" level="ERROR"/>
+  <logger name="org.glassfish" level="WARN"/>
 
   <root level="INFO">
     <appender-ref ref="STDOUT" />

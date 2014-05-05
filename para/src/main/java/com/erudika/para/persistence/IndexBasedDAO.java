@@ -134,11 +134,22 @@ public class IndexBasedDAO implements DAO {
 		if (keys == null || StringUtils.isBlank(appid)) {
 			return results;
 		}
-		for (String key : keys) {
-			if (getMap(appid).containsKey(key)) {
-				results.put(key, (P) read(key));
+		List<P> list = search.findByIds(keys);
+
+		if (list.isEmpty()) {
+			for (String key : keys) {
+				if (getMap(appid).containsKey(key)) {
+					results.put(key, (P) read(key));
+				}
+			}
+		} else {
+			for (P p : list) {
+				if (p != null) {
+					results.put(p.getId(), p);
+				}
 			}
 		}
+
 		logger.debug("DAO.readAll() {}", results.size());
 		return results;
 	}

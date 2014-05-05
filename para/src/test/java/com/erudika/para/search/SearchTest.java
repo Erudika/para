@@ -141,6 +141,15 @@ public abstract class SearchTest {
 	}
 
 	@Test
+	public void testFindByIds() {
+		assertTrue(s.findByIds(null).isEmpty());
+		assertTrue(s.findByIds(new ArrayList<String>(0)).isEmpty());
+		List<?> list = s.findByIds(Arrays.asList(new String[]{u.getId(), t.getId()}));
+		assertFalse(list.isEmpty());
+		assertEquals(2, list.size());
+	}
+
+	@Test
 	public void testfindNearby() {
 		assertTrue(s.findNearby(null, null, 100, 1, 1).isEmpty());
 		List<User> l1 = s.findNearby(u.getType(), "*", 10, 40.60, -73.90);
@@ -208,7 +217,7 @@ public abstract class SearchTest {
 	@Test
 	public void testFindTermInList() {
 		assertTrue(s.findTermInList(u.getType(), Config._EMAIL, Arrays.asList(new String[0])).isEmpty());
-		assertEquals(1, s.findTermInList(u.getType(), Config._EMAIL, 
+		assertEquals(1, s.findTermInList(u.getType(), Config._EMAIL,
 				Arrays.asList("email@test.com", u1.getEmail())).size());
 		assertEquals(3, s.findTermInList(u.getType(), Config._ID,
 				Arrays.asList(u.getId(), u1.getId(), u2.getId(), "xxx", "yyy")).size());
@@ -238,11 +247,11 @@ public abstract class SearchTest {
 		assertTrue(s.findTerms(u.getType(), Collections.singletonMap("", null), true).isEmpty());
 		assertTrue(s.findTerms(u.getType(), Collections.singletonMap("", ""), true).isEmpty());
 		assertTrue(s.findTerms(u.getType(), Collections.singletonMap("term", null), true).isEmpty());
-		assertEquals(1L, s.findTerms(u.getType(), 
+		assertEquals(1L, s.findTerms(u.getType(),
 				Collections.singletonMap(Config._IDENTIFIER, u2.getIdentifier()), true).size());
-		assertEquals(1L, s.findTerms(u.getType(), 
+		assertEquals(1L, s.findTerms(u.getType(),
 				Collections.singletonMap(Config._EMAIL, u.getEmail()), true).size());
-		assertTrue(s.findTerms(u.getType(), 
+		assertTrue(s.findTerms(u.getType(),
 				Collections.singletonMap(Config._TYPE, u.getType()), true).size() >= 2);
 	}
 

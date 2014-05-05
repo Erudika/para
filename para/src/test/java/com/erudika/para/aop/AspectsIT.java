@@ -53,6 +53,7 @@ public class AspectsIT {
 	@BeforeClass
 	public static void setUpClass() throws Exception {
 		System.setProperty("para.env", "embedded");
+		System.setProperty("para.cache_enabled", "true");
 		Para.initialize(new Module() {
 			public void configure(Binder binder) {
 				binder.bind(DAO.class).to(MockDAO.class);

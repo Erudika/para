@@ -119,6 +119,23 @@ public interface Search {
 	<P extends ParaObject> P findById(String appid, String id);
 
 	/**
+	 * Simple multi id search.
+	 * @param <P> type of the object
+	 * @param ids a list of ids to search for
+	 * @return the object if found or null
+	 */
+	<P extends ParaObject> List<P> findByIds(List<String> ids);
+
+	/**
+	 * Simple multi id search.
+	 * @param <P> type of the object
+	 * @param appid name of the {@link com.erudika.para.core.App}
+	 * @param ids a list of ids to search for
+	 * @return the object if found or null
+	 */
+	<P extends ParaObject> List<P> findByIds(String appid, List<String> ids);
+
+	/**
 	 * Search for {@link com.erudika.para.core.Address} objects in a radius of X km from a given point.
 	 * @param <P> type of the object
 	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}

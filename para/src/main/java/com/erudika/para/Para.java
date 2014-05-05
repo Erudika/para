@@ -65,7 +65,7 @@ public final class Para {
 	public static void initialize(Module... modules) {
 		if (injector == null) {
 			try {
-				logger.info("--- Para.initialize() ---");
+				logger.info("--- Para.initialize() [{}] ---", Config.ENVIRONMENT);
 				Stage stage = Config.IN_PRODUCTION ? Stage.PRODUCTION : Stage.DEVELOPMENT;
 				List<Module> coreModules = getCoreModules();
 				List<Module> externalModules = getExternalModules(modules);
@@ -76,8 +76,8 @@ public final class Para {
 					injector = Guice.createInjector(stage, coreModules);
 				}
 
-				for (InitializeListener destroyListener : initListeners) {
-					destroyListener.onInitialize();
+				for (InitializeListener initListener : initListeners) {
+					initListener.onInitialize();
 				}
 			} catch (Exception e) {
 				logger.error(null, e);

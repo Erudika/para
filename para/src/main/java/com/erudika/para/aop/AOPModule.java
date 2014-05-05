@@ -22,7 +22,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.matcher.Matchers;
 
 /**
- *
+ * The default Aspect Oriented Programming module
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class AOPModule extends AbstractModule {

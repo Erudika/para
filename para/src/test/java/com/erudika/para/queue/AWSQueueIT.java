@@ -39,7 +39,7 @@ public class AWSQueueIT extends QueueTest {
 	@BeforeClass
 	public static void setUpClass() throws InterruptedException {
 		sqsServer = SQSRestServerBuilder.start();
-		Thread.sleep(2000);
+		Thread.sleep(1000);
 		q = new AWSQueue("testq", endpoint);
 	}
 

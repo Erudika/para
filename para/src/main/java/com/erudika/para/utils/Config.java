@@ -17,8 +17,6 @@
  */
 package com.erudika.para.utils;
 
-//import static com.erudika.para.utils.Utils.MD5;
-
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
@@ -29,9 +27,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-//import static com.erudika.para.utils.Utils.getInitParam;
-//import static com.erudika.para.utils.Utils.initConfig;
 
 /**
  *
@@ -188,9 +183,9 @@ public final class Config {
 	 */
 	public static final Long PASSRESET_TIMEOUT_SEC = NumberUtils.toLong(getConfigParam("pass_reset_timeout", ""), 30 * 60);
 	/**
-	 * Enable object caching. Default: true
+	 * Enable object caching. Default: true only if {@link #ENVIRONMENT} = "production"
 	 */
-	public static final boolean CACHE_ENABLED = Boolean.parseBoolean(getConfigParam("cache_enabled", "true"));
+	public static final boolean CACHE_ENABLED = Boolean.parseBoolean(getConfigParam("cache_enabled", "" + ENVIRONMENT.equals("production")));
 	/**
 	 * Enable object indexing. Default: true
 	 */

@@ -34,6 +34,8 @@ import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.get.MultiGetItemResponse;
+import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
@@ -148,6 +150,27 @@ public class ElasticSearch implements Search {
 			logger.warn(null, e);
 			return null;
 		}
+	}
+
+	@Override
+	public <P extends ParaObject> List<P> findByIds(String appid, List<String> ids) {
+		List<P> list = new ArrayList<P>();
+		if (ids == null || ids.isEmpty()) {
+			return list;
+		}
+		try {
+			SearchHits hits = null;
+			MultiGetResponse response = client().prepareMultiGet().add(appid, null, ids).execute().actionGet();
+			for (MultiGetItemResponse multiGetItemResponse : response.getResponses()) {
+				GetResponse res = multiGetItemResponse.getResponse();
+				if (res.isExists() && !res.isSourceEmpty()) {
+					list.add(Utils.setAnnotatedFields(res.getSource()));
+				}
+			}
+		} catch (Exception e) {
+			logger.warn(null, e);
+		}
+		return list;
 	}
 
 	@Override
@@ -357,7 +380,7 @@ public class ElasticSearch implements Search {
 	}
 
 	/**
-	 * Executes an ElasticSearch query. This is the core method of the class. 
+	 * Executes an ElasticSearch query. This is the core method of the class.
 	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param type type of object
 	 * @param query the search query builder
@@ -405,7 +428,7 @@ public class ElasticSearch implements Search {
 	}
 
 	/**
-	 * Returns the source (a map of fields and values) for and object. 
+	 * Returns the source (a map of fields and values) for and object.
 	 * The source is extracted from the index directly not the data store.
 	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param key the object id
@@ -487,6 +510,11 @@ public class ElasticSearch implements Search {
 	@Override
 	public <P extends ParaObject> P findById(String id) {
 		return findById(Config.APP_NAME_NS, id);
+	}
+
+	@Override
+	public <P extends ParaObject> List<P> findByIds(List<String> ids) {
+		return findByIds(Config.APP_NAME_NS, ids);
 	}
 
 	@Override

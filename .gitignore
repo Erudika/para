@@ -9,6 +9,7 @@ rebel.xml
 nbactions.xml
 application.conf
 Tomcat.dpf
+release.properties
 nb-configuration.xml
 onemenu-server/target/
 onemenu-server/tmp/**

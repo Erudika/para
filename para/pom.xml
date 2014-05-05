@@ -32,11 +32,11 @@
 			<artifactId>jersey-server</artifactId>
 			<version>${jerseyVer}</version>
 		</dependency>
-<!--		<dependency>
+		<dependency>
 			<groupId>org.glassfish.jersey.containers</groupId>
 			<artifactId>jersey-container-servlet</artifactId>
 			<version>${jerseyVer}</version>
-		</dependency>-->
+		</dependency>
 <!--		<dependency>
 			<groupId>org.glassfish.jersey.containers</groupId>
 			<artifactId>jersey-container-jetty-http</artifactId>
@@ -279,10 +279,6 @@
 				<version>9.2.0.M0</version>
 				<configuration>
 					<systemProperties>
-						<systemProperty>
-							<name>para.env</name>
-							<value>embedded</value>
-						</systemProperty>
 						<systemProperty>
 							<name>org.eclipse.jetty.util.log.Log</name>
 							<value>org.eclipse.jetty.util.log.Slf4jLog</value>
