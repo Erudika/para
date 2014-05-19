@@ -22,6 +22,7 @@ import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -97,8 +98,8 @@ public final class Utils {
 	private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 	private static final ExecutorService exec = Executors.newSingleThreadExecutor();
 	private static final ObjectMapper jsonMapper = new ObjectMapper();
-	private static final ObjectReader jsonReader = jsonMapper.reader();
-	private static final ObjectWriter jsonWriter = jsonMapper.writer();
+	private static final ObjectReader jsonReader;
+	private static final ObjectWriter jsonWriter;
 	private static HumanTime humantime;
 	private static Utils instance;
 
@@ -124,6 +125,10 @@ public final class Utils {
 		jsonMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 		jsonMapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
 		jsonMapper.enable(SerializationFeature.INDENT_OUTPUT);
+		jsonMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+		jsonMapper.disable(SerializationFeature.WRITE_NULL_MAP_VALUES);
+		jsonReader = jsonMapper.reader();
+		jsonWriter = jsonMapper.writer();
 	}
 
 	private Utils() { }
@@ -172,7 +177,7 @@ public final class Utils {
 	 * @return JSON object writer
 	 */
 	public static ObjectWriter getJsonWriter() {
-		return jsonWriter.withFeatures(SerializationFeature.INDENT_OUTPUT);
+		return jsonWriter;
 	}
 
 	/**
@@ -180,7 +185,7 @@ public final class Utils {
 	 * @return JSON object writer with indentation disabled
 	 */
 	public static ObjectWriter getJsonWriterNoIdent() {
-		return jsonWriter;
+		return jsonWriter.without(SerializationFeature.INDENT_OUTPUT);
 	}
 
 	/////////////////////////////////////////////
@@ -831,7 +836,7 @@ public final class Utils {
 
 	/**
 	 * Populates an object with an array of query parameters (dangerous!).
-	 * This method might be deprecated in the future.
+	 * <b>This method might be deprecated in the future.</b>
 	 * @param <P> the object type
 	 * @param transObject an object
 	 * @param paramMap a query parameters map
@@ -1147,7 +1152,7 @@ public final class Utils {
 
 	/**
 	 * A JSON object used for JavaScript validation. It maps Hibernate Validator annotations to JavaScript.
-	 * This method WILL change in the future.
+	 * <b>This method WILL change in the future.</b>
 	 * @param type the type of object that will be validated
 	 * @param fields list of fields to map
 	 * @param lang language map
@@ -1300,7 +1305,7 @@ public final class Utils {
 	 * Distributed id generator. Relies on node/worker ids and datacenter ids to prevent collisions.
 	 * @return a long unique ID string of digits
 	 */
-	public static synchronized String getNewId() {
+	public static String getNewId() {
 		// unique across JVMs as long as each has a different workerID
 		// based on Twitter's Snowflake algorithm
 		long timestamp = timestamp();

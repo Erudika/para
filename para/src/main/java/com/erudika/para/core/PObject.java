@@ -160,7 +160,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	@NotBlank @Size(min = 2, max = 255)
 	public final String getName() {
 		if (name == null && id != null) {
-			name = getType().concat(id);
+			name = getType().concat(" ").concat(id);
 		}
 		return name;
 	}
@@ -310,6 +310,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	@Override
 	public void unlinkAll() {
 		Map<String, Object> terms = new HashMap<String, Object>();
+		// delete all links where id1 == id OR id2 == id
 		terms.put("id1", id);
 		terms.put("id2", id);
 		getDao().deleteAll(getAppid(), getSearch().findTerms(getAppid(), Utils.type(Linker.class), terms, false));

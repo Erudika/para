@@ -57,6 +57,7 @@ public final class ElasticSearchUtils {
 	private static final Logger logger = LoggerFactory.getLogger(ElasticSearchUtils.class);
 	private static Client searchClient;
 	private static Node searchNode;
+	private static final String esDir = "/var/lib/elasticsearch/";
 
 	private ElasticSearchUtils() { }
 
@@ -75,12 +76,17 @@ public final class ElasticSearchUtils {
 		settings.put("action.disable_delete_all_indices", true);
 		settings.put("cluster.name", Config.CLUSTER_NAME);
 
+		String esHome = Config.getConfigParam("para.es.dir", esDir);
+		if (!esHome.endsWith("/")) {
+			esHome += "/";
+		}
+
 		if (Config.IN_PRODUCTION) {
 			settings.put("cloud.aws.access_key", Config.AWS_ACCESSKEY);
 			settings.put("cloud.aws.secret_key", Config.AWS_SECRETKEY);
-			settings.put("path.data", "/var/lib/elasticsearch/data");
-			settings.put("path.work", "/var/lib/elasticsearch/work");
-	//		settings.put("path.logs", "/var/log/elasticsearch/");
+			settings.put("path.data", esHome + "data");
+			settings.put("path.work", esHome + "work");
+			settings.put("path.logs", esHome + "logs");
 
 			settings.put("cloud.aws.region", Config.AWS_REGION);
 			settings.put("network.tcp.keep_alive", true);
@@ -93,9 +99,11 @@ public final class ElasticSearchUtils {
 			searchNode = NodeBuilder.nodeBuilder().settings(settings).client(true).data(false).node();
 			searchClient = searchNode.client();
 		} else if ("embedded".equals(Config.ENVIRONMENT)) {
-			// for testing only
-			settings.put("path.data", "target/elasticsearch/data");
-			settings.put("path.work", "target/elasticsearch/work");
+			// for local develoment only
+			settings.put("path.data", esHome + "data");
+			settings.put("path.work", esHome + "work");
+			settings.put("path.logs", esHome + "logs");
+
 			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(true).data(true).node();
 			searchClient = searchNode.client();
 			if (!existsIndex(Config.APP_NAME_NS)) {
@@ -112,6 +120,13 @@ public final class ElasticSearchUtils {
 				shutdownClient();
 			}
 		});
+
+		try {
+			// wait a bit to prevent NoShardAvailableActionException
+			Thread.sleep(1000);
+		} catch (InterruptedException ex) {
+			logger.warn(null, ex);
+		}
 
 		return searchClient;
 	}

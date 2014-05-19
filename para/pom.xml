@@ -12,8 +12,9 @@
 	<name>Para</name>
 
 	<properties>
-		<jerseyVer>2.7</jerseyVer>
-		<springVer>3.2.3.RELEASE</springVer>
+		<jerseyVer>2.8</jerseyVer>
+		<springVer>4.0.0.M1</springVer>
+		<springVer2>1.0.2.RELEASE</springVer2>
 		<jacksonVer>2.3.3</jacksonVer>
 		<hazelcastVer>3.2</hazelcastVer>
 	</properties>
@@ -37,11 +38,11 @@
 			<artifactId>jersey-container-servlet</artifactId>
 			<version>${jerseyVer}</version>
 		</dependency>
-<!--		<dependency>
+		<dependency>
 			<groupId>org.glassfish.jersey.containers</groupId>
-			<artifactId>jersey-container-jetty-http</artifactId>
+			<artifactId>jersey-container-jetty-servlet</artifactId>
 			<version>${jerseyVer}</version>
-		</dependency>-->
+		</dependency>
 
 		<!-- SPRING -->
 		<dependency>
@@ -69,6 +70,41 @@
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-config</artifactId>
 			<version>${springVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+			<version>${springVer2}</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>spring-boot-starter-tomcat</artifactId>
+					<groupId>org.springframework.boot</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-jetty</artifactId>
+			<version>${springVer2}</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>jetty-jsp</artifactId>
+					<groupId>org.eclipse.jetty</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>jetty-servlet</artifactId>
+					<groupId>org.eclipse.jetty</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>jetty-webapp</artifactId>
+					<groupId>org.eclipse.jetty</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-logging</artifactId>
+			<version>${springVer2}</version>
 		</dependency>
 
 		<!-- JACKSON -->
@@ -123,7 +159,7 @@
 		</dependency>
 
 		<!-- CASSANDRA CLIENT -->
-<!--		<dependency>
+		<!--		<dependency>
 			<groupId>org.hectorclient</groupId>
 			<artifactId>hector-core</artifactId>
 			<version>1.1-4</version>
@@ -173,11 +209,6 @@
 
 		<!-- OTHER -->
 		<dependency>
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-			<version>16.0.1</version>
-		</dependency>
-		<dependency>
 			<groupId>com.eaio.uuid</groupId>
 			<artifactId>uuid</artifactId>
 			<version>3.2</version>
@@ -185,7 +216,7 @@
 		<dependency>
 			<groupId>com.typesafe</groupId>
 			<artifactId>config</artifactId>
-			<version>1.2.0</version>
+			<version>1.2.1</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-beanutils</groupId>
@@ -217,7 +248,7 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
-			<version>3.1</version>
+			<version>3.3.2</version>
 		</dependency>
 		<dependency>
 			<groupId>javax</groupId>
@@ -239,11 +270,6 @@
 			<groupId>org.geonames</groupId>
 			<artifactId>geonames-ws-client</artifactId>
 			<version>1.1.9</version>
-		</dependency>
-		<dependency>
-			<groupId>org.tuckey</groupId>
-			<artifactId>urlrewritefilter</artifactId>
-			<version>4.0.4</version>
 		</dependency>
 
 		<!-- TESTING -->
@@ -395,6 +421,34 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>fatjar</id>
+			<activation>
+				<property>
+					<name>fatJAR</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-maven-plugin</artifactId>
+						<version>${springVer2}</version>
+						<executions>
+							<execution>
+								<goals>
+									<goal>repackage</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 	<reporting>
 		<plugins>

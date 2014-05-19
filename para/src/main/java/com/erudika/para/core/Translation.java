@@ -31,7 +31,7 @@ import org.hibernate.validator.constraints.NotBlank;
 public class Translation extends PObject {
 	private static final long serialVersionUID = 1L;
 
-	@Stored @Locked @NotBlank private String locale;
+	@Stored @Locked @NotBlank private String locale;	// actually a language code
 	@Stored @Locked @NotBlank private String thekey;
 	@Stored @NotBlank private String value;
 	@Stored private Boolean approved;

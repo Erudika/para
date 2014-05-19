@@ -21,6 +21,7 @@ import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.persistence.DAO;
+import static com.erudika.para.rest.Api1.PATH;
 import com.erudika.para.rest.RestUtils.ForbiddenExceptionMapper;
 import com.erudika.para.rest.RestUtils.GenericExceptionMapper;
 import com.erudika.para.rest.RestUtils.InternalExceptionMapper;
@@ -31,6 +32,7 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.HumanTime;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -59,8 +61,10 @@ import org.slf4j.LoggerFactory;
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@ApplicationPath("/v1/")
+@ApplicationPath(PATH)
 public final class Api1 extends ResourceConfig {
+
+	public static final String PATH = "/v1/";
 
 	private static final Logger logger = LoggerFactory.getLogger(Api1.class);
 
@@ -87,11 +91,12 @@ public final class Api1 extends ResourceConfig {
 			return;
 		}
 
-		RestUtils.scanForDomainClasses(coreClasses, allTypes);
+		RestUtils.scanForDomainClasses(coreClasses);
 		setApplicationName(Config.APP_NAME_NS);
 
 //		register(JsonParseExceptionMapper.class);
 //		register(JsonMappingExceptionMapper.class);
+		register(new JacksonJsonProvider(Utils.getJsonMapper()));
 		register(GenericExceptionMapper.class);
 		register(ForbiddenExceptionMapper.class);
 		register(NotFoundExceptionMapper.class);
@@ -103,6 +108,7 @@ public final class Api1 extends ResourceConfig {
 			for (Class<? extends ParaObject> clazz : coreClasses) {
 				ParaObject p = clazz.newInstance();
 				registerCrudApi(p.getPlural(), crudHandler(Utils.type(clazz)));
+				allTypes.add(p.getPlural());
 			}
 		} catch (Exception ex) {
 			logger.error(null, ex);
@@ -194,7 +200,7 @@ public final class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				String id = ctx.getUriInfo().getPathParameters().getFirst(Config._ID);
 				String type = ctx.getUriInfo().getPathParameters().getFirst(Config._TYPE);
-				String appid = Config.APP_NAME_NS; // TODO
+				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
 				App app = dao.read(new App(appid).getId());
 				if (app != null && !StringUtils.isBlank(type)) {
 					if (app.getDatatypes().contains(type)) {
@@ -254,7 +260,7 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> addRemoveTypesHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				String appid = Config.APP_NAME_NS; // TODO
+				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
 				App app = dao.read(new App(appid).getId());
 				Map<String, Object> tmap = RestUtils.getMapFromEntity(ctx.getEntityStream());
 				if (app != null && tmap != null) {
@@ -279,7 +285,7 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> readTypesHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				String appid = Config.APP_NAME_NS; // TODO
+				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
 				App app = dao.read(new App(appid).getId());
 				if (app != null) {
 					allTypes.addAll(app.getDatatypes());
@@ -292,7 +298,7 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> keysHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				String appid = Config.APP_NAME_NS; // TODO
+				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
 				App app = dao.read(new App(appid).getId());
 				if (app != null) {
 					app.resetSecret();
@@ -307,7 +313,7 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> setupHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = new App(Config.APP_NAME_NS);
+				App app = new App(Config.APP_NAME_NS); // the root app name
 				if (app.exists()) {
 					return RestUtils.getStatusResponse(Response.Status.OK, "All set!");
 				} else {
@@ -322,8 +328,9 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> searchHandler(final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
+				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
 				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
-				return Response.ok(buildQueryAndSearch(params, type)).build();
+				return Response.ok(buildQueryAndSearch(appid, params, type)).build();
 			}
 		};
 	}
@@ -349,8 +356,9 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> updateHandler(final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				String id = ctx.getUriInfo().getPathParameters().getFirst(Config._ID);
-				return RestUtils.getUpdateResponse(dao.read(id), ctx.getEntityStream());
+				ParaObject obj = Utils.toObject(type);
+				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
+				return RestUtils.getUpdateResponse(dao.read(obj.getId()), ctx.getEntityStream());
 			}
 		};
 	}
@@ -365,11 +373,10 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	private <P extends ParaObject> Map<String, Object> buildQueryAndSearch(MultivaluedMap<String, String> params,
-			String typeOverride) {
+	private <P extends ParaObject> Map<String, Object> buildQueryAndSearch(String appid,
+			MultivaluedMap<String, String> params, String typeOverride) {
 		String query = params.containsKey("q") ? params.getFirst("q") : "*";
 		String type = (typeOverride != null) ? typeOverride : params.getFirst(Config._TYPE);
-		String appid = Config.APP_NAME_NS; // TODO
 		String desc = params.containsKey("desc") ? params.getFirst("desc") : "true";
 
 		Pager pager = new Pager();

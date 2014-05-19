@@ -50,7 +50,7 @@ public class AppAuthentication implements Authentication {
 	 * @return a list of roles
 	 */
 	public Collection<? extends GrantedAuthority> getAuthorities() {
-		return Collections.singleton(new SimpleGrantedAuthority("ROLE_APP"));
+		return Collections.singleton(new SimpleGrantedAuthority(App.APP_ROLE));
 	}
 
 	/**

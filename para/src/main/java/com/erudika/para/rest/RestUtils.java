@@ -22,12 +22,12 @@ import com.erudika.para.core.ParaObject;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.core.JsonParseException;
-import com.google.common.reflect.ClassPath;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Modifier;
 import java.net.URI;
+import java.security.Principal;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -49,6 +49,10 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AssignableTypeFilter;
+import org.springframework.util.ClassUtils;
 
 /**
  * A few helper methods for handling REST requests and responses.
@@ -57,6 +61,7 @@ import org.slf4j.LoggerFactory;
 public final class RestUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(RestUtils.class);
+	private static final CoreClassScanner scanner = new CoreClassScanner();
 	private static final DateTimeFormatter timeFormatter = DateTimeFormat.
 			forPattern("yyyyMMdd'T'HHmmss'Z'").withZoneUTC();
 
@@ -90,7 +95,11 @@ public final class RestUtils {
 		String auth = request.getHeader(HttpHeaders.AUTHORIZATION);
 		if (StringUtils.isBlank(auth)) {
 			auth = request.getParameter("X-Amz-Credential");
-			return StringUtils.substringBefore(auth, "/");
+			if (StringUtils.isBlank(auth)) {
+				return "";
+			} else {
+				return StringUtils.substringBefore(auth, "/");
+			}
 		} else {
 			String credential = StringUtils.substringBetween(auth, "Credential=", ",");
 			return StringUtils.substringBefore(credential, "/");
@@ -111,6 +120,21 @@ public final class RestUtils {
 			return request.getParameter("X-Amz-Date");
 		} else {
 			return date;
+		}
+	}
+
+	/**
+	 * Returns the {@code appid} of the requesting App or the
+	 * default {@code appid} if this request is not signed.
+	 * @param princ the authenticated App
+	 * @return the {@code appid}
+	 */
+	public static String getPrincipalAppid(Principal princ) {
+		String def = Config.APP_NAME_NS;
+		if (princ == null) {
+			return def;
+		} else {
+			return StringUtils.isBlank(princ.getName()) ? def : princ.getName();
 		}
 	}
 
@@ -277,7 +301,6 @@ public final class RestUtils {
 	}
 
 
-
 	/////////////////////////////////////////////
 	//				MISC METHODS
 	/////////////////////////////////////////////
@@ -299,38 +322,56 @@ public final class RestUtils {
 		return newContent;
 	}
 
-	static void scanForDomainClasses(Set<Class<? extends ParaObject>> classes, Set<String> types) {
-		if (classes == null || types == null) {
+	/**
+	 * This scans a package for Para objects and adds the to the set.
+	 * NOTE: This method is slow!
+	 * @param classes a set
+	 */
+	static void scanForDomainClasses(Set<Class<? extends ParaObject>> classes) {
+		if (classes == null) {
 			return;
 		}
 		try {
-			ClassLoader cl = Thread.currentThread().getContextClassLoader();
-	//		ClassLoader cl = ClassLoader.getSystemClassLoader();
-	//		ClassLoader cl = ParaObject.class.getClassLoader();
-
-			Set<ClassPath.ClassInfo> s = ClassPath.from(cl).getTopLevelClasses(ParaObject.class.getPackage().getName());
+			Set<Class<? extends ParaObject>> s = scanner.getComponentClasses(ParaObject.class.getPackage().getName());
 			if (!Config.CORE_PACKAGE_NAME.isEmpty()) {
-				Set<ClassPath.ClassInfo> s2 = ClassPath.from(cl).getTopLevelClasses(Config.CORE_PACKAGE_NAME);
-				s = new HashSet<ClassPath.ClassInfo>(s);
+				Set<Class<? extends ParaObject>> s2 = scanner.getComponentClasses(Config.CORE_PACKAGE_NAME);
 				s.addAll(s2);
 			}
 
-			for (ClassPath.ClassInfo classInfo : s) {
-				String type = classInfo.getSimpleName();
-				Class<? extends ParaObject> coreClass = Utils.toClass(type, classInfo.getPackageName(), null);
-				if (coreClass != null) {
-					boolean isAbstract = Modifier.isAbstract(coreClass.getModifiers());
-					boolean isInterface = Modifier.isInterface(coreClass.getModifiers());
-					boolean isFinal = Modifier.isFinal(coreClass.getModifiers());
-					boolean isCoreObject = ParaObject.class.isAssignableFrom(coreClass);
-					if (isCoreObject && !isAbstract && !isInterface && !isFinal) {
-						classes.add(coreClass);
-						types.add(Utils.type(coreClass));
-					}
+			for (Class<? extends ParaObject> coreClass : s) {
+				boolean isAbstract = Modifier.isAbstract(coreClass.getModifiers());
+				boolean isInterface = Modifier.isInterface(coreClass.getModifiers());
+				boolean isFinal = Modifier.isFinal(coreClass.getModifiers());
+				boolean isCoreObject = ParaObject.class.isAssignableFrom(coreClass);
+				if (isCoreObject && !isAbstract && !isInterface && !isFinal) {
+					classes.add(coreClass);
 				}
 			}
-		} catch (IOException ex) {
+		} catch (Exception ex) {
 			logger.error(null, ex);
+		}
+	}
+
+	private static class CoreClassScanner extends ClassPathScanningCandidateComponentProvider {
+		public CoreClassScanner() {
+			super(false);
+			addIncludeFilter(new AssignableTypeFilter(ParaObject.class));
+		}
+
+		@SuppressWarnings("unchecked")
+		public final Set<Class<? extends ParaObject>> getComponentClasses(String basePackage) {
+			basePackage = (basePackage == null) ? "" : basePackage;
+			Set<Class<? extends ParaObject>> classes = new HashSet<Class<? extends ParaObject>>();
+			for (BeanDefinition candidate : findCandidateComponents(basePackage)) {
+				try {
+					Class<? extends ParaObject> cls = (Class<? extends ParaObject>) ClassUtils.
+							resolveClassName(candidate.getBeanClassName(), ClassUtils.getDefaultClassLoader());
+					classes.add(cls);
+				} catch (Exception ex) {
+					logger.error(null, ex);
+				}
+			}
+			return classes;
 		}
 	}
 

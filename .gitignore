@@ -4,6 +4,7 @@
 *.zip
 *.tgz
 *.bak
+*.log
 keys.txt
 rebel.xml
 nbactions.xml

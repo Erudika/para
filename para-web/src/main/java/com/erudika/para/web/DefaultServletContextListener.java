@@ -15,21 +15,26 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
+
 package com.erudika.para.web;
 
-import com.erudika.para.Para;
-import org.slf4j.Logger;
+import java.util.EnumSet;
+import javax.servlet.DispatcherType;
+import javax.servlet.FilterRegistration;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tuckey.web.filters.urlrewrite.UrlRewriteFilter;
 
 /**
- * The default context listener.
+ *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class ParaContextListener implements ServletContextListener {
+public class DefaultServletContextListener implements ServletContextListener {
 
-	private static final Logger logger = LoggerFactory.getLogger(ParaContextListener.class);
+	private static final Logger logger = LoggerFactory.getLogger(DefaultServletContextListener.class);
 
 	/**
 	 * Initialization.
@@ -37,7 +42,14 @@ public class ParaContextListener implements ServletContextListener {
 	 */
 	@Override
 	public void contextInitialized(ServletContextEvent sce) {
-		Para.initialize();
+		logger.info("Para WAR: contextInitialized()");
+		// UrlRewriteFilter (nice URLs)
+		ServletContext sc = sce.getServletContext();
+		EnumSet<DispatcherType> dispachers = EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD);
+		FilterRegistration.Dynamic urf = sc.addFilter("urlRewriteFilter", UrlRewriteFilter.class);
+		urf.addMappingForUrlPatterns(dispachers, false, "/*");
+		urf.setInitParameter("statusEnabled", "false");
+		urf.setInitParameter("logLevel", "slf4j");
 	}
 
 	/**
@@ -46,7 +58,6 @@ public class ParaContextListener implements ServletContextListener {
 	 */
 	@Override
 	public void contextDestroyed(ServletContextEvent sce) {
-		Para.destroy();
+		logger.info("Para WAR: contextDestroyed()");
 	}
-
 }

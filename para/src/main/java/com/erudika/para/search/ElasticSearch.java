@@ -17,10 +17,10 @@
  */
 package com.erudika.para.search;
 
-import com.erudika.para.persistence.DAO;
-import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Address;
+import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Tag;
+import com.erudika.para.persistence.DAO;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -28,16 +28,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.count.CountRequestBuilder;
+import org.elasticsearch.action.get.GetRequestBuilder;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.get.MultiGetItemResponse;
 import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
-import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.DistanceUnit;
@@ -53,6 +54,7 @@ import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -400,25 +402,25 @@ public class ElasticSearch implements Search {
 		int pageNum = (int) page.getPage();
 		int start = (pageNum < 1 || pageNum > Config.MAX_PAGES) ? 0 : (pageNum - 1) * max;
 
-		if (query == null) {
+		if (query == null || type == null) {
 			query = QueryBuilders.matchAllQuery();
 		}
 		if (sort == null) {
 			sort = SortBuilders.scoreSort();
 		}
-		if (type == null) {
-			type = "_all";
-		}
 
 		SearchHits hits = null;
 
 		try {
-			SearchResponse response = client().prepareSearch(appid).
-					setSearchType(SearchType.DFS_QUERY_THEN_FETCH).setTypes(type).
-					setQuery(query).addSort(sort).setFrom(start).setSize(max).
-					execute().actionGet();
+			SearchRequestBuilder srb = client().prepareSearch(appid).
+				setSearchType(SearchType.DFS_QUERY_THEN_FETCH).
+				setQuery(query).addSort(sort).setFrom(start).setSize(max);
 
-			hits = response.getHits();
+			if (type != null) {
+				srb.setTypes(type);
+			}
+
+			hits = srb.execute().actionGet().getHits();
 			page.setCount(hits.getTotalHits());
 		} catch (Exception e) {
 			logger.warn(null, e);
@@ -440,13 +442,15 @@ public class ElasticSearch implements Search {
 		if (StringUtils.isBlank(key) || StringUtils.isBlank(appid)) {
 			return map;
 		}
-		if (StringUtils.isBlank(type)) {
-			type = "_all";
-		}
+
 		try {
-			GetResponse resp = client().prepareGet().setIndex(appid).
-					setId(key).setType(type).execute().actionGet();
-			map = resp.getSource();
+			GetRequestBuilder grb = client().prepareGet().setIndex(appid).setId(key);
+
+			if (type != null) {
+				grb.setType(type);
+			}
+
+			map = grb.execute().actionGet().getSource();
 		} catch (Exception e) {
 			logger.warn(null, e);
 		}
@@ -455,17 +459,22 @@ public class ElasticSearch implements Search {
 
 	@Override
 	public Long getCount(String appid, String type) {
-		if (StringUtils.isBlank(type) || StringUtils.isBlank(appid)) {
+		if (StringUtils.isBlank(appid)) {
 			return 0L;
 		}
-		return client().prepareCount(appid).
-				setTypes(type).setQuery(QueryBuilders.matchAllQuery()).
-				execute().actionGet().getCount();
+		CountRequestBuilder crb = client().prepareCount(appid).
+				setQuery(QueryBuilders.matchAllQuery());
+
+		if (type != null) {
+			crb.setTypes(type);
+		}
+
+		return crb.execute().actionGet().getCount();
 	}
 
 	@Override
 	public Long getCount(String appid, String type, Map<String, ?> terms) {
-		if (StringUtils.isBlank(type) || StringUtils.isBlank(appid) || terms == null || terms.isEmpty()) {
+		if (StringUtils.isBlank(appid) || terms == null || terms.isEmpty()) {
 			return 0L;
 		}
 		FilterBuilder fb;
@@ -482,7 +491,13 @@ public class ElasticSearch implements Search {
 			}
 		}
 		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), fb);
-		return client().prepareCount(appid).setTypes(type).setQuery(qb).execute().actionGet().getCount();
+		CountRequestBuilder crb = client().prepareCount(appid).setQuery(qb);
+
+		if (type != null) {
+			crb.setTypes(type);
+		}
+
+		return crb.execute().actionGet().getCount();
 	}
 
 	//////////////////////////////////////////////////////////////

@@ -169,6 +169,7 @@ public abstract class SearchTest {
 		assertTrue(s.findQuery(u.getType(), "_type:user").size() >= 3);
 		assertFalse(s.findQuery(u.getType(), "ann").isEmpty());
 		assertFalse(s.findQuery(u.getType(), "Ann").isEmpty());
+		assertTrue(s.findQuery(null, "*").size() > 4);
 
 		Pager p = new Pager();
 		assertEquals(0, p.getCount());
@@ -265,7 +266,7 @@ public abstract class SearchTest {
 
 	@Test
 	public void testgetCount() {
-		assertEquals(0, s.getCount(null).intValue());
+		assertTrue(s.getCount(null).intValue() > 4);
 		assertEquals(0, s.getCount("").intValue());
 		assertEquals(0, s.getCount("test").intValue());
 		assertTrue(s.getCount(u.getType()).intValue() >= 3);
@@ -274,12 +275,10 @@ public abstract class SearchTest {
 	@Test
 	public void testGetCount() throws InterruptedException {
 		assertEquals(0L, s.getCount(u.getType(), null, null).intValue());
-//		Thread.sleep(500);
 		assertEquals(0L, s.getCount(u.getType(), Collections.singletonMap(Config._ID, "")).intValue());
-//		Thread.sleep(500);
 		assertEquals(1L, s.getCount(u.getType(), Collections.singletonMap(Config._ID, u.getId())).intValue());
-//		Thread.sleep(500);
 		assertEquals(0L, s.getCount(appid1, u.getType(), Collections.singletonMap(Config._ID, u.getId())).intValue());
+		assertTrue(s.getCount(null, Collections.singletonMap(Config._TYPE, u.getType())).intValue() > 1);
 	}
 
 	@Test

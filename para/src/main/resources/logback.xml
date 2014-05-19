@@ -3,7 +3,22 @@
 
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-      <pattern>[%level] %msg%n</pattern>
+      <pattern>%-30(%d{HH:mm:ss} %highlight([%-5level])) %msg%n</pattern>
+    </encoder>
+  </appender>
+
+	<appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>para.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <!-- rollover monthly -->
+      <fileNamePattern>para-%d{yyyy-MM}.%i.log</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+        <!-- or whenever the file size reaches 50MB -->
+        <maxFileSize>50MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%-30(%d [%-5level]) %msg%n</pattern>
     </encoder>
   </appender>
 
@@ -16,8 +31,10 @@
   <logger name="org.tuckey" level="WARN"/>
   <logger name="org.openid4java" level="ERROR"/>
   <logger name="org.glassfish" level="WARN"/>
+  <logger name="org.hibernate" level="WARN"/>
 
   <root level="INFO">
     <appender-ref ref="STDOUT" />
+    <appender-ref ref="ROLLING" />
   </root>
 </configuration>

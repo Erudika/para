@@ -44,6 +44,9 @@ import org.hibernate.validator.constraints.NotBlank;
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class App extends PObject {
+
+	public static final String APP_ROLE = "ROLE_APP";
+
 	private static final long serialVersionUID = 1L;
 	private static final String prefix = Utils.type(App.class).concat(Config.SEPARATOR);
 

@@ -17,18 +17,23 @@
  */
 package com.erudika.para;
 
+import com.erudika.para.aop.AOPModule;
 import com.erudika.para.cache.Cache;
 import com.erudika.para.cache.CacheModule;
+import com.erudika.para.core.App;
+import static com.erudika.para.core.User.Roles.ADMIN;
+import static com.erudika.para.core.User.Roles.MOD;
+import static com.erudika.para.core.User.Roles.USER;
 import com.erudika.para.email.EmailModule;
 import com.erudika.para.i18n.I18nModule;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.PersistenceModule;
 import com.erudika.para.queue.QueueModule;
+import com.erudika.para.rest.Api1;
 import com.erudika.para.search.Search;
 import com.erudika.para.search.SearchModule;
 import com.erudika.para.storage.StorageModule;
 import com.erudika.para.utils.Config;
-import com.erudika.para.aop.AOPModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
@@ -40,22 +45,44 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import javax.annotation.PreDestroy;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletContextListener;
+import javax.servlet.ServletException;
+import org.eclipse.jetty.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.embedded.EmbeddedServletContainerFactory;
+import org.springframework.boot.context.embedded.jetty.JettyEmbeddedServletContainerFactory;
+import org.springframework.boot.context.embedded.jetty.JettyServerCustomizer;
+import org.springframework.boot.context.web.SpringBootServletInitializer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * This is the main utility class and entry point. Para modules are initialized and destroyed from here.
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public final class Para {
+@Configuration
+@EnableAutoConfiguration
+@ComponentScan
+public class Para extends SpringBootServletInitializer {
 
 	private static final Logger logger = LoggerFactory.getLogger(Para.class);
 	private static final List<DestroyListener> destroyListeners = new ArrayList<DestroyListener>();
 	private static final List<InitializeListener> initListeners = new ArrayList<InitializeListener>();
 	private static Injector injector;
 
-	private Para() { }
+	public Para() { }
 
 	/**
 	 * Initializes the Para core modules and allows the user to override them. Call this method first.
@@ -195,6 +222,26 @@ public final class Para {
 		void onDestroy();
 	}
 
+	/**
+	 * Try loading an external {@link javax.servlet.ServletContextListener} class
+	 * via {@link java.util.ServiceLoader#load(java.lang.Class)}.
+	 * @return a loaded ServletContextListener class.
+	 * Defaults to {@link com.erudika.para.web.ParaContextListener}.
+	 */
+	public static ServletContextListener getContextListener() {
+		ServiceLoader<ServletContextListener> loader = ServiceLoader.load(ServletContextListener.class);
+		for (ServletContextListener module : loader) {
+			if (module != null) {
+				try {
+					return module.getClass().newInstance();
+				} catch (Exception ex) {
+					logger.error(null, ex);
+				}
+			}
+		}
+		return null;
+	}
+
 	private static List<Module> getCoreModules() {
 		List<Module> coreModules = new ArrayList<Module>();
 		coreModules.add(new AOPModule());
@@ -222,5 +269,90 @@ public final class Para {
 
 	private static void handleNotInitializedError() {
 		throw new IllegalStateException("Call Para.initialize() first!");
+	}
+
+	/**
+	 * Jetty configuration.
+	 * @return a factory
+	 */
+	@Bean
+	public EmbeddedServletContainerFactory servletContainerFactory() {
+		JettyEmbeddedServletContainerFactory factory = new JettyEmbeddedServletContainerFactory();
+		factory.setPort(8080);
+		factory.addServerCustomizers(new JettyServerCustomizer() {
+			public void customize(Server server) {
+				ServletContainer servletContainer = new ServletContainer(new Api1());
+				ServletHolder sh = new ServletHolder(servletContainer);
+
+				ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
+				context.setContextPath("/");
+				context.addServlet(sh, Api1.PATH + "*");
+				server.setHandler(context);
+
+				ConstraintSecurityHandler sec = new ConstraintSecurityHandler();
+				sec.addRole(USER.toString());
+				sec.addRole(MOD.toString());
+				sec.addRole(ADMIN.toString());
+				sec.addRole(App.APP_ROLE);
+				context.setSecurityHandler(sec);
+			}
+		});
+		return factory;
+	}
+
+	/**
+	 * Called before shutdown.
+	 */
+	@PreDestroy
+	public void preDestroy() {
+		destroy();
+	}
+
+	private static void printLogo() {
+		String[] logo = {"",
+			"      ____  ___ _ ____ ___ _ ",
+			"     / __ \\/ __` / ___/ __` /",
+			"    / /_/ / /_/ / /  / /_/ / ",
+			"   / .___/\\__,_/_/   \\__,_/  ",
+			"  /_/                        ", ""};
+
+		for (String line : logo) {
+			System.out.println(line);
+		}
+	}
+
+	@Override
+	protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
+		// entry point (when deployed as WAR)
+		printLogo();
+		application.web(true);
+		application.showBanner(false);
+		initialize();
+		return application.sources(Para.class);
+	}
+
+	@Override
+	public void onStartup(ServletContext sc) throws ServletException {
+		logger.info(">>> onStartup()");
+		super.onStartup(sc);
+		sc.declareRoles(USER.toString(), MOD.toString(), ADMIN.toString(), App.APP_ROLE);
+		sc.getSessionCookieConfig().setName("sess");
+		sc.getSessionCookieConfig().setMaxAge(1);
+		sc.getSessionCookieConfig().setHttpOnly(true);
+
+		EventListener el = getContextListener();
+		if (el != null) {
+			sc.addListener(el);
+		}
+	}
+
+	public static void main(String[] args) {
+		// Main entry point
+		printLogo();
+		SpringApplication app = new SpringApplication(Para.class);
+		app.setWebEnvironment(true);
+		app.setShowBanner(false);
+		initialize();
+		app.run(args);
 	}
 }
