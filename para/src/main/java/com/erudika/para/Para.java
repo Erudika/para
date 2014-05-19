@@ -226,7 +226,6 @@ public class Para extends SpringBootServletInitializer {
 	 * Try loading an external {@link javax.servlet.ServletContextListener} class
 	 * via {@link java.util.ServiceLoader#load(java.lang.Class)}.
 	 * @return a loaded ServletContextListener class.
-	 * Defaults to {@link com.erudika.para.web.ParaContextListener}.
 	 */
 	public static ServletContextListener getContextListener() {
 		ServiceLoader<ServletContextListener> loader = ServiceLoader.load(ServletContextListener.class);

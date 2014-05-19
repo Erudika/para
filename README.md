@@ -26,7 +26,7 @@ applications.
 
 ### Architecture
 
-```txt
+```
 +----------------------------------------------------------+
 |                                                          |
 |               Java Domain Objects (POJOs)                |
