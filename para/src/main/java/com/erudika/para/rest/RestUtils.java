@@ -347,6 +347,7 @@ public final class RestUtils {
 					classes.add(coreClass);
 				}
 			}
+			logger.debug("Found {} ParaObject classes: {}", classes.size(), classes);
 		} catch (Exception ex) {
 			logger.error(null, ex);
 		}

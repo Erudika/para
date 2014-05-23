@@ -204,23 +204,7 @@ public final class Api1 extends ResourceConfig {
 				App app = dao.read(new App(appid).getId());
 				if (app != null && !StringUtils.isBlank(type)) {
 					if (app.getDatatypes().contains(type)) {
-						if (StringUtils.isBlank(id)) {
-							if (GET.equals(ctx.getMethod())) {
-								return searchHandler(type).apply(ctx);
-							} else if (POST.equals(ctx.getMethod())) {
-								return createHandler(type).apply(ctx);
-							} else if (ctx.getUriInfo().getPath().endsWith("search")) {
-								return searchHandler(type).apply(ctx);
-							}
-						} else {
-							if (GET.equals(ctx.getMethod())) {
-								return readHandler(type).apply(ctx);
-							} else if (PUT.equals(ctx.getMethod())) {
-								return updateHandler(type).apply(ctx);
-							} else if (DELETE.equals(ctx.getMethod())) {
-								return deleteHandler(type).apply(ctx);
-							}
-						}
+						crudHandler(type).apply(ctx);
 					} else {
 						return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST,
 								"Type '" + type + "' is undefined.");
@@ -265,7 +249,7 @@ public final class Api1 extends ResourceConfig {
 				Map<String, Object> tmap = RestUtils.getMapFromEntity(ctx.getEntityStream());
 				if (app != null && tmap != null) {
 					String datatype = (String) tmap.get("type");
-					if (StringUtils.isBlank(datatype)) {
+					if (!StringUtils.isBlank(datatype)) {
 						if (POST.equals(ctx.getMethod())) {
 							app.addDatatypes(datatype);
 						} else if (DELETE.equals(ctx.getMethod())) {

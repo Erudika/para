@@ -6,11 +6,11 @@
 ## What is this?
 
 **Para** was designed as a simple and modular back-end framework for object persistence and retrieval.
-It enables your application to store its objects to a datastore (SQL or NoSQL based) and then it
-automatically indexes those objects and makes them searchable.
+It enables your application to store objects directly to a data store (NoSQL) or any relational database (RDBMS)
+and it also automatically indexes those objects and makes them searchable.
 
-Para can be used in two ways - as the backbone of a single application or as a standalone server supporting multiple
-applications.
+Para can be used in two ways - as the backbone of your JVM-based application or as a standalone server supporting
+multiple applications and clients written in any programming language.
 
 ### Features
 
@@ -114,11 +114,11 @@ See the docs for more info.
 ## Contributing
 
 1. Fork this repository and clone the fork to your machine
-2. Create your feature branch (`git checkout -b my-new-feature`)
+2. Create a branch (`git checkout -b my-new-feature`)
 3. Implement a new feature or fix a bug and add some tests
-4. Commit your changes (`git commit -am 'Add some feature'`)
-5. Push to the branch (`git push origin my-new-feature`)
-6. Create new Pull Request
+4. Commit your changes (`git commit -am 'Added a new feature'`)
+5. Push the branch to **your fork** on GitHub (`git push origin my-new-feature`)
+6. Create new Pull Request from your fork
 
 For more information see [CONTRIBUTING.md](https://github.com/Erudika/para/blob/master/CONTRIBUTING.md)
 

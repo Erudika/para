@@ -45,9 +45,9 @@ public class DefaultServletContextListener implements ServletContextListener {
 		logger.info("Para WAR: contextInitialized()");
 		// UrlRewriteFilter (nice URLs)
 		ServletContext sc = sce.getServletContext();
-		EnumSet<DispatcherType> dispachers = EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD);
 		FilterRegistration.Dynamic urf = sc.addFilter("urlRewriteFilter", UrlRewriteFilter.class);
-		urf.addMappingForUrlPatterns(dispachers, false, "/*");
+		urf.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST,
+				DispatcherType.ERROR, DispatcherType.FORWARD), false, "/*");
 		urf.setInitParameter("statusEnabled", "false");
 		urf.setInitParameter("logLevel", "slf4j");
 	}

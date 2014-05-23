@@ -20,10 +20,6 @@ package com.erudika.para;
 import com.erudika.para.aop.AOPModule;
 import com.erudika.para.cache.Cache;
 import com.erudika.para.cache.CacheModule;
-import com.erudika.para.core.App;
-import static com.erudika.para.core.User.Roles.ADMIN;
-import static com.erudika.para.core.User.Roles.MOD;
-import static com.erudika.para.core.User.Roles.USER;
 import com.erudika.para.email.EmailModule;
 import com.erudika.para.i18n.I18nModule;
 import com.erudika.para.persistence.DAO;
@@ -49,19 +45,13 @@ import javax.annotation.PreDestroy;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
-import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.boot.context.embedded.EmbeddedServletContainerFactory;
-import org.springframework.boot.context.embedded.jetty.JettyEmbeddedServletContainerFactory;
-import org.springframework.boot.context.embedded.jetty.JettyServerCustomizer;
+import org.springframework.boot.context.embedded.ServletRegistrationBean;
 import org.springframework.boot.context.web.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -270,33 +260,12 @@ public class Para extends SpringBootServletInitializer {
 		throw new IllegalStateException("Call Para.initialize() first!");
 	}
 
-	/**
-	 * Jetty configuration.
-	 * @return a factory
-	 */
 	@Bean
-	public EmbeddedServletContainerFactory servletContainerFactory() {
-		JettyEmbeddedServletContainerFactory factory = new JettyEmbeddedServletContainerFactory();
-		factory.setPort(8080);
-		factory.addServerCustomizers(new JettyServerCustomizer() {
-			public void customize(Server server) {
-				ServletContainer servletContainer = new ServletContainer(new Api1());
-				ServletHolder sh = new ServletHolder(servletContainer);
-
-				ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
-				context.setContextPath("/");
-				context.addServlet(sh, Api1.PATH + "*");
-				server.setHandler(context);
-
-				ConstraintSecurityHandler sec = new ConstraintSecurityHandler();
-				sec.addRole(USER.toString());
-				sec.addRole(MOD.toString());
-				sec.addRole(ADMIN.toString());
-				sec.addRole(App.APP_ROLE);
-				context.setSecurityHandler(sec);
-			}
-		});
-		return factory;
+	public ServletRegistrationBean jerseyRegistrationBean() {
+		ServletRegistrationBean reg = new ServletRegistrationBean(
+				new ServletContainer(new Api1()), Api1.PATH + "*");
+		reg.setName(Api1.class.getSimpleName());
+		return reg;
 	}
 
 	/**
@@ -322,7 +291,7 @@ public class Para extends SpringBootServletInitializer {
 
 	@Override
 	protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
-		// entry point (when deployed as WAR)
+		// entry point (WAR)
 		printLogo();
 		application.web(true);
 		application.showBanner(false);
@@ -332,9 +301,7 @@ public class Para extends SpringBootServletInitializer {
 
 	@Override
 	public void onStartup(ServletContext sc) throws ServletException {
-		logger.info(">>> onStartup()");
 		super.onStartup(sc);
-		sc.declareRoles(USER.toString(), MOD.toString(), ADMIN.toString(), App.APP_ROLE);
 		sc.getSessionCookieConfig().setName("sess");
 		sc.getSessionCookieConfig().setMaxAge(1);
 		sc.getSessionCookieConfig().setHttpOnly(true);
@@ -346,7 +313,7 @@ public class Para extends SpringBootServletInitializer {
 	}
 
 	public static void main(String[] args) {
-		// Main entry point
+		// entry point (JAR)
 		printLogo();
 		SpringApplication app = new SpringApplication(Para.class);
 		app.setWebEnvironment(true);
