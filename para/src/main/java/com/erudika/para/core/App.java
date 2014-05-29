@@ -22,11 +22,8 @@ import com.erudika.para.annotations.Stored;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -53,7 +50,7 @@ public class App extends PObject {
 	@Stored @Locked private boolean shared;
 	@Stored @Locked @NotBlank private String appid;
 	@Stored @Locked @NotBlank private String secret;
-	@Stored private Set<String> datatypes;
+	@Stored private Map<String, String> datatypes;
 	@Stored @Locked private Boolean active;
 
 	private Map<String, String> credentials;
@@ -71,6 +68,7 @@ public class App extends PObject {
 	 */
 	public App(String appid) {
 		this.shared = false;
+		this.active = true;
 		setAppid(appid);
 		setName(getName());
 	}
@@ -140,25 +138,20 @@ public class App extends PObject {
 	/**
 	 * Returns a set of custom data types for this app.
 	 * An app can have many custom types which describe its domain.
-	 * @return a set of types
+	 * @return a map of type names (plural form to singular)
 	 */
-	public Set<String> getDatatypes() {
+	public Map<String, String> getDatatypes() {
 		if (datatypes == null) {
-			datatypes = new LinkedHashSet<String>();
+			datatypes = new HashMap<String, String>();
 		}
 		return datatypes;
 	}
 
 	/**
-	 * Sets the datatypes for this app
-	 * @param datatypes a set ot types
+	 * Sets the data types for this app
+	 * @param datatypes a map of type names (plural form to singular)
 	 */
-	public void setDatatypes(Set<String> datatypes) {
-		if (datatypes == null || datatypes.isEmpty()) {
-			this.datatypes = datatypes;
-		} else {
-			addDatatypes(datatypes.toArray(new String[]{ }));
-		}
+	public void setDatatypes(Map<String, String> datatypes) {
 		this.datatypes = datatypes;
 	}
 
@@ -179,26 +172,23 @@ public class App extends PObject {
 	}
 
 	/**
-	 * Adds a number of user-defined datatypes to the set of datatypes.
+	 * Adds a user-defined data type to the types map.
+	 * @param pluralDatatype the plural form of the type
 	 * @param datatype a datatype, must not be null or empty
 	 */
-	public void addDatatypes(String... datatype) {
-		if (datatype != null && datatype.length > 0) {
-			for (String t : datatype) {
-				if (!StringUtils.isBlank(t)) {
-					getDatatypes().add(t);
-				}
-			}
+	public void addDatatype(String pluralDatatype, String datatype) {
+		if (!StringUtils.isBlank(pluralDatatype) && !StringUtils.isBlank(datatype)) {
+			getDatatypes().put(pluralDatatype, datatype);
 		}
 	}
 
 	/**
-	 * Removes a datatype from the set of datatypes.
-	 * @param datatype a datatype, must not be null or empty
+	 * Removes a datatype from the types map.
+	 * @param pluralDatatype a datatype, must not be null or empty
 	 */
-	public void removeDatatypes(String... datatype) {
-		if (datatype != null && datatype.length > 0) {
-			getDatatypes().removeAll(Arrays.asList(datatype));
+	public void removeDatatype(String pluralDatatype) {
+		if (!StringUtils.isBlank(pluralDatatype)) {
+			getDatatypes().remove(pluralDatatype);
 		}
 	}
 

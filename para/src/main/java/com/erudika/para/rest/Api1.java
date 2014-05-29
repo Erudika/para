@@ -21,7 +21,6 @@ import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.persistence.DAO;
-import static com.erudika.para.rest.Api1.PATH;
 import com.erudika.para.rest.RestUtils.ForbiddenExceptionMapper;
 import com.erudika.para.rest.RestUtils.GenericExceptionMapper;
 import com.erudika.para.rest.RestUtils.InternalExceptionMapper;
@@ -37,12 +36,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.MediaType;
@@ -61,7 +58,6 @@ import org.slf4j.LoggerFactory;
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@ApplicationPath(PATH)
 public final class Api1 extends ResourceConfig {
 
 	public static final String PATH = "/v1/";
@@ -74,8 +70,8 @@ public final class Api1 extends ResourceConfig {
 	private static final String POST = HttpMethod.POST;
 	private static final String DELETE = HttpMethod.DELETE;
 
-	private static final Set<Class<? extends ParaObject>> coreClasses = new HashSet<Class<? extends ParaObject>>();
-	private static final Set<String> allTypes = new LinkedHashSet<String>();
+	// maps plural to singular type definitions
+	private static final Map<String, String> coreTypes = new HashMap<String, String>();
 
 	private final DAO dao;
 	private final Search search;
@@ -91,11 +87,8 @@ public final class Api1 extends ResourceConfig {
 			return;
 		}
 
-		RestUtils.scanForDomainClasses(coreClasses);
 		setApplicationName(Config.APP_NAME_NS);
 
-//		register(JsonParseExceptionMapper.class);
-//		register(JsonMappingExceptionMapper.class);
 		register(new JacksonJsonProvider(Utils.getJsonMapper()));
 		register(GenericExceptionMapper.class);
 		register(ForbiddenExceptionMapper.class);
@@ -103,16 +96,10 @@ public final class Api1 extends ResourceConfig {
 		register(InternalExceptionMapper.class);
 		register(UnavailableExceptionMapper.class);
 
+		initCoreTypes();
+
 		// core objects CRUD API
-		try {
-			for (Class<? extends ParaObject> clazz : coreClasses) {
-				ParaObject p = clazz.newInstance();
-				registerCrudApi(p.getPlural(), crudHandler(Utils.type(clazz)));
-				allTypes.add(p.getPlural());
-			}
-		} catch (Exception ex) {
-			logger.error(null, ex);
-		}
+		registerCrudApi("{type}", typeCrudHandler());
 
 		// search API
 		Resource.Builder searchRes = Resource.builder("search");
@@ -131,16 +118,26 @@ public final class Api1 extends ResourceConfig {
 
 		// user-defined types
 		Resource.Builder typesRes = Resource.builder("types");
-		typesRes.addMethod(GET).produces(JSON).handledBy(readTypesHandler());
-		typesRes.addMethod(POST).produces(JSON).consumes(JSON).handledBy(addRemoveTypesHandler());
-		typesRes.addMethod(DELETE).produces(JSON).handledBy(addRemoveTypesHandler());
+		typesRes.addMethod(GET).produces(JSON).handledBy(listTypesHandler());
 		registerResources(typesRes.build());
-		registerCrudApi("{type}", typeCrudHandler());
 
 		// util functions API
 		Resource.Builder utilsRes = Resource.builder("utils");
 		utilsRes.addMethod(GET).produces(JSON).handledBy(utilsHandler());
 		registerResources(utilsRes.build());
+	}
+
+	private void initCoreTypes() {
+		Set<Class<? extends ParaObject>> coreClasses = new HashSet<Class<? extends ParaObject>>();
+		RestUtils.scanForDomainClasses(coreClasses);
+		try {
+			for (Class<? extends ParaObject> clazz : coreClasses) {
+				ParaObject p = clazz.newInstance();
+				coreTypes.put(p.getPlural(), p.getType());
+			}
+		} catch (Exception ex) {
+			logger.error(null, ex);
+		}
 	}
 
 	private void registerCrudApi(String path, Inflector<ContainerRequestContext, Response> handler) {
@@ -198,19 +195,33 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> typeCrudHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				String id = ctx.getUriInfo().getPathParameters().getFirst(Config._ID);
-				String type = ctx.getUriInfo().getPathParameters().getFirst(Config._TYPE);
+				String typePlural = ctx.getUriInfo().getPathParameters().getFirst(Config._TYPE);
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
 				App app = dao.read(new App(appid).getId());
-				if (app != null && !StringUtils.isBlank(type)) {
-					if (app.getDatatypes().contains(type)) {
-						crudHandler(type).apply(ctx);
-					} else {
-						return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST,
-								"Type '" + type + "' is undefined.");
+				if (app != null && !StringUtils.isBlank(typePlural)) {
+					String type = coreTypes.get(typePlural);
+					if (type == null) {
+						type = app.getDatatypes().get(typePlural);
 					}
+					if (type == null && POST.equals(ctx.getMethod())) {
+						Response res = crudHandler(type).apply(ctx);
+						Object ent = res.getEntity();
+						if (ent != null && ent instanceof ParaObject) {
+							type = ((ParaObject) ent).getType();
+							typePlural = ((ParaObject) ent).getPlural();
+							if (type != null) {
+								app.addDatatype(typePlural, type);
+								app.update();
+							}
+						}
+						return res;
+					}
+					if (type == null) {
+						type = typePlural;
+					}
+					return crudHandler(type).apply(ctx);
 				}
-				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "Type '" + type + "' not found.");
+				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found: " + appid);
 			}
 		};
 	}
@@ -241,40 +252,17 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> addRemoveTypesHandler() {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				App app = dao.read(new App(appid).getId());
-				Map<String, Object> tmap = RestUtils.getMapFromEntity(ctx.getEntityStream());
-				if (app != null && tmap != null) {
-					String datatype = (String) tmap.get("type");
-					if (!StringUtils.isBlank(datatype)) {
-						if (POST.equals(ctx.getMethod())) {
-							app.addDatatypes(datatype);
-						} else if (DELETE.equals(ctx.getMethod())) {
-							app.removeDatatypes(datatype);
-						}
-						return Response.ok(app.getDatatypes()).build();
-					} else {
-						return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, "'type' cannot be empty.");
-					}
-				} else {
-					return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST);
-				}
-			}
-		};
-	}
-
-	private Inflector<ContainerRequestContext, Response> readTypesHandler() {
+	private Inflector<ContainerRequestContext, Response> listTypesHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
 				App app = dao.read(new App(appid).getId());
 				if (app != null) {
-					allTypes.addAll(app.getDatatypes());
+					Map<String, String> allTypes = new HashMap<String, String>(app.getDatatypes());
+					allTypes.putAll(coreTypes);
+					return Response.ok(allTypes).build();
 				}
-				return Response.ok(allTypes).build();
+				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found: " + appid);
 			}
 		};
 	}
@@ -341,6 +329,7 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				ParaObject obj = Utils.toObject(type);
+				obj.setType(type);
 				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
 				return RestUtils.getUpdateResponse(dao.read(obj.getId()), ctx.getEntityStream());
 			}
@@ -351,6 +340,7 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				ParaObject obj = Utils.toObject(type);
+				obj.setType(type);
 				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
 				return RestUtils.getDeleteResponse(obj);
 			}

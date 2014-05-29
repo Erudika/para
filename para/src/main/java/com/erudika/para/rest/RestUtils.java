@@ -39,6 +39,7 @@ import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.ServiceUnavailableException;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -157,14 +158,14 @@ public final class RestUtils {
 
 	/**
 	 * Create response as JSON
-	 * @param type type of the object to create
+	 * @param type type of the object to create (not used)
 	 * @param is entity input stream
 	 * @return a status code 201 or 400
 	 */
 	public static Response getCreateResponse(String type, InputStream is) {
 		ParaObject content = null;
 		try {
-			if (is != null) {
+			if (is != null && is.available() > 0) {
 				Map<String, Object> newContent = Utils.getJsonReader(Map.class).readValue(is);
 				content = Utils.setAnnotatedFields(newContent);
 			}
@@ -323,8 +324,7 @@ public final class RestUtils {
 	}
 
 	/**
-	 * This scans a package for Para objects and adds the to the set.
-	 * NOTE: This method is slow!
+	 * This scans a package for Para objects and adds them to the set.
 	 * @param classes a set
 	 */
 	static void scanForDomainClasses(Set<Class<? extends ParaObject>> classes) {
@@ -391,7 +391,11 @@ public final class RestUtils {
 		 * @return a response
 		 */
 		public Response toResponse(final Exception ex) {
-			return getExceptionResponse(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), ex.getMessage());
+			if (ex instanceof WebApplicationException) {
+				return getExceptionResponse(((WebApplicationException) ex).getResponse().getStatus(), ex.getMessage());
+			} else {
+				return getExceptionResponse(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), ex.getMessage());
+			}
 		}
 	}
 

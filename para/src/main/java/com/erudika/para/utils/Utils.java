@@ -912,11 +912,12 @@ public final class Utils {
 			for (Field field : fields) {
 				boolean dontSkip = ((filter == null) ? true : !field.isAnnotationPresent(filter));
 				if (field.isAnnotationPresent(Stored.class) && dontSkip) {
-					Object prop = PropertyUtils.getProperty(bean, field.getName());
-					if (prop == null || isBasicType(field.getType())) {
-						map.put(field.getName(), prop);
+					String name = field.getName();
+					Object value = PropertyUtils.getProperty(bean, name);
+					if (value == null || isBasicType(field.getType())) {
+						map.put(name, value);
 					} else {
-						map.put(field.getName(), getJsonWriterNoIdent().writeValueAsString(prop));
+						map.put(name, getJsonWriterNoIdent().writeValueAsString(value));
 					}
 				}
 			}
@@ -974,13 +975,29 @@ public final class Utils {
 					if (value == null && PropertyUtils.isReadable(bean, name)) {
 						value = PropertyUtils.getProperty(bean, name);
 					}
-					if (value == null || isBasicType(field.getType())) {
-						BeanUtils.setProperty(bean, name, value);
-					} else {
-						Object val = getJsonReader(field.getType()).readValue(value.toString());
-						BeanUtils.setProperty(bean, name, val);
+					// handle complex JSON objects deserialized to Maps, Arrays, etc.
+					if (!isBasicType(field.getType()) && value instanceof String) {
+						// in this case the object is a flattened JSON string coming from the DB
+						value = getJsonReader(field.getType()).readValue(value.toString());
 					}
+					BeanUtils.setProperty(bean, name, value);
 					props.remove(name);
+				}
+			}
+			// handle unknown fields
+			if (!props.isEmpty()) {
+				for (Entry<String, Object> entry : props.entrySet()) {
+					String name = entry.getKey();
+					Object value = entry.getValue();
+					// handle the case where we have custom user-defined properties
+					// which are not defined as Java class fields
+					if (!PropertyUtils.isReadable(bean, name) && bean instanceof Sysprop) {
+						if (value == null) {
+							((Sysprop) bean).removeProperty(name);
+						} else {
+							((Sysprop) bean).addProperty(name, value);
+						}
+					}
 				}
 			}
 		} catch (Exception ex) {

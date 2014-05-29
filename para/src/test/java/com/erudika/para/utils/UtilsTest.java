@@ -23,19 +23,21 @@ import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import static org.junit.Assert.*;
 import static com.erudika.para.utils.Utils.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.After;
+import org.junit.AfterClass;
+import static org.junit.Assert.*;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  *
@@ -314,6 +316,7 @@ public class UtilsTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void testSetAnnotatedFields() {
 		assertNull(setAnnotatedFields(null));
 		assertNull(setAnnotatedFields(new HashMap<String, Object>()));
@@ -324,7 +327,7 @@ public class UtilsTest {
 		map.put(Config._TYPE, Utils.type(User.class));
 		map.put(Config._EMAIL, "u@test.co");
 		map.put(Config._NAME, "User Name");
-		map.put(Config._TAGS, "[\"tag1\",\"tag2\"]");
+		map.put(Config._TAGS, "[\"tag1\",\"tag2\"]");	// flattened JSON string
 		map.put(Config._TIMESTAMP, Long.toString(timestamp));
 
 		User obj = setAnnotatedFields(map);
@@ -343,6 +346,62 @@ public class UtilsTest {
 		assertEquals(map.get(Config._EMAIL), obj2.getEmail());
 		assertEquals(timestamp, obj2.getTimestamp().longValue());
 		assertEquals(true, obj2.getActive());
+
+		// complex nested objects coming from Jackson
+		Map<String, Object> map1 = new HashMap<String, Object>();
+		Map<String, Object> props = new HashMap<String, Object>(){{
+			put("testprop1", "test");
+			put("testprop2", true);
+			put("testprop3", 5);
+			put("testprop4", Collections.singletonList("list"));
+		}};
+
+		map1.put(Config._ID, "123");
+		map1.put(Config._TYPE, Utils.type(Sysprop.class));
+		map1.put(Config._NAME, "Sysprop");
+		map1.put(Config._TIMESTAMP, timestamp);
+		map1.put("properties", props);
+
+		Sysprop sys = setAnnotatedFields(map1);
+		assertNotNull(sys);
+		assertEquals(map1.get(Config._ID), sys.getId());
+		assertEquals(map1.get(Config._TYPE), sys.getType());
+		assertEquals(map1.get(Config._NAME), sys.getName());
+		assertEquals(map1.get(Config._TIMESTAMP), sys.getTimestamp());
+		assertEquals(props.size(), sys.getProperties().size());
+		assertEquals(props.get("testprop1"), sys.getProperties().get("testprop1"));
+		assertEquals(props.get("testprop2"), sys.getProperties().get("testprop2"));
+		assertEquals(props.get("testprop3"), sys.getProperties().get("testprop3"));
+		assertEquals(props.get("testprop4"), sys.getProperties().get("testprop4"));
+		assertEquals(((List<String>) props.get("testprop4")).get(0),
+				((List<String>) sys.getProperties().get("testprop4")).get(0));
+
+		// unknown fields and custom types test
+		map1.put(Config._TYPE, "custom");
+		map1.put("animal", "cat");
+		map1.put("hair", "long");
+		map1.put("color", "white");
+		map1.put("legs", 4);
+
+		Sysprop sys2 = setAnnotatedFields(map1);
+		assertNotNull(sys2);
+		assertEquals(map1.get(Config._ID), sys2.getId());
+		assertEquals(map1.get(Config._TYPE), sys2.getType());
+		assertEquals(map1.get(Config._NAME), sys2.getName());
+		assertEquals(map1.get(Config._TIMESTAMP), sys2.getTimestamp());
+		assertEquals(8, sys2.getProperties().size());
+		assertEquals(map1.get("animal"), sys2.getProperties().get("animal"));
+		assertEquals(map1.get("hair"), sys2.getProperties().get("hair"));
+		assertEquals(map1.get("color"), sys2.getProperties().get("color"));
+		assertEquals(map1.get("legs"), sys2.getProperties().get("legs"));
+
+		map1.put("animal", null);
+		map1.put("hair", null);
+		map1.put("color", null);
+		map1.put("legs", null);
+		// update
+		setAnnotatedFields(sys2, map1, Locked.class);
+		assertEquals(4, sys2.getProperties().size());
 	}
 
 	@Test

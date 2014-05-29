@@ -26,7 +26,7 @@ multiple applications and clients written in any programming language.
 
 ### Architecture
 
-```
+<pre style="font-family: Menlo, 'Courier New', monospace; line-height: 16px !important;">
 +----------------------------------------------------------+
 |                                                          |
 |               Java Domain Objects (POJOs)                |
@@ -53,7 +53,7 @@ multiple applications and clients written in any programming language.
 +----v---------+-------------------------------------------+
 |           Clients : Node.js, Ruby, Python etc.           |
 +----------------------------------------------------------+
-```
+</pre>
 
 ## Getting started
 
@@ -96,7 +96,7 @@ Here's the Maven snippet to include in your `pom.xml`:
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para</artifactId>
-  <version>1.3.1</version>
+  <version>1.4.0</version>
 </dependency>
 ```
 

@@ -159,8 +159,9 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	@Override
 	@NotBlank @Size(min = 2, max = 255)
 	public final String getName() {
-		if (name == null && id != null) {
-			name = getType().concat(" ").concat(id);
+		if (name == null) {
+			name = getType().concat(" ").
+					concat((id == null) ? System.currentTimeMillis() + "" : id);
 		}
 		return name;
 	}
