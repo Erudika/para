@@ -20,7 +20,9 @@ package com.erudika.para.aop;
 import com.erudika.para.annotations.Cached;
 import com.erudika.para.annotations.Indexed;
 import com.erudika.para.cache.Cache;
+import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
+import com.erudika.para.core.User;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
@@ -75,7 +77,6 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 			logger.error(null, e);
 		}
 
-//			result = indexingAction(mi, indexedAnno);
 		Object[] args = mi.getArguments();
 		String appid = AOPUtils.getFirstArgOfString(args);
 
@@ -98,14 +99,16 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					logger.debug("{}: Unindexed {}->{}", cn, appid, removeMe.getId());
 					break;
 				case ADD_ALL:
-					result = mi.proceed();
 					List<ParaObject> addUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
+					removeSpecialClasses(addUs);
+					result = mi.proceed();
 					search.indexAll(appid, addUs);
 					logger.debug("{}: Indexed all {}->#{}", cn, appid, addUs.size());
 					break;
 				case REMOVE_ALL:
-					result = mi.proceed();
 					List<ParaObject> removeUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
+					removeSpecialClasses(removeUs);
+					result = mi.proceed();
 					search.unindexAll(appid, removeUs);
 					logger.debug("{}: Unindexed all {}->#{}", cn, appid, removeUs.size());
 					break;
@@ -166,7 +169,8 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					break;
 				case PUT_ALL:
 					List<ParaObject> putUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
-					if (putUs != null) {
+					removeSpecialClasses(putUs);
+					if (putUs != null && !putUs.isEmpty()) {
 						Map<String, ParaObject> map1 = new LinkedHashMap<String, ParaObject>();
 						for (ParaObject paraObject : putUs) {
 							map1.put(paraObject.getId(), paraObject);
@@ -177,7 +181,8 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					break;
 				case DELETE_ALL:
 					List<ParaObject> deleteUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
-					if (deleteUs != null) {
+					removeSpecialClasses(deleteUs);
+					if (deleteUs != null && !deleteUs.isEmpty()) {
 						List<String> list = new ArrayList<String>();
 						for (ParaObject paraObject : deleteUs) {
 							list.add(paraObject.getId());
@@ -191,6 +196,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 			}
 		}
 
+		// both searching and caching are disabled - pass it through
 		if (indexedAnno == null && cachedAnno == null) {
 			result = mi.proceed();
 		}
@@ -198,4 +204,14 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		return result;
 	}
 
+	private void removeSpecialClasses(List<ParaObject> objects) {
+		if (objects != null) {
+			ArrayList<ParaObject> list = new ArrayList<ParaObject>(objects);
+			for (ParaObject paraObject : list) {
+				if (paraObject instanceof User || paraObject instanceof App) {
+					objects.remove(paraObject);
+				}
+			}
+		}
+	}
 }

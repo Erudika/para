@@ -77,6 +77,7 @@ public class IndexBasedDAO implements DAO {
 		if (so.getTimestamp() == null) {
 			so.setTimestamp(Utils.timestamp());
 		}
+		so.setAppid(appid);
 		getMap(appid).put(so.getId(), Utils.setAnnotatedFields(Utils.toObject(so.getType()),
 				Utils.getAnnotatedFields(so), null));
 		logger.debug("DAO.create() {}", so.getId());
@@ -118,11 +119,11 @@ public class IndexBasedDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> void createAll(String appid, List<P> objects) {
-		if (StringUtils.isBlank(appid)) {
+		if (StringUtils.isBlank(appid) || objects == null) {
 			return;
 		}
 		for (P p : objects) {
-			create(p);
+			create(appid, p);
 		}
 		logger.debug("DAO.createAll() {}", objects.size());
 	}
@@ -161,7 +162,7 @@ public class IndexBasedDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> void updateAll(String appid, List<P> objects) {
-		if (!StringUtils.isBlank(appid)) {
+		if (!StringUtils.isBlank(appid) && objects != null) {
 			for (P obj : objects) {
 				if (obj != null) {
 					update(appid, obj);
@@ -173,10 +174,10 @@ public class IndexBasedDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> void deleteAll(String appid, List<P> objects) {
-		if (!StringUtils.isBlank(appid)) {
+		if (!StringUtils.isBlank(appid) && objects != null) {
 			for (P obj : objects) {
 				if (obj != null && getMap(appid).containsKey(obj.getId())) {
-					delete(obj);
+					delete(appid, obj);
 				}
 			}
 			logger.debug("DAO.deleteAll() {}", objects.size());

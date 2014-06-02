@@ -54,7 +54,7 @@ public class AppAuthentication implements Authentication {
 	}
 
 	/**
-	 * Null
+	 * Always null (unused).
 	 * @return credentials string
 	 */
 	public Object getCredentials() {
@@ -98,6 +98,6 @@ public class AppAuthentication implements Authentication {
 	 * @return the identifier
 	 */
 	public String getName() {
-		return principal.getAppid();
+		return principal.getId();
 	}
 }

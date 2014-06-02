@@ -21,11 +21,7 @@ import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.persistence.DAO;
-import com.erudika.para.rest.RestUtils.ForbiddenExceptionMapper;
 import com.erudika.para.rest.RestUtils.GenericExceptionMapper;
-import com.erudika.para.rest.RestUtils.InternalExceptionMapper;
-import com.erudika.para.rest.RestUtils.NotFoundExceptionMapper;
-import com.erudika.para.rest.RestUtils.UnavailableExceptionMapper;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.HumanTime;
@@ -55,7 +51,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * This is the main REST API configuration class which defines all endpoints for all resources
+ * and the way API request will be handled. This is API version 1.0.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public final class Api1 extends ResourceConfig {
@@ -91,15 +88,16 @@ public final class Api1 extends ResourceConfig {
 
 		register(new JacksonJsonProvider(Utils.getJsonMapper()));
 		register(GenericExceptionMapper.class);
-		register(ForbiddenExceptionMapper.class);
-		register(NotFoundExceptionMapper.class);
-		register(InternalExceptionMapper.class);
-		register(UnavailableExceptionMapper.class);
+//		register(ForbiddenExceptionMapper.class);
+//		register(NotFoundExceptionMapper.class);
+//		register(InternalExceptionMapper.class);
+//		register(UnavailableExceptionMapper.class);
 
 		initCoreTypes();
 
 		// core objects CRUD API
 		registerCrudApi("{type}", typeCrudHandler());
+		registerBatchCrudApi(batchCrudHandler());
 
 		// search API
 		Resource.Builder searchRes = Resource.builder("search");
@@ -149,6 +147,17 @@ public final class Api1 extends ResourceConfig {
 		core.addChildResource("{id}").addMethod(PUT).produces(JSON).consumes(JSON).handledBy(handler);
 		core.addChildResource("{id}").addMethod(DELETE).produces(JSON).handledBy(handler);
 		registerResources(core.build());
+	}
+
+	private void registerBatchCrudApi(Inflector<ContainerRequestContext, Response> handler) {
+		Resource.Builder batch = Resource.builder();
+		batch.addMethod(GET).produces(JSON).handledBy(handler);
+		batch.addMethod(POST).produces(JSON).consumes(JSON).handledBy(handler);
+		batch.addChildResource("search").addMethod(GET).produces(JSON).handledBy(handler);
+		batch.addChildResource("{id}").addMethod(GET).produces(JSON).handledBy(handler);
+		batch.addChildResource("{id}").addMethod(PUT).produces(JSON).consumes(JSON).handledBy(handler);
+		batch.addChildResource("{id}").addMethod(DELETE).produces(JSON).handledBy(handler);
+		registerResources(batch.build());
 	}
 
 	private Inflector<ContainerRequestContext, Response> utilsHandler() {
@@ -203,6 +212,7 @@ public final class Api1 extends ResourceConfig {
 					if (type == null) {
 						type = app.getDatatypes().get(typePlural);
 					}
+					// register a new data type
 					if (type == null && POST.equals(ctx.getMethod())) {
 						Response res = crudHandler(type).apply(ctx);
 						Object ent = res.getEntity();
@@ -252,6 +262,23 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
+	private Inflector<ContainerRequestContext, Response> batchCrudHandler() {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				if (POST.equals(ctx.getMethod())) {
+					return batchCreateHandler().apply(ctx);
+				} else if (GET.equals(ctx.getMethod())) {
+					return batchReadHandler().apply(ctx);
+				} else if (PUT.equals(ctx.getMethod())) {
+					return batchUpdateHandler().apply(ctx);
+				} else if (DELETE.equals(ctx.getMethod())) {
+					return batchDeleteHandler().apply(ctx);
+				}
+				return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, "Unknown method.");
+			}
+		};
+	}
+
 	private Inflector<ContainerRequestContext, Response> listTypesHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
@@ -275,7 +302,9 @@ public final class Api1 extends ResourceConfig {
 				if (app != null) {
 					app.resetSecret();
 					app.update();
-					return Response.ok(app.credentialsMap()).build();
+					Map<String, String> creds = app.getCredentials();
+					creds.put("info", "Save the secret key! It is showed only once!");
+					return Response.ok(creds).build();
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found: " + appid);
 			}
@@ -291,18 +320,18 @@ public final class Api1 extends ResourceConfig {
 				} else {
 					app.setName(Config.APP_NAME);
 					app.create();
-					return Response.ok(app.credentialsMap()).build();
+					Map<String, String> creds = app.getCredentials();
+					creds.put("info", "Save the secret key! It is showed only once!");
+					return Response.ok(creds).build();
 				}
 			}
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> searchHandler(final String type) {
+	private Inflector<ContainerRequestContext, Response> createHandler(final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
-				return Response.ok(buildQueryAndSearch(appid, params, type)).build();
+				return RestUtils.getCreateResponse(type, ctx.getEntityStream());
 			}
 		};
 	}
@@ -313,14 +342,6 @@ public final class Api1 extends ResourceConfig {
 				ParaObject obj = Utils.toObject(type);
 				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
 				return RestUtils.getReadResponse(dao.read(obj.getId()));
-			}
-		};
-	}
-
-	private Inflector<ContainerRequestContext, Response> createHandler(final String type) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				return RestUtils.getCreateResponse(type, ctx.getEntityStream());
 			}
 		};
 	}
@@ -340,9 +361,57 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				ParaObject obj = Utils.toObject(type);
+				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
 				obj.setType(type);
+				obj.setAppid(appid);
 				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
 				return RestUtils.getDeleteResponse(obj);
+			}
+		};
+	}
+
+	private Inflector<ContainerRequestContext, Response> batchCreateHandler() {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
+				return RestUtils.getBatchCreateResponse(appid, ctx.getEntityStream());
+			}
+		};
+	}
+
+	private Inflector<ContainerRequestContext, Response> batchReadHandler() {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
+				return RestUtils.getBatchReadResponse(appid, ctx.getUriInfo().getQueryParameters().get("ids"));
+			}
+		};
+	}
+
+	private Inflector<ContainerRequestContext, Response> batchUpdateHandler() {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
+				return RestUtils.getBatchUpdateResponse(appid, ctx.getEntityStream());
+			}
+		};
+	}
+
+	private Inflector<ContainerRequestContext, Response> batchDeleteHandler() {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
+				return RestUtils.getBatchDeleteResponse(appid, ctx.getEntityStream());
+			}
+		};
+	}
+
+	private Inflector<ContainerRequestContext, Response> searchHandler(final String type) {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
+				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
+				return Response.ok(buildQueryAndSearch(appid, params, type)).build();
 			}
 		};
 	}
@@ -369,6 +438,10 @@ public final class Api1 extends ResourceConfig {
 				items = Collections.singletonList(obj);
 				pager.setCount(1);
 			}
+		} else if ("nearby".equals(queryType)) {
+			List<String> ids = params.get("ids");
+			items = search.findByIds(appid, ids);
+			pager.setCount(items.size());
 		} else if ("nearby".equals(queryType)) {
 			String latlng = params.getFirst("latlng");
 			if (latlng != null) {

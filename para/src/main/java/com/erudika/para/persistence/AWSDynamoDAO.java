@@ -92,6 +92,7 @@ public class AWSDynamoDAO implements DAO {
 		if (so.getTimestamp() == null) {
 			so.setTimestamp(Utils.timestamp());
 		}
+		so.setAppid(appid);
 		createRow(so.getId(), appid, toRow(so, null));
 		logger.debug("DAO.create() {}", so.getId());
 		return so.getId();
@@ -128,13 +129,13 @@ public class AWSDynamoDAO implements DAO {
 	//				ROW FUNCTIONS
 	/////////////////////////////////////////////
 
-	private String createRow(String key, String cf, Map<String, AttributeValue> row) {
-		if (StringUtils.isBlank(key) || StringUtils.isBlank(cf) || row == null || row.isEmpty()) {
+	private String createRow(String key, String appid, Map<String, AttributeValue> row) {
+		if (StringUtils.isBlank(key) || StringUtils.isBlank(appid) || row == null || row.isEmpty()) {
 			return null;
 		}
 		try {
 			setRowKey(key, row);
-			PutItemRequest putItemRequest = new PutItemRequest(cf, row);
+			PutItemRequest putItemRequest = new PutItemRequest(appid, row);
 			client().putItem(putItemRequest);
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -142,8 +143,8 @@ public class AWSDynamoDAO implements DAO {
 		return key;
 	}
 
-	private void updateRow(String key, String cf, Map<String, AttributeValue> row) {
-		if (StringUtils.isBlank(key) || StringUtils.isBlank(cf) || row == null || row.isEmpty()) {
+	private void updateRow(String key, String appid, Map<String, AttributeValue> row) {
+		if (StringUtils.isBlank(key) || StringUtils.isBlank(appid) || row == null || row.isEmpty()) {
 			return;
 		}
 		Map<String, AttributeValueUpdate> rou = new HashMap<String, AttributeValueUpdate>();
@@ -151,7 +152,7 @@ public class AWSDynamoDAO implements DAO {
 			for (Entry<String, AttributeValue> attr : row.entrySet()) {
 				rou.put(attr.getKey(), new AttributeValueUpdate(attr.getValue(), AttributeAction.PUT));
 			}
-			UpdateItemRequest updateItemRequest = new UpdateItemRequest(cf,
+			UpdateItemRequest updateItemRequest = new UpdateItemRequest(appid,
 					Collections.singletonMap(Config._KEY, new AttributeValue(key)), rou);
 			client().updateItem(updateItemRequest);
 		} catch (Exception e) {
@@ -159,13 +160,13 @@ public class AWSDynamoDAO implements DAO {
 		}
 	}
 
-	private Map<String, AttributeValue> readRow(String key, String cf) {
-		if (StringUtils.isBlank(key) || StringUtils.isBlank(cf)) {
+	private Map<String, AttributeValue> readRow(String key, String appid) {
+		if (StringUtils.isBlank(key) || StringUtils.isBlank(appid)) {
 			return null;
 		}
 		Map<String, AttributeValue> row = null;
 		try {
-			GetItemRequest getItemRequest = new GetItemRequest(cf,
+			GetItemRequest getItemRequest = new GetItemRequest(appid,
 					Collections.singletonMap(Config._KEY, new AttributeValue(key)));
 			GetItemResult res = client().getItem(getItemRequest);
 			if (res != null && res.getItem() != null && !res.getItem().isEmpty()) {
@@ -177,12 +178,12 @@ public class AWSDynamoDAO implements DAO {
 		return (row == null || row.isEmpty()) ? null : row;
 	}
 
-	private void deleteRow(String key, String cf) {
-		if (StringUtils.isBlank(key) || StringUtils.isBlank(cf)) {
+	private void deleteRow(String key, String appid) {
+		if (StringUtils.isBlank(key) || StringUtils.isBlank(appid)) {
 			return;
 		}
 		try {
-			DeleteItemRequest delItemRequest = new DeleteItemRequest(cf,
+			DeleteItemRequest delItemRequest = new DeleteItemRequest(appid,
 					Collections.singletonMap(Config._KEY, new AttributeValue(key)));
 			client().deleteItem(delItemRequest);
 		} catch (Exception e) {
@@ -213,6 +214,13 @@ public class AWSDynamoDAO implements DAO {
 		for (int i = 0; i < batchSteps; i++) {
 			while (it.hasNext() && j < MAX_ITEMS_PER_BATCH) {
 				ParaObject object = it.next();
+				if (StringUtils.isBlank(object.getId())) {
+					object.setId(Utils.getNewId());
+				}
+				if (object.getTimestamp() == null) {
+					object.setTimestamp(Utils.timestamp());
+				}
+				object.setAppid(appid);
 				Map<String, AttributeValue> row = toRow(object, null);
 				setRowKey(object.getId(), row);
 				reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(row)));
@@ -295,10 +303,12 @@ public class AWSDynamoDAO implements DAO {
 		// DynamoDB doesn't have a BatchUpdate API yet so we have to do one of the following:
 		// - read items from db then recreate them with changes applied
 		// - update items one by one (chosen for simplicity)
-		for (P object : objects) {
-			update(appid, object);
+		if (objects != null) {
+			for (P object : objects) {
+				update(appid, object);
+			}
+			logger.debug("DAO.updateAll() {}", objects.size());
 		}
-		logger.debug("DAO.updateAll() {}", objects.size());
 	}
 
 	@Override

@@ -17,28 +17,28 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.utils.Pager;
 import com.erudika.para.Para;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import javax.validation.constraints.Size;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import java.util.List;
 import org.hibernate.validator.constraints.NotBlank;
 
 /**
@@ -57,7 +57,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 
 	@Stored private Long updated;
 	@Stored private String name;
-	@Stored private Set<String> tags;
+	@Stored private List<String> tags;
 	@Stored private Integer votes;
 
 	@Stored @Locked private String plural;
@@ -68,6 +68,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 
 	private transient DAO dao;
 	private transient Search search;
+	private transient Set<String> tagz;
 
 	/**
 	 * Returns the core persistence object.
@@ -254,12 +255,12 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	///////////////////////////////////////
 
 	@Override
-	public Set<String> getTags() {
+	public List<String> getTags() {
 		return tags;
 	}
 
 	@Override
-	public void setTags(Set<String> tags) {
+	public void setTags(List<String> tags) {
 		if (tags == null || tags.isEmpty()) {
 			this.tags = tags;
 		} else {
@@ -273,14 +274,17 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	 */
 	public void addTags(String... tag) {
 		if (tag != null && tag.length > 0) {
-			if (tags == null) {
-				tags = new LinkedHashSet<String>();
+			if (tags == null || tagz == null) {
+				tagz = new HashSet<String>();
+				tags = new ArrayList<String>();
 			}
 			for (String t : tag) {
 				if (!StringUtils.isBlank(t)) {
-					tags.add(t);
+					tagz.add(Utils.noSpaces(Utils.stripAndTrim(t), "-"));
 				}
 			}
+			tags.clear();
+			tags.addAll(tagz);
 		}
 	}
 
@@ -289,8 +293,10 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	 * @param tag a tag, must not be null or empty
 	 */
 	public void removeTags(String... tag) {
-		if (tags != null && tag != null && tag.length > 0) {
-			tags.removeAll(Arrays.asList(tag));
+		if (tagz != null && tag != null && tag.length > 0) {
+			tagz.removeAll(Arrays.asList(tag));
+			tags.clear();
+			tags.addAll(tagz);
 		}
 	}
 

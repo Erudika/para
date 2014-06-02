@@ -50,7 +50,7 @@ public final class AWSDynamoUtils {
 	 * Returns a client instance for AWS DynamoDB
 	 * @return a client that talks to DynamoDB
 	 */
-	public static AmazonDynamoDBClient getClient() {
+	protected static AmazonDynamoDBClient getClient() {
 		if (ddbClient != null) {
 			return ddbClient;
 		}
@@ -76,7 +76,7 @@ public final class AWSDynamoUtils {
 	 * Stops the client and releases resources.
 	 * <b>There's no need to call this explicitly!</b>
 	 */
-	public static void shutdownClient() {
+	protected static void shutdownClient() {
 		if (ddbClient != null) {
 			ddbClient.shutdown();
 			ddbClient = null;

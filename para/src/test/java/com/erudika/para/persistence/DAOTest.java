@@ -17,6 +17,7 @@
  */
 package com.erudika.para.persistence;
 
+import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
 import com.erudika.para.search.Search;
@@ -24,10 +25,10 @@ import com.erudika.para.utils.Utils;
 import java.util.Arrays;
 import java.util.Map;
 import org.junit.After;
-import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Test;
 import static org.mockito.Mockito.*;
 /**
  *
@@ -86,7 +87,7 @@ public abstract class DAOTest {
 		u.setId(u.getId()+"-APP1");
 		u.setName("UserApp1");
 		dao.create(appid1, u);
-		assertNotNull(dao.read(appid1, u.getId()));
+		assertEquals(appid1, dao.read(appid1, u.getId()).getAppid());
 		assertNull(dao.read(u.getId()));
 		assertNull(dao.read(appid2, u.getId()));
 
@@ -125,64 +126,87 @@ public abstract class DAOTest {
 
 	@Test
 	public void testCreateAllReadAllUpdateAllDeleteAll() {
-		Tag t1 = new Tag("t1");
-		Tag t2 = new Tag("t2");
-		Tag t3 = new Tag("t3");
+		Sysprop t1 = new Sysprop("sp1");
+		Sysprop t2 = new Sysprop("sp2");
+		Sysprop t3 = new Sysprop("sp3");
+
+		// multi app support
+		dao.createAll(appid1, Arrays.asList(t1, t2, t3));
+		assertEquals(appid1, dao.read(appid1, t2.getId()).getAppid());
+		assertNull(dao.read(t2.getId()));
+		assertNull(dao.read(appid2, t2.getId()));
+
+		dao.createAll(null);
 		dao.createAll(Arrays.asList(t1, t2, t3));
+
+		assertNotNull(t1.getId());
+		assertNotNull(t2.getId());
+		assertNotNull(t3.getId());
+		assertNotNull(t1.getTimestamp());
+		assertNotNull(t2.getTimestamp());
+		assertNotNull(t3.getTimestamp());
 		assertNotNull(dao.read(t1.getId()));
 		assertNotNull(dao.read(t2.getId()));
 		assertNotNull(dao.read(t3.getId()));
 
-		Map<String, Tag> tags = dao.readAll(Arrays.asList(t1.getId(), t2.getId(), t3.getId()), true);
-		assertFalse(tags.isEmpty());
-		assertTrue(tags.containsKey(t1.getId()));
-		assertTrue(tags.containsKey(t2.getId()));
-		assertTrue(tags.containsKey(t3.getId()));
+		dao.readAll(null, true);
+		Map<String, Sysprop> props = dao.readAll(Arrays.asList(t1.getId(), t2.getId(), t3.getId()), true);
 
-		assertTrue(t1.equals(tags.get(t1.getId())));
-		assertTrue(t2.equals(tags.get(t2.getId())));
-		assertTrue(t3.equals(tags.get(t3.getId())));
+		assertFalse(props.isEmpty());
+		assertTrue(props.containsKey(t1.getId()));
+		assertTrue(props.containsKey(t2.getId()));
+		assertTrue(props.containsKey(t3.getId()));
 
-		t1.setCount(10);
-		t2.setCount(20);
-		t3.setCount(30);
+		assertTrue(t1.equals(props.get(t1.getId())));
+		assertTrue(t2.equals(props.get(t2.getId())));
+		assertTrue(t3.equals(props.get(t3.getId())));
+
+		t1.setName("Name 1");
+		t2.setName("Name 2");
+		t3.setName("Name 3");
 
 		// these shouldn't go through
 		t1.setType("type1");
 		t2.setType("type2");
 		t3.setType("type3");
 
+		dao.updateAll(null);
 		dao.updateAll(Arrays.asList(t1, t2, t3));
 
-		Tag tr1 = dao.read(t1.getId());
-		Tag tr2 = dao.read(t2.getId());
-		Tag tr3 = dao.read(t3.getId());
+		Sysprop tr1 = dao.read(t1.getId());
+		Sysprop tr2 = dao.read(t2.getId());
+		Sysprop tr3 = dao.read(t3.getId());
 
 		assertEquals(t1.getId(), tr1.getId());
 		assertEquals(t2.getId(), tr2.getId());
 		assertEquals(t3.getId(), tr3.getId());
-		assertEquals(Utils.type(Tag.class), tr1.getType());
-		assertEquals(Utils.type(Tag.class), tr2.getType());
-		assertEquals(Utils.type(Tag.class), tr3.getType());
-		assertEquals(t1.getCount(), tr1.getCount());
-		assertEquals(t2.getCount(), tr2.getCount());
-		assertEquals(t3.getCount(), tr3.getCount());
+		assertEquals(Utils.type(Sysprop.class), tr1.getType());
+		assertEquals(Utils.type(Sysprop.class), tr2.getType());
+		assertEquals(Utils.type(Sysprop.class), tr3.getType());
+		assertEquals(t1.getName(), tr1.getName());
+		assertEquals(t2.getName(), tr2.getName());
+		assertEquals(t3.getName(), tr3.getName());
+		assertNotNull(t1.getUpdated());
+		assertNotNull(t2.getUpdated());
+		assertNotNull(t3.getUpdated());
 
+		dao.deleteAll(null);
 		dao.deleteAll(Arrays.asList(t1, t2, t3));
+
 		assertNull(dao.read(t1.getId()));
 		assertNull(dao.read(t2.getId()));
 		assertNull(dao.read(t3.getId()));
 
 		// update locked field test
-		Tag t4 = new Tag("t4");
+		Sysprop t4 = new Sysprop();
 		t4.setParentid("123");
 		dao.create(t4);
 		t4.setParentid("321");
 		t4.setType("type4");
 		dao.update(t4);
-		Tag tr4 = dao.read(t4.getId());
+		Sysprop tr4 = dao.read(t4.getId());
 		assertEquals(t4.getId(), tr4.getId());
-		assertEquals(Utils.type(Tag.class), tr4.getType());
+		assertEquals(Utils.type(Sysprop.class), tr4.getType());
 		assertEquals("123", tr4.getParentid());
 	}
 

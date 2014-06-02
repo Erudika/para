@@ -22,6 +22,7 @@ import com.erudika.para.annotations.Stored;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
@@ -48,12 +49,9 @@ public class App extends PObject {
 	private static final String prefix = Utils.type(App.class).concat(Config.SEPARATOR);
 
 	@Stored @Locked private boolean shared;
-	@Stored @Locked @NotBlank private String appid;
 	@Stored @Locked @NotBlank private String secret;
 	@Stored private Map<String, String> datatypes;
 	@Stored @Locked private Boolean active;
-
-	private Map<String, String> credentials;
 
 	/**
 	 * No-args constructor
@@ -64,29 +62,33 @@ public class App extends PObject {
 
 	/**
 	 * Default constructor
-	 * @param appid the name of the app
+	 * @param id the name of the app
 	 */
-	public App(String appid) {
+	public App(String id) {
 		this.shared = false;
 		this.active = true;
-		setAppid(appid);
+		this.secret = Utils.generateSecurityToken(20);
+		setId(id);
 		setName(getName());
 	}
 
 	@Override
-	public void setId(String id) {
-		if (StringUtils.isBlank(id) || StringUtils.startsWith(id, prefix)) {
-			super.setId(id);
-		} else {
-			setAppid(id);
-			super.setId(prefix.concat(getAppid()));
+	public final void setId(String id) {
+		if (StringUtils.startsWith(id, prefix)) {
+			super.setId(prefix.concat(Utils.noSpaces(Utils.stripAndTrim(id.replaceAll(prefix, "")), "-")));
+		} else if (id != null) {
+			super.setId(prefix.concat(Utils.noSpaces(Utils.stripAndTrim(id), "-")));
 		}
 	}
 
 	@Override
 	public String getObjectURI() {
 		String defurl = "/".concat(getPlural());
-		return (getAppid() != null) ? defurl.concat("/").concat(getAppid()) : defurl;
+		return (getId() != null) ? defurl.concat("/").concat(getId()) : defurl;
+	}
+
+	public String getAppIdentifier() {
+		return (getId() != null) ? getId().replaceFirst(prefix, "") : "";
 	}
 
 	/**
@@ -120,19 +122,6 @@ public class App extends PObject {
 	 */
 	public void setSecret(String secret) {
 		this.secret = secret;
-	}
-
-	@Override
-	public final String getAppid() {
-		return appid;
-	}
-
-	@Override
-	public final void setAppid(String appid) {
-		this.appid = Utils.stripAndTrim(Utils.noSpaces(appid, ""));
-		if (!this.appid.isEmpty()) {
-			setId(prefix.concat(appid));
-		}
 	}
 
 	/**
@@ -203,20 +192,19 @@ public class App extends PObject {
 	 * Returns the map containing the app's access key and secret key.
 	 * @return a map of API keys (never null)
 	 */
+	@JsonIgnore
 	public Map<String, String> getCredentials() {
-		return credentials;
-	}
-
-	/**
-	 * Builds a map of access key and secret key, plus some information
-	 * @return a map of API keys
-	 */
-	public Map<String, String> credentialsMap() {
-		Map<String, String> creds = new HashMap<String, String>();
-		creds.put("accessKey", Utils.base64enc(getId().getBytes()));
-		creds.put("secretKey", getSecret());
-		creds.put("info", "Save the secret key! It is showed only once!");
-		return creds;
+		if (getId() == null) {
+			return Collections.emptyMap();
+		} else {
+			return new HashMap<String, String>() {
+				private static final long serialVersionUID = 1L;
+				{
+					put("accessKey", Utils.base64enc(getId().getBytes()));
+					put("secretKey", getSecret());
+				}
+			};
+		}
 	}
 
 	@Override
@@ -224,24 +212,15 @@ public class App extends PObject {
 		if (getId() != null && this.exists()) {
 			return null;
 		}
-		if (StringUtils.isBlank(secret)) {
-			resetSecret();
-		}
-		// show credentials when viewed as JSON
-		credentials = credentialsMap();
-		return getDao().create(this);
+		resetSecret();
+		return super.create();
 	}
 
-	/**
-	 * Reads the application from the datastore.
-	 * @param appWithId app with the id set
-	 * @return an App instance or null
-	 */
-	public static App readApp(App appWithId) {
-		if (appWithId == null || StringUtils.isBlank(appWithId.getId())) {
-			return null;
+	@Override
+	public void delete() {
+		// root app cannot be deleted
+		if (!StringUtils.equals(getId(), prefix.concat(Config.APP_NAME_NS))) {
+			super.delete();
 		}
-		return appWithId.getDao().read(appWithId.getId());
 	}
-
 }

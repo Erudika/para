@@ -84,7 +84,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 					} else if (!StringUtils.isBlank(id)) {
 						App app = new App();
 						app.setId(id);
-						app = App.readApp(app);
+						app = app.getDao().read(id);
 
 						if (app != null) {
 							if (signer.isValidSignature(request, app.getSecret())) {

@@ -19,7 +19,7 @@ package com.erudika.para.core;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.Serializable;
-import java.util.Set;
+import java.util.List;
 
 /**
  * The core domain interface. All Para objects implement it.
@@ -158,13 +158,13 @@ public interface ParaObject extends Serializable {
 	 * @return a set of tags, or an empty set
 	 * @see Tag
 	 */
-	Set<String> getTags();
+	List<String> getTags();
 
 	/**
 	 * Merges the given tags with existing tags.
 	 * @param tags the additional tags, or clears all tags if set to null
 	 */
-	void setTags(Set<String> tags);
+	void setTags(List<String> tags);
 
 	/**
 	 * Stores this object in the data store.

@@ -22,8 +22,7 @@ import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -116,13 +115,13 @@ public class PObjectTest {
 	@Test
 	public void testAddRemoveTags() {
 		User u1 = new User("111");
-		Set<String> someTags = new HashSet<String>();
+		List<String> someTags = new ArrayList<String>();
 		someTags.add("one");
 		someTags.add("two");
 		someTags.add("");
 		someTags.add(" ");
 		someTags.add(null);
-		Set<String> cleanTags = new HashSet<String>();
+		List<String> cleanTags = new ArrayList<String>();
 		cleanTags.add("one");
 		cleanTags.add("two");
 		u1.setTags(someTags);
@@ -141,6 +140,12 @@ public class PObjectTest {
 		assertEquals(3, u1.getTags().size());
 		assertFalse(u1.getTags().contains("two"));
 		assertFalse(u1.getTags().contains("four"));
+
+		u1.addTags("one", "five");
+		assertEquals(3, u1.getTags().size());
+		u1.removeTags("two");
+		assertEquals(3, u1.getTags().size());
+		u1.removeTags(null, null);
 
 		u1.setTags(null);
 		assertNull(u1.getTags());

@@ -45,6 +45,13 @@ public class TagTest {
 		assertEquals("tag:test", t.getId());
 		t.setId("test1");
 		assertEquals("tag:test1", t.getId());
+
+		t.setId("tag:tag:test tag ? @#$%^&>?<~`|\\;:./>-= COOL");
+		assertEquals("tag:test-tag-cool", t.getId());
+		assertEquals("test-tag-cool", t.getTag());
+		t.setId("tag ? @#$%^&>?<~`|\\;:./>-= COOL");
+		assertEquals("tag:tag-cool", t.getId());
+		assertEquals("tag-cool", t.getTag());
 	}
 
 	@Test
@@ -80,7 +87,11 @@ public class TagTest {
 	@Test
 	public void testSetTag() {
 		t.setTag("test1");
-		assertEquals("tag:test1", t.getId());
+		assertEquals("test1", t.getTag());
+		t.setTag(null);
+		assertTrue(t.getTag().isEmpty());
+		t.setTag("tag:test tag ? @#$%^&>?<~`|\\;:./>-= COOL");
+		assertEquals("tagtest-tag-cool", t.getTag());
 	}
 
 	@Test

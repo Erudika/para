@@ -20,6 +20,10 @@ package com.erudika.para.aop;
 import com.erudika.para.Para;
 import com.erudika.para.cache.Cache;
 import com.erudika.para.cache.MockCache;
+import com.erudika.para.core.App;
+import com.erudika.para.core.ParaObject;
+import com.erudika.para.core.Sysprop;
+import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
@@ -46,9 +50,9 @@ import org.slf4j.LoggerFactory;
 public class AspectsIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(AspectsIT.class);
-	private static User u;
-	private static User u1;
-	private static User u2;
+	private static Sysprop s0;
+	private static Sysprop s1;
+	private static Sysprop s2;
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
@@ -63,32 +67,20 @@ public class AspectsIT {
 
 		ElasticSearchUtils.createIndex(Config.APP_NAME_NS);
 
-		u = new User("111");
-		u.setName("John Doe");
-		u.setGroups(User.Groups.USERS.toString());
-		u.setEmail("john@asd.com");
-		u.setIdentifier(u.getEmail());
-		u.setTimestamp(Utils.timestamp());
-		u.setPassword("123456");
-		u.addTags("one", "two", "three");
+		s0 = new Sysprop("111");
+		s0.setName("John Doe");
+		s0.setTimestamp(Utils.timestamp());
+		s0.addTags("one", "two", "three");
 
-		u1 = new User("222");
-		u1.setName("Joe Black");
-		u1.setGroups(User.Groups.USERS.toString());
-		u1.setEmail("joe@asd.com");
-		u1.setIdentifier(u1.getEmail());
-		u1.setTimestamp(Utils.timestamp());
-		u1.setPassword("123456");
-		u1.addTags("two", "four", "three");
+		s1 = new Sysprop("222");
+		s1.setName("Joe Black");
+		s1.setTimestamp(Utils.timestamp());
+		s1.addTags("two", "four", "three");
 
-		u2 = new User("333");
-		u2.setName("Ann Smith");
-		u2.setGroups(User.Groups.USERS.toString());
-		u2.setEmail("ann@asd.com");
-		u2.setIdentifier(u2.getEmail());
-		u2.setTimestamp(Utils.timestamp());
-		u2.setPassword("123456");
-		u2.addTags("four", "five", "three");
+		s2 = new Sysprop("333");
+		s2.setName("Ann Smith");
+		s2.setTimestamp(Utils.timestamp());
+		s2.addTags("four", "five", "three");
 
 	}
 
@@ -96,9 +88,9 @@ public class AspectsIT {
 	public static void tearDownClass() throws Exception {
 		ElasticSearchUtils.deleteIndex(Config.APP_NAME_NS);
 		Para.destroy();
-		u = null;
-		u1 = null;
-		u2 = null;
+		s0 = null;
+		s1 = null;
+		s2 = null;
 	}
 
 	@Test
@@ -107,8 +99,8 @@ public class AspectsIT {
 		Search s = Para.getSearch();
 		Cache c = Para.getCache();
 
-		assertNotNull(u.create());
-		assertNotNull(d.read(u.getId()));
+		assertNotNull(s0.create());
+		assertNotNull(d.read(s0.getId()));
 
 		User uB = new User("invalid");
 		uB.setIdentifier(null); // no identifier (username)
@@ -135,50 +127,81 @@ public class AspectsIT {
 		assertNull(s.findById(uB.getId()));
 		assertNull(c.get(uB.getId()));
 
-		ArrayList<User> list = new ArrayList<User>();
-		list.add(u);
-		list.add(u1);
-		list.add(u2);
+		ArrayList<Sysprop> list = new ArrayList<Sysprop>();
+		list.add(s0);
+		list.add(s1);
+		list.add(s2);
 
 		d.createAll(list);
-		assertNotNull(d.read(u.getId()));
-		assertNotNull(s.findById(u.getId()));
-		assertNotNull(c.get(u.getId()));
+		assertNotNull(d.read(s0.getId()));
+		assertNotNull(s.findById(s0.getId()));
+		assertNotNull(c.get(s0.getId()));
 
-		assertNotNull(d.read(u1.getId()));
-		assertNotNull(s.findById(u1.getId()));
-		assertNotNull(c.get(u1.getId()));
+		assertNotNull(d.read(s1.getId()));
+		assertNotNull(s.findById(s1.getId()));
+		assertNotNull(c.get(s1.getId()));
 
-		assertNotNull(d.read(u2.getId()));
-		assertNotNull(s.findById(u2.getId()));
-		assertNotNull(c.get(u2.getId()));
+		assertNotNull(d.read(s2.getId()));
+		assertNotNull(s.findById(s2.getId()));
+		assertNotNull(c.get(s2.getId()));
 
 		logger.debug("---- read all from cache ----");
-		Map<String, User> map = d.readAll(Arrays.asList(u.getId(), u1.getId(), u2.getId()), true);
-		assertTrue(map.containsKey(u.getId()));
-		assertTrue(map.containsKey(u1.getId()));
-		assertTrue(map.containsKey(u2.getId()));
+		Map<String, User> map = d.readAll(Arrays.asList(s0.getId(), s1.getId(), s2.getId()), true);
+		assertTrue(map.containsKey(s0.getId()));
+		assertTrue(map.containsKey(s1.getId()));
+		assertTrue(map.containsKey(s2.getId()));
 
 		logger.debug("---- cache remove ----");
-		c.remove(u1.getId());
-		c.remove(u2.getId());
-		d.readAll(Arrays.asList(u.getId(), u1.getId(), u2.getId()), true);
-		assertTrue(c.contains(u1.getId()));
-		assertTrue(c.contains(u2.getId()));
+		c.remove(s1.getId());
+		c.remove(s2.getId());
+		d.readAll(Arrays.asList(s0.getId(), s1.getId(), s2.getId()), true);
+		assertTrue(c.contains(s1.getId()));
+		assertTrue(c.contains(s2.getId()));
 
 		logger.debug("---- delete all ----");
 		d.deleteAll(list);
-		assertNull(d.read(u.getId()));
-		assertNull(s.findById(u.getId()));
-		assertNull(c.get(u.getId()));
+		assertNull(d.read(s0.getId()));
+		assertNull(s.findById(s0.getId()));
+		assertNull(c.get(s0.getId()));
 
-		assertNull(d.read(u1.getId()));
-		assertNull(s.findById(u1.getId()));
-		assertNull(c.get(u1.getId()));
+		assertNull(d.read(s1.getId()));
+		assertNull(s.findById(s1.getId()));
+		assertNull(c.get(s1.getId()));
 
-		assertNull(d.read(u2.getId()));
-		assertNull(s.findById(u2.getId()));
-		assertNull(c.get(u2.getId()));
+		assertNull(d.read(s2.getId()));
+		assertNull(s.findById(s2.getId()));
+		assertNull(c.get(s2.getId()));
+
+		// test skipping special classes calling batch methods
+		App app1 = new App("app1");
+		User user1 = new User("user1");
+		user1.setName("John Doe");
+		user1.setGroups(User.Groups.USERS.toString());
+		user1.setEmail("john1@asd.com");
+		user1.setIdentifier(user1.getEmail());
+		user1.setTimestamp(Utils.timestamp());
+		user1.setPassword("123456");
+		Tag t1 = new Tag("testtag123");
+
+		ArrayList<ParaObject> list1 = new ArrayList<ParaObject>();
+		list1.add(app1);
+		list1.add(user1);
+		list1.add(t1);
+		Para.getDAO().createAll(list1);
+
+		assertNull(Para.getDAO().read(app1.getId()));
+		assertNull(Para.getDAO().read(user1.getId()));
+		assertNotNull(Para.getDAO().read(t1.getId()));
+
+		assertNull(Para.getSearch().findById(app1.getId()));
+		assertNull(Para.getSearch().findById(user1.getId()));
+		assertNotNull(Para.getSearch().findById(t1.getId()));
+
+		assertFalse(Para.getCache().contains(app1.getId()));
+		assertFalse(Para.getCache().contains(user1.getId()));
+		assertTrue(Para.getCache().contains(t1.getId()));
+
+
 	}
 
 }

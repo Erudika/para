@@ -17,6 +17,7 @@
  */
 package com.erudika.para.persistence;
 
+import com.erudika.para.Para;
 import com.erudika.para.search.ElasticSearch;
 import com.erudika.para.search.ElasticSearchUtils;
 import com.erudika.para.search.Search;
@@ -47,7 +48,7 @@ public class IndexBasedDAOIT extends DAOTest {
 		ElasticSearchUtils.deleteIndex(Config.APP_NAME_NS);
 		ElasticSearchUtils.deleteIndex(appid1);
 		ElasticSearchUtils.deleteIndex(appid2);
-		ElasticSearchUtils.shutdownClient();
+		Para.destroy();
 	}
 
 }

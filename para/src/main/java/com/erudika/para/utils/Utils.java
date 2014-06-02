@@ -873,19 +873,13 @@ public final class Utils {
 		return (so == null) ? false : so.getClass().equals(toClass(so.getType()));
 	}
 
-	/**
-	 * Returns a map of annotated fields of a domain object. Only annotated fields are returned.
-	 * This method forms the basis of an Object/Grid Mapper. It converts an object
-	 * to a map of key/value pairs. That map can later be persisted to a data store.
-	 * <br>
-	 * Field values that are objects (i.e. not primitive types or wrappers) are converted to JSON.
-	 * Null is considered a primitive type. Transient fields and serialVersionUID are skipped.
-	 * @param <P> the object type
-	 * @param bean the object to convert to a map
-	 * @return a map of fields and their values
-	 */
-	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P bean) {
-		return getAnnotatedFields(bean, null);
+	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P pojo) {
+		return getAnnotatedFields(pojo, null);
+	}
+
+	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P pojo,
+			Class<? extends Annotation> filter) {
+		return getAnnotatedFields(pojo, filter, true);
 	}
 
 	/**
@@ -893,32 +887,34 @@ public final class Utils {
 	 * This method forms the basis of an Object/Grid Mapper. It converts an object
 	 * to a map of key/value pairs. That map can later be persisted to a data store.
 	 * <br>
-	 * Field values that are objects (i.e. not primitive types or wrappers) are converted to JSON.
+	 * If {@code convertNestedToJsonString} is true all field values that are objects
+	 * (i.e. not primitive types or wrappers) are converted to a JSON string otherwise they are left as they are
+	 * and will be serialized as regular JSON objects later (structure is preserved).
 	 * Null is considered a primitive type. Transient fields and serialVersionUID are skipped.
 	 * @param <P> the object type
-	 * @param bean the object to convert to a map
+	 * @param pojo the object to convert to a map
 	 * @param filter a filter annotation. fields that have it will be skipped
+	 * @param convertNestedToJsonString true if you want to flatten the nested objects to a JSON string.
 	 * @return a map of fields and their values
 	 */
-	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P bean,
-			Class<? extends Annotation> filter) {
+	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P pojo,
+			Class<? extends Annotation> filter, boolean convertNestedToJsonString) {
 		HashMap<String, Object> map = new HashMap<String, Object>();
-		if (bean == null) {
+		if (pojo == null) {
 			return map;
 		}
 		try {
-			List<Field> fields = getAllDeclaredFields(bean.getClass());
+			List<Field> fields = getAllDeclaredFields(pojo.getClass());
 			// filter transient fields and those without annotations
 			for (Field field : fields) {
 				boolean dontSkip = ((filter == null) ? true : !field.isAnnotationPresent(filter));
 				if (field.isAnnotationPresent(Stored.class) && dontSkip) {
 					String name = field.getName();
-					Object value = PropertyUtils.getProperty(bean, name);
-					if (value == null || isBasicType(field.getType())) {
-						map.put(name, value);
-					} else {
-						map.put(name, getJsonWriterNoIdent().writeValueAsString(value));
+					Object value = PropertyUtils.getProperty(pojo, name);
+					if (!isBasicType(field.getType()) && convertNestedToJsonString) {
+						value = getJsonWriterNoIdent().writeValueAsString(value);
 					}
+					map.put(name, value);
 				}
 			}
 		} catch (Exception ex) {
@@ -928,16 +924,6 @@ public final class Utils {
 		return map;
 	}
 
-	/**
-	 * Converts a map of fields/values to a domain object. Only annotated fields are populated.
-	 * This method forms the basis of an Object/Grid Mapper.
-	 * <br>
-	 * Map values that are JSON objects are converted to their corresponding Java types.
-	 * Nulls and primitive types are preserved.
-	 * @param <P> the object type
-	 * @param data the map of fields/values
-	 * @return the populated object
-	 */
 	public static <P extends ParaObject> P setAnnotatedFields(Map<String, Object> data) {
 		return setAnnotatedFields(null, data, null);
 	}
@@ -949,22 +935,22 @@ public final class Utils {
 	 * Map values that are JSON objects are converted to their corresponding Java types.
 	 * Nulls and primitive types are preserved.
 	 * @param <P> the object type
-	 * @param bean the object to populate with data
+	 * @param pojo the object to populate with data
 	 * @param data the map of fields/values
 	 * @param filter a filter annotation. fields that have it will be skipped
 	 * @return the populated object
 	 */
-	public static <P extends ParaObject> P setAnnotatedFields(P bean, Map<String, Object> data,
+	public static <P extends ParaObject> P setAnnotatedFields(P pojo, Map<String, Object> data,
 			Class<? extends Annotation> filter) {
 		if (data == null || data.isEmpty()) {
 			return null;
 		}
 		try {
-			if (bean == null) {
+			if (pojo == null) {
 				// try to find a declared class in the core package
-				bean = (P) toClass((String) data.get(Config._TYPE)).getConstructor().newInstance();
+				pojo = (P) toClass((String) data.get(Config._TYPE)).getConstructor().newInstance();
 			}
-			List<Field> fields = getAllDeclaredFields(bean.getClass());
+			List<Field> fields = getAllDeclaredFields(pojo.getClass());
 			Map<String, Object> props = new HashMap<String, Object>(data);
 			for (Field field : fields) {
 				boolean dontSkip = ((filter == null) ? true : !field.isAnnotationPresent(filter));
@@ -972,15 +958,15 @@ public final class Utils {
 					String name = field.getName();
 					Object value = data.get(name);
 					// try to read a default value from the bean if any
-					if (value == null && PropertyUtils.isReadable(bean, name)) {
-						value = PropertyUtils.getProperty(bean, name);
+					if (value == null && PropertyUtils.isReadable(pojo, name)) {
+						value = PropertyUtils.getProperty(pojo, name);
 					}
 					// handle complex JSON objects deserialized to Maps, Arrays, etc.
 					if (!isBasicType(field.getType()) && value instanceof String) {
 						// in this case the object is a flattened JSON string coming from the DB
 						value = getJsonReader(field.getType()).readValue(value.toString());
 					}
-					BeanUtils.setProperty(bean, name, value);
+					BeanUtils.setProperty(pojo, name, value);
 					props.remove(name);
 				}
 			}
@@ -991,20 +977,20 @@ public final class Utils {
 					Object value = entry.getValue();
 					// handle the case where we have custom user-defined properties
 					// which are not defined as Java class fields
-					if (!PropertyUtils.isReadable(bean, name) && bean instanceof Sysprop) {
+					if (!PropertyUtils.isReadable(pojo, name) && pojo instanceof Sysprop) {
 						if (value == null) {
-							((Sysprop) bean).removeProperty(name);
+							((Sysprop) pojo).removeProperty(name);
 						} else {
-							((Sysprop) bean).addProperty(name, value);
+							((Sysprop) pojo).addProperty(name, value);
 						}
 					}
 				}
 			}
 		} catch (Exception ex) {
 			logger.error(null, ex);
-			bean = null;
+			pojo = null;
 		}
-		return bean;
+		return pojo;
 	}
 
 	/**

@@ -90,7 +90,7 @@ public class ElasticSearch implements Search {
 		if (so == null || StringUtils.isBlank(appid)) {
 			return;
 		}
-		Map<String, Object> data = Utils.getAnnotatedFields(so);
+		Map<String, Object> data = Utils.getAnnotatedFields(so, null, false);
 		try {
 			IndexRequestBuilder irb = client().prepareIndex(appid,
 					so.getType(), so.getId()).setSource(data);
@@ -119,13 +119,13 @@ public class ElasticSearch implements Search {
 
 	@Override
 	public <P extends ParaObject> void indexAll(String appid, List<P> objects) {
-		if (objects == null || StringUtils.isBlank(appid)) {
+		if (StringUtils.isBlank(appid) || objects == null || objects.isEmpty()) {
 			return ;
 		}
 		BulkRequestBuilder brb = client().prepareBulk();
 		for (ParaObject pObject : objects) {
 			brb.add(client().prepareIndex(appid, pObject.getType(),
-						pObject.getId()).setSource(Utils.getAnnotatedFields(pObject)));
+						pObject.getId()).setSource(Utils.getAnnotatedFields(pObject, null, false)));
 		}
 		brb.execute().actionGet();
 		logger.debug("Search.indexAll() {}", objects.size());
@@ -133,7 +133,7 @@ public class ElasticSearch implements Search {
 
 	@Override
 	public <P extends ParaObject> void unindexAll(String appid, List<P> objects) {
-		if (objects == null || StringUtils.isBlank(appid)) {
+		if (StringUtils.isBlank(appid) || objects == null || objects.isEmpty()) {
 			return ;
 		}
 		BulkRequestBuilder brb = client().prepareBulk();
@@ -161,7 +161,6 @@ public class ElasticSearch implements Search {
 			return list;
 		}
 		try {
-			SearchHits hits = null;
 			MultiGetResponse response = client().prepareMultiGet().add(appid, null, ids).execute().actionGet();
 			for (MultiGetItemResponse multiGetItemResponse : response.getResponses()) {
 				GetResponse res = multiGetItemResponse.getResponse();

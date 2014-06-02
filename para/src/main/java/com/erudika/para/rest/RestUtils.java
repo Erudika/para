@@ -17,8 +17,10 @@
  */
 package com.erudika.para.rest;
 
+import com.erudika.para.Para;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.core.ParaObject;
+import com.erudika.para.core.User;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.core.JsonParseException;
@@ -28,17 +30,15 @@ import java.io.PrintWriter;
 import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.ServiceUnavailableException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -135,7 +135,11 @@ public final class RestUtils {
 		if (princ == null) {
 			return def;
 		} else {
-			return StringUtils.isBlank(princ.getName()) ? def : princ.getName();
+			if (princ instanceof User) {
+				return StringUtils.isBlank(((User) princ).getAppid()) ? null : ((User) princ).getAppid();
+			} else {
+				return StringUtils.isBlank(princ.getName()) ? def : princ.getName();
+			}
 		}
 	}
 
@@ -166,8 +170,15 @@ public final class RestUtils {
 		ParaObject content = null;
 		try {
 			if (is != null && is.available() > 0) {
+				if (is.available() > (1024 * 1024)) {
+					return getStatusResponse(Response.Status.BAD_REQUEST,
+							"Request is too large - the maximum is 1MB.");
+				}
 				Map<String, Object> newContent = Utils.getJsonReader(Map.class).readValue(is);
+				newContent.put(Config._TYPE, type);
 				content = Utils.setAnnotatedFields(newContent);
+			} else {
+				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
 			}
 		} catch (JsonParseException e) {
 			return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
@@ -184,16 +195,13 @@ public final class RestUtils {
 	 * @return a status code 201 or 400
 	 */
 	public static Response getCreateResponse(ParaObject content) {
-		if (content != null && content.getId() != null && content.exists()) {
-			return Response.ok().build();
-		}
 		String[] errors = Utils.validateObject(content);
 		if (content != null && errors.length == 0) {
 			String id = content.create();
 			if (id == null) {
 				return getStatusResponse(Response.Status.BAD_REQUEST, "Failed to create object.");
 			} else {
-				return Response.created(URI.create(content.getObjectURI())).entity(content).build();
+				return Response.created(URI.create(Utils.urlEncode(content.getObjectURI()))).entity(content).build();
 			}
 		} else {
 			return getStatusResponse(Response.Status.BAD_REQUEST, errors);
@@ -209,8 +217,14 @@ public final class RestUtils {
 	public static Response getUpdateResponse(ParaObject object, InputStream is) {
 		Map<String, Object> newContent = null;
 		try {
-			if (is != null) {
+			if (is != null && is.available() > 0) {
+				if (is.available() > (1024 * 1024)) {
+					return getStatusResponse(Response.Status.BAD_REQUEST,
+							"Request is too large - the maximum is 1MB.");
+				}
 				newContent = Utils.getJsonReader(Map.class).readValue(is);
+			} else {
+				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
 			}
 		} catch (JsonParseException e) {
 			return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
@@ -228,7 +242,7 @@ public final class RestUtils {
 	 * @return a status code 200 or 400 or 404
 	 */
 	public static Response getUpdateResponse(ParaObject object, Map<String, Object> newContent) {
-		if (object != null) {
+		if (object != null && object.getAppid() != null) {
 			Utils.setAnnotatedFields(object, newContent, Locked.class);
 			String[] errors = Utils.validateObject(object);
 			if (errors.length == 0) {
@@ -248,12 +262,131 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getDeleteResponse(ParaObject content) {
-		if (content != null && content.getId() != null) {
+		if (content != null && content.getId() != null && content.getAppid() != null) {
 			content.delete();
 			return Response.ok().build();
 		} else {
 			return getStatusResponse(Response.Status.BAD_REQUEST);
 		}
+	}
+
+	/**
+	 * Batch read response as JSON
+	 * @param appid appid
+	 * @param ids list of ids
+	 * @return status code 200 or 400
+	 */
+	public static Response getBatchReadResponse(String appid, List<String> ids) {
+		if (ids != null && !ids.isEmpty()) {
+			return Response.ok(Para.getDAO().readAll(appid, ids, true)).build();
+		} else {
+			return getStatusResponse(Response.Status.BAD_REQUEST, "Missing ids.");
+		}
+	}
+
+	/**
+	 * Batch create response as JSON
+	 * @param appid appid
+	 * @param is entity input stream
+	 * @return a status code 200 or 400
+	 */
+	@SuppressWarnings("unchecked")
+	public static Response getBatchCreateResponse(String appid, InputStream is) {
+		ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
+		try {
+			if (is != null && is.available() > 0) {
+				if (is.available() > (1024 * 1024)) {
+					return getStatusResponse(Response.Status.BAD_REQUEST,
+							"Request is too large - the maximum is 1MB.");
+				}
+				List<Object> items = Utils.getJsonReader(List.class).readValue(is);
+				for (Object object : items) {
+					ParaObject pobj = Utils.setAnnotatedFields((Map<String, Object>) object);
+					if (pobj != null && Utils.isValidObject(pobj)) {
+						objects.add(pobj);
+					}
+				}
+				Para.getDAO().createAll(appid, objects);
+			} else {
+				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
+			}
+		} catch (JsonParseException e) {
+			return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
+		} catch (IOException e) {
+			logger.error(null, e);
+			return RestUtils.getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
+		}
+		return Response.ok(objects).build();
+	}
+
+	/**
+	 * Batch update response as JSON
+	 * @param appid appid
+	 * @param is entity input stream
+	 * @return a status code 200 or 400
+	 */
+	@SuppressWarnings("unchecked")
+	public static Response getBatchUpdateResponse(String appid, InputStream is) {
+		ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
+		try {
+			if (is != null && is.available() > 0) {
+				if (is.available() > (1024 * 1024)) {
+					return getStatusResponse(Response.Status.BAD_REQUEST,
+							"Request is too large - the maximum is 1MB.");
+				}
+				List<Object> items = Utils.getJsonReader(List.class).readValue(is);
+				for (Object object : items) {
+					ParaObject pobj = Utils.setAnnotatedFields((Map<String, Object>) object);
+					if (pobj != null && Utils.isValidObject(pobj)) {
+						objects.add(pobj);
+					}
+				}
+				Para.getDAO().updateAll(appid, objects);
+			} else {
+				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
+			}
+		} catch (JsonParseException e) {
+			return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
+		} catch (IOException e) {
+			logger.error(null, e);
+			return RestUtils.getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
+		}
+		return Response.ok(objects).build();
+	}
+
+	/**
+	 * Batch delete response as JSON
+	 * @param appid appid
+	 * @param is entity input stream
+	 * @return a status code 200 or 400
+	 */
+	@SuppressWarnings("unchecked")
+	public static Response getBatchDeleteResponse(String appid, InputStream is) {
+		ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
+		try {
+			if (is != null && is.available() > 0) {
+				if (is.available() > (1024 * 1024)) {
+					return getStatusResponse(Response.Status.BAD_REQUEST,
+							"Request is too large - the maximum is 1MB.");
+				}
+				List<Object> items = Utils.getJsonReader(List.class).readValue(is);
+				for (Object object : items) {
+					ParaObject pobj = Utils.setAnnotatedFields((Map<String, Object>) object);
+					if (pobj != null && pobj.getId() != null && pobj.getType() != null) {
+						objects.add(pobj);
+					}
+				}
+				Para.getDAO().deleteAll(appid, objects);
+			} else {
+				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
+			}
+		} catch (JsonParseException e) {
+			return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
+		} catch (IOException e) {
+			logger.error(null, e);
+			return RestUtils.getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
+		}
+		return Response.ok().build();
 	}
 
 	/**
@@ -386,7 +519,6 @@ public final class RestUtils {
 	@Provider
 	public static class GenericExceptionMapper implements ExceptionMapper<Exception> {
 		/**
-		 *
 		 * @param ex exception
 		 * @return a response
 		 */
@@ -396,66 +528,6 @@ public final class RestUtils {
 			} else {
 				return getExceptionResponse(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), ex.getMessage());
 			}
-		}
-	}
-
-	/**
-	 * Error 403 exception mapper.
-	 */
-	@Provider
-	public static class ForbiddenExceptionMapper implements ExceptionMapper<ForbiddenException> {
-		/**
-		 *
-		 * @param ex exception
-		 * @return a response
-		 */
-		public Response toResponse(final ForbiddenException ex) {
-			return getExceptionResponse(Response.Status.FORBIDDEN.getStatusCode(), ex.getMessage());
-		}
-	}
-
-	/**
-	 * Error 404 exception mapper.
-	 */
-	@Provider
-	public static class NotFoundExceptionMapper implements ExceptionMapper<NotFoundException> {
-		/**
-		 * Convert to response.
-		 * @param ex exception
-		 * @return a response
-		 */
-		public Response toResponse(NotFoundException ex) {
-			return getExceptionResponse(Response.Status.NOT_FOUND.getStatusCode(), ex.getMessage());
-		}
-	}
-
-	/**
-	 * Error 500 exception mapper.
-	 */
-	@Provider
-	public static class InternalExceptionMapper implements ExceptionMapper<InternalServerErrorException> {
-		/**
-		 *
-		 * @param ex exception
-		 * @return a response
-		 */
-		public Response toResponse(InternalServerErrorException ex) {
-			return getExceptionResponse(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), ex.getMessage());
-		}
-	}
-
-	/**
-	 * Error 503 exception mapper.
-	 */
-	@Provider
-	public static class UnavailableExceptionMapper implements ExceptionMapper<ServiceUnavailableException> {
-		/**
-		 *
-		 * @param ex exception
-		 * @return a response
-		 */
-		public Response toResponse(ServiceUnavailableException ex) {
-			return getExceptionResponse(Response.Status.SERVICE_UNAVAILABLE.getStatusCode(), ex.getMessage());
 		}
 	}
 

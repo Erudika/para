@@ -16,17 +16,16 @@ multiple applications and clients written in any programming language.
 
 - Standalone executable JAR with embedded Jetty (WAR also available).
 - RESTful JSON API secured with Amazon's Signature 4 algorithm.
-- Simple annotation-based Object Grid Mapper (OGM) for mapping objects to a datastore.
-- Support for scalable data stores (Amazon DynamoDB, Cassandra).
 - Full text search (current implementation is based on ElasticSearch).
 - Distributed object cache support (implemented with Hazelcast).
-- Strong and flexible security based on Spring Security (OpenID and Facebook integration, CSRF protection, etc.).
-- Internationalization utilities for translating language packs into different languages.
+- Flexible security based on Spring Security (OpenID and Facebook login, CSRF protection, etc.).
+- Support for scalable data stores (Amazon DynamoDB, Cassandra).
 - Modular design based on Google Guice.
+- I18n utilities for translating language packs into different languages.
 
 ### Architecture
 
-<pre style="font-family: Menlo, 'Courier New', monospace; line-height: 16px !important;">
+<pre>
 +----------------------------------------------------------+
 |                                                          |
 |               Java Domain Objects (POJOs)                |
@@ -96,7 +95,7 @@ Here's the Maven snippet to include in your `pom.xml`:
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para</artifactId>
-  <version>1.4.0</version>
+  <version>1.5.0</version>
 </dependency>
 ```
 

@@ -65,7 +65,7 @@ public final class ElasticSearchUtils {
 	 * Creates an instance of the client that talks to ElaasticSearch.
 	 * @return a client instance
 	 */
-	public static Client getClient() {
+	protected static Client getClient() {
 		if (searchClient != null) {
 			return searchClient;
 		}
@@ -134,7 +134,7 @@ public final class ElasticSearchUtils {
 	/**
 	 * Stops the client instance and releases resources.
 	 */
-	public static void shutdownClient() {
+	protected static void shutdownClient() {
 		if (searchClient != null) {
 			searchClient.close();
 			searchClient = null;

@@ -31,8 +31,8 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 
 /**
- * Helper functions for {@link HazelcastCache}. 
- * 
+ * Helper functions for {@link HazelcastCache}.
+ *
  * @author Alex Bogdanovski [alex@erudika.com]
  * @see HazelcastCache
  */
@@ -46,7 +46,7 @@ public final class HazelcastUtils {
 	 * Initializes a new Hazelcast instance with default settings.
 	 * @return a Hazelcast instance
 	 */
-	public static HazelcastInstance getClient() {
+	protected static HazelcastInstance getClient() {
 		if (hcInstance == null) {
 			hcInstance = Hazelcast.getHazelcastInstanceByName(getNodeName());
 			if (hcInstance != null) {
@@ -89,7 +89,7 @@ public final class HazelcastUtils {
 	 * This method stops the Hazelcast instance if it is running.
 	 * <b>There's no need to call this explicitly!</b>
 	 */
-	public static void shutdownClient() {
+	protected static void shutdownClient() {
 		if (hcInstance != null) {
 			hcInstance.shutdown();
 			hcInstance = null;

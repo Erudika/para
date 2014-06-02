@@ -44,19 +44,20 @@ public class Tag extends PObject {
 
 	/**
 	 * Default constructor
-	 * @param tag the tag
+	 * @param id the tag name
 	 */
-	public Tag(String tag) {
+	public Tag(String id) {
 		this.count = 0;
-		setTag(tag);
+		setId(id);
 		setName(getName());
 	}
 
 	@Override
-	public void setId(String id) {
-		if (StringUtils.isBlank(id) || StringUtils.startsWith(id, prefix)) {
-			super.setId(id);
-		} else {
+	public final void setId(String id) {
+		if (StringUtils.startsWith(id, prefix)) {
+			setTag(id.replaceAll(prefix, ""));
+			super.setId(prefix.concat(getTag()));
+		} else if (id != null) {
 			setTag(id);
 			super.setId(prefix.concat(getTag()));
 		}
@@ -88,19 +89,16 @@ public class Tag extends PObject {
 	 * The tag value.
 	 * @return the tag itself
 	 */
-	public final String getTag() {
+	public String getTag() {
 		return tag;
 	}
 
 	/**
-	 * Sets the tag value. 
+	 * Sets the tag value.
 	 * @param tag a tag. Must not be null or empty.
 	 */
-	public final void setTag(String tag) {
-		this.tag = Utils.noSpaces(tag, "-");
-		if (!this.tag.isEmpty()) {
-			setId(prefix.concat(getTag()));
-		}
+	public void setTag(String tag) {
+		this.tag = Utils.noSpaces(Utils.stripAndTrim(tag), "-");
 	}
 
 	/**
