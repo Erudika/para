@@ -18,12 +18,12 @@
 package com.erudika.para.core;
 
 /**
- * This interface enables voting on an object. 
+ * This interface enables voting on an object.
  * All core objects implement this and can be voted for.
  * @author Alex Bogdanovski [alex@erudika.com]
  * @see Vote
  */
-public interface Votable extends ParaObject {
+public interface Votable {
 
 	/**
 	 * The type of vote (negative or positive)

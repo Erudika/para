@@ -27,7 +27,7 @@ import java.util.List;
  * @author Alex Bogdanovski [alex@erudika.com]
  * @see Linker
  */
-public interface Linkable extends ParaObject {
+public interface Linkable {
 
 	/**
 	 * Count the total number of links between this object and another type of object.
@@ -45,9 +45,9 @@ public interface Linkable extends ParaObject {
 	List<Linker> getLinks(Class<? extends ParaObject> c2, Pager... pager);
 
 	/**
-	 * Similar to {@link #getChildren(java.lang.Class, com.erudika.para.utils.Pager[])} 
+	 * Similar to {@link #getChildren(java.lang.Class, com.erudika.para.utils.Pager[])}
 	 * but for many-to-many relationships.
-	 * @param <P> type of linked objects 
+	 * @param <P> type of linked objects
 	 * @param clazz type of linked objects
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of linked objects
@@ -72,7 +72,7 @@ public interface Linkable extends ParaObject {
 	/**
 	 * Links an object to this one in a many-to-many relationship.
 	 * Only a link is created. Objects are left untouched.
-	 * @param c2 the other type	
+	 * @param c2 the other type
 	 * @param id2 the other id
 	 * @return the id of the {@link Linker} object that is created
 	 */
@@ -87,7 +87,7 @@ public interface Linkable extends ParaObject {
 	void unlink(Class<? extends ParaObject> c2, String id2);
 
 	/**
-	 * Unlinks all objects that are linked to this one. 
+	 * Unlinks all objects that are linked to this one.
 	 * Deletes all {@link Linker} objects. Only the links are deleted. Objects are left untouched.
 	 */
 	void unlinkAll();

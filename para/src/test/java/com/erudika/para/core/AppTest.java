@@ -41,6 +41,9 @@ public class AppTest {
 		assertEquals("app:test-app-cool", app.getId());
 		app.setId("test app ? @#$%^&>?<~`|\\;:./>-= COOL");
 		assertEquals("app:test-app-cool", app.getId());
+		// if coming from db
+		app.setId("app:test-app");
+		assertEquals("app:test-app", app.getId());
 	}
 
 	@Test

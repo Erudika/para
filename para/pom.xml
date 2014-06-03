@@ -12,7 +12,7 @@
 	<name>Para</name>
 
 	<properties>
-		<jerseyVer>2.8</jerseyVer>
+		<jerseyVer>2.9</jerseyVer>
 		<springVer>4.0.0.M1</springVer>
 		<springVer2>1.0.2.RELEASE</springVer2>
 		<jacksonVer>2.3.3</jacksonVer>
@@ -302,7 +302,7 @@
 			<plugin>
 				<groupId>org.eclipse.jetty</groupId>
 				<artifactId>jetty-maven-plugin</artifactId>
-				<version>9.2.0.RC0</version>
+				<version>9.2.0.v20140526</version>
 				<configuration>
 					<systemProperties>
 						<systemProperty>

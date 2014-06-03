@@ -75,9 +75,9 @@ public class App extends PObject {
 	@Override
 	public final void setId(String id) {
 		if (StringUtils.startsWith(id, prefix)) {
-			super.setId(prefix.concat(Utils.noSpaces(Utils.stripAndTrim(id.replaceAll(prefix, "")), "-")));
+			super.setId(prefix.concat(Utils.noSpaces(Utils.stripAndTrim(id.replaceAll(prefix, ""), " "), "-")));
 		} else if (id != null) {
-			super.setId(prefix.concat(Utils.noSpaces(Utils.stripAndTrim(id), "-")));
+			super.setId(prefix.concat(Utils.noSpaces(Utils.stripAndTrim(id, " "), "-")));
 		}
 	}
 

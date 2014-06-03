@@ -12,6 +12,8 @@ and it also automatically indexes those objects and makes them searchable.
 Para can be used in two ways - as the backbone of your JVM-based application or as a standalone server supporting
 multiple applications and clients written in any programming language.
 
+Para is similar to [Dropwizard](https://dropwizard.github.io/dropwizard/) and [Deployd](http://www.deployd.com/).
+
 ### Features
 
 - Standalone executable JAR with embedded Jetty (WAR also available).
@@ -50,7 +52,7 @@ multiple applications and clients written in any programming language.
 +----+---------^----+  +-----------------+   +-------------+
      |         |
 +----v---------+-------------------------------------------+
-|           Clients : Node.js, Ruby, Python etc.           |
+|        Clients : JavaScript, Ruby, Python etc.           |
 +----------------------------------------------------------+
 </pre>
 

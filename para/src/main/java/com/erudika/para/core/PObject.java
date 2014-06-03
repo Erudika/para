@@ -46,7 +46,7 @@ import org.hibernate.validator.constraints.NotBlank;
  * @author Alex Bogdanovski [alex@erudika.com]
  * @see ParaObject
  */
-public abstract class PObject implements ParaObject, Linkable, Votable {
+public abstract class PObject implements ParaObject {
 
 	@Stored @Locked private String id;
 	@Stored @Locked private Long timestamp;
@@ -337,11 +337,11 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	}
 
 	@Override
-	public boolean isLinked(Class<? extends ParaObject> c2, String toId) {
+	public boolean isLinked(Class<? extends ParaObject> c2, String id2) {
 		if (c2 == null) {
 			return false;
 		}
-		return getDao().read(getAppid(), new Linker(this.getClass(), c2, getId(), toId).getId()) != null;
+		return getDao().read(getAppid(), new Linker(this.getClass(), c2, getId(), id2).getId()) != null;
 	}
 
 	@Override
@@ -382,6 +382,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 			terms.put(field, term);
 		}
 		terms.put(Config._PARENTID, getId());
+		// TODO: make this work with no type specified (clazz = null)
 		return getSearch().findTerms(getAppid(), Utils.type(clazz), terms, true, pager);
 	}
 
@@ -412,7 +413,7 @@ public abstract class PObject implements ParaObject, Linkable, Votable {
 	//	    	VOTING METHODS
 	///////////////////////////////////////
 
-	private boolean vote(String userid, Votable votable, VoteValue upDown) {
+	private boolean vote(String userid, ParaObject votable, VoteValue upDown) {
 		if (StringUtils.isBlank(userid) || votable == null || votable.getId() == null || upDown == null) {
 			return false;
 		}

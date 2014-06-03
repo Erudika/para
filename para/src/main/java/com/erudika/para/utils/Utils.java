@@ -345,8 +345,18 @@ public final class Utils {
 	 * @return a clean string
 	 */
 	public static String stripAndTrim(String str) {
+		return stripAndTrim(str, "");
+	}
+
+	/**
+	 * Strips all symbols, punctuation, whitespace and control chars from a string.
+	 * @param str a dirty string
+	 * @param replaceWith a string to replace spaces with
+	 * @return a clean string
+	 */
+	public static String stripAndTrim(String str, String replaceWith) {
 		return StringUtils.isBlank(str) ? "" :
-			str.replaceAll("[\\p{S}\\p{P}\\p{C}]", "").replaceAll("\\p{Z}+", " ").trim();
+			str.replaceAll("[\\p{S}\\p{P}\\p{C}]", replaceWith).replaceAll("\\p{Z}+", " ").trim();
 	}
 
 	/**

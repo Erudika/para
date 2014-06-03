@@ -98,7 +98,7 @@ public class Tag extends PObject {
 	 * @param tag a tag. Must not be null or empty.
 	 */
 	public void setTag(String tag) {
-		this.tag = Utils.noSpaces(Utils.stripAndTrim(tag), "-");
+		this.tag = Utils.noSpaces(Utils.stripAndTrim(tag, " "), "-");
 	}
 
 	/**

@@ -96,8 +96,7 @@ public final class Api1 extends ResourceConfig {
 		initCoreTypes();
 
 		// core objects CRUD API
-		registerCrudApi("{type}", typeCrudHandler());
-		registerBatchCrudApi(batchCrudHandler());
+		registerCrudApi("{type}", typeCrudHandler(), linksHandler());
 
 		// search API
 		Resource.Builder searchRes = Resource.builder("search");
@@ -138,7 +137,8 @@ public final class Api1 extends ResourceConfig {
 		}
 	}
 
-	private void registerCrudApi(String path, Inflector<ContainerRequestContext, Response> handler) {
+	private void registerCrudApi(String path, Inflector<ContainerRequestContext, Response> handler,
+			Inflector<ContainerRequestContext, Response> linksHandler) {
 		Resource.Builder core = Resource.builder(path);
 		core.addMethod(GET).produces(JSON).handledBy(handler);
 		core.addMethod(POST).produces(JSON).consumes(JSON).handledBy(handler);
@@ -146,18 +146,10 @@ public final class Api1 extends ResourceConfig {
 		core.addChildResource("{id}").addMethod(GET).produces(JSON).handledBy(handler);
 		core.addChildResource("{id}").addMethod(PUT).produces(JSON).consumes(JSON).handledBy(handler);
 		core.addChildResource("{id}").addMethod(DELETE).produces(JSON).handledBy(handler);
+		core.addChildResource("{id}/links").addMethod(GET).produces(JSON).handledBy(linksHandler);
+		core.addChildResource("{id}/links").addMethod(POST).produces(JSON).handledBy(linksHandler);
+		core.addChildResource("{id}/links").addMethod(DELETE).produces(JSON).handledBy(linksHandler);
 		registerResources(core.build());
-	}
-
-	private void registerBatchCrudApi(Inflector<ContainerRequestContext, Response> handler) {
-		Resource.Builder batch = Resource.builder();
-		batch.addMethod(GET).produces(JSON).handledBy(handler);
-		batch.addMethod(POST).produces(JSON).consumes(JSON).handledBy(handler);
-		batch.addChildResource("search").addMethod(GET).produces(JSON).handledBy(handler);
-		batch.addChildResource("{id}").addMethod(GET).produces(JSON).handledBy(handler);
-		batch.addChildResource("{id}").addMethod(PUT).produces(JSON).consumes(JSON).handledBy(handler);
-		batch.addChildResource("{id}").addMethod(DELETE).produces(JSON).handledBy(handler);
-		registerResources(batch.build());
 	}
 
 	private Inflector<ContainerRequestContext, Response> utilsHandler() {
@@ -206,30 +198,34 @@ public final class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				String typePlural = ctx.getUriInfo().getPathParameters().getFirst(Config._TYPE);
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				App app = dao.read(new App(appid).getId());
+				App app = dao.read(appid, new App(appid).getId());
 				if (app != null && !StringUtils.isBlank(typePlural)) {
-					String type = coreTypes.get(typePlural);
-					if (type == null) {
-						type = app.getDatatypes().get(typePlural);
-					}
-					// register a new data type
-					if (type == null && POST.equals(ctx.getMethod())) {
-						Response res = crudHandler(type).apply(ctx);
-						Object ent = res.getEntity();
-						if (ent != null && ent instanceof ParaObject) {
-							type = ((ParaObject) ent).getType();
-							typePlural = ((ParaObject) ent).getPlural();
-							if (type != null) {
-								app.addDatatype(typePlural, type);
-								app.update();
-							}
+					if ("_batch".equals(typePlural)) {
+						return batchCrudHandler().apply(ctx);
+					} else {
+						String type = coreTypes.get(typePlural);
+						if (type == null) {
+							type = app.getDatatypes().get(typePlural);
 						}
-						return res;
+						// register a new data type
+						if (type == null && POST.equals(ctx.getMethod())) {
+							Response res = crudHandler(type).apply(ctx);
+							Object ent = res.getEntity();
+							if (ent != null && ent instanceof ParaObject) {
+								type = ((ParaObject) ent).getType();
+								typePlural = ((ParaObject) ent).getPlural();
+								if (type != null) {
+									app.addDatatype(typePlural, type);
+									app.update();
+								}
+							}
+							return res;
+						}
+						if (type == null) {
+							type = typePlural;
+						}
+						return crudHandler(type).apply(ctx);
 					}
-					if (type == null) {
-						type = typePlural;
-					}
-					return crudHandler(type).apply(ctx);
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found: " + appid);
 			}
@@ -279,11 +275,85 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
+	private Inflector<ContainerRequestContext, Response> linksHandler() {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
+				String id = ctx.getUriInfo().getPathParameters().getFirst(Config._ID);
+				String type = ctx.getUriInfo().getPathParameters().getFirst(Config._TYPE);
+				String id2 = params.getFirst(Config._ID);
+				String type2 = params.getFirst(Config._TYPE);
+				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
+
+				ParaObject pobj = Utils.toObject(type);
+				pobj.setId(id);
+				pobj = dao.read(appid, pobj.getId());
+
+				Pager pager = new Pager();
+				pager.setPage(NumberUtils.toLong(params.getFirst("page"), 0));
+				pager.setSortby(params.getFirst("sort"));
+				pager.setDesc(Boolean.parseBoolean(params.containsKey("desc") ? params.getFirst("desc") : "true"));
+
+				String childrenOnly = params.getFirst("childrenOnly");
+
+				if (pobj != null) {
+					if (POST.equals(ctx.getMethod())) {
+						if (type2 != null && id2 != null) {
+							String linkid = pobj.link(Utils.toClass(type2), id2);
+							if (linkid == null) {
+								return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST,
+										"Failed to create link.");
+							} else {
+								return Response.ok(linkid).build();
+							}
+						} else {
+							return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST,
+									"Parameters 'type' and 'id' are missing.");
+						}
+					} else if (GET.equals(ctx.getMethod())) {
+						Map<String, Object> result = new HashMap<String, Object>();
+						if (type2 != null) {
+							if (id2 != null) {
+								return Response.ok(pobj.isLinked(Utils.toClass(type2), id2)).build();
+							} else {
+								List<?> items;
+								if (childrenOnly == null) {
+									items = pobj.getLinkedObjects(Utils.toClass(type2), pager);
+								} else {
+									items = pobj.getChildren(Utils.toClass(type2),
+											params.getFirst("field"), params.getFirst("term"), pager);
+								}
+								result.put("items", items);
+								result.put("totalHits", pager.getCount());
+								return Response.ok(result).build();
+							}
+						} else {
+							return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST,
+									"Parameter 'type' is missing.");
+						}
+					} else if (DELETE.equals(ctx.getMethod())) {
+						String all = params.getFirst("all");
+						if (all != null) {
+							pobj.unlinkAll();
+						} else if (type2 != null) {
+							if (id2 != null) {
+								pobj.unlink(Utils.toClass(type2), id2);
+							} else if (childrenOnly != null) {
+								pobj.deleteChildren(Utils.toClass(type2));
+							}
+						}
+						return Response.ok().build();
+					}
+				}
+				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "Object not found: " + id);
+			}
+		};
+	}
 	private Inflector<ContainerRequestContext, Response> listTypesHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				App app = dao.read(new App(appid).getId());
+				App app = dao.read(appid, new App(appid).getId());
 				if (app != null) {
 					Map<String, String> allTypes = new HashMap<String, String>(app.getDatatypes());
 					allTypes.putAll(coreTypes);
@@ -298,7 +368,7 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				App app = dao.read(new App(appid).getId());
+				App app = dao.read(appid, new App(appid).getId());
 				if (app != null) {
 					app.resetSecret();
 					app.update();
@@ -339,9 +409,10 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> readHandler(final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
+				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
 				ParaObject obj = Utils.toObject(type);
 				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
-				return RestUtils.getReadResponse(dao.read(obj.getId()));
+				return RestUtils.getReadResponse(dao.read(appid, obj.getId()));
 			}
 		};
 	}
@@ -349,10 +420,11 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> updateHandler(final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
+				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
 				ParaObject obj = Utils.toObject(type);
 				obj.setType(type);
 				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
-				return RestUtils.getUpdateResponse(dao.read(obj.getId()), ctx.getEntityStream());
+				return RestUtils.getUpdateResponse(dao.read(appid, obj.getId()), ctx.getEntityStream());
 			}
 		};
 	}
@@ -420,12 +492,11 @@ public final class Api1 extends ResourceConfig {
 			MultivaluedMap<String, String> params, String typeOverride) {
 		String query = params.containsKey("q") ? params.getFirst("q") : "*";
 		String type = (typeOverride != null) ? typeOverride : params.getFirst(Config._TYPE);
-		String desc = params.containsKey("desc") ? params.getFirst("desc") : "true";
 
 		Pager pager = new Pager();
 		pager.setPage(NumberUtils.toLong(params.getFirst("page"), 0));
 		pager.setSortby(params.getFirst("sort"));
-		pager.setDesc(Boolean.parseBoolean(desc));
+		pager.setDesc(Boolean.parseBoolean(params.containsKey("desc") ? params.getFirst("desc") : "true"));
 
 		String queryType = params.containsKey("querytype") ? params.getFirst("querytype") : null;
 		Map<String, Object> result = new HashMap<String, Object>();
