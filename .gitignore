@@ -12,14 +12,6 @@ application.conf
 Tomcat.dpf
 release.properties
 nb-configuration.xml
-onemenu-server/target/
-onemenu-server/tmp/**
-onemenu-server/src/main/webapp/WEB-INF/lib/**
-onemenu-server/src/main/webapp/WEB-INF/classes/**
-onemenu-puppet/*.txt
-onemenu-puppet/onemenu/files/admin-keyfile
-onemenu-puppet/onemenu/files/adminpass.txt
-onemenu-invalidator/target/
 /target/
 /para/target/
 /para-web/target/

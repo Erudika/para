@@ -88,10 +88,6 @@ public final class Api1 extends ResourceConfig {
 
 		register(new JacksonJsonProvider(Utils.getJsonMapper()));
 		register(GenericExceptionMapper.class);
-//		register(ForbiddenExceptionMapper.class);
-//		register(NotFoundExceptionMapper.class);
-//		register(InternalExceptionMapper.class);
-//		register(UnavailableExceptionMapper.class);
 
 		initCoreTypes();
 
@@ -349,6 +345,7 @@ public final class Api1 extends ResourceConfig {
 			}
 		};
 	}
+	
 	private Inflector<ContainerRequestContext, Response> listTypesHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
