@@ -1,7 +1,7 @@
 ![Logo](https://s3-eu-west-1.amazonaws.com/org.paraio/para.png)
 ============================
 
-> ### Para - a general-purpose back-end framework for the cloud.
+> ### A general-purpose back-end framework for the cloud.
 
 ## What is this?
 
@@ -56,9 +56,15 @@ Para is similar to [Dropwizard](https://dropwizard.github.io/dropwizard/) and [D
 +----------------------------------------------------------+
 </pre>
 
+## Documentation
+
+###[Read the Docs](http://paraio.org/docs)
+
 ## Getting started
 
 ### Building Para
+
+Para can be compiled with JDK 1.6 and up.
 
 Para uses Maven. Here's how you clone it and build it:
 
@@ -101,16 +107,13 @@ Here's the Maven snippet to include in your `pom.xml`:
 </dependency>
 ```
 
-## Documentation
+## Wishlist / Future plans
 
-####[Read the Docs](http://paraio.org/docs)
-*The docs will be online soon.*
-
-## Configuration
-
-See the configuration file `src/main/resources/reference.conf` and modify it if needed.
-Para uses [Typesafe's Config](https://github.com/typesafehub/config) library so you can easily load your config file from any URL.
-See the docs for more info.
+- Add more implementations for popular databases like MongoDB, PostgreSQL, etc.
+- Integration with JOOQ
+- Integration with Comsat, Quasar
+- Add API clients written in popular languages - Ruby, C#, JavaScript and why not... Swift :)
+- Separate implementations from core
 
 ## Contributing
 

@@ -158,23 +158,6 @@
 			<version>${hazelcastVer}</version>
 		</dependency>
 
-		<!-- CASSANDRA CLIENT -->
-		<!--		<dependency>
-			<groupId>org.hectorclient</groupId>
-			<artifactId>hector-core</artifactId>
-			<version>1.1-4</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>servlet-api</artifactId>
-					<groupId>javax.servlet</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>slf4j-api</artifactId>
-					<groupId>org.slf4j</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>-->
-
 		<!-- LOGGING -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
