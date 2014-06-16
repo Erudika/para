@@ -9,6 +9,9 @@
 It enables your application to store objects directly to a data store (NoSQL) or any relational database (RDBMS)
 and it also automatically indexes those objects and makes them searchable.
 
+The name "Para" means "steam" in Bulgarian. And just like steam is used to power stuff, you can use
+Para to power your mobile or web application back-end.
+
 Para can be used in two ways - as the backbone of your JVM-based application or as a standalone server supporting
 multiple applications and clients written in any programming language.
 
@@ -17,7 +20,7 @@ Para is similar to [Dropwizard](https://dropwizard.github.io/dropwizard/) and [D
 ### Features
 
 - Standalone executable JAR with embedded Jetty (WAR also available).
-- RESTful JSON API secured with Amazon's Signature 4 algorithm.
+- RESTful JSON API for your objects secured with Amazon's Signature 4 algorithm.
 - Full text search (current implementation is based on ElasticSearch).
 - Distributed object cache support (implemented with Hazelcast).
 - Flexible security based on Spring Security (OpenID and Facebook login, CSRF protection, etc.).
@@ -61,6 +64,12 @@ Para is similar to [Dropwizard](https://dropwizard.github.io/dropwizard/) and [D
 ###[Read the Docs](http://paraio.org/docs)
 
 ## Getting started
+
+To get started quickly just (grab the JAR file)[https://github.com/Erudika/para/releases] and execute it with:
+
+```sh
+java -jar para-X.Y.Z.jar
+```
 
 ### Building Para
 

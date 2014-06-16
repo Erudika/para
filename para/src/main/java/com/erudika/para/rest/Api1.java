@@ -154,35 +154,35 @@ public final class Api1 extends ResourceConfig {
 				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
 				String method = params.getFirst("method");
 				if ("newid".equals(method)) {
-					return Response.ok(Collections.singletonMap("value", Utils.getNewId())).build();
+					return Response.ok(Utils.getNewId()).build();
 				} else if ("timestamp".equals(method)) {
 //					String type = params.getFirst(Config._TYPE);
-					return Response.ok(Collections.singletonMap("value", Utils.timestamp())).build();
+					return Response.ok(Utils.timestamp()).build();
 				} else if ("currentyear".equals(method)) {
-					return Response.ok(Collections.singletonMap("value", Utils.getCurrentYear())).build();
+					return Response.ok(Utils.getCurrentYear()).build();
 				} else if ("formatdate".equals(method)) {
 					String format = params.getFirst("format");
 					String locale = params.getFirst("locale");
 					Locale loc = LocaleUtils.toLocale(locale);
-					return Response.ok(Collections.singletonMap("value", Utils.formatDate(format, loc))).build();
+					return Response.ok(Utils.formatDate(format, loc)).build();
 				} else if ("formatmessage".equals(method)) {
 					String msg = params.getFirst("message");
 					Object[] paramz = params.get("fields").toArray();
-					return Response.ok(Collections.singletonMap("value", Utils.formatMessage(msg, paramz))).build();
+					return Response.ok(Utils.formatMessage(msg, paramz)).build();
 				} else if ("nospaces".equals(method)) {
 					String str = params.getFirst("string");
 					String repl = params.getFirst("replacement");
-					return Response.ok(Collections.singletonMap("value", Utils.noSpaces(str, repl))).build();
+					return Response.ok(Utils.noSpaces(str, repl)).build();
 				} else if ("nosymbols".equals(method)) {
 					String str = params.getFirst("string");
-					return Response.ok(Collections.singletonMap("value", Utils.stripAndTrim(str))).build();
+					return Response.ok(Utils.stripAndTrim(str)).build();
 				} else if ("md2html".equals(method)) {
 					String md = params.getFirst("md");
-					return Response.ok(Collections.singletonMap("value", Utils.markdownToHtml(md))).build();
+					return Response.ok(Utils.markdownToHtml(md)).build();
 				} else if ("timeago".equals(method)) {
 					String d = params.getFirst("delta");
 					long delta = NumberUtils.toLong(d, 1);
-					return Response.ok(Collections.singletonMap("value", HumanTime.approximately(delta))).build();
+					return Response.ok(HumanTime.approximately(delta)).build();
 				}
 				return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, "Method not specified.");
 			}
@@ -345,7 +345,7 @@ public final class Api1 extends ResourceConfig {
 			}
 		};
 	}
-	
+
 	private Inflector<ContainerRequestContext, Response> listTypesHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
