@@ -980,7 +980,7 @@ public final class Utils {
 					props.remove(name);
 				}
 			}
-			// handle unknown fields
+			// handle unknown (user-defined) fields
 			if (!props.isEmpty()) {
 				for (Entry<String, Object> entry : props.entrySet()) {
 					String name = entry.getKey();

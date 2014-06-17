@@ -18,6 +18,8 @@
 package com.erudika.para.core;
 
 import com.erudika.para.annotations.Stored;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
@@ -54,6 +56,7 @@ public class Sysprop extends PObject {
 	 * @param value a value
 	 * @return this
 	 */
+	@JsonAnySetter
 	public Sysprop addProperty(String name, Object value) {
 		if (!StringUtils.isBlank(name) && value != null) {
 			getProperties().put(name, value);
@@ -101,6 +104,7 @@ public class Sysprop extends PObject {
 	 * A map of all properties (key/values)
 	 * @return a map
 	 */
+	@JsonAnyGetter
 	public Map<String, Object> getProperties() {
 		if (properties == null) {
 			properties = new HashMap<String, Object>();
