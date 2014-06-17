@@ -145,7 +145,15 @@ public final class Api1 extends ResourceConfig {
 		core.addChildResource("{id}/links").addMethod(GET).produces(JSON).handledBy(linksHandler);
 		core.addChildResource("{id}/links").addMethod(POST).produces(JSON).handledBy(linksHandler);
 		core.addChildResource("{id}/links").addMethod(DELETE).produces(JSON).handledBy(linksHandler);
+
+		Resource.Builder batch = Resource.builder("_batch");
+		batch.addMethod(POST).produces(JSON).consumes(JSON).handledBy(batchCreateHandler());
+		batch.addMethod(GET).produces(JSON).handledBy(batchReadHandler());
+		batch.addMethod(PUT).produces(JSON).consumes(JSON).handledBy(batchUpdateHandler());
+		batch.addMethod(DELETE).produces(JSON).consumes(JSON).handledBy(batchDeleteHandler());
+
 		registerResources(core.build());
+		registerResources(batch.build());
 	}
 
 	private Inflector<ContainerRequestContext, Response> utilsHandler() {
@@ -156,7 +164,6 @@ public final class Api1 extends ResourceConfig {
 				if ("newid".equals(method)) {
 					return Response.ok(Utils.getNewId()).build();
 				} else if ("timestamp".equals(method)) {
-//					String type = params.getFirst(Config._TYPE);
 					return Response.ok(Utils.timestamp()).build();
 				} else if ("currentyear".equals(method)) {
 					return Response.ok(Utils.getCurrentYear()).build();
@@ -196,32 +203,28 @@ public final class Api1 extends ResourceConfig {
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
 				App app = dao.read(appid, new App(appid).getId());
 				if (app != null && !StringUtils.isBlank(typePlural)) {
-					if ("_batch".equals(typePlural)) {
-						return batchCrudHandler().apply(ctx);
-					} else {
-						String type = coreTypes.get(typePlural);
-						if (type == null) {
-							type = app.getDatatypes().get(typePlural);
-						}
-						// register a new data type
-						if (type == null && POST.equals(ctx.getMethod())) {
-							Response res = crudHandler(type).apply(ctx);
-							Object ent = res.getEntity();
-							if (ent != null && ent instanceof ParaObject) {
-								type = ((ParaObject) ent).getType();
-								typePlural = ((ParaObject) ent).getPlural();
-								if (type != null) {
-									app.addDatatype(typePlural, type);
-									app.update();
-								}
-							}
-							return res;
-						}
-						if (type == null) {
-							type = typePlural;
-						}
-						return crudHandler(type).apply(ctx);
+					String type = coreTypes.get(typePlural);
+					if (type == null) {
+						type = app.getDatatypes().get(typePlural);
 					}
+					// register a new data type
+					if (type == null && POST.equals(ctx.getMethod())) {
+						Response res = crudHandler(type).apply(ctx);
+						Object ent = res.getEntity();
+						if (ent != null && ent instanceof ParaObject) {
+							type = ((ParaObject) ent).getType();
+							typePlural = ((ParaObject) ent).getPlural();
+							if (type != null) {
+								app.addDatatype(typePlural, type);
+								app.update();
+							}
+						}
+						return res;
+					}
+					if (type == null) {
+						type = typePlural;
+					}
+					return crudHandler(type).apply(ctx);
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found: " + appid);
 			}
@@ -254,23 +257,6 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> batchCrudHandler() {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				if (POST.equals(ctx.getMethod())) {
-					return batchCreateHandler().apply(ctx);
-				} else if (GET.equals(ctx.getMethod())) {
-					return batchReadHandler().apply(ctx);
-				} else if (PUT.equals(ctx.getMethod())) {
-					return batchUpdateHandler().apply(ctx);
-				} else if (DELETE.equals(ctx.getMethod())) {
-					return batchDeleteHandler().apply(ctx);
-				}
-				return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, "Unknown method.");
-			}
-		};
-	}
-
 	private Inflector<ContainerRequestContext, Response> linksHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
@@ -294,8 +280,8 @@ public final class Api1 extends ResourceConfig {
 
 				if (pobj != null) {
 					if (POST.equals(ctx.getMethod())) {
-						if (type2 != null && id2 != null) {
-							String linkid = pobj.link(Utils.toClass(type2), id2);
+						if (id2 != null) {
+							String linkid = pobj.link(id2);
 							if (linkid == null) {
 								return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST,
 										"Failed to create link.");
@@ -310,14 +296,14 @@ public final class Api1 extends ResourceConfig {
 						Map<String, Object> result = new HashMap<String, Object>();
 						if (type2 != null) {
 							if (id2 != null) {
-								return Response.ok(pobj.isLinked(Utils.toClass(type2), id2)).build();
+								return Response.ok(pobj.isLinked(type2, id2)).build();
 							} else {
 								List<?> items;
 								if (childrenOnly == null) {
-									items = pobj.getLinkedObjects(Utils.toClass(type2), pager);
+									items = pobj.getLinkedObjects(type2, pager);
 								} else {
-									items = pobj.getChildren(Utils.toClass(type2),
-											params.getFirst("field"), params.getFirst("term"), pager);
+									items = pobj.getChildren(type2, params.getFirst("field"),
+											params.getFirst("term"), pager);
 								}
 								result.put("items", items);
 								result.put("totalHits", pager.getCount());
@@ -333,9 +319,9 @@ public final class Api1 extends ResourceConfig {
 							pobj.unlinkAll();
 						} else if (type2 != null) {
 							if (id2 != null) {
-								pobj.unlink(Utils.toClass(type2), id2);
+								pobj.unlink(type2, id2);
 							} else if (childrenOnly != null) {
-								pobj.deleteChildren(Utils.toClass(type2));
+								pobj.deleteChildren(type2);
 							}
 						}
 						return Response.ok().build();

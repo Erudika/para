@@ -335,13 +335,28 @@ public final class RestUtils {
 							"Request is too large - the maximum is 1MB.");
 				}
 				List<Object> items = Utils.getJsonReader(List.class).readValue(is);
-				for (Object object : items) {
-					ParaObject pobj = Utils.setAnnotatedFields((Map<String, Object>) object);
-					if (pobj != null && Utils.isValidObject(pobj)) {
-						objects.add(pobj);
-					}
+				List<String> keys = new ArrayList<String>();
+				for (Object item : items) {
+					keys.add((String) ((Map<String, Object>) item).get(Config._ID));
 				}
-				Para.getDAO().updateAll(appid, objects);
+				keys.remove(null);
+
+				Map<String, ParaObject> existing = Para.getDAO().readAll(appid, keys, false);
+
+				if (!existing.isEmpty()) {
+					for (Object object : items) {
+						Map<String, Object> data = (Map<String, Object>) object;
+						String id = (String) data.get(Config._ID);
+						ParaObject pobj = existing.get(id);
+						if (pobj != null) {
+							Utils.setAnnotatedFields(pobj, data, Locked.class);
+							if (Utils.isValidObject(pobj)) {
+								objects.add(pobj);
+							}
+						}
+					}
+					Para.getDAO().updateAll(appid, objects);
+				}
 			} else {
 				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
 			}

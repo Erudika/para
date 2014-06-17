@@ -63,11 +63,15 @@ public class PObjectTest {
 		u.setDao(dao);
 		u.setSearch(search);
 
-		Linker l1 = new Linker(User.class, Tag.class, "111", "222");
-		Linker l2 = new Linker(User.class, User.class, "111", "333");
+		dao.create(t);
+		dao.create(u);
+		dao.create(u3);
 
-		u.link(t.getClass(), t.getId());
-		u.link(u3.getClass(), u3.getId());
+		Linker l1 = new Linker(Utils.type(User.class), Utils.type(Tag.class), "111", "222");
+		Linker l2 = new Linker(Utils.type(User.class), Utils.type(User.class), "111", "333");
+
+		u.link(t.getId());
+		u.link(u3.getId());
 
 		assertTrue(u.isLinked(t));
 		assertTrue(u.isLinked(u3));
@@ -79,8 +83,8 @@ public class PObjectTest {
 		when(search.findTerms(anyString(), anyString(), anyMapOf(String.class, Object.class),
 				anyBoolean())).thenReturn(list);
 
-		assertEquals(0, u.getLinkedObjects(Tag.class, null, null).size());
-		assertEquals(0, u.getLinkedObjects(User.class, null, null).size());
+		assertEquals(0, u.getLinkedObjects(Utils.type(Tag.class), null, null).size());
+		assertEquals(0, u.getLinkedObjects(Utils.type(User.class), null, null).size());
 
 		u.unlinkAll();
 

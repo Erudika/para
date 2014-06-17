@@ -366,7 +366,7 @@
 				<executions>
 					<execution>
 						<id>validate</id>
-						<phase>install</phase>
+						<phase>validate</phase>
 						<configuration>
 							<skip>${skipTests}</skip>
 							<configLocation>${basedir}/src/main/resources/checkstyle.xml</configLocation>
@@ -432,9 +432,4 @@
 			</build>
 		</profile>
 	</profiles>
-
-	<reporting>
-		<plugins>
-		</plugins>
-	</reporting>
 </project>

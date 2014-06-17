@@ -20,7 +20,6 @@ package com.erudika.para.core;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.utils.Config;
-import com.erudika.para.utils.Utils;
 import org.hibernate.validator.constraints.NotBlank;
 
 /**
@@ -43,25 +42,25 @@ public final class Linker extends PObject {
 
 	/**
 	 * A link. The names of the objects are compared and sorted alphabetically.
-	 * @param c1 the type of the first object
-	 * @param c2 the type of the second object
-	 * @param i1 the id of the first object
-	 * @param i2 the id of the second object
+	 * @param type1 the type of the first object
+	 * @param type2 the type of the second object
+	 * @param id1 the id of the first object
+	 * @param id2 the id of the second object
 	 */
-	public Linker(Class<? extends ParaObject> c1, Class<? extends ParaObject> c2, String i1, String i2) {
-		if (isReversed(Utils.type(c1), Utils.type(c2))) {
-			type1 = Utils.type(c2);
-			type2 = Utils.type(c1);
-			this.id1 = i2;
-			this.id2 = i1;
+	public Linker(String type1, String type2, String id1, String id2) {
+		if (isReversed(type1, type2)) {
+			this.type1 = type2;
+			this.type2 = type1;
+			this.id1 = id2;
+			this.id2 = id1;
 		} else {
-			type1 = Utils.type(c1);
-			type2 = Utils.type(c2);
-			this.id1 = i1;
-			this.id2 = i2;
+			this.type1 = type1;
+			this.type2 = type2;
+			this.id1 = id1;
+			this.id2 = id2;
 		}
-		setName(type1 + Config.SEPARATOR + type2);
-		setId(type1 + Config.SEPARATOR + id1 + Config.SEPARATOR + type2 + Config.SEPARATOR + id2);
+		setName(this.type1 + Config.SEPARATOR + this.type2);
+		setId(this.type1 + Config.SEPARATOR + this.id1 + Config.SEPARATOR + this.type2 + Config.SEPARATOR + this.id2);
 	}
 
 	/**
@@ -171,22 +170,22 @@ public final class Linker extends PObject {
 
 	/**
 	 * Checks if the position of a given object is first or second.
-	 * @param c1 the given class of object
+	 * @param type2 the given class of object
 	 * @return true if the object's type is equal to {@link #getType1()}
 	 */
-	public boolean isFirst(Class<? extends ParaObject> c1) {
-		if (c1 == null) {
+	public boolean isFirst(String type2) {
+		if (type2 == null) {
 			return false;
 		}
-		return Utils.type(c1).equals(type1);
+		return type2.equals(type1);
 	}
 //
 	/**
 	 * Returns the name of the id field (id1 or id2) for a given type.
-	 * @param c the type to check
+	 * @param type the type to check
 	 * @return "id1" if the given type is first in the link, otherwise "id2"
 	 */
-	public String getIdFieldNameFor(Class<? extends ParaObject> c) {
-		return isFirst(c) ? "id1" : "id2";
+	public String getIdFieldNameFor(String type) {
+		return isFirst(type) ? "id1" : "id2";
 	}
 }

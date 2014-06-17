@@ -17,6 +17,7 @@
  */
 package com.erudika.para.core;
 
+import com.erudika.para.utils.Utils;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -27,23 +28,23 @@ import static org.junit.Assert.*;
 public class LinkerTest {
 	@Test
 	public void test() {
-		Linker l1 = new Linker(User.class, Tag.class, "111", "222");
-		Linker l2 = new Linker(Tag.class, User.class, "222", "111");
+		Linker l1 = new Linker(Utils.type(User.class), Utils.type(Tag.class), "111", "222");
+		Linker l2 = new Linker(Utils.type(Tag.class), Utils.type(User.class), "222", "111");
 		assertTrue(l1.getId().equals(l2.getId()));
-		assertEquals("id2", l1.getIdFieldNameFor(User.class));
-		assertEquals("id1", l1.getIdFieldNameFor(Tag.class));
-		assertEquals("id1", l2.getIdFieldNameFor(Tag.class));
-		assertEquals("id2", l2.getIdFieldNameFor(User.class));
+		assertEquals("id2", l1.getIdFieldNameFor(Utils.type(User.class)));
+		assertEquals("id1", l1.getIdFieldNameFor(Utils.type(Tag.class)));
+		assertEquals("id1", l2.getIdFieldNameFor(Utils.type(Tag.class)));
+		assertEquals("id2", l2.getIdFieldNameFor(Utils.type(User.class)));
 
 		assertEquals(l1.getId1(), "222");
 		assertEquals(l1.getId2(), "111");
 		assertEquals(l2.getId1(), "222");
 		assertEquals(l2.getId2(), "111");
 
-		assertTrue(!l1.isFirst(User.class));
-		assertTrue(l1.isFirst(Tag.class));
-		assertTrue(l2.isFirst(Tag.class));
-		assertTrue(!l2.isFirst(User.class));
+		assertTrue(!l1.isFirst(Utils.type(User.class)));
+		assertTrue(l1.isFirst(Utils.type(Tag.class)));
+		assertTrue(l2.isFirst(Utils.type(Tag.class)));
+		assertTrue(!l2.isFirst(Utils.type(User.class)));
 		assertTrue(l1.equals(l2));
 	}
 }

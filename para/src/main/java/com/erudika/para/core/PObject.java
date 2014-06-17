@@ -305,13 +305,18 @@ public abstract class PObject implements ParaObject {
 	///////////////////////////////////////
 
 	@Override
-	public String link(Class<? extends ParaObject> c2, String id2) {
-		return getDao().create(getAppid(), new Linker(this.getClass(), c2, getId(), id2));
+	public String link(String id2) {
+		ParaObject second = getDao().read(id2);
+		if (second == null) {
+			return null;
+		}
+		// auto correct the second type
+		return getDao().create(getAppid(), new Linker(this.getType(), second.getType(), getId(), id2));
 	}
 
 	@Override
-	public void unlink(Class<? extends ParaObject> c2, String id2) {
-		getDao().delete(getAppid(), new Linker(this.getClass(), c2, getId(), id2));
+	public void unlink(String type2, String id2) {
+		getDao().delete(getAppid(), new Linker(this.getType(), type2, getId(), id2));
 	}
 
 	@Override
@@ -324,12 +329,12 @@ public abstract class PObject implements ParaObject {
 	}
 
 	@Override
-	public List<Linker> getLinks(Class<? extends ParaObject> c2, Pager... pager) {
-		if (c2 == null) {
+	public List<Linker> getLinks(String type2, Pager... pager) {
+		if (type2 == null) {
 			return new ArrayList<Linker>();
 		}
-		Linker link = new Linker(this.getClass(), c2, null, null);
-		String idField = link.getIdFieldNameFor(this.getClass());
+		Linker link = new Linker(this.getType(), type2, null, null);
+		String idField = link.getIdFieldNameFor(this.getType());
 		Map<String, Object> terms = new HashMap<String, Object>();
 		terms.put(Config._NAME, link.getName());
 		terms.put(idField, id);
@@ -337,11 +342,11 @@ public abstract class PObject implements ParaObject {
 	}
 
 	@Override
-	public boolean isLinked(Class<? extends ParaObject> c2, String id2) {
-		if (c2 == null) {
+	public boolean isLinked(String type2, String id2) {
+		if (type2 == null) {
 			return false;
 		}
-		return getDao().read(getAppid(), new Linker(this.getClass(), c2, getId(), id2).getId()) != null;
+		return getDao().read(getAppid(), new Linker(this.getType(), type2, getId(), id2).getId()) != null;
 	}
 
 	@Override
@@ -349,16 +354,16 @@ public abstract class PObject implements ParaObject {
 		if (toObj == null) {
 			return false;
 		}
-		return isLinked(toObj.getClass(), toObj.getId());
+		return isLinked(toObj.getType(), toObj.getId());
 	}
 
 	@Override
-	public Long countLinks(Class<? extends ParaObject> c2) {
+	public Long countLinks(String type2) {
 		if (id == null) {
 			return 0L;
 		}
-		Linker link = new Linker(this.getClass(), c2, null, null);
-		String idField = link.getIdFieldNameFor(this.getClass());
+		Linker link = new Linker(this.getType(), type2, null, null);
+		String idField = link.getIdFieldNameFor(this.getType());
 		Map<String, Object> terms = new HashMap<String, Object>();
 		terms.put(Config._NAME, link.getName());
 		terms.put(idField, id);
@@ -366,41 +371,41 @@ public abstract class PObject implements ParaObject {
 	}
 
 	@Override
-	public Long countChildren(Class<? extends ParaObject> clazz) {
-		return getSearch().getCount(getAppid(), Utils.type(clazz));
+	public Long countChildren(String type) {
+		return getSearch().getCount(getAppid(), type);
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> getChildren(Class<P> clazz, Pager... pager) {
-		return getChildren(clazz, null, null, pager);
+	public <P extends ParaObject> List<P> getChildren(String type, Pager... pager) {
+		return getChildren(type, null, null, pager);
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> getChildren(Class<P> clazz, String field, String term, Pager... pager) {
+	public <P extends ParaObject> List<P> getChildren(String type, String field, String term, Pager... pager) {
 		Map<String, Object> terms = new HashMap<String, Object>();
 		if (StringUtils.isBlank(field) && StringUtils.isBlank(term)) {
 			terms.put(field, term);
 		}
 		terms.put(Config._PARENTID, getId());
 		// TODO: make this work with no type specified (clazz = null)
-		return getSearch().findTerms(getAppid(), Utils.type(clazz), terms, true, pager);
+		return getSearch().findTerms(getAppid(), type, terms, true, pager);
 	}
 
 	@Override
-	public void deleteChildren(Class<? extends ParaObject> clazz) {
+	public void deleteChildren(String type) {
 		if (!StringUtils.isBlank(getId())) {
 			getDao().deleteAll(getAppid(), getSearch().findTerms(getAppid(),
-					Utils.type(clazz), Collections.singletonMap(Config._PARENTID, getId()), true));
+					type, Collections.singletonMap(Config._PARENTID, getId()), true));
 		}
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <P extends ParaObject> List<P> getLinkedObjects(Class<P> clazz, Pager... pager) {
-		List<Linker> links = getLinks(clazz, pager);
+	public <P extends ParaObject> List<P> getLinkedObjects(String type, Pager... pager) {
+		List<Linker> links = getLinks(type, pager);
 		ArrayList<String> keys = new ArrayList<String>();
 		for (Linker link : links) {
-			if (link.isFirst(clazz)) {
+			if (link.isFirst(type)) {
 				keys.add(link.getId1());
 			} else {
 				keys.add(link.getId2());
