@@ -31,11 +31,9 @@ import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.MediaType;
@@ -67,9 +65,6 @@ public final class Api1 extends ResourceConfig {
 	private static final String POST = HttpMethod.POST;
 	private static final String DELETE = HttpMethod.DELETE;
 
-	// maps plural to singular type definitions
-	private static final Map<String, String> coreTypes = new HashMap<String, String>();
-
 	private final DAO dao;
 	private final Search search;
 
@@ -88,8 +83,6 @@ public final class Api1 extends ResourceConfig {
 
 		register(new JacksonJsonProvider(Utils.getJsonMapper()));
 		register(GenericExceptionMapper.class);
-
-		initCoreTypes();
 
 		// core objects CRUD API
 		registerCrudApi("{type}", typeCrudHandler(), linksHandler());
@@ -118,19 +111,6 @@ public final class Api1 extends ResourceConfig {
 		Resource.Builder utilsRes = Resource.builder("utils");
 		utilsRes.addMethod(GET).produces(JSON).handledBy(utilsHandler());
 		registerResources(utilsRes.build());
-	}
-
-	private void initCoreTypes() {
-		Set<Class<? extends ParaObject>> coreClasses = new HashSet<Class<? extends ParaObject>>();
-		RestUtils.scanForDomainClasses(coreClasses);
-		try {
-			for (Class<? extends ParaObject> clazz : coreClasses) {
-				ParaObject p = clazz.newInstance();
-				coreTypes.put(p.getPlural(), p.getType());
-			}
-		} catch (Exception ex) {
-			logger.error(null, ex);
-		}
 	}
 
 	private void registerCrudApi(String path, Inflector<ContainerRequestContext, Response> handler,
@@ -201,37 +181,23 @@ public final class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				String typePlural = ctx.getUriInfo().getPathParameters().getFirst(Config._TYPE);
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				App app = dao.read(appid, new App(appid).getId());
+				App app = RestUtils.getApp(appid);
 				if (app != null && !StringUtils.isBlank(typePlural)) {
-					String type = coreTypes.get(typePlural);
+					String type = RestUtils.getCoreTypes().get(typePlural);
 					if (type == null) {
 						type = app.getDatatypes().get(typePlural);
-					}
-					// register a new data type
-					if (type == null && POST.equals(ctx.getMethod())) {
-						Response res = crudHandler(type).apply(ctx);
-						Object ent = res.getEntity();
-						if (ent != null && ent instanceof ParaObject) {
-							type = ((ParaObject) ent).getType();
-							typePlural = ((ParaObject) ent).getPlural();
-							if (type != null) {
-								app.addDatatype(typePlural, type);
-								app.update();
-							}
-						}
-						return res;
 					}
 					if (type == null) {
 						type = typePlural;
 					}
-					return crudHandler(type).apply(ctx);
+					return crudHandler(app, type).apply(ctx);
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found: " + appid);
 			}
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> crudHandler(final String type) {
+	private Inflector<ContainerRequestContext, Response> crudHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				String id = ctx.getUriInfo().getPathParameters().getFirst(Config._ID);
@@ -239,17 +205,17 @@ public final class Api1 extends ResourceConfig {
 					if (GET.equals(ctx.getMethod())) {
 						return searchHandler(type).apply(ctx);
 					} else if (POST.equals(ctx.getMethod())) {
-						return createHandler(type).apply(ctx);
+						return createHandler(app, type).apply(ctx);
 					} else if (ctx.getUriInfo().getPath().endsWith("search")) {
 						return searchHandler(type).apply(ctx);
 					}
 				} else {
 					if (GET.equals(ctx.getMethod())) {
-						return readHandler(type).apply(ctx);
+						return readHandler(app, type).apply(ctx);
 					} else if (PUT.equals(ctx.getMethod())) {
-						return updateHandler(type).apply(ctx);
+						return updateHandler(app, type).apply(ctx);
 					} else if (DELETE.equals(ctx.getMethod())) {
-						return deleteHandler(type).apply(ctx);
+						return deleteHandler(app, type).apply(ctx);
 					}
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "Type '" + type + "' not found.");
@@ -336,10 +302,10 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				App app = dao.read(appid, new App(appid).getId());
+				App app = RestUtils.getApp(appid);
 				if (app != null) {
 					Map<String, String> allTypes = new HashMap<String, String>(app.getDatatypes());
-					allTypes.putAll(coreTypes);
+					allTypes.putAll(RestUtils.getCoreTypes());
 					return Response.ok(allTypes).build();
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found: " + appid);
@@ -351,7 +317,7 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				App app = dao.read(appid, new App(appid).getId());
+				App app = RestUtils.getApp(appid);
 				if (app != null) {
 					app.resetSecret();
 					app.update();
@@ -381,44 +347,42 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> createHandler(final String type) {
+	private Inflector<ContainerRequestContext, Response> createHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				return RestUtils.getCreateResponse(type, ctx.getEntityStream());
+				return RestUtils.getCreateResponse(app, type, ctx.getEntityStream());
 			}
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> readHandler(final String type) {
+	private Inflector<ContainerRequestContext, Response> readHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
 				ParaObject obj = Utils.toObject(type);
 				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
-				return RestUtils.getReadResponse(dao.read(appid, obj.getId()));
+				return RestUtils.getReadResponse(dao.read(app.getAppIdentifier(), obj.getId()));
 			}
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> updateHandler(final String type) {
+	private Inflector<ContainerRequestContext, Response> updateHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
 				ParaObject obj = Utils.toObject(type);
 				obj.setType(type);
 				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
-				return RestUtils.getUpdateResponse(dao.read(appid, obj.getId()), ctx.getEntityStream());
+				return RestUtils.getUpdateResponse(dao.read(app.getAppIdentifier(), obj.getId()),
+						ctx.getEntityStream());
 			}
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> deleteHandler(final String type) {
+	private Inflector<ContainerRequestContext, Response> deleteHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				ParaObject obj = Utils.toObject(type);
-				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
 				obj.setType(type);
-				obj.setAppid(appid);
+				obj.setAppid(app.getAppIdentifier());
 				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
 				return RestUtils.getDeleteResponse(obj);
 			}

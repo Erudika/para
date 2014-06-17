@@ -133,6 +133,12 @@ Here's the Maven snippet to include in your `pom.xml`:
 5. Push the branch to **your fork** on GitHub (`git push origin my-new-feature`)
 6. Create new Pull Request from your fork
 
+Please try to respect the code style of this project. To check your code, run it through the style checker:
+
+```sh
+mvn -f para validate
+```
+
 For more information see [CONTRIBUTING.md](https://github.com/Erudika/para/blob/master/CONTRIBUTING.md)
 
 ## License

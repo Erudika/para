@@ -19,6 +19,7 @@ package com.erudika.para.rest;
 
 import com.erudika.para.Para;
 import com.erudika.para.annotations.Locked;
+import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.User;
 import com.erudika.para.utils.Config;
@@ -32,11 +33,13 @@ import java.net.URI;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.WebApplicationException;
@@ -62,6 +65,8 @@ import org.springframework.util.ClassUtils;
 public final class RestUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(RestUtils.class);
+	// maps plural to singular type definitions
+	private static final Map<String, String> coreTypes = new HashMap<String, String>();
 	private static final CoreClassScanner scanner = new CoreClassScanner();
 	private static final DateTimeFormatter timeFormatter = DateTimeFormat.
 			forPattern("yyyyMMdd'T'HHmmss'Z'").withZoneUTC();
@@ -130,7 +135,7 @@ public final class RestUtils {
 	 * @param princ the authenticated App
 	 * @return the {@code appid}
 	 */
-	public static String getPrincipalAppid(Principal princ) {
+	protected static String getPrincipalAppid(Principal princ) {
 		String def = Config.APP_NAME_NS;
 		if (princ == null) {
 			return def;
@@ -141,6 +146,63 @@ public final class RestUtils {
 				return StringUtils.isBlank(princ.getName()) ? def : princ.getName();
 			}
 		}
+	}
+
+	/**
+	 * Returns the current {@link App} object.
+	 * @param appid the id of the app
+	 * @return an App object or null
+	 */
+	protected static App getApp(String appid) {
+		if (StringUtils.isBlank(appid)) {
+			return null;
+		} else {
+			return  Para.getDAO().read(Config.APP_NAME_NS, new App(appid).getId());
+		}
+	}
+
+	/**
+	 * Adds unknown types to this App's list of data types. Called on create().
+	 * @param app the current app
+	 * @param objects a list of new objects
+	 */
+	protected static void registerNewTypes(App app, ParaObject... objects) {
+		// register a new data type
+		if (app != null && objects != null && objects.length > 0) {
+			boolean update = false;
+			for (ParaObject obj : objects) {
+				if (obj != null && obj.getType() != null &&
+						!getCoreTypes().containsKey(obj.getPlural()) &&
+						!app.getDatatypes().containsKey(obj.getPlural())) {
+
+					app.addDatatype(obj.getPlural(), obj.getType());
+					update = true;
+				}
+			}
+			if (update) {
+				app.update();
+			}
+		}
+	}
+
+	/**
+	 * Returns a map of the core data types.
+	 * @return a map of type plural -> type singular form
+	 */
+	protected static Map<String, String> getCoreTypes() {
+		if (coreTypes.isEmpty()) {
+			Set<Class<? extends ParaObject>> coreClasses = new HashSet<Class<? extends ParaObject>>();
+			scanForDomainClasses(coreClasses);
+			try {
+				for (Class<? extends ParaObject> clazz : coreClasses) {
+					ParaObject p = clazz.newInstance();
+					coreTypes.put(p.getPlural(), p.getType());
+				}
+			} catch (Exception ex) {
+				logger.error(null, ex);
+			}
+		}
+		return coreTypes;
 	}
 
 	/////////////////////////////////////////////
@@ -164,10 +226,11 @@ public final class RestUtils {
 	 * Create response as JSON
 	 * @param type type of the object to create (not used)
 	 * @param is entity input stream
+	 * @param app the app object
 	 * @return a status code 201 or 400
 	 */
-	public static Response getCreateResponse(String type, InputStream is) {
-		ParaObject content = null;
+	public static Response getCreateResponse(App app, String type, InputStream is) {
+		ParaObject content;
 		try {
 			if (is != null && is.available() > 0) {
 				if (is.available() > (1024 * 1024)) {
@@ -175,16 +238,21 @@ public final class RestUtils {
 							"Request is too large - the maximum is 1MB.");
 				}
 				Map<String, Object> newContent = Utils.getJsonReader(Map.class).readValue(is);
-				newContent.put(Config._TYPE, type);
+				// type is not fount in datatypes (try to get it from req. body)
+				if (!StringUtils.isBlank(type)) {
+					newContent.put(Config._TYPE, type);
+				}
+				newContent.put(Config._APPID, app.getAppIdentifier());
 				content = Utils.setAnnotatedFields(newContent);
+				registerNewTypes(app, content);
 			} else {
 				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
 			}
 		} catch (JsonParseException e) {
-			return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
+			return getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
 		} catch (IOException e) {
 			logger.error(null, e);
-			return RestUtils.getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
+			return getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
 		}
 		return getCreateResponse(content);
 	}
@@ -215,7 +283,7 @@ public final class RestUtils {
 	 * @return a status code 200 or 400 or 404
 	 */
 	public static Response getUpdateResponse(ParaObject object, InputStream is) {
-		Map<String, Object> newContent = null;
+		Map<String, Object> newContent;
 		try {
 			if (is != null && is.available() > 0) {
 				if (is.available() > (1024 * 1024)) {
@@ -227,10 +295,10 @@ public final class RestUtils {
 				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
 			}
 		} catch (JsonParseException e) {
-			return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
+			return getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
 		} catch (IOException e) {
 			logger.error(null, e);
-			return RestUtils.getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
+			return getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
 		}
 		return getUpdateResponse(object, newContent);
 	}
@@ -306,15 +374,23 @@ public final class RestUtils {
 						objects.add(pobj);
 					}
 				}
+
 				Para.getDAO().createAll(appid, objects);
+
+				Utils.asyncExecute(new Callable<Object>() {
+					public Object call() throws Exception {
+						registerNewTypes(getApp(appid), objects.toArray(new ParaObject[objects.size()]));
+						return null;
+					}
+				});
 			} else {
 				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
 			}
 		} catch (JsonParseException e) {
-			return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
+			return getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
 		} catch (IOException e) {
 			logger.error(null, e);
-			return RestUtils.getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
+			return getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
 		}
 		return Response.ok(objects).build();
 	}
@@ -361,10 +437,10 @@ public final class RestUtils {
 				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
 			}
 		} catch (JsonParseException e) {
-			return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
+			return getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
 		} catch (IOException e) {
 			logger.error(null, e);
-			return RestUtils.getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
+			return getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
 		}
 		return Response.ok(objects).build();
 	}
@@ -396,10 +472,10 @@ public final class RestUtils {
 				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
 			}
 		} catch (JsonParseException e) {
-			return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
+			return getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
 		} catch (IOException e) {
 			logger.error(null, e);
-			return RestUtils.getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
+			return getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
 		}
 		return Response.ok().build();
 	}
@@ -438,8 +514,8 @@ public final class RestUtils {
 			response.setStatus(status);
 			response.setContentType(MediaType.APPLICATION_JSON);
 			out = response.getWriter();
-			Utils.getJsonWriter().writeValue(out, RestUtils.
-					getStatusResponse(Response.Status.fromStatusCode(status), message).getEntity());
+			Utils.getJsonWriter().writeValue(out, getStatusResponse(Response.Status.
+					fromStatusCode(status), message).getEntity());
 		} catch (Exception ex) {
 			logger.error(null, ex);
 		} finally {

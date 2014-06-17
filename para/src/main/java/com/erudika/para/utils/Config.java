@@ -47,6 +47,8 @@ public final class Config {
 	public static final String PARA = "para";
 	/** {@value #_TYPE} */
 	public static final String _TYPE = "type";
+	/** {@value #_APPID} */
+	public static final String _APPID = "appid";
 	/** {@value #_CREATORID} */
 	public static final String _CREATORID = "creatorid";
 	/** {@value #_ID} */

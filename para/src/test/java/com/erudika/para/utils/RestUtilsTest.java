@@ -45,7 +45,7 @@ public class RestUtilsTest {
 	public void testGetCreateUpdateDeleteResponse() {
 		Tag t = new Tag("tag");
 		t.setDao(new MockDAO());
-		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(null, null).getStatus());
+		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(null, null, null).getStatus());
 		assertEquals(Status.CREATED.getStatusCode(), getCreateResponse(t).getStatus());
 		assertNotNull(t.getDao().read(t.getId()));
 
