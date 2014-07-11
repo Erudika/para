@@ -12,11 +12,11 @@
 	<name>Para</name>
 
 	<properties>
-		<jerseyVer>2.9</jerseyVer>
+		<jerseyVer>2.10.1</jerseyVer>
 		<springVer>4.0.0.M1</springVer>
 		<springVer2>1.0.2.RELEASE</springVer2>
-		<jacksonVer>2.3.3</jacksonVer>
-		<hazelcastVer>3.2</hazelcastVer>
+		<jacksonVer>2.4.1</jacksonVer>
+		<hazelcastVer>3.2.3</hazelcastVer>
 	</properties>
 
 	<dependencies>
@@ -138,12 +138,12 @@
 		<dependency>
 			<groupId>org.elasticsearch</groupId>
 			<artifactId>elasticsearch</artifactId>
-			<version>1.1.1</version>
+			<version>1.2.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.elasticsearch</groupId>
 			<artifactId>elasticsearch-cloud-aws</artifactId>
-			<version>2.1.1</version>
+			<version>2.2.0</version>
 		</dependency>
 
 		<!-- HAZELCAST -->
@@ -204,7 +204,7 @@
 		<dependency>
 			<groupId>commons-beanutils</groupId>
 			<artifactId>commons-beanutils</artifactId>
-			<version>1.9.1</version>
+			<version>1.9.2</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>commons-logging</artifactId>
@@ -215,12 +215,12 @@
 		<dependency>
 			<groupId>org.hibernate</groupId>
 			<artifactId>hibernate-validator</artifactId>
-			<version>5.1.0.Final</version>
+			<version>5.1.1.Final</version>
 		</dependency>
 		<dependency>
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk</artifactId>
-			<version>1.7.6</version>
+			<version>1.8.3</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>commons-logging</artifactId>
@@ -285,7 +285,7 @@
 			<plugin>
 				<groupId>org.eclipse.jetty</groupId>
 				<artifactId>jetty-maven-plugin</artifactId>
-				<version>9.2.0.v20140526</version>
+				<version>9.2.1.v20140609</version>
 				<configuration>
 					<systemProperties>
 						<systemProperty>
@@ -314,7 +314,7 @@
 			<plugin>
 				<groupId>com.jcabi</groupId>
 				<artifactId>jcabi-dynamodb-maven-plugin</artifactId>
-				<version>0.5</version>
+				<version>0.7</version>
 				<executions>
 					<execution>
 						<id>dynamodb-integration-test</id>
@@ -348,7 +348,7 @@
 								<artifactItem>
 									<groupId>com.jcabi</groupId>
 									<artifactId>DynamoDBLocal</artifactId>
-									<version>2013-09-12</version>
+									<version>2014-01-08</version>
 									<type>zip</type>
 									<outputDirectory>${project.build.directory}/dynamodb-dist</outputDirectory>
 									<overWrite>false</overWrite>

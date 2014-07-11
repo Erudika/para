@@ -813,12 +813,11 @@ public final class Utils {
 
 	/**
 	 * Executes a {@link java.util.concurrent.Callable} asynchronously
-	 * @param callable a task
-	 * @return a future
+	 * @param runnable a task
 	 */
-	public static void asyncExecute(Runnable callable) {
+	public static void asyncExecute(Runnable runnable) {
 		try {
-			exec.execute(callable);
+			exec.execute(runnable);
 		} catch (Exception ex) {
 			logger.warn(null, ex);
 		}
