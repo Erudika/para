@@ -67,7 +67,6 @@ public class App extends PObject {
 	public App(String id) {
 		this.shared = false;
 		this.active = true;
-		this.secret = Utils.generateSecurityToken(20);
 		setId(id);
 		setName(getName());
 	}
@@ -113,6 +112,9 @@ public class App extends PObject {
 	 */
 	@JsonIgnore
 	public String getSecret() {
+		if (secret == null) {
+			resetSecret();
+		}
 		return secret;
 	}
 
@@ -200,7 +202,7 @@ public class App extends PObject {
 			return new HashMap<String, String>() {
 				private static final long serialVersionUID = 1L;
 				{
-					put("accessKey", Utils.base64enc(getId().getBytes()));
+					put("accessKey", getId());
 					put("secretKey", getSecret());
 				}
 			};

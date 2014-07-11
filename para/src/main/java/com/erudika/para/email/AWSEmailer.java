@@ -27,7 +27,6 @@ import com.amazonaws.services.simpleemail.model.SendEmailRequest;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.util.List;
-import java.util.concurrent.Callable;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 
@@ -64,9 +63,9 @@ public class AWSEmailer implements Emailer {
 
 			request.setMessage(msg);
 
-			Utils.asyncExecute(new Callable<Object>() {
-				public Object call() throws Exception {
-					return sesclient.sendEmail(request);
+			Utils.asyncExecute(new Runnable() {
+				public void run() {
+					sesclient.sendEmail(request);
 				}
 			});
 			return true;

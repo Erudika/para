@@ -39,7 +39,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.WebApplicationException;
@@ -56,6 +55,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.AssignableTypeFilter;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.ClassUtils;
 
 /**
@@ -154,11 +155,16 @@ public final class RestUtils {
 	 * @return an App object or null
 	 */
 	protected static App getApp(String appid) {
-		if (StringUtils.isBlank(appid)) {
-			return null;
-		} else {
-			return  Para.getDAO().read(Config.APP_NAME_NS, new App(appid).getId());
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		if (!StringUtils.isBlank(appid) && auth != null) {
+			Object principal = auth.getPrincipal();
+			if (principal != null && principal instanceof App) {
+				return (App) principal;
+			} else {
+				return Para.getDAO().read(Config.APP_NAME_NS, new App(appid).getId());
+			}
 		}
+		return null;
 	}
 
 	/**
@@ -377,10 +383,10 @@ public final class RestUtils {
 
 				Para.getDAO().createAll(appid, objects);
 
-				Utils.asyncExecute(new Callable<Object>() {
-					public Object call() throws Exception {
-						registerNewTypes(getApp(appid), objects.toArray(new ParaObject[objects.size()]));
-						return null;
+				App app = getApp(appid);
+				Utils.asyncExecute(new Runnable() {
+					public void run() {
+						registerNewTypes(app, objects.toArray(new ParaObject[objects.size()]));
 					}
 				});
 			} else {

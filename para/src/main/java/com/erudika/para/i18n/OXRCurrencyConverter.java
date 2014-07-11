@@ -29,7 +29,6 @@ import java.security.cert.X509Certificate;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import org.slf4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -87,10 +86,9 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 			s = fetchFxRatesJSON();
 		} else if ((Utils.timestamp() - s.getTimestamp()) > REFRESH_AFTER) {
 			// lazy refresh fx rates
-			Utils.asyncExecute(new Callable<Boolean>() {
-				public Boolean call() throws Exception {
+			Utils.asyncExecute(new Runnable() {
+				public void run() {
 					fetchFxRatesJSON();
-					return true;
 				}
 			});
 		}

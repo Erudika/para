@@ -56,10 +56,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -96,7 +94,7 @@ import org.springframework.security.crypto.bcrypt.BCrypt;
 public final class Utils {
 
 	private static final Logger logger = LoggerFactory.getLogger(Utils.class);
-	private static final ExecutorService exec = Executors.newSingleThreadExecutor();
+	private static final ExecutorService exec = Executors.newFixedThreadPool(2);
 	private static final ObjectMapper jsonMapper = new ObjectMapper();
 	private static final ObjectReader jsonReader;
 	private static final ObjectWriter jsonWriter;
@@ -818,12 +816,11 @@ public final class Utils {
 	 * @param callable a task
 	 * @return a future
 	 */
-	public static Future<?> asyncExecute(Callable<?> callable) {
+	public static void asyncExecute(Runnable callable) {
 		try {
-			return exec.submit(callable);
+			exec.execute(callable);
 		} catch (Exception ex) {
 			logger.warn(null, ex);
-			return null;
 		}
 	}
 
@@ -976,6 +973,7 @@ public final class Utils {
 						// in this case the object is a flattened JSON string coming from the DB
 						value = getJsonReader(field.getType()).readValue(value.toString());
 					}
+					field.setAccessible(true);
 					BeanUtils.setProperty(pojo, name, value);
 					props.remove(name);
 				}
