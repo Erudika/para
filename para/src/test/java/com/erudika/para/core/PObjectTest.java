@@ -154,4 +154,12 @@ public class PObjectTest {
 		u1.setTags(null);
 		assertNull(u1.getTags());
 	}
+
+	@Test
+	public void testGetSetShardKey() {
+		User u1 = new User("111");
+		assertEquals(u1.getId(), u1.getShardKey());
+		u1.setShardKey("somekey");
+		assertEquals("somekey", u1.getShardKey());
+	}
 }

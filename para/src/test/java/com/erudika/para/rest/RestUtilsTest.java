@@ -15,16 +15,23 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.utils;
+package com.erudika.para.rest;
 
+import com.erudika.para.core.App;
+import com.erudika.para.core.ParaObject;
+import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
+import com.erudika.para.core.Votable;
 import com.erudika.para.persistence.MockDAO;
-import org.junit.Test;
-import static org.junit.Assert.*;
-import javax.ws.rs.core.Response.Status;
 import static com.erudika.para.rest.RestUtils.*;
+import java.security.Principal;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import javax.ws.rs.core.Response.Status;
+import static org.junit.Assert.*;
+import org.junit.Test;
 
 /**
  *
@@ -57,6 +64,47 @@ public class RestUtilsTest {
 		assertEquals(Status.BAD_REQUEST.getStatusCode(), getDeleteResponse(null).getStatus());
 		assertEquals(Status.OK.getStatusCode(), getDeleteResponse(t).getStatus());
 		assertNull(t.getDao().read(t.getId()));
+	}
+
+	@Test
+	public void testGetCoreTypes() {
+		assertEquals("user", getCoreTypes().get("users"));
+	}
+
+	@Test
+	public void testScanForDomainClasses() {
+		Set<Class<? extends ParaObject>> set = new HashSet<Class<? extends ParaObject>>();
+		scanForDomainClasses(set);
+		assertFalse(set.isEmpty());
+		assertTrue(set.contains(Tag.class));
+		assertFalse(set.contains(Votable.class));
+		assertFalse(set.contains(ParaObject.class));
+	}
+
+	@Test
+	public void testRegisterNewTypes() {
+		App app = new App("test");
+		app.setDao(new MockDAO());
+		Sysprop custom = new Sysprop("ctype");
+		custom.setType("cat");
+		registerNewTypes(app, custom);
+		assertEquals("cat", app.getDatatypes().get("cats"));
+	}
+
+	@Test
+	public void testGetApp() {
+		assertNull(getApp(null));
+		assertNull(getApp(" "));
+		// TODO
+	}
+
+	@Test
+	public void testGetPrincipalAppid() {
+		assertEquals("pname", getPrincipalAppid(new Principal() {
+			public String getName() {
+				return "pname";
+			}
+		}));
 	}
 
 //	@Test

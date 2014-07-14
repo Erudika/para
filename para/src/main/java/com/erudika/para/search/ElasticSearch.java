@@ -168,7 +168,7 @@ public class ElasticSearch implements Search {
 		try {
 			MultiGetRequestBuilder mgr = client().prepareMultiGet();
 			for (String id : ids) {
-				MultiGetRequest.Item i = new MultiGetRequest.Item(appid, null, id);
+				MultiGetRequest.Item i = new MultiGetRequest.Item(stripRouting(appid), null, id);
 				i.routing(getRouting(appid, id));
 				mgr.add(i);
 			}
@@ -423,7 +423,7 @@ public class ElasticSearch implements Search {
 		SearchHits hits = null;
 
 		try {
-			SearchRequestBuilder srb = client().prepareSearch(appid).
+			SearchRequestBuilder srb = client().prepareSearch(stripRouting(appid)).
 				setSearchType(SearchType.DFS_QUERY_THEN_FETCH).
 				setRouting(getRouting(appid, null)).
 				setQuery(query).addSort(sort).setFrom(start).setSize(max);
@@ -457,7 +457,7 @@ public class ElasticSearch implements Search {
 
 		try {
 			GetRequestBuilder grb = client().prepareGet().
-					setIndex(appid).setId(key).
+					setIndex(stripRouting(appid)).setId(key).
 					setRouting(getRouting(appid, key));
 
 			if (type != null) {
@@ -476,7 +476,7 @@ public class ElasticSearch implements Search {
 		if (StringUtils.isBlank(appid)) {
 			return 0L;
 		}
-		CountRequestBuilder crb = client().prepareCount(appid).
+		CountRequestBuilder crb = client().prepareCount(stripRouting(appid)).
 				setRouting(getRouting(appid, null)).
 				setQuery(QueryBuilders.matchAllQuery());
 
@@ -506,7 +506,8 @@ public class ElasticSearch implements Search {
 			}
 		}
 		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), fb);
-		CountRequestBuilder crb = client().prepareCount(appid).setQuery(qb).setRouting(getRouting(appid, null));
+		CountRequestBuilder crb = client().prepareCount(stripRouting(appid)).
+				setQuery(qb).setRouting(getRouting(appid, null));
 
 		if (type != null) {
 			crb.setTypes(type);
@@ -521,7 +522,7 @@ public class ElasticSearch implements Search {
 	 * 'routing:appid' or '_:appid' (routing = appid in this case)
 	 * @param appid an appid with routing value prefixed (or not)
 	 * @param alt the alternative routing value that will be returned if appid has no routing
-	 * @return
+	 * @return the routing value
 	 */
 	private String getRouting(String appid, String alt) {
 		if (StringUtils.contains(appid, Config.SEPARATOR)) {
@@ -533,6 +534,19 @@ public class ElasticSearch implements Search {
 			}
 		}
 		return alt;
+	}
+
+	/**
+	 * Returns the appid without the routing prefix (if any)
+	 * @param appid the appid
+	 * @return appid sans routing prefix, unchanged if prefix is missing
+	 */
+	private String stripRouting(String appid) {
+		if (StringUtils.contains(appid, Config.SEPARATOR)) {
+			return appid.substring(appid.indexOf(Config.SEPARATOR) + 1);
+		} else {
+			return appid;
+		}
 	}
 
 	//////////////////////////////////////////////////////////////

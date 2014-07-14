@@ -332,7 +332,7 @@ public final class ElasticSearchUtils {
 			md.put("node.name", nodeInfo.getNode().getName());
 			md.put("node.address", nodeInfo.getNode().getAddress().toString());
 			md.put("node.data", Boolean.toString(nodeInfo.getNode().isDataNode()));
-			md.put("node.getClient()", Boolean.toString(nodeInfo.getNode().isClientNode()));
+			md.put("node.client", Boolean.toString(nodeInfo.getNode().isClientNode()));
 			md.put("node.version", nodeInfo.getNode().getVersion().toString());
 		}
 		return md;

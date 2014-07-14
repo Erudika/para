@@ -543,23 +543,6 @@ public final class RestUtils {
 	/////////////////////////////////////////////
 
 	/**
-	 * Converts a JSON entity from a POST/PUT request to a Map
-	 * @param is entity stream
-	 * @return a map representing the consumed entity
-	 */
-	static Map<String, Object> getMapFromEntity(InputStream is) {
-		Map<String, Object> newContent = null;
-		try {
-			if (is != null) {
-				newContent = Utils.getJsonReader(Map.class).readValue(is);
-			}
-		} catch (Exception e) {
-			logger.error(null, e);
-		}
-		return newContent;
-	}
-
-	/**
 	 * This scans a package for Para objects and adds them to the set.
 	 * @param classes a set
 	 */
