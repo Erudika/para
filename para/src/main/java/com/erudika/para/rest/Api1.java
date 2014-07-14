@@ -360,6 +360,7 @@ public final class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				ParaObject obj = Utils.toObject(type);
 				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
+				obj.setShardKey(app.isShared() ? app.getId() : null);
 				return RestUtils.getReadResponse(dao.read(app.getAppIdentifier(), obj.getId()));
 			}
 		};
@@ -371,6 +372,7 @@ public final class Api1 extends ResourceConfig {
 				ParaObject obj = Utils.toObject(type);
 				obj.setType(type);
 				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
+				obj.setShardKey(app.isShared() ? app.getId() : null);
 				return RestUtils.getUpdateResponse(dao.read(app.getAppIdentifier(), obj.getId()),
 						ctx.getEntityStream());
 			}
@@ -384,6 +386,7 @@ public final class Api1 extends ResourceConfig {
 				obj.setType(type);
 				obj.setAppid(app.getAppIdentifier());
 				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
+				obj.setShardKey(app.isShared() ? app.getId() : null);
 				return RestUtils.getDeleteResponse(obj);
 			}
 		};
@@ -429,16 +432,18 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
+				App app = RestUtils.getApp(appid);
 				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
-				return Response.ok(buildQueryAndSearch(appid, params, type)).build();
+				return Response.ok(buildQueryAndSearch(app, params, type)).build();
 			}
 		};
 	}
 
-	private <P extends ParaObject> Map<String, Object> buildQueryAndSearch(String appid,
+	private <P extends ParaObject> Map<String, Object> buildQueryAndSearch(App app,
 			MultivaluedMap<String, String> params, String typeOverride) {
 		String query = params.containsKey("q") ? params.getFirst("q") : "*";
 		String type = (typeOverride != null) ? typeOverride : params.getFirst(Config._TYPE);
+		String appid = app.isShared() ? "_".concat(Config.SEPARATOR).concat(app.getId()) : app.getId();
 
 		Pager pager = new Pager();
 		pager.setPage(NumberUtils.toLong(params.getFirst("page"), 0));
@@ -456,7 +461,7 @@ public final class Api1 extends ResourceConfig {
 				items = Collections.singletonList(obj);
 				pager.setCount(1);
 			}
-		} else if ("nearby".equals(queryType)) {
+		} else if ("ids".equals(queryType)) {
 			List<String> ids = params.get("ids");
 			items = search.findByIds(appid, ids);
 			pager.setCount(items.size());

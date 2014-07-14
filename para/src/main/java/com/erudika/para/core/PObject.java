@@ -65,6 +65,7 @@ public abstract class PObject implements ParaObject {
 
 	private transient PObject parent;
 	private transient PObject creator;
+	private transient String shardKey;
 
 	private transient DAO dao;
 	private transient Search search;
@@ -482,6 +483,16 @@ public abstract class PObject implements ParaObject {
 	//////////////////////////////////////
 	//			OBJECT METHODS
 	//////////////////////////////////////
+
+	@Override
+	public final String getShardKey() {
+		return StringUtils.isBlank(shardKey) ? getId() : shardKey;
+	}
+
+	@Override
+	public final void setShardKey(String shardKey) {
+		this.shardKey = shardKey;
+	}
 
 	@Override
 	public int hashCode() {

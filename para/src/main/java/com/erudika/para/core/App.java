@@ -35,9 +35,9 @@ import org.hibernate.validator.constraints.NotBlank;
  * The apps are separated by name and each {@link ParaObject} belongs to an app.
  * <br>
  * There can be two ways to separate apps - dedicated and shared.
- * Shared apps use the same data store table, same search index and the same cache map.
- * Object separation is done by key prefixes which are the same as the appid.
- * Dedicated apps have their own separate data stores, indexes and caches.
+ * Shared apps use their own database table and cache, but share the same search index.
+ * Object separation (sharding) is done using the shard key which is usually the same as the appid.
+ * Dedicated apps have their own separate database tables and caches and a separate index for each app.
  * <br>
  * @author Alex Bogdanovski [alex@erudika.com]
  */

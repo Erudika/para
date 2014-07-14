@@ -37,12 +37,14 @@ import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.cluster.metadata.AliasAction;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
 import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.slf4j.Logger;
@@ -155,13 +157,25 @@ public final class ElasticSearchUtils {
 	 * @return true if created
 	 */
 	public static boolean createIndex(String appid) {
+		return createIndex(appid, Integer.valueOf(Config.getConfigParam("para.es.shards", "5")),
+				Integer.valueOf(Config.getConfigParam("para.es.replicas", "0")));
+	}
+
+	/**
+	 * Creates a new search index.
+	 * @param appid the index name (alias)
+	 * @param shards number of shards
+	 * @param replicas number of replicas
+	 * @return true if created
+	 */
+	public static boolean createIndex(String appid, int shards, int replicas) {
 		if (StringUtils.isBlank(appid) || StringUtils.containsWhitespace(appid) || existsIndex(appid)) {
 			return false;
 		}
 		try {
 			NodeBuilder nb = NodeBuilder.nodeBuilder();
-			nb.settings().put("number_of_shards", Config.getConfigParam("para.es.shards", "5"));
-			nb.settings().put("number_of_replicas", Config.getConfigParam("para.es.replicas", "0"));
+			nb.settings().put("number_of_shards", Integer.toString(shards));
+			nb.settings().put("number_of_replicas", Integer.toString(replicas));
 			nb.settings().put("auto_expand_replicas", "0-all");
 			nb.settings().put("analysis.analyzer.default.type", "standard");
 			nb.settings().putArray("analysis.analyzer.default.stopwords",
@@ -179,7 +193,7 @@ public final class ElasticSearchUtils {
 			create.addMapping("_default_", getDefaultMapping());
 			create.execute().actionGet();
 
-			getClient().admin().indices().prepareAliases().addAlias(name, appid).execute().actionGet();
+			addIndexAlias(name, appid);
 		} catch (Exception e) {
 			logger.warn(null, e);
 			return false;
@@ -275,13 +289,8 @@ public final class ElasticSearchUtils {
 						brb.numberOfActions(), resp.hasFailures());
 			}
 
-			// switch to alias NEW_INDEX -> ALIAS, OLD_INDEX -> X
-			getClient().admin().indices().prepareAliases().
-					addAlias(newName, appid).
-					removeAlias(oldName, appid).execute().actionGet();
-
-			// delete the old index
-			deleteIndex(oldName);
+			// switch to alias NEW_INDEX -> ALIAS, OLD_INDEX -> X, deleting the old index
+			switchIndexToAlias(oldName, newName, appid, true);
 		} catch (Exception e) {
 			logger.warn(null, e);
 			return false;
@@ -321,12 +330,68 @@ public final class ElasticSearchUtils {
 
 		for (NodeInfo nodeInfo : res) {
 			md.put("node.name", nodeInfo.getNode().getName());
-			md.put("node.name", nodeInfo.getNode().getAddress().toString());
+			md.put("node.address", nodeInfo.getNode().getAddress().toString());
 			md.put("node.data", Boolean.toString(nodeInfo.getNode().isDataNode()));
 			md.put("node.getClient()", Boolean.toString(nodeInfo.getNode().isClientNode()));
 			md.put("node.version", nodeInfo.getNode().getVersion().toString());
 		}
 		return md;
+	}
+
+	/**
+	 * Adds a new alias to an existing index.
+	 * @param indexName the index name
+	 * @param alias the alias
+	 * @return true if acknowledged
+	 */
+	public static boolean addIndexAlias(String indexName, String alias) {
+		return addIndexAlias(indexName, alias, false);
+	}
+
+	/**
+	 * Adds a new alias to an existing index.
+	 * @param indexName the index name
+	 * @param alias the alias
+	 * @param setRouting if true will route by appid (alias)
+	 * @return true if acknowledged
+	 */
+	public static boolean addIndexAlias(String indexName, String alias, boolean setRouting) {
+		AliasAction act = new AliasAction(AliasAction.Type.ADD, indexName, alias);
+		if (setRouting) {
+			act.routing(alias);
+			act.filter(FilterBuilders.termFilter(Config._APPID, alias));
+		}
+		return getClient().admin().indices().prepareAliases().addAliasAction(act).
+				execute().actionGet().isAcknowledged();
+	}
+
+	/**
+	 * Removes an alias from an index.
+	 * @param indexName the index name
+	 * @param alias the alias
+	 * @return true if acknowledged
+	 */
+	public static boolean removeIndexAlias(String indexName, String alias) {
+		return getClient().admin().indices().prepareAliases().removeAlias(indexName, alias).
+				execute().actionGet().isAcknowledged();
+	}
+
+	/**
+	 * Replaces the index to which an alias points with another index.
+	 * @param oldIndex the index name to be replaced
+	 * @param newIndex the new index name to switch to
+	 * @param alias the alias (unchanged)
+	 * @param deleteOld if true will delete the old index completely
+	 */
+	public static void switchIndexToAlias(String oldIndex, String newIndex, String alias, boolean deleteOld) {
+		getClient().admin().indices().prepareAliases().
+				addAlias(newIndex, alias).
+				removeAlias(oldIndex, alias).
+				execute().actionGet();
+		// delete the old index
+		if (deleteOld) {
+			deleteIndex(oldIndex);
+		}
 	}
 
 	/**

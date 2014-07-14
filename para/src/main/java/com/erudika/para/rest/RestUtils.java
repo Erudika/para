@@ -250,6 +250,7 @@ public final class RestUtils {
 				}
 				newContent.put(Config._APPID, app.getAppIdentifier());
 				content = Utils.setAnnotatedFields(newContent);
+				content.setShardKey(app.isShared() ? app.getId() : null);
 				registerNewTypes(app, content);
 			} else {
 				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
@@ -367,6 +368,7 @@ public final class RestUtils {
 	@SuppressWarnings("unchecked")
 	public static Response getBatchCreateResponse(String appid, InputStream is) {
 		ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
+		App	app = getApp(appid);
 		try {
 			if (is != null && is.available() > 0) {
 				if (is.available() > (1024 * 1024)) {
@@ -377,13 +379,13 @@ public final class RestUtils {
 				for (Object object : items) {
 					ParaObject pobj = Utils.setAnnotatedFields((Map<String, Object>) object);
 					if (pobj != null && Utils.isValidObject(pobj)) {
+						pobj.setShardKey(app.isShared() ? app.getId() : null);
 						objects.add(pobj);
 					}
 				}
 
 				Para.getDAO().createAll(appid, objects);
 
-				App app = getApp(appid);
 				Utils.asyncExecute(new Runnable() {
 					public void run() {
 						registerNewTypes(app, objects.toArray(new ParaObject[objects.size()]));
@@ -410,6 +412,7 @@ public final class RestUtils {
 	@SuppressWarnings("unchecked")
 	public static Response getBatchUpdateResponse(String appid, InputStream is) {
 		ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
+		App	app = getApp(appid);
 		try {
 			if (is != null && is.available() > 0) {
 				if (is.available() > (1024 * 1024)) {
@@ -433,6 +436,7 @@ public final class RestUtils {
 						if (pobj != null) {
 							Utils.setAnnotatedFields(pobj, data, Locked.class);
 							if (Utils.isValidObject(pobj)) {
+								pobj.setShardKey(app.isShared() ? app.getId() : null);
 								objects.add(pobj);
 							}
 						}
@@ -460,6 +464,7 @@ public final class RestUtils {
 	@SuppressWarnings("unchecked")
 	public static Response getBatchDeleteResponse(String appid, InputStream is) {
 		ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
+		App	app = getApp(appid);
 		try {
 			if (is != null && is.available() > 0) {
 				if (is.available() > (1024 * 1024)) {
@@ -470,6 +475,7 @@ public final class RestUtils {
 				for (Object object : items) {
 					ParaObject pobj = Utils.setAnnotatedFields((Map<String, Object>) object);
 					if (pobj != null && pobj.getId() != null && pobj.getType() != null) {
+						pobj.setShardKey(app.isShared() ? app.getId() : null);
 						objects.add(pobj);
 					}
 				}

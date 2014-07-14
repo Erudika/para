@@ -36,6 +36,8 @@ import org.elasticsearch.action.count.CountRequestBuilder;
 import org.elasticsearch.action.get.GetRequestBuilder;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.get.MultiGetItemResponse;
+import org.elasticsearch.action.get.MultiGetRequest;
+import org.elasticsearch.action.get.MultiGetRequestBuilder;
 import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -92,8 +94,8 @@ public class ElasticSearch implements Search {
 		}
 		Map<String, Object> data = Utils.getAnnotatedFields(so, null, false);
 		try {
-			IndexRequestBuilder irb = client().prepareIndex(appid,
-					so.getType(), so.getId()).setSource(data);
+			IndexRequestBuilder irb = client().prepareIndex(appid, so.getType(), so.getId()).
+					setSource(data).setRouting(so.getShardKey());
 			if (ttl > 0) {
 				irb.setTTL(ttl);
 			}
@@ -110,7 +112,8 @@ public class ElasticSearch implements Search {
 			return;
 		}
 		try {
-			client().prepareDelete(appid, so.getType(), so.getId()).execute().actionGet();
+			client().prepareDelete(appid, so.getType(), so.getId()).
+					setRouting(so.getShardKey()).execute().actionGet();
 			logger.debug("Search.unindex() {}", so.getId());
 		} catch (Exception e) {
 			logger.warn(null, e);
@@ -124,8 +127,9 @@ public class ElasticSearch implements Search {
 		}
 		BulkRequestBuilder brb = client().prepareBulk();
 		for (ParaObject pObject : objects) {
-			brb.add(client().prepareIndex(appid, pObject.getType(),
-						pObject.getId()).setSource(Utils.getAnnotatedFields(pObject, null, false)));
+			brb.add(client().prepareIndex(appid, pObject.getType(), pObject.getId()).
+					setSource(Utils.getAnnotatedFields(pObject, null, false)).
+					setRouting(pObject.getShardKey()));
 		}
 		brb.execute().actionGet();
 		logger.debug("Search.indexAll() {}", objects.size());
@@ -138,7 +142,8 @@ public class ElasticSearch implements Search {
 		}
 		BulkRequestBuilder brb = client().prepareBulk();
 		for (ParaObject pObject : objects) {
-			brb.add(client().prepareDelete(appid, pObject.getType(), pObject.getId()));
+			brb.add(client().prepareDelete(appid, pObject.getType(), pObject.getId()).
+					setRouting(pObject.getShardKey()));
 		}
 		brb.execute().actionGet();
 		logger.debug("Search.unindexAll() {}", objects.size());
@@ -161,7 +166,14 @@ public class ElasticSearch implements Search {
 			return list;
 		}
 		try {
-			MultiGetResponse response = client().prepareMultiGet().add(appid, null, ids).execute().actionGet();
+			MultiGetRequestBuilder mgr = client().prepareMultiGet();
+			for (String id : ids) {
+				MultiGetRequest.Item i = new MultiGetRequest.Item(appid, null, id);
+				i.routing(getRouting(appid, id));
+				mgr.add(i);
+			}
+
+			MultiGetResponse response = mgr.execute().actionGet();
 			for (MultiGetItemResponse multiGetItemResponse : response.getResponses()) {
 				GetResponse res = multiGetItemResponse.getResponse();
 				if (res.isExists() && !res.isSourceEmpty()) {
@@ -413,6 +425,7 @@ public class ElasticSearch implements Search {
 		try {
 			SearchRequestBuilder srb = client().prepareSearch(appid).
 				setSearchType(SearchType.DFS_QUERY_THEN_FETCH).
+				setRouting(getRouting(appid, null)).
 				setQuery(query).addSort(sort).setFrom(start).setSize(max);
 
 			if (type != null) {
@@ -443,7 +456,9 @@ public class ElasticSearch implements Search {
 		}
 
 		try {
-			GetRequestBuilder grb = client().prepareGet().setIndex(appid).setId(key);
+			GetRequestBuilder grb = client().prepareGet().
+					setIndex(appid).setId(key).
+					setRouting(getRouting(appid, key));
 
 			if (type != null) {
 				grb.setType(type);
@@ -462,6 +477,7 @@ public class ElasticSearch implements Search {
 			return 0L;
 		}
 		CountRequestBuilder crb = client().prepareCount(appid).
+				setRouting(getRouting(appid, null)).
 				setQuery(QueryBuilders.matchAllQuery());
 
 		if (type != null) {
@@ -490,13 +506,33 @@ public class ElasticSearch implements Search {
 			}
 		}
 		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), fb);
-		CountRequestBuilder crb = client().prepareCount(appid).setQuery(qb);
+		CountRequestBuilder crb = client().prepareCount(appid).setQuery(qb).setRouting(getRouting(appid, null));
 
 		if (type != null) {
 			crb.setTypes(type);
 		}
 
 		return crb.execute().actionGet().getCount();
+	}
+
+	/**
+	 * Extracts the routing value from the appid.
+	 * The appid might contain a routing prefix like:
+	 * 'routing:appid' or '_:appid' (routing = appid in this case)
+	 * @param appid an appid with routing value prefixed (or not)
+	 * @param alt the alternative routing value that will be returned if appid has no routing
+	 * @return
+	 */
+	private String getRouting(String appid, String alt) {
+		if (StringUtils.contains(appid, Config.SEPARATOR)) {
+			String routing = appid.substring(0, appid.indexOf(Config.SEPARATOR));
+			if ("_".equals(routing)) {
+				return appid;
+			} else if (!StringUtils.isBlank(routing)) {
+				return routing;
+			}
+		}
+		return alt;
 	}
 
 	//////////////////////////////////////////////////////////////
