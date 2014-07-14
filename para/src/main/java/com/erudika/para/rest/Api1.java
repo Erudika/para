@@ -118,13 +118,13 @@ public final class Api1 extends ResourceConfig {
 		Resource.Builder core = Resource.builder(path);
 		core.addMethod(GET).produces(JSON).handledBy(handler);
 		core.addMethod(POST).produces(JSON).consumes(JSON).handledBy(handler);
-		core.addChildResource("search").addMethod(GET).produces(JSON).handledBy(handler);
+		core.addChildResource("search/{querytype}").addMethod(GET).produces(JSON).handledBy(handler);
 		core.addChildResource("{id}").addMethod(GET).produces(JSON).handledBy(handler);
 		core.addChildResource("{id}").addMethod(PUT).produces(JSON).consumes(JSON).handledBy(handler);
 		core.addChildResource("{id}").addMethod(DELETE).produces(JSON).handledBy(handler);
-		core.addChildResource("{id}/links").addMethod(GET).produces(JSON).handledBy(linksHandler);
-		core.addChildResource("{id}/links").addMethod(POST).produces(JSON).handledBy(linksHandler);
-		core.addChildResource("{id}/links").addMethod(DELETE).produces(JSON).handledBy(linksHandler);
+		core.addChildResource("{id}/links/{type2}/{id2}").addMethod(GET).produces(JSON).handledBy(linksHandler);
+		core.addChildResource("{id}/links/{id2}").addMethod(POST).produces(JSON).handledBy(linksHandler);
+		core.addChildResource("{id}/links/{type2}/{id2}").addMethod(DELETE).produces(JSON).handledBy(linksHandler);
 
 		Resource.Builder batch = Resource.builder("_batch");
 		batch.addMethod(POST).produces(JSON).consumes(JSON).handledBy(batchCreateHandler());
@@ -206,7 +206,7 @@ public final class Api1 extends ResourceConfig {
 						return searchHandler(type).apply(ctx);
 					} else if (POST.equals(ctx.getMethod())) {
 						return createHandler(app, type).apply(ctx);
-					} else if (ctx.getUriInfo().getPath().endsWith("search")) {
+					} else if (ctx.getUriInfo().getPath().contains("search")) {
 						return searchHandler(type).apply(ctx);
 					}
 				} else {
@@ -227,11 +227,15 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
-				String id = ctx.getUriInfo().getPathParameters().getFirst(Config._ID);
-				String type = ctx.getUriInfo().getPathParameters().getFirst(Config._TYPE);
-				String id2 = params.getFirst(Config._ID);
-				String type2 = params.getFirst(Config._TYPE);
+				MultivaluedMap<String, String> pathp = ctx.getUriInfo().getPathParameters();
+				String id = pathp.getFirst(Config._ID);
+				String type = pathp.getFirst(Config._TYPE);
+				String id2 = pathp.getFirst("id2");
+				String type2 = pathp.getFirst("type2");
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
+
+				id2 = StringUtils.isBlank(id2) ? params.getFirst(Config._ID) : id2;
+				type2 = StringUtils.isBlank(type2) ? params.getFirst(Config._TYPE) : type2;
 
 				ParaObject pobj = Utils.toObject(type);
 				pobj.setId(id);
@@ -434,12 +438,13 @@ public final class Api1 extends ResourceConfig {
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
 				App app = RestUtils.getApp(appid);
 				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
-				return Response.ok(buildQueryAndSearch(app, params, type)).build();
+				String queryType = ctx.getUriInfo().getPathParameters().getFirst("querytype");
+				return Response.ok(buildQueryAndSearch(app, queryType, params, type)).build();
 			}
 		};
 	}
 
-	private <P extends ParaObject> Map<String, Object> buildQueryAndSearch(App app,
+	private <P extends ParaObject> Map<String, Object> buildQueryAndSearch(App app, String queryType,
 			MultivaluedMap<String, String> params, String typeOverride) {
 		String query = params.containsKey("q") ? params.getFirst("q") : "*";
 		String type = (typeOverride != null) ? typeOverride : params.getFirst(Config._TYPE);
@@ -450,7 +455,7 @@ public final class Api1 extends ResourceConfig {
 		pager.setSortby(params.getFirst("sort"));
 		pager.setDesc(Boolean.parseBoolean(params.containsKey("desc") ? params.getFirst("desc") : "true"));
 
-		String queryType = params.containsKey("querytype") ? params.getFirst("querytype") : null;
+		queryType = StringUtils.isBlank(queryType) ? params.getFirst("querytype") : queryType;
 		Map<String, Object> result = new HashMap<String, Object>();
 		List<P> items = new ArrayList<P>();
 
