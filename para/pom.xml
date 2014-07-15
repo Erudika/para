@@ -43,6 +43,11 @@
 			<artifactId>jersey-container-jetty-servlet</artifactId>
 			<version>${jerseyVer}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.glassfish.jersey.connectors</groupId>
+			<artifactId>jersey-jetty-connector</artifactId>
+			<version>${jerseyVer}</version>
+		</dependency>
 
 		<!-- SPRING -->
 		<dependency>

@@ -24,6 +24,7 @@ import com.amazonaws.auth.AWS4Signer;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.http.HttpMethodName;
 import com.erudika.para.utils.Config;
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -41,7 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A signer class based on the {@code AWS4Signer} implementing AWS Signature Version 4. 
+ * A signer class based on the {@code AWS4Signer} implementing AWS Signature Version 4.
  * Also contains a method for signature validation. The signatures that this class produces are
  * compatible with the original AWS SDK implementation.
  * @author Alex Bogdanovski [alex@erudika.com]
@@ -81,7 +82,7 @@ public class Signer extends AWS4Signer {
 	/**
 	 * Signs a request using AWS signature V4.
 	 * @param request the request instance
-	 * @param accessKey the app's access key 
+	 * @param accessKey the app's access key
 	 * @param secretKey the app's secret key
 	 */
 	public void sign(Request<?> request, String accessKey, String secretKey) {
@@ -206,7 +207,10 @@ public class Signer extends AWS4Signer {
 		String httpMethod = req.getMethod();
 		InputStream entity;
 		try {
-			entity = req.getInputStream();
+			entity = new BufferedInputStream(req.getInputStream());
+			if (entity.available() <= 0) {
+				entity = null;
+			}
 		} catch (IOException ex) {
 			logger.error(null, ex);
 			entity = null;

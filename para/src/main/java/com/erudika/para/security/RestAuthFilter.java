@@ -21,14 +21,19 @@ import com.erudika.para.core.App;
 import com.erudika.para.rest.RestUtils;
 import com.erudika.para.rest.Signer;
 import com.erudika.para.utils.Config;
-import com.erudika.para.utils.Utils;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Date;
 import javax.servlet.FilterChain;
+import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
+import javax.servlet.ServletInputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
@@ -62,50 +67,118 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 	@Override
 	public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
 			throws IOException, ServletException {
-		HttpServletRequest request = (HttpServletRequest) req;
+		// We must wrap the request in order to read the InputStream twice:
+		// - first read - used to calculate the signature
+		// - second read - used as request payload
+		BufferedRequestWrapper request = new BufferedRequestWrapper((HttpServletRequest) req);
 		HttpServletResponse response = (HttpServletResponse) res;
 
-		String key = RestUtils.extractAccessKey(request);
+		String appid = RestUtils.extractAccessKey(request);
 		String date = RestUtils.extractDate(request);
 		Date d = RestUtils.parseAWSDate(date);
 		boolean requestExpired = (d != null) && (System.currentTimeMillis() >
 				(d.getTime() + (Config.REQUEST_EXPIRES_AFTER_SEC * 1000)));
 
-		if (req.isSecure()) {
-			if (!StringUtils.isBlank(key)) {
-				String id = Utils.base64dec(key);
+		if (!StringUtils.isBlank(appid)) {
+			if (StringUtils.isBlank(date)) {
+				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
+						"'X-Amz-Date' header/parameter is not set!");
+			} else {
+				if (requestExpired) {
+					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Request has expired.");
+				} else if (!StringUtils.isBlank(appid)) {
+					App app = new App();
+					app.setId(appid);
+					app = app.getDao().read(appid);
 
-				if (StringUtils.isBlank(date)) {
-					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-							"'X-Amz-Date' header/parameter is not set!");
-				} else {
-					if (requestExpired) {
-						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Request has expired.");
-					} else if (!StringUtils.isBlank(id)) {
-						App app = new App();
-						app.setId(id);
-						app = app.getDao().read(id);
-
-						if (app != null) {
-							if (signer.isValidSignature(request, app.getSecret())) {
-								SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
-							} else {
-								RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-										"Signature is invalid.");
-							}
+					if (app != null) {
+						if (signer.isValidSignature(request, app.getSecret())) {
+							SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
 						} else {
-							RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND, "App not found.");
+							RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+									"Signature is invalid.");
 						}
 					} else {
-						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Bad request.");
+						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND, "App not found.");
 					}
+				} else {
+					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Bad request.");
 				}
-			} else {
-				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Credentials are missing.");
 			}
+		} else {
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Credentials are missing.");
 		}
 
-		chain.doFilter(req, res);
+		chain.doFilter(request, res);
+	}
+
+
+	private class BufferedRequestWrapper extends HttpServletRequestWrapper {
+
+		ByteArrayInputStream bais;
+		ByteArrayOutputStream baos;
+		BufferedServletInputStream bsis;
+		byte[] buffer;
+
+		public BufferedRequestWrapper(HttpServletRequest req) throws IOException {
+			super(req);
+			InputStream is = req.getInputStream();
+			baos = new ByteArrayOutputStream();
+			byte buf[] = new byte[1024];
+			int length;
+			while ((length = is.read(buf)) > 0) {
+				baos.write(buf, 0, length);
+			}
+			buffer = baos.toByteArray();
+		}
+
+		public ServletInputStream getInputStream() {
+			try {
+				bais = new ByteArrayInputStream(buffer);
+				bsis = new BufferedServletInputStream(bais);
+			} catch (Exception ex) {
+				logger.error(ex);
+			}
+			return bsis;
+		}
+
+	}
+
+	private class BufferedServletInputStream extends ServletInputStream {
+		ByteArrayInputStream bais;
+
+		public BufferedServletInputStream(ByteArrayInputStream bais) {
+			this.bais = bais;
+		}
+
+		@Override
+		public int available() {
+			return bais.available();
+		}
+
+		@Override
+		public int read() {
+			return bais.read();
+		}
+
+		@Override
+		public int read(byte[] buf, int off, int len) {
+			return bais.read(buf, off, len);
+		}
+
+		@Override
+		public boolean isFinished() {
+			return bais.available() <= 0;
+		}
+
+		@Override
+		public boolean isReady() {
+			return !isFinished();
+		}
+
+		@Override
+		public void setReadListener(ReadListener rl) {
+		}
 	}
 
 }

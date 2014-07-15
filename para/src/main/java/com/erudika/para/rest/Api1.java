@@ -88,7 +88,7 @@ public final class Api1 extends ResourceConfig {
 		registerCrudApi("{type}", typeCrudHandler(), linksHandler());
 
 		// search API
-		Resource.Builder searchRes = Resource.builder("search");
+		Resource.Builder searchRes = Resource.builder("search/{querytype}");
 		searchRes.addMethod(GET).produces(JSON).handledBy(searchHandler(null));
 		registerResources(searchRes.build());
 
@@ -108,7 +108,7 @@ public final class Api1 extends ResourceConfig {
 		registerResources(typesRes.build());
 
 		// util functions API
-		Resource.Builder utilsRes = Resource.builder("utils");
+		Resource.Builder utilsRes = Resource.builder("utils/{method}");
 		utilsRes.addMethod(GET).produces(JSON).handledBy(utilsHandler());
 		registerResources(utilsRes.build());
 	}
@@ -140,7 +140,8 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
-				String method = params.getFirst("method");
+				String method = ctx.getUriInfo().getPathParameters().getFirst("method");
+				method = StringUtils.isBlank(method) ? params.getFirst("method") : method;
 				if ("newid".equals(method)) {
 					return Response.ok(Utils.getNewId()).build();
 				} else if ("timestamp".equals(method)) {

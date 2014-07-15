@@ -18,12 +18,14 @@
 package com.erudika.para.rest;
 
 import com.amazonaws.Request;
+import com.erudika.para.core.ParaObject;
+import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Utils;
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectOutputStream;
-import java.util.Collections;
 import java.util.Map;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.WebApplicationException;
@@ -36,11 +38,14 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
+import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.jetty.connector.JettyConnectorProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * The Java REST client
+ *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public final class ParaClient {
@@ -53,14 +58,19 @@ public final class ParaClient {
 	private static final String PUT = HttpMethod.PUT;
 	private static final String POST = HttpMethod.POST;
 	private static final String DELETE = HttpMethod.DELETE;
-	private Signer signer = new Signer();
-	private Client client = ClientBuilder.newClient();
+	private final Signer signer = new Signer();
+	private final Client client;
 	private String endpoint;
 	private String path;
 	private String accessKey;
 	private String secretKey;
 
 	public ParaClient(String accessKey, String secretKey) {
+		ClientConfig clientConfig = new ClientConfig();
+		clientConfig.register(RestUtils.GenericExceptionMapper.class);
+		clientConfig.register(new JacksonJsonProvider(Utils.getJsonMapper()));
+		clientConfig.connectorProvider(new JettyConnectorProvider());
+		this.client = ClientBuilder.newClient(clientConfig);
 		this.accessKey = accessKey;
 		this.secretKey = secretKey;
 	}
@@ -92,28 +102,29 @@ public final class ParaClient {
 		}
 	}
 
-	public long getTimestamp() {
-//		Map<String, String> params = new HashMap<String, String>();
-		Map<String, String> params = Collections.singletonMap("method", "timestamp");
-		Map<String, Object> res = getEntity(invokeGet("utils", params), Map.class);
-		return (long) (res != null ? res.get("value") : 0L);
-	}
-
 	@SuppressWarnings("unchecked")
 	private <T> T getEntity(Response res, Class<?> type) {
 		if (res != null) {
-			if (res.getStatus() == Response.Status.OK.getStatusCode()) {
+			if (res.getStatus() == Response.Status.OK.getStatusCode()
+					|| res.getStatus() == Response.Status.CREATED.getStatusCode()
+					|| res.getStatus() == Response.Status.NOT_MODIFIED.getStatusCode()) {
 				return (T) res.readEntity(type);
 			} else {
-				throw new WebApplicationException(res);
+				Map<String, Object> error = res.readEntity(Map.class);
+				if (error != null && error.containsKey("code")) {
+					throw new WebApplicationException((String) error.get("message"), (int) error.get("code"));
+				}
 			}
-		} else {
-			throw new WebApplicationException(res);
 		}
+		return null;
 	}
 
 	private Response invokeGet(String resourcePath, Map<String, String> params) {
 		return invoke(GET, resourcePath, null, params, null);
+	}
+
+	private Response invokePost(String resourcePath, Map<String, String> params, Entity<?> entity) {
+		return invoke(POST, resourcePath, null, params, entity);
 	}
 
 	private Response invoke(String httpMethod, String resourcePath,
@@ -135,6 +146,7 @@ public final class ParaClient {
 		String reqPath = getApiPath() + resourcePath;
 		WebTarget target = client.target(getEndpoint()).path(reqPath);
 		InputStream in = null;
+		Entity<?> jsonPayload = null;
 
 		if (params != null) {
 			for (Map.Entry<String, String> param : params.entrySet()) {
@@ -151,14 +163,10 @@ public final class ParaClient {
 		}
 
 		if (entity != null) {
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			ObjectOutputStream oos;
 			try {
-				oos = new ObjectOutputStream(baos);
-				oos.writeObject(entity.getEntity());
-				oos.flush();
-				oos.close();
-				in = new ByteArrayInputStream(baos.toByteArray());
+				byte[] entt = Utils.getJsonWriter().writeValueAsBytes(entity.getEntity());
+				in = new BufferedInputStream(new ByteArrayInputStream(entt));
+				jsonPayload = Entity.json(new String(entt, Config.DEFAULT_ENCODING));
 			} catch (IOException ex) {
 				logger.error(null, ex);
 			}
@@ -169,10 +177,38 @@ public final class ParaClient {
 		builder.header(HttpHeaders.AUTHORIZATION, signed.getHeaders().get(HttpHeaders.AUTHORIZATION)).
 				header("X-Amz-Date", signed.getHeaders().get("X-Amz-Date"));
 
-		if (entity != null) {
-			return builder.method(httpMethod, entity);
+		if (jsonPayload != null) {
+			return builder.method(httpMethod, jsonPayload);
 		} else {
 			return builder.method(httpMethod);
 		}
+	}
+
+	public void close() {
+		if (client != null) {
+			client.close();
+		}
+	}
+
+	/////////////////////////////////////////////
+	//				API METHODS
+	/////////////////////////////////////////////
+	public <P extends ParaObject> P create(ParaObject obj) {
+		if (obj == null) {
+			return null;
+		}
+		return getEntity(invokePost(obj.getType(), null, Entity.json(obj)), obj.getClass());
+	}
+
+	public <P extends ParaObject> P read(String type, String id) {
+		if (type == null || id == null) {
+			return null;
+		}
+		return getEntity(invokeGet(type.concat("/").concat(id), null), Utils.toClass(type));
+	}
+
+	public long getTimestamp() {
+		Long res = getEntity(invokeGet("utils/timestamp", null), Long.class);
+		return res != null ? res : 0L;
 	}
 }
