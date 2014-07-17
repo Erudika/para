@@ -446,7 +446,7 @@ public class User extends PObject implements UserDetails {
 	}
 
 	/**
-	 * Changes the user password persistently.
+	 * Changes the user password permanently.
 	 * @param token the reset token. see {@link #generatePasswordResetToken()}
 	 * @param newpass the new password
 	 * @return true if successful

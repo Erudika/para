@@ -80,13 +80,8 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 				(d.getTime() + (Config.REQUEST_EXPIRES_AFTER_SEC * 1000)));
 
 		if (!StringUtils.isBlank(appid)) {
-			if (StringUtils.isBlank(date)) {
-				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-						"'X-Amz-Date' header/parameter is not set!");
-			} else {
-				if (requestExpired) {
-					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Request has expired.");
-				} else if (!StringUtils.isBlank(appid)) {
+			if (!StringUtils.isBlank(date)) {
+				if (!requestExpired) {
 					App app = new App();
 					app.setId(appid);
 					app = app.getDao().read(appid);
@@ -96,17 +91,20 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 							SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
 						} else {
 							RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-									"Signature is invalid.");
+									"Request signature is invalid.");
 						}
 					} else {
 						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND, "App not found.");
 					}
 				} else {
-					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Bad request.");
+					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Request has expired.");
 				}
+			} else {
+				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
+						"'X-Amz-Date' header/parameter is not set!");
 			}
 		} else {
-			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Credentials are missing.");
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Credentials are missing.");
 		}
 
 		chain.doFilter(request, res);

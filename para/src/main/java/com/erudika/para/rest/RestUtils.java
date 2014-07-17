@@ -32,6 +32,7 @@ import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -208,7 +209,7 @@ public final class RestUtils {
 				logger.error(null, ex);
 			}
 		}
-		return coreTypes;
+		return Collections.unmodifiableMap(coreTypes);
 	}
 
 	/////////////////////////////////////////////
@@ -248,9 +249,9 @@ public final class RestUtils {
 				if (!StringUtils.isBlank(type)) {
 					newContent.put(Config._TYPE, type);
 				}
-				newContent.put(Config._APPID, app.getAppIdentifier());
 				content = Utils.setAnnotatedFields(newContent);
-				content.setShardKey(app.isShared() ? app.getId() : null);
+				content.setAppid(app.getAppIdentifier());
+				content.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
 				registerNewTypes(app, content);
 			} else {
 				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
@@ -289,7 +290,7 @@ public final class RestUtils {
 	 * @param is entity input stream
 	 * @return a status code 200 or 400 or 404
 	 */
-	public static Response getUpdateResponse(ParaObject object, InputStream is) {
+	public static Response getUpdateResponse(App app, ParaObject object, InputStream is) {
 		Map<String, Object> newContent;
 		try {
 			if (is != null && is.available() > 0) {
@@ -297,6 +298,7 @@ public final class RestUtils {
 					return getStatusResponse(Response.Status.BAD_REQUEST,
 							"Request is too large - the maximum is 1MB.");
 				}
+				object.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
 				newContent = Utils.getJsonReader(Map.class).readValue(is);
 			} else {
 				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
@@ -336,8 +338,10 @@ public final class RestUtils {
 	 * @param content the object to delete
 	 * @return a status code 200 or 400
 	 */
-	public static Response getDeleteResponse(ParaObject content) {
+	public static Response getDeleteResponse(App app, ParaObject content) {
 		if (content != null && content.getId() != null && content.getAppid() != null) {
+			content.setAppid(app.getAppIdentifier());
+			content.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
 			content.delete();
 			return Response.ok().build();
 		} else {
@@ -351,9 +355,9 @@ public final class RestUtils {
 	 * @param ids list of ids
 	 * @return status code 200 or 400
 	 */
-	public static Response getBatchReadResponse(String appid, List<String> ids) {
+	public static Response getBatchReadResponse(App app, List<String> ids) {
 		if (ids != null && !ids.isEmpty()) {
-			return Response.ok(Para.getDAO().readAll(appid, ids, true)).build();
+			return Response.ok(Para.getDAO().readAll(app.getAppIdentifier(), ids, true).values()).build();
 		} else {
 			return getStatusResponse(Response.Status.BAD_REQUEST, "Missing ids.");
 		}
@@ -366,9 +370,8 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	@SuppressWarnings("unchecked")
-	public static Response getBatchCreateResponse(String appid, InputStream is) {
+	public static Response getBatchCreateResponse(App app, InputStream is) {
 		ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
-		App	app = getApp(appid);
 		try {
 			if (is != null && is.available() > 0) {
 				if (is.available() > (1024 * 1024)) {
@@ -379,12 +382,13 @@ public final class RestUtils {
 				for (Object object : items) {
 					ParaObject pobj = Utils.setAnnotatedFields((Map<String, Object>) object);
 					if (pobj != null && Utils.isValidObject(pobj)) {
-						pobj.setShardKey(app.isShared() ? app.getId() : null);
+						pobj.setAppid(app.getAppIdentifier());
+						pobj.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
 						objects.add(pobj);
 					}
 				}
 
-				Para.getDAO().createAll(appid, objects);
+				Para.getDAO().createAll(app.getAppIdentifier(), objects);
 
 				Utils.asyncExecute(new Runnable() {
 					public void run() {
@@ -410,9 +414,8 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	@SuppressWarnings("unchecked")
-	public static Response getBatchUpdateResponse(String appid, InputStream is) {
+	public static Response getBatchUpdateResponse(App app, InputStream is) {
 		ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
-		App	app = getApp(appid);
 		try {
 			if (is != null && is.available() > 0) {
 				if (is.available() > (1024 * 1024)) {
@@ -422,11 +425,15 @@ public final class RestUtils {
 				List<Object> items = Utils.getJsonReader(List.class).readValue(is);
 				List<String> keys = new ArrayList<String>();
 				for (Object item : items) {
-					keys.add((String) ((Map<String, Object>) item).get(Config._ID));
+					if (item != null) {
+						String id = (String) ((Map<String, Object>) item).get(Config._ID);
+						if (!StringUtils.isBlank(id)) {
+							keys.add(id);
+						}
+					}
 				}
-				keys.remove(null);
 
-				Map<String, ParaObject> existing = Para.getDAO().readAll(appid, keys, false);
+				Map<String, ParaObject> existing = Para.getDAO().readAll(app.getAppIdentifier(), keys, false);
 
 				if (!existing.isEmpty()) {
 					for (Object object : items) {
@@ -436,12 +443,12 @@ public final class RestUtils {
 						if (pobj != null) {
 							Utils.setAnnotatedFields(pobj, data, Locked.class);
 							if (Utils.isValidObject(pobj)) {
-								pobj.setShardKey(app.isShared() ? app.getId() : null);
+								pobj.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
 								objects.add(pobj);
 							}
 						}
 					}
-					Para.getDAO().updateAll(appid, objects);
+					Para.getDAO().updateAll(app.getAppIdentifier(), objects);
 				}
 			} else {
 				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
@@ -462,32 +469,23 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	@SuppressWarnings("unchecked")
-	public static Response getBatchDeleteResponse(String appid, InputStream is) {
+	public static Response getBatchDeleteResponse(App app, List<String> ids) {
 		ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
-		App	app = getApp(appid);
-		try {
-			if (is != null && is.available() > 0) {
-				if (is.available() > (1024 * 1024)) {
-					return getStatusResponse(Response.Status.BAD_REQUEST,
-							"Request is too large - the maximum is 1MB.");
-				}
-				List<Object> items = Utils.getJsonReader(List.class).readValue(is);
-				for (Object object : items) {
-					ParaObject pobj = Utils.setAnnotatedFields((Map<String, Object>) object);
+		if (ids != null && !ids.isEmpty()) {
+			if (ids.size() <= Config.MAX_ITEMS_PER_PAGE) {
+				for (ParaObject pobj : Para.getDAO().readAll(app.getAppIdentifier(), ids, false).values()) {
 					if (pobj != null && pobj.getId() != null && pobj.getType() != null) {
-						pobj.setShardKey(app.isShared() ? app.getId() : null);
+						pobj.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
 						objects.add(pobj);
 					}
 				}
-				Para.getDAO().deleteAll(appid, objects);
+				Para.getDAO().deleteAll(app.getAppIdentifier(), objects);
 			} else {
-				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
+				return getStatusResponse(Response.Status.BAD_REQUEST,
+						"Limit reached. Maximum number of items to delete is " + Config.MAX_ITEMS_PER_PAGE);
 			}
-		} catch (JsonParseException e) {
-			return getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
-		} catch (IOException e) {
-			logger.error(null, e);
-			return getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
+		} else {
+			return getStatusResponse(Response.Status.BAD_REQUEST, "Missing ids.");
 		}
 		return Response.ok().build();
 	}

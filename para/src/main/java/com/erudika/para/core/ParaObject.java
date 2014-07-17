@@ -175,14 +175,14 @@ public interface ParaObject extends Serializable, Linkable, Votable {
 	String create();
 
 	/**
-	 * Updates the object persistently. Changes to {@link com.erudika.para.annotations.Locked} fields are ignored.
+	 * Updates the object permanently. Changes to {@link com.erudika.para.annotations.Locked} fields are ignored.
 	 * @see com.erudika.para.annotations.Locked
 	 * @see com.erudika.para.persistence.DAO#update(com.erudika.para.core.ParaObject)
 	 */
 	void update();
 
 	/**
-	 * Deletes the object persistently by removing it from the data store.
+	 * Deletes the object permanently by removing it from the data store.
 	 * @see com.erudika.para.persistence.DAO#delete(com.erudika.para.core.ParaObject)
 	 */
 	void delete();

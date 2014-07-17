@@ -72,7 +72,7 @@ public interface DAO {
 	<P extends ParaObject> P read(String key);
 
 	/**
-	 * Updates an object persistently.
+	 * Updates an object permanently.
 	 * @param <P> the type of object
 	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param so the domain object
@@ -82,14 +82,14 @@ public interface DAO {
 	<P extends ParaObject> void update(String appid, P so);
 
 	/**
-	 * Updates an object persistently.
+	 * Updates an object permanently.
 	 * @param <P> the type of object
 	 * @param so the domain object
 	 */
 	<P extends ParaObject> void update(P so);
 
 	/**
-	 * Deletes an object persistently.
+	 * Deletes an object permanently.
 	 * @param <P> the type of object
 	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param so the domain object
@@ -99,7 +99,7 @@ public interface DAO {
 	<P extends ParaObject> void delete(String appid, P so);
 
 	/**
-	 * Deletes an object persistently.
+	 * Deletes an object permanently.
 	 * @param <P> the type of object
 	 * @param so the domain object
 	 */

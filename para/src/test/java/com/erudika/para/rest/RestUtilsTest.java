@@ -24,6 +24,7 @@ import com.erudika.para.core.Tag;
 import com.erudika.para.core.Votable;
 import com.erudika.para.persistence.MockDAO;
 import static com.erudika.para.rest.RestUtils.*;
+import com.erudika.para.utils.Config;
 import java.security.Principal;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -61,8 +62,8 @@ public class RestUtilsTest {
 		assertEquals(Status.OK.getStatusCode(), getUpdateResponse(t, map).getStatus());
 		assertNotNull(t.getDao().read(t.getId()));
 
-		assertEquals(Status.BAD_REQUEST.getStatusCode(), getDeleteResponse(null).getStatus());
-		assertEquals(Status.OK.getStatusCode(), getDeleteResponse(t).getStatus());
+		assertEquals(Status.BAD_REQUEST.getStatusCode(), getDeleteResponse(new App(Config.PARA), null).getStatus());
+		assertEquals(Status.OK.getStatusCode(), getDeleteResponse(new App(Config.PARA), t).getStatus());
 		assertNull(t.getDao().read(t.getId()));
 	}
 

@@ -116,16 +116,19 @@ public final class Api1 extends ResourceConfig {
 	private void registerCrudApi(String path, Inflector<ContainerRequestContext, Response> handler,
 			Inflector<ContainerRequestContext, Response> linksHandler) {
 		Resource.Builder core = Resource.builder(path);
+		// list endpoints (both do the same thing)
 		core.addMethod(GET).produces(JSON).handledBy(handler);
-		core.addMethod(POST).produces(JSON).consumes(JSON).handledBy(handler);
 		core.addChildResource("search/{querytype}").addMethod(GET).produces(JSON).handledBy(handler);
+		// CRUD endpoints (non-batch)
+		core.addMethod(POST).produces(JSON).consumes(JSON).handledBy(handler);
 		core.addChildResource("{id}").addMethod(GET).produces(JSON).handledBy(handler);
 		core.addChildResource("{id}").addMethod(PUT).produces(JSON).consumes(JSON).handledBy(handler);
 		core.addChildResource("{id}").addMethod(DELETE).produces(JSON).handledBy(handler);
+		// links CRUD endpoints
 		core.addChildResource("{id}/links/{type2}/{id2}").addMethod(GET).produces(JSON).handledBy(linksHandler);
 		core.addChildResource("{id}/links/{id2}").addMethod(POST).produces(JSON).handledBy(linksHandler);
 		core.addChildResource("{id}/links/{type2}/{id2}").addMethod(DELETE).produces(JSON).handledBy(linksHandler);
-
+		// CRUD endpoints (batch)
 		Resource.Builder batch = Resource.builder("_batch");
 		batch.addMethod(POST).produces(JSON).consumes(JSON).handledBy(batchCreateHandler());
 		batch.addMethod(GET).produces(JSON).handledBy(batchReadHandler());
@@ -246,6 +249,7 @@ public final class Api1 extends ResourceConfig {
 				pager.setPage(NumberUtils.toLong(params.getFirst("page"), 0));
 				pager.setSortby(params.getFirst("sort"));
 				pager.setDesc(Boolean.parseBoolean(params.containsKey("desc") ? params.getFirst("desc") : "true"));
+				pager.setLimit(NumberUtils.toInt(params.getFirst("limit"), pager.getLimit()));
 
 				String childrenOnly = params.getFirst("childrenOnly");
 
@@ -285,8 +289,7 @@ public final class Api1 extends ResourceConfig {
 									"Parameter 'type' is missing.");
 						}
 					} else if (DELETE.equals(ctx.getMethod())) {
-						String all = params.getFirst("all");
-						if (all != null) {
+						if (type2 == null && id2 == null) {
 							pobj.unlinkAll();
 						} else if (type2 != null) {
 							if (id2 != null) {
@@ -365,7 +368,6 @@ public final class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				ParaObject obj = Utils.toObject(type);
 				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
-				obj.setShardKey(app.isShared() ? app.getId() : null);
 				return RestUtils.getReadResponse(dao.read(app.getAppIdentifier(), obj.getId()));
 			}
 		};
@@ -377,8 +379,7 @@ public final class Api1 extends ResourceConfig {
 				ParaObject obj = Utils.toObject(type);
 				obj.setType(type);
 				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
-				obj.setShardKey(app.isShared() ? app.getId() : null);
-				return RestUtils.getUpdateResponse(dao.read(app.getAppIdentifier(), obj.getId()),
+				return RestUtils.getUpdateResponse(app, dao.read(app.getAppIdentifier(), obj.getId()),
 						ctx.getEntityStream());
 			}
 		};
@@ -389,10 +390,8 @@ public final class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				ParaObject obj = Utils.toObject(type);
 				obj.setType(type);
-				obj.setAppid(app.getAppIdentifier());
 				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
-				obj.setShardKey(app.isShared() ? app.getId() : null);
-				return RestUtils.getDeleteResponse(obj);
+				return RestUtils.getDeleteResponse(app, obj);
 			}
 		};
 	}
@@ -401,7 +400,8 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				return RestUtils.getBatchCreateResponse(appid, ctx.getEntityStream());
+				App app = RestUtils.getApp(appid);
+				return RestUtils.getBatchCreateResponse(app, ctx.getEntityStream());
 			}
 		};
 	}
@@ -410,7 +410,8 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				return RestUtils.getBatchReadResponse(appid, ctx.getUriInfo().getQueryParameters().get("ids"));
+				App app = RestUtils.getApp(appid);
+				return RestUtils.getBatchReadResponse(app, ctx.getUriInfo().getQueryParameters().get("ids"));
 			}
 		};
 	}
@@ -419,7 +420,8 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				return RestUtils.getBatchUpdateResponse(appid, ctx.getEntityStream());
+				App app = RestUtils.getApp(appid);
+				return RestUtils.getBatchUpdateResponse(app, ctx.getEntityStream());
 			}
 		};
 	}
@@ -428,7 +430,8 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				return RestUtils.getBatchDeleteResponse(appid, ctx.getEntityStream());
+				App app = RestUtils.getApp(appid);
+				return RestUtils.getBatchDeleteResponse(app, ctx.getUriInfo().getQueryParameters().get("ids"));
 			}
 		};
 	}
@@ -449,12 +452,13 @@ public final class Api1 extends ResourceConfig {
 			MultivaluedMap<String, String> params, String typeOverride) {
 		String query = params.containsKey("q") ? params.getFirst("q") : "*";
 		String type = (typeOverride != null) ? typeOverride : params.getFirst(Config._TYPE);
-		String appid = app.isShared() ? "_".concat(Config.SEPARATOR).concat(app.getId()) : app.getId();
+		String appid = app.isShared() ? ("_" + Config.SEPARATOR + app.getAppIdentifier()) : app.getAppIdentifier();
 
 		Pager pager = new Pager();
 		pager.setPage(NumberUtils.toLong(params.getFirst("page"), 0));
 		pager.setSortby(params.getFirst("sort"));
 		pager.setDesc(Boolean.parseBoolean(params.containsKey("desc") ? params.getFirst("desc") : "true"));
+		pager.setLimit(NumberUtils.toInt(params.getFirst("limit"), pager.getLimit()));
 
 		queryType = StringUtils.isBlank(queryType) ? params.getFirst("querytype") : queryType;
 		Map<String, Object> result = new HashMap<String, Object>();
@@ -473,7 +477,7 @@ public final class Api1 extends ResourceConfig {
 			pager.setCount(items.size());
 		} else if ("nearby".equals(queryType)) {
 			String latlng = params.getFirst("latlng");
-			if (latlng != null) {
+			if (StringUtils.contains(latlng, ",")) {
 				String[] coords = latlng.split(",", 2);
 				String rad = params.containsKey("radius") ? params.getFirst("radius") : null;
 				int radius = NumberUtils.toInt(rad, 10);

@@ -92,7 +92,9 @@ public class AWSDynamoDAO implements DAO {
 		if (so.getTimestamp() == null) {
 			so.setTimestamp(Utils.timestamp());
 		}
-		so.setAppid(appid);
+		if (so.getAppid() == null) {
+			so.setAppid(appid);
+		}
 		createRow(so.getId(), appid, toRow(so, null));
 		logger.debug("DAO.create() {}", so.getId());
 		return so.getId();
@@ -197,39 +199,7 @@ public class AWSDynamoDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> void createAll(String appid, List<P> objects) {
-		if (objects == null || objects.isEmpty() || StringUtils.isBlank(appid)) {
-			return;
-		}
-
-		List<WriteRequest> reqs = new ArrayList<WriteRequest>();
-		int batchSteps = 1;
-		if ((objects.size() > MAX_ITEMS_PER_BATCH)) {
-			batchSteps = (objects.size() / MAX_ITEMS_PER_BATCH) +
-					((objects.size() % MAX_ITEMS_PER_BATCH > 0) ? 1 : 0);
-		}
-
-		Iterator<P> it = objects.iterator();
-		int j = 0;
-
-		for (int i = 0; i < batchSteps; i++) {
-			while (it.hasNext() && j < MAX_ITEMS_PER_BATCH) {
-				ParaObject object = it.next();
-				if (StringUtils.isBlank(object.getId())) {
-					object.setId(Utils.getNewId());
-				}
-				if (object.getTimestamp() == null) {
-					object.setTimestamp(Utils.timestamp());
-				}
-				object.setAppid(appid);
-				Map<String, AttributeValue> row = toRow(object, null);
-				setRowKey(object.getId(), row);
-				reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(row)));
-				j++;
-			}
-			batchWrite(Collections.singletonMap(appid, reqs));
-			reqs.clear();
-			j = 0;
-		}
+		writeAll(appid, objects, false);
 		logger.debug("DAO.createAll() {}", objects.size());
 	}
 
@@ -301,14 +271,12 @@ public class AWSDynamoDAO implements DAO {
 	@Override
 	public <P extends ParaObject> void updateAll(String appid, List<P> objects) {
 		// DynamoDB doesn't have a BatchUpdate API yet so we have to do one of the following:
-		// - read items from db then recreate them with changes applied
-		// - update items one by one (chosen for simplicity)
-		if (objects != null) {
-			for (P object : objects) {
-				update(appid, object);
-			}
-			logger.debug("DAO.updateAll() {}", objects.size());
-		}
+		// 1. update items one by one
+		// 2. call writeAll() - (chosen for simplicity)
+		// OPTION (1):
+		// if (objects != null) for (P object : objects) update(appid, object);
+		writeAll(appid, objects, true);
+		logger.debug("DAO.updateAll() {}", objects.size());
 	}
 
 	@Override
@@ -377,6 +345,44 @@ public class AWSDynamoDAO implements DAO {
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
+		}
+	}
+
+	private <P extends ParaObject> void writeAll(String appid, List<P> objects, boolean updateOp) {
+		if (objects == null || objects.isEmpty() || StringUtils.isBlank(appid)) {
+			return;
+		}
+
+		List<WriteRequest> reqs = new ArrayList<WriteRequest>();
+		int batchSteps = 1;
+		if ((objects.size() > MAX_ITEMS_PER_BATCH)) {
+			batchSteps = (objects.size() / MAX_ITEMS_PER_BATCH) +
+					((objects.size() % MAX_ITEMS_PER_BATCH > 0) ? 1 : 0);
+		}
+
+		Iterator<P> it = objects.iterator();
+		int j = 0;
+
+		for (int i = 0; i < batchSteps; i++) {
+			while (it.hasNext() && j < MAX_ITEMS_PER_BATCH) {
+				ParaObject object = it.next();
+				if (StringUtils.isBlank(object.getId())) {
+					object.setId(Utils.getNewId());
+				}
+				if (object.getTimestamp() == null) {
+					object.setTimestamp(Utils.timestamp());
+				}
+				if (object.getAppid() == null) {
+					object.setAppid(appid);
+				}
+				Map<String, AttributeValue> row = toRow(object, (updateOp ? Locked.class : null));
+				setRowKey(object.getId(), row);
+				reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(row)));
+				j++;
+			}
+			batchWrite(Collections.singletonMap(appid, reqs));
+			reqs.clear();
+			j = 0;
 		}
 	}
 

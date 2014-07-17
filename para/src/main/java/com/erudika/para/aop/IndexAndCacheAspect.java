@@ -96,21 +96,21 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					result = mi.proceed();
 					ParaObject removeMe = AOPUtils.getArgOfParaObject(args);
 					search.unindex(appid, removeMe);
-					logger.debug("{}: Unindexed {}->{}", cn, appid, removeMe.getId());
+					logger.debug("{}: Unindexed {}->{}", cn, appid, (removeMe == null) ? null : removeMe.getId());
 					break;
 				case ADD_ALL:
 					List<ParaObject> addUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
 					removeSpecialClasses(addUs);
 					result = mi.proceed();
 					search.indexAll(appid, addUs);
-					logger.debug("{}: Indexed all {}->#{}", cn, appid, addUs.size());
+					logger.debug("{}: Indexed all {}->#{}", cn, appid, (addUs == null) ? null : addUs.size());
 					break;
 				case REMOVE_ALL:
 					List<ParaObject> removeUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
 					removeSpecialClasses(removeUs);
 					result = mi.proceed();
 					search.unindexAll(appid, removeUs);
-					logger.debug("{}: Unindexed all {}->#{}", cn, appid, removeUs.size());
+					logger.debug("{}: Unindexed all {}->#{}", cn, appid, (removeUs == null) ? null : removeUs.size());
 					break;
 				default:
 					break;

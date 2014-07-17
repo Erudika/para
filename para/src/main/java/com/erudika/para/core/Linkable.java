@@ -120,7 +120,7 @@ public interface Linkable {
 	<P extends ParaObject> List<P> getChildren(String type, String field, String term, Pager... pager);
 
 	/**
-	 * Deletes all child objects persistently.
+	 * Deletes all child objects permanently.
 	 * @param type the children's type.
 	 */
 	void deleteChildren(String type);

@@ -25,6 +25,7 @@ import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
@@ -36,6 +37,8 @@ import org.slf4j.LoggerFactory;
  * An implementation of the {@link DAO} interface used for local development only.
  * It uses is based on the {@link com.erudika.para.search.Search} implementation.
  * Objects are stored in the index rather than in a data store.
+ *
+ * <b>Note</b>: This implementation doesn't work well with shared apps (app.isShared() must be false).
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class IndexBasedDAO implements DAO {
@@ -77,7 +80,9 @@ public class IndexBasedDAO implements DAO {
 		if (so.getTimestamp() == null) {
 			so.setTimestamp(Utils.timestamp());
 		}
-		so.setAppid(appid);
+		if (so.getAppid() == null) {
+			so.setAppid(appid);
+		}
 		getMap(appid).put(so.getId(), Utils.setAnnotatedFields(Utils.toObject(so.getType()),
 				Utils.getAnnotatedFields(so), null));
 		logger.debug("DAO.create() {}", so.getId());
@@ -90,6 +95,7 @@ public class IndexBasedDAO implements DAO {
 		if (key == null || StringUtils.isBlank(appid) || search == null) {
 			return null;
 		}
+
 		P so = search.findById(appid, key);
 		if (so == null) {
 			so = (P) getMap(appid).get(key);
@@ -131,11 +137,11 @@ public class IndexBasedDAO implements DAO {
 	@Override
 	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> Map<String, P> readAll(String appid, List<String> keys, boolean getAllColumns) {
-		Map<String, P> results = new HashMap<String, P>();
+		Map<String, P> results = new LinkedHashMap<String, P>();
 		if (keys == null || StringUtils.isBlank(appid)) {
 			return results;
 		}
-		List<P> list = search.findByIds(keys);
+		List<P> list = search.findByIds(appid, keys);
 
 		if (list.isEmpty()) {
 			for (String key : keys) {
