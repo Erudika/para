@@ -149,8 +149,6 @@ public final class Api1 extends ResourceConfig {
 					return Response.ok(Utils.getNewId()).build();
 				} else if ("timestamp".equals(method)) {
 					return Response.ok(Utils.timestamp()).build();
-				} else if ("currentyear".equals(method)) {
-					return Response.ok(Utils.getCurrentYear()).build();
 				} else if ("formatdate".equals(method)) {
 					String format = params.getFirst("format");
 					String locale = params.getFirst("locale");
@@ -251,7 +249,7 @@ public final class Api1 extends ResourceConfig {
 				pager.setDesc(Boolean.parseBoolean(params.containsKey("desc") ? params.getFirst("desc") : "true"));
 				pager.setLimit(NumberUtils.toInt(params.getFirst("limit"), pager.getLimit()));
 
-				String childrenOnly = params.getFirst("childrenOnly");
+				String childrenOnly = params.getFirst("childrenonly");
 
 				if (pobj != null) {
 					if (POST.equals(ctx.getMethod())) {
@@ -273,12 +271,24 @@ public final class Api1 extends ResourceConfig {
 							if (id2 != null) {
 								return Response.ok(pobj.isLinked(type2, id2)).build();
 							} else {
-								List<?> items;
+								List<ParaObject> items = new ArrayList<ParaObject>();
 								if (childrenOnly == null) {
-									items = pobj.getLinkedObjects(type2, pager);
+									if (params.containsKey("count")) {
+										pager.setCount(pobj.countLinks(type2));
+									} else {
+										items = pobj.getLinkedObjects(type2, pager);
+									}
 								} else {
-									items = pobj.getChildren(type2, params.getFirst("field"),
-											params.getFirst("term"), pager);
+									if (params.containsKey("count")) {
+										pager.setCount(pobj.countChildren(type2));
+									} else {
+										if (params.containsKey("field") && params.containsKey("term")) {
+											items = pobj.getChildren(type2, params.getFirst("field"),
+													params.getFirst("term"), pager);
+										} else {
+											items = pobj.getChildren(type2, pager);
+										}
+									}
 								}
 								result.put("items", items);
 								result.put("totalHits", pager.getCount());

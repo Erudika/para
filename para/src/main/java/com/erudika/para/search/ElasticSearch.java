@@ -311,7 +311,7 @@ public class ElasticSearch implements Search {
 		if (StringUtils.isBlank(keyword)) {
 			return new ArrayList<P>();
 		}
-		QueryBuilder qb = QueryBuilders.wildcardQuery(Utils.type(Tag.class), keyword.concat("*"));
+		QueryBuilder qb = QueryBuilders.wildcardQuery("tag", keyword.concat("*"));
 //		SortBuilder sb = SortBuilders.fieldSort("count").order(SortOrder.DESC);
 		return searchQuery(appid, Utils.type(Tag.class), qb, pager);
 	}

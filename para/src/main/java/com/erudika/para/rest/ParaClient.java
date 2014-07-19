@@ -20,6 +20,7 @@ package com.erudika.para.rest;
 import com.amazonaws.Request;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
+import com.erudika.para.core.Tag;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -29,9 +30,11 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.WebApplicationException;
@@ -390,6 +393,7 @@ public final class ParaClient {
 
 	/**
 	 * Returns a list all objects found for the given type.
+	 * The result is paginated so only one page of items is returned, at a time.
 	 * @param <P> the type of object
 	 * @param type the type of objects to search for
 	 * @param pager a {@link com.erudika.para.utils.Pager}
@@ -406,32 +410,545 @@ public final class ParaClient {
 	//				 SEARCH
 	/////////////////////////////////////////////
 
+	/**
+	 * Simple id search.
+	 * @param <P> type of the object
+	 * @param id the id
+	 * @return the object if found or null
+	 */
+	@SuppressWarnings("unchecked")
+	public <P extends ParaObject> P findById(String id) {
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle(Config._ID, id);
+		return (P) getItems(find("id", params)).get(0);
+	}
 
+	/**
+	 * Simple multi id search.
+	 * @param <P> type of the object
+	 * @param ids a list of ids to search for
+	 * @return the object if found or null
+	 */
+	@SuppressWarnings("unchecked")
+	public <P extends ParaObject> List<P> findByIds(List<String> ids){
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.put("ids", ids);
+		return (List<P>) getItems(find("ids", params));
+	}
+
+	/**
+	 * Search for {@link com.erudika.para.core.Address} objects in a radius of X km from a given point.
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param query the query string
+	 * @param radius the radius of the search circle
+	 * @param lat latitude
+	 * @param lng longitude
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of objects found
+	 */
+	public <P extends ParaObject> List<P> findNearby(String type, String query, int radius, double lat, double lng,
+			Pager... pager){
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("latlng", lat + "," + lng);
+		params.putSingle("radius", Integer.toString(radius));
+		params.putSingle("q", query);
+		params.putSingle(Config._TYPE, type);
+		params.putAll(pagerToParams(pager));
+		return getItems(find("nearby", params), pager);
+	}
+
+	/**
+	 * Searches for objects that have a property which value starts with a given prefix.
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param field the property name of an object
+	 * @param prefix the prefix
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of objects found
+	 */
+	public <P extends ParaObject> List<P> findPrefix(String type, String field, String prefix, Pager... pager) {
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("field", field);
+		params.putSingle("prefix", prefix);
+		params.putSingle(Config._TYPE, type);
+		params.putAll(pagerToParams(pager));
+		return getItems(find("prefix", params), pager);
+	}
+
+	/**
+	 * Simple query string search. This is the basic search method.
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param query the query string
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of objects found
+	 */
+	public <P extends ParaObject> List<P> findQuery(String type, String query, Pager... pager) {
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("q", query);
+		params.putSingle(Config._TYPE, type);
+		params.putAll(pagerToParams(pager));
+		return getItems(find("", params), pager);
+	}
+
+	/**
+	 * Searches for objects that have similar property values to a given text. A "find like this" query.
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param filterKey exclude an object with this key from the results (optional)
+	 * @param fields a list of property names
+	 * @param liketext text to compare to
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of objects found
+	 */
+	public <P extends ParaObject> List<P> findSimilar(String type, String filterKey, String[] fields, String liketext,
+			Pager... pager) {
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.put("fields", Arrays.asList(fields));
+		params.putSingle("filterid", filterKey);
+		params.putSingle("like", liketext);
+		params.putSingle(Config._TYPE, type);
+		params.putAll(pagerToParams(pager));
+		return getItems(find("similar", params), pager);
+	}
+
+	/**
+	 * Searches for objects tagged with one or more tags.
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param tags the list of tags
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of objects found
+	 */
+	public <P extends ParaObject> List<P> findTagged(String type, String[] tags, Pager... pager) {
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.put("tags", Arrays.asList(tags));
+		params.putSingle(Config._TYPE, type);
+		params.putAll(pagerToParams(pager));
+		return getItems(find("tagged", params), pager);
+	}
+
+	/**
+	 * Searches for {@link com.erudika.para.core.Tag} objects.
+	 * This method might be deprecated in the future.
+	 * @param <P> type of the object
+	 * @param keyword the tag keyword to search for
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of objects found
+	 */
+	public <P extends ParaObject> List<P> findTags(String keyword, Pager... pager) {
+		return findWildcard(Utils.type(Tag.class), "tag", StringUtils.join(keyword, "*"), pager);
+	}
+
+	/**
+	 * Searches for objects having a property value that is in list of possible values.
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param field the property name of an object
+	 * @param terms a list of terms (property values)
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of objects found
+	 */
+	public <P extends ParaObject> List<P> findTermInList(String type, String field, List<String> terms, Pager... pager) {
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("field", field);
+		params.put("terms", terms);
+		params.putSingle(Config._TYPE, type);
+		params.putAll(pagerToParams(pager));
+		return getItems(find("in", params), pager);
+	}
+
+	/**
+	 * Searches for objects that have properties matching some given values. A terms query.
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param terms a map of fields (property names) to terms (property values)
+	 * @param matchAll match all terms. If true - AND search, if false - OR search
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of objects found
+	 */
+	public <P extends ParaObject> List<P> findTerms(String type, Map<String, ?> terms, boolean matchAll,
+			Pager... pager) {
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("matchall", Boolean.toString(matchAll));
+		ArrayList<String> list = new ArrayList<String>();
+		for (Map.Entry<String, ? extends Object> term : terms.entrySet()) {
+			String key = term.getKey();
+			Object value = term.getValue();
+			if (value != null) {
+				list.add(key.concat(Config.SEPARATOR).concat(value.toString()));
+			}
+		}
+		if (!terms.isEmpty()) {
+			params.put("terms", list);
+		}
+		params.putSingle(Config._TYPE, type);
+		params.putAll(pagerToParams(pager));
+		return getItems(find("terms", params), pager);
+	}
+
+	/**
+	 * Searches for objects that have a property with a value matching a wildcard query.
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param field the property name of an object
+	 * @param wildcard wildcard query string. For example "cat*".
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of objects found
+	 */
+	public <P extends ParaObject> List<P> findWildcard(String type, String field, String wildcard, Pager... pager) {
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("field", field);
+		params.putSingle("wildcard", wildcard);
+		params.putSingle(Config._TYPE, type);
+		params.putAll(pagerToParams(pager));
+		return getItems(find("wildcard", params), pager);
+	}
+
+	/**
+	 * Counts indexed objects.
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @return the number of results found
+	 */
+	public Long getCount(String type) {
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle(Config._TYPE, type);
+		Pager pager = new Pager();
+		getItems(find("count", params), pager);
+		return pager.getCount();
+	}
+
+	/**
+	 * Counts indexed objects matching a set of terms/values.
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param terms a list of terms (property values)
+	 * @return the number of results found
+	 */
+	public Long getCount(String type, Map<String, ?> terms) {
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		ArrayList<String> list = new ArrayList<String>();
+		for (Map.Entry<String, ? extends Object> term : terms.entrySet()) {
+			String key = term.getKey();
+			Object value = term.getValue();
+			if (value != null) {
+				list.add(key.concat(Config.SEPARATOR).concat(value.toString()));
+			}
+		}
+		if (!terms.isEmpty()) {
+			params.put("terms", list);
+		}
+		params.putSingle(Config._TYPE, type);
+		params.putSingle("count", "true");
+		Pager pager = new Pager();
+		getItems(find("terms", params), pager);
+		return pager.getCount();
+	}
+
+	private <P extends ParaObject> Map<String, Object> find(String queryType, MultivaluedMap<String, String> params) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		if (params != null && !params.isEmpty()) {
+			String qType = StringUtils.isBlank(queryType) ? "" : "/".concat(queryType);
+			return getEntity(invokeGet("search".concat(qType), params), Map.class);
+		} else {
+			map.put("items", new ArrayList<P>());
+			map.put("totalHits", 0);
+		}
+		return map;
+	}
 
 	/////////////////////////////////////////////
 	//				 LINKS
 	/////////////////////////////////////////////
 
+	/**
+	 * Count the total number of links between this object and another type of object.
+	 * @param type2 the other type of object
+	 * @param obj the object to execute this method on
+	 * @return the number of links for the given object
+	 */
+	public Long countLinks(ParaObject obj, String type2) {
+		if (obj == null || obj.getId() == null || type2 == null) {
+			return 0L;
+		}
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("count", "true");
+		Pager pager = new Pager();
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
+		getItems(getEntity(invokeGet(url, params), Map.class), pager);
+		return pager.getCount();
+	}
 
+	/**
+	 * Similar to {@link #getChildren(java.lang.String, com.erudika.para.utils.Pager...) }
+	 * but for many-to-many relationships.
+	 * @param <P> type of linked objects
+	 * @param type2 type of linked objects to search for
+	 * @param obj the object to execute this method on
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of linked objects
+	 */
+	public <P extends ParaObject> List<P> getLinkedObjects(ParaObject obj, String type2, Pager... pager) {
+		ArrayList<P> list = new ArrayList<P>();
+		if (obj == null || obj.getId() == null || type2 == null) {
+			return list;
+		}
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
+		return getItems(getEntity(invokeGet(url, null), Map.class), pager);
+	}
+
+	/**
+	 * Checks if this object is linked to another.
+	 * @param type2 the other type
+	 * @param id2 the other id
+	 * @param obj the object to execute this method on
+	 * @return true if the two are linked
+	 */
+	public boolean isLinked(ParaObject obj, String type2, String id2) {
+		if (obj == null || obj.getId() == null || type2 == null || id2 == null) {
+			return false;
+		}
+		String url = Utils.formatMessage("{0}/links/{1}/{2}", obj.getObjectURI(), type2, id2);
+		return getEntity(invokeGet(url, null), Boolean.class);
+	}
+
+	/**
+	 * Links an object to this one in a many-to-many relationship.
+	 * Only a link is created. Objects are left untouched.
+	 * The type of the second object is automatically determined on read.
+	 * @param id2 link to the object with this id
+	 * @param obj the object to execute this method on
+	 * @return the id of the {@link Linker} object that is created
+	 */
+	public String link(ParaObject obj, String id2) {
+		if (obj == null || obj.getId() == null || id2 == null) {
+			return null;
+		}
+		String url = Utils.formatMessage("{0}/links/{1}/{2}", obj.getObjectURI(), "notype", id2);
+		return getEntity(invokePost(url, null), String.class);
+	}
+
+	/**
+	 * Unlinks an object from this one.
+	 * Only a link is deleted. Objects are left untouched.
+	 * @param type2 the other type
+	 * @param obj the object to execute this method on
+	 * @param id2 the other id
+	 */
+	public void unlink(ParaObject obj, String type2, String id2) {
+		if (obj == null || obj.getId() == null || type2 == null || id2 == null) {
+			return;
+		}
+		String url = Utils.formatMessage("{0}/links/{1}/{2}", obj.getObjectURI(), type2, id2);
+		invokeDelete(url, null);
+	}
+
+	/**
+	 * Unlinks all objects that are linked to this one.
+	 * @param obj the object to execute this method on
+	 * Deletes all {@link Linker} objects. Only the links are deleted. Objects are left untouched.
+	 */
+	public void unlinkAll(ParaObject obj) {
+		if (obj == null || obj.getId() == null) {
+			return;
+		}
+		String url = Utils.formatMessage("{0}/links", obj.getObjectURI());
+		invokeDelete(url, null);
+	}
+
+	/**
+	 * Count the total number of child objects for this object.
+	 * @param type2 the type of the other object
+	 * @param obj the object to execute this method on
+	 * @return the number of links
+	 */
+	public Long countChildren(ParaObject obj, String type2) {
+		if (obj == null || obj.getId() == null || type2 == null) {
+			return 0L;
+		}
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("count", "true");
+		params.putSingle("childrenonly", "true");
+		Pager pager = new Pager();
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
+		getItems(getEntity(invokeGet(url, params), Map.class), pager);
+		return pager.getCount();
+	}
+
+	/**
+	 * Returns all child objects linked to this object.
+	 * @param <P> the type of children
+	 * @param type2 the type of children to look for
+	 * @param obj the object to execute this method on
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
+	 */
+	public <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, Pager... pager) {
+		ArrayList<P> list = new ArrayList<P>();
+		if (obj == null || obj.getId() == null || type2 == null) {
+			return list;
+		}
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("childrenonly", "true");
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
+		return getItems(getEntity(invokeGet(url, params), Map.class), pager);
+	}
+
+	/**
+	 * Returns all child objects linked to this object.
+	 * @param <P> the type of children
+	 * @param type2 the type of children to look for
+	 * @param field the field name to use as filter
+	 * @param term the field value to use as filter
+	 * @param obj the object to execute this method on
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
+	 */
+	public <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, String field, String term,
+			Pager... pager) {
+		ArrayList<P> list = new ArrayList<P>();
+		if (obj == null || obj.getId() == null || type2 == null) {
+			return list;
+		}
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("childrenonly", "true");
+		params.putSingle("field", field);
+		params.putSingle("term", term);
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
+		return getItems(getEntity(invokeGet(url, params), Map.class), pager);
+	}
+
+	/**
+	 * Deletes all child objects permanently.
+	 * @param obj the object to execute this method on
+	 * @param type2 the children's type.
+	 */
+	public void deleteChildren(ParaObject obj, String type2) {
+		if (obj == null || obj.getId() == null || type2 == null) {
+			return;
+		}
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("childrenonly", "true");
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
+		invokeDelete(url, params);
+	}
 
 	/////////////////////////////////////////////
 	//				 UTILS
 	/////////////////////////////////////////////
 
+	/**
+	 * Generates a new unique id.
+	 * @return a new id
+	 */
+	public String newId() {
+		String res = getEntity(invokeGet("utils/newid", null), String.class);
+		return res != null ? res : "";
+	}
 
+	/**
+	 * Returns the current timestamp.
+	 * @return a long number
+	 */
 	public long getTimestamp() {
 		Long res = getEntity(invokeGet("utils/timestamp", null), Long.class);
 		return res != null ? res : 0L;
+	}
+
+	/**
+	 * Formats a date in a specific format.
+	 * @param format the date format
+	 * @param loc the locale instance
+	 * @return a formatted date
+	 */
+	public String formatDate(String format, Locale loc) {
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("format", format);
+		params.putSingle("locale", loc == null ? null : loc.toString());
+		return getEntity(invokeGet("utils/formatdate", params), String.class);
+	}
+
+	/**
+	 * Converts spaces to dashes.
+	 * @param str a string with spaces
+	 * @param replaceWith a string to replace spaces with
+	 * @return a string with dashes
+	 */
+	public String noSpaces(String str, String replaceWith) {
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("string", str);
+		params.putSingle("replacement", replaceWith);
+		return getEntity(invokeGet("utils/nospaces", params), String.class);
+	}
+
+	/**
+	 * Strips all symbols, punctuation, whitespace and control chars from a string.
+	 * @param str a dirty string
+	 * @return a clean string
+	 */
+	public String stripAndTrim(String str) {
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("string", str);
+		return getEntity(invokeGet("utils/nosymbols", params), String.class);
+	}
+
+	/**
+	 * Converts Markdown to HTML
+	 * @param markdownString Markdown
+	 * @return HTML
+	 */
+	public String markdownToHtml(String markdownString) {
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("md", markdownString);
+		return getEntity(invokeGet("utils/md2html", params), String.class);
+	}
+
+	/**
+	 * Returns the number of minutes, hours, months elapsed for a time delta.
+	 * @param delta the time delta between two events
+	 * @return a string like "5m", "1h"
+	 */
+	public String approximately(long delta) {
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("delta", Long.toString(delta));
+		return getEntity(invokeGet("utils/timeago", params), String.class);
 	}
 
 	/////////////////////////////////////////////
 	//				 MISC
 	/////////////////////////////////////////////
 
-	public Map<String, String> setup() {
+	/**
+	 * First-time setup - creates the root app and returns its credentials.
+	 * @return a map of credentials
+	 */
+	Map<String, String> setup() {
 		return getEntity(invokeGet("setup", null), Map.class);
 	}
 
+	/**
+	 * Generates a new set of access/secret keys.
+	 * Old keys are discarded and invalid after this.
+	 * @return a map of new credentials
+	 */
+	public Map<String, String> newKeys() {
+		return getEntity(invokePost("newkeys", null), Map.class);
+	}
+
+	/**
+	 * Returns all registered types for this App.
+	 * @return a map of plural->singular form of all the registered types.
+	 */
+	public Map<String, String> types() {
+		return getEntity(invokeGet("types", null), Map.class);
+	}
+
+	/**
+	 * Closes the client. Calling this method effectively invalidates all resource
+	 * targets produced by the client instance. Invoking any method
+	 * on such targets once the client is closed would result in an
+	 * IllegalStateException being thrown.
+	 */
 	public void close() {
 		if (client != null) {
 			client.close();
