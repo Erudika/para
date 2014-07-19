@@ -138,7 +138,7 @@ public final class ParaClient {
 			if (res.getStatus() == Response.Status.OK.getStatusCode()
 					|| res.getStatus() == Response.Status.CREATED.getStatusCode()
 					|| res.getStatus() == Response.Status.NOT_MODIFIED.getStatusCode()) {
-				return res.readEntity((Class<T>) type);
+					return res.readEntity((Class<T>) type);
 			} else if (res.getStatus() != Response.Status.NOT_FOUND.getStatusCode()
 					&& res.getStatus() != Response.Status.NOT_MODIFIED.getStatusCode()
 					&& res.getStatus() != Response.Status.NO_CONTENT.getStatusCode()) {
@@ -235,9 +235,8 @@ public final class ParaClient {
 	}
 
 	private MultivaluedMap<String, String> pagerToParams(Pager... pager) {
-		MultivaluedMap<String, String> map = null;
+		MultivaluedMap<String, String> map = new MultivaluedHashMap<String, String>();
 		if (pager != null && pager.length > 0) {
-			map = new MultivaluedHashMap<String, String>();
 			Pager p = pager[0];
 			if (p != null) {
 				map.put("page", Collections.singletonList(Long.toString(p.getPage())));
@@ -252,30 +251,31 @@ public final class ParaClient {
 	}
 
 	@SuppressWarnings("unchecked")
-	private <P extends ParaObject> List<P> getItems(Map<String, Object> result, Pager... pager) {
-		if (result != null && result.containsKey("items")) {
-			if (pager != null && pager.length > 0 && pager[0] != null && result.containsKey("totalHits")) {
-				pager[0].setCount(Integer.valueOf((int) result.get("totalHits")).longValue());
-			}
-			return (List<P>) result.get("items");
-		}
-		return new ArrayList<P>();
-	}
-
-	private <P extends ParaObject> List<P> getItemsFromMaps(List<Map<String, Object>> list) {
-		// this isn't very efficient but there's no way to know what type of objects we're reading
-		ArrayList<P> objects = new ArrayList<P>();
-		if (list != null) {
-			for (Map<String, Object> map : list) {
-				P p = Utils.setAnnotatedFields(map);
+	private <P extends ParaObject> List<P> getItemsFromList(List<?> result) {
+		if (result != null && !result.isEmpty()) {
+			// this isn't very efficient but there's no way to know what type of objects we're reading
+			ArrayList<P> objects = new ArrayList<P>();
+			for (Object map : result) {
+				P p = Utils.setAnnotatedFields((Map<String, Object>) map);
 				if (p != null) {
 					objects.add(p);
 				}
 			}
+			return objects;
 		}
-		return objects;
+		return Collections.emptyList();
 	}
 
+	@SuppressWarnings("unchecked")
+	private <P extends ParaObject> List<P> getItems(Map<String, Object> result, Pager... pager) {
+		if (result != null && !result.isEmpty() && result.containsKey("items")) {
+			if (pager != null && pager.length > 0 && pager[0] != null && result.containsKey("totalHits")) {
+				pager[0].setCount(Integer.valueOf((int) result.get("totalHits")).longValue());
+			}
+			return (List<P>) getItemsFromList((List<?>) result.get("items"));
+		}
+		return Collections.emptyList();
+	}
 
 	/////////////////////////////////////////////
 	//				 PERSISTENCE
@@ -341,10 +341,9 @@ public final class ParaClient {
 	 */
 	public <P extends ParaObject> List<P> createAll(List<P> objects) {
 		if (objects == null || objects.isEmpty() || objects.get(0) == null) {
-			return new ArrayList<P>();
+			return Collections.emptyList();
 		}
-		List<Map<String, Object>> list = getEntity(invokePost("_batch", Entity.json(objects)), List.class);
-		return getItemsFromMaps(list);
+		return getItemsFromList(getEntity(invokePost("_batch", Entity.json(objects)), List.class));
 	}
 
 	/**
@@ -355,12 +354,11 @@ public final class ParaClient {
 	 */
 	public <P extends ParaObject> List<P> readAll(List<String> keys) {
 		if (keys == null || keys.isEmpty()) {
-			return new ArrayList<P>();
+			return Collections.emptyList();
 		}
 		MultivaluedMap<String, String> ids = new MultivaluedHashMap<String, String>();
 		ids.put("ids", keys);
-		List<Map<String, Object>> list = getEntity(invokeGet("_batch", ids), List.class);
-		return getItemsFromMaps(list);
+		return getItemsFromList(getEntity(invokeGet("_batch", ids), List.class));
 	}
 
 	/**
@@ -371,10 +369,9 @@ public final class ParaClient {
 	 */
 	public <P extends ParaObject> List<P> updateAll(List<P> objects) {
 		if (objects == null || objects.isEmpty()) {
-			return new ArrayList<P>();
+			return Collections.emptyList();
 		}
-		List<Map<String, Object>> list = getEntity(invokePut("_batch", Entity.json(objects)), List.class);
-		return getItemsFromMaps(list);
+		return getItemsFromList(getEntity(invokePut("_batch", Entity.json(objects)), List.class));
 	}
 
 	/**
@@ -401,7 +398,7 @@ public final class ParaClient {
 	 */
 	public <P extends ParaObject> List<P> list(String type, Pager... pager) {
 		if (type == null) {
-			return new ArrayList<P>();
+			return Collections.emptyList();
 		}
 		return getItems(getEntity(invokeGet(type, pagerToParams(pager)), Map.class), pager);
 	}
@@ -420,7 +417,8 @@ public final class ParaClient {
 	public <P extends ParaObject> P findById(String id) {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
 		params.putSingle(Config._ID, id);
-		return (P) getItems(find("id", params)).get(0);
+		List<P> list = getItems(find("id", params));
+		return list.isEmpty() ? null : list.get(0);
 	}
 
 	/**
@@ -505,7 +503,7 @@ public final class ParaClient {
 	public <P extends ParaObject> List<P> findSimilar(String type, String filterKey, String[] fields, String liketext,
 			Pager... pager) {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
-		params.put("fields", Arrays.asList(fields));
+		params.put("fields", fields == null ? null : Arrays.asList(fields));
 		params.putSingle("filterid", filterKey);
 		params.putSingle("like", liketext);
 		params.putSingle(Config._TYPE, type);
@@ -523,7 +521,7 @@ public final class ParaClient {
 	 */
 	public <P extends ParaObject> List<P> findTagged(String type, String[] tags, Pager... pager) {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
-		params.put("tags", Arrays.asList(tags));
+		params.put("tags", tags == null ? null : Arrays.asList(tags));
 		params.putSingle(Config._TYPE, type);
 		params.putAll(pagerToParams(pager));
 		return getItems(find("tagged", params), pager);
@@ -538,7 +536,8 @@ public final class ParaClient {
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findTags(String keyword, Pager... pager) {
-		return findWildcard(Utils.type(Tag.class), "tag", StringUtils.join(keyword, "*"), pager);
+		keyword = (keyword == null) ? "*" : keyword.concat("*");
+		return findWildcard(Utils.type(Tag.class), "tag", keyword, pager);
 	}
 
 	/**
@@ -570,6 +569,9 @@ public final class ParaClient {
 	 */
 	public <P extends ParaObject> List<P> findTerms(String type, Map<String, ?> terms, boolean matchAll,
 			Pager... pager) {
+		if (terms == null) {
+			return Collections.emptyList();
+		}
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
 		params.putSingle("matchall", Boolean.toString(matchAll));
 		ArrayList<String> list = new ArrayList<String>();
@@ -600,7 +602,7 @@ public final class ParaClient {
 	public <P extends ParaObject> List<P> findWildcard(String type, String field, String wildcard, Pager... pager) {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
 		params.putSingle("field", field);
-		params.putSingle("wildcard", wildcard);
+		params.putSingle("q", wildcard);
 		params.putSingle(Config._TYPE, type);
 		params.putAll(pagerToParams(pager));
 		return getItems(find("wildcard", params), pager);
@@ -626,6 +628,9 @@ public final class ParaClient {
 	 * @return the number of results found
 	 */
 	public Long getCount(String type, Map<String, ?> terms) {
+		if (terms == null) {
+			return 0L;
+		}
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
 		ArrayList<String> list = new ArrayList<String>();
 		for (Map.Entry<String, ? extends Object> term : terms.entrySet()) {
@@ -904,8 +909,8 @@ public final class ParaClient {
 	}
 
 	/**
-	 * Returns the number of minutes, hours, months elapsed for a time delta.
-	 * @param delta the time delta between two events
+	 * Returns the number of minutes, hours, months elapsed for a time delta (milliseconds).
+	 * @param delta the time delta between two events, in milliseconds
 	 * @return a string like "5m", "1h"
 	 */
 	public String approximately(long delta) {

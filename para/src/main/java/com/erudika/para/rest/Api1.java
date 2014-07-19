@@ -461,8 +461,9 @@ public final class Api1 extends ResourceConfig {
 	private <P extends ParaObject> Map<String, Object> buildQueryAndSearch(App app, String queryType,
 			MultivaluedMap<String, String> params, String typeOverride) {
 		String query = params.containsKey("q") ? params.getFirst("q") : "*";
-		String type = (typeOverride != null) ? typeOverride : params.getFirst(Config._TYPE);
 		String appid = app.isShared() ? ("_" + Config.SEPARATOR + app.getAppIdentifier()) : app.getAppIdentifier();
+		String type = (!StringUtils.isBlank(typeOverride) && !"search".equals(typeOverride)) ?
+				typeOverride : params.getFirst(Config._TYPE);
 
 		Pager pager = new Pager();
 		pager.setPage(NumberUtils.toLong(params.getFirst("page"), 0));

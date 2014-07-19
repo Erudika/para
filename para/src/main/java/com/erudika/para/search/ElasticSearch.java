@@ -413,7 +413,7 @@ public class ElasticSearch implements Search {
 		int pageNum = (int) page.getPage();
 		int start = (pageNum < 1 || pageNum > Config.MAX_PAGES) ? 0 : (pageNum - 1) * max;
 
-		if (query == null || type == null) {
+		if (query == null || StringUtils.isBlank(type)) {
 			query = QueryBuilders.matchAllQuery();
 		}
 		if (sort == null) {
@@ -428,7 +428,7 @@ public class ElasticSearch implements Search {
 				setRouting(getRouting(appid, null)).
 				setQuery(query).addSort(sort).setFrom(start).setSize(max);
 
-			if (type != null) {
+			if (!StringUtils.isBlank(type)) {
 				srb.setTypes(type);
 			}
 
