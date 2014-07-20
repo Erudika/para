@@ -205,13 +205,33 @@ public class ParaClientIT {
 
 		assertTrue(pc.updateAll(null).isEmpty());
 		assertTrue(pc.updateAll(Collections.singletonList(null)).isEmpty());
-		l1.get(0).setName("NewName1");
-		l1.get(1).setName("NewName2");
-		l1.get(2).setName("NewName3");
-		List<Sysprop> l3 = pc.updateAll(l1);
-		assertEquals(l1.get(0).getName(), l3.get(0).getName());
-		assertEquals(l1.get(1).getName(), l3.get(1).getName());
-		assertEquals(l1.get(2).getName(), l3.get(2).getName());
+
+		Sysprop part1 = new Sysprop(l1.get(0).getId());
+		Sysprop part2 = new Sysprop(l1.get(1).getId());
+		Sysprop part3 = new Sysprop(l1.get(2).getId());
+		part1.setType(dogsType);
+		part2.setType(dogsType);
+		part3.setType(dogsType);
+
+		part1.addProperty("custom", "prop");
+		part1.setName("NewName1");
+		part2.setName("NewName2");
+		part3.setName("NewName3");
+//		// these shouldn't go through
+//		part1.setType("type1");
+//		part2.setType("type2");
+//		part3.setType("type3");
+
+		List<Sysprop> l3 = pc.updateAll(Arrays.asList(part1, part2, part3));
+
+		assertTrue(l3.get(0).hasProperty("custom"));
+		assertEquals(dogsType, l3.get(0).getType());
+		assertEquals(dogsType, l3.get(1).getType());
+		assertEquals(dogsType, l3.get(2).getType());
+
+		assertEquals(part1.getName(), l3.get(0).getName());
+		assertEquals(part2.getName(), l3.get(1).getName());
+		assertEquals(part3.getName(), l3.get(2).getName());
 
 		pc.deleteAll(nl);
 		Thread.sleep(1000);
@@ -364,8 +384,27 @@ public class ParaClientIT {
 	}
 
 	@Test
-	public void testLinks() {
+	public void testLinks() throws InterruptedException {
+		assertNotNull(pc.link(u, t.getId()));
+		assertNotNull(pc.link(u, u2.getId()));
 
+		assertFalse(pc.isLinked(u, null));
+		assertTrue(pc.isLinked(u, t));
+		assertTrue(pc.isLinked(u, u2));
+
+		Thread.sleep(1000);
+
+		assertEquals(1, pc.getLinkedObjects(u, Utils.type(Tag.class)).size());
+		assertEquals(1, pc.getLinkedObjects(u, Utils.type(Sysprop.class)).size());
+
+		assertEquals(0, pc.countLinks(u, null).intValue());
+		assertEquals(1, pc.countLinks(u, Utils.type(Tag.class)).intValue());
+		assertEquals(1, pc.countLinks(u, Utils.type(Sysprop.class)).intValue());
+
+		pc.unlinkAll(u);
+
+		assertFalse(pc.isLinked(u, t));
+		assertFalse(pc.isLinked(u, u2));
 	}
 
 	@Test

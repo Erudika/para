@@ -428,7 +428,7 @@ public final class ParaClient {
 	 * @return the object if found or null
 	 */
 	@SuppressWarnings("unchecked")
-	public <P extends ParaObject> List<P> findByIds(List<String> ids){
+	public <P extends ParaObject> List<P> findByIds(List<String> ids) {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
 		params.put("ids", ids);
 		return (List<P>) getItems(find("ids", params));
@@ -446,7 +446,7 @@ public final class ParaClient {
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findNearby(String type, String query, int radius, double lat, double lng,
-			Pager... pager){
+			Pager... pager) {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
 		params.putSingle("latlng", lat + "," + lng);
 		params.putSingle("radius", Integer.toString(radius));
@@ -718,6 +718,19 @@ public final class ParaClient {
 	}
 
 	/**
+	 * Checks if a given object is linked to this one.
+	 * @param toObj the other object
+	 * @param obj the object to execute this method on
+	 * @return true if linked
+	 */
+	public boolean isLinked(ParaObject obj, ParaObject toObj) {
+		if (obj == null || obj.getId() == null || toObj == null || toObj.getId() == null) {
+			return false;
+		}
+		return isLinked(obj, toObj.getType(), toObj.getId());
+	}
+
+	/**
 	 * Links an object to this one in a many-to-many relationship.
 	 * Only a link is created. Objects are left untouched.
 	 * The type of the second object is automatically determined on read.
@@ -729,7 +742,7 @@ public final class ParaClient {
 		if (obj == null || obj.getId() == null || id2 == null) {
 			return null;
 		}
-		String url = Utils.formatMessage("{0}/links/{1}/{2}", obj.getObjectURI(), "notype", id2);
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), id2);
 		return getEntity(invokePost(url, null), String.class);
 	}
 

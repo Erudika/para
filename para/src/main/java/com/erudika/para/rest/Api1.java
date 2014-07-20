@@ -126,8 +126,10 @@ public final class Api1 extends ResourceConfig {
 		core.addChildResource("{id}").addMethod(DELETE).produces(JSON).handledBy(handler);
 		// links CRUD endpoints
 		core.addChildResource("{id}/links/{type2}/{id2}").addMethod(GET).produces(JSON).handledBy(linksHandler);
+		core.addChildResource("{id}/links/{type2}").addMethod(GET).produces(JSON).handledBy(linksHandler);
 		core.addChildResource("{id}/links/{id2}").addMethod(POST).produces(JSON).handledBy(linksHandler);
 		core.addChildResource("{id}/links/{type2}/{id2}").addMethod(DELETE).produces(JSON).handledBy(linksHandler);
+		core.addChildResource("{id}/links").addMethod(DELETE).produces(JSON).handledBy(linksHandler);
 		// CRUD endpoints (batch)
 		Resource.Builder batch = Resource.builder("_batch");
 		batch.addMethod(POST).produces(JSON).consumes(JSON).handledBy(batchCreateHandler());
@@ -185,10 +187,7 @@ public final class Api1 extends ResourceConfig {
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
 				App app = RestUtils.getApp(appid);
 				if (app != null && !StringUtils.isBlank(typePlural)) {
-					String type = RestUtils.getCoreTypes().get(typePlural);
-					if (type == null) {
-						type = app.getDatatypes().get(typePlural);
-					}
+					String type = RestUtils.getAllTypes(app).get(typePlural);
 					if (type == null) {
 						type = typePlural;
 					}
@@ -235,13 +234,17 @@ public final class Api1 extends ResourceConfig {
 				String id2 = pathp.getFirst("id2");
 				String type2 = pathp.getFirst("type2");
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
+				App app = RestUtils.getApp(appid);
+
+				String typeSingular = (type == null) ? null : RestUtils.getAllTypes(app).get(type);
+				type = (typeSingular == null) ? type : typeSingular;
 
 				id2 = StringUtils.isBlank(id2) ? params.getFirst(Config._ID) : id2;
 				type2 = StringUtils.isBlank(type2) ? params.getFirst(Config._TYPE) : type2;
 
 				ParaObject pobj = Utils.toObject(type);
 				pobj.setId(id);
-				pobj = dao.read(appid, pobj.getId());
+				pobj = dao.read(app.getAppIdentifier(), pobj.getId());
 
 				Pager pager = new Pager();
 				pager.setPage(NumberUtils.toLong(params.getFirst("page"), 0));
@@ -322,9 +325,7 @@ public final class Api1 extends ResourceConfig {
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
 				App app = RestUtils.getApp(appid);
 				if (app != null) {
-					Map<String, String> allTypes = new HashMap<String, String>(app.getDatatypes());
-					allTypes.putAll(RestUtils.getCoreTypes());
-					return Response.ok(allTypes).build();
+					return Response.ok(RestUtils.getAllTypes(app)).build();
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found: " + appid);
 			}

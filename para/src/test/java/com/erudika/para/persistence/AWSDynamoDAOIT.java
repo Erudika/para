@@ -48,17 +48,17 @@ public class AWSDynamoDAOIT extends DAOTest {
 
 	@Test
 	public void testCreateDeleteExistsTable() throws InterruptedException {
-		String appid1 = "test-index";
+		String testappid1 = "test-index";
 		String badAppid = "test index 123";
 
 		AWSDynamoUtils.createTable("");
 		assertFalse(AWSDynamoUtils.existsTable(""));
 
-		AWSDynamoUtils.createTable(appid1);
-		assertTrue(AWSDynamoUtils.existsTable(appid1));
+		AWSDynamoUtils.createTable(testappid1);
+		assertTrue(AWSDynamoUtils.existsTable(testappid1));
 
-		AWSDynamoUtils.deleteTable(appid1);
-		assertFalse(AWSDynamoUtils.existsTable(appid1));
+		AWSDynamoUtils.deleteTable(testappid1);
+		assertFalse(AWSDynamoUtils.existsTable(testappid1));
 
 		assertFalse(AWSDynamoUtils.createTable(badAppid));
 		assertFalse(AWSDynamoUtils.existsTable(badAppid));

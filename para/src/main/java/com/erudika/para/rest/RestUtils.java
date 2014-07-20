@@ -212,6 +212,19 @@ public final class RestUtils {
 		return Collections.unmodifiableMap(coreTypes);
 	}
 
+	/**
+	 * Returns a map of all registered types.
+	 * @param app the app to search for custom types
+	 * @return a map of plural -> singular form of type names
+	 */
+	protected static Map<String, String> getAllTypes(App app) {
+		Map<String, String> map = new HashMap<String, String>(getCoreTypes());
+		if (app != null) {
+			map.putAll(app.getDatatypes());
+		}
+		return map;
+	}
+
 	/////////////////////////////////////////////
 	//			REST RESPONSE HANDLERS
 	/////////////////////////////////////////////
@@ -378,9 +391,9 @@ public final class RestUtils {
 					return getStatusResponse(Response.Status.BAD_REQUEST,
 							"Request is too large - the maximum is 1MB.");
 				}
-				List<Object> items = Utils.getJsonReader(List.class).readValue(is);
-				for (Object object : items) {
-					ParaObject pobj = Utils.setAnnotatedFields((Map<String, Object>) object);
+				List<Map<String, Object>> items = Utils.getJsonReader(List.class).readValue(is);
+				for (Map<String, Object> object : items) {
+					ParaObject pobj = Utils.setAnnotatedFields(object);
 					if (pobj != null && Utils.isValidObject(pobj)) {
 						pobj.setAppid(app.getAppIdentifier());
 						pobj.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
@@ -422,34 +435,20 @@ public final class RestUtils {
 					return getStatusResponse(Response.Status.BAD_REQUEST,
 							"Request is too large - the maximum is 1MB.");
 				}
-				List<Object> items = Utils.getJsonReader(List.class).readValue(is);
-				List<String> keys = new ArrayList<String>();
-				for (Object item : items) {
-					if (item != null) {
-						String id = (String) ((Map<String, Object>) item).get(Config._ID);
-						if (!StringUtils.isBlank(id)) {
-							keys.add(id);
-						}
-					}
-				}
-
-				Map<String, ParaObject> existing = Para.getDAO().readAll(app.getAppIdentifier(), keys, false);
-
-				if (!existing.isEmpty()) {
-					for (Object object : items) {
-						Map<String, Object> data = (Map<String, Object>) object;
-						String id = (String) data.get(Config._ID);
-						ParaObject pobj = existing.get(id);
+				List<Map<String, Object>> items = Utils.getJsonReader(List.class).readValue(is);
+				// WARN: objects will not be validated here as this would require them to be read first
+				for (Map<String, Object> item : items) {
+					if (item != null && item.containsKey(Config._ID) && item.containsKey(Config._TYPE)) {
+						ParaObject pobj = Utils.setAnnotatedFields(null, item, Locked.class);
 						if (pobj != null) {
-							Utils.setAnnotatedFields(pobj, data, Locked.class);
-							if (Utils.isValidObject(pobj)) {
-								pobj.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
-								objects.add(pobj);
-							}
+							pobj.setId((String) item.get(Config._ID));
+							pobj.setType((String) item.get(Config._TYPE));
+							pobj.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
+							objects.add(pobj);
 						}
 					}
-					Para.getDAO().updateAll(app.getAppIdentifier(), objects);
 				}
+				Para.getDAO().updateAll(app.getAppIdentifier(), objects);
 			} else {
 				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
 			}

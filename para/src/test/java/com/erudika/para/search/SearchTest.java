@@ -158,14 +158,14 @@ public abstract class SearchTest {
 
 	@Test
 	public void testFindPrefix() {
-		assertTrue(s.findPrefix("", "null", "xx").isEmpty());
+		assertFalse(s.findPrefix("", "null", "xx").isEmpty()); // will find *
 		assertFalse(s.findPrefix(u.getType(), Config._NAME, "ann").isEmpty());
 	}
 
 	@Test
 	public void testFindQuery() {
 		assertTrue(s.findQuery(null, null).isEmpty());
-		assertTrue(s.findQuery("", "*").isEmpty());
+		assertFalse(s.findQuery("", "*").isEmpty()); // will find *
 		assertTrue(s.findQuery(u.getType(), "_type:user").size() >= 3);
 		assertFalse(s.findQuery(u.getType(), "ann").isEmpty());
 		assertFalse(s.findQuery(u.getType(), "Ann").isEmpty());

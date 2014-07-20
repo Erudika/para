@@ -92,9 +92,7 @@ public class AWSDynamoDAO implements DAO {
 		if (so.getTimestamp() == null) {
 			so.setTimestamp(Utils.timestamp());
 		}
-		if (so.getAppid() == null) {
-			so.setAppid(appid);
-		}
+		so.setAppid(appid);
 		createRow(so.getId(), appid, toRow(so, null));
 		logger.debug("DAO.create() {}", so.getId());
 		return so.getId();
@@ -200,7 +198,7 @@ public class AWSDynamoDAO implements DAO {
 	@Override
 	public <P extends ParaObject> void createAll(String appid, List<P> objects) {
 		writeAll(appid, objects, false);
-		logger.debug("DAO.createAll() {}", objects.size());
+		logger.debug("DAO.createAll() {}", (objects == null) ? 0 : objects.size());
 	}
 
 	@Override
@@ -271,12 +269,14 @@ public class AWSDynamoDAO implements DAO {
 	@Override
 	public <P extends ParaObject> void updateAll(String appid, List<P> objects) {
 		// DynamoDB doesn't have a BatchUpdate API yet so we have to do one of the following:
-		// 1. update items one by one
-		// 2. call writeAll() - (chosen for simplicity)
-		// OPTION (1):
-		// if (objects != null) for (P object : objects) update(appid, object);
-		writeAll(appid, objects, true);
-		logger.debug("DAO.updateAll() {}", objects.size());
+		// 1. update items one by one (chosen for simplicity)
+		// 2. call writeAll() - writeAll(appid, objects, true);
+		if (objects != null) {
+			for (P object : objects) {
+				update(appid, object);
+			}
+		}
+		logger.debug("DAO.updateAll() {}", (objects == null) ? 0 : objects.size());
 	}
 
 	@Override
@@ -337,9 +337,8 @@ public class AWSDynamoDAO implements DAO {
 			}
 			logger.debug("batchWrite() CC: {}", result.getConsumedCapacity());
 
-			Thread.sleep(1000);
-
 			if (result.getUnprocessedItems() != null && !result.getUnprocessedItems().isEmpty()) {
+				Thread.sleep(1000);
 				logger.warn("UNPROCESSED {0}", result.getUnprocessedItems().size());
 				batchWrite(result.getUnprocessedItems());
 			}
@@ -372,10 +371,11 @@ public class AWSDynamoDAO implements DAO {
 				if (object.getTimestamp() == null) {
 					object.setTimestamp(Utils.timestamp());
 				}
-				if (object.getAppid() == null) {
-					object.setAppid(appid);
+				if (updateOp) {
+					object.setUpdated(Utils.timestamp());
 				}
-				Map<String, AttributeValue> row = toRow(object, (updateOp ? Locked.class : null));
+				object.setAppid(appid);
+				Map<String, AttributeValue> row = toRow(object, null);
 				setRowKey(object.getId(), row);
 				reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(row)));
 				j++;

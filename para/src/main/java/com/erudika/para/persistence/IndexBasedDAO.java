@@ -80,9 +80,7 @@ public class IndexBasedDAO implements DAO {
 		if (so.getTimestamp() == null) {
 			so.setTimestamp(Utils.timestamp());
 		}
-		if (so.getAppid() == null) {
-			so.setAppid(appid);
-		}
+		so.setAppid(appid);
 		getMap(appid).put(so.getId(), Utils.setAnnotatedFields(Utils.toObject(so.getType()),
 				Utils.getAnnotatedFields(so), null));
 		logger.debug("DAO.create() {}", so.getId());
