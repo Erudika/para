@@ -685,8 +685,7 @@ public final class ParaClient {
 	}
 
 	/**
-	 * Similar to {@link #getChildren(java.lang.String, com.erudika.para.utils.Pager...) }
-	 * but for many-to-many relationships.
+	 * Returns all objects linked to the given one. Only applicable to many-to-many relationships.
 	 * @param <P> type of linked objects
 	 * @param type2 type of linked objects to search for
 	 * @param obj the object to execute this method on
@@ -736,7 +735,7 @@ public final class ParaClient {
 	 * The type of the second object is automatically determined on read.
 	 * @param id2 link to the object with this id
 	 * @param obj the object to execute this method on
-	 * @return the id of the {@link Linker} object that is created
+	 * @return the id of the {@link com.erudika.para.core.Linker} object that is created
 	 */
 	public String link(ParaObject obj, String id2) {
 		if (obj == null || obj.getId() == null || id2 == null) {
@@ -764,7 +763,8 @@ public final class ParaClient {
 	/**
 	 * Unlinks all objects that are linked to this one.
 	 * @param obj the object to execute this method on
-	 * Deletes all {@link Linker} objects. Only the links are deleted. Objects are left untouched.
+	 * Deletes all {@link com.erudika.para.core.Linker} objects.
+	 * Only the links are deleted. Objects are left untouched.
 	 */
 	public void unlinkAll(ParaObject obj) {
 		if (obj == null || obj.getId() == null) {
@@ -955,7 +955,7 @@ public final class ParaClient {
 
 	/**
 	 * Returns all registered types for this App.
-	 * @return a map of plural->singular form of all the registered types.
+	 * @return a map of plural-singular form of all the registered types.
 	 */
 	public Map<String, String> types() {
 		return getEntity(invokeGet("types", null), Map.class);

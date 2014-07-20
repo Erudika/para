@@ -194,7 +194,7 @@ public final class RestUtils {
 
 	/**
 	 * Returns a map of the core data types.
-	 * @return a map of type plural -> type singular form
+	 * @return a map of type plural - type singular form
 	 */
 	protected static Map<String, String> getCoreTypes() {
 		if (coreTypes.isEmpty()) {
@@ -215,7 +215,7 @@ public final class RestUtils {
 	/**
 	 * Returns a map of all registered types.
 	 * @param app the app to search for custom types
-	 * @return a map of plural -> singular form of type names
+	 * @return a map of plural - singular form of type names
 	 */
 	protected static Map<String, String> getAllTypes(App app) {
 		Map<String, String> map = new HashMap<String, String>(getCoreTypes());
@@ -301,6 +301,7 @@ public final class RestUtils {
 	 * Update response as JSON
 	 * @param object object to validate and update
 	 * @param is entity input stream
+	 * @param app the app object
 	 * @return a status code 200 or 400 or 404
 	 */
 	public static Response getUpdateResponse(App app, ParaObject object, InputStream is) {
@@ -349,6 +350,7 @@ public final class RestUtils {
 	/**
 	 * Delete response as JSON
 	 * @param content the object to delete
+	 * @param app the current App object
 	 * @return a status code 200 or 400
 	 */
 	public static Response getDeleteResponse(App app, ParaObject content) {
@@ -364,7 +366,7 @@ public final class RestUtils {
 
 	/**
 	 * Batch read response as JSON
-	 * @param appid appid
+	 * @param app the current App object
 	 * @param ids list of ids
 	 * @return status code 200 or 400
 	 */
@@ -378,7 +380,7 @@ public final class RestUtils {
 
 	/**
 	 * Batch create response as JSON
-	 * @param appid appid
+	 * @param app the current App object
 	 * @param is entity input stream
 	 * @return a status code 200 or 400
 	 */
@@ -422,7 +424,7 @@ public final class RestUtils {
 
 	/**
 	 * Batch update response as JSON
-	 * @param appid appid
+	 * @param app the current App object
 	 * @param is entity input stream
 	 * @return a status code 200 or 400
 	 */
@@ -463,8 +465,8 @@ public final class RestUtils {
 
 	/**
 	 * Batch delete response as JSON
-	 * @param appid appid
-	 * @param is entity input stream
+	 * @param app the current App object
+	 * @param ids list of ids to delete
 	 * @return a status code 200 or 400
 	 */
 	@SuppressWarnings("unchecked")
