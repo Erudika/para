@@ -92,19 +92,24 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 						} else {
 							RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
 									"Request signature is invalid.");
+							return;
 						}
 					} else {
 						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND, "App not found.");
+						return;
 					}
 				} else {
 					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Request has expired.");
+					return;
 				}
 			} else {
 				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
 						"'X-Amz-Date' header/parameter is not set!");
+				return;
 			}
 		} else {
 			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Credentials are missing.");
+			return;
 		}
 
 		chain.doFilter(request, res);
