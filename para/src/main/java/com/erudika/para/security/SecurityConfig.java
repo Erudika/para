@@ -102,6 +102,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		String[] defroles = {"USER", "MOD", "ADMIN"};
 		Map<String, String> confMap = Config.getConfigMap();
 		ConfigObject c = Config.getConfig().getObject("security.protected");
+		boolean enableRestFilter = c.containsKey("api");
 
 		for (ConfigValue cv : c.values()) {
 			ArrayList<String> patterns = new ArrayList<String>();
@@ -176,12 +177,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		facebookFilter.setAuthenticationFailureHandler(failureHandler);
 		facebookFilter.setRememberMeServices(tbrms);
 
-		RestAuthFilter restFilter = new RestAuthFilter(new Signer());
-
-		http.addFilterAfter(restFilter, BasicAuthenticationFilter.class);
 		http.addFilterAfter(passwordFilter, BasicAuthenticationFilter.class);
 		http.addFilterAfter(openidFilter, BasicAuthenticationFilter.class);
 		http.addFilterAfter(facebookFilter, BasicAuthenticationFilter.class);
+
+		if (enableRestFilter) {
+			RestAuthFilter restFilter = new RestAuthFilter(new Signer());
+			http.addFilterAfter(restFilter, BasicAuthenticationFilter.class);
+		}
 	}
 
 }

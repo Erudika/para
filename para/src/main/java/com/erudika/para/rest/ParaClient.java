@@ -138,11 +138,11 @@ public final class ParaClient {
 			if (res.getStatus() == Response.Status.OK.getStatusCode()
 					|| res.getStatus() == Response.Status.CREATED.getStatusCode()
 					|| res.getStatus() == Response.Status.NOT_MODIFIED.getStatusCode()) {
-					return res.readEntity((Class<T>) type);
+					return res.hasEntity() ? res.readEntity((Class<T>) type) : null;
 			} else if (res.getStatus() != Response.Status.NOT_FOUND.getStatusCode()
 					&& res.getStatus() != Response.Status.NOT_MODIFIED.getStatusCode()
 					&& res.getStatus() != Response.Status.NO_CONTENT.getStatusCode()) {
-				Map<String, Object> error = res.readEntity(Map.class);
+				Map<String, Object> error = res.hasEntity() ? res.readEntity(Map.class) : null;
 				if (error != null && error.containsKey("code")) {
 					String msg = error.containsKey("message") ? (String) error.get("message") : "error";
 					msg = msg.concat(" ").concat(Integer.toString((int) error.get("code")));

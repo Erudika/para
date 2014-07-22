@@ -305,6 +305,7 @@ public class Para extends SpringBootServletInitializer {
 		sc.getSessionCookieConfig().setName("sess");
 		sc.getSessionCookieConfig().setMaxAge(1);
 		sc.getSessionCookieConfig().setHttpOnly(true);
+		sc.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
 
 		EventListener el = getContextListener();
 		if (el != null) {

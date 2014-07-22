@@ -415,9 +415,9 @@ public class ParaClientIT {
 		assertFalse(id1.isEmpty());
 		assertNotEquals(id1, id2);
 
-		final Long t = pc.getTimestamp();
-		assertNotNull(t);
-		assertNotEquals(0, t.intValue());
+		final Long ts = pc.getTimestamp();
+		assertNotNull(ts);
+		assertNotEquals(0, ts.intValue());
 
 		String date1 = pc.formatDate("MM dd yyyy", Locale.US);
 		String date2 = Utils.formatDate("MM dd yyyy", Locale.US);
