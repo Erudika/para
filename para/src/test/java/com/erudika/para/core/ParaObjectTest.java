@@ -31,17 +31,13 @@ import static org.mockito.Mockito.*;
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class PObjectTest {
+public class ParaObjectTest {
 
 	@Test
 	public void testGetType() {
 		Tag tag = new Tag();
-		PObject p = new PObject() { };
 		assertNotNull(tag.getType());
-		assertNotNull(p.getType());
-		assertEquals("", p.getType());
 		assertEquals("tag", tag.getType());
-		assertEquals("", p.getType());
 	}
 
 	@Test
@@ -128,28 +124,26 @@ public class PObjectTest {
 		List<String> cleanTags = new ArrayList<String>();
 		cleanTags.add("one");
 		cleanTags.add("two");
-		u1.setTags(someTags);
+		u1.setTags(CoreUtils.addTags(u1.getTags(), someTags.toArray(new String[]{})));
 		assertFalse(u1.getTags().contains(""));
 		assertFalse(u1.getTags().contains(" "));
 		assertFalse(u1.getTags().contains(null));
 		assertEquals(cleanTags, u1.getTags());
-		u1.addTags();
-		u1.addTags(null, null, null);
-		u1.addTags("two", "two", "two");
+		u1.setTags(CoreUtils.addTags(u1.getTags(), "two", "two", null));
 		assertEquals(cleanTags, u1.getTags());
-		u1.addTags("three", "four", "five");
+		u1.setTags(CoreUtils.addTags(u1.getTags(), "three", "four", "five"));
 		assertEquals(5, u1.getTags().size());
 
-		u1.removeTags("two", "four");
+		u1.setTags(CoreUtils.removeTags(u1.getTags(), "two", "four"));
 		assertEquals(3, u1.getTags().size());
 		assertFalse(u1.getTags().contains("two"));
 		assertFalse(u1.getTags().contains("four"));
 
-		u1.addTags("one", "five");
+		u1.setTags(CoreUtils.addTags(u1.getTags(), "one", "five"));
 		assertEquals(3, u1.getTags().size());
-		u1.removeTags("two");
+		u1.setTags(CoreUtils.removeTags(u1.getTags(), "two"));
 		assertEquals(3, u1.getTags().size());
-		u1.removeTags(null, null);
+		u1.setTags(CoreUtils.removeTags(u1.getTags(), null, null));
 
 		u1.setTags(null);
 		assertNull(u1.getTags());

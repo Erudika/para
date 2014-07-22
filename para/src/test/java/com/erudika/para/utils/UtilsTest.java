@@ -18,7 +18,7 @@
 package com.erudika.para.utils;
 
 import com.erudika.para.annotations.Locked;
-import com.erudika.para.core.PObject;
+import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
@@ -460,7 +460,7 @@ public class UtilsTest {
 		assertTrue(isBasicType(Integer.class));
 		assertTrue(isBasicType(Long.class));
 		assertFalse(isBasicType(Object.class));
-		assertFalse(isBasicType(PObject.class));
+		assertFalse(isBasicType(ParaObject.class));
 		// etc.
 	}
 

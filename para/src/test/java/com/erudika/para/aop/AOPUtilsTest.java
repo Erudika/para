@@ -17,7 +17,7 @@
  */
 package com.erudika.para.aop;
 
-import com.erudika.para.core.PObject;
+import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
@@ -57,7 +57,7 @@ public class AOPUtilsTest {
 		list1.add(tag1);
 		list1.add(tag2);
 		list1.add(tag3);
-		List<PObject> list2 = new ArrayList<PObject>();
+		List<ParaObject> list2 = new ArrayList<ParaObject>();
 		list2.add(new Tag("tagzz1"));
 		list2.add(new Tag("tagzz2"));
 		list2.add(new Tag("tagzz3"));

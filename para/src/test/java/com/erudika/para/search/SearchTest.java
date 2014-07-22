@@ -18,6 +18,7 @@
 package com.erudika.para.search;
 
 import com.erudika.para.core.Address;
+import com.erudika.para.core.CoreUtils;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
@@ -63,7 +64,7 @@ public abstract class SearchTest {
 		u.setIdentifier(u.getEmail());
 		u.setTimestamp(Utils.timestamp());
 		u.setPassword("123456");
-		u.addTags("one", "two", "three");
+		u.setTags(CoreUtils.addTags(u.getTags(), "one", "two", "three"));
 
 		u1 = new User("222");
 		u1.setSearch(s);
@@ -73,7 +74,7 @@ public abstract class SearchTest {
 		u1.setIdentifier(u1.getEmail());
 		u1.setTimestamp(Utils.timestamp());
 		u1.setPassword("123456");
-		u1.addTags("two", "four", "three");
+		u1.setTags(CoreUtils.addTags(u1.getTags(), "two", "four", "three"));
 
 		u2 = new User("333");
 		u2.setSearch(s);
@@ -83,7 +84,7 @@ public abstract class SearchTest {
 		u2.setIdentifier(u2.getEmail());
 		u2.setTimestamp(Utils.timestamp());
 		u2.setPassword("123456");
-		u2.addTags("four", "five", "three");
+		u2.setTags(CoreUtils.addTags(u2.getTags(), "four", "five", "three"));
 
 		t = new Tag("test");
 		t.setSearch(s);

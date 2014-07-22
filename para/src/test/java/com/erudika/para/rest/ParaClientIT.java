@@ -20,6 +20,7 @@ package com.erudika.para.rest;
 import com.erudika.para.Para;
 import com.erudika.para.core.Address;
 import com.erudika.para.core.App;
+import com.erudika.para.core.CoreUtils;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
@@ -82,17 +83,17 @@ public class ParaClientIT {
 		u = new Sysprop("111");
 		u.setName("John Doe");
 		u.setTimestamp(Utils.timestamp());
-		u.addTags("one", "two", "three");
+		u.setTags(CoreUtils.addTags(u.getTags(), "one", "two", "three"));
 
 		u1 = new Sysprop("222");
 		u1.setName("Joe Black");
 		u1.setTimestamp(Utils.timestamp());
-		u1.addTags("two", "four", "three");
+		u1.setTags(CoreUtils.addTags(u1.getTags(), "two", "four", "three"));
 
 		u2 = new Sysprop("333");
 		u2.setName("Ann Smith");
 		u2.setTimestamp(Utils.timestamp());
-		u2.addTags("four", "five", "three");
+		u2.setTags(CoreUtils.addTags(u2.getTags(), "four", "five", "three"));
 
 		t = new Tag("test");
 		t.setCount(3);

@@ -113,7 +113,7 @@ Here's the Maven snippet to include in your `pom.xml`:
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para</artifactId>
-  <version>1.6.1</version>
+  <version>1.7.0</version>
 </dependency>
 ```
 
