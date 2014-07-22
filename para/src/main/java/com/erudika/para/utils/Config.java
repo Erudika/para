@@ -193,9 +193,9 @@ public final class Config {
 	 */
 	public static final boolean SEARCH_ENABLED = Boolean.parseBoolean(getConfigParam("search_enabled", "true"));
 	/**
-	 * Enable REST API. Default: true
+	 * Enable the RESTful API. Default: true
 	 */
-	public static final boolean REST_ENABLED = Boolean.parseBoolean(getConfigParam("rest_enabled", "true"));
+	public static final boolean API_ENABLED = Boolean.parseBoolean(getConfigParam("api_enabled", "true"));
 	/**
 	 * Read objects from index, not the data store. This WILL override the cache.
 	 */

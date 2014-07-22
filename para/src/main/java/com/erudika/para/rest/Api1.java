@@ -75,7 +75,7 @@ public final class Api1 extends ResourceConfig {
 		dao = Para.getDAO()	;
 		search = Para.getSearch();
 
-		if (!Config.REST_ENABLED) {
+		if (!Config.API_ENABLED) {
 			return;
 		}
 
@@ -111,6 +111,22 @@ public final class Api1 extends ResourceConfig {
 		Resource.Builder utilsRes = Resource.builder("utils/{method}");
 		utilsRes.addMethod(GET).produces(JSON).handledBy(utilsHandler());
 		registerResources(utilsRes.build());
+
+		// register custom resources
+		for (CustomResourceHandler handler : Para.getCustomResourceHandlers()) {
+			Resource.Builder custom = Resource.builder(handler.getRelativePath());
+			Inflector<ContainerRequestContext, Response> inf = new Inflector<ContainerRequestContext, Response>() {
+				public Response apply(ContainerRequestContext ctx) {
+					return handler.handle(ctx);
+				}
+			};
+			// todo: allow handlers to specify which methods are allowed
+			custom.addMethod(GET).produces(JSON).handledBy(inf);
+			custom.addMethod(POST).produces(JSON).handledBy(inf);
+			custom.addMethod(PUT).produces(JSON).handledBy(inf);
+			custom.addMethod(DELETE).produces(JSON).handledBy(inf);
+			registerResources(custom.build());
+		}
 	}
 
 	private void registerCrudApi(String path, Inflector<ContainerRequestContext, Response> handler,
@@ -135,7 +151,7 @@ public final class Api1 extends ResourceConfig {
 		batch.addMethod(POST).produces(JSON).consumes(JSON).handledBy(batchCreateHandler());
 		batch.addMethod(GET).produces(JSON).handledBy(batchReadHandler());
 		batch.addMethod(PUT).produces(JSON).consumes(JSON).handledBy(batchUpdateHandler());
-		batch.addMethod(DELETE).produces(JSON).consumes(JSON).handledBy(batchDeleteHandler());
+		batch.addMethod(DELETE).produces(JSON).handledBy(batchDeleteHandler());
 
 		registerResources(core.build());
 		registerResources(batch.build());

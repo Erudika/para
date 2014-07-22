@@ -26,6 +26,7 @@ import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.PersistenceModule;
 import com.erudika.para.queue.QueueModule;
 import com.erudika.para.rest.Api1;
+import com.erudika.para.rest.CustomResourceHandler;
 import com.erudika.para.search.Search;
 import com.erudika.para.search.SearchModule;
 import com.erudika.para.storage.StorageModule;
@@ -231,6 +232,23 @@ public class Para extends SpringBootServletInitializer {
 		return null;
 	}
 
+	/**
+	 * Try loading external {@link com.erudika.para.rest.CustomResourceHandler} classes.
+	 * These will handle custom API requests.
+	 * via {@link java.util.ServiceLoader#load(java.lang.Class)}.
+	 * @return a loaded list of  ServletContextListener class.
+	 */
+	public static List<CustomResourceHandler> getCustomResourceHandlers() {
+		ServiceLoader<CustomResourceHandler> loader = ServiceLoader.load(CustomResourceHandler.class);
+		List<CustomResourceHandler> externalResources = new ArrayList<CustomResourceHandler>();
+		for (CustomResourceHandler handler : loader) {
+			if (handler != null) {
+				externalResources.add(handler);
+			}
+		}
+		return externalResources;
+	}
+
 	private static List<Module> getCoreModules() {
 		List<Module> coreModules = new ArrayList<Module>();
 		coreModules.add(new AOPModule());
@@ -307,6 +325,8 @@ public class Para extends SpringBootServletInitializer {
 		sc.getSessionCookieConfig().setHttpOnly(true);
 		sc.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
 
+		// adding a ServletContextListener here doesn't work with Jetty
+		// add it the to the web.xml config instead
 		EventListener el = getContextListener();
 		if (el != null) {
 			sc.addListener(el);

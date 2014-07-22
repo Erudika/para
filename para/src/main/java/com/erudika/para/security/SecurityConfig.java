@@ -99,27 +99,32 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	 */
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-		String[] defroles = {"USER", "MOD", "ADMIN"};
+		String[] defRoles = {"USER", "MOD", "ADMIN"};
 		Map<String, String> confMap = Config.getConfigMap();
 		ConfigObject c = Config.getConfig().getObject("security.protected");
-		boolean enableRestFilter = c.containsKey("api");
+		ConfigValue apiSec = Config.getConfig().getValue("security.api");
+		boolean enableRestFilter = apiSec != null && "enabled".equals(apiSec.toString());
 
-		for (ConfigValue cv : c.values()) {
+		for (String key : c.keySet()) {
+			ConfigValue cv = c.get(key);
 			ArrayList<String> patterns = new ArrayList<String>();
 			ArrayList<String> roles = new ArrayList<String>();
 
-			for (ConfigValue configValue : (ConfigList) cv) {
-				if (configValue instanceof List) {
-					for (ConfigValue role : (ConfigList) configValue) {
-						roles.add(((String) role.unwrapped()).toUpperCase());
+			// if API security is disabled don't add any API related patterns
+			// to the list of protected resources
+			if (!"api".equals(key) || enableRestFilter) {
+				for (ConfigValue configValue : (ConfigList) cv) {
+					if (configValue instanceof List) {
+						for (ConfigValue role : (ConfigList) configValue) {
+							roles.add(((String) role.unwrapped()).toUpperCase());
+						}
+					} else {
+						patterns.add((String) configValue.unwrapped());
 					}
-				} else {
-					patterns.add((String) configValue.unwrapped());
 				}
+				String[] rolz = (roles.isEmpty()) ? defRoles : roles.toArray(new String[0]);
+				http.authorizeRequests().antMatchers(patterns.toArray(new String[0])).hasAnyRole(rolz);
 			}
-
-			String[] rolz = (roles.isEmpty()) ? defroles : roles.toArray(new String[0]);
-			http.authorizeRequests().antMatchers(patterns.toArray(new String[0])).hasAnyRole(rolz);
 		}
 
 		CachedCsrfTokenRepository str = new CachedCsrfTokenRepository();

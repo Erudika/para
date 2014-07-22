@@ -15,28 +15,29 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
+
 package com.erudika.para.rest;
 
-import com.erudika.para.utils.Utils;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.Provider;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.Response;
 
 /**
- * Provides a pre-configured {@code ObjectMapper} instance to {@code JacksonJsonProvider}.
+ * A custom API resource handler. Handles custom resources.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@Provider
-public class ObjectMapperProvider implements ContextResolver<ObjectMapper> {
+public interface CustomResourceHandler {
 
 	/**
-	 * Returns the JSON mapper
-	 * @param type --- (not used)
-	 * @return the default JSON mapper
+	 * The relative path of the custom resource.
+	 * @return any string (Jersey path parameters are allowed)
 	 */
-	@Override
-	public ObjectMapper getContext(Class<?> type) {
-		return Utils.getJsonMapper();
-	}
+	String getRelativePath();
+
+	/**
+	 * This method is called when a custom resource needs to be handled.
+	 * @param ctx the context object - contains all the details of the request and context
+	 * @return a response
+	 */
+	Response handle(ContainerRequestContext ctx);
 
 }
