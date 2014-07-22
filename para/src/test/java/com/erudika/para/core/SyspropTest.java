@@ -24,7 +24,7 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 
 /**
- * 
+ *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class SyspropTest {
@@ -70,7 +70,7 @@ public class SyspropTest {
 		assertEquals(s.getProperty("test2"), s1.getProperty("test2"));
 		assertEquals(s.getProperty("test1"), s1.getProperty("test1"));
 		assertFalse((Boolean) s1.getProperty("test4"));
-		assertTrue((int) s1.getProperty("test5") == 42);
+		assertTrue((Integer) s1.getProperty("test5") == 42);
 	}
 
 }

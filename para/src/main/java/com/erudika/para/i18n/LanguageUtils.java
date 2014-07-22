@@ -335,9 +335,9 @@ public class LanguageUtils {
 		Sysprop progress = getProgressMap(appid);
 
 		if (value == PLUS) {
-			approved = Math.round((int) progress.getProperty(langCode) * (defsize / 100) + 1);
+			approved = Math.round((Integer) progress.getProperty(langCode) * (defsize / 100) + 1);
 		} else if (value == MINUS) {
-			approved = Math.round((int) progress.getProperty(langCode) * (defsize / 100) - 1);
+			approved = Math.round((Integer) progress.getProperty(langCode) * (defsize / 100) - 1);
 		}
 
 		if (approved > defsize) {

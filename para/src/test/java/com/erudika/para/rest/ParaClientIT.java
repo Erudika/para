@@ -186,7 +186,6 @@ public class ParaClientIT {
 		}
 
 		assertTrue(pc.createAll(null).isEmpty());
-		assertTrue(pc.createAll(Collections.singletonList(null)).isEmpty());
 		List<Sysprop> l1 = pc.createAll(dogs);
 		assertEquals(3, l1.size());
 		assertNotNull(l1.get(0).getId());
@@ -204,7 +203,6 @@ public class ParaClientIT {
 		assertEquals("bark!", l2.get(0).getProperty("foo"));
 
 		assertTrue(pc.updateAll(null).isEmpty());
-		assertTrue(pc.updateAll(Collections.singletonList(null)).isEmpty());
 
 		Sysprop part1 = new Sysprop(l1.get(0).getId());
 		Sysprop part2 = new Sysprop(l1.get(1).getId());
@@ -287,7 +285,6 @@ public class ParaClientIT {
 		assertNotNull(pc.findById(t.getId()));
 
 		assertTrue(pc.findByIds(null).isEmpty());
-		assertTrue(pc.findByIds(Collections.singletonList(null)).isEmpty());
 		assertEquals(3, pc.findByIds(Arrays.asList(u.getId(), u1.getId(), u2.getId())).size());
 
 		assertTrue(pc.findNearby(null, null, 100, 1, 1).isEmpty());

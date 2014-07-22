@@ -113,7 +113,7 @@ public final class Api1 extends ResourceConfig {
 		registerResources(utilsRes.build());
 
 		// register custom resources
-		for (CustomResourceHandler handler : Para.getCustomResourceHandlers()) {
+		for (final CustomResourceHandler handler : Para.getCustomResourceHandlers()) {
 			Resource.Builder custom = Resource.builder(handler.getRelativePath());
 			Inflector<ContainerRequestContext, Response> inf = new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {

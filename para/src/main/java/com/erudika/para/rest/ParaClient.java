@@ -145,8 +145,8 @@ public final class ParaClient {
 				Map<String, Object> error = res.hasEntity() ? res.readEntity(Map.class) : null;
 				if (error != null && error.containsKey("code")) {
 					String msg = error.containsKey("message") ? (String) error.get("message") : "error";
-					msg = msg.concat(" ").concat(Integer.toString((int) error.get("code")));
-					throw new WebApplicationException(msg, (int) error.get("code"));
+					msg = msg.concat(" ").concat(Integer.toString((Integer) error.get("code")));
+					throw new WebApplicationException(msg, (Integer) error.get("code"));
 				}
 			}
 		}
@@ -270,7 +270,7 @@ public final class ParaClient {
 	private <P extends ParaObject> List<P> getItems(Map<String, Object> result, Pager... pager) {
 		if (result != null && !result.isEmpty() && result.containsKey("items")) {
 			if (pager != null && pager.length > 0 && pager[0] != null && result.containsKey("totalHits")) {
-				pager[0].setCount(Integer.valueOf((int) result.get("totalHits")).longValue());
+				pager[0].setCount(((Integer) result.get("totalHits")).longValue());
 			}
 			return (List<P>) getItemsFromList((List<?>) result.get("items"));
 		}
@@ -343,7 +343,7 @@ public final class ParaClient {
 		if (objects == null || objects.isEmpty() || objects.get(0) == null) {
 			return Collections.emptyList();
 		}
-		return getItemsFromList(getEntity(invokePost("_batch", Entity.json(objects)), List.class));
+		return getItemsFromList((List<?>) getEntity(invokePost("_batch", Entity.json(objects)), List.class));
 	}
 
 	/**
@@ -358,7 +358,7 @@ public final class ParaClient {
 		}
 		MultivaluedMap<String, String> ids = new MultivaluedHashMap<String, String>();
 		ids.put("ids", keys);
-		return getItemsFromList(getEntity(invokeGet("_batch", ids), List.class));
+		return getItemsFromList((List<?>) getEntity(invokeGet("_batch", ids), List.class));
 	}
 
 	/**
@@ -371,7 +371,7 @@ public final class ParaClient {
 		if (objects == null || objects.isEmpty()) {
 			return Collections.emptyList();
 		}
-		return getItemsFromList(getEntity(invokePut("_batch", Entity.json(objects)), List.class));
+		return getItemsFromList((List<?>) getEntity(invokePut("_batch", Entity.json(objects)), List.class));
 	}
 
 	/**
@@ -396,11 +396,12 @@ public final class ParaClient {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects
 	 */
+	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> list(String type, Pager... pager) {
 		if (type == null) {
 			return Collections.emptyList();
 		}
-		return getItems(getEntity(invokeGet(type, pagerToParams(pager)), Map.class), pager);
+		return getItems((Map<String, Object>) getEntity(invokeGet(type, pagerToParams(pager)), Map.class), pager);
 	}
 
 	/////////////////////////////////////////////
@@ -672,6 +673,7 @@ public final class ParaClient {
 	 * @param obj the object to execute this method on
 	 * @return the number of links for the given object
 	 */
+	@SuppressWarnings("unchecked")
 	public Long countLinks(ParaObject obj, String type2) {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return 0L;
@@ -680,7 +682,7 @@ public final class ParaClient {
 		params.putSingle("count", "true");
 		Pager pager = new Pager();
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
-		getItems(getEntity(invokeGet(url, params), Map.class), pager);
+		getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
 		return pager.getCount();
 	}
 
@@ -692,13 +694,14 @@ public final class ParaClient {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of linked objects
 	 */
+	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> getLinkedObjects(ParaObject obj, String type2, Pager... pager) {
 		ArrayList<P> list = new ArrayList<P>();
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return list;
 		}
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
-		return getItems(getEntity(invokeGet(url, null), Map.class), pager);
+		return getItems((Map<String, Object>) getEntity(invokeGet(url, null), Map.class), pager);
 	}
 
 	/**
@@ -780,6 +783,7 @@ public final class ParaClient {
 	 * @param obj the object to execute this method on
 	 * @return the number of links
 	 */
+	@SuppressWarnings("unchecked")
 	public Long countChildren(ParaObject obj, String type2) {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return 0L;
@@ -789,7 +793,7 @@ public final class ParaClient {
 		params.putSingle("childrenonly", "true");
 		Pager pager = new Pager();
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
-		getItems(getEntity(invokeGet(url, params), Map.class), pager);
+		getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
 		return pager.getCount();
 	}
 
@@ -801,6 +805,7 @@ public final class ParaClient {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
+	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, Pager... pager) {
 		ArrayList<P> list = new ArrayList<P>();
 		if (obj == null || obj.getId() == null || type2 == null) {
@@ -809,7 +814,7 @@ public final class ParaClient {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
 		params.putSingle("childrenonly", "true");
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
-		return getItems(getEntity(invokeGet(url, params), Map.class), pager);
+		return getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
 	}
 
 	/**
@@ -822,6 +827,7 @@ public final class ParaClient {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
+	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, String field, String term,
 			Pager... pager) {
 		ArrayList<P> list = new ArrayList<P>();
@@ -833,7 +839,7 @@ public final class ParaClient {
 		params.putSingle("field", field);
 		params.putSingle("term", term);
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
-		return getItems(getEntity(invokeGet(url, params), Map.class), pager);
+		return getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
 	}
 
 	/**

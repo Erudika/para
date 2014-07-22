@@ -385,8 +385,8 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	@SuppressWarnings("unchecked")
-	public static Response getBatchCreateResponse(App app, InputStream is) {
-		ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
+	public static Response getBatchCreateResponse(final App app, InputStream is) {
+		final ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
 		try {
 			if (is != null && is.available() > 0) {
 				if (is.available() > (1024 * 1024)) {

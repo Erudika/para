@@ -160,6 +160,7 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> findByIds(String appid, List<String> ids) {
 		List<P> list = new ArrayList<P>();
 		if (ids == null || ids.isEmpty()) {
@@ -177,7 +178,7 @@ public class ElasticSearch implements Search {
 			for (MultiGetItemResponse multiGetItemResponse : response.getResponses()) {
 				GetResponse res = multiGetItemResponse.getResponse();
 				if (res.isExists() && !res.isSourceEmpty()) {
-					list.add(Utils.setAnnotatedFields(res.getSource()));
+					list.add((P) Utils.setAnnotatedFields(res.getSource()));
 				}
 			}
 		} catch (Exception e) {
