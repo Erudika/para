@@ -45,7 +45,6 @@ import java.security.SecureRandom;
 import java.text.DateFormatSymbols;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -69,6 +68,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -391,7 +391,19 @@ public final class Utils {
 		if (str == null) {
 			return "";
 		}
-		return new String(Base64.getEncoder().encode(str));
+		return new String(Base64.encodeBase64(str));
+	}
+
+	/**
+	 * Encodes a byte array to Base64. URL safe.
+	 * @param str the byte array
+	 * @return an encoded string
+	 */
+	public static String base64encURL(byte[] str) {
+		if (str == null) {
+			return "";
+		}
+		return new String(Base64.encodeBase64URLSafe(str));
 	}
 
 	/**
@@ -404,7 +416,7 @@ public final class Utils {
 			return "";
 		}
 		try {
-			return new String(Base64.getDecoder().decode(str), Config.DEFAULT_ENCODING);
+			return new String(Base64.decodeBase64(str), Config.DEFAULT_ENCODING);
 		} catch (UnsupportedEncodingException ex) {
 			return "";
 		}

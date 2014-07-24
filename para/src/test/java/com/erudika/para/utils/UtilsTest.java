@@ -19,7 +19,6 @@ package com.erudika.para.utils;
 
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
@@ -161,6 +160,7 @@ public class UtilsTest {
 		assertNotNull(base64enc(null));
 		assertNotNull(base64enc(new byte[0]));
 		assertEquals("dGVzdDEyMyBzdHJpbmc=", base64enc("test123 string".getBytes()));
+		assertEquals("dGVzdDEyMyBzdHJpbmc", base64encURL("test123 string".getBytes()));
 		assertEquals("ICAg", base64enc("   ".getBytes()));
 		assertEquals("MTIz", base64enc(base64dec("MTIz").getBytes()));
 	}
