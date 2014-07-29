@@ -18,9 +18,9 @@
 package com.erudika.para.security;
 
 import com.erudika.para.core.User;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -57,12 +57,10 @@ public final class SecurityUtils {
 	 * @param res HTTP response
 	 */
 	public static void clearSession(HttpServletRequest req, HttpServletResponse res) {
-//		Utils.removeStateParam(Config.AUTH_COOKIE, req, res);
-		try {
-			SecurityContextHolder.clearContext();
-			req.logout();
-		} catch (ServletException ex) {
-			logger.warn(null, ex);
+		SecurityContextHolder.clearContext();
+		HttpSession session = req.getSession(false);
+		if (session != null) {
+			session.invalidate();
 		}
 	}
 }

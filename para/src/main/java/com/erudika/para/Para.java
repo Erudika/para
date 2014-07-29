@@ -31,6 +31,8 @@ import com.erudika.para.search.Search;
 import com.erudika.para.search.SearchModule;
 import com.erudika.para.storage.StorageModule;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.filters.CachingHttpHeadersFilter;
+import com.erudika.para.utils.filters.GZipServletFilter;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
@@ -46,12 +48,14 @@ import javax.annotation.PreDestroy;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
+import org.ebaysf.web.cors.CORSFilter;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.boot.context.embedded.ServletRegistrationBean;
 import org.springframework.boot.context.web.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
@@ -284,6 +288,38 @@ public class Para extends SpringBootServletInitializer {
 				new ServletContainer(new Api1()), Api1.PATH + "*");
 		reg.setName(Api1.class.getSimpleName());
 		return reg;
+	}
+
+	@Bean
+	public FilterRegistrationBean gzipFilterRegistrationBean() {
+		FilterRegistrationBean frb = new FilterRegistrationBean(new GZipServletFilter());
+		frb.addUrlPatterns("*.css", "*.json", "*.html", "*.js", Api1.PATH + "*");
+		frb.setAsyncSupported(true);
+		frb.setEnabled(Config.GZIP_ENABLED);
+		return frb;
+	}
+
+	@Bean
+	public FilterRegistrationBean cachingFilterRegistrationBean() {
+		FilterRegistrationBean frb = new FilterRegistrationBean(new CachingHttpHeadersFilter());
+		frb.addUrlPatterns("/images/*", "/scripts/*", "/styles/*");
+		frb.setAsyncSupported(true);
+		frb.setEnabled(Config.IN_PRODUCTION);
+		return frb;
+	}
+
+	@Bean
+	public FilterRegistrationBean corsFilterRegistrationBean() {
+		FilterRegistrationBean frb = new FilterRegistrationBean(new CORSFilter());
+		frb.addUrlPatterns(Api1.PATH + "*");
+		frb.addInitParameter("cors.allowed.methods", "GET,POST,PUT,DELETE,HEAD,OPTIONS");
+		frb.addInitParameter("cors.exposed.headers", "Cache-Control,Content-Length,Content-Type,Date,ETag,Expires");
+		frb.addInitParameter("cors.allowed.headers", "Origin,Accept,X-Requested-With,Content-Type,"
+				+ "Access-Control-Request-Method,Access-Control-Request-Headers,X-Amz-Credential,"
+				+ "X-Amz-Date,Authorization");
+		frb.setAsyncSupported(true);
+		frb.setEnabled(Config.CORS_ENABLED);
+		return frb;
 	}
 
 	/**

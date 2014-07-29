@@ -197,6 +197,14 @@ public final class Config {
 	 */
 	public static final boolean API_ENABLED = Boolean.parseBoolean(getConfigParam("api_enabled", "true"));
 	/**
+	 * Enable the CORS filter for API requests. Default: true
+	 */
+	public static final boolean CORS_ENABLED = Boolean.parseBoolean(getConfigParam("cors_enabled", "true"));
+	/**
+	 * Enable the GZIP filter for API requests. Default: true
+	 */
+	public static final boolean GZIP_ENABLED = Boolean.parseBoolean(getConfigParam("gzip_enabled", "true"));
+	/**
 	 * Read objects from index, not the data store. This WILL override the cache.
 	 */
 	public static final boolean READ_FROM_INDEX = Boolean.parseBoolean(getConfigParam("read_from_index", "true"));

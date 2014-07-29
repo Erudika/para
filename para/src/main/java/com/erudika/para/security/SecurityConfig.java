@@ -103,7 +103,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		Map<String, String> confMap = Config.getConfigMap();
 		ConfigObject c = Config.getConfig().getObject("security.protected");
 		ConfigValue apiSec = Config.getConfig().getValue("security.api");
-		boolean enableRestFilter = apiSec != null && "enabled".equals(apiSec.toString());
+		boolean enableRestFilter = apiSec != null && "enabled".equals(apiSec.unwrapped());
 
 		for (String key : c.keySet()) {
 			ConfigValue cv = c.get(key);

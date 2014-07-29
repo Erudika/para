@@ -259,6 +259,11 @@
 			<artifactId>geonames-ws-client</artifactId>
 			<version>1.1.9</version>
 		</dependency>
+		<dependency>
+			<groupId>org.ebaysf.web</groupId>
+			<artifactId>cors-filter</artifactId>
+			<version>1.0.1</version>
+		</dependency>
 
 		<!-- TESTING -->
 		<dependency>
