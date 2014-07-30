@@ -17,6 +17,7 @@
  */
 package com.erudika.para.utils.filters;
 
+import javax.servlet.ServletException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,12 +120,11 @@ public final class GZipResponseUtil {
 	 * {@link javax.servlet.RequestDispatcher#include(javax.servlet.ServletRequest, javax.servlet.ServletResponse)}
 	 * method and the set header is ignored.
 	 */
-	public static void addGzipHeader(final HttpServletResponse response) throws GzipResponseHeadersNotModifiableException {
+	public static void addGzipHeader(final HttpServletResponse response) throws ServletException {
 		response.setHeader("Content-Encoding", "gzip");
 		boolean containsEncoding = response.containsHeader("Content-Encoding");
 		if (!containsEncoding) {
-			throw new GzipResponseHeadersNotModifiableException("Failure when attempting to set "
-					+ "Content-Encoding: gzip");
+			throw new ServletException("Failure when attempting to set Content-Encoding: gzip");
 		}
 	}
 }

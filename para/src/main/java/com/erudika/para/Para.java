@@ -31,7 +31,6 @@ import com.erudika.para.search.Search;
 import com.erudika.para.search.SearchModule;
 import com.erudika.para.storage.StorageModule;
 import com.erudika.para.utils.Config;
-import com.erudika.para.utils.filters.CachingHttpHeadersFilter;
 import com.erudika.para.utils.filters.GZipServletFilter;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -247,6 +246,7 @@ public class Para extends SpringBootServletInitializer {
 		List<CustomResourceHandler> externalResources = new ArrayList<CustomResourceHandler>();
 		for (CustomResourceHandler handler : loader) {
 			if (handler != null) {
+				injectInto(handler);
 				externalResources.add(handler);
 			}
 		}
@@ -296,15 +296,6 @@ public class Para extends SpringBootServletInitializer {
 		frb.addUrlPatterns("*.css", "*.json", "*.html", "*.js", Api1.PATH + "*");
 		frb.setAsyncSupported(true);
 		frb.setEnabled(Config.GZIP_ENABLED);
-		return frb;
-	}
-
-	@Bean
-	public FilterRegistrationBean cachingFilterRegistrationBean() {
-		FilterRegistrationBean frb = new FilterRegistrationBean(new CachingHttpHeadersFilter());
-		frb.addUrlPatterns("/images/*", "/scripts/*", "/styles/*");
-		frb.setAsyncSupported(true);
-		frb.setEnabled(Config.IN_PRODUCTION);
 		return frb;
 	}
 

@@ -22,6 +22,7 @@ import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -128,8 +129,10 @@ public class ParaObjectTest {
 		assertFalse(u1.getTags().contains(""));
 		assertFalse(u1.getTags().contains(" "));
 		assertFalse(u1.getTags().contains(null));
+		Collections.sort(u1.getTags());
 		assertEquals(cleanTags, u1.getTags());
 		u1.setTags(CoreUtils.addTags(u1.getTags(), "two", "two", null));
+		Collections.sort(u1.getTags());
 		assertEquals(cleanTags, u1.getTags());
 		u1.setTags(CoreUtils.addTags(u1.getTags(), "three", "four", "five"));
 		assertEquals(5, u1.getTags().size());

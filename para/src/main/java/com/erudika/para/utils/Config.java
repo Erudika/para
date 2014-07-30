@@ -245,8 +245,27 @@ public final class Config {
 	}
 
 	/**
+	 * Returns the unwrapped value of a configuration parameter or its default value.
+	 * @param key the param key
+	 * @param defaultValue the default param value
+	 * @param <V> the type of value to return
+	 * @return the value of a param
+	 */
+	@SuppressWarnings("unchecked")
+	public static <V> V getConfigParamUnwrapped(String key, V defaultValue) {
+		if (config == null) {
+			init(null);
+		}
+		if (StringUtils.isBlank(key)) {
+			return defaultValue;
+		}
+		ConfigValue raw = config.hasPath(key) ? config.getValue(key) : null;
+		return (V) ((raw != null) ? raw.unwrapped() : defaultValue);
+	}
+
+	/**
 	 * Returns the value of a configuration parameter or its default value.
-	 * System.setProperty has precedence.
+	 * {@link System#getProperty(java.lang.String)} has precedence.
 	 * @param key the param key
 	 * @param defaultValue the default param value
 	 * @return the value of a param

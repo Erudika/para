@@ -33,10 +33,10 @@ import java.util.concurrent.TimeUnit;
 public class CachingHttpHeadersFilter implements Filter {
 
 	// Cache period is 1 month (in ms)
-	private final static long CACHE_PERIOD = TimeUnit.DAYS.toMillis(31L);
+	private static final long CACHE_PERIOD = TimeUnit.DAYS.toMillis(31L);
 
 	// We consider the last modified date is the start up time of the server
-	private final static long LAST_MODIFIED = System.currentTimeMillis();
+	private static final long LAST_MODIFIED = System.currentTimeMillis();
 
 	@Override
 	public void init(FilterConfig filterConfig) throws ServletException {
