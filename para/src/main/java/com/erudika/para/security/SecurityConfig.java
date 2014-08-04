@@ -182,9 +182,23 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		facebookFilter.setAuthenticationFailureHandler(failureHandler);
 		facebookFilter.setRememberMeServices(tbrms);
 
+		GoogleAuthFilter googleFilter = new GoogleAuthFilter("/" + GoogleAuthFilter.GOOGLE_ACTION);
+		googleFilter.setAuthenticationManager(authenticationManager());
+		googleFilter.setAuthenticationSuccessHandler(successHandler);
+		googleFilter.setAuthenticationFailureHandler(failureHandler);
+		googleFilter.setRememberMeServices(tbrms);
+
+		LinkedInAuthFilter linkedinFilter = new LinkedInAuthFilter("/" + LinkedInAuthFilter.LINKEDIN_ACTION);
+		linkedinFilter.setAuthenticationManager(authenticationManager());
+		linkedinFilter.setAuthenticationSuccessHandler(successHandler);
+		linkedinFilter.setAuthenticationFailureHandler(failureHandler);
+		linkedinFilter.setRememberMeServices(tbrms);
+
 		http.addFilterAfter(passwordFilter, BasicAuthenticationFilter.class);
 		http.addFilterAfter(openidFilter, BasicAuthenticationFilter.class);
 		http.addFilterAfter(facebookFilter, BasicAuthenticationFilter.class);
+		http.addFilterAfter(googleFilter, BasicAuthenticationFilter.class);
+		http.addFilterAfter(linkedinFilter, BasicAuthenticationFilter.class);
 
 		if (enableRestFilter) {
 			RestAuthFilter restFilter = new RestAuthFilter(new Signer());

@@ -92,6 +92,12 @@ public final class Config {
 	public static final String DEFAULT_ENCODING = "UTF-8";
 	/** {@value #FB_PREFIX} */
 	public static final String FB_PREFIX = "fb" + SEPARATOR;
+	/** {@value #GPLUS_PREFIX} */
+	public static final String GPLUS_PREFIX = "gp" + SEPARATOR;
+	/** {@value #LINKEDIN_PREFIX} */
+	public static final String LINKEDIN_PREFIX = "in" + SEPARATOR;
+	/** {@value #TWITTER_PREFIX} */
+	public static final String TWITTER_PREFIX = "tw" + SEPARATOR;
 
 	//////////  INITIALIZATION PARAMETERS  //////////////
 	/**
@@ -118,6 +124,30 @@ public final class Config {
 	 * Facebook app secret (for authentication)
 	 */
 	public static final String FB_SECRET = getConfigParam("fb_secret", "");
+	/**
+	 * Google+ app id (for authentication)
+	 */
+	public static final String GPLUS_APP_ID = getConfigParam("gp_app_id", "");
+	/**
+	 * Google+ app secret (for authentication)
+	 */
+	public static final String GPLUS_SECRET = getConfigParam("gp_secret", "");
+	/**
+	 * LinkedIn app id (for authentication)
+	 */
+	public static final String LINKEDIN_APP_ID = getConfigParam("in_app_id", "");
+	/**
+	 * LinkedIn app secret (for authentication)
+	 */
+	public static final String LINKEDIN_SECRET = getConfigParam("in_secret", "");
+	/**
+	 * Twitter app id (for authentication)
+	 */
+	public static final String TWITTER_APP_ID = getConfigParam("tw_app_id", "");
+	/**
+	 * Twitter app secret (for authentication)
+	 */
+	public static final String TWITTER_SECRET = getConfigParam("tw_secret", "");
 	/**
 	 * OpenExchangeRates.org API key
 	 */

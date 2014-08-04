@@ -88,8 +88,6 @@ public class OpenIDAuthFilter extends OpenIDAuthenticationFilter {
 			throw new BadCredentialsException("Bad credentials.");
 		} else if (!user.isEnabled()) {
 			throw new LockedException("Account is locked.");
-//		} else {
-//			SecurityUtils.setAuthCookie(user, request, response);
 		}
 		return userAuth;
 	}

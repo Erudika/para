@@ -93,6 +93,9 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 					user.setName(StringUtils.isBlank(fbName) ? "No Name" : fbName);
 					user.setPassword(new UUID().toString());
 					user.setIdentifier(Config.FB_PREFIX.concat(fbID));
+					if (user.getPicture() == null) {
+						user.setPicture("http://graph.facebook.com/" + fbID + "/picture?type=large");
+					}
 					String id = user.create();
 					if (id == null) {
 						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
@@ -106,8 +109,6 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 			throw new BadCredentialsException("Bad credentials.");
 		} else if (!user.isEnabled()) {
 			throw new LockedException("Account is locked.");
-//		} else {
-//			SecurityUtils.setAuthCookie(user, request, response);
 		}
 		return userAuth;
 	}

@@ -239,6 +239,16 @@
 			<version>3.3.2</version>
 		</dependency>
 		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+  			<artifactId>httpcore</artifactId>
+  			<version>4.3.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+  			<artifactId>httpclient</artifactId>
+  			<version>4.3.2</version>
+		</dependency>
+		<dependency>
 			<groupId>javax</groupId>
 			<artifactId>javaee-web-api</artifactId>
 			<version>7.0</version>

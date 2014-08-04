@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Objects;
 import javax.validation.constraints.Size;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.hibernate.validator.constraints.NotBlank;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -68,6 +67,7 @@ public class User implements ParaObject, UserDetails {
 	@Stored private String currency;
 	@Stored private Boolean pro;
 	@Stored private Integer plan;
+	@Stored private String picture;
 
 	@NotBlank @Size(min = Config.MIN_PASS_LENGTH, max = 255)
 	private transient String password;	// for validation purposes only
@@ -94,6 +94,22 @@ public class User implements ParaObject, UserDetails {
 	@Override
 	public ParaObject getParent() {
 		return this;
+	}
+
+	/**
+	 * The profile picture URL.
+	 * @return a URL or null
+	 */
+	public String getPicture() {
+		return picture;
+	}
+
+	/**
+	 * Sets the profile picture URL.
+	 * @param picture the picture URL.
+	 */
+	public void setPicture(String picture) {
+		this.picture = picture;
 	}
 
 	/**
@@ -290,11 +306,35 @@ public class User implements ParaObject, UserDetails {
 	}
 
 	/**
-	 * Is the main identifier a facebook id
-	 * @return true if user is signed in with a facebook id
+	 * Is the main identifier a Facebook id
+	 * @return true if user is signed in with Facebook
 	 */
 	public boolean isFacebookUser() {
 		return StringUtils.startsWithIgnoreCase(identifier, Config.FB_PREFIX);
+	}
+
+	/**
+	 * Is the main identifier a Google+ id
+	 * @return true if user is signed in with Google+
+	 */
+	public boolean isGooglePlusUser() {
+		return StringUtils.startsWithIgnoreCase(identifier, Config.GPLUS_PREFIX);
+	}
+
+	/**
+	 * Is the main identifier a LinkedIn id
+	 * @return true if user is signed in with LinkedIn
+	 */
+	public boolean isLinkedInUser() {
+		return StringUtils.startsWithIgnoreCase(identifier, Config.LINKEDIN_PREFIX);
+	}
+
+	/**
+	 * Is the main identifier a Twitter id
+	 * @return true if user is signed in with Twitter
+	 */
+	public boolean isTwitterUser() {
+		return StringUtils.startsWithIgnoreCase(identifier, Config.TWITTER_PREFIX);
 	}
 
 	/**
@@ -408,9 +448,6 @@ public class User implements ParaObject, UserDetails {
 			return null;
 		}
 		String identifier = u.getIdentifier();
-		if (NumberUtils.isDigits(identifier)) {
-			identifier = Config.FB_PREFIX + u.getIdentifier();
-		}
 		Sysprop s = u.getDao().read(u.getAppid(), identifier);
 		if (s != null && s.getCreatorid() != null) {
 			User user = u.getDao().read(u.getAppid(), s.getCreatorid());
@@ -510,9 +547,6 @@ public class User implements ParaObject, UserDetails {
 		if (StringUtils.isBlank(userid) || StringUtils.isBlank(newIdent)) {
 			return false;
 		}
-		if (NumberUtils.isDigits(newIdent)) {
-			newIdent = Config.FB_PREFIX + newIdent;
-		}
 		Sysprop s = new Sysprop();
 		s.setId(newIdent);
 		s.setName(Config._IDENTIFIER);
@@ -529,9 +563,6 @@ public class User implements ParaObject, UserDetails {
 	 */
 	private void deleteIdentifier(String ident) {
 		if (!StringUtils.isBlank(ident)) {
-			if (NumberUtils.isDigits(ident)) {
-				ident = Config.FB_PREFIX + ident;
-			}
 			getDao().delete(getAppid(), new Sysprop(ident));
 		}
 	}
