@@ -34,10 +34,31 @@ public interface CustomResourceHandler {
 	String getRelativePath();
 
 	/**
-	 * This method is called when a custom resource needs to be handled.
+	 * This method is called when a GET request to be handled.
 	 * @param ctx the context object - contains all the details of the request and context
 	 * @return a response
 	 */
-	Response handle(ContainerRequestContext ctx);
+	Response handleGet(ContainerRequestContext ctx);
+
+	/**
+	 * This method is called when a POST request to be handled.
+	 * @param ctx the context object - contains all the details of the request and context
+	 * @return a response
+	 */
+	Response handlePost(ContainerRequestContext ctx);
+
+	/**
+	 * This method is called when a PUT request to be handled.
+	 * @param ctx the context object - contains all the details of the request and context
+	 * @return a response
+	 */
+	Response handlePut(ContainerRequestContext ctx);
+
+	/**
+	 * This method is called when a DELETE request to be handled.
+	 * @param ctx the context object - contains all the details of the request and context
+	 * @return a response
+	 */
+	Response handleDelete(ContainerRequestContext ctx);
 
 }

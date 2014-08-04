@@ -115,16 +115,28 @@ public final class Api1 extends ResourceConfig {
 		// register custom resources
 		for (final CustomResourceHandler handler : Para.getCustomResourceHandlers()) {
 			Resource.Builder custom = Resource.builder(handler.getRelativePath());
-			Inflector<ContainerRequestContext, Response> inf = new Inflector<ContainerRequestContext, Response>() {
+			custom.addMethod(GET).produces(JSON).handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
-					return handler.handle(ctx);
+					return handler.handleGet(ctx);
 				}
-			};
-			// todo: allow handlers to specify which methods are allowed
-			custom.addMethod(GET).produces(JSON).handledBy(inf);
-			custom.addMethod(POST).produces(JSON).handledBy(inf);
-			custom.addMethod(PUT).produces(JSON).handledBy(inf);
-			custom.addMethod(DELETE).produces(JSON).handledBy(inf);
+			});
+			custom.addMethod(POST).produces(JSON).consumes(JSON).
+					handledBy(new Inflector<ContainerRequestContext, Response>() {
+				public Response apply(ContainerRequestContext ctx) {
+					return handler.handlePost(ctx);
+				}
+			});
+			custom.addMethod(PUT).produces(JSON).consumes(JSON).
+					handledBy(new Inflector<ContainerRequestContext, Response>() {
+				public Response apply(ContainerRequestContext ctx) {
+					return handler.handlePut(ctx);
+				}
+			});
+			custom.addMethod(DELETE).produces(JSON).handledBy(new Inflector<ContainerRequestContext, Response>() {
+				public Response apply(ContainerRequestContext ctx) {
+					return handler.handleDelete(ctx);
+				}
+			});
 			registerResources(custom.build());
 		}
 	}
