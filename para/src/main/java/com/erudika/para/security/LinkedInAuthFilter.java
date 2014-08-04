@@ -54,7 +54,7 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 	/**
 	 * The default filter mapping
 	 */
-	public static final String LINKEDIN_ACTION = "/member/register/linkedin";
+	public static final String LINKEDIN_ACTION = "/linkedin_auth";
 
 	/**
 	 * Default constructor.
