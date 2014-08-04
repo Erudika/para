@@ -45,7 +45,6 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import javax.annotation.PreDestroy;
 import javax.servlet.ServletContext;
-import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
 import org.ebaysf.web.cors.CORSFilter;
 import org.glassfish.jersey.servlet.ServletContainer;
@@ -217,25 +216,6 @@ public class Para extends SpringBootServletInitializer {
 	}
 
 	/**
-	 * Try loading an external {@link javax.servlet.ServletContextListener} class
-	 * via {@link java.util.ServiceLoader#load(java.lang.Class)}.
-	 * @return a loaded ServletContextListener class.
-	 */
-	public static ServletContextListener getContextListener() {
-		ServiceLoader<ServletContextListener> loader = ServiceLoader.load(ServletContextListener.class);
-		for (ServletContextListener module : loader) {
-			if (module != null) {
-				try {
-					return module.getClass().newInstance();
-				} catch (Exception ex) {
-					logger.error(null, ex);
-				}
-			}
-		}
-		return null;
-	}
-
-	/**
 	 * Try loading external {@link com.erudika.para.rest.CustomResourceHandler} classes.
 	 * These will handle custom API requests.
 	 * via {@link java.util.ServiceLoader#load(java.lang.Class)}.
@@ -351,13 +331,6 @@ public class Para extends SpringBootServletInitializer {
 		sc.getSessionCookieConfig().setMaxAge(1);
 		sc.getSessionCookieConfig().setHttpOnly(true);
 		sc.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
-
-		// adding a ServletContextListener here doesn't work with Jetty
-		// add it the to the web.xml config instead
-		EventListener el = getContextListener();
-		if (el != null) {
-			sc.addListener(el);
-		}
 	}
 
 	public static void main(String[] args) {
