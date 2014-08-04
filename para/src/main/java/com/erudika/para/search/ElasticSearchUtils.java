@@ -78,6 +78,7 @@ public final class ElasticSearchUtils {
 		settings.put("action.disable_delete_all_indices", true);
 		settings.put("cluster.name", Config.CLUSTER_NAME);
 
+		boolean localNode = Config.getConfigParamUnwrapped("para.es.local_node", true);
 		String esHome = Config.getConfigParam("para.es.dir", esDir);
 		if (!esHome.endsWith("/")) {
 			esHome += "/";
@@ -98,7 +99,7 @@ public final class ElasticSearchUtils {
 			settings.put("discovery.type", "ec2");
 			settings.put("discovery.ec2.groups", "elasticsearch");
 //			settings.put("discovery.ec2.availability_zones", "eu-west-1a");
-			searchNode = NodeBuilder.nodeBuilder().settings(settings).client(true).data(false).node();
+			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(localNode).client(!localNode).node();
 			searchClient = searchNode.client();
 		} else if ("embedded".equals(Config.ENVIRONMENT)) {
 			// for local develoment only
@@ -108,15 +109,16 @@ public final class ElasticSearchUtils {
 
 			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(true).data(true).node();
 			searchClient = searchNode.client();
-			if (!existsIndex(Config.APP_NAME_NS)) {
-				createIndex(Config.APP_NAME_NS);
-			}
 		} else {
 			searchClient = new TransportClient();
 				((TransportClient) searchClient).addTransportAddress(
 						new InetSocketTransportAddress("localhost", 9300));
 		}
 
+		if (!existsIndex(Config.APP_NAME_NS)) {
+			createIndex(Config.APP_NAME_NS);
+		}
+		
 		Para.addDestroyListener(new Para.DestroyListener() {
 			public void onDestroy() {
 				shutdownClient();

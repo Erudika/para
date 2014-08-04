@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
  * @author Alex Bogdanovski [alex@erudika.com]
  * @see com.erudika.para.persistence.DAO
  */
+@SuppressWarnings("unchecked")
 public class IndexAndCacheAspect implements MethodInterceptor {
 
 	private static final Logger logger = LoggerFactory.getLogger(IndexAndCacheAspect.class);
@@ -60,7 +61,6 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	 * @return the returned value of the method invoked or something else (decided here)
 	 * @throws Throwable error
 	 */
-	@SuppressWarnings("unchecked")
 	public Object invoke(MethodInvocation mi) throws Throwable {
 		Object result = null;
 		Method m = mi.getMethod();

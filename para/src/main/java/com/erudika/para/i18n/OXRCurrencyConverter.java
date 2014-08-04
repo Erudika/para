@@ -61,6 +61,7 @@ import org.slf4j.LoggerFactory;
 public class OXRCurrencyConverter implements CurrencyConverter {
 
 	private static final Logger logger = LoggerFactory.getLogger(OXRCurrencyConverter.class);
+	private static final String FXRATES_KEY = "fxrates";
 	private static final long REFRESH_AFTER = 24 * 60 * 60 * 1000; // 24 hours in ms
 	private static final String SERVICE_URL = "http://openexchangerates.org/api/latest.json?app_id=".
 			concat(Config.OPENX_API_KEY);
@@ -81,7 +82,7 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 		if (amount == null || StringUtils.isBlank(from) || StringUtils.isBlank(to)) {
 			return 0.0;
 		}
-		Sysprop s = dao.read(Config.FXRATES_KEY);
+		Sysprop s = dao.read(FXRATES_KEY);
 		if (s == null) {
 			s = fetchFxRatesJSON();
 		} else if ((Utils.timestamp() - s.getTimestamp()) > REFRESH_AFTER) {
@@ -121,7 +122,7 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 					JsonNode rates = jsonNode.get("rates");
 					if (rates != null) {
 						map = reader.treeToValue(rates, Map.class);
-						s.setId(Config.FXRATES_KEY);
+						s.setId(FXRATES_KEY);
 						s.setProperties(map);
 //						s.addProperty("fetched", Utils.formatDate("dd MM yyyy HH:mm", Locale.UK));
 						dao.create(s);

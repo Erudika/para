@@ -83,7 +83,7 @@ public final class Config {
 	/** {@value #MAX_PAGES} */
 	public static final int MAX_PAGES = 10000;
 	/** {@value #MAX_IMG_SIZE_PX} */
-	public static final int MAX_IMG_SIZE_PX = 800;
+	public static final int MAX_IMG_SIZE_PX = 1024;
 	/** {@value #MIN_PASS_LENGTH} */
 	public static final int MIN_PASS_LENGTH = 6;
 	/** {@value #SEPARATOR} */
@@ -92,8 +92,6 @@ public final class Config {
 	public static final String DEFAULT_ENCODING = "UTF-8";
 	/** {@value #FB_PREFIX} */
 	public static final String FB_PREFIX = "fb" + SEPARATOR;
-	/** {@value #FXRATES_KEY} */
-	public static final String FXRATES_KEY = "fxrates";
 
 	//////////  INITIALIZATION PARAMETERS  //////////////
 	/**
