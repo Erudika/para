@@ -824,6 +824,16 @@ public final class Utils {
 	}
 
 	/**
+	 * Checks if a response is of type JSON.
+	 * @param contentType the value of "Content-Type" header
+	 * @return true if JSON
+	 */
+	public static boolean isJSONResponse(String contentType) {
+		return StringUtils.startsWith(contentType, "application/json") ||
+				StringUtils.startsWith(contentType, "application/javascript");
+	}
+
+	/**
 	 * Executes a {@link java.util.concurrent.Callable} asynchronously
 	 * @param runnable a task
 	 */

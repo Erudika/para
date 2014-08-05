@@ -27,13 +27,14 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
@@ -95,47 +96,43 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 						// got valid token
 						HttpGet profileGet = new HttpGet(PROFILE_URL + token.get("access_token"));
 						CloseableHttpResponse resp2 = httpclient.execute(profileGet);
-						if (resp2 != null && resp2.getEntity() != null) {
+						HttpEntity respEntity = resp2.getEntity();
+						String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
+
+						if (respEntity != null && Utils.isJSONResponse(ctype)) {
 							Map<String, Object> profile = jreader.readValue(resp2.getEntity().getContent());
 
 							if (profile != null && profile.containsKey("id")) {
 								String linkedInID = (String) profile.get("id");
 								String email = (String) profile.get("emailAddress");
+								String pic = (String) profile.get("pictureUrl");
 								String fName = (String) profile.get("firstName");
 								String lName = (String) profile.get("lastName");
 								String name = fName + " " + lName;
 
 								user.setIdentifier(Config.LINKEDIN_PREFIX.concat(linkedInID));
-								final User user1 = User.readUserForIdentifier(user);
-								user1.setEmail(StringUtils.isBlank(email) ? "email@domain.com" : email);
-								user1.setName(StringUtils.isBlank(name) ? "No Name" : name);
-								user1.setPassword(new UUID().toString());
-								user1.setIdentifier(Config.LINKEDIN_PREFIX.concat(linkedInID));
-								if (user1.getPicture() == null) {
-									String pic = (String) profile.get("pictureUrl");
-									if (pic != null) {
-										user1.setPicture(pic);
-									} else {
-										user1.setPicture("http://www.gravatar.com/avatar?d=mm&size=200");
+								user = User.readUserForIdentifier(user);
+								if (user == null) {
+									//user is new
+									user = new User();
+									user.setEmail(StringUtils.isBlank(email) ? "email@domain.com" : email);
+									user.setName(StringUtils.isBlank(name) ? "No Name" : name);
+									user.setPassword(new UUID().toString());
+									user.setIdentifier(Config.LINKEDIN_PREFIX.concat(linkedInID));
+									if (user.getPicture() == null) {
+										if (pic != null) {
+											user.setPicture(pic);
+										} else {
+											user.setPicture("http://www.gravatar.com/avatar?d=mm&size=200");
+										}
+									}
+
+									String id = user.create();
+									if (id == null) {
+										throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 									}
 								}
-
-								String id = user.create();
-								if (id == null) {
-									throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
-								} else {
-									userAuth = new AbstractAuthenticationToken(user1.getAuthorities()) {
-										private static final long serialVersionUID = 1L;
-										public Object getCredentials() {
-											return user1.getIdentifier();
-										}
-										public Object getPrincipal() {
-											return user1;
-										}
-									};
-									userAuth.setAuthenticated(true);
-									user = user1;
-								}
+								userAuth = new UserAuthentication(user);
 							}
 							EntityUtils.consumeQuietly(resp2.getEntity());
 						}

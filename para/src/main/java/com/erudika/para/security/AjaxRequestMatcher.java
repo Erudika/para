@@ -26,14 +26,14 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
  * True if the URI starts with /vX.Y.Z (.Y.Z are optional)
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public final class RestRequestMatcher implements RequestMatcher {
+public final class AjaxRequestMatcher implements RequestMatcher {
 	/**
 	 * An instance of this class.
 	 */
-	public static final RequestMatcher INSTANCE = new RestRequestMatcher();
+	public static final RequestMatcher INSTANCE = new AjaxRequestMatcher();
 	private static final RegexRequestMatcher regex = new RegexRequestMatcher("^/v\\d[\\.\\d^/]*.*", null, true);
 
-	private RestRequestMatcher() { }
+	private AjaxRequestMatcher() { }
 
 	@Override
 	public boolean matches(HttpServletRequest request) {

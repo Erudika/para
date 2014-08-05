@@ -23,33 +23,19 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
-import java.io.IOException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.conn.ClientConnectionManager;
-import org.apache.http.conn.scheme.Scheme;
-import org.apache.http.conn.scheme.SchemeRegistry;
-import org.apache.http.conn.ssl.SSLSocketFactory;
-import org.apache.http.conn.ssl.X509HostnameVerifier;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.LoggerFactory;
 
@@ -111,12 +97,12 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 		ObjectReader reader = Utils.getJsonReader(Map.class);
 
 		try {
-			HttpClient http = getHttpClient(new DefaultHttpClient());
+			CloseableHttpClient http = HttpClients.createDefault();
 			HttpGet httpGet = new HttpGet(SERVICE_URL);
 			HttpResponse res = http.execute(httpGet);
 			HttpEntity entity = res.getEntity();
 
-			if (entity != null && isJSON(entity.getContentType().getValue())) {
+			if (entity != null && Utils.isJSONResponse(entity.getContentType().getValue())) {
 				JsonNode jsonNode = reader.readTree(entity.getContent());
 				if (jsonNode != null) {
 					JsonNode rates = jsonNode.get("rates");
@@ -137,41 +123,36 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 		return s;
 	}
 
-	private boolean isJSON(String type) {
-		return StringUtils.startsWith(type, "application/json") ||
-				StringUtils.startsWith(type, "application/javascript");
-	}
-
-	private static HttpClient getHttpClient(HttpClient base) {
-		if (Config.IN_PRODUCTION) {
-			return base;
-		}
-		try {
-			SSLContext ctx = SSLContext.getInstance("TLS");
-			X509TrustManager tm = new X509TrustManager() {
-				public void checkClientTrusted(X509Certificate[] xcs, String string) throws CertificateException { }
-				public void checkServerTrusted(X509Certificate[] xcs, String string) throws CertificateException { }
-				public X509Certificate[] getAcceptedIssuers() {
-					return null;
-				}
-			};
-			X509HostnameVerifier verifier = new X509HostnameVerifier() {
-				public void verify(String string, SSLSocket ssls) throws IOException { }
-				public void verify(String string, X509Certificate xc) throws SSLException { }
-				public void verify(String string, String[] strings, String[] strings1) throws SSLException { }
-				public boolean verify(String string, SSLSession ssls) {
-					return true;
-				}
-			};
-			ctx.init(null, new TrustManager[]{tm}, null);
-			SSLSocketFactory ssf = new SSLSocketFactory(ctx, verifier);
-			ClientConnectionManager ccm = base.getConnectionManager();
-			SchemeRegistry sr = ccm.getSchemeRegistry();
-			sr.register(new Scheme("https", 443, ssf));
-			return new DefaultHttpClient(ccm, base.getParams());
-		} catch (Exception ex) {
-			logger.error("error: {}", ex);
-			return null;
-		}
-	}
+//	private static HttpClient getHttpClient(HttpClient base) {
+//		if (Config.IN_PRODUCTION) {
+//			return base;
+//		}
+//		try {
+//			SSLContext ctx = SSLContext.getInstance("TLS");
+//			X509TrustManager tm = new X509TrustManager() {
+//				public void checkClientTrusted(X509Certificate[] xcs, String string) throws CertificateException { }
+//				public void checkServerTrusted(X509Certificate[] xcs, String string) throws CertificateException { }
+//				public X509Certificate[] getAcceptedIssuers() {
+//					return null;
+//				}
+//			};
+//			X509HostnameVerifier verifier = new X509HostnameVerifier() {
+//				public void verify(String string, SSLSocket ssls) throws IOException { }
+//				public void verify(String string, X509Certificate xc) throws SSLException { }
+//				public void verify(String string, String[] strings, String[] strings1) throws SSLException { }
+//				public boolean verify(String string, SSLSession ssls) {
+//					return true;
+//				}
+//			};
+//			ctx.init(null, new TrustManager[]{tm}, null);
+//			SSLSocketFactory ssf = new SSLSocketFactory(ctx, verifier);
+//			ClientConnectionManager ccm = base.getConnectionManager();
+//			SchemeRegistry sr = ccm.getSchemeRegistry();
+//			sr.register(new Scheme("https", 443, ssf));
+//			return new DefaultHttpClient(ccm, base.getParams());
+//		} catch (Exception ex) {
+//			logger.error("error: {}", ex);
+//			return null;
+//		}
+//	}
 }

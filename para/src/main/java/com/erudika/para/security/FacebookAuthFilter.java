@@ -21,18 +21,20 @@ import com.eaio.uuid.UUID;
 import com.erudika.para.core.User;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
+import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
-import javax.crypto.Mac;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
@@ -45,8 +47,10 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
  */
 public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 
-	private static final Logger log = LoggerFactory.getLogger(FacebookAuthFilter.class);
-
+	private static final String PROFILE_URL = "https://graph.facebook.com/me?"
+			+ "fields=name,email,picture.width(400).type(square).height(400)&access_token=";
+	private static final String TOKEN_URL = "https://graph.facebook.com/oauth/access_token?"
+			+ "code={0}&redirect_uri={1}&client_id={2}&client_secret={3}";
 	/**
 	 * The default filter mapping
 	 */
@@ -66,42 +70,76 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * @param response HTTP response
 	 * @return an authentication object that contains the principal object if successful.
 	 * @throws IOException ex
-	 * @throws ServletException ex
 	 */
 	@Override
+	@SuppressWarnings("unchecked")
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, ServletException {
-		String requestURI = request.getRequestURI();
+			throws IOException {
+		final String requestURI = request.getRequestURI();
 		Authentication userAuth = null;
 		User user = new User();
 
 		if (requestURI.endsWith(FACEBOOK_ACTION)) {
-			//Facebook Connect Authentication
-			String fbSig = request.getParameter("fbsig");
-			String fbEmail = request.getParameter("fbemail");
-			String fbName = request.getParameter("fbname");
-			String fbID = verifiedFacebookID(fbSig);
+			String authCode = request.getParameter("code");
+			if (!StringUtils.isBlank(authCode)) {
+				String url = Utils.formatMessage(TOKEN_URL, authCode,
+						request.getRequestURL().toString(), Config.FB_APP_ID, Config.FB_SECRET);
 
-			if (fbID != null) {
-				//success!
-				user.setIdentifier(Config.FB_PREFIX.concat(fbID));
-				user = User.readUserForIdentifier(user);
-				if (user == null) {
-					//user is new
-					user = new User();
-					user.setEmail(StringUtils.isBlank(fbEmail) ? "email@domain.com" : fbEmail);
-					user.setName(StringUtils.isBlank(fbName) ? "No Name" : fbName);
-					user.setPassword(new UUID().toString());
-					user.setIdentifier(Config.FB_PREFIX.concat(fbID));
-					if (user.getPicture() == null) {
-						user.setPicture("http://graph.facebook.com/" + fbID + "/picture?type=large");
-					}
-					String id = user.create();
-					if (id == null) {
-						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
+				CloseableHttpClient httpclient = HttpClients.createDefault();
+				HttpPost tokenPost = new HttpPost(url);
+				CloseableHttpResponse resp1 = httpclient.execute(tokenPost);
+				ObjectReader jreader = Utils.getJsonReader(Map.class);
+
+				if (resp1 != null && resp1.getEntity() != null) {
+					Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
+					if (token != null && token.containsKey("access_token")) {
+						// got valid token
+						HttpGet profileGet = new HttpGet(PROFILE_URL + token.get("access_token"));
+						CloseableHttpResponse resp2 = httpclient.execute(profileGet);
+						HttpEntity respEntity = resp2.getEntity();
+						String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
+
+						if (respEntity != null && Utils.isJSONResponse(ctype)) {
+							Map<String, Object> profile = jreader.readValue(resp2.getEntity().getContent());
+
+							if (profile != null && profile.containsKey("id")) {
+								String fbId = (String) profile.get("id");
+								Map<String, Object> pic = (Map<String, Object>) profile.get("picture");
+								String email = (String) profile.get("email");
+								String name = (String) profile.get("name");
+
+								user.setIdentifier(Config.FB_PREFIX.concat(fbId));
+								user = User.readUserForIdentifier(user);
+								if (user == null) {
+									//user is new
+									user = new User();
+									user.setEmail(StringUtils.isBlank(email) ? "email@domain.com" : email);
+									user.setName(StringUtils.isBlank(name) ? "No Name" : name);
+									user.setPassword(new UUID().toString());
+									user.setIdentifier(Config.FB_PREFIX.concat(fbId));
+									if (user.getPicture() == null && pic != null) {
+										Map<String, Object> data = (Map<String, Object>) pic.get("data");
+										// try to get the direct url to the profile pic
+										if (data != null && data.containsKey("url")) {
+											user.setPicture((String) data.get("url"));
+										} else {
+											user.setPicture("http://graph.facebook.com/" + fbId +
+													"/picture?width=400&height=400&type=square");
+										}
+									}
+
+									String id = user.create();
+									if (id == null) {
+										throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
+									}
+								}
+								userAuth = new UserAuthentication(user);
+							}
+							EntityUtils.consumeQuietly(resp2.getEntity());
+						}
+						EntityUtils.consumeQuietly(resp1.getEntity());
 					}
 				}
-				userAuth = new UserAuthentication(user);
 			}
 		}
 
@@ -112,34 +150,4 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 		}
 		return userAuth;
 	}
-
-	private String verifiedFacebookID(String fbSig) {
-		if (!StringUtils.contains(fbSig, ".")) {
-			return null;
-		}
-		String fbid = null;
-
-		try {
-			String[] parts = fbSig.split("\\.");
-			byte[] sig = Utils.base64dec(parts[0]).getBytes();
-			byte[] encodedJSON = parts[1].getBytes();	// careful, we compute against the base64 encoded version
-			String decodedJSON = Utils.base64dec(parts[1]);
-			Map<String, String> root = Utils.getJsonReader(Map.class).readValue(decodedJSON);
-
-			if (StringUtils.contains(decodedJSON, "HMAC-SHA256")) {
-				SecretKey secret = new SecretKeySpec(Config.FB_SECRET.getBytes(), "HMACSHA256");
-				Mac mac = Mac.getInstance("HMACSHA256");
-				mac.init(secret);
-				byte[] digested = mac.doFinal(encodedJSON);
-				if (Arrays.equals(sig, digested)) {
-					fbid = root.get("user_id");
-				}
-			}
-		} catch (Exception ex) {
-			log.warn("Failed to decode FB signature: {0}", ex);
-		}
-
-		return fbid;
-	}
-
 }

@@ -37,7 +37,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
@@ -87,7 +86,7 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 				String entity = Utils.formatMessage(PAYLOAD,
 						URLEncoder.encode(authCode, "UTF-8"),
 						URLEncoder.encode(request.getRequestURL().toString(), "UTF-8"),
-						Config.GMAPS_API_KEY, Config.GPLUS_SECRET);
+						Config.GPLUS_APP_ID, Config.GPLUS_SECRET);
 
 				CloseableHttpClient httpclient = HttpClients.createDefault();
 				HttpPost tokenPost = new HttpPost(TOKEN_URL);
@@ -106,50 +105,43 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 						HttpEntity respEntity = resp2.getEntity();
 						String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
 
-						if (respEntity != null && ctype != null && ctype.startsWith("application/json")) {
+						if (respEntity != null && Utils.isJSONResponse(ctype)) {
 							Map<String, Object> profile = jreader.readValue(resp2.getEntity().getContent());
 
 							if (profile != null && profile.containsKey("sub")) {
 								String googleSubId = (String) profile.get("sub");
+								String pic = (String) profile.get("picture");
 								String email = (String) profile.get("email");
 								String name = (String) profile.get("name");
 
 								user.setIdentifier(Config.GPLUS_PREFIX.concat(googleSubId));
-								final User user1 = User.readUserForIdentifier(user);
-								user1.setEmail(StringUtils.isBlank(email) ? "email@domain.com" : email);
-								user1.setName(StringUtils.isBlank(name) ? "No Name" : name);
-								user1.setPassword(new UUID().toString());
-								user1.setIdentifier(Config.GPLUS_PREFIX.concat(googleSubId));
-								if (user1.getPicture() == null) {
-									String pic = (String) profile.get("picture");
-									if (pic != null) {
-										if (pic.indexOf("?") > 0) {
-											// user picture migth contain size parameters - remove them
-											user1.setPicture(pic.substring(0, pic.indexOf("?")));
+								user = User.readUserForIdentifier(user);
+								if (user == null) {
+									//user is new
+									user = new User();
+									user.setEmail(StringUtils.isBlank(email) ? "email@domain.com" : email);
+									user.setName(StringUtils.isBlank(name) ? "No Name" : name);
+									user.setPassword(new UUID().toString());
+									user.setIdentifier(Config.GPLUS_PREFIX.concat(googleSubId));
+									if (user.getPicture() == null) {
+										if (pic != null) {
+											if (pic.indexOf("?") > 0) {
+												// user picture migth contain size parameters - remove them
+												user.setPicture(pic.substring(0, pic.indexOf("?")));
+											} else {
+												user.setPicture(pic);
+											}
 										} else {
-											user1.setPicture(pic);
+											user.setPicture("http://www.gravatar.com/avatar?d=mm&size=200");
 										}
-									} else {
-										user1.setPicture("http://www.gravatar.com/avatar?d=mm&size=200");
+									}
+
+									String id = user.create();
+									if (id == null) {
+										throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 									}
 								}
-
-								String id = user.create();
-								if (id == null) {
-									throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
-								} else {
-									userAuth = new AbstractAuthenticationToken(user1.getAuthorities()) {
-										private static final long serialVersionUID = 1L;
-										public Object getCredentials() {
-											return user1.getIdentifier();
-										}
-										public Object getPrincipal() {
-											return user1;
-										}
-									};
-									userAuth.setAuthenticated(true);
-									user = user1;
-								}
+								userAuth = new UserAuthentication(user);
 							}
 							EntityUtils.consumeQuietly(resp2.getEntity());
 						}

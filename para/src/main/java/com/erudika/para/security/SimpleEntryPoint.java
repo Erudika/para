@@ -43,7 +43,7 @@ public class SimpleEntryPoint extends LoginUrlAuthenticationEntryPoint {
 	public void commence(HttpServletRequest request, HttpServletResponse response,
 		AuthenticationException authException) throws IOException, ServletException {
 		if (RestRequestMatcher.INSTANCE.matches(request)) {
-			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN, authException.getMessage());
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage());
 		} else {
 			super.commence(request, response, authException);
 		}
