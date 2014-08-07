@@ -42,8 +42,6 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.openid.OpenID4JavaConsumer;
 import org.springframework.security.openid.OpenIDAuthenticationProvider;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
-import org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices;
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.NullSecurityContextRepository;
@@ -143,7 +141,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.NEVER);
 		http.sessionManagement().sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy());
 		http.securityContext().securityContextRepository(new NullSecurityContextRepository());
-		http.exceptionHandling().authenticationEntryPoint(new SimpleEntryPoint(confMap.get("security.signin")));
+		http.exceptionHandling().authenticationEntryPoint(new SimpleAuthenticationEntryPoint(confMap.get("security.signin")));
 		http.exceptionHandling().accessDeniedHandler(new SimpleAccessDeniedHandler(confMap.get("security.access_denied")));
 		http.requestCache().requestCache(new SimpleRequestCache());
 
@@ -152,10 +150,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		successHandler.setTargetUrlParameter(confMap.get("security.returnto"));
 		successHandler.setUseReferer(true);
 
-		SimpleUrlAuthenticationFailureHandler failureHandler = new SimpleUrlAuthenticationFailureHandler();
+		SimpleAuthenticationFailureHandler failureHandler = new SimpleAuthenticationFailureHandler();
 		failureHandler.setDefaultFailureUrl(confMap.get("security.signin_failure"));
 
-		TokenBasedRememberMeServices tbrms = new TokenBasedRememberMeServices(Config.APP_SECRET_KEY, new SimpleUserService());
+		SimpleRememberMeServices tbrms = new SimpleRememberMeServices(Config.APP_SECRET_KEY, new SimpleUserService());
 		tbrms.setAlwaysRemember(true);
 		tbrms.setTokenValiditySeconds(Config.SESSION_TIMEOUT_SEC.intValue());
 		tbrms.setCookieName(Config.AUTH_COOKIE);

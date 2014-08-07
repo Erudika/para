@@ -99,7 +99,7 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 						HttpEntity respEntity = resp2.getEntity();
 						String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
 
-						if (respEntity != null && Utils.isJSONResponse(ctype)) {
+						if (respEntity != null && Utils.isJsonType(ctype)) {
 							Map<String, Object> profile = jreader.readValue(resp2.getEntity().getContent());
 
 							if (profile != null && profile.containsKey("id")) {

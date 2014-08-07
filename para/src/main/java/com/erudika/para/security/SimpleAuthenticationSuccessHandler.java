@@ -17,10 +17,14 @@
  */
 package com.erudika.para.security;
 
+import com.erudika.para.rest.RestUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
+import java.io.IOException;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 
 /**
@@ -29,12 +33,16 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
  */
 public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-	/**
-	 * Returns the URL to redirect to on success
-	 * @param request HTTP request
-	 * @param response HTTP response
-	 * @return the URL to redirect to
-	 */
+	@Override
+	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+			Authentication authentication) throws IOException, ServletException {
+		if (isRestRequest(request)) {
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NO_CONTENT, "Authentication success.");
+		} else {
+			super.onAuthenticationSuccess(request, response, authentication);
+		}
+	}
+
 	@Override
 	protected String determineTargetUrl(HttpServletRequest request, HttpServletResponse response) {
 		String cookie = Utils.getStateParam(Config.RETURNTO_COOKIE, request);
@@ -47,4 +55,12 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 		}
 	}
 
+	/**
+	 * Checks if it is a rest request
+	 * @param request request
+	 * @return true if rest or ajax
+	 */
+	protected boolean isRestRequest(HttpServletRequest request) {
+		return RestRequestMatcher.INSTANCE.matches(request) || AjaxRequestMatcher.INSTANCE.matches(request);
+	}
 }

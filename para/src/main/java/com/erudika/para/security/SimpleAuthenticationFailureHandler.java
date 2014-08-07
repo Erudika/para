@@ -23,30 +23,31 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 
 /**
- *
+ * Simple handler for successful authentication requests.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class SimpleEntryPoint extends LoginUrlAuthenticationEntryPoint {
-
-	/**
-	 * Default constructor.
-	 * @param loginFormUrl url of the login page e.g. "/login.html"
-	 */
-	public SimpleEntryPoint(String loginFormUrl) {
-		super(loginFormUrl);
-	}
+public class SimpleAuthenticationFailureHandler extends SimpleUrlAuthenticationFailureHandler {
 
 	@Override
-	public void commence(HttpServletRequest request, HttpServletResponse response,
-		AuthenticationException authException) throws IOException, ServletException {
-		if (RestRequestMatcher.INSTANCE.matches(request)) {
-			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage());
+	public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
+			AuthenticationException exception) throws IOException, ServletException {
+		if (isRestRequest(request)) {
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, exception.getMessage());
 		} else {
-			super.commence(request, response, authException);
+			super.onAuthenticationFailure(request, response, exception);
 		}
 	}
 
+	/**
+	 * Checks if it is a rest request
+	 *
+	 * @param request
+	 * @return true if rest or ajax
+	 */
+	protected boolean isRestRequest(HttpServletRequest request) {
+		return RestRequestMatcher.INSTANCE.matches(request) || AjaxRequestMatcher.INSTANCE.matches(request);
+	}
 }

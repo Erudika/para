@@ -31,7 +31,6 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
@@ -86,20 +85,21 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 						request.getRequestURL().toString(), Config.FB_APP_ID, Config.FB_SECRET);
 
 				CloseableHttpClient httpclient = HttpClients.createDefault();
-				HttpPost tokenPost = new HttpPost(url);
+				HttpGet tokenPost = new HttpGet(url);
 				CloseableHttpResponse resp1 = httpclient.execute(tokenPost);
 				ObjectReader jreader = Utils.getJsonReader(Map.class);
 
 				if (resp1 != null && resp1.getEntity() != null) {
-					Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
-					if (token != null && token.containsKey("access_token")) {
+					String token = EntityUtils.toString(resp1.getEntity(), Config.DEFAULT_ENCODING);
+					if (token != null && token.startsWith("access_token")) {
 						// got valid token
-						HttpGet profileGet = new HttpGet(PROFILE_URL + token.get("access_token"));
+						String accessToken = token.substring(token.indexOf("=") + 1, token.indexOf("&"));
+						HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
 						CloseableHttpResponse resp2 = httpclient.execute(profileGet);
 						HttpEntity respEntity = resp2.getEntity();
 						String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
 
-						if (respEntity != null && Utils.isJSONResponse(ctype)) {
+						if (respEntity != null && Utils.isJsonType(ctype)) {
 							Map<String, Object> profile = jreader.readValue(resp2.getEntity().getContent());
 
 							if (profile != null && profile.containsKey("id")) {

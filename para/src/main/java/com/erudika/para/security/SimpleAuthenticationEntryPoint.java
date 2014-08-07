@@ -22,31 +22,43 @@ import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.web.access.AccessDeniedHandlerImpl;
+import javax.ws.rs.HttpMethod;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 
 /**
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class SimpleAccessDeniedHandler extends AccessDeniedHandlerImpl {
+public class SimpleAuthenticationEntryPoint extends LoginUrlAuthenticationEntryPoint {
 
 	/**
 	 * Default constructor.
-	 * @param errorPage error page path e.g. "/error.html"
+	 * @param loginFormUrl url of the login page e.g. "/login.html"
 	 */
-	public SimpleAccessDeniedHandler(String errorPage) {
-		setErrorPage(errorPage);
+	public SimpleAuthenticationEntryPoint(String loginFormUrl) {
+		super(loginFormUrl);
 	}
 
 	@Override
-	public void handle(HttpServletRequest request, HttpServletResponse response,
-		AccessDeniedException accessDeniedException) throws IOException, ServletException {
-		if (isRestRequest(request)) {
-			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN, accessDeniedException.getMessage());
+	public void commence(HttpServletRequest request, HttpServletResponse response,
+		AuthenticationException authException) throws IOException, ServletException {
+		if (isPreflight(request)) {
+			response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+		} else if (isRestRequest(request)) {
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage());
 		} else {
-			super.handle(request, response, accessDeniedException);
+			super.commence(request, response, authException);
 		}
+	}
+
+	/**
+	 * Checks if this is a X-domain pre-flight request.
+	 * @param request request
+	 * @return true if preflight
+	 */
+	private boolean isPreflight(HttpServletRequest request) {
+		return HttpMethod.OPTIONS.equals(request.getMethod());
 	}
 
 	/**
@@ -57,4 +69,5 @@ public class SimpleAccessDeniedHandler extends AccessDeniedHandlerImpl {
 	protected boolean isRestRequest(HttpServletRequest request) {
 		return RestRequestMatcher.INSTANCE.matches(request) || AjaxRequestMatcher.INSTANCE.matches(request);
 	}
+
 }
