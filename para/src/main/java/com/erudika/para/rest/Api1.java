@@ -143,6 +143,9 @@ public final class Api1 extends ResourceConfig {
 
 	private void registerCrudApi(String path, Inflector<ContainerRequestContext, Response> handler,
 			Inflector<ContainerRequestContext, Response> linksHandler) {
+		// print logo
+		Resource.Builder logo = Resource.builder("/");
+		logo.addMethod(GET).produces(JSON).handledBy(handler);
 		Resource.Builder core = Resource.builder(path);
 		// list endpoints (both do the same thing)
 		core.addMethod(GET).produces(JSON).handledBy(handler);
@@ -165,6 +168,7 @@ public final class Api1 extends ResourceConfig {
 		batch.addMethod(PUT).produces(JSON).consumes(JSON).handledBy(batchUpdateHandler());
 		batch.addMethod(DELETE).produces(JSON).handledBy(batchDeleteHandler());
 
+		registerResources(logo.build());
 		registerResources(core.build());
 		registerResources(batch.build());
 	}
@@ -214,12 +218,17 @@ public final class Api1 extends ResourceConfig {
 				String typePlural = ctx.getUriInfo().getPathParameters().getFirst(Config._TYPE);
 				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
 				App app = RestUtils.getApp(appid);
-				if (app != null && !StringUtils.isBlank(typePlural)) {
-					String type = RestUtils.getAllTypes(app).get(typePlural);
-					if (type == null) {
-						type = typePlural;
+				if (app != null) {
+					if (!StringUtils.isBlank(typePlural)) {
+						String type = RestUtils.getAllTypes(app).get(typePlural);
+						if (type == null) {
+							type = typePlural;
+						}
+						return crudHandler(app, type).apply(ctx);
+					} else {
+						// print logo
+						return Response.ok(Para.LOGO).build();
 					}
-					return crudHandler(app, type).apply(ctx);
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found: " + appid);
 			}

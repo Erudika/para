@@ -70,6 +70,21 @@ import org.springframework.context.annotation.Configuration;
 @ComponentScan
 public class Para extends SpringBootServletInitializer {
 
+	public static final String LOGO;
+	static {
+		String[] logo = {"",
+			"      ____  ___ _ ____ ___ _ ",
+			"     / __ \\/ __` / ___/ __` /",
+			"    / /_/ / /_/ / /  / /_/ / ",
+			"   / .___/\\__,_/_/   \\__,_/  ",
+			"  /_/                        ", ""};
+		StringBuilder sb = new StringBuilder();
+		for (String line : logo) {
+			sb.append(line).append("\n");
+		}
+		LOGO = sb.toString();
+	}
+
 	private static final Logger logger = LoggerFactory.getLogger(Para.class);
 	private static final List<DestroyListener> destroyListeners = new ArrayList<DestroyListener>();
 	private static final List<InitializeListener> initListeners = new ArrayList<InitializeListener>();
@@ -302,16 +317,7 @@ public class Para extends SpringBootServletInitializer {
 	}
 
 	private static void printLogo() {
-		String[] logo = {"",
-			"      ____  ___ _ ____ ___ _ ",
-			"     / __ \\/ __` / ___/ __` /",
-			"    / /_/ / /_/ / /  / /_/ / ",
-			"   / .___/\\__,_/_/   \\__,_/  ",
-			"  /_/                        ", ""};
-
-		for (String line : logo) {
-			System.out.println(line);
-		}
+		System.out.print(LOGO);
 	}
 
 	@Override
