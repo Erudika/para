@@ -424,9 +424,6 @@ public class User implements ParaObject, UserDetails {
 	 */
 	@JsonIgnore
 	public String getPassword() {
-		if (StringUtils.isBlank(password)) {
-			password = Utils.generateSecurityToken();
-		}
 		return password;
 	}
 
@@ -453,9 +450,11 @@ public class User implements ParaObject, UserDetails {
 			User user = u.getDao().read(u.getAppid(), s.getCreatorid());
 			if (user != null) {
 				if (!identifier.equals(user.getIdentifier())) {
+					// the main identifier was changed - update
 					user.setIdentifier(identifier);
 					u.getDao().update(user);
 				}
+				user.setPassword((String) s.getProperty(Config._PASSWORD));
 				return user;
 			}
 		}
