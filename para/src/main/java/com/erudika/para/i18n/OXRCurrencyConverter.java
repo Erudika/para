@@ -102,7 +102,7 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 			HttpResponse res = http.execute(httpGet);
 			HttpEntity entity = res.getEntity();
 
-			if (entity != null && Utils.isJSONResponse(entity.getContentType().getValue())) {
+			if (entity != null && Utils.isJsonType(entity.getContentType().getValue())) {
 				JsonNode jsonNode = reader.readTree(entity.getContent());
 				if (jsonNode != null) {
 					JsonNode rates = jsonNode.get("rates");

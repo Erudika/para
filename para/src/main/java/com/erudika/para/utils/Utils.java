@@ -828,9 +828,10 @@ public final class Utils {
 	 * @param contentType the value of "Content-Type" header
 	 * @return true if JSON
 	 */
-	public static boolean isJSONResponse(String contentType) {
+	public static boolean isJsonType(String contentType) {
 		return StringUtils.startsWith(contentType, "application/json") ||
-				StringUtils.startsWith(contentType, "application/javascript");
+				StringUtils.startsWith(contentType, "application/javascript") ||
+				StringUtils.startsWith(contentType, "text/javascript");	// F U facebook!
 	}
 
 	/**
