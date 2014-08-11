@@ -22,6 +22,8 @@ import com.erudika.para.cache.Cache;
 import com.erudika.para.core.User;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
+import java.util.HashMap;
+import java.util.Map;
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -46,6 +48,8 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 
 	private String parameterName = DEFAULT_CSRF_PARAMETER_NAME;
 	private String headerName = DEFAULT_CSRF_HEADER_NAME;
+
+	private Map<String, Object[]> localCache = new HashMap<String, Object[]>();
 
 	private Cache cache;
 
@@ -78,7 +82,12 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 		if (token != null) {
 			User u = SecurityUtils.getAuthenticatedUser();
 			if (u != null && !cache.contains(Config.APP_NAME_NS, u.getIdentifier().concat(parameterName))) {
-				cache.put(Config.APP_NAME_NS, u.getIdentifier().concat(parameterName), token, Config.SESSION_TIMEOUT_SEC);
+				if (Config.CACHE_ENABLED) {
+					cache.put(Config.APP_NAME_NS, u.getIdentifier().concat(parameterName), token, Config.SESSION_TIMEOUT_SEC);
+				} else {
+					String key = Config.APP_NAME_NS.concat(u.getIdentifier()).concat(parameterName);
+					localCache.put(key, new Object[]{token, System.currentTimeMillis()});
+				}
 			}
 		}
 	}
@@ -91,7 +100,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	 */
 	public CsrfToken loadToken(HttpServletRequest request) {
 		String cookie = Utils.getStateParam(Config.AUTH_COOKIE, request);
-		CsrfToken token;
+		CsrfToken token = null;
 		if (cookie != null) {
 			String ident;
 			String[] ctokens = Utils.base64dec(cookie).split(":");
@@ -100,7 +109,20 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 			} else {
 				ident = ctokens[0];
 			}
-			token = cache.get(Config.APP_NAME_NS, ident.concat(parameterName));
+			if (Config.CACHE_ENABLED) {
+				token = cache.get(Config.APP_NAME_NS, ident.concat(parameterName));
+			} else {
+				String key = Config.APP_NAME_NS.concat(ident).concat(parameterName);
+				Object[] arr = localCache.get(key);
+				if (arr != null && arr.length == 2) {
+					boolean expired = (((Long) arr[1]) + Config.SESSION_TIMEOUT_SEC * 1000) < System.currentTimeMillis();
+					if (expired) {
+						localCache.remove(key);
+					} else {
+						token = (CsrfToken) arr[0];
+					}
+				}
+			}
 		} else {
 			String t = request.getParameter(parameterName);
 			token = (t == null) ? null : new DefaultCsrfToken(headerName, parameterName, t);
