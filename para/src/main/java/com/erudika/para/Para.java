@@ -75,7 +75,7 @@ import org.springframework.web.context.WebApplicationContext;
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 @Configuration
-@EnableAutoConfiguration(exclude = {MessageSourceAutoConfiguration.class})
+@EnableAutoConfiguration(exclude = { MessageSourceAutoConfiguration.class })
 @ComponentScan
 public class Para implements WebApplicationInitializer {
 
@@ -350,8 +350,7 @@ public class Para implements WebApplicationInitializer {
 			sc.getSessionCookieConfig().setMaxAge(1);
 			sc.getSessionCookieConfig().setHttpOnly(true);
 			sc.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
-		}
-		else {
+		} else {
 			logger.debug("No ContextLoaderListener registered, as "
 					+ "createRootApplicationContext() did not "
 					+ "return an application context");

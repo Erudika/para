@@ -36,10 +36,8 @@ public final class GZipResponseUtil {
 
 	/**
 	 * Gzipping an empty file or stream always results in a 20 byte output This is in java or elsewhere.
-	 * <p/>
 	 * On a unix system to reproduce do <code>gzip -n empty_file</code>. -n tells gzip to not include the file name. The
 	 * resulting file size is 20 bytes.
-	 * <p/>
 	 * Therefore 20 bytes can be used indicate that the gzip byte[] will be empty when ungzipped.
 	 */
 	private static final int EMPTY_GZIPPED_CONTENT_SIZE = 20;
@@ -109,13 +107,9 @@ public final class GZipResponseUtil {
 
 	/**
 	 * Adds the gzip HTTP header to the response.
-	 * <p/>
-	 * <p>
 	 * This is need when a gzipped body is returned so that browsers can properly decompress it.
-	 * </p>
-	 *
 	 * @param response the response which will have a header added to it. I.e this method changes its parameter
-	 * @throws GzipResponseHeadersNotModifiableException Either the response is committed or we were called using the
+	 * @throws ServletException Either the response is committed or we were called using the
 	 * include method from a
 	 * {@link javax.servlet.RequestDispatcher#include(javax.servlet.ServletRequest, javax.servlet.ServletResponse)}
 	 * method and the set header is ignored.

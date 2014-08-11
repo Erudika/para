@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.AssignableTypeFilter;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.ClassUtils;
 
@@ -132,12 +133,15 @@ public final class RestUtils {
 	 * @return an App object or null
 	 */
 	protected static App getPrincipalApp() {
-		Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-		if (principal != null) {
-			if (principal instanceof App) {
-				return (App) principal;
-			} else if (principal instanceof User) {
-				return Para.getDAO().read(Config.APP_NAME_NS, new App(((User) principal).getAppid()).getId());
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		if (auth != null) {
+			Object principal = auth.getPrincipal();
+			if (principal != null) {
+				if (principal instanceof App) {
+					return (App) principal;
+				} else if (principal instanceof User) {
+					return Para.getDAO().read(Config.APP_NAME_NS, new App(((User) principal).getAppid()).getId());
+				}
 			}
 		}
 		logger.info("Unauthenticated request - returning root App: '{}'", Config.APP_NAME_NS);
@@ -566,6 +570,12 @@ public final class RestUtils {
 	//	    	  EXCEPTIONS
 	/////////////////////////////////////////////
 
+	/**
+	 * Returns an exception/error response as a JSON object.
+	 * @param status HTTP status code
+	 * @param msg message
+	 * @return a JSON object
+	 */
 	public static Response getExceptionResponse(final int status, final String msg) {
 		return Response.status(status).entity(new LinkedHashMap<String, Object>() {
 			private static final long serialVersionUID = 1L;

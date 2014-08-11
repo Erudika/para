@@ -302,7 +302,7 @@ public final class ParaClient {
 	 * @return the retrieved object or null if not found
 	 */
 	public <P extends ParaObject> P read(String type, String id) {
-		if (type == null || id == null) {
+		if (StringUtils.isBlank(type) || StringUtils.isBlank(id)) {
 			return null;
 		}
 		return getEntity(invokeGet(type.concat("/").concat(id), null), Utils.toClass(type));
@@ -398,7 +398,7 @@ public final class ParaClient {
 	 */
 	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> list(String type, Pager... pager) {
-		if (type == null) {
+		if (StringUtils.isBlank(type)) {
 			return Collections.emptyList();
 		}
 		return getItems((Map<String, Object>) getEntity(invokeGet(type, pagerToParams(pager)), Map.class), pager);

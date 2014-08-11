@@ -118,7 +118,7 @@ public final class ElasticSearchUtils {
 		if (!existsIndex(Config.APP_NAME_NS)) {
 			createIndex(Config.APP_NAME_NS);
 		}
-		
+
 		Para.addDestroyListener(new Para.DestroyListener() {
 			public void onDestroy() {
 				shutdownClient();

@@ -20,7 +20,6 @@ package com.erudika.para.security;
 
 import com.erudika.para.utils.Utils;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.web.authentication.rememberme.InvalidCookieException;
 import org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices;
 
 /**
@@ -46,7 +45,7 @@ public class SimpleRememberMeServices extends TokenBasedRememberMeServices {
 	}
 
 	@Override
-	protected String[] decodeCookie(String cookieValue) throws InvalidCookieException {
+	protected String[] decodeCookie(String cookieValue) {
 		String[] cookieTokens = super.decodeCookie(cookieValue);
 		if (cookieTokens.length > 0) {
 			cookieTokens[0] = Utils.base64dec(cookieTokens[0]);

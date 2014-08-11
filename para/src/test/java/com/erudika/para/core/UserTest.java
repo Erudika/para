@@ -22,7 +22,6 @@ import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
-import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
 import org.junit.Test;
@@ -93,7 +92,7 @@ public class UserTest {
 		list.add(new Sysprop(u.getIdentifier()));
 		list.add(new Sysprop(secIdent));
 
-		when(u.getSearch().findTerms(anyString(), anyString(), anyMapOf(String.class, Object.class), 
+		when(u.getSearch().findTerms(anyString(), anyString(), anyMapOf(String.class, Object.class),
 				anyBoolean())).thenReturn(list);
 
 		u.attachIdentifier(secIdent);
@@ -176,13 +175,14 @@ public class UserTest {
 		assertNotNull(User.readUserForIdentifier(u));
 
 		u.setIdentifier("1");
-		assertNotNull(User.readUserForIdentifier(u));
+		assertNull(User.readUserForIdentifier(u));
 
 		u.setIdentifier(u.getEmail());
 		assertNotNull(User.readUserForIdentifier(u));
 
 		u.setIdentifier("1234");
 		assertNull(User.readUserForIdentifier(u));
+		
 
 		u.delete();
 

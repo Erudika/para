@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 import static org.junit.Assert.*;
 import org.junit.Test;
@@ -92,14 +93,14 @@ public class RestUtilsTest {
 	}
 
 	@Test
-	public void testGetApp() {
-		assertNull(getPrincipalApp());
-		// TODO
+	public void testGetJSONResponse() {
+		assertEquals(Status.BAD_REQUEST.getStatusCode(), getStatusResponse(null).getStatus());
+		assertEquals(Status.OK.getStatusCode(), getStatusResponse(Status.OK).getStatus());
 	}
 
-//	@Test
-//	public void testGetJSONResponse() {
-//		assertEquals(Status.BAD_REQUEST.getStatusCode(), getStatusResponse(null).getStatus());
-//		assertEquals(Status.OK.getStatusCode(), getStatusResponse(Status.OK).getStatus());
-//	}
+	@Test
+	public void testGetExceptionResponse() {
+		assertEquals(Status.FORBIDDEN.getStatusCode(), getExceptionResponse(403, null).getStatus());
+		assertEquals(MediaType.APPLICATION_JSON, getExceptionResponse(403, "").getMediaType().toString());
+	}
 }
