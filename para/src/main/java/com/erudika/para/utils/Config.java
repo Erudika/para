@@ -86,6 +86,8 @@ public final class Config {
 	public static final int MAX_IMG_SIZE_PX = 1024;
 	/** {@value #MIN_PASS_LENGTH} */
 	public static final int MIN_PASS_LENGTH = 6;
+	/** {@value #MAX_ENTITY_SIZE_BYTES} */
+	public static final int MAX_ENTITY_SIZE_BYTES = 1024 * 1024;
 	/** {@value #SEPARATOR} */
 	public static final String SEPARATOR = ":";
 	/** {@value #DEFAULT_ENCODING} */

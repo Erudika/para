@@ -21,7 +21,6 @@ import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.persistence.DAO;
-import com.erudika.para.rest.RestUtils.GenericExceptionMapper;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.HumanTime;
@@ -81,8 +80,8 @@ public final class Api1 extends ResourceConfig {
 
 		setApplicationName(Config.APP_NAME_NS);
 
-		register(new JacksonJsonProvider(Utils.getJsonMapper()));
 		register(GenericExceptionMapper.class);
+		register(new JacksonJsonProvider(Utils.getJsonMapper()));
 
 		// core objects CRUD API
 		registerCrudApi("{type}", typeCrudHandler(), linksHandler());
@@ -207,7 +206,8 @@ public final class Api1 extends ResourceConfig {
 					long delta = NumberUtils.toLong(d, 1);
 					return Response.ok(HumanTime.approximately(delta)).build();
 				}
-				return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, "Method not specified.");
+				return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, "Unknown method: " +
+						((method == null) ? "empty" : method));
 			}
 		};
 	}
@@ -216,8 +216,7 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				String typePlural = ctx.getUriInfo().getPathParameters().getFirst(Config._TYPE);
-				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				App app = RestUtils.getApp(appid);
+				App app = RestUtils.getPrincipalApp();
 				if (app != null) {
 					if (!StringUtils.isBlank(typePlural)) {
 						String type = RestUtils.getAllTypes(app).get(typePlural);
@@ -230,7 +229,7 @@ public final class Api1 extends ResourceConfig {
 						return Response.ok(Para.LOGO).build();
 					}
 				}
-				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found: " + appid);
+				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
@@ -270,8 +269,7 @@ public final class Api1 extends ResourceConfig {
 				String type = pathp.getFirst(Config._TYPE);
 				String id2 = pathp.getFirst("id2");
 				String type2 = pathp.getFirst("type2");
-				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				App app = RestUtils.getApp(appid);
+				App app = RestUtils.getPrincipalApp();
 
 				String typeSingular = (type == null) ? null : RestUtils.getAllTypes(app).get(type);
 				type = (typeSingular == null) ? type : typeSingular;
@@ -359,12 +357,11 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> listTypesHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				App app = RestUtils.getApp(appid);
+				App app = RestUtils.getPrincipalApp();
 				if (app != null) {
 					return Response.ok(RestUtils.getAllTypes(app)).build();
 				}
-				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found: " + appid);
+				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
@@ -372,8 +369,7 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> keysHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				App app = RestUtils.getApp(appid);
+				App app = RestUtils.getPrincipalApp();
 				if (app != null) {
 					app.resetSecret();
 					app.update();
@@ -381,7 +377,7 @@ public final class Api1 extends ResourceConfig {
 					creds.put("info", "Save the secret key! It is showed only once!");
 					return Response.ok(creds).build();
 				}
-				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found: " + appid);
+				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
@@ -447,8 +443,7 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> batchCreateHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				App app = RestUtils.getApp(appid);
+				App app = RestUtils.getPrincipalApp();
 				return RestUtils.getBatchCreateResponse(app, ctx.getEntityStream());
 			}
 		};
@@ -457,8 +452,7 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> batchReadHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				App app = RestUtils.getApp(appid);
+				App app = RestUtils.getPrincipalApp();
 				return RestUtils.getBatchReadResponse(app, ctx.getUriInfo().getQueryParameters().get("ids"));
 			}
 		};
@@ -467,8 +461,7 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> batchUpdateHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				App app = RestUtils.getApp(appid);
+				App app = RestUtils.getPrincipalApp();
 				return RestUtils.getBatchUpdateResponse(app, ctx.getEntityStream());
 			}
 		};
@@ -477,8 +470,7 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> batchDeleteHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				App app = RestUtils.getApp(appid);
+				App app = RestUtils.getPrincipalApp();
 				return RestUtils.getBatchDeleteResponse(app, ctx.getUriInfo().getQueryParameters().get("ids"));
 			}
 		};
@@ -487,8 +479,7 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> searchHandler(final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				String appid = RestUtils.getPrincipalAppid(ctx.getSecurityContext().getUserPrincipal());
-				App app = RestUtils.getApp(appid);
+				App app = RestUtils.getPrincipalApp();
 				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
 				String queryType = ctx.getUriInfo().getPathParameters().getFirst("querytype");
 				return Response.ok(buildQueryAndSearch(app, queryType, params, type)).build();

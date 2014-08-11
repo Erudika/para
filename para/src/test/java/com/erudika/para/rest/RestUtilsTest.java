@@ -25,7 +25,6 @@ import com.erudika.para.core.Votable;
 import com.erudika.para.persistence.MockDAO;
 import static com.erudika.para.rest.RestUtils.*;
 import com.erudika.para.utils.Config;
-import java.security.Principal;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -94,18 +93,8 @@ public class RestUtilsTest {
 
 	@Test
 	public void testGetApp() {
-		assertNull(getApp(null));
-		assertNull(getApp(" "));
+		assertNull(getPrincipalApp());
 		// TODO
-	}
-
-	@Test
-	public void testGetPrincipalAppid() {
-		assertEquals("pname", getPrincipalAppid(new Principal() {
-			public String getName() {
-				return "pname";
-			}
-		}));
 	}
 
 //	@Test

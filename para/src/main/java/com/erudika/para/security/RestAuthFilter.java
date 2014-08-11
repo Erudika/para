@@ -18,6 +18,7 @@
 package com.erudika.para.security;
 
 import com.erudika.para.core.App;
+import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
 import com.erudika.para.rest.Signer;
 import com.erudika.para.utils.Config;
@@ -37,6 +38,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.GenericFilterBean;
 
@@ -74,43 +76,52 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		HttpServletResponse response = (HttpServletResponse) res;
 
 		if (RestRequestMatcher.INSTANCE.matches(request)) {
-			String appid = RestUtils.extractAccessKey(request);
-			String date = RestUtils.extractDate(request);
-			Date d = RestUtils.parseAWSDate(date);
-			boolean requestExpired = (d != null) && (System.currentTimeMillis() >
-					(d.getTime() + (Config.REQUEST_EXPIRES_AFTER_SEC * 1000)));
-
-			if (!StringUtils.isBlank(appid)) {
-				if (!StringUtils.isBlank(date)) {
-					if (!requestExpired) {
-						App app = new App();
-						app.setId(appid);
-						app = app.getDao().read(appid);
-
-						if (app != null) {
-							if (signer.isValidSignature(request, app.getSecret())) {
-								SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
-							} else {
-								RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-										"Request signature is invalid.");
-								return;
-							}
-						} else {
-							RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND, "App not found.");
-							return;
-						}
-					} else {
-						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Request has expired.");
-						return;
-					}
-				} else {
-					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-							"'X-Amz-Date' header/parameter is not set!");
+			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+			if (auth != null && auth.getPrincipal() instanceof User) {
+				User u = SecurityUtils.getAuthenticatedUser();
+				if (u == null || !u.getActive()) {
+					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN, "User is invalid.");
 					return;
 				}
 			} else {
-				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Credentials are missing.");
-				return;
+				String appid = RestUtils.extractAccessKey(request);
+				String date = RestUtils.extractDate(request);
+				Date d = RestUtils.parseAWSDate(date);
+				boolean requestExpired = (d != null) && (System.currentTimeMillis() >
+						(d.getTime() + (Config.REQUEST_EXPIRES_AFTER_SEC * 1000)));
+
+				if (!StringUtils.isBlank(appid)) {
+					if (!StringUtils.isBlank(date)) {
+						if (!requestExpired) {
+							App app = new App();
+							app.setId(appid);
+							app = app.getDao().read(appid);
+
+							if (app != null) {
+								if (signer.isValidSignature(request, app.getSecret())) {
+									SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
+								} else {
+									RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+											"Request signature is invalid.");
+									return;
+								}
+							} else {
+								RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND, "App not found.");
+								return;
+							}
+						} else {
+							RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Request has expired.");
+							return;
+						}
+					} else {
+						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
+								"'X-Amz-Date' header/parameter is not set!");
+						return;
+					}
+				} else {
+					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Credentials are missing.");
+					return;
+				}
 			}
 		}
 

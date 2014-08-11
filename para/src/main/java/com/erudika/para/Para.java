@@ -31,6 +31,7 @@ import com.erudika.para.search.Search;
 import com.erudika.para.search.SearchModule;
 import com.erudika.para.storage.StorageModule;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.filters.ErrorFilter;
 import com.erudika.para.utils.filters.GZipServletFilter;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -45,6 +46,7 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import javax.annotation.PreDestroy;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletException;
 import org.ebaysf.web.cors.CORSFilter;
 import org.glassfish.jersey.servlet.ServletContainer;
@@ -52,13 +54,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.MessageSourceAutoConfiguration;
+import org.springframework.boot.builder.ParentContextApplicationContextInitializer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.embedded.AnnotationConfigEmbeddedWebApplicationContext;
 import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.boot.context.embedded.ServletRegistrationBean;
-import org.springframework.boot.context.web.SpringBootServletInitializer;
+import org.springframework.boot.context.web.ServletContextApplicationContextInitializer;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.WebApplicationInitializer;
+import org.springframework.web.context.ContextLoaderListener;
+import org.springframework.web.context.WebApplicationContext;
 
 /**
  * This is the main utility class and entry point. Para modules are initialized and destroyed from here.
@@ -66,9 +75,9 @@ import org.springframework.context.annotation.Configuration;
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 @Configuration
-@EnableAutoConfiguration
+@EnableAutoConfiguration(exclude = {MessageSourceAutoConfiguration.class})
 @ComponentScan
-public class Para extends SpringBootServletInitializer {
+public class Para implements WebApplicationInitializer {
 
 	public static final String LOGO;
 	static {
@@ -282,6 +291,9 @@ public class Para extends SpringBootServletInitializer {
 		ServletRegistrationBean reg = new ServletRegistrationBean(
 				new ServletContainer(new Api1()), Api1.PATH + "*");
 		reg.setName(Api1.class.getSimpleName());
+		reg.setAsyncSupported(true);
+		reg.setEnabled(true);
+		reg.setOrder(1);
 		return reg;
 	}
 
@@ -291,6 +303,8 @@ public class Para extends SpringBootServletInitializer {
 		frb.addUrlPatterns("*.css", "*.json", "*.html", "*.js", Api1.PATH + "*");
 		frb.setAsyncSupported(true);
 		frb.setEnabled(Config.GZIP_ENABLED);
+		frb.setMatchAfter(true);
+		frb.setOrder(20);
 		return frb;
 	}
 
@@ -305,6 +319,8 @@ public class Para extends SpringBootServletInitializer {
 				+ "X-Amz-Date,Authorization");
 		frb.setAsyncSupported(true);
 		frb.setEnabled(Config.CORS_ENABLED);
+		frb.setMatchAfter(true);
+		frb.setOrder(3);
 		return frb;
 	}
 
@@ -321,6 +337,49 @@ public class Para extends SpringBootServletInitializer {
 	}
 
 	@Override
+	public void onStartup(ServletContext sc) throws ServletException {
+		WebApplicationContext rootAppContext = createRootApplicationContext(sc);
+		if (rootAppContext != null) {
+			sc.addListener(new ContextLoaderListener(rootAppContext) {
+				@Override
+				public void contextInitialized(ServletContextEvent event) {
+					// no-op because the application context is already initialized
+				}
+			});
+			sc.getSessionCookieConfig().setName("sess");
+			sc.getSessionCookieConfig().setMaxAge(1);
+			sc.getSessionCookieConfig().setHttpOnly(true);
+			sc.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
+		}
+		else {
+			logger.debug("No ContextLoaderListener registered, as "
+					+ "createRootApplicationContext() did not "
+					+ "return an application context");
+		}
+	}
+
+	protected WebApplicationContext createRootApplicationContext(
+			ServletContext servletContext) {
+		ApplicationContext parent = null;
+		Object object = servletContext
+				.getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
+		if (object instanceof ApplicationContext) {
+			logger.info("Root context already created (using as parent).");
+			parent = (ApplicationContext) object;
+			servletContext.setAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE, null);
+		}
+		SpringApplicationBuilder application = new SpringApplicationBuilder();
+		if (parent != null) {
+			application.initializers(new ParentContextApplicationContextInitializer(parent));
+		}
+		application.initializers(new ServletContextApplicationContextInitializer(servletContext));
+		application.contextClass(AnnotationConfigEmbeddedWebApplicationContext.class);
+		application = configure(application);
+		// Ensure error pages are registered
+		application.sources(ErrorFilter.class);
+		return (WebApplicationContext) application.run();
+	}
+
 	protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
 		// entry point (WAR)
 		printLogo();
@@ -328,15 +387,6 @@ public class Para extends SpringBootServletInitializer {
 		application.showBanner(false);
 		initialize();
 		return application.sources(Para.class);
-	}
-
-	@Override
-	public void onStartup(ServletContext sc) throws ServletException {
-		super.onStartup(sc);
-		sc.getSessionCookieConfig().setName("sess");
-		sc.getSessionCookieConfig().setMaxAge(1);
-		sc.getSessionCookieConfig().setHttpOnly(true);
-		sc.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
 	}
 
 	public static void main(String[] args) {

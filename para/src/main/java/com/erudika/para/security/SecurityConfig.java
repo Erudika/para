@@ -42,6 +42,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.openid.OpenID4JavaConsumer;
 import org.springframework.security.openid.OpenIDAuthenticationProvider;
+import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.context.NullSecurityContextRepository;
@@ -200,7 +201,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 		if (enableRestFilter) {
 			RestAuthFilter restFilter = new RestAuthFilter(new Signer());
-			http.addFilterAfter(restFilter, BasicAuthenticationFilter.class);
+			http.addFilterAfter(restFilter, RememberMeAuthenticationFilter.class);
 		}
 	}
 

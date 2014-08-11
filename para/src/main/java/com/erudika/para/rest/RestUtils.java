@@ -30,7 +30,6 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Modifier;
 import java.net.URI;
-import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -42,12 +41,9 @@ import java.util.Map;
 import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.Provider;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -56,7 +52,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.AssignableTypeFilter;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.ClassUtils;
 
@@ -132,40 +127,21 @@ public final class RestUtils {
 	}
 
 	/**
-	 * Returns the {@code appid} of the requesting App or the
-	 * default {@code appid} if this request is not signed.
-	 * @param princ the authenticated App
-	 * @return the {@code appid}
-	 */
-	protected static String getPrincipalAppid(Principal princ) {
-		String def = Config.APP_NAME_NS;
-		if (princ == null) {
-			return def;
-		} else {
-			if (princ instanceof User) {
-				return StringUtils.isBlank(((User) princ).getAppid()) ? null : ((User) princ).getAppid();
-			} else {
-				return StringUtils.isBlank(princ.getName()) ? def : princ.getName();
-			}
-		}
-	}
-
-	/**
-	 * Returns the current {@link App} object.
+	 * Returns the current authenticated {@link App} object.
 	 * @param appid the id of the app
 	 * @return an App object or null
 	 */
-	protected static App getApp(String appid) {
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		if (!StringUtils.isBlank(appid) && auth != null) {
-			Object principal = auth.getPrincipal();
-			if (principal != null && principal instanceof App) {
+	protected static App getPrincipalApp() {
+		Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+		if (principal != null) {
+			if (principal instanceof App) {
 				return (App) principal;
-			} else {
-				return Para.getDAO().read(Config.APP_NAME_NS, new App(appid).getId());
+			} else if (principal instanceof User) {
+				return Para.getDAO().read(Config.APP_NAME_NS, new App(((User) principal).getAppid()).getId());
 			}
 		}
-		return null;
+		logger.info("Unauthenticated request - returning root App: '{}'", Config.APP_NAME_NS);
+		return Para.getDAO().read(Config.APP_NAME_NS, new App(Config.APP_NAME_NS).getId());
 	}
 
 	/**
@@ -230,6 +206,36 @@ public final class RestUtils {
 	/////////////////////////////////////////////
 
 	/**
+	 * Returns a Response with the entity object inside it and 200 status code.
+	 * If there was and error the status code is different than 200.
+	 * @param is the entity input stream
+	 * @param type the type to convert the entity into, for example a Map.
+	 * @return response with 200 or error status
+	 */
+	public static Response getEntity(InputStream is, Class<?> type) {
+		Object entity = null;
+		try {
+			if (is != null && is.available() > 0) {
+				if (is.available() > Config.MAX_ENTITY_SIZE_BYTES) {
+					return getStatusResponse(Response.Status.BAD_REQUEST,
+							"Request is too large - the maximum is " +
+							(Config.MAX_ENTITY_SIZE_BYTES / 1024) + "MB.");
+				}
+				entity = Utils.getJsonReader(type).readValue(is);
+			} else {
+				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
+			}
+		} catch (JsonParseException e) {
+			return getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
+		} catch (IOException e) {
+			logger.error(null, e);
+			return getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
+		}
+
+		return Response.ok(entity).build();
+	}
+
+	/**
 	 * Read response as JSON
 	 * @param content the object that was read
 	 * @return status code 200 or 404
@@ -249,31 +255,22 @@ public final class RestUtils {
 	 * @param app the app object
 	 * @return a status code 201 or 400
 	 */
+	@SuppressWarnings("unchecked")
 	public static Response getCreateResponse(App app, String type, InputStream is) {
 		ParaObject content;
-		try {
-			if (is != null && is.available() > 0) {
-				if (is.available() > (1024 * 1024)) {
-					return getStatusResponse(Response.Status.BAD_REQUEST,
-							"Request is too large - the maximum is 1MB.");
-				}
-				Map<String, Object> newContent = Utils.getJsonReader(Map.class).readValue(is);
-				// type is not fount in datatypes (try to get it from req. body)
-				if (!StringUtils.isBlank(type)) {
-					newContent.put(Config._TYPE, type);
-				}
-				content = Utils.setAnnotatedFields(newContent);
-				content.setAppid(app.getAppIdentifier());
-				content.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
-				registerNewTypes(app, content);
-			} else {
-				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
+		Response entityRes = getEntity(is, Map.class);
+		if (entityRes.getStatusInfo() == Response.Status.OK) {
+			Map<String, Object> newContent = (Map<String, Object>) entityRes.getEntity();
+			// type is not fount in datatypes (try to get it from req. body)
+			if (!StringUtils.isBlank(type)) {
+				newContent.put(Config._TYPE, type);
 			}
-		} catch (JsonParseException e) {
-			return getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
-		} catch (IOException e) {
-			logger.error(null, e);
-			return getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
+			content = Utils.setAnnotatedFields(newContent);
+			content.setAppid(app.getAppIdentifier());
+			content.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
+			registerNewTypes(app, content);
+		} else {
+			return entityRes;
 		}
 		return getCreateResponse(content);
 	}
@@ -304,24 +301,15 @@ public final class RestUtils {
 	 * @param app the app object
 	 * @return a status code 200 or 400 or 404
 	 */
+	@SuppressWarnings("unchecked")
 	public static Response getUpdateResponse(App app, ParaObject object, InputStream is) {
 		Map<String, Object> newContent;
-		try {
-			if (is != null && is.available() > 0) {
-				if (is.available() > (1024 * 1024)) {
-					return getStatusResponse(Response.Status.BAD_REQUEST,
-							"Request is too large - the maximum is 1MB.");
-				}
-				object.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
-				newContent = Utils.getJsonReader(Map.class).readValue(is);
-			} else {
-				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
-			}
-		} catch (JsonParseException e) {
-			return getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
-		} catch (IOException e) {
-			logger.error(null, e);
-			return getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
+		Response entityRes = getEntity(is, Map.class);
+		if (entityRes.getStatusInfo() == Response.Status.OK) {
+			newContent = (Map<String, Object>) entityRes.getEntity();
+			object.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
+		} else {
+			return entityRes;
 		}
 		return getUpdateResponse(object, newContent);
 	}
@@ -387,37 +375,27 @@ public final class RestUtils {
 	@SuppressWarnings("unchecked")
 	public static Response getBatchCreateResponse(final App app, InputStream is) {
 		final ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
-		try {
-			if (is != null && is.available() > 0) {
-				if (is.available() > (1024 * 1024)) {
-					return getStatusResponse(Response.Status.BAD_REQUEST,
-							"Request is too large - the maximum is 1MB.");
+		Response entityRes = getEntity(is, List.class);
+		if (entityRes.getStatusInfo() == Response.Status.OK) {
+			List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
+			for (Map<String, Object> object : items) {
+				ParaObject pobj = Utils.setAnnotatedFields(object);
+				if (pobj != null && Utils.isValidObject(pobj)) {
+					pobj.setAppid(app.getAppIdentifier());
+					pobj.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
+					objects.add(pobj);
 				}
-				List<Map<String, Object>> items = Utils.getJsonReader(List.class).readValue(is);
-				for (Map<String, Object> object : items) {
-					ParaObject pobj = Utils.setAnnotatedFields(object);
-					if (pobj != null && Utils.isValidObject(pobj)) {
-						pobj.setAppid(app.getAppIdentifier());
-						pobj.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
-						objects.add(pobj);
-					}
-				}
-
-				Para.getDAO().createAll(app.getAppIdentifier(), objects);
-
-				Utils.asyncExecute(new Runnable() {
-					public void run() {
-						registerNewTypes(app, objects.toArray(new ParaObject[objects.size()]));
-					}
-				});
-			} else {
-				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
 			}
-		} catch (JsonParseException e) {
-			return getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
-		} catch (IOException e) {
-			logger.error(null, e);
-			return getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
+
+			Para.getDAO().createAll(app.getAppIdentifier(), objects);
+
+			Utils.asyncExecute(new Runnable() {
+				public void run() {
+					registerNewTypes(app, objects.toArray(new ParaObject[objects.size()]));
+				}
+			});
+		} else {
+			return entityRes;
 		}
 		return Response.ok(objects).build();
 	}
@@ -431,34 +409,24 @@ public final class RestUtils {
 	@SuppressWarnings("unchecked")
 	public static Response getBatchUpdateResponse(App app, InputStream is) {
 		ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
-		try {
-			if (is != null && is.available() > 0) {
-				if (is.available() > (1024 * 1024)) {
-					return getStatusResponse(Response.Status.BAD_REQUEST,
-							"Request is too large - the maximum is 1MB.");
-				}
-				List<Map<String, Object>> items = Utils.getJsonReader(List.class).readValue(is);
-				// WARN: objects will not be validated here as this would require them to be read first
-				for (Map<String, Object> item : items) {
-					if (item != null && item.containsKey(Config._ID) && item.containsKey(Config._TYPE)) {
-						ParaObject pobj = Utils.setAnnotatedFields(null, item, Locked.class);
-						if (pobj != null) {
-							pobj.setId((String) item.get(Config._ID));
-							pobj.setType((String) item.get(Config._TYPE));
-							pobj.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
-							objects.add(pobj);
-						}
+		Response entityRes = getEntity(is, List.class);
+		if (entityRes.getStatusInfo() == Response.Status.OK) {
+			List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
+			// WARN: objects will not be validated here as this would require them to be read first
+			for (Map<String, Object> item : items) {
+				if (item != null && item.containsKey(Config._ID) && item.containsKey(Config._TYPE)) {
+					ParaObject pobj = Utils.setAnnotatedFields(null, item, Locked.class);
+					if (pobj != null) {
+						pobj.setId((String) item.get(Config._ID));
+						pobj.setType((String) item.get(Config._TYPE));
+						pobj.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
+						objects.add(pobj);
 					}
 				}
-				Para.getDAO().updateAll(app.getAppIdentifier(), objects);
-			} else {
-				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
 			}
-		} catch (JsonParseException e) {
-			return getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
-		} catch (IOException e) {
-			logger.error(null, e);
-			return getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
+			Para.getDAO().updateAll(app.getAppIdentifier(), objects);
+		} else {
+			return entityRes;
 		}
 		return Response.ok(objects).build();
 	}
@@ -595,28 +563,10 @@ public final class RestUtils {
 	}
 
 	/////////////////////////////////////////////
-	//	    	  EXCEPTION MAPPERS
+	//	    	  EXCEPTIONS
 	/////////////////////////////////////////////
 
-	/**
-	 * Generic exception mapper.
-	 */
-	@Provider
-	public static class GenericExceptionMapper implements ExceptionMapper<Exception> {
-		/**
-		 * @param ex exception
-		 * @return a response
-		 */
-		public Response toResponse(final Exception ex) {
-			if (ex instanceof WebApplicationException) {
-				return getExceptionResponse(((WebApplicationException) ex).getResponse().getStatus(), ex.getMessage());
-			} else {
-				return getExceptionResponse(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), ex.getMessage());
-			}
-		}
-	}
-
-	private static Response getExceptionResponse(final int status, final String msg) {
+	public static Response getExceptionResponse(final int status, final String msg) {
 		return Response.status(status).entity(new LinkedHashMap<String, Object>() {
 			private static final long serialVersionUID = 1L;
 			{

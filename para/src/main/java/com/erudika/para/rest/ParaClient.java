@@ -77,7 +77,7 @@ public final class ParaClient {
 
 	public ParaClient(String accessKey, String secretKey) {
 		ClientConfig clientConfig = new ClientConfig();
-		clientConfig.register(RestUtils.GenericExceptionMapper.class);
+		clientConfig.register(GenericExceptionMapper.class);
 		clientConfig.register(new JacksonJsonProvider(Utils.getJsonMapper()));
 		clientConfig.connectorProvider(new JettyConnectorProvider());
 		this.client = ClientBuilder.newClient(clientConfig);
