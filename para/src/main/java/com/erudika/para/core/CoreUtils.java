@@ -242,11 +242,10 @@ public final class CoreUtils {
 	public static <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, String field, String term,
 			Pager... pager) {
 		Map<String, Object> terms = new HashMap<String, Object>();
-		if (StringUtils.isBlank(field) && StringUtils.isBlank(term)) {
+		if (!StringUtils.isBlank(field) && !StringUtils.isBlank(term)) {
 			terms.put(field, term);
 		}
 		terms.put(Config._PARENTID, obj.getId());
-		// TODO: make this work with no type specified (clazz = null)
 		return obj.getSearch().findTerms(obj.getAppid(), type2, terms, true, pager);
 	}
 
