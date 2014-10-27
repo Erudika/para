@@ -19,12 +19,12 @@ package com.erudika.para.security;
 
 import com.eaio.uuid.UUID;
 import com.erudika.para.cache.Cache;
-import com.erudika.para.core.User;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
@@ -77,16 +77,16 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	 * @param response HTTP response
 	 * @see org.springframework.security.web.csrf.CsrfTokenRepository#saveToken(org.springframework.security.web.csrf.CsrfToken, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
 	 */
-	public void saveToken(CsrfToken token, HttpServletRequest request,
-			HttpServletResponse response) {
+	public void saveToken(CsrfToken token, HttpServletRequest request, HttpServletResponse response) {
 		if (token != null) {
-			User u = SecurityUtils.getAuthenticatedUser();
-			if (u != null && !cache.contains(Config.APP_NAME_NS, u.getIdentifier().concat(parameterName))) {
+			String ident = getIdentifierFromCookie(request);
+			if (ident != null) {
 				if (Config.CACHE_ENABLED) {
-					cache.put(Config.APP_NAME_NS, u.getIdentifier().concat(parameterName), token, Config.SESSION_TIMEOUT_SEC);
+					String key = ident.concat(parameterName);
+					storeTokenAsCookie((CsrfToken) cache.get(Config.APP_NAME_NS, key), request, response);
 				} else {
-					String key = Config.APP_NAME_NS.concat(u.getIdentifier()).concat(parameterName);
-					localCache.put(key, new Object[]{token, System.currentTimeMillis()});
+					String key = Config.APP_NAME_NS.concat(ident).concat(parameterName);
+					storeTokenAsCookie((CsrfToken) localCache.get(key)[0], request, response);
 				}
 			}
 		}
@@ -99,18 +99,15 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	 * @see org.springframework.security.web.csrf.CsrfTokenRepository#loadToken(javax.servlet.http.HttpServletRequest)
 	 */
 	public CsrfToken loadToken(HttpServletRequest request) {
-		String cookie = Utils.getStateParam(Config.AUTH_COOKIE, request);
+		String ident = getIdentifierFromCookie(request);
 		CsrfToken token = null;
-		if (cookie != null) {
-			String ident;
-			String[] ctokens = Utils.base64dec(cookie).split(":");
-			if (StringUtils.startsWithAny(ctokens[0], "http", "https") && ctokens[1].startsWith("//")) {
-				ident = ctokens[0].concat(":").concat(ctokens[1]);
-			} else {
-				ident = ctokens[0];
-			}
+		if (ident != null) {
 			if (Config.CACHE_ENABLED) {
-				token = cache.get(Config.APP_NAME_NS, ident.concat(parameterName));
+				String key = ident.concat(parameterName);
+				token = cache.get(Config.APP_NAME_NS, key);
+				if (token == null) {
+					cache.put(Config.APP_NAME_NS, key, generateToken(null), Config.SESSION_TIMEOUT_SEC);
+				}
 			} else {
 				String key = Config.APP_NAME_NS.concat(ident).concat(parameterName);
 				Object[] arr = localCache.get(key);
@@ -121,13 +118,39 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 					} else {
 						token = (CsrfToken) arr[0];
 					}
+				} else {
+					localCache.put(key, new Object[]{generateToken(null), System.currentTimeMillis()});
 				}
 			}
-		} else {
+		}
+		if (token == null) {
 			String t = request.getParameter(parameterName);
 			token = (t == null) ? null : new DefaultCsrfToken(headerName, parameterName, t);
 		}
 		return token;
+	}
+
+	private String getIdentifierFromCookie(HttpServletRequest request) {
+		String cookie = Utils.getStateParam(Config.AUTH_COOKIE, request);
+		String ident = null;
+		if (cookie != null) {
+			String[] ctokens = Utils.base64dec(cookie).split(":");
+			ident = Utils.base64dec(ctokens[0]);
+		}
+		return ident;
+	}
+
+	private void storeTokenAsCookie(CsrfToken token, HttpServletRequest request, HttpServletResponse response) {
+		String cookieName = Config.getConfigParam("security.csrf_cookie", "");
+		if (!StringUtils.isBlank(cookieName) && token != null) {
+			String storedToken = Utils.getStateParam(cookieName, request);
+			if (!StringUtils.equals(storedToken, token.getToken())) {
+				Cookie c = new Cookie(cookieName, token.getToken());
+				c.setMaxAge(Config.SESSION_TIMEOUT_SEC.intValue());
+				c.setPath("/");
+				response.addCookie(c);
+			}
+		}
 	}
 
 	/**
