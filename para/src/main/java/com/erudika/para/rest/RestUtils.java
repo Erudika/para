@@ -132,7 +132,7 @@ public final class RestUtils {
 	 * @param appid the id of the app
 	 * @return an App object or null
 	 */
-	protected static App getPrincipalApp() {
+	public static App getPrincipalApp() {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 		if (auth != null) {
 			Object principal = auth.getPrincipal();
@@ -284,7 +284,7 @@ public final class RestUtils {
 	 * @param content the object to create
 	 * @return a status code 201 or 400
 	 */
-	public static Response getCreateResponse(ParaObject content) {
+	protected static Response getCreateResponse(ParaObject content) {
 		String[] errors = Utils.validateObject(content);
 		if (content != null && errors.length == 0) {
 			String id = content.create();
@@ -324,7 +324,7 @@ public final class RestUtils {
 	 * @param newContent new updated content
 	 * @return a status code 200 or 400 or 404
 	 */
-	public static Response getUpdateResponse(ParaObject object, Map<String, Object> newContent) {
+	protected static Response getUpdateResponse(ParaObject object, Map<String, Object> newContent) {
 		if (object != null && object.getAppid() != null) {
 			Utils.setAnnotatedFields(object, newContent, Locked.class);
 			String[] errors = Utils.validateObject(object);
@@ -473,9 +473,10 @@ public final class RestUtils {
 		if (status == null) {
 			return Response.status(Response.Status.BAD_REQUEST).build();
 		}
-		String msg = (messages == null || messages.length == 0) ? "" : StringUtils.join(messages, ". ");
+		String msg = (messages == null || messages.length == 0) ?
+				status.getReasonPhrase() : StringUtils.join(messages, ". ");
 		try {
-			return getExceptionResponse(status.getStatusCode(), status.getReasonPhrase().concat(". ").concat(msg));
+			return getExceptionResponse(status.getStatusCode(), msg);
 		} catch (Exception ex) {
 			logger.error(null, ex);
 			return Response.status(Response.Status.BAD_REQUEST).build();
