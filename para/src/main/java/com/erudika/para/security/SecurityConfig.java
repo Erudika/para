@@ -101,8 +101,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		String[] defRoles = {"USER", "MOD", "ADMIN"};
 		Map<String, String> confMap = Config.getConfigMap();
 		ConfigObject c = Config.getConfig().getObject("security.protected");
-		ConfigValue apiSec = Config.getConfig().getValue("security.api");
-		boolean enableRestFilter = apiSec != null && "enabled".equals(apiSec.unwrapped());
+		ConfigValue apiSec = Config.getConfig().getValue("security.api_security");
+		boolean enableRestFilter = apiSec != null && Boolean.TRUE.equals(apiSec.unwrapped());
 
 		for (String key : c.keySet()) {
 			ConfigValue cv = c.get(key);
@@ -126,17 +126,21 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 			}
 		}
 
-		CachedCsrfTokenRepository str = new CachedCsrfTokenRepository();
-		Para.injectInto(str);
+		if (Config.getConfigParamUnwrapped("security.csrf_protection", true)) {
+			CachedCsrfTokenRepository str = new CachedCsrfTokenRepository();
+			Para.injectInto(str);
+			
+			http.csrf().requireCsrfProtectionMatcher(new RequestMatcher() {
+				private Pattern allowedMethods = Pattern.compile("^(GET|HEAD|TRACE|OPTIONS)$");
 
-		http.csrf().requireCsrfProtectionMatcher(new RequestMatcher() {
-			private Pattern allowedMethods = Pattern.compile("^(GET|HEAD|TRACE|OPTIONS)$");
-
-			public boolean matches(HttpServletRequest request) {
-				return !RestRequestMatcher.INSTANCE.matches(request)
-						&& !allowedMethods.matcher(request.getMethod()).matches();
-			}
-		}).csrfTokenRepository(str);
+				public boolean matches(HttpServletRequest request) {
+					return !RestRequestMatcher.INSTANCE.matches(request)
+							&& !allowedMethods.matcher(request.getMethod()).matches();
+				}
+			}).csrfTokenRepository(str);
+		} else {
+			http.csrf().disable();
+		}
 
 		http.sessionManagement().enableSessionUrlRewriting(false);
 		http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.NEVER);
@@ -145,6 +149,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		http.exceptionHandling().authenticationEntryPoint(new SimpleAuthenticationEntryPoint(confMap.get("security.signin")));
 		http.exceptionHandling().accessDeniedHandler(new SimpleAccessDeniedHandler(confMap.get("security.access_denied")));
 		http.requestCache().requestCache(new SimpleRequestCache());
+		http.logout().logoutUrl(confMap.get("security.signout")).
+				logoutSuccessUrl(confMap.get("security.signout_success"));
 
 		SimpleAuthenticationSuccessHandler successHandler = new SimpleAuthenticationSuccessHandler();
 		successHandler.setDefaultTargetUrl(confMap.get("security.signin_success"));

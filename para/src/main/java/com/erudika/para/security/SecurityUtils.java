@@ -19,7 +19,6 @@ package com.erudika.para.security;
 
 import com.erudika.para.core.User;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,11 +55,13 @@ public final class SecurityUtils {
 	 * @param req HTTP request
 	 * @param res HTTP response
 	 */
-	public static void clearSession(HttpServletRequest req, HttpServletResponse res) {
+	public static void clearSession(HttpServletRequest req) {
 		SecurityContextHolder.clearContext();
-		HttpSession session = req.getSession(false);
-		if (session != null) {
-			session.invalidate();
+		if (req != null) {
+			HttpSession session = req.getSession(false);
+			if (session != null) {
+				session.invalidate();
+			}
 		}
 	}
 }
