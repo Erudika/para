@@ -111,7 +111,6 @@ public class Api1 extends ResourceConfig {
 		// current user/app object
 		Resource.Builder meRes = Resource.builder("me");
 		meRes.addMethod(GET).produces(JSON).handledBy(meHandler());
-		meRes.addMethod(PUT).produces(JSON).handledBy(meHandler());
 		registerResources(meRes.build());
 
 		// util functions API
@@ -375,7 +374,6 @@ public class Api1 extends ResourceConfig {
 							return Response.ok(app).build();
 						}
 					}
-				} else if(PUT.equals(ctx.getMethod())) {
 				}
 				return Response.status(Response.Status.UNAUTHORIZED).build();
 			}
