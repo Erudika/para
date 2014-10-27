@@ -65,6 +65,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.web.WebApplicationInitializer;
 import org.springframework.web.context.ContextLoaderListener;
 import org.springframework.web.context.WebApplicationContext;
@@ -77,7 +78,7 @@ import org.springframework.web.context.WebApplicationContext;
 @Configuration
 @EnableAutoConfiguration(exclude = { MessageSourceAutoConfiguration.class })
 @ComponentScan
-public class Para implements WebApplicationInitializer {
+public class Para implements WebApplicationInitializer, Ordered {
 
 	public static final String LOGO;
 	static {
@@ -108,6 +109,7 @@ public class Para implements WebApplicationInitializer {
 	 */
 	public static void initialize(Module... modules) {
 		if (injector == null) {
+			printLogo();
 			try {
 				logger.info("--- Para.initialize() [{}] ---", Config.ENVIRONMENT);
 				Stage stage = Config.IN_PRODUCTION ? Stage.PRODUCTION : Stage.DEVELOPMENT;
@@ -286,6 +288,11 @@ public class Para implements WebApplicationInitializer {
 		throw new IllegalStateException("Call Para.initialize() first!");
 	}
 
+	@Override
+	public int getOrder() {
+		return 1;
+	}
+
 	@Bean
 	public ServletRegistrationBean jerseyRegistrationBean() {
 		ServletRegistrationBean reg = new ServletRegistrationBean(
@@ -333,7 +340,9 @@ public class Para implements WebApplicationInitializer {
 	}
 
 	private static void printLogo() {
-		System.out.print(LOGO);
+		if (Config.getConfigParamUnwrapped("print_logo", true) == true) {
+			System.out.print(LOGO);
+		}
 	}
 
 	@Override
@@ -357,11 +366,9 @@ public class Para implements WebApplicationInitializer {
 		}
 	}
 
-	protected WebApplicationContext createRootApplicationContext(
-			ServletContext servletContext) {
+	protected WebApplicationContext createRootApplicationContext(ServletContext servletContext) {
 		ApplicationContext parent = null;
-		Object object = servletContext
-				.getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
+		Object object = servletContext.getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
 		if (object instanceof ApplicationContext) {
 			logger.info("Root context already created (using as parent).");
 			parent = (ApplicationContext) object;
@@ -381,7 +388,6 @@ public class Para implements WebApplicationInitializer {
 
 	protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
 		// entry point (WAR)
-		printLogo();
 		application.web(true);
 		application.showBanner(false);
 		initialize();
@@ -390,7 +396,6 @@ public class Para implements WebApplicationInitializer {
 
 	public static void main(String[] args) {
 		// entry point (JAR)
-		printLogo();
 		SpringApplication app = new SpringApplication(Para.class);
 		app.setWebEnvironment(true);
 		app.setShowBanner(false);

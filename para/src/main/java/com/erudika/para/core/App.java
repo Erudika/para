@@ -21,6 +21,7 @@ import com.erudika.para.Para;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.persistence.DAO;
+import com.erudika.para.search.ElasticSearchUtils;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
@@ -68,8 +69,10 @@ public class App implements ParaObject {
 
 	@Stored @Locked private boolean shared;
 	@Stored @Locked @NotBlank private String secret;
+	@Stored @Locked private Boolean readOnly;
 	@Stored private Map<String, String> datatypes;
-	@Stored @Locked private Boolean active;
+	@Stored private Boolean active;
+	@Stored private Long deleteOn;
 
 	private transient String shardKey;
 	private transient DAO dao;
@@ -87,7 +90,7 @@ public class App implements ParaObject {
 	 * @param id the name of the app
 	 */
 	public App(String id) {
-		this.shared = false;
+		this.shared = true;
 		this.active = true;
 		setId(id);
 		setName(getName());
@@ -118,6 +121,22 @@ public class App implements ParaObject {
 	}
 
 	/**
+	 * The timestamp for when this app must be deleted.
+	 * @return a timestamp
+	 */
+	public Long getDeleteOn() {
+		return deleteOn;
+	}
+
+	/**
+	 * Sets the time for deletion
+	 * @param deleteOn a timestamp
+	 */
+	public void setDeleteOn(Long deleteOn) {
+		this.deleteOn = deleteOn;
+	}
+
+	/**
 	 * Returns the app's secret key
 	 * @return the secret key
 	 */
@@ -135,6 +154,22 @@ public class App implements ParaObject {
 	 */
 	public void setSecret(String secret) {
 		this.secret = secret;
+	}
+
+	/**
+	 * Gets read-only mode.
+	 * @return true if app is in read-only mode
+	 */
+	public Boolean isReadOnly() {
+		return readOnly;
+	}
+
+	/**
+	 * Sets read-only mode
+	 * @param readOnly true if app is in read-only mode
+	 */
+	public void setReadOnly(Boolean readOnly) {
+		this.readOnly = readOnly;
 	}
 
 	/**
@@ -233,6 +268,10 @@ public class App implements ParaObject {
 	public void delete() {
 		// root app cannot be deleted
 		if (!StringUtils.equals(getId(), prefix.concat(Config.APP_NAME_NS))) {
+			if (!shared) {
+				ElasticSearchUtils.deleteIndex(getAppIdentifier());
+			}
+
 			getDao().delete(this);
 		}
 	}

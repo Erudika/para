@@ -18,7 +18,7 @@
 package com.erudika.para.utils;
 
 /**
- * This class deals with pagination. It limits the results for queries in the {@link com.erudika.para.persistence.DAO}
+ * This class stores pagination data. It limits the results for queries in the {@link com.erudika.para.persistence.DAO}
  * and {@link com.erudika.para.search.Search} objects and also counts the total number of results that are returned.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
