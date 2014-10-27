@@ -20,8 +20,10 @@ package com.erudika.para.rest;
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
+import com.erudika.para.core.User;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
+import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.HumanTime;
 import com.erudika.para.utils.Pager;
@@ -52,7 +54,7 @@ import org.slf4j.LoggerFactory;
  * and the way API request will be handled. This is API version 1.0.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public final class Api1 extends ResourceConfig {
+public class Api1 extends ResourceConfig {
 
 	public static final String PATH = "/v1/";
 
@@ -105,6 +107,12 @@ public final class Api1 extends ResourceConfig {
 		Resource.Builder typesRes = Resource.builder("types");
 		typesRes.addMethod(GET).produces(JSON).handledBy(listTypesHandler());
 		registerResources(typesRes.build());
+
+		// current user/app object
+		Resource.Builder meRes = Resource.builder("me");
+		meRes.addMethod(GET).produces(JSON).handledBy(meHandler());
+		meRes.addMethod(PUT).produces(JSON).handledBy(meHandler());
+		registerResources(meRes.build());
 
 		// util functions API
 		Resource.Builder utilsRes = Resource.builder("utils/{method}");
@@ -234,7 +242,7 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> crudHandler(final App app, final String type) {
+	protected Inflector<ContainerRequestContext, Response> crudHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				String id = ctx.getUriInfo().getPathParameters().getFirst(Config._ID);
@@ -260,7 +268,7 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> linksHandler() {
+	protected Inflector<ContainerRequestContext, Response> linksHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
@@ -354,6 +362,26 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
+	private Inflector<ContainerRequestContext, Response> meHandler() {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				if (GET.equals(ctx.getMethod())) {
+					User user = SecurityUtils.getAuthenticatedUser();
+					if (user != null) {
+						return Response.ok(user).build();
+					} else {
+						App app = RestUtils.getPrincipalApp();
+						if (app != null) {
+							return Response.ok(app).build();
+						}
+					}
+				} else if(PUT.equals(ctx.getMethod())) {
+				}
+				return Response.status(Response.Status.UNAUTHORIZED).build();
+			}
+		};
+	}
+
 	private Inflector<ContainerRequestContext, Response> listTypesHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
@@ -399,7 +427,7 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> createHandler(final App app, final String type) {
+	protected Inflector<ContainerRequestContext, Response> createHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				return RestUtils.getCreateResponse(app, type, ctx.getEntityStream());
@@ -407,7 +435,7 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> readHandler(final App app, final String type) {
+	protected Inflector<ContainerRequestContext, Response> readHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				ParaObject obj = Utils.toObject(type);
@@ -417,7 +445,7 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> updateHandler(final App app, final String type) {
+	protected Inflector<ContainerRequestContext, Response> updateHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				ParaObject obj = Utils.toObject(type);
@@ -429,7 +457,7 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> deleteHandler(final App app, final String type) {
+	protected Inflector<ContainerRequestContext, Response> deleteHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				ParaObject obj = Utils.toObject(type);
@@ -440,7 +468,7 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> batchCreateHandler() {
+	protected Inflector<ContainerRequestContext, Response> batchCreateHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = RestUtils.getPrincipalApp();
@@ -449,7 +477,7 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> batchReadHandler() {
+	protected Inflector<ContainerRequestContext, Response> batchReadHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = RestUtils.getPrincipalApp();
@@ -458,7 +486,7 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> batchUpdateHandler() {
+	protected Inflector<ContainerRequestContext, Response> batchUpdateHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = RestUtils.getPrincipalApp();
@@ -467,7 +495,7 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> batchDeleteHandler() {
+	protected Inflector<ContainerRequestContext, Response> batchDeleteHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = RestUtils.getPrincipalApp();
@@ -476,7 +504,7 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> searchHandler(final String type) {
+	protected Inflector<ContainerRequestContext, Response> searchHandler(final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = RestUtils.getPrincipalApp();
