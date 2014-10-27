@@ -20,7 +20,6 @@ package com.erudika.para.security;
 import com.erudika.para.utils.Utils;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
-import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 /**
@@ -33,15 +32,13 @@ public final class AjaxRequestMatcher implements RequestMatcher {
 	 * An instance of this class.
 	 */
 	public static final RequestMatcher INSTANCE = new AjaxRequestMatcher();
-	private static final RequestMatcher ajax = new RequestHeaderRequestMatcher("X-Requested-With", "XMLHttpRequest");
 
 	private AjaxRequestMatcher() { }
 
 	@Override
 	public boolean matches(HttpServletRequest request) {
 		// Determine if the request is AJAX or expects JSON response.
-		String accept = request.getHeader(HttpHeaders.ACCEPT);
-		return ajax.matches(request) || Utils.isJsonType(accept);
+		return Utils.isAjaxRequest(request) || Utils.isJsonType(request.getHeader(HttpHeaders.ACCEPT));
 	}
 
 }

@@ -35,7 +35,8 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
  */
 public class SimpleRequestCache implements RequestCache {
 
-	private final RequestMatcher requestMatcher = AnyRequestMatcher.INSTANCE;
+	private final RequestMatcher anyRequestMatcher = AnyRequestMatcher.INSTANCE;
+	private final RequestMatcher ajaxRequestMatcher = AjaxRequestMatcher.INSTANCE;
 	private final PortResolver portResolver = new PortResolverImpl();
 
 	/**
@@ -45,7 +46,7 @@ public class SimpleRequestCache implements RequestCache {
 	 */
 	@Override
 	public void saveRequest(HttpServletRequest request, HttpServletResponse response) {
-		if (requestMatcher.matches(request)) {
+		if (anyRequestMatcher.matches(request) && !ajaxRequestMatcher.matches(request)) {
 			DefaultSavedRequest savedRequest = new DefaultSavedRequest(request, portResolver);
 			Utils.setStateParam(Config.RETURNTO_COOKIE,
 					Utils.base64enc(savedRequest.getRedirectUrl().getBytes()), request, response);

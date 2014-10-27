@@ -80,7 +80,8 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 			if (auth != null && auth.getPrincipal() instanceof User) {
 				User u = SecurityUtils.getAuthenticatedUser();
 				if (u == null || !u.getActive()) {
-					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN, "User is invalid.");
+					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+							"User doesn't have permission to access this resource.");
 					return;
 				}
 			} else {
