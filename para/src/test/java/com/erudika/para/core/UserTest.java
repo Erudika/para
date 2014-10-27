@@ -68,7 +68,30 @@ public class UserTest {
 		assertEquals("EUR", u.getCurrency());
 		u.setCurrency("");
 		assertEquals("EUR", u.getCurrency());
+	}
 
+	@Test
+	public void testCanModify() {
+		Sysprop p = new Sysprop("test");
+		assertFalse(u.canModify(null));
+		assertFalse(u.canModify(p));
+		p.setCreatorid(u.getId());
+		p.setAppid("1");
+		u.setAppid("1");
+		assertTrue(u.canModify(p));
+
+		p.setCreatorid(null);
+		p.setParentid(u.getId());
+		assertTrue(u.canModify(p));
+
+		p.setParentid(null);
+		p.setId(u.getId());
+		assertTrue(u.canModify(p));
+
+		p.setId("1234");
+		u.setGroups(Groups.ADMINS.toString());
+		assertTrue(u.canModify(p));
+		u.setGroups(Groups.USERS.toString());
 	}
 
 	@Test
@@ -182,7 +205,7 @@ public class UserTest {
 
 		u.setIdentifier("1234");
 		assertNull(User.readUserForIdentifier(u));
-		
+
 
 		u.delete();
 

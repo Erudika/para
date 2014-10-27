@@ -65,8 +65,6 @@ public class User implements ParaObject, UserDetails {
 	@Stored @Locked private Boolean active;
 	@Stored @NotBlank @Email private String email;
 	@Stored private String currency;
-	@Stored private Boolean pro;
-	@Stored private Integer plan;
 	@Stored private String picture;
 
 	@NotBlank @Size(min = Config.MIN_PASS_LENGTH, max = 255)
@@ -110,38 +108,6 @@ public class User implements ParaObject, UserDetails {
 	 */
 	public void setPicture(String picture) {
 		this.picture = picture;
-	}
-
-	/**
-	 * Paid plan. Reserved for future use.
-	 * @return a paid plan
-	 */
-	public Integer getPlan() {
-		return plan;
-	}
-
-	/**
-	 * Sets a paid plan. Reserved for future use.
-	 * @param plan a paid plan
-	 */
-	public void setPlan(Integer plan) {
-		this.plan = plan;
-	}
-
-	/**
-	 * Premium user flag.
-	 * @return true if user is pro
-	 */
-	public Boolean getPro() {
-		return pro != null && pro;
-	}
-
-	/**
-	 * Sets the premium user flag.
-	 * @param pro pro plan flag
-	 */
-	public void setPro(Boolean pro) {
-		this.pro = pro;
 	}
 
 	/**
@@ -232,6 +198,20 @@ public class User implements ParaObject, UserDetails {
 		this.currency = currency;
 	}
 
+	/**
+	 * @param obj an object
+	 * @return true if the user is the creator or parent of this object or an admin user
+	 */
+	public boolean canModify(ParaObject obj) {
+		if (obj == null || id == null) {
+			return false;
+		} else {
+			boolean appsMatch = StringUtils.equalsIgnoreCase(appid, obj.getAppid());
+			boolean mine = id.equals(obj.getCreatorid()) || id.equals(obj.getId()) || id.equals(obj.getParentid());
+			return appsMatch && (mine || isAdmin());
+		}
+	}
+
 	@Override
 	public String create() {
 		if (StringUtils.isBlank(getIdentifier())) {
@@ -309,6 +289,7 @@ public class User implements ParaObject, UserDetails {
 	 * Is the main identifier a Facebook id
 	 * @return true if user is signed in with Facebook
 	 */
+	@JsonIgnore
 	public boolean isFacebookUser() {
 		return StringUtils.startsWithIgnoreCase(identifier, Config.FB_PREFIX);
 	}
@@ -317,6 +298,7 @@ public class User implements ParaObject, UserDetails {
 	 * Is the main identifier a Google+ id
 	 * @return true if user is signed in with Google+
 	 */
+	@JsonIgnore
 	public boolean isGooglePlusUser() {
 		return StringUtils.startsWithIgnoreCase(identifier, Config.GPLUS_PREFIX);
 	}
@@ -325,6 +307,7 @@ public class User implements ParaObject, UserDetails {
 	 * Is the main identifier a LinkedIn id
 	 * @return true if user is signed in with LinkedIn
 	 */
+	@JsonIgnore
 	public boolean isLinkedInUser() {
 		return StringUtils.startsWithIgnoreCase(identifier, Config.LINKEDIN_PREFIX);
 	}
@@ -333,6 +316,7 @@ public class User implements ParaObject, UserDetails {
 	 * Is the main identifier a Twitter id
 	 * @return true if user is signed in with Twitter
 	 */
+	@JsonIgnore
 	public boolean isTwitterUser() {
 		return StringUtils.startsWithIgnoreCase(identifier, Config.TWITTER_PREFIX);
 	}
@@ -341,6 +325,7 @@ public class User implements ParaObject, UserDetails {
 	 * Checks for admin rights
 	 * @return true if user has admin rights
 	 */
+	@JsonIgnore
 	public boolean isAdmin() {
 		return StringUtils.equalsIgnoreCase(this.groups, Groups.ADMINS.toString());
 	}
@@ -349,8 +334,27 @@ public class User implements ParaObject, UserDetails {
 	 * Checks for moderator rights
 	 * @return true if user has mod rights
 	 */
+	@JsonIgnore
 	public boolean isModerator() {
 		return isAdmin() ? true : StringUtils.equalsIgnoreCase(this.groups, Groups.MODS.toString());
+	}
+
+	/**
+	 * Returns the name of the identity provider.
+	 * @return "facebook", "google"... etc.
+	 */
+	public String getIdentityProvider() {
+		if (isFacebookUser()) {
+			return "facebook";
+		} else if (isGooglePlusUser()) {
+			return "google";
+		} else if (isTwitterUser()) {
+			return "twitter";
+		} else if (isLinkedInUser()) {
+			return "linkedin";
+		} else {
+			return "none";
+		}
 	}
 
 	/**
