@@ -17,21 +17,22 @@
  */
 package com.erudika.para.email;
 
-import com.erudika.para.utils.Config;
-import com.google.inject.AbstractModule;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * The default email module.
+ * Does nothing.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class EmailModule extends AbstractModule {
+public class NoopEmailer implements Emailer {
 
-	protected void configure() {
-		if (Config.IN_PRODUCTION) {
-			bind(Emailer.class).to(AWSEmailer.class);
-		} else {
-			bind(Emailer.class).to(NoopEmailer.class);
-		}
+	private static final Logger logger = LoggerFactory.getLogger(NoopEmailer.class);
+
+	@Override
+	public boolean sendEmail(List<String> emails, String subject, String body) {
+		logger.info("EMAIL SENT: {}, {}, {}", emails, subject, body);
+		return true;
 	}
 
 }
