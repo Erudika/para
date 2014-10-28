@@ -17,6 +17,7 @@
 		<springVer2>1.1.8.RELEASE</springVer2>
 		<jacksonVer>2.4.3</jacksonVer>
 		<hazelcastVer>3.3.1</hazelcastVer>
+		<awsJdkVer>1.9.1</awsJdkVer>
 	</properties>
 
 	<dependencies>
@@ -158,6 +159,12 @@
 			<groupId>org.elasticsearch</groupId>
 			<artifactId>elasticsearch-cloud-aws</artifactId>
 			<version>2.3.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>com.amazonaws</groupId>
+					<artifactId>aws-java-sdk</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<!-- HAZELCAST -->
@@ -204,6 +211,38 @@
 			<version>${logbackVer}</version>
 		</dependency>
 
+		<!-- AWS JAVA SDK -->
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-core</artifactId>
+			<version>${awsJdkVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-ec2</artifactId>
+			<version>${awsJdkVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-dynamodb</artifactId>
+			<version>${awsJdkVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-s3</artifactId>
+			<version>${awsJdkVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-ses</artifactId>
+			<version>${awsJdkVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-sqs</artifactId>
+			<version>${awsJdkVer}</version>
+		</dependency>
+
 		<!-- OTHER -->
 		<dependency>
 			<groupId>com.eaio.uuid</groupId>
@@ -231,17 +270,18 @@
 			<artifactId>hibernate-validator</artifactId>
 			<version>5.1.2.Final</version>
 		</dependency>
-		<dependency>
+<!--		<dependency>
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk</artifactId>
-			<version>1.9.0</version>
+			<version>${awsJdkVer}</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>commons-logging</artifactId>
 					<groupId>commons-logging</groupId>
 				</exclusion>
 			</exclusions>
-		</dependency>
+		</dependency>-->
+
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>

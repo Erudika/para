@@ -129,7 +129,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		if (Config.getConfigParamUnwrapped("security.csrf_protection", true)) {
 			CachedCsrfTokenRepository str = new CachedCsrfTokenRepository();
 			Para.injectInto(str);
-			
+
 			http.csrf().requireCsrfProtectionMatcher(new RequestMatcher() {
 				private Pattern allowedMethods = Pattern.compile("^(GET|HEAD|TRACE|OPTIONS)$");
 

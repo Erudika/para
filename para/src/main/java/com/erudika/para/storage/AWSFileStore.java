@@ -24,7 +24,6 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.StorageClass;
-import com.amazonaws.util.IOUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.io.IOException;
@@ -101,7 +100,11 @@ public class AWSFileStore implements FileStore {
 		} catch (IOException e) {
 			logger.error(null, e);
 		} finally {
-			IOUtils.closeQuietly(data, null);
+			try {
+				data.close();
+			} catch (IOException ex) {
+				logger.error(null, ex);
+			}
 		}
 		return null;
 	}

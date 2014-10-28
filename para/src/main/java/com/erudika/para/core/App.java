@@ -160,7 +160,7 @@ public class App implements ParaObject {
 	 * Gets read-only mode.
 	 * @return true if app is in read-only mode
 	 */
-	public Boolean isReadOnly() {
+	public Boolean getReadOnly() {
 		return readOnly;
 	}
 

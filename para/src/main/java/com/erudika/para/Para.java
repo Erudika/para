@@ -340,7 +340,7 @@ public class Para implements WebApplicationInitializer, Ordered {
 	}
 
 	private static void printLogo() {
-		if (Config.getConfigParamUnwrapped("print_logo", true) == true) {
+		if (Config.getConfigParamUnwrapped("print_logo", true)) {
 			System.out.print(LOGO);
 		}
 	}
