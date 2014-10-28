@@ -17,8 +17,13 @@
  */
 package com.erudika.para.search;
 
+import com.erudika.para.core.ParaObject;
 import com.erudika.para.persistence.DAO;
+import static com.erudika.para.search.SearchTest.u;
 import com.erudika.para.utils.Config;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.AfterClass;
 import static org.junit.Assert.*;
 import org.junit.BeforeClass;
@@ -88,6 +93,25 @@ public class ElasticSearchIT extends SearchTest {
 		assertNull(ElasticSearchUtils.getIndexNameForAlias(""));
 		assertEquals("test-index1", ElasticSearchUtils.getIndexNameForAlias("test-index"));
 		ElasticSearchUtils.deleteIndex("test-index");
+	}
+
+	@Test
+	public void testRangeQuery() {
+		// many terms
+		Map<String, Object> terms1 = new HashMap<String, Object>();
+		terms1.put(Config._TIMESTAMP + " <", 1111111111L);
+
+		Map<String, Object> terms2 = new HashMap<String, Object>();
+		terms2.put(Config._TIMESTAMP + "<=", u.getTimestamp());
+
+		List<ParaObject> res1 = s.findTerms(u.getType(), terms1, true);
+		List<ParaObject> res2 = s.findTerms(u.getType(), terms2, true);
+
+		assertEquals(1, res1.size());
+		assertEquals(1, res2.size());
+
+		assertEquals(u.getId(), res1.get(0).getId());
+		assertEquals(u.getId(), res2.get(0).getId());
 	}
 
 	@Test

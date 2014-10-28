@@ -62,7 +62,7 @@ public abstract class SearchTest {
 		u.setGroups(User.Groups.USERS.toString());
 		u.setEmail("john@asd.com");
 		u.setIdentifier(u.getEmail());
-		u.setTimestamp(Utils.timestamp());
+		u.setTimestamp(1000000000L);
 		u.setPassword("123456");
 		u.setTags(CoreUtils.addTags(u.getTags(), "one", "two", "three"));
 

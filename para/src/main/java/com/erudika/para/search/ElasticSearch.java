@@ -28,6 +28,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
@@ -45,12 +47,14 @@ import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.index.query.AndFilterBuilder;
+import org.elasticsearch.index.query.BaseFilterBuilder;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.OrFilterBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeFilterBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.sort.SortBuilder;
@@ -245,36 +249,41 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> findTerms(String appid, String type,
 			Map<String, ?> terms, boolean mustMatchAll, Pager... pager) {
 		if (terms == null || terms.isEmpty()) {
 			return new ArrayList<P>();
 		}
-		FilterBuilder fb = null;
+		FilterBuilder fb = mustMatchAll ? FilterBuilders.andFilter() : FilterBuilders.orFilter();
 		boolean noop = true;
-		if (terms.size() == 1) {
-			String field = terms.keySet().iterator().next();
-			if (!StringUtils.isBlank(field) && terms.get(field) != null) {
-				fb = FilterBuilders.termFilter(field, terms.get(field));
+		boolean one = terms.size() == 1;
+
+		for (Map.Entry<String, ?> term : terms.entrySet()) {
+			if (!StringUtils.isBlank(term.getKey()) && term.getValue() != null) {
+				Matcher matcher = Pattern.compile(".*(<|>|<=|>=)$").matcher(term.getKey().trim());
+				BaseFilterBuilder bfb = FilterBuilders.termFilter(term.getKey(), term.getValue());
+				if (matcher.matches()) {
+					String key = term.getKey().replaceAll("[<>=\\s]+$", "");
+					RangeFilterBuilder rfb = FilterBuilders.rangeFilter(key);
+					if (">".equals(matcher.group(1))) {
+						bfb = rfb.gt(term.getValue());
+					} else if ("<".equals(matcher.group(1))) {
+						bfb = rfb.lt(term.getValue());
+					} else if (">=".equals(matcher.group(1))) {
+						bfb = rfb.gte(term.getValue());
+					} else if ("<=".equals(matcher.group(1))) {
+						bfb = rfb.lte(term.getValue());
+					}
+				}
+				if (one) {
+					fb = bfb;
+				} else if (mustMatchAll) {
+					((AndFilterBuilder) fb).add(bfb);
+				} else {
+					((OrFilterBuilder) fb).add(bfb);
+				}
 				noop = false;
-			}
-		} else {
-			if (mustMatchAll) {
-				fb = FilterBuilders.andFilter();
-				for (Map.Entry<String, ?> term : terms.entrySet()) {
-					if (!StringUtils.isBlank(term.getKey()) && term.getValue() != null) {
-						((AndFilterBuilder) fb).add(FilterBuilders.termFilter(term.getKey(), term.getValue()));
-						noop = false;
-					}
-				}
-			} else {
-				fb = FilterBuilders.orFilter();
-				for (Map.Entry<String, ?> term : terms.entrySet()) {
-					if (!StringUtils.isBlank(term.getKey()) && term.getValue() != null) {
-						((OrFilterBuilder) fb).add(FilterBuilders.termFilter(term.getKey(), term.getValue()));
-						noop = false;
-					}
-				}
 			}
 		}
 		if (noop) {
