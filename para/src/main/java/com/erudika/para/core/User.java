@@ -228,7 +228,9 @@ public class User implements ParaObject, UserDetails {
 			setGroups(User.Groups.USERS.toString());
 		}
 
-		setActive(true);
+		if (active == null) {
+			setActive(true);
+		}
 
 		if (getDao().create(getAppid(), this) != null) {
 			createIdentifier(getId(), getIdentifier(), getPassword());
