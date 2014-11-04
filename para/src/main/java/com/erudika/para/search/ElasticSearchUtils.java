@@ -78,8 +78,8 @@ public final class ElasticSearchUtils {
 		settings.put("action.disable_delete_all_indices", true);
 		settings.put("cluster.name", Config.CLUSTER_NAME);
 
-		boolean localNode = Config.getConfigParamUnwrapped("para.es.local_node", true);
-		String esHome = Config.getConfigParam("para.es.dir", esDir);
+		boolean localNode = Config.getConfigParamUnwrapped("es.local_node", true);
+		String esHome = Config.getConfigParam("es.dir", esDir);
 		if (!esHome.endsWith("/")) {
 			esHome += "/";
 		}
@@ -159,8 +159,8 @@ public final class ElasticSearchUtils {
 	 * @return true if created
 	 */
 	public static boolean createIndex(String appid) {
-		return createIndex(appid, Integer.valueOf(Config.getConfigParam("para.es.shards", "5")),
-				Integer.valueOf(Config.getConfigParam("para.es.replicas", "0")));
+		return createIndex(appid, Integer.valueOf(Config.getConfigParam("es.shards", "5")),
+				Integer.valueOf(Config.getConfigParam("es.replicas", "0")));
 	}
 
 	/**

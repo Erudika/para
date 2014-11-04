@@ -35,6 +35,7 @@ import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.count.CountRequestBuilder;
+import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.get.GetRequestBuilder;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.get.MultiGetItemResponse;
@@ -103,7 +104,11 @@ public class ElasticSearch implements Search {
 			if (ttl > 0) {
 				irb.setTTL(ttl);
 			}
-			irb.execute().actionGet();
+			if (isAsyncEnabled()) {
+				irb.execute();
+			} else {
+				irb.execute().actionGet();
+			}
 			logger.debug("Search.index() {}", so.getId());
 		} catch (Exception e) {
 			logger.warn(null, e);
@@ -116,8 +121,13 @@ public class ElasticSearch implements Search {
 			return;
 		}
 		try {
-			client().prepareDelete(appid, so.getType(), so.getId()).
-					setRouting(so.getShardKey()).execute().actionGet();
+			DeleteRequestBuilder drb = client().prepareDelete(appid, so.getType(), so.getId()).
+					setRouting(so.getShardKey());
+			if (isAsyncEnabled()) {
+				drb.execute();
+			} else {
+				drb.execute().actionGet();
+			}
 			logger.debug("Search.unindex() {}", so.getId());
 		} catch (Exception e) {
 			logger.warn(null, e);
@@ -135,7 +145,11 @@ public class ElasticSearch implements Search {
 					setSource(Utils.getAnnotatedFields(pObject, null, false)).
 					setRouting(pObject.getShardKey()));
 		}
-		brb.execute().actionGet();
+		if (isAsyncEnabled()) {
+			brb.execute();
+		} else {
+			brb.execute().actionGet();
+		}
 		logger.debug("Search.indexAll() {}", objects.size());
 	}
 
@@ -149,7 +163,11 @@ public class ElasticSearch implements Search {
 			brb.add(client().prepareDelete(appid, pObject.getType(), pObject.getId()).
 					setRouting(pObject.getShardKey()));
 		}
-		brb.execute().actionGet();
+		if (isAsyncEnabled()) {
+			brb.execute();
+		} else {
+			brb.execute().actionGet();
+		}
 		logger.debug("Search.unindexAll() {}", objects.size());
 	}
 
@@ -557,6 +575,13 @@ public class ElasticSearch implements Search {
 		} else {
 			return appid;
 		}
+	}
+
+	/**
+	 * @return true if asynchronous indexing/unindexing is enabled.
+	 */
+	private boolean isAsyncEnabled() {
+		return Config.getConfigParamUnwrapped("es.async_enabled", false);
 	}
 
 	//////////////////////////////////////////////////////////////

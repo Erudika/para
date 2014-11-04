@@ -55,12 +55,12 @@ public final class HazelcastUtils {
 			com.hazelcast.config.Config cfg = new com.hazelcast.config.Config();
 			cfg.setInstanceName(getNodeName());
 			MapConfig mapcfg = new MapConfig("default");
-			mapcfg.setEvictionPercentage(25);
-			mapcfg.setEvictionPolicy(MapConfig.EvictionPolicy.LRU);
+			mapcfg.setEvictionPercentage(getEvictionPercentage());
+			mapcfg.setEvictionPolicy(getEvictionPolicy());
 	//			mapcfg.setMapStoreConfig(new MapStoreConfig().setEnabled(false).setClassName(NODE_NAME));
-			mapcfg.setMaxSizeConfig(new MaxSizeConfig().setSize(25).setMaxSizePolicy(USED_HEAP_PERCENTAGE));
+			mapcfg.setMaxSizeConfig(getMaxSize());
 			cfg.addMapConfig(mapcfg);
-			cfg.setProperty("hazelcast.jmx", "true");
+			cfg.setProperty("hazelcast.jmx", Boolean.toString(isJMXOn()));
 			cfg.setProperty("hazelcast.logging.type", "slf4j");
 			if (Config.IN_PRODUCTION) {
 				cfg.setNetworkConfig(new NetworkConfig().setJoin(new JoinConfig().
@@ -98,6 +98,24 @@ public final class HazelcastUtils {
 
 	private static String getNodeName() {
 		return Config.PARA.concat("-hc-").concat(Config.WORKER_ID);
+	}
+
+	private static MapConfig.EvictionPolicy getEvictionPolicy() {
+		return "LFU".equals(Config.getConfigParamUnwrapped("hc.eviction_policy", "LRU")) ?
+				MapConfig.EvictionPolicy.LFU : MapConfig.EvictionPolicy.LRU;
+	}
+
+	private static int getEvictionPercentage() {
+		return Config.getConfigParamUnwrapped("hc.eviction_percentage", 25);
+	}
+
+	private static MaxSizeConfig getMaxSize() {
+		return new MaxSizeConfig().setSize(Config.getConfigParamUnwrapped("hc.max_size", 25)).
+				setMaxSizePolicy(USED_HEAP_PERCENTAGE);
+	}
+
+	private static boolean isJMXOn() {
+		return Config.getConfigParamUnwrapped("hc.jmx_enabled", true);
 	}
 
 }
