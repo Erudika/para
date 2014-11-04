@@ -262,9 +262,10 @@ public final class Utils {
 	/**
 	 * Generates an authentication token - a random string encoded in Base64.
 	 * @param length the length of the generated token
+	 * @param urlSafe switches to a URL safe encoding
 	 * @return a random string
 	 */
-	public static String generateSecurityToken(int length) {
+	public static String generateSecurityToken(int length, boolean urlSafe) {
 		final byte[] bytes = new byte[length];
 		SecureRandom rand;
 		try {
@@ -274,7 +275,16 @@ public final class Utils {
 			rand = new SecureRandom();
 		}
 		rand.nextBytes(bytes);
-		return base64enc(bytes);
+		return urlSafe ? base64encURL(bytes) : base64enc(bytes);
+	}
+
+	/**
+	 * Generates an authentication token - a random string encoded in Base64.
+	 * @param length the length of the generated token
+	 * @return a random string
+	 */
+	public static String generateSecurityToken(int length) {
+		return generateSecurityToken(length, false);
 	}
 
 	/**
