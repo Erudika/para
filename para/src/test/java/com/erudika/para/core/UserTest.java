@@ -241,7 +241,8 @@ public class UserTest {
 
 	@Test
 	public void testGeneratePasswordResetToken() {
-		u.generatePasswordResetToken();
+		String fail = u.generatePasswordResetToken();
+		assertTrue(fail.isEmpty());
 		Sysprop s = dao.read(u.getIdentifier());
 		assertNull(s);
 
@@ -279,6 +280,47 @@ public class UserTest {
 		u.delete();
 		dao.delete(new Sysprop(u.getIdentifier()));
 		assertFalse(u.resetPassword(u.generatePasswordResetToken(), "654321"));
+	}
+
+	@Test
+	public void testGenerateEmailConfirmationToken() {
+		String fail = u.generateEmailConfirmationToken();
+		assertTrue(fail.isEmpty());
+		Sysprop s = dao.read(u.getIdentifier());
+		assertNull(s);
+
+		u.create();
+
+		String token1 = u.generateEmailConfirmationToken();
+		s = dao.read(u.getIdentifier());
+		assertNotNull(s);
+		assertEquals(token1, s.getProperty(Config._EMAIL_TOKEN));
+
+		String token2 = u.generateEmailConfirmationToken();
+		s = dao.read(u.getIdentifier());
+		assertNotNull(s);
+		assertEquals(token2, s.getProperty(Config._EMAIL_TOKEN));
+		assertNotEquals(token1, s.getProperty(Config._EMAIL_TOKEN));
+	}
+
+	@Test
+	public void testActivateWithEmailToken() {
+		String fail = u.generateEmailConfirmationToken();
+		assertTrue(fail.isEmpty());
+		assertFalse(u.getActive());
+		u.create();
+		assertFalse(u.getActive());
+		String token = u.generateEmailConfirmationToken();
+
+		assertTrue(u.activateWithEmailToken(token));
+		assertTrue(u.getActive());
+
+		assertFalse(u.activateWithEmailToken(token));
+		assertTrue(u.getActive());
+
+		u.delete();
+		dao.delete(new Sysprop(u.getIdentifier()));
+		assertFalse(u.activateWithEmailToken(u.generatePasswordResetToken()));
 	}
 
 }

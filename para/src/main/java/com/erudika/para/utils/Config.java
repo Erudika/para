@@ -65,6 +65,8 @@ public final class Config {
 	public static final String _PASSWORD = "password";
 	/** {@value #_RESET_TOKEN} */
 	public static final String _RESET_TOKEN = "token";
+	/** {@value #_EMAIL_TOKEN} */
+	public static final String _EMAIL_TOKEN = "etoken";
 	/** {@value #_TIMESTAMP} */
 	public static final String _TIMESTAMP = "timestamp";
 	/** {@value #_UPDATED} */

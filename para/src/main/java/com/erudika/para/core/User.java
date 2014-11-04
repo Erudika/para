@@ -17,6 +17,7 @@
  */
 package com.erudika.para.core;
 
+import com.eaio.uuid.UUID;
 import com.erudika.para.Para;
 import com.erudika.para.annotations.Email;
 import com.erudika.para.annotations.Locked;
@@ -500,7 +501,7 @@ public class User implements ParaObject, UserDetails {
 		}
 		Sysprop s = getDao().read(getAppid(), identifier);
 		if (s != null) {
-			String token = Utils.MD5(Utils.getNewId() + Config.SEPARATOR + Utils.generateSecurityToken());
+			String token = Utils.generateSecurityToken(42, true);
 			s.addProperty(Config._RESET_TOKEN, token);
 			getDao().update(getAppid(), s);
 			return token;
@@ -570,6 +571,49 @@ public class User implements ParaObject, UserDetails {
 		if (!StringUtils.isBlank(ident)) {
 			getDao().delete(getAppid(), new Sysprop(ident));
 		}
+	}
+
+	/**
+	 * Generates a new email confirmation token. Sent via email for user activation.
+	 * @return a Base64 encoded UUID
+	 */
+	public String generateEmailConfirmationToken() {
+		if (StringUtils.isBlank(identifier)) {
+			return "";
+		}
+		Sysprop s = getDao().read(getAppid(), identifier);
+		if (s != null) {
+			String token = Utils.base64encURL(new UUID().toString().getBytes());
+			s.addProperty(Config._EMAIL_TOKEN, token);
+			getDao().update(getAppid(), s);
+			return token;
+		}
+		return "";
+	}
+
+	/**
+	 * Activates a user if a given token matches the one stored.
+	 * @param token the email confirmation token. see {@link #generateEmailConfirmationToken() }
+	 * @return true if successful
+	 */
+	public final boolean activateWithEmailToken(String token) {
+		if (StringUtils.isBlank(token)) {
+			return false;
+		}
+		Sysprop s = getDao().read(getAppid(), identifier);
+		if (s != null && s.hasProperty(Config._EMAIL_TOKEN)) {
+			String storedToken = (String) s.getProperty(Config._EMAIL_TOKEN);
+			long now = Utils.timestamp();
+			long timeout = Config.PASSRESET_TIMEOUT_SEC * 1000;
+			if (StringUtils.equals(storedToken, token) && (s.getUpdated() + timeout) > now) {
+				s.removeProperty(Config._EMAIL_TOKEN);
+				getDao().update(getAppid(), s);
+				setActive(true);
+				update();
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
