@@ -443,7 +443,7 @@ public class User implements ParaObject, UserDetails {
 	 * @param u a user having a valid identifier set.
 	 * @return a user or null if no user is found for this identifier
 	 */
-	public static User readUserForIdentifier(User u) {
+	public static final User readUserForIdentifier(User u) {
 		if (u == null || StringUtils.isBlank(u.getIdentifier())) {
 			return null;
 		}
@@ -470,7 +470,7 @@ public class User implements ParaObject, UserDetails {
 	 * @param u a user with a set password
 	 * @return true if password matches the one in the data store
 	 */
-	public static boolean passwordMatches(User u) {
+	public static final boolean passwordMatches(User u) {
 		if (u == null) {
 			return false;
 		}
@@ -512,23 +512,15 @@ public class User implements ParaObject, UserDetails {
 	 * @return true if successful
 	 */
 	public final boolean resetPassword(String token, String newpass) {
-		if (StringUtils.isBlank(newpass) || StringUtils.isBlank(token)) {
-			return false;
-		}
-		if (newpass.length() < Config.MIN_PASS_LENGTH) {
+		if (StringUtils.isBlank(newpass) || StringUtils.isBlank(token) || newpass.length() < Config.MIN_PASS_LENGTH) {
 			return false;
 		}
 		Sysprop s = getDao().read(getAppid(), identifier);
-		if (s != null && s.hasProperty(Config._RESET_TOKEN)) {
-			String storedToken = (String) s.getProperty(Config._RESET_TOKEN);
-			long now = Utils.timestamp();
-			long timeout = Config.PASSRESET_TIMEOUT_SEC * 1000;
-			if (StringUtils.equals(storedToken, token) && (s.getUpdated() + timeout) > now) {
-				s.removeProperty(Config._RESET_TOKEN);
-				s.addProperty(Config._PASSWORD, Utils.bcrypt(newpass));
-				getDao().update(getAppid(), s);
-				return true;
-			}
+		if (isValidToken(s, Config._RESET_TOKEN, token)) {
+			s.removeProperty(Config._RESET_TOKEN);
+			s.addProperty(Config._PASSWORD, Utils.bcrypt(newpass));
+			getDao().update(getAppid(), s);
+			return true;
 		}
 		return false;
 	}
@@ -593,19 +585,46 @@ public class User implements ParaObject, UserDetails {
 	 * @return true if successful
 	 */
 	public final boolean activateWithEmailToken(String token) {
+		Sysprop s = getDao().read(getAppid(), identifier);
+		if (isValidToken(s, Config._EMAIL_TOKEN, token)) {
+			s.removeProperty(Config._EMAIL_TOKEN);
+			getDao().update(getAppid(), s);
+			setActive(true);
+			update();
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Validates a token sent via email for password reset.
+	 * @param token a token
+	 * @return true if valid
+	 */
+	public final boolean isValidPasswordResetToken(String token) {
+		Sysprop s = getDao().read(getAppid(), identifier);
+		return isValidToken(s, Config._RESET_TOKEN, token);
+	}
+
+	/**
+	 * Validates a token sent for email confirmation.
+	 * @param token a token
+	 * @return true if valid
+	 */
+	public final boolean isValidEmailConfirmationToken(String token) {
+		Sysprop s = getDao().read(getAppid(), identifier);
+		return isValidToken(s, Config._EMAIL_TOKEN, token);
+	}
+
+	private boolean isValidToken(Sysprop s, String key, String token) {
 		if (StringUtils.isBlank(token)) {
 			return false;
 		}
-		Sysprop s = getDao().read(getAppid(), identifier);
-		if (s != null && s.hasProperty(Config._EMAIL_TOKEN)) {
-			String storedToken = (String) s.getProperty(Config._EMAIL_TOKEN);
-			long now = Utils.timestamp();
+		if (s != null && s.hasProperty(key)) {
+			String storedToken = (String) s.getProperty(key);
+			// tokens expire afer a reasonably short period ~ 30 mins
 			long timeout = Config.PASSRESET_TIMEOUT_SEC * 1000;
-			if (StringUtils.equals(storedToken, token) && (s.getUpdated() + timeout) > now) {
-				s.removeProperty(Config._EMAIL_TOKEN);
-				getDao().update(getAppid(), s);
-				setActive(true);
-				update();
+			if (StringUtils.equals(storedToken, token) && (s.getUpdated() + timeout) > Utils.timestamp()) {
 				return true;
 			}
 		}
