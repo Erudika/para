@@ -83,10 +83,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	 */
 	@Override
 	public void configure(WebSecurity web) throws Exception {
-		ConfigList c = Config.getConfig().getList("security.ignored");
-		for (ConfigValue configValue : c) {
-			web.ignoring().antMatchers((String) configValue.unwrapped());
-		}
+		web.ignoring().requestMatchers(IgnoredRequestMatcher.INSTANCE);
 		//web.debug(true);
 	}
 
@@ -135,6 +132,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 				public boolean matches(HttpServletRequest request) {
 					return !RestRequestMatcher.INSTANCE.matches(request)
+							&& !IgnoredRequestMatcher.INSTANCE.matches(request)
 							&& !allowedMethods.matcher(request.getMethod()).matches();
 				}
 			}).csrfTokenRepository(str);
