@@ -473,8 +473,10 @@ public final class RestUtils {
 		if (status == null) {
 			return Response.status(Response.Status.BAD_REQUEST).build();
 		}
-		String msg = (messages == null || messages.length == 0) ?
-				status.getReasonPhrase() : StringUtils.join(messages, ". ");
+		String msg = StringUtils.join(messages, ". ");
+		if (StringUtils.isBlank(msg)) {
+			msg = status.getReasonPhrase();
+		}
 		try {
 			return getExceptionResponse(status.getStatusCode(), msg);
 		} catch (Exception ex) {
