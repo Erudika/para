@@ -99,6 +99,7 @@ public class SimpleUserService implements UserDetailsService,
 			}
 
 			user = new User();
+			user.setActive(true);
 			user.setEmail(email);
 			user.setName(fullName);
 			user.setPassword(new UUID().toString());
