@@ -88,6 +88,7 @@ public class User implements ParaObject, UserDetails {
 	public User(String id) {
 		setId(id);
 		setName(getName());
+		this.groups = Groups.USERS.toString();
 	}
 
 	@Override
