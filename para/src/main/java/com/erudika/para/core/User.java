@@ -34,7 +34,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import javax.validation.constraints.Size;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
 import org.springframework.security.core.GrantedAuthority;
@@ -69,7 +68,6 @@ public class User implements ParaObject, UserDetails {
 	@Stored private String currency;
 	@Stored private String picture;
 
-	@NotBlank @Size(min = Config.MIN_PASS_LENGTH, max = 255)
 	private transient String password;	// for validation purposes only
 	private transient String shardKey;
 	private transient DAO dao;

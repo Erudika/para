@@ -192,7 +192,7 @@ public class ElasticSearch implements Search {
 			MultiGetRequestBuilder mgr = client().prepareMultiGet();
 			for (String id : ids) {
 				MultiGetRequest.Item i = new MultiGetRequest.Item(stripRouting(appid), null, id);
-				i.routing(getRouting(appid, id));
+				i.routing(getRouting(appid, null));
 				mgr.add(i);
 			}
 
@@ -486,7 +486,7 @@ public class ElasticSearch implements Search {
 		try {
 			GetRequestBuilder grb = client().prepareGet().
 					setIndex(stripRouting(appid)).setId(key).
-					setRouting(getRouting(appid, key));
+					setRouting(getRouting(appid, null));
 
 			if (type != null) {
 				grb.setType(type);
@@ -561,7 +561,7 @@ public class ElasticSearch implements Search {
 				return routing;
 			}
 		}
-		return alt;
+		return (alt == null) ? appid : alt;
 	}
 
 	/**
