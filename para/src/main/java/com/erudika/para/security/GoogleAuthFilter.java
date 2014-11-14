@@ -124,16 +124,12 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 									user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 									user.setPassword(new UUID().toString());
 									user.setIdentifier(Config.GPLUS_PREFIX.concat(googleSubId));
-									if (user.getPicture() == null) {
-										if (pic != null) {
-											if (pic.indexOf("?") > 0) {
-												// user picture migth contain size parameters - remove them
-												user.setPicture(pic.substring(0, pic.indexOf("?")));
-											} else {
-												user.setPicture(pic);
-											}
+									if (pic != null) {
+										if (pic.indexOf("?") > 0) {
+											// user picture migth contain size parameters - remove them
+											user.setPicture(pic.substring(0, pic.indexOf("?")));
 										} else {
-											user.setPicture("http://www.gravatar.com/avatar?d=mm&size=200");
+											user.setPicture(pic);
 										}
 									}
 

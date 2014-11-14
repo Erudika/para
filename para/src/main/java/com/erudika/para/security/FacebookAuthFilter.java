@@ -118,7 +118,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 									user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 									user.setPassword(new UUID().toString());
 									user.setIdentifier(Config.FB_PREFIX.concat(fbId));
-									if (user.getPicture() == null && pic != null) {
+									if (pic != null) {
 										Map<String, Object> data = (Map<String, Object>) pic.get("data");
 										// try to get the direct url to the profile pic
 										if (data != null && data.containsKey("url")) {

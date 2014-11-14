@@ -40,6 +40,7 @@ import org.hibernate.validator.constraints.NotBlank;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.util.DigestUtils;
 
 /**
  * The core user object. Stores information about users.
@@ -233,6 +234,8 @@ public class User implements ParaObject, UserDetails {
 		if (getDao().create(getAppid(), this) != null) {
 			createIdentifier(getId(), getIdentifier(), getPassword());
 		}
+
+		setGravatarPicture();
 
 		return getId();
 	}
@@ -630,6 +633,20 @@ public class User implements ParaObject, UserDetails {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Sets the profile picture using the Gravatar service.
+	 */
+	private void setGravatarPicture() {
+		if (StringUtils.isBlank(picture)) {
+			if (email != null) {
+				String emailHash = DigestUtils.md5DigestAsHex(email.getBytes());
+				setPicture("http://www.gravatar.com/avatar/" + emailHash + "?size=200&d=mm&r=pg");
+			} else {
+				setPicture("http://www.gravatar.com/avatar?d=mm&size=200");
+			}
+		}
 	}
 
 	/**

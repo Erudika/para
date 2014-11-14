@@ -55,7 +55,7 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 	/**
 	 * The default filter mapping
 	 */
-	public static final String LINKEDIN_ACTION = "/linkedin_auth";
+	public static final String LINKEDIN_ACTION = "linkedin_auth";
 
 	/**
 	 * Default constructor.
@@ -120,12 +120,8 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 									user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 									user.setPassword(new UUID().toString());
 									user.setIdentifier(Config.LINKEDIN_PREFIX.concat(linkedInID));
-									if (user.getPicture() == null) {
-										if (pic != null) {
-											user.setPicture(pic);
-										} else {
-											user.setPicture("http://www.gravatar.com/avatar?d=mm&size=200");
-										}
+									if (pic != null) {
+										user.setPicture(pic);
 									}
 
 									String id = user.create();

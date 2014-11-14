@@ -27,7 +27,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.openid.OpenIDAttribute;
 import org.springframework.security.openid.OpenIDAuthenticationToken;
-import org.springframework.util.DigestUtils;
 
 /**
  * Simple user service. Looks up users in the data store.
@@ -104,14 +103,6 @@ public class SimpleUserService implements UserDetailsService,
 			user.setName(fullName);
 			user.setPassword(new UUID().toString());
 			user.setIdentifier(token.getIdentityUrl());
-			if (user.getPicture() == null) {
-				if (email != null) {
-					String emailHash = DigestUtils.md5DigestAsHex(email.getBytes());
-					user.setPicture("http://www.gravatar.com/avatar/" + emailHash + "?size=200&d=mm&r=pg");
-				} else {
-					user.setPicture("http://www.gravatar.com/avatar?d=mm&size=200");
-				}
-			}
 			String id = user.create();
 			if (id == null) {
 				throw new BadCredentialsException("Authentication failed: cannot create new user.");
