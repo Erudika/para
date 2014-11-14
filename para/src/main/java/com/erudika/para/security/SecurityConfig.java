@@ -45,7 +45,7 @@ import org.springframework.security.openid.OpenIDAuthenticationProvider;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
-import org.springframework.security.web.context.NullSecurityContextRepository;
+import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 /**
@@ -128,12 +128,15 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 			Para.injectInto(str);
 
 			http.csrf().requireCsrfProtectionMatcher(new RequestMatcher() {
-				private Pattern allowedMethods = Pattern.compile("^(GET|HEAD|TRACE|OPTIONS)$");
+				private final Pattern allowedMethods = Pattern.compile("^(GET|HEAD|TRACE|OPTIONS)$");
+				private final RegexRequestMatcher authEndpoints = new RegexRequestMatcher("^/\\w+_auth$", null);
 
 				public boolean matches(HttpServletRequest request) {
-					return !RestRequestMatcher.INSTANCE.matches(request)
+					boolean matches = !RestRequestMatcher.INSTANCE.matches(request)
 							&& !IgnoredRequestMatcher.INSTANCE.matches(request)
+							&& !authEndpoints.matches(request)
 							&& !allowedMethods.matcher(request.getMethod()).matches();
+					return matches;
 				}
 			}).csrfTokenRepository(str);
 		} else {
@@ -143,7 +146,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		http.sessionManagement().enableSessionUrlRewriting(false);
 		http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.NEVER);
 		http.sessionManagement().sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy());
-		http.securityContext().securityContextRepository(new NullSecurityContextRepository());
 		http.exceptionHandling().authenticationEntryPoint(new SimpleAuthenticationEntryPoint(confMap.get("security.signin")));
 		http.exceptionHandling().accessDeniedHandler(new SimpleAccessDeniedHandler(confMap.get("security.access_denied")));
 		http.requestCache().requestCache(new SimpleRequestCache());
