@@ -21,7 +21,6 @@ import com.amazonaws.Request;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Tag;
-import com.erudika.para.core.User;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -984,8 +983,9 @@ public final class ParaClient {
 	}
 
 	/**
-	 * Returns a {@link User} or an {@link App} that is currently authenticated.
-	 * @return a {@link User} or an {@link App}
+	 * Returns a {@link com.erudika.para.core.User} or an
+	 * {@link com.erudika.para.core.App} that is currently authenticated.
+	 * @return a {@link com.erudika.para.core.User} or an {@link com.erudika.para.core.App}
 	 */
 	public <P extends ParaObject> P me() {
 		Map<String, Object> data = getEntity(invokeGet("_me", null), Map.class);

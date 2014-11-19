@@ -58,6 +58,8 @@ public class AspectsIT {
 	@BeforeClass
 	public static void setUpClass() throws Exception {
 		System.setProperty("para.env", "embedded");
+		System.setProperty("para.app_name", "para-test");
+		System.setProperty("para.cluster_name", "para-test");
 		System.setProperty("para.cache_enabled", "true");
 		Para.initialize(new Module() {
 			public void configure(Binder binder) {

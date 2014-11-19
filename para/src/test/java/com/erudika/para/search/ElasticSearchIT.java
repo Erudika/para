@@ -39,6 +39,8 @@ public class ElasticSearchIT extends SearchTest {
 	@BeforeClass
 	public static void setUpClass() {
 		System.setProperty("para.env", "embedded");
+		System.setProperty("para.app_name", "para-test");
+		System.setProperty("para.cluster_name", "para-test");
 		s = new ElasticSearch(mock(DAO.class));
 		ElasticSearchUtils.createIndex(Config.APP_NAME_NS);
 		ElasticSearchUtils.createIndex(appid1);

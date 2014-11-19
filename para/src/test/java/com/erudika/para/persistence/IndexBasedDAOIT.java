@@ -34,6 +34,8 @@ public class IndexBasedDAOIT extends DAOTest {
 	@BeforeClass
 	public static void setUpClass() {
 		System.setProperty("para.env", "embedded");
+		System.setProperty("para.app_name", "para-test");
+		System.setProperty("para.cluster_name", "para-test");
 		// dependency hell?
 		dao = new IndexBasedDAO();
 		Search search = new ElasticSearch(dao);

@@ -68,7 +68,8 @@ public class ParaClientIT {
 	@BeforeClass
 	public static void setUpClass() throws InterruptedException {
 		System.setProperty("para.env", "embedded");
-		System.setProperty("para.cluster_name", Config.PARA + "-test");
+		System.setProperty("para.app_name", "para-test");
+		System.setProperty("para.cluster_name", "para-test");
 		Para.main(new String[0]);
 		Para.getDAO().delete(new App(Config.PARA));
 		ParaClient temp = new ParaClient("", "");
