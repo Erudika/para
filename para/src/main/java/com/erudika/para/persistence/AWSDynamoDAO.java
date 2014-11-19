@@ -104,7 +104,7 @@ public class AWSDynamoDAO implements DAO {
 			return null;
 		}
 		P so = fromRow(readRow(key, appid));
-		logger.debug("DAO.read() {} -> {}", key, so);
+		logger.debug("DAO.read() {} -> {}", key, so == null ? null : so.getType());
 		return so != null ? so : null;
 	}
 

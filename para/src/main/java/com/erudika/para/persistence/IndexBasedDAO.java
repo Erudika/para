@@ -98,7 +98,7 @@ public class IndexBasedDAO implements DAO {
 		if (so == null) {
 			so = (P) getMap(appid).get(key);
 		}
-		logger.debug("DAO.read() {} -> {}", key, so);
+		logger.debug("DAO.read() {} -> {}", key, so == null ? null : so.getType());
 		return so;
 	}
 

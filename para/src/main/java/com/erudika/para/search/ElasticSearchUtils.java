@@ -125,12 +125,8 @@ public final class ElasticSearchUtils {
 			}
 		});
 
-		try {
-			// wait a bit to prevent NoShardAvailableActionException
-			Thread.sleep(1000);
-		} catch (InterruptedException ex) {
-			logger.warn(null, ex);
-		}
+		// wait for the shards to initialize to prevent NoShardAvailableActionException
+		searchClient.admin().cluster().prepareHealth(Config.APP_NAME_NS).setWaitForGreenStatus().execute().actionGet();
 
 		return searchClient;
 	}
