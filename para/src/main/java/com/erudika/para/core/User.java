@@ -29,7 +29,6 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -229,11 +228,11 @@ public class User implements ParaObject, UserDetails {
 			setGroups(User.Groups.USERS.toString());
 		}
 
+		setGravatarPicture();
+
 		if (getDao().create(getAppid(), this) != null) {
 			createIdentifier(getId(), getIdentifier(), getPassword());
 		}
-
-		setGravatarPicture();
 
 		return getId();
 	}
@@ -241,26 +240,19 @@ public class User implements ParaObject, UserDetails {
 	@Override
 	public void delete() {
 		if (getId() != null) {
+			getDao().deleteAll(getAppid(), getIdentifiers());
 			getDao().delete(getAppid(), this);
-			for (String ident1 : getIdentifiers()) {
-				deleteIdentifier(ident1);
-			}
 		}
 	}
 
 	/**
 	 * Returns a list of identifiers for this user (can have many).
-	 * @return a list of identifiers
+	 * @return a list of {@link Sysprop} objects
 	 */
 	@JsonIgnore
-	public List<String> getIdentifiers() {
-		List<Sysprop> list = getSearch().findTerms(getAppid(), Utils.type(Sysprop.class),
+	public List<Sysprop> getIdentifiers() {
+		return getSearch().findTerms(getAppid(), Utils.type(Sysprop.class),
 				Collections.singletonMap(Config._CREATORID, getId()), true);
-		ArrayList<String> idents = new ArrayList<String>();
-		for (Sysprop s : list) {
-			idents.add(s.getId());
-		}
-		return idents;
 	}
 
 	/**
@@ -838,7 +830,7 @@ public class User implements ParaObject, UserDetails {
 
 	@Override
 	public String getShardKey() {
-		return StringUtils.isBlank(shardKey) ? getId() : shardKey;
+		return shardKey;
 	}
 
 	@Override

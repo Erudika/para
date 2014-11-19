@@ -305,7 +305,7 @@ public class Address implements ParaObject {
 
 	@Override
 	public String getShardKey() {
-		return StringUtils.isBlank(shardKey) ? getId() : shardKey;
+		return shardKey;
 	}
 
 	@Override
