@@ -21,6 +21,7 @@ import com.amazonaws.Request;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Tag;
+import com.erudika.para.core.User;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -305,7 +306,22 @@ public final class ParaClient {
 		if (StringUtils.isBlank(type) || StringUtils.isBlank(id)) {
 			return null;
 		}
+
 		return getEntity(invokeGet(type.concat("/").concat(id), null), Utils.toClass(type));
+	}
+
+	/**
+	 * Retrieves an object from the data store.
+	 * @param <P> the type of object
+	 * @param id the id of the object
+	 * @return the retrieved object or null if not found
+	 */
+	public <P extends ParaObject> P read(String id) {
+		if (StringUtils.isBlank(id)) {
+			return null;
+		}
+		Map<String, Object> data = getEntity(invokeGet("_id/".concat(id), null), Map.class);
+		return Utils.setAnnotatedFields(data);
 	}
 
 	/**
@@ -947,7 +963,7 @@ public final class ParaClient {
 	 * @return a map of credentials
 	 */
 	Map<String, String> setup() {
-		return getEntity(invokeGet("setup", null), Map.class);
+		return getEntity(invokeGet("_setup", null), Map.class);
 	}
 
 	/**
@@ -956,7 +972,7 @@ public final class ParaClient {
 	 * @return a map of new credentials
 	 */
 	public Map<String, String> newKeys() {
-		return getEntity(invokePost("newkeys", null), Map.class);
+		return getEntity(invokePost("_newkeys", null), Map.class);
 	}
 
 	/**
@@ -964,7 +980,16 @@ public final class ParaClient {
 	 * @return a map of plural-singular form of all the registered types.
 	 */
 	public Map<String, String> types() {
-		return getEntity(invokeGet("types", null), Map.class);
+		return getEntity(invokeGet("_types", null), Map.class);
+	}
+
+	/**
+	 * Returns a {@link User} or an {@link App} that is currently authenticated.
+	 * @return a {@link User} or an {@link App}
+	 */
+	public <P extends ParaObject> P me() {
+		Map<String, Object> data = getEntity(invokeGet("_me", null), Map.class);
+		return Utils.setAnnotatedFields(data);
 	}
 
 	/**

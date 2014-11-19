@@ -151,15 +151,20 @@ public class ParaClientIT {
 		assertNull(pc.read(null, null));
 		assertNull(pc.read("", ""));
 
+		Tag trID = pc.read(t1.getId());
+		assertNotNull(trID);
+		assertNotNull(trID.getTimestamp());
+		assertEquals(t1.getTag(), trID.getTag());
+
 		Tag tr = pc.read(t1.getType(), t1.getId());
 		assertNotNull(tr);
 		assertNotNull(tr.getTimestamp());
-		assertEquals(t1.getTag(), t1.getTag());
+		assertEquals(t1.getTag(), tr.getTag());
 
 		tr.setCount(15);
 		Tag tu = pc.update(tr);
 		assertNotNull(tu);
-		assertEquals(tr.getCount(), tu.getCount());
+		assertEquals(tu.getCount(), tr.getCount());
 		assertNotNull(tu.getUpdated());
 
 		Sysprop s = new Sysprop();

@@ -69,7 +69,7 @@ To get started quickly just (grab the JAR file)[https://github.com/Erudika/para/
 
 1. [Download the JAR](https://github.com/Erudika/para/releases)
 2. Execute it with `java -jar para-X.Y.Z.jar`
-3. Call `curl localhost:8080/v1/setup` to get the access and secret keys (give it a few seconds to initialize)
+3. Call `curl localhost:8080/v1/_setup` to get the access and secret keys (give it a few seconds to initialize)
 4. Start using the RESTful API directly or using the provided `ParaClient` class.
 
 ### Building Para
