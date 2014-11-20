@@ -176,7 +176,7 @@ public final class RestUtils {
 	 * Returns a map of the core data types.
 	 * @return a map of type plural - type singular form
 	 */
-	protected static Map<String, String> getCoreTypes() {
+	public static Map<String, String> getCoreTypes() {
 		if (coreTypes.isEmpty()) {
 			Set<Class<? extends ParaObject>> coreClasses = new HashSet<Class<? extends ParaObject>>();
 			scanForDomainClasses(coreClasses);
@@ -197,7 +197,7 @@ public final class RestUtils {
 	 * @param app the app to search for custom types
 	 * @return a map of plural - singular form of type names
 	 */
-	protected static Map<String, String> getAllTypes(App app) {
+	public static Map<String, String> getAllTypes(App app) {
 		Map<String, String> map = new HashMap<String, String>(getCoreTypes());
 		if (app != null) {
 			map.putAll(app.getDatatypes());

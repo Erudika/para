@@ -36,7 +36,7 @@ public class Pager {
 	 * No-args constructor
 	 */
 	public Pager() {
-		this(1, 0, null, true, Config.MAX_ITEMS_PER_PAGE);
+		this(1, null, true, Config.MAX_ITEMS_PER_PAGE);
 	}
 
 	/**
@@ -44,29 +44,28 @@ public class Pager {
 	 * @param limit the results limit
 	 */
 	public Pager(int limit) {
-		this(1, 0, null, true, limit);
+		this(1, null, true, limit);
 	}
 
 	/**
 	 * Default constructor with a page and count.
 	 * @param page the page number
-	 * @param count the starting results count
+	 * @param limit the results limit
 	 */
-	public Pager(long page, long count) {
-		this(page, count, null, true, Config.MAX_ITEMS_PER_PAGE);
+	public Pager(long page, int limit) {
+		this(page, null, true, limit);
 	}
 
 	/**
 	 * Default constructor with a page, count, sortby, desc and limit.
 	 * @param page the page number
-	 * @param count the starting results count
 	 * @param sortby name of property to sort by
 	 * @param desc sort order
 	 * @param limit the results limit
 	 */
-	public Pager(long page, long count, String sortby, boolean desc, int limit) {
+	public Pager(long page, String sortby, boolean desc, int limit) {
 		this.page = page;
-		this.count = count;
+		this.count = 0;
 		this.sortby = sortby;
 		this.desc = desc;
 		this.limit = limit;
