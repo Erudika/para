@@ -431,6 +431,7 @@ public class Api1 extends ResourceConfig {
 					return RestUtils.getStatusResponse(Response.Status.OK, "All set!");
 				} else {
 					app.setName(Config.APP_NAME);
+					app.setShared(false);
 					app.create();
 					Map<String, String> creds = app.getCredentials();
 					creds.put("info", "Save the secret key! It is showed only once!");

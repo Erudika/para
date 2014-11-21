@@ -546,6 +546,11 @@ public class ElasticSearch implements Search {
 
 	/**
 	 * Extracts the routing value from the appid.
+	 * Routing is used when an app is shared, i.e. there's one root index
+	 * and all apps are indexed there, based on their shard key. This shard key
+	 * must be equal to the routing value here so that the search engine knows where
+	 * to look for those objects.
+	 *
 	 * The appid might contain a routing prefix like:
 	 * 'routing:appid' or '_:appid' (routing = appid in this case)
 	 * @param appid an appid with routing value prefixed (or not)
@@ -565,12 +570,21 @@ public class ElasticSearch implements Search {
 
 	/**
 	 * Returns the appid without the routing prefix (if any)
+	 * If the routing prefix is '_' that means that we have an app sharing
+	 * a root index with other apps.
 	 * @param appid the appid
-	 * @return appid sans routing prefix, unchanged if prefix is missing
+	 * @return appid without the routing prefix, unchanged if prefix is missing
 	 */
 	private String stripRouting(String appid) {
 		if (StringUtils.contains(appid, Config.SEPARATOR)) {
-			return appid.substring(appid.indexOf(Config.SEPARATOR) + 1);
+			String[] tuparts = appid.split(Config.SEPARATOR);
+			String routing = tuparts[0];
+			String id = tuparts[1];
+			if ("_".equals(routing)) {
+				return Config.APP_NAME_NS;
+			} else {
+				return id;
+			}
 		} else {
 			return appid;
 		}
