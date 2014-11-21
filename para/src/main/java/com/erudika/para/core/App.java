@@ -36,16 +36,19 @@ import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
 
 /**
- * This is a representation of an application within Para. <b>This functionality is WORK IN PROGRESS!</b>
+ * This is a representation of an application within Para.
  * <br>
  * It allows the user to create separate apps running on the same infrastructure.
  * The apps are separated by name and each {@link ParaObject} belongs to an app.
  * <br>
- * There can be two ways to separate apps - dedicated and shared.
+ * There can be two types of apps - dedicated and shared.
  * Shared apps use their own database table and cache, but share the same search index.
- * Object separation (sharding) is done using the shard key which is usually the same as the appid.
- * Dedicated apps have their own separate database tables and caches and a separate index for each app.
+ * Dedicated apps have their own separate database tables, caches and search index.
+ * Sharding is done using the shard key which is usually the same as the appid.
  * <br>
+ * Usually when we have a multi-app environment there's a parent app (dedicated) and
+ * lots of child apps (shared) that share the same index with the parent app.
+ *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class App implements ParaObject {
