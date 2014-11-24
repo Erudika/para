@@ -44,6 +44,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -64,7 +65,8 @@ public final class RestUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(RestUtils.class);
 	// maps plural to singular type definitions
-	private static final Map<String, String> coreTypes = new HashMap<String, String>();
+	@SuppressWarnings("unchecked")
+	private static final Map<String, String> coreTypes = new DualHashBidiMap();
 	private static final CoreClassScanner scanner = new CoreClassScanner();
 	private static final DateTimeFormatter timeFormatter = DateTimeFormat.
 			forPattern("yyyyMMdd'T'HHmmss'Z'").withZoneUTC();

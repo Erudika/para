@@ -66,4 +66,22 @@ public class AppTest {
 		assertFalse(app.getCredentials().isEmpty());
 	}
 
+	@Test
+	public void testAddRemoveDatatypes() {
+		App app = new App();
+		assertTrue(app.getDatatypes().isEmpty());
+		app.addDatatype("", "type");
+		app.addDatatype("", "");
+		app.addDatatype("null", null);
+		assertTrue(app.getDatatypes().isEmpty());
+
+		app.addDatatype("types", "type");
+		assertTrue(app.getDatatypes().containsKey("types"));
+		app.addDatatype("typess", "type");
+		assertFalse(app.getDatatypes().containsKey("typess"));
+		app.addDatatype("types", "typee");
+		assertFalse(app.getDatatypes().containsValue("typee"));
+	}
+
+
 }

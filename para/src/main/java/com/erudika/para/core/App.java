@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -180,9 +181,10 @@ public class App implements ParaObject {
 	 * An app can have many custom types which describe its domain.
 	 * @return a map of type names (plural form to singular)
 	 */
+	@SuppressWarnings("unchecked")
 	public Map<String, String> getDatatypes() {
 		if (datatypes == null) {
-			datatypes = new HashMap<String, String>();
+			datatypes = new DualHashBidiMap();
 		}
 		return datatypes;
 	}
@@ -217,8 +219,9 @@ public class App implements ParaObject {
 	 * @param datatype a datatype, must not be null or empty
 	 */
 	public void addDatatype(String pluralDatatype, String datatype) {
-		if (!StringUtils.isBlank(pluralDatatype) && !StringUtils.isBlank(datatype)) {
-			getDatatypes().put(pluralDatatype, datatype);
+		if (!StringUtils.isBlank(pluralDatatype) && !StringUtils.isBlank(datatype) &&
+				!getDatatypes().containsValue(datatype)) {
+			getDatatypes().putIfAbsent(pluralDatatype, datatype);
 		}
 	}
 
