@@ -608,6 +608,7 @@ public class Api1 extends ResourceConfig {
 		}
 
 		result.put("items", items);
+		result.put("page", pager.getPage());
 		result.put("totalHits", pager.getCount());
 		return result;
 	}
