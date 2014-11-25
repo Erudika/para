@@ -90,7 +90,7 @@ public class Api1 extends ResourceConfig {
 
 		// search API
 		Resource.Builder searchRes = Resource.builder("search/{querytype}");
-		searchRes.addMethod(GET).produces(JSON).handledBy(searchHandler(null));
+		searchRes.addMethod(GET).produces(JSON).handledBy(searchHandler(null, null));
 		registerResources(searchRes.build());
 
 		// first time setup
@@ -188,7 +188,7 @@ public class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
-				String method = ctx.getUriInfo().getPathParameters().getFirst("method");
+				String method = pathParam("method", ctx);
 				method = StringUtils.isBlank(method) ? params.getFirst("method") : method;
 				if ("newid".equals(method)) {
 					return Response.ok(Utils.getNewId()).build();
@@ -227,7 +227,7 @@ public class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> typeCrudHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				String typePlural = ctx.getUriInfo().getPathParameters().getFirst(Config._TYPE);
+				String typePlural = pathParam(Config._TYPE, ctx);
 				App app = RestUtils.getPrincipalApp();
 				if (app != null) {
 					if (!StringUtils.isBlank(typePlural)) {
@@ -249,14 +249,14 @@ public class Api1 extends ResourceConfig {
 	protected final Inflector<ContainerRequestContext, Response> crudHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				String id = ctx.getUriInfo().getPathParameters().getFirst(Config._ID);
+				String id = pathParam(Config._ID, ctx);
 				if (StringUtils.isBlank(id)) {
 					if (GET.equals(ctx.getMethod())) {
-						return searchHandler(type).apply(ctx);
+						return searchHandler(app, type).apply(ctx);
 					} else if (POST.equals(ctx.getMethod())) {
 						return createHandler(app, type).apply(ctx);
 					} else if (ctx.getUriInfo().getPath().contains("search")) {
-						return searchHandler(type).apply(ctx);
+						return searchHandler(app, type).apply(ctx);
 					}
 				} else {
 					if (GET.equals(ctx.getMethod())) {
@@ -389,7 +389,7 @@ public class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = RestUtils.getPrincipalApp();
-				String id = ctx.getUriInfo().getPathParameters().getFirst(Config._ID);
+				String id = pathParam(Config._ID, ctx);
 				return RestUtils.getReadResponse(dao.read(app.getAppIdentifier(), id));
 			}
 		};
@@ -453,7 +453,7 @@ public class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				ParaObject obj = Utils.toObject(type);
-				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
+				obj.setId(pathParam(Config._ID, ctx));
 				return RestUtils.getReadResponse(dao.read(app.getAppIdentifier(), obj.getId()));
 			}
 		};
@@ -464,7 +464,7 @@ public class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				ParaObject obj = Utils.toObject(type);
 				obj.setType(type);
-				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
+				obj.setId(pathParam(Config._ID, ctx));
 				return RestUtils.getUpdateResponse(app, dao.read(app.getAppIdentifier(), obj.getId()),
 						ctx.getEntityStream());
 			}
@@ -476,7 +476,7 @@ public class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				ParaObject obj = Utils.toObject(type);
 				obj.setType(type);
-				obj.setId(ctx.getUriInfo().getPathParameters().getFirst(Config._ID));
+				obj.setId(pathParam(Config._ID, ctx));
 				return RestUtils.getDeleteResponse(app, obj);
 			}
 		};
@@ -495,7 +495,7 @@ public class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = RestUtils.getPrincipalApp();
-				return RestUtils.getBatchReadResponse(app, ctx.getUriInfo().getQueryParameters().get("ids"));
+				return RestUtils.getBatchReadResponse(app, queryParams("ids", ctx));
 			}
 		};
 	}
@@ -513,18 +513,18 @@ public class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = RestUtils.getPrincipalApp();
-				return RestUtils.getBatchDeleteResponse(app, ctx.getUriInfo().getQueryParameters().get("ids"));
+				return RestUtils.getBatchDeleteResponse(app, queryParams("ids", ctx));
 			}
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> searchHandler(final String type) {
+	protected final Inflector<ContainerRequestContext, Response> searchHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = RestUtils.getPrincipalApp();
+				App app1 = (app == null) ? RestUtils.getPrincipalApp() : app;
 				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
-				String queryType = ctx.getUriInfo().getPathParameters().getFirst("querytype");
-				return Response.ok(buildQueryAndSearch(app, queryType, params, type)).build();
+				String queryType = pathParam("querytype", ctx);
+				return Response.ok(buildQueryAndSearch(app1, queryType, params, type)).build();
 			}
 		};
 	}
@@ -532,7 +532,7 @@ public class Api1 extends ResourceConfig {
 	private <P extends ParaObject> Map<String, Object> buildQueryAndSearch(App app, String queryType,
 			MultivaluedMap<String, String> params, String typeOverride) {
 		String query = params.containsKey("q") ? params.getFirst("q") : "*";
-		String appid = app.isShared() ? ("_" + Config.SEPARATOR + app.getAppIdentifier()) : app.getAppIdentifier();
+		String appid = getAppid(app);
 		String type = (!StringUtils.isBlank(typeOverride) && !"search".equals(typeOverride)) ?
 				typeOverride : params.getFirst(Config._TYPE);
 
@@ -612,4 +612,30 @@ public class Api1 extends ResourceConfig {
 		return result;
 	}
 
+	protected String pathParam(String param, ContainerRequestContext ctx) {
+		return ctx.getUriInfo().getPathParameters().getFirst(param);
+	}
+
+	protected List<String> pathParams(String param, ContainerRequestContext ctx) {
+		return ctx.getUriInfo().getPathParameters().get(param);
+	}
+
+	protected String queryParam(String param, ContainerRequestContext ctx) {
+		return ctx.getUriInfo().getQueryParameters().getFirst(param);
+	}
+
+	protected List<String> queryParams(String param, ContainerRequestContext ctx) {
+		return ctx.getUriInfo().getQueryParameters().get(param);
+	}
+
+	protected boolean hasQueryParam(String param, ContainerRequestContext ctx) {
+		return ctx.getUriInfo().getQueryParameters().containsKey(param);
+	}
+
+	protected String getAppid(App app) {
+		if (app == null) {
+			return null;
+		}
+		return app.isShared() ? ("_" + Config.SEPARATOR + app.getAppIdentifier()) : app.getAppIdentifier();
+	}
 }
