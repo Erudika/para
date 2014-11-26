@@ -634,9 +634,6 @@ public class Api1 extends ResourceConfig {
 	}
 
 	protected String getAppid(App app) {
-		if (app == null) {
-			return null;
-		}
-		return app.isShared() ? ("_" + Config.SEPARATOR + app.getAppIdentifier()) : app.getAppIdentifier();
+		return RestUtils.getAppidWithRouting(app);
 	}
 }

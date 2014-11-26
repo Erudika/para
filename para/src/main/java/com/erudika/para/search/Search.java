@@ -34,38 +34,38 @@ public interface Search {
 
 	/**
 	 * Indexes an object. Only fields marked with {@link com.erudika.para.annotations.Stored} are indexed.
-	 * @param so the domain object the object to index
+	 * @param po the domain object the object to index
 	 */
-	void index(ParaObject so);
+	void index(ParaObject po);
 
 	/**
 	 * Indexes an object. Only fields marked with {@link com.erudika.para.annotations.Stored} are indexed.
 	 * @param appid name of the {@link com.erudika.para.core.App}
-	 * @param so the domain object
+	 * @param po the domain object
 	 */
-	void index(String appid, ParaObject so);
+	void index(String appid, ParaObject po);
 
 	/**
 	 * Indexes an object. Only fields marked with {@link com.erudika.para.annotations.Stored} are indexed.
 	 * Automatically removes the object from the index after TTL milliseconds.
 	 * @param appid name of the {@link com.erudika.para.core.App}
-	 * @param so the domain object
+	 * @param po the domain object
 	 * @param ttl time to live in milliseconds before the object is removed from the index.
 	 */
-	void index(String appid, ParaObject so, long ttl);
+	void index(String appid, ParaObject po, long ttl);
 
 	/**
 	 * Removes an object from the index.
-	 * @param so the domain object
+	 * @param po the domain object
 	 */
-	void unindex(ParaObject so);
+	void unindex(ParaObject po);
 
 	/**
 	 * Removes an object from the index.
 	 * @param appid name of the {@link com.erudika.para.core.App}
-	 * @param so the domain object
+	 * @param po the domain object
 	 */
-	void unindex(String appid, ParaObject so);
+	void unindex(String appid, ParaObject po);
 
 	/**
 	 * Indexes multiple objects in a batch operation.

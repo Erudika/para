@@ -293,19 +293,25 @@ public abstract class SearchTest {
 		s.unindex(ux);
 
 		// test multiapp support
+		String routedAppid1 = "_:" + appid1;
+		String routedAppid2 = "_:" + appid2;
 		ux.setId(u.getId()+"-APP1");
+		ux.setAppid(appid1);
+		ux.setShardKey(appid1);
 		ux.setName("UserApp1");
 		s.index(appid1, ux);
-		assertNotNull(s.findById(appid1, ux.getId()));
+		assertNotNull(s.findById(routedAppid1, ux.getId()));
 		assertNull(s.findById(ux.getId()));
-		assertNull(s.findById(appid2, ux.getId()));
+		assertNull(s.findById(routedAppid2, ux.getId()));
 
 		Tag tx = new Tag(t.getId()+"-APP2");
 		tx.setName("TagApp2");
+		tx.setAppid(appid2);
+		tx.setShardKey(appid2);
 		s.index(appid2, tx);
-		assertNotNull(s.findById(appid2, tx.getId()));
+		assertNotNull(s.findById(routedAppid2, tx.getId()));
 		assertNull(s.findById(tx.getId()));
-		assertNull(s.findById(appid1, tx.getId()));
+		assertNull(s.findById(routedAppid1, tx.getId()));
 	}
 
 	@Test

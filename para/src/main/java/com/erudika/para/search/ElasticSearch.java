@@ -88,19 +88,19 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public void index(String appid, ParaObject so) {
-		index(appid, so, 0);
+	public void index(String appid, ParaObject po) {
+		index(appid, po, 0);
 	}
 
 	@Override
-	public void index(String appid, ParaObject so, long ttl) {
-		if (so == null || StringUtils.isBlank(appid)) {
+	public void index(String appid, ParaObject po, long ttl) {
+		if (po == null || StringUtils.isBlank(appid)) {
 			return;
 		}
-		Map<String, Object> data = Utils.getAnnotatedFields(so, null, false);
+		Map<String, Object> data = Utils.getAnnotatedFields(po, null, false);
 		try {
-			IndexRequestBuilder irb = client().prepareIndex(appid, so.getType(), so.getId()).
-					setSource(data).setRouting(so.getShardKey());
+			IndexRequestBuilder irb = client().prepareIndex(getIndexName(po), po.getType(), po.getId()).
+					setSource(data).setRouting(po.getShardKey());
 			if (ttl > 0) {
 				irb.setTTL(ttl);
 			}
@@ -109,26 +109,26 @@ public class ElasticSearch implements Search {
 			} else {
 				irb.execute().actionGet();
 			}
-			logger.debug("Search.index() {}", so.getId());
+			logger.debug("Search.index() {}", po.getId());
 		} catch (Exception e) {
 			logger.warn(null, e);
 		}
 	}
 
 	@Override
-	public void unindex(String appid, ParaObject so) {
-		if (so == null || StringUtils.isBlank(so.getId()) || StringUtils.isBlank(appid)) {
+	public void unindex(String appid, ParaObject po) {
+		if (po == null || StringUtils.isBlank(po.getId()) || StringUtils.isBlank(appid)) {
 			return;
 		}
 		try {
-			DeleteRequestBuilder drb = client().prepareDelete(appid, so.getType(), so.getId()).
-					setRouting(so.getShardKey());
+			DeleteRequestBuilder drb = client().prepareDelete(getIndexName(po), po.getType(), po.getId()).
+					setRouting(po.getShardKey());
 			if (isAsyncEnabled()) {
 				drb.execute();
 			} else {
 				drb.execute().actionGet();
 			}
-			logger.debug("Search.unindex() {}", so.getId());
+			logger.debug("Search.unindex() {}", po.getId());
 		} catch (Exception e) {
 			logger.warn(null, e);
 		}
@@ -140,10 +140,10 @@ public class ElasticSearch implements Search {
 			return ;
 		}
 		BulkRequestBuilder brb = client().prepareBulk();
-		for (ParaObject pObject : objects) {
-			brb.add(client().prepareIndex(appid, pObject.getType(), pObject.getId()).
-					setSource(Utils.getAnnotatedFields(pObject, null, false)).
-					setRouting(pObject.getShardKey()));
+		for (ParaObject po : objects) {
+			brb.add(client().prepareIndex(getIndexName(po), po.getType(), po.getId()).
+					setSource(Utils.getAnnotatedFields(po, null, false)).
+					setRouting(po.getShardKey()));
 		}
 		if (isAsyncEnabled()) {
 			brb.execute();
@@ -159,9 +159,9 @@ public class ElasticSearch implements Search {
 			return ;
 		}
 		BulkRequestBuilder brb = client().prepareBulk();
-		for (ParaObject pObject : objects) {
-			brb.add(client().prepareDelete(appid, pObject.getType(), pObject.getId()).
-					setRouting(pObject.getShardKey()));
+		for (ParaObject po : objects) {
+			brb.add(client().prepareDelete(getIndexName(po), po.getType(), po.getId()).
+					setRouting(po.getShardKey()));
 		}
 		if (isAsyncEnabled()) {
 			brb.execute();
@@ -560,7 +560,7 @@ public class ElasticSearch implements Search {
 		if (StringUtils.contains(appid, Config.SEPARATOR)) {
 			String routing = appid.substring(0, appid.indexOf(Config.SEPARATOR));
 			if ("_".equals(routing)) {
-				return appid;
+				return appid.substring(2);
 			} else if (!StringUtils.isBlank(routing)) {
 				return routing;
 			}
@@ -587,6 +587,23 @@ public class ElasticSearch implements Search {
 			}
 		} else {
 			return appid;
+		}
+	}
+
+	/**
+	 * Determine if the object is part of a shared app - if so,
+	 * return the root index, otherwise return the separate (i.e. the appid).
+	 * @param po the object
+	 * @return root index (if shared) or appid of the object (if dedicated)
+	 */
+	private String getIndexName(ParaObject po) {
+		if (po == null) {
+			return null;
+		}
+		if (po.getShardKey() == null) {
+			return po.getAppid();
+		} else {
+			return Config.APP_NAME_NS;
 		}
 	}
 
