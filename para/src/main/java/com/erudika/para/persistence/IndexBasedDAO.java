@@ -18,6 +18,7 @@
 package com.erudika.para.persistence;
 
 import com.erudika.para.annotations.Locked;
+import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
@@ -94,7 +95,7 @@ public class IndexBasedDAO implements DAO {
 			return null;
 		}
 
-		P so = search.findById(appid, key);
+		P so = search.findById(getAppidWithRouting(appid), key);
 		if (so == null) {
 			so = (P) getMap(appid).get(key);
 		}
@@ -139,7 +140,7 @@ public class IndexBasedDAO implements DAO {
 		if (keys == null || StringUtils.isBlank(appid)) {
 			return results;
 		}
-		List<P> list = search.findByIds(appid, keys);
+		List<P> list = search.findByIds(getAppidWithRouting(appid), keys);
 
 		if (list.isEmpty()) {
 			for (String key : keys) {
@@ -193,6 +194,18 @@ public class IndexBasedDAO implements DAO {
 			maps.put(appid, new  HashMap<String, ParaObject>());
 		}
 		return maps.get(appid);
+	}
+
+	private String getAppidWithRouting(String appid) {
+		if (!Config.IN_PRODUCTION && !Config.IN_DEVELOPMENT) {
+			App app = search.findById(Config.APP_NAME_NS, new App(appid).getId());
+			if (app != null) {
+				return app.getAppidWithRouting();
+			} else {
+				return null;
+			}
+		}
+		return appid;
 	}
 
 	////////////////////////////////////////////////////////////////////

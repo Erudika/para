@@ -151,23 +151,6 @@ public final class RestUtils {
 	}
 
 	/**
-	 * Returns a modified appid with a prefix with the correct routing information.
-	 * @param app a app
-	 * @return the appid unchanged if the app is not shared or
-	 * adds a "_" prefix if the app is shared.
-	 */
-	protected static String getAppidWithRouting(App app) {
-		if (app == null) {
-			return null;
-		}
-		if (app.isShared()) {
-			return "_" + Config.SEPARATOR + app.getAppIdentifier();
-		} else {
-			return app.getAppIdentifier();
-		}
-	}
-
-	/**
 	 * Adds unknown types to this App's list of data types. Called on create().
 	 * @param app the current app
 	 * @param objects a list of new objects

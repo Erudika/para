@@ -18,6 +18,7 @@
 package com.erudika.para.search;
 
 import com.erudika.para.core.Address;
+import com.erudika.para.core.App;
 import com.erudika.para.core.CoreUtils;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
@@ -293,8 +294,10 @@ public abstract class SearchTest {
 		s.unindex(ux);
 
 		// test multiapp support
-		String routedAppid1 = "_:" + appid1;
-		String routedAppid2 = "_:" + appid2;
+		App ap1 = new App(appid1);
+		App ap2 = new App(appid1);
+		String routedAppid1 = ap1.getAppidWithRouting();
+		String routedAppid2 = ap2.getAppidWithRouting();
 		ux.setId(u.getId()+"-APP1");
 		ux.setAppid(appid1);
 		ux.setShardKey(appid1);

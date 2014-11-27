@@ -101,6 +101,20 @@ public class App implements ParaObject {
 	}
 
 	/**
+	 * Returns a modified appid with a prefix with the correct routing information.
+	 * @param app a app
+	 * @return the appid unchanged if the app is not shared or
+	 * adds a "_" prefix if the app is shared.
+	 */
+	public String getAppidWithRouting() {
+		if (isShared()) {
+			return "_" + Config.SEPARATOR + getAppIdentifier();
+		} else {
+			return getAppIdentifier();
+		}
+	}
+
+	/**
 	 * The App identifier (the id but without the prefix)
 	 * @return the identifier (appid)
 	 */

@@ -532,7 +532,7 @@ public class Api1 extends ResourceConfig {
 	private <P extends ParaObject> Map<String, Object> buildQueryAndSearch(App app, String queryType,
 			MultivaluedMap<String, String> params, String typeOverride) {
 		String query = params.containsKey("q") ? params.getFirst("q") : "*";
-		String appid = getAppid(app);
+		String appid = app.getAppidWithRouting();
 		String type = (!StringUtils.isBlank(typeOverride) && !"search".equals(typeOverride)) ?
 				typeOverride : params.getFirst(Config._TYPE);
 
@@ -631,9 +631,5 @@ public class Api1 extends ResourceConfig {
 
 	protected boolean hasQueryParam(String param, ContainerRequestContext ctx) {
 		return ctx.getUriInfo().getQueryParameters().containsKey(param);
-	}
-
-	protected String getAppid(App app) {
-		return RestUtils.getAppidWithRouting(app);
 	}
 }
