@@ -26,9 +26,13 @@ import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
 import com.amazonaws.services.dynamodbv2.model.KeyType;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
+import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.erudika.para.Para;
 import com.erudika.para.utils.Config;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -149,6 +153,32 @@ public final class AWSDynamoUtils {
 			return false;
 		}
 		return true;
+	}
+
+	/**
+	 * Gives basic information about a DynamoDB table (status, creation date, size).
+	 * @param appid name of the {@link com.erudika.para.core.App}
+	 * @return a map
+	 */
+	public static Map<String, Object> getTableStatus(String appid) {
+		if (StringUtils.isBlank(appid)) {
+			return Collections.emptyMap();
+		}
+		try {
+			Map<String, Object> map = new HashMap<String, Object>();
+			final TableDescription td = getClient().describeTable(appid).getTable();
+			return new HashMap<String, Object>() {{
+				put("status", td.getTableStatus());
+				put("created", td.getCreationDateTime().getTime());
+				put("sizeBytes", td.getTableSizeBytes());
+				put("itemCount", td.getItemCount());
+				put("readCapacityUnits", td.getProvisionedThroughput().getReadCapacityUnits());
+				put("writeCapacityUnits", td.getProvisionedThroughput().getWriteCapacityUnits());
+			}};
+		} catch (Exception e) {
+			logger.error(null, e);
+		}
+		return Collections.emptyMap();
 	}
 
 }

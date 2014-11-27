@@ -441,7 +441,7 @@ public class ElasticSearch implements Search {
 		int pageNum = (int) page.getPage();
 		int start = (pageNum < 1 || pageNum > Config.MAX_PAGES) ? 0 : (pageNum - 1) * max;
 
-		if (query == null || StringUtils.isBlank(type)) {
+		if (query == null) {
 			query = QueryBuilders.matchAllQuery();
 		}
 		if (sort == null) {
