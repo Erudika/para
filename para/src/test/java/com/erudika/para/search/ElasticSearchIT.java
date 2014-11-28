@@ -86,7 +86,7 @@ public class ElasticSearchIT extends SearchTest {
 
 	@Test
 	public void testGetSearchClusterMetadata() {
-		assertFalse(ElasticSearchUtils.getSearchClusterMetadata().isEmpty());
+		assertFalse(ElasticSearchUtils.getSearchClusterInfo().isEmpty());
 	}
 
 	@Test

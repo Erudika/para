@@ -321,7 +321,7 @@ public final class ElasticSearchUtils {
 	 * Returns information about a cluster.
 	 * @return a map of key value pairs containing cluster information
 	 */
-	public static Map<String, String> getSearchClusterMetadata() {
+	public static Map<String, String> getSearchClusterInfo() {
 		Map<String, String> md = new HashMap<String, String>();
 		NodesInfoResponse res = getClient().admin().cluster().nodesInfo(new NodesInfoRequest().all()).actionGet();
 		md.put("cluser.name", res.getClusterName().toString());
