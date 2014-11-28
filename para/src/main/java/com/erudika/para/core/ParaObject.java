@@ -203,6 +203,7 @@ public interface ParaObject extends Serializable, Linkable, Votable {
 	 * It is used mainly for routing with Elasticsearch.
 	 * @return the id value (default) or some other value like appid
 	 */
+	@JsonIgnore
 	String getShardKey();
 
 	/**
