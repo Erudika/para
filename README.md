@@ -15,7 +15,8 @@ Para to power your mobile or web application back-end.
 Para can be used in two ways - as the backbone of your JVM-based application or as a standalone server supporting
 multiple applications and clients written in any programming language.
 
-Para is similar to [Dropwizard](https://dropwizard.github.io/dropwizard/) and [Deployd](http://www.deployd.com/).
+Para is similar to [Dropwizard](https://dropwizard.github.io/dropwizard/) and
+[Deployd](https://github.com/deployd/deployd).
 
 ### Features
 
@@ -120,10 +121,9 @@ Here's the Maven snippet to include in your `pom.xml`:
 ## Wishlist / Future plans
 
 - Add more implementations for popular databases like MongoDB, PostgreSQL, etc.
-- Integration with JOOQ
-- Integration with Comsat, Quasar
-- Add API clients written in popular languages - Ruby, C#, JavaScript and why not... Swift :)
+- Add API clients written in popular languages - JavaScript, PHP, Ruby, Python, C#, Swift, etc.
 - Separate implementations from core
+- Integrations with Heroku, JOOQ, Comsat, Quasar, Ionic Framework
 
 ## Contributing
 
