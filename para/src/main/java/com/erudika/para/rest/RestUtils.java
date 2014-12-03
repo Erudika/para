@@ -309,15 +309,19 @@ public final class RestUtils {
 	 */
 	@SuppressWarnings("unchecked")
 	public static Response getUpdateResponse(App app, ParaObject object, InputStream is) {
-		Map<String, Object> newContent;
-		Response entityRes = getEntity(is, Map.class);
-		if (entityRes.getStatusInfo() == Response.Status.OK) {
-			newContent = (Map<String, Object>) entityRes.getEntity();
-			object.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
+		if (object != null) {
+			Map<String, Object> newContent;
+			Response entityRes = getEntity(is, Map.class);
+			if (entityRes.getStatusInfo() == Response.Status.OK) {
+				newContent = (Map<String, Object>) entityRes.getEntity();
+				object.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
+			} else {
+				return entityRes;
+			}
+			return getUpdateResponse(object, newContent);
 		} else {
-			return entityRes;
+			return getStatusResponse(Response.Status.NOT_FOUND);
 		}
-		return getUpdateResponse(object, newContent);
 	}
 
 	/**
