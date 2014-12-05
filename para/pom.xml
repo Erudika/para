@@ -16,8 +16,8 @@
 		<springVer>4.0.0.M2</springVer>
 		<springVer2>1.1.8.RELEASE</springVer2>
 		<jacksonVer>2.4.3</jacksonVer>
-		<hazelcastVer>3.3.2</hazelcastVer>
-		<awsJdkVer>1.9.1</awsJdkVer>
+		<hazelcastVer>3.3.3</hazelcastVer>
+		<awsJdkVer>1.9.8</awsJdkVer>
 	</properties>
 
 	<dependencies>
