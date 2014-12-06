@@ -70,13 +70,13 @@ public class Signer extends AWS4Signer {
 	 * @param secretKey the app's secret key
 	 * @return a signed request. The actual signature is inside the {@code Authorization} header.
 	 */
-	public Request<?> sign(String httpeMethod, String endpoint, String resourcePath,
+	public Map<String, String> sign(String httpeMethod, String endpoint, String resourcePath,
 			Map<String, String> headers, Map<String, String> params, InputStream entity,
 			String accessKey, String secretKey) {
 
 		Request<?> req = buildAWSRequest(httpeMethod, endpoint, resourcePath, headers, params, entity);
 		sign(req, accessKey, secretKey);
-		return req;
+		return req.getHeaders();
 	}
 
 	/**
@@ -137,7 +137,7 @@ public class Signer extends AWS4Signer {
 	 */
 	@Override
 	protected String extractRegionName(URI endpoint) {
-		return "eu-west-1";
+		return Config.AWS_REGION;
 	}
 
 	/**

@@ -17,18 +17,12 @@
  */
 package com.erudika.para.rest;
 
-import com.amazonaws.Request;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Tag;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,23 +30,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import javax.ws.rs.HttpMethod;
+import static javax.ws.rs.HttpMethod.*;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
-import org.glassfish.jersey.client.ClientConfig;
-import org.glassfish.jersey.jetty.connector.JettyConnectorProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The Java REST client.
@@ -61,26 +45,14 @@ import org.slf4j.LoggerFactory;
  */
 public final class ParaClient {
 
-	private static final Logger logger = LoggerFactory.getLogger(ParaClient.class);
 	private static final String DEFAULT_ENDPOINT = "http://localhost:8080";
 	private static final String DEFAULT_PATH = "/v1/";
-	private static final String GET = HttpMethod.GET;
-	private static final String PUT = HttpMethod.PUT;
-	private static final String POST = HttpMethod.POST;
-	private static final String DELETE = HttpMethod.DELETE;
-	private final Signer signer = new Signer();
-	private final Client client;
 	private String endpoint;
 	private String path;
-	private String accessKey;
-	private String secretKey;
+	private final String accessKey;
+	private final String secretKey;
 
 	public ParaClient(String accessKey, String secretKey) {
-		ClientConfig clientConfig = new ClientConfig();
-		clientConfig.register(GenericExceptionMapper.class);
-		clientConfig.register(new JacksonJsonProvider(Utils.getJsonMapper()));
-		clientConfig.connectorProvider(new JettyConnectorProvider());
-		this.client = ClientBuilder.newClient(clientConfig);
 		this.accessKey = accessKey;
 		this.secretKey = secretKey;
 	}
@@ -153,85 +125,33 @@ public final class ParaClient {
 		return null;
 	}
 
-	private Response invokeGet(String resourcePath, MultivaluedMap<String, String> params) {
-		return invoke(GET, resourcePath, null, params, null);
-	}
-
-	private Response invokePost(String resourcePath, Entity<?> entity) {
-		return invoke(POST, resourcePath, null, null, entity);
-	}
-
-	private Response invokePut(String resourcePath, Entity<?> entity) {
-		return invoke(PUT, resourcePath, null, null, entity);
-	}
-
-	private Response invokeDelete(String resourcePath, MultivaluedMap<String, String> params) {
-		return invoke(DELETE, resourcePath, null, params, null);
-	}
-
-	private Response invoke(String httpMethod, String resourcePath,
-			Map<String, String> headers, MultivaluedMap<String, String> params, Entity<?> entity) {
-
-		if (StringUtils.isBlank(accessKey) || StringUtils.isBlank(secretKey)) {
-			logger.warn("Blank access key or secret key!");
-			accessKey = "";
-			secretKey = "";
-		}
-
-		if (httpMethod == null) {
-			httpMethod = GET;
-		}
+	private String getFullPath(String resourcePath) {
 		if (resourcePath == null) {
 			resourcePath = "";
 		} else if (resourcePath.startsWith("/")) {
 			resourcePath = resourcePath.substring(1);
 		}
+		return getApiPath() + resourcePath;
+	}
 
-		String reqPath = getApiPath() + resourcePath;
-		WebTarget target = client.target(getEndpoint()).path(reqPath);
-		InputStream in = null;
-		Entity<?> jsonPayload = null;
-		Map<String, String> sigParams = new HashMap<String, String>();
+	private Response invokeGet(String resourcePath, MultivaluedMap<String, String> params) {
+		return RestUtils.invokeSignedRequest(accessKey, secretKey, GET,
+				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
+	}
 
-		if (params != null) {
-			for (Map.Entry<String, List<String>> param : params.entrySet()) {
-				String key = param.getKey();
-				List<String> value = param.getValue();
-				if (value != null && !value.isEmpty() && value.get(0) != null) {
-					target = target.queryParam(key, value.toArray());
-					sigParams.put(key, value.get(0));
-				}
-			}
-		}
+	private Response invokePost(String resourcePath, Entity<?> entity) {
+		return RestUtils.invokeSignedRequest(accessKey, secretKey, POST,
+				getEndpoint(), getFullPath(resourcePath), null, null, entity);
+	}
 
-		Invocation.Builder builder = target.request(MediaType.APPLICATION_JSON);
+	private Response invokePut(String resourcePath, Entity<?> entity) {
+		return RestUtils.invokeSignedRequest(accessKey, secretKey, PUT,
+				getEndpoint(), getFullPath(resourcePath), null, null, entity);
+	}
 
-		if (headers != null) {
-			for (Map.Entry<String, String> header : headers.entrySet()) {
-				builder.header(header.getKey(), header.getValue());
-			}
-		}
-
-		if (entity != null) {
-			try {
-				byte[] entt = Utils.getJsonWriter().writeValueAsBytes(entity.getEntity());
-				in = new BufferedInputStream(new ByteArrayInputStream(entt));
-				jsonPayload = Entity.json(new String(entt, Config.DEFAULT_ENCODING));
-			} catch (IOException ex) {
-				logger.error(null, ex);
-			}
-		}
-
-		Request<?> signed = signer.sign(httpMethod, getEndpoint(), reqPath, headers, sigParams, in, accessKey, secretKey);
-
-		builder.header(HttpHeaders.AUTHORIZATION, signed.getHeaders().get(HttpHeaders.AUTHORIZATION)).
-				header("X-Amz-Date", signed.getHeaders().get("X-Amz-Date"));
-
-		if (jsonPayload != null) {
-			return builder.method(httpMethod, jsonPayload);
-		} else {
-			return builder.method(httpMethod);
-		}
+	private Response invokeDelete(String resourcePath, MultivaluedMap<String, String> params) {
+		return RestUtils.invokeSignedRequest(accessKey, secretKey, DELETE,
+				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
 	}
 
 	private MultivaluedMap<String, String> pagerToParams(Pager... pager) {
@@ -990,17 +910,5 @@ public final class ParaClient {
 	public <P extends ParaObject> P me() {
 		Map<String, Object> data = getEntity(invokeGet("_me", null), Map.class);
 		return Utils.setAnnotatedFields(data);
-	}
-
-	/**
-	 * Closes the client. Calling this method effectively invalidates all resource
-	 * targets produced by the client instance. Invoking any method
-	 * on such targets once the client is closed would result in an
-	 * IllegalStateException being thrown.
-	 */
-	public void close() {
-		if (client != null) {
-			client.close();
-		}
 	}
 }

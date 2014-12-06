@@ -59,7 +59,6 @@ public final class ElasticSearchUtils {
 	private static final Logger logger = LoggerFactory.getLogger(ElasticSearchUtils.class);
 	private static Client searchClient;
 	private static Node searchNode;
-	private static final String esDir = "/var/lib/elasticsearch/";
 
 	private ElasticSearchUtils() { }
 
@@ -79,7 +78,7 @@ public final class ElasticSearchUtils {
 		settings.put("cluster.name", Config.CLUSTER_NAME);
 
 		boolean localNode = Config.getConfigParamUnwrapped("es.local_node", true);
-		String esHome = Config.getConfigParam("es.dir", esDir);
+		String esHome = Config.getConfigParam("es.dir", "/var/lib/elasticsearch/");
 		if (!esHome.endsWith("/")) {
 			esHome += "/";
 		}

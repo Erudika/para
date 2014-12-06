@@ -68,10 +68,9 @@ public class ParaClientIT {
 	@BeforeClass
 	public static void setUpClass() throws InterruptedException {
 		System.setProperty("para.env", "embedded");
-		System.setProperty("para.app_name", "para-test");
+		System.setProperty("para.app_name", "para-client-test");
 		System.setProperty("para.cluster_name", "para-test");
 		Para.main(new String[0]);
-		Para.getDAO().delete(new App(Config.PARA));
 		ParaClient temp = new ParaClient("", "");
 		Map<String, String> credentials = temp.setup();
 		if (credentials != null && credentials.containsKey("accessKey")) {
@@ -131,8 +130,8 @@ public class ParaClientIT {
 	@AfterClass
 	public static void tearDownClass() {
 //		Para.destroy();
-		Para.getDAO().delete(new App(Config.PARA));
-		ElasticSearchUtils.deleteIndex(Config.PARA);
+		Para.getDAO().delete(new App(Config.APP_NAME_NS));
+		ElasticSearchUtils.deleteIndex(Config.APP_NAME_NS);
 	}
 
 	@Test
@@ -164,6 +163,7 @@ public class ParaClientIT {
 
 		tr.setCount(15);
 		Tag tu = pc.update(tr);
+		assertNull(pc.update(new Tag("null")));
 		assertNotNull(tu);
 		assertEquals(tu.getCount(), tr.getCount());
 		assertNotNull(tu.getUpdated());
@@ -302,7 +302,8 @@ public class ParaClientIT {
 		l1 = pc.findNearby(u.getType(), "*", 10, 40.60, -73.90);
 		assertFalse(l1.isEmpty());
 
-		assertFalse(pc.findPrefix("", "null", "xx").isEmpty());
+		assertTrue(pc.findPrefix(null, null, "").isEmpty());
+		assertTrue(pc.findPrefix("", "null", "xx").isEmpty());
 		assertFalse(pc.findPrefix(u.getType(), Config._NAME, "ann").isEmpty());
 
 		assertFalse(pc.findQuery(null, null).isEmpty());

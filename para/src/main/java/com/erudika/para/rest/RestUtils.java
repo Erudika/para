@@ -25,6 +25,10 @@ import com.erudika.para.core.User;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -41,11 +45,20 @@ import java.util.Map;
 import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang3.StringUtils;
+import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.jetty.connector.JettyConnectorProvider;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
@@ -64,12 +77,22 @@ import org.springframework.util.ClassUtils;
 public final class RestUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(RestUtils.class);
+	private static final Signer signer = new Signer();
+	private static final Client apiClient;
 	// maps plural to singular type definitions
 	@SuppressWarnings("unchecked")
 	private static final Map<String, String> coreTypes = new DualHashBidiMap();
 	private static final CoreClassScanner scanner = new CoreClassScanner();
 	private static final DateTimeFormatter timeFormatter = DateTimeFormat.
 			forPattern("yyyyMMdd'T'HHmmss'Z'").withZoneUTC();
+
+	static {
+		ClientConfig clientConfig = new ClientConfig();
+		clientConfig.register(GenericExceptionMapper.class);
+		clientConfig.register(new JacksonJsonProvider(Utils.getJsonMapper()));
+		clientConfig.connectorProvider(new JettyConnectorProvider());
+		apiClient = ClientBuilder.newClient(clientConfig);
+	}
 
 	private RestUtils() { }
 
@@ -207,10 +230,6 @@ public final class RestUtils {
 		return map;
 	}
 
-	/////////////////////////////////////////////
-	//			REST RESPONSE HANDLERS
-	/////////////////////////////////////////////
-
 	/**
 	 * Returns a Response with the entity object inside it and 200 status code.
 	 * If there was and error the status code is different than 200.
@@ -219,7 +238,7 @@ public final class RestUtils {
 	 * @return response with 200 or error status
 	 */
 	public static Response getEntity(InputStream is, Class<?> type) {
-		Object entity = null;
+		Object entity;
 		try {
 			if (is != null && is.available() > 0) {
 				if (is.available() > Config.MAX_ENTITY_SIZE_BYTES) {
@@ -240,6 +259,134 @@ public final class RestUtils {
 
 		return Response.ok(entity).build();
 	}
+
+//	/**
+//	 * Converts an object to an {@link InputStream}.
+//	 * @param object an object
+//	 * @return an {@link InputStream}
+//	 */
+//	public static InputStream getEntityInputStream(Object object) {
+//		if (object != null) {
+//			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//			ObjectOutputStream oos;
+//			try {
+//				oos = new ObjectOutputStream(baos);
+//				oos.writeObject(object);
+//				oos.flush();
+//				oos.close();
+//				return new ByteArrayInputStream(baos.toByteArray());
+//			} catch (IOException ex) {
+//				logger.error(null, ex);
+//			}
+//		}
+//		return null;
+//	}
+
+	/**
+	 * Builds, signs and executes a request to an API endpoint using the provided credentials.
+	 * Signs the request using the Amazon Signature 4 algorithm and returns the response.
+	 * @param accessKey access key
+	 * @param secretKey secret key
+	 * @param httpMethod the method (GET, POST...)
+	 * @param endpointURL protocol://host:port
+	 * @param reqPath the API resource path relative to the endpointURL
+	 * @param headers headers map
+	 * @param params parameters map
+	 * @param entity an entity containing any Java object (payload), could be null
+	 * @return a response object
+	 */
+	public static Response invokeSignedRequest(String accessKey, String secretKey,
+			String httpMethod, String endpointURL, String reqPath,
+			Map<String, String> headers, MultivaluedMap<String, String> params, Entity<?> entity) {
+		byte[] jsonEntity = null;
+		if (entity != null) {
+			try {
+				jsonEntity = Utils.getJsonWriter().writeValueAsBytes(entity.getEntity());
+			} catch (JsonProcessingException ex) {
+				jsonEntity = null;
+				logger.error(null, ex);
+			}
+		}
+		return invokeSignedRequest(accessKey, secretKey, httpMethod, endpointURL, reqPath, headers, params, jsonEntity);
+	}
+
+	/**
+	 * Builds, signs and executes a request to an API endpoint using the provided credentials.
+	 * Signs the request using the Amazon Signature 4 algorithm and returns the response.
+	 * @param accessKey access key
+	 * @param secretKey secret key
+	 * @param httpMethod the method (GET, POST...)
+	 * @param endpointURL protocol://host:port
+	 * @param reqPath the API resource path relative to the endpointURL
+	 * @param headers headers map
+	 * @param params parameters map
+	 * @param jsonEntity an object serialized to JSON byte array (payload), could be null
+	 * @return a response object
+	 */
+	public static Response invokeSignedRequest(String accessKey, String secretKey,
+			String httpMethod, String endpointURL, String reqPath,
+			Map<String, String> headers, MultivaluedMap<String, String> params, byte[] jsonEntity) {
+
+		if (StringUtils.isBlank(accessKey) || StringUtils.isBlank(secretKey)) {
+			logger.warn("Blank access key or secret key!");
+			accessKey = "";
+			secretKey = "";
+		}
+
+		if (httpMethod == null) {
+			httpMethod = HttpMethod.GET;
+		}
+
+		WebTarget target = apiClient.target(endpointURL).path(reqPath);
+		InputStream in = null;
+		Entity<?> jsonPayload = null;
+		Map<String, String> sigParams = new HashMap<String, String>();
+
+		if (params != null) {
+			for (Map.Entry<String, List<String>> param : params.entrySet()) {
+				String key = param.getKey();
+				List<String> value = param.getValue();
+				if (value != null && !value.isEmpty() && value.get(0) != null) {
+					target = target.queryParam(key, value.toArray());
+					sigParams.put(key, value.get(0));
+				}
+			}
+		}
+
+		Invocation.Builder builder = target.request(MediaType.APPLICATION_JSON);
+
+		if (headers != null) {
+			for (Map.Entry<String, String> header : headers.entrySet()) {
+				builder.header(header.getKey(), header.getValue());
+			}
+		}
+
+		if (jsonEntity != null && jsonEntity.length > 0) {
+			try {
+				in = new BufferedInputStream(new ByteArrayInputStream(jsonEntity));
+				jsonPayload = Entity.json(new String(jsonEntity, Config.DEFAULT_ENCODING));
+			} catch (IOException ex) {
+				logger.error(null, ex);
+			}
+		}
+
+		Map<String, String> signedHeaders =
+				signer.sign(httpMethod, endpointURL, reqPath, headers, sigParams, in, accessKey, secretKey);
+
+		builder.header(HttpHeaders.AUTHORIZATION, signedHeaders.get(HttpHeaders.AUTHORIZATION)).
+				header("X-Amz-Date", signedHeaders.get("X-Amz-Date"));
+
+
+		if (jsonPayload != null) {
+			return builder.method(httpMethod, jsonPayload);
+		} else {
+			return builder.method(httpMethod);
+		}
+	}
+
+	/////////////////////////////////////////////
+	//			REST RESPONSE HANDLERS
+	/////////////////////////////////////////////
 
 	/**
 	 * Read response as JSON

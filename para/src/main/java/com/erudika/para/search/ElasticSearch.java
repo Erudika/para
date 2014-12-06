@@ -99,7 +99,7 @@ public class ElasticSearch implements Search {
 		}
 		Map<String, Object> data = Utils.getAnnotatedFields(po, null, false);
 		try {
-			IndexRequestBuilder irb = client().prepareIndex(getIndexName(po), po.getType(), po.getId()).
+			IndexRequestBuilder irb = client().prepareIndex(getIndexName(po, appid), po.getType(), po.getId()).
 					setSource(data).setRouting(po.getShardKey());
 			if (ttl > 0) {
 				irb.setTTL(ttl);
@@ -121,7 +121,7 @@ public class ElasticSearch implements Search {
 			return;
 		}
 		try {
-			DeleteRequestBuilder drb = client().prepareDelete(getIndexName(po), po.getType(), po.getId()).
+			DeleteRequestBuilder drb = client().prepareDelete(getIndexName(po, appid), po.getType(), po.getId()).
 					setRouting(po.getShardKey());
 			if (isAsyncEnabled()) {
 				drb.execute();
@@ -141,7 +141,7 @@ public class ElasticSearch implements Search {
 		}
 		BulkRequestBuilder brb = client().prepareBulk();
 		for (ParaObject po : objects) {
-			brb.add(client().prepareIndex(getIndexName(po), po.getType(), po.getId()).
+			brb.add(client().prepareIndex(getIndexName(po, appid), po.getType(), po.getId()).
 					setSource(Utils.getAnnotatedFields(po, null, false)).
 					setRouting(po.getShardKey()));
 		}
@@ -160,7 +160,7 @@ public class ElasticSearch implements Search {
 		}
 		BulkRequestBuilder brb = client().prepareBulk();
 		for (ParaObject po : objects) {
-			brb.add(client().prepareDelete(getIndexName(po), po.getType(), po.getId()).
+			brb.add(client().prepareDelete(getIndexName(po, appid), po.getType(), po.getId()).
 					setRouting(po.getShardKey()));
 		}
 		if (isAsyncEnabled()) {
@@ -594,16 +594,21 @@ public class ElasticSearch implements Search {
 	 * Determine if the object is part of a shared app - if so,
 	 * return the root index, otherwise return the separate (i.e. the appid).
 	 * @param po the object
+	 * @param defaultIndex fallback to this index if the given object is not assigned to any app
 	 * @return root index (if shared) or appid of the object (if dedicated)
 	 */
-	private String getIndexName(ParaObject po) {
+	private String getIndexName(ParaObject po, String defaultIndex) {
 		if (po == null) {
 			return null;
 		}
-		if (po.getShardKey() == null) {
+		if (po.getShardKey() != null) {
+			// shared
+			return Config.APP_NAME_NS;
+		} else if (po.getAppid() != null) {
+			// not shared
 			return po.getAppid();
 		} else {
-			return Config.APP_NAME_NS;
+			return defaultIndex;
 		}
 	}
 

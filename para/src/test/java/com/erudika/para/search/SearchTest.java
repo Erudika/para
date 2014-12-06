@@ -160,7 +160,8 @@ public abstract class SearchTest {
 
 	@Test
 	public void testFindPrefix() {
-		assertFalse(s.findPrefix("", "null", "xx").isEmpty()); // will find *
+		assertTrue(s.findPrefix(null, null, "").isEmpty());
+		assertTrue(s.findPrefix("", "null", "xx").isEmpty());
 		assertFalse(s.findPrefix(u.getType(), Config._NAME, "ann").isEmpty());
 	}
 
@@ -295,7 +296,9 @@ public abstract class SearchTest {
 
 		// test multiapp support
 		App ap1 = new App(appid1);
-		App ap2 = new App(appid1);
+		App ap2 = new App(appid2);
+		ap1.setShared(true);
+		ap2.setShared(true);
 		String routedAppid1 = ap1.getAppidWithRouting();
 		String routedAppid2 = ap2.getAppidWithRouting();
 		ux.setId(u.getId()+"-APP1");
