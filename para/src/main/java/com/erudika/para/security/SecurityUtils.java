@@ -53,7 +53,6 @@ public final class SecurityUtils {
 	/**
 	 * Clears the session. Deletes cookies and clears the security context.
 	 * @param req HTTP request
-	 * @param res HTTP response
 	 */
 	public static void clearSession(HttpServletRequest req) {
 		SecurityContextHolder.clearContext();

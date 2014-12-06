@@ -46,7 +46,7 @@ import org.apache.commons.lang3.StringUtils;
 public final class ParaClient {
 
 	private static final String DEFAULT_ENDPOINT = "http://localhost:8080";
-	private static final String DEFAULT_PATH = "/v1/";
+	private static final String DEFAULT_PATH = Api1.PATH;
 	private String endpoint;
 	private String path;
 	private final String accessKey;
@@ -905,6 +905,7 @@ public final class ParaClient {
 	/**
 	 * Returns a {@link com.erudika.para.core.User} or an
 	 * {@link com.erudika.para.core.App} that is currently authenticated.
+	 * @param <P> an App or User
 	 * @return a {@link com.erudika.para.core.User} or an {@link com.erudika.para.core.App}
 	 */
 	public <P extends ParaObject> P me() {

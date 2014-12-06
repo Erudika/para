@@ -154,7 +154,6 @@ public final class RestUtils {
 
 	/**
 	 * Returns the current authenticated {@link App} object.
-	 * @param appid the id of the app
 	 * @return an App object or null
 	 */
 	public static App getPrincipalApp() {
@@ -259,28 +258,6 @@ public final class RestUtils {
 
 		return Response.ok(entity).build();
 	}
-
-//	/**
-//	 * Converts an object to an {@link InputStream}.
-//	 * @param object an object
-//	 * @return an {@link InputStream}
-//	 */
-//	public static InputStream getEntityInputStream(Object object) {
-//		if (object != null) {
-//			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//			ObjectOutputStream oos;
-//			try {
-//				oos = new ObjectOutputStream(baos);
-//				oos.writeObject(object);
-//				oos.flush();
-//				oos.close();
-//				return new ByteArrayInputStream(baos.toByteArray());
-//			} catch (IOException ex) {
-//				logger.error(null, ex);
-//			}
-//		}
-//		return null;
-//	}
 
 	/**
 	 * Builds, signs and executes a request to an API endpoint using the provided credentials.
