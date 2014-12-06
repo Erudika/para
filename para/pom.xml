@@ -364,7 +364,7 @@
 						</systemProperty>
 						<systemProperty>
 							<name>logback.configurationFile</name>
-							<value>src/main/resources/logback.xml</value>
+							<value>${basedir}/src/main/resources/logback.xml</value>
 						</systemProperty>
 					</systemProperties>
 					<webApp>
@@ -465,7 +465,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<stylesheetfile>src/main/javadoc/stylesheet.css</stylesheetfile>
+					<stylesheetfile>${basedir}/src/main/javadoc/stylesheet.css</stylesheetfile>
 					<show>public</show>
 					<aggregate>true</aggregate>
 					<quiet>true</quiet>
