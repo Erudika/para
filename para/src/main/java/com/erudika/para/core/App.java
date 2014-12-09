@@ -105,6 +105,7 @@ public class App implements ParaObject {
 	 * @return the appid unchanged if the app is not shared or
 	 * adds a "_" prefix if the app is shared.
 	 */
+	@JsonIgnore
 	public String getAppidWithRouting() {
 		if (isShared()) {
 			return "_" + Config.SEPARATOR + getAppIdentifier();
