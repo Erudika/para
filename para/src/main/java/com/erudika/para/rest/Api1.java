@@ -238,7 +238,7 @@ public class Api1 extends ResourceConfig {
 						return crudHandler(app, type).apply(ctx);
 					} else {
 						// print logo
-						return Response.ok(Para.LOGO).build();
+						return Response.ok(Para.LOGO, MediaType.TEXT_PLAIN).build();
 					}
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");

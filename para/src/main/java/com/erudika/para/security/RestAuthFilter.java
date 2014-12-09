@@ -77,7 +77,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 
 		if (RestRequestMatcher.INSTANCE.matches(request)) {
 			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-			if (auth != null && auth.getPrincipal() instanceof User) {
+			if (auth != null && auth.getPrincipal() instanceof User && request.getHeader("Authorization") == null) {
 				User u = SecurityUtils.getAuthenticatedUser();
 				if (u == null || !u.getActive()) {
 					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,

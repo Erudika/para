@@ -304,20 +304,9 @@ public final class RestUtils {
 			String httpMethod, String endpointURL, String reqPath,
 			Map<String, String> headers, MultivaluedMap<String, String> params, byte[] jsonEntity) {
 
-		if (StringUtils.isBlank(accessKey) || StringUtils.isBlank(secretKey)) {
-			logger.warn("Blank access key or secret key!");
-			accessKey = "";
-			secretKey = "";
-		}
-
-		if (httpMethod == null) {
-			httpMethod = HttpMethod.GET;
-		}
-
 		WebTarget target = apiClient.target(endpointURL).path(reqPath);
-		InputStream in = null;
-		Entity<?> jsonPayload = null;
-		Map<String, String> sigParams = new HashMap<String, String>();
+		Map<String, String> signedHeaders = signRequest(accessKey, secretKey, httpMethod, endpointURL, reqPath,
+				headers, params, jsonEntity);
 
 		if (params != null) {
 			for (Map.Entry<String, List<String>> param : params.entrySet()) {
@@ -325,7 +314,6 @@ public final class RestUtils {
 				List<String> value = param.getValue();
 				if (value != null && !value.isEmpty() && value.get(0) != null) {
 					target = target.queryParam(key, value.toArray());
-					sigParams.put(key, value.get(0));
 				}
 			}
 		}
@@ -338,27 +326,69 @@ public final class RestUtils {
 			}
 		}
 
+		Entity<?> jsonPayload = null;
 		if (jsonEntity != null && jsonEntity.length > 0) {
 			try {
-				in = new BufferedInputStream(new ByteArrayInputStream(jsonEntity));
 				jsonPayload = Entity.json(new String(jsonEntity, Config.DEFAULT_ENCODING));
 			} catch (IOException ex) {
 				logger.error(null, ex);
 			}
 		}
 
-		Map<String, String> signedHeaders =
-				signer.sign(httpMethod, endpointURL, reqPath, headers, sigParams, in, accessKey, secretKey);
-
 		builder.header(HttpHeaders.AUTHORIZATION, signedHeaders.get(HttpHeaders.AUTHORIZATION)).
 				header("X-Amz-Date", signedHeaders.get("X-Amz-Date"));
-
 
 		if (jsonPayload != null) {
 			return builder.method(httpMethod, jsonPayload);
 		} else {
 			return builder.method(httpMethod);
 		}
+	}
+
+	/**
+	 * Builds and signs a request to an API endpoint using the provided credentials.
+	 * @param accessKey access key
+	 * @param secretKey secret key
+	 * @param httpMethod the method (GET, POST...)
+	 * @param endpointURL protocol://host:port
+	 * @param reqPath the API resource path relative to the endpointURL
+	 * @param headers headers map
+	 * @param params parameters map
+	 * @param jsonEntity an object serialized to JSON byte array (payload), could be null
+	 * @return a map containing the "Authorization" header
+	 */
+	public static Map<String, String> signRequest(String accessKey, String secretKey,
+			String httpMethod, String endpointURL, String reqPath,
+			Map<String, String> headers, MultivaluedMap<String, String> params, byte[] jsonEntity) {
+
+		if (StringUtils.isBlank(accessKey) || StringUtils.isBlank(secretKey)) {
+			logger.warn("Blank access key or secret key!");
+			accessKey = "";
+			secretKey = "";
+		}
+
+		if (httpMethod == null) {
+			httpMethod = HttpMethod.GET;
+		}
+
+		InputStream in = null;
+		Map<String, String> sigParams = new HashMap<String, String>();
+
+		if (params != null) {
+			for (Map.Entry<String, List<String>> param : params.entrySet()) {
+				String key = param.getKey();
+				List<String> value = param.getValue();
+				if (value != null && !value.isEmpty() && value.get(0) != null) {
+					sigParams.put(key, value.get(0));
+				}
+			}
+		}
+
+		if (jsonEntity != null && jsonEntity.length > 0) {
+			in = new BufferedInputStream(new ByteArrayInputStream(jsonEntity));
+		}
+
+		return signer.sign(httpMethod, endpointURL, reqPath, headers, sigParams, in, accessKey, secretKey);
 	}
 
 	/////////////////////////////////////////////
