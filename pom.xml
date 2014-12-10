@@ -3,7 +3,7 @@
 
 	<groupId>com.erudika</groupId>
 	<artifactId>para-parent</artifactId>
-	<version>1.8.1-SNAPSHOT</version>
+	<version>1.9.0</version>
 	<packaging>pom</packaging>
 
 	<organization>
@@ -47,7 +47,7 @@
 		<connection>scm:git:https://github.com/erudika/para.git</connection>
 		<developerConnection>scm:git:git@github.com:erudika/para.git</developerConnection>
 		<url>https://github.com/erudika/para</url>
-		<tag>HEAD</tag>
+		<tag>v1.9.0</tag>
 	</scm>
 
 	<issueManagement>
