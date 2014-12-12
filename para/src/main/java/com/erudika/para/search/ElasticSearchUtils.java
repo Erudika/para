@@ -51,7 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Helper utilities for connecting to an ElasticSearch cluster.
+ * Helper utilities for connecting to an Elasticsearch cluster.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public final class ElasticSearchUtils {
@@ -63,7 +63,7 @@ public final class ElasticSearchUtils {
 	private ElasticSearchUtils() { }
 
 	/**
-	 * Creates an instance of the client that talks to ElaasticSearch.
+	 * Creates an instance of the client that talks to Elasticsearch.
 	 * @return a client instance
 	 */
 	protected static Client getClient() {
@@ -72,7 +72,6 @@ public final class ElasticSearchUtils {
 		}
 		ImmutableSettings.Builder settings = ImmutableSettings.settingsBuilder();
 		settings.put("node.name", getNodeName());
-		settings.put("client.transport.sniff", true);
 		settings.put("client.transport.sniff", true);
 		settings.put("action.disable_delete_all_indices", true);
 		settings.put("cluster.name", Config.CLUSTER_NAME);
@@ -89,15 +88,10 @@ public final class ElasticSearchUtils {
 			settings.put("path.data", esHome + "data");
 			settings.put("path.work", esHome + "work");
 			settings.put("path.logs", esHome + "logs");
-
 			settings.put("cloud.aws.region", Config.AWS_REGION);
 			settings.put("network.tcp.keep_alive", true);
-//			settings.put("index.number_of_shards", 5);
-//			settings.put("index.number_of_replicas", 0);
-//
 			settings.put("discovery.type", "ec2");
 			settings.put("discovery.ec2.groups", "elasticsearch");
-//			settings.put("discovery.ec2.availability_zones", "eu-west-1a");
 			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(localNode).client(!localNode).node();
 			searchClient = searchNode.client();
 		} else if ("embedded".equals(Config.ENVIRONMENT)) {
@@ -109,7 +103,7 @@ public final class ElasticSearchUtils {
 			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(true).data(true).node();
 			searchClient = searchNode.client();
 		} else {
-			searchClient = new TransportClient();
+			searchClient = new TransportClient(settings);
 				((TransportClient) searchClient).addTransportAddress(
 						new InetSocketTransportAddress("localhost", 9300));
 		}
