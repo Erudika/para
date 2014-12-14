@@ -355,7 +355,7 @@
 			<plugin>
 				<groupId>org.eclipse.jetty</groupId>
 				<artifactId>jetty-maven-plugin</artifactId>
-				<version>9.2.1.v20140609</version>
+				<version>9.2.5.v20141112</version>
 				<configuration>
 					<systemProperties>
 						<systemProperty>
