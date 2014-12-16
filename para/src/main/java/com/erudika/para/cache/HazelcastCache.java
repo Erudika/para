@@ -32,9 +32,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Hazelcast implementation of the {@link Cache} interface. 
+ * Hazelcast implementation of the {@link Cache} interface.
  * Each application uses a separate distributed map.
- * 
+ *
  * @author Alex Bogdanovski [alex@erudika.com]
  * @see Cache
  * @see HazelcastUtils
@@ -66,7 +66,11 @@ public class HazelcastCache implements Cache {
 	public <T> void put(String appid, String id, T object) {
 		if (!StringUtils.isBlank(id) && object != null && !StringUtils.isBlank(appid)) {
 			logger.debug("Cache.put() {} {}", appid, id);
-			client().getMap(appid).putAsync(id, object);
+			if (isAsyncEnabled()) {
+				client().getMap(appid).putAsync(id, object);
+			} else {
+				client().getMap(appid).put(id, object);
+			}
 		}
 	}
 
@@ -74,7 +78,11 @@ public class HazelcastCache implements Cache {
 	public <T> void put(String appid, String id, T object, Long ttlSeconds) {
 		if (!StringUtils.isBlank(id) && object != null && !StringUtils.isBlank(appid)) {
 			logger.debug("Cache.put() {} {} ttl {}", appid, id, ttlSeconds);
-			client().getMap(appid).putAsync(id, object, ttlSeconds, TimeUnit.SECONDS);
+			if (isAsyncEnabled()) {
+				client().getMap(appid).putAsync(id, object, ttlSeconds, TimeUnit.SECONDS);
+			} else {
+				client().getMap(appid).put(id, object, ttlSeconds, TimeUnit.SECONDS);
+			}
 		}
 	}
 
@@ -145,6 +153,13 @@ public class HazelcastCache implements Cache {
 			}
 			logger.debug("Cache.removeAll() {} {}", appid, ids.size());
 		}
+	}
+
+	/**
+	 * @return true if asynchronous caching is enabled.
+	 */
+	private boolean isAsyncEnabled() {
+		return Config.getConfigParamUnwrapped("hc.async_enabled", false);
 	}
 
 	////////////////////////////////////////////////////
