@@ -137,6 +137,7 @@ public class Para implements WebApplicationInitializer, Ordered {
 	public static void destroy() {
 		try {
 			logger.info("--- Para.destroy() ---");
+			injector = null;
 			for (DestroyListener destroyListener : destroyListeners) {
 				destroyListener.onDestroy();
 			}
