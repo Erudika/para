@@ -81,7 +81,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 		if (token != null) {
 			String ident = getIdentifierFromCookie(request);
 			if (ident != null) {
-				if (Config.CACHE_ENABLED) {
+				if (Config.isCacheEnabled()) {
 					String key = ident.concat(parameterName);
 					storeTokenAsCookie((CsrfToken) cache.get(Config.APP_NAME_NS, key), request, response);
 				} else {
@@ -102,7 +102,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 		String ident = getIdentifierFromCookie(request);
 		CsrfToken token = null;
 		if (ident != null) {
-			if (Config.CACHE_ENABLED) {
+			if (Config.isCacheEnabled()) {
 				String key = ident.concat(parameterName);
 				token = cache.get(Config.APP_NAME_NS, key);
 				if (token == null) {

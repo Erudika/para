@@ -71,8 +71,8 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 
 		try {
 			superMethod = DAO.class.getMethod(m.getName(), m.getParameterTypes());
-			indexedAnno = Config.SEARCH_ENABLED ? superMethod.getAnnotation(Indexed.class) : null;
-			cachedAnno = Config.CACHE_ENABLED ? superMethod.getAnnotation(Cached.class) : null;
+			indexedAnno = Config.isSearchEnabled() ? superMethod.getAnnotation(Indexed.class) : null;
+			cachedAnno = Config.isCacheEnabled() ? superMethod.getAnnotation(Cached.class) : null;
 		} catch (Exception e) {
 			logger.error(null, e);
 		}

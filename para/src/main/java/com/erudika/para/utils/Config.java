@@ -217,14 +217,6 @@ public final class Config {
 	 */
 	public static final Long PASSRESET_TIMEOUT_SEC = NumberUtils.toLong(getConfigParam("pass_reset_timeout", ""), 30 * 60);
 	/**
-	 * Enable object caching. Default: true only if {@link #ENVIRONMENT} = "production"
-	 */
-	public static final boolean CACHE_ENABLED = Boolean.parseBoolean(getConfigParam("cache_enabled", "" + ENVIRONMENT.equals("production")));
-	/**
-	 * Enable object indexing. Default: true
-	 */
-	public static final boolean SEARCH_ENABLED = Boolean.parseBoolean(getConfigParam("search_enabled", "true"));
-	/**
 	 * Enable the RESTful API. Default: true
 	 */
 	public static final boolean API_ENABLED = Boolean.parseBoolean(getConfigParam("api_enabled", "true"));
@@ -337,6 +329,22 @@ public final class Config {
 			init(null);
 		}
 		return config;
+	}
+
+	/**
+	 * Default: true only if {@link #ENVIRONMENT} = "production"
+	 * @return true if caching is enabled
+	 */
+	public static boolean isCacheEnabled() {
+		return Boolean.parseBoolean(getConfigParam("cache_enabled", "" + ENVIRONMENT.equals("production")));
+	}
+
+	/**
+	 * Default: true
+	 * @return true if indexing is enabled
+	 */
+	public static boolean isSearchEnabled() {
+		return Boolean.parseBoolean(getConfigParam("search_enabled", "true"));
 	}
 
 	private static String[] getAwsCredentials() {
