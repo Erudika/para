@@ -77,8 +77,8 @@ public final class ElasticSearchUtils {
 		settings.put("cluster.name", Config.CLUSTER_NAME);
 
 		boolean localNode = Config.getConfigParamUnwrapped("es.local_node", true);
-		String esHome = Config.getConfigParam("es.dir", "/var/lib/elasticsearch/");
-		if (!esHome.endsWith("/")) {
+		String esHome = Config.getConfigParam("es.dir", "");
+		if (!esHome.isEmpty() && !esHome.endsWith("/")) {
 			esHome += "/";
 		}
 

@@ -129,9 +129,9 @@ public class ParaClientIT {
 
 	@AfterClass
 	public static void tearDownClass() {
-//		Para.destroy();
 		Para.getDAO().delete(new App(Config.APP_NAME_NS));
 		ElasticSearchUtils.deleteIndex(Config.APP_NAME_NS);
+		Para.destroy();
 	}
 
 	@Test
