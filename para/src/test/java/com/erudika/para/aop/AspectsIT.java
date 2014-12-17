@@ -110,10 +110,11 @@ public class AspectsIT {
 		uB.setPassword("badpass");
 		uB.create();
 		assertNull(d.read(uB.getId()));
+		assertNull(s.findById(uB.getId()));
+		assertNull(c.get(uB.getId()));
 
 		uB.setEmail("tes1@test.com");
 		uB.setIdentifier(uB.getEmail());
-
 		uB.create();
 		assertNotNull(d.read(uB.getId()));
 		assertNotNull(s.findById(uB.getId()));

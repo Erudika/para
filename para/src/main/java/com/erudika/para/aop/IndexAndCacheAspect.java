@@ -52,8 +52,26 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 
 	private static final Logger logger = LoggerFactory.getLogger(IndexAndCacheAspect.class);
 
-	@Inject private Search search;
-	@Inject private Cache cache;
+	private Search search;
+	private Cache cache;
+
+	public Search getSearch() {
+		return search;
+	}
+
+	@Inject
+	public void setSearch(Search search) {
+		this.search = search;
+	}
+
+	public Cache getCache() {
+		return cache;
+	}
+
+	@Inject
+	public void setCache(Cache cache) {
+		this.cache = cache;
+	}
 
 	/**
 	 * Executes code when a method is invoked. A big switch statement.
@@ -62,13 +80,15 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	 * @throws Throwable error
 	 */
 	public Object invoke(MethodInvocation mi) throws Throwable {
+		if(!mi.getMethod().isAccessible()) {
+			return mi.proceed();
+		}
 		Object result = null;
 		Method m = mi.getMethod();
 		Method superMethod = null;
 		Indexed indexedAnno = null;
 		Cached cachedAnno = null;
 		String cn = getClass().getSimpleName();
-
 		try {
 			superMethod = DAO.class.getMethod(m.getName(), m.getParameterTypes());
 			indexedAnno = Config.isSearchEnabled() ? superMethod.getAnnotation(Indexed.class) : null;
