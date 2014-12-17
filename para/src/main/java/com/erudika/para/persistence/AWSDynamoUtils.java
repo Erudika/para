@@ -67,6 +67,10 @@ public final class AWSDynamoUtils {
 			ddbClient.setEndpoint(LOCAL_ENDPOINT);
 		}
 
+		if (!existsTable(Config.APP_NAME_NS)) {
+			createTable(Config.APP_NAME_NS);
+		}
+
 		Para.addDestroyListener(new Para.DestroyListener() {
 			public void onDestroy() {
 				shutdownClient();

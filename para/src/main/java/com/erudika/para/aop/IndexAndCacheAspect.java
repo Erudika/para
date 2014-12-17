@@ -28,6 +28,7 @@ import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -80,7 +81,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	 * @throws Throwable error
 	 */
 	public Object invoke(MethodInvocation mi) throws Throwable {
-		if(!mi.getMethod().isAccessible()) {
+		if (!Modifier.isPublic(mi.getMethod().getModifiers())) {
 			return mi.proceed();
 		}
 		Object result = null;
