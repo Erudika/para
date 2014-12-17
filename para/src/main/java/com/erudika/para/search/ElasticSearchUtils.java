@@ -70,37 +70,32 @@ public final class ElasticSearchUtils {
 		if (searchClient != null) {
 			return searchClient;
 		}
+		boolean localNode = Config.getConfigParamUnwrapped("es.local_node", true);
+		boolean corsEnabled = Config.getConfigParamUnwrapped("es.cors_enabled", !Config.IN_PRODUCTION);
+		String esHome = Config.getConfigParam("es.dir", "");
+
 		ImmutableSettings.Builder settings = ImmutableSettings.settingsBuilder();
 		settings.put("node.name", getNodeName());
 		settings.put("client.transport.sniff", true);
 		settings.put("action.disable_delete_all_indices", true);
 		settings.put("cluster.name", Config.CLUSTER_NAME);
-
-		boolean localNode = Config.getConfigParamUnwrapped("es.local_node", true);
-		String esHome = Config.getConfigParam("es.dir", "");
-		if (!esHome.isEmpty() && !esHome.endsWith("/")) {
-			esHome += "/";
-		}
+		settings.put("http.cors.enabled", corsEnabled);
+		settings.put("path.data", esHome + "data");
+		settings.put("path.work", esHome + "work");
+		settings.put("path.logs", esHome + "logs");
 
 		if (Config.IN_PRODUCTION) {
 			settings.put("cloud.aws.access_key", Config.AWS_ACCESSKEY);
 			settings.put("cloud.aws.secret_key", Config.AWS_SECRETKEY);
-			settings.put("path.data", esHome + "data");
-			settings.put("path.work", esHome + "work");
-			settings.put("path.logs", esHome + "logs");
 			settings.put("cloud.aws.region", Config.AWS_REGION);
 			settings.put("network.tcp.keep_alive", true);
-			settings.put("discovery.type", "ec2");
+			settings.put("discovery.type", Config.getConfigParam("discovery_type", "ec2"));
 			settings.put("discovery.ec2.groups", "elasticsearch");
-			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(localNode).client(!localNode).node();
+			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(localNode).node();
 			searchClient = searchNode.client();
 		} else if ("embedded".equals(Config.ENVIRONMENT)) {
 			// for local develoment only
-			settings.put("path.data", esHome + "data");
-			settings.put("path.work", esHome + "work");
-			settings.put("path.logs", esHome + "logs");
-
-			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(true).data(true).node();
+			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(localNode).data(true).node();
 			searchClient = searchNode.client();
 		} else {
 			searchClient = new TransportClient(settings);
