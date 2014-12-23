@@ -60,7 +60,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
 	/**
-	 * Configuers the authentication providers
+	 * Configures the authentication providers
 	 *
 	 * @param auth a builder
 	 * @throws Exception ex

@@ -66,8 +66,9 @@ public class User implements ParaObject, UserDetails {
 	@Stored @NotBlank @Email private String email;
 	@Stored private String currency;
 	@Stored private String picture;
+	@Stored private String sectoken;
 
-	private transient String password;	// for validation purposes only
+	private transient String password;
 	private transient String shardKey;
 	private transient DAO dao;
 	private transient Search search;
@@ -92,6 +93,26 @@ public class User implements ParaObject, UserDetails {
 	@Override
 	public ParaObject getParent() {
 		return this;
+	}
+
+	/**
+	 * Returns the security token. A random string used for
+	 * for security purposes like remember me functionality.
+	 * @return a security token
+	 */
+	public String getSectoken() {
+		if (sectoken == null) {
+			sectoken = Utils.generateSecurityToken(42, true);
+		}
+		return sectoken;
+	}
+
+	/**
+	 * Sets the security token
+	 * @param sectoken a new token
+	 */
+	public void setSectoken(String sectoken) {
+		this.sectoken = sectoken;
 	}
 
 	/**
@@ -315,6 +336,15 @@ public class User implements ParaObject, UserDetails {
 	}
 
 	/**
+	 * Is the main identifier a GitHub id
+	 * @return true if user is signed in with GitHub
+	 */
+	@JsonIgnore
+	public boolean isGitHubUser() {
+		return StringUtils.startsWithIgnoreCase(identifier, Config.GITHUB_PREFIX);
+	}
+
+	/**
 	 * Checks for admin rights
 	 * @return true if user has admin rights
 	 */
@@ -341,6 +371,8 @@ public class User implements ParaObject, UserDetails {
 			return "facebook";
 		} else if (isGooglePlusUser()) {
 			return "google";
+		} else if (isGitHubUser()) {
+			return "github";
 		} else if (isTwitterUser()) {
 			return "twitter";
 		} else if (isLinkedInUser()) {
@@ -512,7 +544,9 @@ public class User implements ParaObject, UserDetails {
 		Sysprop s = getDao().read(getAppid(), identifier);
 		if (isValidToken(s, Config._RESET_TOKEN, token)) {
 			s.removeProperty(Config._RESET_TOKEN);
-			s.addProperty(Config._PASSWORD, Utils.bcrypt(newpass));
+			String hashed = Utils.bcrypt(newpass);
+			s.addProperty(Config._PASSWORD, hashed);
+			setPassword(hashed);
 			getDao().update(getAppid(), s);
 			return true;
 		}
@@ -540,7 +574,9 @@ public class User implements ParaObject, UserDetails {
 		s.setName(Config._IDENTIFIER);
 		s.setCreatorid(userid);
 		if (!StringUtils.isBlank(password)) {
-			s.addProperty(Config._PASSWORD, Utils.bcrypt(password));
+			String hashed = Utils.bcrypt(password);
+			s.addProperty(Config._PASSWORD, hashed);
+			setPassword(hashed);
 		}
 		return getDao().create(getAppid(), s) != null;
 	}
