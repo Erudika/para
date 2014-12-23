@@ -102,6 +102,8 @@ public final class Config {
 	public static final String LINKEDIN_PREFIX = "in" + SEPARATOR;
 	/** {@value #TWITTER_PREFIX} */
 	public static final String TWITTER_PREFIX = "tw" + SEPARATOR;
+	/** {@value #GITHUB_PREFIX} */
+	public static final String GITHUB_PREFIX = "gh" + SEPARATOR;
 
 	//////////  INITIALIZATION PARAMETERS  //////////////
 	/**
