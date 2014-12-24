@@ -219,12 +219,12 @@ public class UserTest {
 	@Test
 	public void testPasswordMatches() {
 		u.create();
+		u.setPassword("123456");
 		assertTrue(User.passwordMatches(u));
 
 		User u1 = new User();
 		u1.setDao(dao);
 		u1.setIdentifier(u.getIdentifier());
-
 		u1.setPassword("1234");
 		assertFalse(User.passwordMatches(u1));
 
