@@ -28,6 +28,7 @@ import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.erudika.para.Para;
+import com.erudika.para.core.App;
 import com.erudika.para.utils.Config;
 import java.util.Collections;
 import java.util.HashMap;
@@ -102,7 +103,7 @@ public final class AWSDynamoUtils {
 		}
 		try {
 			List<String> tables = getClient().listTables().getTableNames();
-			return tables != null && tables.contains(appid);
+			return tables != null && tables.contains(getTablNameForAppid(appid));
 		} catch (Exception e) {
 			return false;
 		}
@@ -114,7 +115,7 @@ public final class AWSDynamoUtils {
 	 * @return true if created
 	 */
 	public static boolean createTable(String appid) {
-		return createTable(appid, 2L, 1L);
+		return createTable(getTablNameForAppid(appid), 2L, 1L);
 	}
 
 	/**
@@ -129,7 +130,7 @@ public final class AWSDynamoUtils {
 			return false;
 		}
 		try {
-			getClient().createTable(new CreateTableRequest().withTableName(appid).
+			getClient().createTable(new CreateTableRequest().withTableName(getTablNameForAppid(appid)).
 					withKeySchema(new KeySchemaElement(Config._KEY, KeyType.HASH)).
 					withAttributeDefinitions(new AttributeDefinition().withAttributeName(Config._KEY).
 					withAttributeType(ScalarAttributeType.S)).
@@ -151,7 +152,7 @@ public final class AWSDynamoUtils {
 			return false;
 		}
 		try {
-			getClient().deleteTable(new DeleteTableRequest().withTableName(appid));
+			getClient().deleteTable(new DeleteTableRequest().withTableName(getTablNameForAppid(appid)));
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;
@@ -170,7 +171,7 @@ public final class AWSDynamoUtils {
 		}
 		try {
 			Map<String, Object> map = new HashMap<String, Object>();
-			final TableDescription td = getClient().describeTable(appid).getTable();
+			final TableDescription td = getClient().describeTable(getTablNameForAppid(appid)).getTable();
 			return new HashMap<String, Object>() {
 				{
 					put("status", td.getTableStatus());
@@ -187,4 +188,15 @@ public final class AWSDynamoUtils {
 		return Collections.emptyMap();
 	}
 
+	protected static String getTableNameForApp(App app) {
+		return (app == null) ? null : getTablNameForAppid(app.getAppIdentifier());
+	}
+
+	protected static String getTablNameForAppid(String appIdentifier) {
+		if (StringUtils.isBlank(appIdentifier)) {
+			return null;
+		} else {
+			return appIdentifier.equals(Config.APP_NAME_NS) ? appIdentifier : Config.PARA + "-" + appIdentifier;
+		}
+	}
 }

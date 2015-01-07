@@ -57,6 +57,7 @@ import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static com.erudika.para.persistence.AWSDynamoUtils.*;
 
 /**
  * An implementation of the {@link DAO} interface using AWS DynamoDB as a data store.
@@ -135,7 +136,7 @@ public class AWSDynamoDAO implements DAO {
 		}
 		try {
 			setRowKey(key, row);
-			PutItemRequest putItemRequest = new PutItemRequest(appid, row);
+			PutItemRequest putItemRequest = new PutItemRequest(getTablNameForAppid(appid), row);
 			client().putItem(putItemRequest);
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -152,7 +153,7 @@ public class AWSDynamoDAO implements DAO {
 			for (Entry<String, AttributeValue> attr : row.entrySet()) {
 				rou.put(attr.getKey(), new AttributeValueUpdate(attr.getValue(), AttributeAction.PUT));
 			}
-			UpdateItemRequest updateItemRequest = new UpdateItemRequest(appid,
+			UpdateItemRequest updateItemRequest = new UpdateItemRequest(getTablNameForAppid(appid),
 					Collections.singletonMap(Config._KEY, new AttributeValue(key)), rou);
 			client().updateItem(updateItemRequest);
 		} catch (Exception e) {
@@ -166,7 +167,7 @@ public class AWSDynamoDAO implements DAO {
 		}
 		Map<String, AttributeValue> row = null;
 		try {
-			GetItemRequest getItemRequest = new GetItemRequest(appid,
+			GetItemRequest getItemRequest = new GetItemRequest(getTablNameForAppid(appid),
 					Collections.singletonMap(Config._KEY, new AttributeValue(key)));
 			GetItemResult res = client().getItem(getItemRequest);
 			if (res != null && res.getItem() != null && !res.getItem().isEmpty()) {
@@ -183,7 +184,7 @@ public class AWSDynamoDAO implements DAO {
 			return;
 		}
 		try {
-			DeleteItemRequest delItemRequest = new DeleteItemRequest(appid,
+			DeleteItemRequest delItemRequest = new DeleteItemRequest(getTablNameForAppid(appid),
 					Collections.singletonMap(Config._KEY, new AttributeValue(key)));
 			client().deleteItem(delItemRequest);
 		} catch (Exception e) {
@@ -220,7 +221,7 @@ public class AWSDynamoDAO implements DAO {
 			kna.setAttributesToGet(Arrays.asList(Config._KEY, Config._TYPE));
 		}
 
-		batchGet(Collections.singletonMap(appid, kna), results);
+		batchGet(Collections.singletonMap(getTablNameForAppid(appid), kna), results);
 
 		logger.debug("DAO.readAll() {}", results.size());
 		return results;
@@ -237,7 +238,7 @@ public class AWSDynamoDAO implements DAO {
 		}
 		try {
 			ScanRequest scanRequest = new ScanRequest().
-					withTableName(appid).
+					withTableName(getTablNameForAppid(appid)).
 					withLimit(pager.getLimit()).
 					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
 
@@ -271,9 +272,10 @@ public class AWSDynamoDAO implements DAO {
 		// DynamoDB doesn't have a BatchUpdate API yet so we have to do one of the following:
 		// 1. update items one by one (chosen for simplicity)
 		// 2. call writeAll() - writeAll(appid, objects, true);
+		String table = getTablNameForAppid(appid);
 		if (objects != null) {
 			for (P object : objects) {
-				update(appid, object);
+				update(table, object);
 			}
 		}
 		logger.debug("DAO.updateAll() {}", (objects == null) ? 0 : objects.size());
@@ -292,7 +294,7 @@ public class AWSDynamoDAO implements DAO {
 						withKey(Collections.singletonMap(Config._KEY, new AttributeValue(object.getId())))));
 			}
 		}
-		batchWrite(Collections.singletonMap(appid, reqs));
+		batchWrite(Collections.singletonMap(getTablNameForAppid(appid), reqs));
 		logger.debug("DAO.deleteAll() {}", objects.size());
 	}
 
@@ -380,7 +382,7 @@ public class AWSDynamoDAO implements DAO {
 				reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(row)));
 				j++;
 			}
-			batchWrite(Collections.singletonMap(appid, reqs));
+			batchWrite(Collections.singletonMap(getTablNameForAppid(appid), reqs));
 			reqs.clear();
 			j = 0;
 		}
