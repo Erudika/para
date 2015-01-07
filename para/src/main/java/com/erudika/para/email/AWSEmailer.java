@@ -32,6 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 
 /**
  * An emailer that uses AWS Simple Email Service (SES).
+ * By default, this implementation treats the body as HTML content.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 @Singleton
@@ -58,8 +59,8 @@ public class AWSEmailer implements Emailer {
 			Message msg = new Message().withSubject(subjContent);
 
 			// Include a body in both text and HTML formats
-			Content textContent = new Content().withData(body);
-			msg.setBody(new Body().withText(textContent));
+			Content textContent = new Content().withData(body).withCharset(Config.DEFAULT_ENCODING);
+			msg.setBody(new Body().withHtml(textContent));
 
 			request.setMessage(msg);
 

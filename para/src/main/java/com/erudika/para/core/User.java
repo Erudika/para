@@ -66,7 +66,6 @@ public class User implements ParaObject, UserDetails {
 	@Stored @NotBlank @Email private String email;
 	@Stored private String currency;
 	@Stored private String picture;
-	@Stored private String sectoken;
 
 	private transient String password;
 	private transient String shardKey;
@@ -93,26 +92,6 @@ public class User implements ParaObject, UserDetails {
 	@Override
 	public ParaObject getParent() {
 		return this;
-	}
-
-	/**
-	 * Returns the security token. A random string used for
-	 * for security purposes like remember me functionality.
-	 * @return a security token
-	 */
-	public String getSectoken() {
-		if (sectoken == null) {
-			sectoken = Utils.generateSecurityToken(42, true);
-		}
-		return sectoken;
-	}
-
-	/**
-	 * Sets the security token
-	 * @param sectoken a new token
-	 */
-	public void setSectoken(String sectoken) {
-		this.sectoken = sectoken;
 	}
 
 	/**
@@ -220,6 +199,8 @@ public class User implements ParaObject, UserDetails {
 	}
 
 	/**
+	 * Note: this method assumes that child objects can be modified by their parents.
+	 * This might not work for special cases where a parent has no rights over a child.
 	 * @param obj an object
 	 * @return true if the user is the creator or parent of this object or an admin user
 	 */
@@ -228,7 +209,9 @@ public class User implements ParaObject, UserDetails {
 			return false;
 		} else {
 			boolean appsMatch = StringUtils.equalsIgnoreCase(appid, obj.getAppid());
-			boolean mine = id.equals(obj.getCreatorid()) || id.equals(obj.getId()) || id.equals(obj.getParentid());
+			boolean isCreatedByMe = obj.getCreatorid() != null &&
+					(obj.getCreatorid().startsWith(id + Config.SEPARATOR) || id.equals(obj.getCreatorid()));
+			boolean mine = isCreatedByMe || id.equals(obj.getId()) || id.equals(obj.getParentid());
 			return appsMatch && (mine || isAdmin());
 		}
 	}
