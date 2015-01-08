@@ -532,7 +532,7 @@ public class Api1 extends ResourceConfig {
 	private <P extends ParaObject> Map<String, Object> buildQueryAndSearch(App app, String queryType,
 			MultivaluedMap<String, String> params, String typeOverride) {
 		String query = params.containsKey("q") ? params.getFirst("q") : "*";
-		String appid = app.getAppidWithRouting();
+		String appid = app.getAppIdentifier();
 		String type = (!StringUtils.isBlank(typeOverride) && !"search".equals(typeOverride)) ?
 				typeOverride : params.getFirst(Config._TYPE);
 

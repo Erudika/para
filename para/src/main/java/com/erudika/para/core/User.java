@@ -68,7 +68,6 @@ public class User implements ParaObject, UserDetails {
 	@Stored private String picture;
 
 	private transient String password;
-	private transient String shardKey;
 	private transient DAO dao;
 	private transient Search search;
 
@@ -845,16 +844,6 @@ public class User implements ParaObject, UserDetails {
 	@Override
 	public void setSearch(Search search) {
 		this.search = search;
-	}
-
-	@Override
-	public String getShardKey() {
-		return shardKey;
-	}
-
-	@Override
-	public void setShardKey(String shardKey) {
-		this.shardKey = shardKey;
 	}
 
 	@Override

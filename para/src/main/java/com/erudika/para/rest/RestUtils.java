@@ -427,7 +427,6 @@ public final class RestUtils {
 			}
 			content = Utils.setAnnotatedFields(newContent);
 			content.setAppid(app.getAppIdentifier());
-			content.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
 			registerNewTypes(app, content);
 		} else {
 			return entityRes;
@@ -468,7 +467,6 @@ public final class RestUtils {
 			Response entityRes = getEntity(is, Map.class);
 			if (entityRes.getStatusInfo() == Response.Status.OK) {
 				newContent = (Map<String, Object>) entityRes.getEntity();
-				object.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
 			} else {
 				return entityRes;
 			}
@@ -508,7 +506,6 @@ public final class RestUtils {
 	public static Response getDeleteResponse(App app, ParaObject content) {
 		if (content != null && content.getId() != null && content.getAppid() != null) {
 			content.setAppid(app.getAppIdentifier());
-			content.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
 			content.delete();
 			return Response.ok().build();
 		} else {
@@ -546,7 +543,6 @@ public final class RestUtils {
 				ParaObject pobj = Utils.setAnnotatedFields(object);
 				if (pobj != null && Utils.isValidObject(pobj)) {
 					pobj.setAppid(app.getAppIdentifier());
-					pobj.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
 					objects.add(pobj);
 				}
 			}
@@ -583,7 +579,6 @@ public final class RestUtils {
 					if (pobj != null) {
 						pobj.setId((String) item.get(Config._ID));
 						pobj.setType((String) item.get(Config._TYPE));
-						pobj.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
 						objects.add(pobj);
 					}
 				}
@@ -608,7 +603,6 @@ public final class RestUtils {
 			if (ids.size() <= Config.MAX_ITEMS_PER_PAGE) {
 				for (ParaObject pobj : Para.getDAO().readAll(app.getAppIdentifier(), ids, false).values()) {
 					if (pobj != null && pobj.getId() != null && pobj.getType() != null) {
-						pobj.setShardKey(app.isShared() ? app.getAppIdentifier() : null);
 						objects.add(pobj);
 					}
 				}

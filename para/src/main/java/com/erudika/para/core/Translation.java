@@ -57,7 +57,6 @@ public class Translation implements ParaObject {
 	@Stored @NotBlank private String value;
 	@Stored private Boolean approved;
 
-	private transient String shardKey;
 	private transient LanguageUtils langutils;
 	private transient DAO dao;
 	private transient Search search;
@@ -351,16 +350,6 @@ public class Translation implements ParaObject {
 	@Override
 	public void setSearch(Search search) {
 		this.search = search;
-	}
-
-	@Override
-	public String getShardKey() {
-		return shardKey;
-	}
-
-	@Override
-	public void setShardKey(String shardKey) {
-		this.shardKey = shardKey;
 	}
 
 	@Override

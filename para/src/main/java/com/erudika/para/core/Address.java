@@ -57,7 +57,6 @@ public class Address implements ParaObject {
 	@Stored @NotBlank private String latlng;
 	@Stored private String phone;
 
-	private transient String shardKey;
 	private transient DAO dao;
 	private transient Search search;
 
@@ -300,16 +299,6 @@ public class Address implements ParaObject {
 	@Override
 	public void setSearch(Search search) {
 		this.search = search;
-	}
-
-	@Override
-	public String getShardKey() {
-		return shardKey;
-	}
-
-	@Override
-	public void setShardKey(String shardKey) {
-		this.shardKey = shardKey;
 	}
 
 	@Override

@@ -55,7 +55,6 @@ public final class Linker implements ParaObject {
 	@Stored @Locked @NotBlank private String type2;
 	@Stored private String metadata;
 
-	private transient String shardKey;
 	private transient DAO dao;
 	private transient Search search;
 
@@ -366,16 +365,6 @@ public final class Linker implements ParaObject {
 	@Override
 	public void setSearch(Search search) {
 		this.search = search;
-	}
-
-	@Override
-	public String getShardKey() {
-		return shardKey;
-	}
-
-	@Override
-	public void setShardKey(String shardKey) {
-		this.shardKey = shardKey;
 	}
 
 	@Override

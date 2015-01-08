@@ -53,7 +53,6 @@ public class Tag implements ParaObject {
 	@Stored @NotBlank @Locked private String tag;
 	@Stored private Integer count;
 
-	private transient String shardKey;
 	private transient DAO dao;
 	private transient Search search;
 
@@ -310,16 +309,6 @@ public class Tag implements ParaObject {
 	@Override
 	public void setSearch(Search search) {
 		this.search = search;
-	}
-
-	@Override
-	public String getShardKey() {
-		return shardKey;
-	}
-
-	@Override
-	public void setShardKey(String shardKey) {
-		this.shardKey = shardKey;
 	}
 
 	@Override

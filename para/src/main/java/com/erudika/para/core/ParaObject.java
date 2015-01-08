@@ -199,21 +199,6 @@ public interface ParaObject extends Serializable, Linkable, Votable {
 	boolean exists();
 
 	/**
-	 * This is the key which controls the location of the object in a sharded space.
-	 * It is used mainly for routing with Elasticsearch.
-	 * @return the id value (default) or some other value like appid
-	 */
-	@JsonIgnore
-	String getShardKey();
-
-	/**
-	 * Sets the shard key.
-	 * @param key some value (usually appid)
-	 */
-	void setShardKey(String key);
-
-
-	/**
 	 * Returns the core persistence object.
 	 * @return a {@link com.erudika.para.persistence.DAO} instance
 	 */

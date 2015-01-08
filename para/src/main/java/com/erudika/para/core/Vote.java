@@ -57,7 +57,6 @@ public class Vote implements ParaObject {
 	@Stored @NotBlank private String value;
 	@Stored @NotNull private Long expiresAfter;
 
-	private transient String shardKey;
 	private transient DAO dao;
 	private transient Search search;
 
@@ -326,16 +325,6 @@ public class Vote implements ParaObject {
 	@Override
 	public void setSearch(Search search) {
 		this.search = search;
-	}
-
-	@Override
-	public String getShardKey() {
-		return shardKey;
-	}
-
-	@Override
-	public void setShardKey(String shardKey) {
-		this.shardKey = shardKey;
 	}
 
 	@Override

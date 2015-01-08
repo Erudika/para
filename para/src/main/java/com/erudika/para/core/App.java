@@ -78,7 +78,6 @@ public class App implements ParaObject {
 	@Stored private Boolean active;
 	@Stored private Long deleteOn;
 
-	private transient String shardKey;
 	private transient DAO dao;
 	private transient Search search;
 
@@ -98,20 +97,6 @@ public class App implements ParaObject {
 		this.active = true;
 		setId(id);
 		setName(getName());
-	}
-
-	/**
-	 * Returns a modified appid with a prefix with the correct routing information.
-	 * @return the appid unchanged if the app is not shared or
-	 * adds a "_" prefix if the app is shared.
-	 */
-	@JsonIgnore
-	public String getAppidWithRouting() {
-		if (isShared()) {
-			return "_" + Config.SEPARATOR + getAppIdentifier();
-		} else {
-			return getAppIdentifier();
-		}
 	}
 
 	/**
@@ -448,16 +433,6 @@ public class App implements ParaObject {
 	@Override
 	public void setSearch(Search search) {
 		this.search = search;
-	}
-
-	@Override
-	public String getShardKey() {
-		return shardKey;
-	}
-
-	@Override
-	public void setShardKey(String shardKey) {
-		this.shardKey = shardKey;
 	}
 
 	@Override

@@ -28,7 +28,6 @@ import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.erudika.para.Para;
-import com.erudika.para.core.App;
 import com.erudika.para.utils.Config;
 import java.util.Collections;
 import java.util.HashMap;
@@ -115,7 +114,7 @@ public final class AWSDynamoUtils {
 	 * @return true if created
 	 */
 	public static boolean createTable(String appid) {
-		return createTable(getTablNameForAppid(appid), 2L, 1L);
+		return createTable(appid, 2L, 1L);
 	}
 
 	/**
@@ -186,10 +185,6 @@ public final class AWSDynamoUtils {
 			logger.error(null, e);
 		}
 		return Collections.emptyMap();
-	}
-
-	protected static String getTableNameForApp(App app) {
-		return (app == null) ? null : getTablNameForAppid(app.getAppIdentifier());
 	}
 
 	protected static String getTablNameForAppid(String appIdentifier) {

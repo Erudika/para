@@ -56,7 +56,6 @@ public class Sysprop implements ParaObject {
 
 	@Stored private Map<String, Object> properties;
 
-	private transient String shardKey;
 	private transient DAO dao;
 	private transient Search search;
 
@@ -304,16 +303,6 @@ public class Sysprop implements ParaObject {
 	@Override
 	public void setSearch(Search search) {
 		this.search = search;
-	}
-
-	@Override
-	public String getShardKey() {
-		return shardKey;
-	}
-
-	@Override
-	public void setShardKey(String shardKey) {
-		this.shardKey = shardKey;
 	}
 
 	@Override

@@ -97,6 +97,21 @@ public interface Search {
 	 */
 	<P extends ParaObject> void unindexAll(String appid, List<P> objects);
 
+	/**
+	 * Removes multiple objects from the index matching a set of terms.
+	 * @param terms a list of terms
+	 * @param matchAll if true all terms must match ('AND' operation)
+	 */
+	void unindexAll(Map<String, ?> terms, boolean matchAll);
+
+	/**
+	 * Removes multiple objects from the index matching a set of terms.
+	 * @param appid name of the {@link com.erudika.para.core.App}
+	 * @param matchAll if true all terms must match ('AND' operation)
+	 * @param terms a list of terms
+	 */
+	void unindexAll(String appid, Map<String, ?> terms, boolean matchAll);
+
 	/////////////////////////////////////////////
 	//			    SEARCH METHODS
 	/////////////////////////////////////////////
