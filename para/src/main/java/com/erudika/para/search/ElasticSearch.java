@@ -34,8 +34,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.count.CountRequestBuilder;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
+import org.elasticsearch.action.deletebyquery.DeleteByQueryRequestBuilder;
 import org.elasticsearch.action.get.GetRequestBuilder;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.get.MultiGetItemResponse;
@@ -99,8 +99,8 @@ public class ElasticSearch implements Search {
 		}
 		Map<String, Object> data = Utils.getAnnotatedFields(po, null, false);
 		try {
-			IndexRequestBuilder irb = client().prepareIndex(getIndexName(po, appid), po.getType(), po.getId()).
-					setSource(data).setRouting(po.getShardKey());
+			IndexRequestBuilder irb = client().prepareIndex(getIndexName(appid), po.getType(), po.getId()).
+					setSource(data);
 			if (ttl > 0) {
 				irb.setTTL(ttl);
 			}
@@ -121,8 +121,7 @@ public class ElasticSearch implements Search {
 			return;
 		}
 		try {
-			DeleteRequestBuilder drb = client().prepareDelete(getIndexName(po, appid), po.getType(), po.getId()).
-					setRouting(po.getShardKey());
+			DeleteRequestBuilder drb = client().prepareDelete(getIndexName(appid), po.getType(), po.getId());
 			if (isAsyncEnabled()) {
 				drb.execute();
 			} else {
@@ -137,13 +136,12 @@ public class ElasticSearch implements Search {
 	@Override
 	public <P extends ParaObject> void indexAll(String appid, List<P> objects) {
 		if (StringUtils.isBlank(appid) || objects == null || objects.isEmpty()) {
-			return ;
+			return;
 		}
 		BulkRequestBuilder brb = client().prepareBulk();
 		for (ParaObject po : objects) {
-			brb.add(client().prepareIndex(getIndexName(po, appid), po.getType(), po.getId()).
-					setSource(Utils.getAnnotatedFields(po, null, false)).
-					setRouting(po.getShardKey()));
+			brb.add(client().prepareIndex(getIndexName(appid), po.getType(), po.getId()).
+					setSource(Utils.getAnnotatedFields(po, null, false)));
 		}
 		if (isAsyncEnabled()) {
 			brb.execute();
@@ -156,12 +154,11 @@ public class ElasticSearch implements Search {
 	@Override
 	public <P extends ParaObject> void unindexAll(String appid, List<P> objects) {
 		if (StringUtils.isBlank(appid) || objects == null || objects.isEmpty()) {
-			return ;
+			return;
 		}
 		BulkRequestBuilder brb = client().prepareBulk();
 		for (ParaObject po : objects) {
-			brb.add(client().prepareDelete(getIndexName(po, appid), po.getType(), po.getId()).
-					setRouting(po.getShardKey()));
+			brb.add(client().prepareDelete(getIndexName(appid), po.getType(), po.getId()));
 		}
 		if (isAsyncEnabled()) {
 			brb.execute();
@@ -169,6 +166,21 @@ public class ElasticSearch implements Search {
 			brb.execute().actionGet();
 		}
 		logger.debug("Search.unindexAll() {}", objects.size());
+	}
+
+	@Override
+	public void unindexAll(String appid, Map<String, ?> terms, boolean matchAll) {
+		if (StringUtils.isBlank(appid) || terms == null || terms.isEmpty()) {
+			return;
+		}
+		DeleteByQueryRequestBuilder dqrb = client().prepareDeleteByQuery(appid);
+		dqrb.setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), getTermsFilter(terms, matchAll)));
+		if (isAsyncEnabled()) {
+			dqrb.execute();
+		} else {
+			dqrb.execute().actionGet();
+		}
+		logger.debug("Search.unindexAll() {}", terms.size());
 	}
 
 	@Override
@@ -191,8 +203,7 @@ public class ElasticSearch implements Search {
 		try {
 			MultiGetRequestBuilder mgr = client().prepareMultiGet();
 			for (String id : ids) {
-				MultiGetRequest.Item i = new MultiGetRequest.Item(stripRouting(appid), null, id);
-				i.routing(getRouting(appid));
+				MultiGetRequest.Item i = new MultiGetRequest.Item(getIndexName(appid), null, id);
 				mgr.add(i);
 			}
 
@@ -273,38 +284,10 @@ public class ElasticSearch implements Search {
 		if (terms == null || terms.isEmpty()) {
 			return new ArrayList<P>();
 		}
-		FilterBuilder fb = mustMatchAll ? FilterBuilders.andFilter() : FilterBuilders.orFilter();
-		boolean noop = true;
-		boolean one = terms.size() == 1;
 
-		for (Map.Entry<String, ?> term : terms.entrySet()) {
-			if (!StringUtils.isBlank(term.getKey()) && term.getValue() != null) {
-				Matcher matcher = Pattern.compile(".*(<|>|<=|>=)$").matcher(term.getKey().trim());
-				BaseFilterBuilder bfb = FilterBuilders.termFilter(term.getKey(), term.getValue());
-				if (matcher.matches()) {
-					String key = term.getKey().replaceAll("[<>=\\s]+$", "");
-					RangeFilterBuilder rfb = FilterBuilders.rangeFilter(key);
-					if (">".equals(matcher.group(1))) {
-						bfb = rfb.gt(term.getValue());
-					} else if ("<".equals(matcher.group(1))) {
-						bfb = rfb.lt(term.getValue());
-					} else if (">=".equals(matcher.group(1))) {
-						bfb = rfb.gte(term.getValue());
-					} else if ("<=".equals(matcher.group(1))) {
-						bfb = rfb.lte(term.getValue());
-					}
-				}
-				if (one) {
-					fb = bfb;
-				} else if (mustMatchAll) {
-					((AndFilterBuilder) fb).add(bfb);
-				} else {
-					((OrFilterBuilder) fb).add(bfb);
-				}
-				noop = false;
-			}
-		}
-		if (noop) {
+		FilterBuilder fb = getTermsFilter(terms, mustMatchAll);
+
+		if (fb == null) {
 			return new ArrayList<P>();
 		} else {
 			QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), fb);
@@ -451,9 +434,8 @@ public class ElasticSearch implements Search {
 		SearchHits hits = null;
 
 		try {
-			SearchRequestBuilder srb = client().prepareSearch(stripRouting(appid)).
+			SearchRequestBuilder srb = client().prepareSearch(getIndexName(appid)).
 				setSearchType(SearchType.DFS_QUERY_THEN_FETCH).
-				setRouting(getRouting(appid)).
 				setQuery(query).addSort(sort).setFrom(start).setSize(max);
 
 			if (!StringUtils.isBlank(type)) {
@@ -485,10 +467,9 @@ public class ElasticSearch implements Search {
 
 		try {
 			GetRequestBuilder grb = client().prepareGet().
-					setIndex(stripRouting(appid)).setId(key).
-					setRouting(getRouting(appid));
+					setIndex(getIndexName(appid)).setId(key);
 
-			if (type != null) {
+			if (!StringUtils.isBlank(type)) {
 				grb.setType(type);
 			}
 
@@ -504,15 +485,14 @@ public class ElasticSearch implements Search {
 		if (StringUtils.isBlank(appid)) {
 			return 0L;
 		}
-		CountRequestBuilder crb = client().prepareCount(stripRouting(appid)).
-				setRouting(getRouting(appid)).
-				setQuery(QueryBuilders.matchAllQuery());
+		SearchRequestBuilder crb = client().prepareSearch(appid).
+				setSearchType(SearchType.COUNT).setQuery(QueryBuilders.matchAllQuery());
 
-		if (type != null) {
+		if (!StringUtils.isBlank(type)) {
 			crb.setTypes(type);
 		}
 
-		return crb.execute().actionGet().getCount();
+		return crb.execute().actionGet().getHits().getTotalHits();
 	}
 
 	@Override
@@ -520,96 +500,31 @@ public class ElasticSearch implements Search {
 		if (StringUtils.isBlank(appid) || terms == null || terms.isEmpty()) {
 			return 0L;
 		}
-		FilterBuilder fb;
-		if (terms.size() == 1) {
-			String field = terms.keySet().iterator().next();
-			if (StringUtils.isBlank(field) || terms.get(field) == null) {
-				return 0L;
-			}
-			fb = FilterBuilders.termFilter(field, terms.get(field));
+		FilterBuilder fb = getTermsFilter(terms, true);
+		if (fb == null) {
+			return 0L;
 		} else {
-			fb = FilterBuilders.andFilter();
-			for (Map.Entry<String, ?> term : terms.entrySet()) {
-				((AndFilterBuilder) fb).add(FilterBuilders.termFilter(term.getKey(), term.getValue()));
+			QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), fb);
+			SearchRequestBuilder crb = client().prepareSearch(getIndexName(appid)).
+					setSearchType(SearchType.COUNT).
+					setQuery(qb);
+
+			if (!StringUtils.isBlank(type)) {
+				crb.setTypes(type);
 			}
-		}
-		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), fb);
-		CountRequestBuilder crb = client().prepareCount(stripRouting(appid)).
-				setQuery(qb).setRouting(getRouting(appid));
 
-		if (type != null) {
-			crb.setTypes(type);
-		}
-
-		return crb.execute().actionGet().getCount();
-	}
-
-	/**
-	 * Extracts the routing value from the appid.
-	 * Routing is used when an app is shared, i.e. there's one root index
-	 * and all apps are indexed there, based on their shard key. This shard key
-	 * must be equal to the routing value here so that the search engine knows where
-	 * to look for those objects.
-	 *
-	 * The appid might contain a routing prefix like:
-	 * 'routing:appid' or '_:appid' (routing = appid in this case)
-	 * @param appid an appid with routing value prefixed (or not)
-	 * @return the routing value
-	 */
-	private String getRouting(String appid) {
-		if (StringUtils.contains(appid, Config.SEPARATOR)) {
-			String routing = appid.substring(0, appid.indexOf(Config.SEPARATOR));
-			if ("_".equals(routing)) {
-				return appid.substring(2);
-			} else if (!StringUtils.isBlank(routing)) {
-				return routing;
-			}
-		}
-		return null;
-	}
-
-	/**
-	 * Returns the appid without the routing prefix (if any)
-	 * If the routing prefix is '_' that means that we have an app sharing
-	 * a root index with other apps.
-	 * @param appid the appid
-	 * @return appid without the routing prefix, unchanged if prefix is missing
-	 */
-	private String stripRouting(String appid) {
-		if (StringUtils.contains(appid, Config.SEPARATOR)) {
-			String[] tuparts = appid.split(Config.SEPARATOR);
-			String routing = tuparts[0];
-			String id = tuparts[1];
-			if ("_".equals(routing)) {
-				return Config.APP_NAME_NS;
-			} else {
-				return id;
-			}
-		} else {
-			return appid;
+			return crb.execute().actionGet().getHits().getTotalHits();
 		}
 	}
 
 	/**
-	 * Determine if the object is part of a shared app - if so,
-	 * return the root index, otherwise return the separate (i.e. the appid).
-	 * @param po the object
-	 * @param defaultIndex fallback to this index if the given object is not assigned to any app
-	 * @return root index (if shared) or appid of the object (if dedicated)
+	 * A method reserved for future use.
+	 * It allows to have indexes with different names than the appid.
+	 * @param appid an app identifer
+	 * @return the correct index name
 	 */
-	private String getIndexName(ParaObject po, String defaultIndex) {
-		if (po == null) {
-			return null;
-		}
-		if (po.getShardKey() != null) {
-			// shared
-			return Config.APP_NAME_NS;
-		} else if (po.getAppid() != null) {
-			// not shared
-			return po.getAppid();
-		} else {
-			return defaultIndex;
-		}
+	private String getIndexName(String appid) {
+		return appid;
 	}
 
 	/**
@@ -617,6 +532,47 @@ public class ElasticSearch implements Search {
 	 */
 	private boolean isAsyncEnabled() {
 		return Config.getConfigParamUnwrapped("es.async_enabled", false);
+	}
+
+	/**
+	 * Creates a term filter for a set of terms.
+	 * @param terms some terms
+	 * @param mustMatchAll if true all terms must match ('AND' operation)
+	 * @return the filter
+	 */
+	private FilterBuilder getTermsFilter(Map<String, ?> terms, boolean mustMatchAll) {
+		FilterBuilder fb = mustMatchAll ? FilterBuilders.andFilter() : FilterBuilders.orFilter();
+		boolean noop = true;
+		boolean one = terms.size() == 1;
+
+		for (Map.Entry<String, ?> term : terms.entrySet()) {
+			if (!StringUtils.isBlank(term.getKey()) && term.getValue() != null) {
+				Matcher matcher = Pattern.compile(".*(<|>|<=|>=)$").matcher(term.getKey().trim());
+				BaseFilterBuilder bfb = FilterBuilders.termFilter(term.getKey(), term.getValue());
+				if (matcher.matches()) {
+					String key = term.getKey().replaceAll("[<>=\\s]+$", "");
+					RangeFilterBuilder rfb = FilterBuilders.rangeFilter(key);
+					if (">".equals(matcher.group(1))) {
+						bfb = rfb.gt(term.getValue());
+					} else if ("<".equals(matcher.group(1))) {
+						bfb = rfb.lt(term.getValue());
+					} else if (">=".equals(matcher.group(1))) {
+						bfb = rfb.gte(term.getValue());
+					} else if ("<=".equals(matcher.group(1))) {
+						bfb = rfb.lte(term.getValue());
+					}
+				}
+				if (one) {
+					fb = bfb;
+				} else if (mustMatchAll) {
+					((AndFilterBuilder) fb).add(bfb);
+				} else {
+					((OrFilterBuilder) fb).add(bfb);
+				}
+				noop = false;
+			}
+		}
+		return noop ? null : fb;
 	}
 
 	//////////////////////////////////////////////////////////////
@@ -639,6 +595,11 @@ public class ElasticSearch implements Search {
 	@Override
 	public <P extends ParaObject> void unindexAll(List<P> objects) {
 		unindexAll(Config.APP_NAME_NS, objects);
+	}
+
+	@Override
+	public void unindexAll(Map<String, ?> terms, boolean matchAll) {
+		unindexAll(Config.APP_NAME_NS, terms, matchAll);
 	}
 
 	@Override

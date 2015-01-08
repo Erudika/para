@@ -341,10 +341,11 @@ public final class ElasticSearchUtils {
 	 * @param setRouting if true will route by appid (alias)
 	 * @return true if acknowledged
 	 */
-	public static boolean addIndexAlias(String indexName, String alias, boolean setRouting) {
+	public static boolean addIndexAlias(String indexName, final String alias, boolean setRouting) {
 		AliasAction act = new AliasAction(AliasAction.Type.ADD, indexName, alias);
 		if (setRouting) {
-			act.routing(alias);
+			act.searchRouting(alias);
+			act.indexRouting(alias);
 			act.filter(FilterBuilders.termFilter(Config._APPID, alias));
 		}
 		return getClient().admin().indices().prepareAliases().addAliasAction(act).
@@ -414,6 +415,7 @@ public final class ElasticSearchUtils {
 						startObject("tag").field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._ID).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._KEY).field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(Config._APPID).field("type", "string").field("index", "not_analyzed").endObject().
 //						startObject(Config._TAGS).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._EMAIL).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._GROUPS).field("type", "string").field("index", "not_analyzed").endObject().
