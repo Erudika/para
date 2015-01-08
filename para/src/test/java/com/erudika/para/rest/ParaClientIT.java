@@ -222,10 +222,6 @@ public class ParaClientIT {
 		part1.setName("NewName1");
 		part2.setName("NewName2");
 		part3.setName("NewName3");
-//		// these shouldn't go through
-//		part1.setType("type1");
-//		part2.setType("type2");
-//		part3.setType("type3");
 
 		List<Sysprop> l3 = pc.updateAll(Arrays.asList(part1, part2, part3));
 
@@ -356,7 +352,7 @@ public class ParaClientIT {
 
 		Map<String, Object> terms1 = new HashMap<String, Object>();
 		terms1.put(Config._TYPE, null);
-		terms1.put(Config._ID, "");
+		terms1.put(Config._ID, " ");
 
 		Map<String, Object> terms2 = new HashMap<String, Object>();
 		terms2.put(" ", "bad");
@@ -378,12 +374,12 @@ public class ParaClientIT {
 		assertFalse(pc.findWildcard(u.getType(), Config._NAME, "an*").isEmpty());
 
 		assertTrue(pc.getCount(null).intValue() > 4);
-		assertEquals(0, pc.getCount("").intValue());
+		assertNotEquals(0, pc.getCount("").intValue());
 		assertEquals(0, pc.getCount("test").intValue());
 		assertTrue(pc.getCount(u.getType()).intValue() >= 3);
 
 		assertEquals(0L, pc.getCount(null, null).intValue());
-		assertEquals(0L, pc.getCount(u.getType(), Collections.singletonMap(Config._ID, "")).intValue());
+		assertEquals(0L, pc.getCount(u.getType(), Collections.singletonMap(Config._ID, " ")).intValue());
 		assertEquals(1L, pc.getCount(u.getType(), Collections.singletonMap(Config._ID, u.getId())).intValue());
 		assertTrue(pc.getCount(null, Collections.singletonMap(Config._TYPE, u.getType())).intValue() > 1);
 	}

@@ -268,21 +268,21 @@ public abstract class SearchTest {
 	}
 
 	@Test
-	public void testgetCount() {
+	public void testGetCount() {
 		assertTrue(s.getCount(null).intValue() > 4);
-		assertEquals(0, s.getCount("").intValue());
+		assertNotEquals(0, s.getCount("").intValue());
 		assertEquals(0, s.getCount("test").intValue());
 		assertTrue(s.getCount(u.getType()).intValue() >= 3);
-	}
 
-	@Test
-	public void testGetCount() throws InterruptedException {
 		assertEquals(0L, s.getCount(u.getType(), null, null).intValue());
-		assertEquals(0L, s.getCount(u.getType(), Collections.singletonMap(Config._ID, "")).intValue());
+		assertEquals(0L, s.getCount(u.getType(), Collections.singletonMap(Config._ID, " ")).intValue());
 		assertEquals(1L, s.getCount(u.getType(), Collections.singletonMap(Config._ID, u.getId())).intValue());
 		assertEquals(0L, s.getCount(appid1, u.getType(), Collections.singletonMap(Config._ID, u.getId())).intValue());
 		assertTrue(s.getCount(null, Collections.singletonMap(Config._TYPE, u.getType())).intValue() > 1);
 	}
+
+//	public void testGetCount() throws InterruptedException {
+//	}
 
 	@Test
 	public void testIndex() {
@@ -299,25 +299,23 @@ public abstract class SearchTest {
 		App ap2 = new App(appid2);
 		ap1.setShared(true);
 		ap2.setShared(true);
-		String routedAppid1 = ap1.getAppidWithRouting();
-		String routedAppid2 = ap2.getAppidWithRouting();
+//		String routedAppid1 = ap1.getAppidWithRouting();
+//		String routedAppid2 = ap2.getAppidWithRouting();
 		ux.setId(u.getId()+"-APP1");
 		ux.setAppid(appid1);
-		ux.setShardKey(appid1);
 		ux.setName("UserApp1");
 		s.index(appid1, ux);
-		assertNotNull(s.findById(routedAppid1, ux.getId()));
+		assertNotNull(s.findById(appid1, ux.getId()));
 		assertNull(s.findById(ux.getId()));
-		assertNull(s.findById(routedAppid2, ux.getId()));
+		assertNull(s.findById(appid2, ux.getId()));
 
 		Tag tx = new Tag(t.getId()+"-APP2");
 		tx.setName("TagApp2");
 		tx.setAppid(appid2);
-		tx.setShardKey(appid2);
 		s.index(appid2, tx);
-		assertNotNull(s.findById(routedAppid2, tx.getId()));
+		assertNotNull(s.findById(appid2, tx.getId()));
 		assertNull(s.findById(tx.getId()));
-		assertNull(s.findById(routedAppid1, tx.getId()));
+		assertNull(s.findById(appid1, tx.getId()));
 	}
 
 	@Test
@@ -353,6 +351,32 @@ public abstract class SearchTest {
 		assertNull(s.findById(tt1.getId()));
 		assertNull(s.findById(tt2.getId()));
 		assertNull(s.findById(tt3.getId()));
+
+		Sysprop sp1 = new Sysprop("sp1");
+		Sysprop sp2 = new Sysprop("sp2");
+		Sysprop sp3 = new Sysprop("sp3");
+		sp1.setName("xx");
+		sp2.setName("xx");
+		sp3.setName("sp3");
+		sp1.setTimestamp(123L);
+		sp2.setTimestamp(123L);
+		sp3.setTimestamp(1234L);
+		List<Sysprop> sps = new ArrayList<Sysprop>();
+		sps.add(sp1);
+		sps.add(sp2);
+		sps.add(sp3);
+
+		s.indexAll(sps);
+
+		Map<String, Object> terms = new HashMap<String, Object>();
+		terms.put(Config._NAME, "xx");
+		terms.put(Config._TIMESTAMP, 123L);
+
+		s.unindexAll(terms, true);
+
+		assertNull(s.findById(sp1.getId()));
+		assertNull(s.findById(sp2.getId()));
+		assertNotNull(s.findById(sp3.getId()));
 	}
 
 }

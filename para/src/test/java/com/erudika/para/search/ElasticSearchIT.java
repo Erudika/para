@@ -17,7 +17,9 @@
  */
 package com.erudika.para.search;
 
+import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
+import com.erudika.para.core.Tag;
 import com.erudika.para.persistence.DAO;
 import static com.erudika.para.search.SearchTest.u;
 import com.erudika.para.utils.Config;
@@ -45,6 +47,7 @@ public class ElasticSearchIT extends SearchTest {
 		ElasticSearchUtils.createIndex(Config.APP_NAME_NS);
 		ElasticSearchUtils.createIndex(appid1);
 		ElasticSearchUtils.createIndex(appid2);
+		ElasticSearchUtils.createIndex("root-index");
 		SearchTest.init();
 	}
 
@@ -53,6 +56,7 @@ public class ElasticSearchIT extends SearchTest {
 		ElasticSearchUtils.deleteIndex(Config.APP_NAME_NS);
 		ElasticSearchUtils.deleteIndex(appid1);
 		ElasticSearchUtils.deleteIndex(appid2);
+		ElasticSearchUtils.deleteIndex("root-index");
 		ElasticSearchUtils.shutdownClient();
 		SearchTest.cleanup();
 	}
@@ -117,50 +121,41 @@ public class ElasticSearchIT extends SearchTest {
 	}
 
 	@Test
-	public void testSharedIndex() {
-		// IndexBasedDAO no longer supports shared Apps so these test will fail.
-		// If tested using a different DAO these should be OK.
+	public void testSharedIndex() throws InterruptedException {
+		String app1 = "myapp1";
+		String app2 = "myapp2";
+		String root = "root-index";
 
-//		String app1 = "myapp1";
-//		String app2 = "myapp2";
-//		String shared = "shared-index";
-//		assertTrue(ElasticSearchUtils.createIndex(shared));
-//		assertTrue(ElasticSearchUtils.addIndexAlias(shared, app1, true));
-//		assertTrue(ElasticSearchUtils.addIndexAlias(shared, app2, true));
-//
-//		try	{
-//			Tag t1 = new Tag("t1");
-//			Tag t2 = new Tag("t2");
-//			Tag t3 = new Tag("t3");
-//
-//			t1.setAppid(app1);
-//			t2.setAppid(app2);
-//			t3.setAppid(app1);
-//
-//			// enable on-index routing by setting the shardKey for each object
-//			t1.setShardKey(t1.getAppid());
-//			t2.setShardKey(t2.getAppid());
-//			t3.setShardKey(t3.getAppid());
-//
-//			s.index(t1.getAppid(), t1);
-//			s.index(t2.getAppid(), t2);
-//			s.index(t3.getAppid(), t3);
-//
-//			// enable on-search routing by prefixing the routing value to the alias.
-//			// "_" means the same value as the alias
-//			app1 = "_:" + app1;
-//			app2 = "_:" + app2;
-//
-//			// top view of all docs in shared index
-//			assertEquals(3, s.getCount(shared, "tag").intValue());
-//			// local view for each app space
-//			assertEquals(2, s.getCount(app1, "tag").intValue());
-//			assertEquals(1, s.getCount(app2, "tag").intValue());
-//
-//			List<Tag> l = s.findQuery(app1, "tag", "*");
-//			assertEquals(2, l.size());
-//		} finally {
-//			ElasticSearchUtils.deleteIndex(shared);
-//		}
+		App rootApp = new App("rootapp");
+		s.index(root, rootApp);
+
+		assertTrue(ElasticSearchUtils.addIndexAlias(root, app1, true));
+		assertTrue(ElasticSearchUtils.addIndexAlias(root, app2, true));
+
+		Tag t1 = new Tag("t1");
+		Tag t2 = new Tag("t2");
+		Tag t3 = new Tag("t3");
+
+		t1.setAppid(app1);
+		t2.setAppid(app2);
+		t3.setAppid(app1);
+
+		s.index(t1.getAppid(), t1);
+		s.index(t2.getAppid(), t2);
+		s.index(t3.getAppid(), t3);
+
+		Thread.sleep(1000);
+
+		// top view of all docs in shared index
+		assertEquals(1, s.getCount(root, "app").intValue());
+		assertEquals(3, s.getCount(root, "tag").intValue());
+		// local view for each app space
+		assertEquals(2, s.getCount(app1, "tag").intValue());
+		assertEquals(1, s.getCount(app2, "tag").intValue());
+
+		List<Tag> l1 = s.findQuery(app1, "tag", "*");
+		assertEquals(2, l1.size());
+		List<Tag> l2 = s.findQuery(app2, "tag", "*");
+		assertEquals(l2.get(0), t2);
 	}
 }
