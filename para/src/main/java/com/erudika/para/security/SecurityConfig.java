@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 Erudika. http://erudika.com
+ * Copyright 2013-2015 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -199,11 +199,25 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		linkedinFilter.setAuthenticationFailureHandler(failureHandler);
 		linkedinFilter.setRememberMeServices(tbrms);
 
+		TwitterAuthFilter twitterFilter = new TwitterAuthFilter("/" + TwitterAuthFilter.TWITTER_ACTION);
+		twitterFilter.setAuthenticationManager(authenticationManager());
+		twitterFilter.setAuthenticationSuccessHandler(successHandler);
+		twitterFilter.setAuthenticationFailureHandler(failureHandler);
+		twitterFilter.setRememberMeServices(tbrms);
+
+		GitHubAuthFilter githubFilter = new GitHubAuthFilter("/" + GitHubAuthFilter.GITHUB_ACTION);
+		githubFilter.setAuthenticationManager(authenticationManager());
+		githubFilter.setAuthenticationSuccessHandler(successHandler);
+		githubFilter.setAuthenticationFailureHandler(failureHandler);
+		githubFilter.setRememberMeServices(tbrms);
+
 		http.addFilterAfter(passwordFilter, BasicAuthenticationFilter.class);
 		http.addFilterAfter(openidFilter, BasicAuthenticationFilter.class);
 		http.addFilterAfter(facebookFilter, BasicAuthenticationFilter.class);
 		http.addFilterAfter(googleFilter, BasicAuthenticationFilter.class);
 		http.addFilterAfter(linkedinFilter, BasicAuthenticationFilter.class);
+		http.addFilterAfter(twitterFilter, BasicAuthenticationFilter.class);
+		http.addFilterAfter(githubFilter, BasicAuthenticationFilter.class);
 
 		if (enableRestFilter) {
 			RestAuthFilter restFilter = new RestAuthFilter(new Signer());

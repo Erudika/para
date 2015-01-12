@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2014 Erudika. http://erudika.com
+ * Copyright 2013-2015 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -154,6 +154,14 @@ public final class Config {
 	 * Twitter app secret (for authentication)
 	 */
 	public static final String TWITTER_SECRET = getConfigParam("tw_secret", "");
+	/**
+	 * GitHub app id (for authentication)
+	 */
+	public static final String GITHUB_APP_ID = getConfigParam("gh_app_id", "");
+	/**
+	 * GitHub app secret (for authentication)
+	 */
+	public static final String GITHUB_SECRET = getConfigParam("gh_secret", "");
 	/**
 	 * OpenExchangeRates.org API key
 	 */
