@@ -116,7 +116,7 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 									//user is new
 									user = new User();
 									user.setActive(true);
-									user.setEmail(StringUtils.isBlank(email) ? "email@domain.com" : email);
+									user.setEmail(StringUtils.isBlank(email) ? linkedInID + "@linkedin.com" : email);
 									user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 									user.setPassword(new UUID().toString());
 									user.setIdentifier(Config.LINKEDIN_PREFIX.concat(linkedInID));

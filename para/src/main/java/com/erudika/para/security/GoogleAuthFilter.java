@@ -120,7 +120,7 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 									//user is new
 									user = new User();
 									user.setActive(true);
-									user.setEmail(StringUtils.isBlank(email) ? "email@domain.com" : email);
+									user.setEmail(StringUtils.isBlank(email) ? googleSubId + "@google.com" : email);
 									user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 									user.setPassword(new UUID().toString());
 									user.setIdentifier(Config.GPLUS_PREFIX.concat(googleSubId));
