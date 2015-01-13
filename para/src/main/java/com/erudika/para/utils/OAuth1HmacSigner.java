@@ -53,7 +53,7 @@ public final class OAuth1HmacSigner {
 	 *
 	 * @param httpMethod the HTTP method
 	 * @param url the request URL
-	 * @param params the parameters map
+	 * @param paramz the parameters map
 	 * @param apiSecret the API secret
 	 * @param oauthToken the token
 	 * @param tokenSecret token secret
@@ -62,6 +62,7 @@ public final class OAuth1HmacSigner {
 			String apiKey, String apiSecret, String oauthToken, String tokenSecret) {
 		try {
 			if (httpMethod != null && url != null && !url.trim().isEmpty() && params != null && apiSecret != null) {
+				Map<String, String[]> paramMap = new TreeMap<String, String[]>(params);
 				String keyString = percentEncode(apiSecret) + "&" + percentEncode(tokenSecret);
 				byte[] keyBytes = keyString.getBytes(Config.DEFAULT_ENCODING);
 
@@ -69,25 +70,26 @@ public final class OAuth1HmacSigner {
 				Mac mac = Mac.getInstance("HmacSHA1");
 				mac.init(key);
 
-				addRequiredParameters(params, apiKey, oauthToken);
+				addRequiredParameters(paramMap, apiKey, oauthToken);
 
 				String sbs = httpMethod.toUpperCase() + "&" + percentEncode(normalizeRequestUrl(url))
-						+ "&" + percentEncode(normalizeRequestParameters(params));
-				logger.debug("SBS {}", sbs);
+						+ "&" + percentEncode(normalizeRequestParameters(paramMap));
+				logger.debug("Oatuh1 base string: {}", sbs);
 
 				byte[] text = sbs.getBytes(Config.DEFAULT_ENCODING);
 				String sig = Utils.base64enc(mac.doFinal(text)).trim();
+				logger.debug("Oauth1 Signature: {}", sig);
 
 				StringBuilder sb = new StringBuilder();
 				sb.append("OAuth ");
 				// add the realm parameter, if any
-				if (params.containsKey("realm")) {
-					String val = params.get("realm")[0];
+				if (paramMap.containsKey("realm")) {
+					String val = paramMap.get("realm")[0];
 					sb.append("realm=\"".concat(val).concat("\""));
 					sb.append(", ");
 				}
 
-				Map<String, SortedSet<String>> oauthParams = getOAuthParameters(params);
+				Map<String, SortedSet<String>> oauthParams = getOAuthParameters(paramMap);
 				TreeSet<String> set = new TreeSet<String>();
 				set.add(percentEncode(sig));
 				oauthParams.put("oauth_signature", set);
@@ -104,7 +106,7 @@ public final class OAuth1HmacSigner {
 					}
 				}
 				String header = sb.toString();
-				logger.debug("Auth Header {}", header);
+				logger.debug("OAuth1 signed header: {}", header);
 				return header;
 			}
 		} catch (Exception e) {
@@ -213,7 +215,8 @@ public final class OAuth1HmacSigner {
 				pMap.put("oauth_timestamp", new String[]{(System.currentTimeMillis() / 1000) + ""});
 			}
 			if (pMap.get("oauth_nonce") == null) {
-				pMap.put("oauth_nonce", new String[]{Utils.stripAndTrim(Utils.generateSecurityToken(32))});
+				String nonce = Utils.stripAndTrim(Utils.generateSecurityToken(32));
+				pMap.put("oauth_nonce", new String[]{ nonce.length() > 32 ? nonce.substring(0, 32) : nonce });
 			}
 			if (pMap.get("oauth_version") == null) {
 				pMap.put("oauth_version", new String[]{"1.0"});
