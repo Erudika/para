@@ -53,10 +53,12 @@ public final class OAuth1HmacSigner {
 	 *
 	 * @param httpMethod the HTTP method
 	 * @param url the request URL
-	 * @param paramz the parameters map
+	 * @param params the parameters map
+	 * @param apiKey the API key
 	 * @param apiSecret the API secret
 	 * @param oauthToken the token
 	 * @param tokenSecret token secret
+	 * @return the signed auth header
 	 */
 	public static String sign(String httpMethod, String url, Map<String, String[]> params,
 			String apiKey, String apiSecret, String oauthToken, String tokenSecret) {

@@ -114,7 +114,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 									//user is new
 									user = new User();
 									user.setActive(true);
-									user.setEmail(StringUtils.isBlank(email) ? fbId +"@facebook.com" : email);
+									user.setEmail(StringUtils.isBlank(email) ? fbId + "@facebook.com" : email);
 									user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 									user.setPassword(new UUID().toString());
 									user.setIdentifier(Config.FB_PREFIX.concat(fbId));
