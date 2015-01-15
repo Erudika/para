@@ -99,11 +99,16 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 							app = app.getDao().read(appid);
 
 							if (app != null) {
-								if (signer.isValidSignature(request, app.getSecret())) {
-									SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
+								if (app.getActive()) {
+									if (signer.isValidSignature(request, app.getSecret())) {
+										SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
+									} else {
+										RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+												"Request signature is invalid.");
+										return;
+									}
 								} else {
-									RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-											"Request signature is invalid.");
+									RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN, "App not active.");
 									return;
 								}
 							} else {

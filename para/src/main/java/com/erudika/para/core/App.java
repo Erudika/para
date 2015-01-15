@@ -116,7 +116,8 @@ public class App implements ParaObject {
 	}
 
 	/**
-	 * Sets the active flag
+	 * Sets the active flag. When an app is disabled (active = false)
+	 * it cannot be accessed through the API.
 	 * @param active true if active
 	 */
 	public void setActive(Boolean active) {

@@ -42,7 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A signer class based on the {@code AWS4Signer} implementing AWS Signature Version 4.
+ * This class extends {@code AWS4Signer} implementing the AWS Signature Version 4 algorithm.
  * Also contains a method for signature validation. The signatures that this class produces are
  * compatible with the original AWS SDK implementation.
  * @author Alex Bogdanovski [alex@erudika.com]
