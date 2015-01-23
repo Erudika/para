@@ -47,25 +47,17 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.codec.binary.Base64;
@@ -79,8 +71,6 @@ import org.geonames.Toponym;
 import org.geonames.ToponymSearchCriteria;
 import org.geonames.ToponymSearchResult;
 import org.geonames.WebService;
-import org.hibernate.validator.constraints.NotBlank;
-import org.hibernate.validator.constraints.NotEmpty;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,6 +86,7 @@ public final class Utils {
 	private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 	private static final ExecutorService exec = Executors.newFixedThreadPool(2);
 	private static final ObjectMapper jsonMapper = new ObjectMapper();
+	private static final Pattern emailz = Pattern.compile(Email.EMAIL_PATTERN);
 	private static final ObjectReader jsonReader;
 	private static final ObjectWriter jsonWriter;
 	private static HumanTime humantime;
@@ -584,12 +575,21 @@ public final class Utils {
 	}
 
 	/**
-	 * URL validation checker
+	 * URL validation
 	 * @param url a URL
 	 * @return true if the URL is valid
 	 */
 	public static boolean isValidURL(String url) {
-		return !StringUtils.isBlank(getHostFromURL(url));
+		return toURL(url) != null;
+	}
+
+	/**
+	 * Email validation
+	 * @param url a URL
+	 * @return true if the URL is valid
+	 */
+	public static boolean isValidEmail(String url) {
+		return emailz.matcher(url).matches();
 	}
 
 	/**
@@ -1158,123 +1158,8 @@ public final class Utils {
 	}
 
 	/////////////////////////////////////////////
-	//	     ANNOTATIONS & VALIDATION
+	//				ANNOTATIONS
 	/////////////////////////////////////////////
-
-	/**
-	 * Validates objects using Hibernate Validator.
-	 * @param obj an object to be validated
-	 * @return true if the object is valid (all fields are populated properly)
-	 */
-	public static boolean isValidObject(ParaObject obj) {
-		return validateObject(obj).length == 0;
-	}
-
-	/**
-	 * Validates objects using Hibernate Validator.
-	 * @param content an object to be validated
-	 * @return a list of error messages or empty if object is valid
-	 */
-	public static String[] validateObject(ParaObject content) {
-		if (content == null) {
-			return new String[]{ "Object cannot be null." };
-		}
-		ArrayList<String> list = new ArrayList<String>();
-		try {
-			ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-			Validator validator = factory.getValidator();
-			for (ConstraintViolation<ParaObject> constraintViolation : validator.validate(content)) {
-				String prop = "'".concat(constraintViolation.getPropertyPath().toString()).concat("'");
-				list.add(prop.concat(" ").concat(constraintViolation.getMessage()));
-			}
-		} catch (Exception e) {
-			logger.error(null, e);
-		}
-		return list.toArray(new String[]{ });
-	}
-
-	/**
-	 * A JSON object used for JavaScript validation. It maps Hibernate Validator annotations to JavaScript.
-	 * <b>This method WILL change in the future.</b>
-	 * @param type the type of object that will be validated
-	 * @param fields list of fields to map
-	 * @param lang language map
-	 * @return the JSON validation object
-	 */
-	public static String getJSONValidationObject(String type, List<String> fields, Map<String, String> lang) {
-		String root = "{}";
-		if (fields == null) {
-			fields = new ArrayList<String>();
-		}
-		if (!StringUtils.isBlank(type)) {
-			Class<? extends ParaObject> c = toClass(type);
-			ArrayList<String> rules = new ArrayList<String>();
-			ArrayList<String> messages = new ArrayList<String>();
-			for (Entry<String, List<Annotation>> entry : getAnnotationsMap(c, new HashSet<String>(fields)).entrySet()) {
-				ArrayList<String> rs = new ArrayList<String>();
-				ArrayList<String> ms = new ArrayList<String>();
-				for (Annotation ano : entry.getValue()) {
-					String[] rmarr = annotationToValidation(ano, lang);
-					if (rmarr.length == 2) {
-						String one = rmarr[0];
-						String two = rmarr[1];
-						if (!StringUtils.isBlank(one)) {
-							rs.add(one);
-						}
-						if (!StringUtils.isBlank(two)) {
-							ms.add(two);
-						}
-					}
-				}
-				if (!rs.isEmpty()) {
-					rules.add("'" + entry.getKey() + "':{" + arrayJoin(rs, ", ") + "}");
-				}
-				if (!ms.isEmpty()) {
-					messages.add("'" + entry.getKey() + "':{" + arrayJoin(ms, ", ") + "}");
-				}
-			}
-			root = "{'rules':{" + arrayJoin(rules, ", ") + "}, 'messages':{" + arrayJoin(messages, ", ") + "}}";
-		}
-		return root;
-	}
-
-	/**
-	 * Returns a map of annotations present in for all the declared fields in an object.
-	 * @param clazz a class to scan
-	 * @param fields only scan these fields (leave null to scan everything)
-	 * @return a map of field names to the list of annotations they have
-	 */
-	static Map<String, List<Annotation>> getAnnotationsMap(Class<? extends ParaObject> clazz, Set<String> fields) {
-		HashMap<String, List<Annotation>> map = new HashMap<String, List<Annotation>>();
-		try {
-			List<Field> fieldlist = getAllDeclaredFields(clazz);
-
-			if (fields != null && !fields.isEmpty()) {
-				for (Iterator<Field> it = fieldlist.iterator(); it.hasNext();) {
-					Field field = it.next();
-					if (!fields.contains(field.getName())) {
-						it.remove();
-					}
-				}
-			}
-
-			for (Field field : fieldlist) {
-				Annotation[] annos = field.getAnnotations();
-				if (annos.length > 1) {
-					ArrayList<Annotation> list = new ArrayList<Annotation>();
-					for (Annotation annotation : annos) {
-						if (!annotation.annotationType().equals(Stored.class)) {
-							list.add(annotation);
-						}
-					}
-					map.put(field.getName(), list);
-				}
-			}
-		} catch (Exception ex) {
-			logger.error(null, ex);
-		}
-		return map;
-	}
 
 	/**
 	 * Returns a list of all declared fields in a class. Transient and serialVersionUID fields are skipped.
@@ -1282,7 +1167,7 @@ public final class Utils {
 	 * @param clazz a class to scan
 	 * @return a list of fields including those of the parent classes excluding the Object class.
 	 */
-	static List<Field> getAllDeclaredFields(Class<? extends ParaObject> clazz) {
+	public static List<Field> getAllDeclaredFields(Class<? extends ParaObject> clazz) {
 		ArrayList<Field> fields = new ArrayList<Field>();
 		if (clazz == null) {
 			return fields;
@@ -1298,46 +1183,6 @@ public final class Utils {
 			parent = parent.getSuperclass();
 		} while (!parent.equals(Object.class));
 		return fields;
-	}
-
-	/**
-	 * A JSON object used for JavaScript validation. It maps Hibernate Validator annotations to JavaScript.
-	 * This method WILL change in the future.
-	 * @param ano annotation
-	 * @param lang language map
-	 * @return an array with two items: a rule and a message
-	 */
-	static String[] annotationToValidation(Annotation ano,  Map<String, String> lang) {
-		if (ano == null) {
-			return new String[0];
-		}
-		if (lang == null) {
-			lang = new HashMap<String, String>();
-		}
-		Class<? extends Annotation> atype = ano.annotationType();
-		String rule = "";
-		String msg = "";
-
-		if (atype.equals(NotBlank.class) || atype.equals(NotEmpty.class) ||
-				atype.equals(NotNull.class)) {
-			rule = "'required': true";
-			msg = "'required': '" + lang.get("requiredfield") + "'";
-		} else if (atype.equals(Size.class)) {
-			try {
-				Integer min = (Integer) atype.getMethod("min").invoke(ano);
-				Integer max = (Integer) atype.getMethod("max").invoke(ano);
-				rule = "'minlength': " + min + ", 'maxlength': " + max;
-				msg = "'minlength': '" + formatMessage(lang.get("minlength"), min) + "', " +
-					"'maxlength': '" + formatMessage(lang.get("maxlength"), max) + "'";
-			} catch (Exception ex) {
-				logger.error(null, ex);
-			}
-
-		} else if (atype.equals(Email.class)) {
-			rule = "'email': true";
-			msg = "'email': '" + lang.get("bademail") + "'";
-		}
-		return new String[]{rule, msg};
 	}
 
 	/////////////////////////////////////////////

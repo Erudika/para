@@ -17,6 +17,7 @@
  */
 package com.erudika.para.annotations;
 
+import static com.erudika.para.annotations.Email.EMAIL_PATTERN;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -32,12 +33,14 @@ import javax.validation.constraints.Pattern;
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 @org.hibernate.validator.constraints.Email(message = "Please provide a valid email address")
-@Pattern(regexp = ".+@.+\\..+", message = "Please provide a valid email address")
+@Pattern(regexp = EMAIL_PATTERN, message = "Please provide a valid email address")
 @Target({ ElementType.METHOD, ElementType.FIELD, ElementType.ANNOTATION_TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = { })
 @Documented
 public @interface Email {
+
+	String EMAIL_PATTERN = "[A-Za-z0-9.%+\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z\\S]{2,4}$";
 
 	/**
 	 * Error for invalid email.
