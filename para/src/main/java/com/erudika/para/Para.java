@@ -341,7 +341,7 @@ public class Para implements WebApplicationInitializer, Ordered {
 	}
 
 	private static void printLogo() {
-		if (Config.getConfigParamUnwrapped("print_logo", true)) {
+		if (Boolean.parseBoolean(Config.getConfigParam("print_logo", "true"))) {
 			System.out.print(LOGO);
 		}
 	}
