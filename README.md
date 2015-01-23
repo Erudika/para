@@ -3,6 +3,8 @@
 
 > ### A general-purpose back-end framework for the cloud.
 
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.erudika/para/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.erudika/para)
+
 ## What is this?
 
 **Para** was designed as a simple and modular back-end framework for object persistence and retrieval.
@@ -25,6 +27,7 @@ Para is similar to [Dropwizard](https://dropwizard.github.io/dropwizard/) and
 - Full text search (current implementation is based on ElasticSearch).
 - Distributed object cache support (implemented with Hazelcast).
 - Flexible security based on Spring Security (OpenID and Facebook login, CSRF protection, etc.).
+- Robust constraint validation mechanism based on JSR-303 and Hibernate Validator.
 - Support for scalable data stores (Amazon DynamoDB, Cassandra).
 - Modular design based on Google Guice.
 - I18n utilities for translating language packs into different languages.
@@ -50,13 +53,13 @@ Para is similar to [Dropwizard](https://dropwizard.github.io/dropwizard/) and
      |                          |                   |
      |                          |                   |
 +----+--------------+  +--------+--------+   +------+------+
-|  Spring Security  |  |                 |   |             |
-|                   |  |  ElasticSearch  +---+ Data Store  |
+|  Security and     |  |                 |   |             |
+|  Validation of    |  |  ElasticSearch  +---+ Data Store  |
 |  Signed Requests  |  |                 |   |             |
 +----+---------^----+  +-----------------+   +-------------+
      |         |
 +----v---------+-------------------------------------------+
-|        Clients : JavaScript, Ruby, Python etc.           |
+|        Clients : JavaScript, Ruby, Python, PHP, etc.     |
 +----------------------------------------------------------+
 </pre>
 
@@ -114,16 +117,16 @@ Here's the Maven snippet to include in your `pom.xml`:
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para</artifactId>
-  <version>1.10</version>
+  <version>1.11</version>
 </dependency>
 ```
 
-## Wishlist / Future plans
+## Wishlist / Plans
 
-- Add more implementations for popular databases like MongoDB, PostgreSQL, etc.
-- Add API clients written in popular languages - JavaScript, PHP, Ruby, Python, C#, Swift, etc.
+- Add `DAO` implementations for popular databases like MongoDB, PostgreSQL, etc.
+- Write API clients in JavaScript, PHP, Ruby, Python, C#, Swift, etc.
 - Separate implementations from core
-- Integrations with Heroku, JOOQ, Comsat, Quasar, Ionic Framework
+- Add integrations with Google App Engine, Heroku, JOOQ, Comsat, Quasar, Ionic Framework
 
 ## Contributing
 
