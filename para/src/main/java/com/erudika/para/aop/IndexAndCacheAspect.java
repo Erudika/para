@@ -26,7 +26,7 @@ import com.erudika.para.core.User;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
-import com.erudika.para.utils.Utils;
+import com.erudika.para.utils.ValidationUtils;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -105,12 +105,14 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 			switch (indexedAnno.action()) {
 				case ADD:
 					ParaObject addMe = AOPUtils.getArgOfParaObject(args);
-					if (Utils.isValidObject(addMe)) {
+					String[] errors = ValidationUtils.validateObject(addMe);
+					if (errors.length == 0) {
 						result = mi.proceed();
 						search.index(appid, addMe);
 						logger.debug("{}: Indexed {}->{}", cn, appid, addMe.getId());
 					} else {
-						logger.debug("{}: Invalid object {}->{}", cn, appid, addMe);
+						logger.warn("{}: Invalid object {}->{} errors: [{}]. Changes weren't persisted.",
+								cn, appid, addMe, String.join("; ", errors));
 					}
 					break;
 				case REMOVE:
