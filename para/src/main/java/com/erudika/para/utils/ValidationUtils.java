@@ -65,7 +65,6 @@ public final class ValidationUtils {
 
 	/**
 	 * A Hibernate Validator.
-	 *
 	 * @return a validator object
 	 */
 	public static Validator getValidator() {
@@ -76,8 +75,7 @@ public final class ValidationUtils {
 	}
 
 	/**
-	 * Validates objects using Hibernate Validator.
-	 *
+	 * Validates objects using Hibernate Validator. Used for basic validation.
 	 * @param obj an object to be validated
 	 * @return true if the object is valid (all fields are populated properly)
 	 */
@@ -86,8 +84,17 @@ public final class ValidationUtils {
 	}
 
 	/**
+	 * Validates objects using Hibernate Validator. Used for full object validation.
+	 * @param app the current app
+	 * @param obj an object to be validated
+	 * @return true if the object is valid (all fields are populated properly)
+	 */
+	public static boolean isValidObject(App app, ParaObject obj) {
+		return validateObject(app, obj).length == 0;
+	}
+
+	/**
 	 * Validates objects using Hibernate Validator.
-	 *
 	 * @param content an object to be validated
 	 * @return a list of error messages or empty if object is valid
 	 */
@@ -109,7 +116,6 @@ public final class ValidationUtils {
 
 	/**
 	 * Validates objects.
-	 *
 	 * @param content an object to be validated
 	 * @param app the current app
 	 * @return a list of error messages or empty if object is valid
