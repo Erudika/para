@@ -27,6 +27,7 @@ import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
 import com.erudika.para.search.ElasticSearchUtils;
 import com.erudika.para.utils.Config;
+import static com.erudika.para.utils.Constraint.*;
 import com.erudika.para.utils.HumanTime;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -43,6 +44,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 /**
  *
@@ -449,5 +451,38 @@ public class ParaClientIT {
 		Map<String, String> types = pc.types();
 		assertFalse(types.isEmpty());
 		assertTrue(types.containsKey(new User().getPlural()));
+
+		Map<String, ?> constraints = pc.validationConstraints();
+		assertFalse(constraints.isEmpty());
+		assertTrue(constraints.containsKey("App"));
+		assertTrue(constraints.containsKey("User"));
+
+		Map<String, Map<String, Map<String, ?>>> constraint = pc.validationConstraints("app");
+		logger.info("{}", constraint);
+		assertFalse(constraint.isEmpty());
+		assertTrue(constraint.containsKey("App"));
+		assertEquals(1, constraint.size());
+
+		pc.addValidationConstraint(catsType, "paws", required());
+		constraint = pc.validationConstraints(catsType);
+		logger.info("> {}", constraint);
+		assertTrue(constraint.get(StringUtils.capitalize(catsType)).containsKey("paws"));
+
+		Sysprop ct = new Sysprop("kitty");
+		ct.setType(catsType);
+		Sysprop ct2 = null;
+		try {
+			// validation fails
+			ct = pc.create(ct);
+		} catch (Exception e) {}
+
+		assertNull(ct2);
+		ct.addProperty("paws", "4");
+		assertNotNull(pc.create(ct));
+
+		pc.removeValidationConstraint(catsType, "paws", "required");
+		constraint = pc.validationConstraints(catsType);
+		logger.info("> {}", constraint);
+		assertFalse(constraint.get(StringUtils.capitalize(catsType)).isEmpty());
 	}
 }

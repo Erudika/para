@@ -31,11 +31,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.After;
-import org.junit.AfterClass;
 import static org.junit.Assert.*;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -45,22 +41,6 @@ import org.junit.Test;
 public class UtilsTest {
 
 	public UtilsTest() {
-	}
-
-	@BeforeClass
-	public static void setUpClass() {
-	}
-
-	@AfterClass
-	public static void tearDownClass() {
-	}
-
-	@Before
-	public void setUp() {
-	}
-
-	@After
-	public void tearDown() {
 	}
 
 	@Test
@@ -465,45 +445,14 @@ public class UtilsTest {
 	}
 
 	@Test
-	public void testIsValidObject() {
-		assertFalse(isValidObject(null));
-		assertFalse(isValidObject(new Tag()));
-		assertTrue(isValidObject(new Tag("tag1")));
-		Tag t = new Tag("");
-		t.setName("");
-		assertFalse(isValidObject(t));
-		assertFalse(isValidObject(new User()));
-		User u = new User();
-		u.setId("123");
-		u.setName("asd");
-		assertFalse(isValidObject(u));
+	public void testGetNewId() {
+		assertFalse(getNewId().isEmpty());
 	}
-
+	
 	@Test
-	public void testValidateRequest() {
-		assertTrue(validateObject(null).length > 0);
-		assertEquals(0, validateObject(new Tag("test")).length);
-	}
-
-	@Test
-	public void testGetJSONValidationObject() {
-		assertEquals("{}", getJSONValidationObject(null, null, null));
-		assertNotEquals("{}", getJSONValidationObject("tag", null, null));
-
-		assertNotNull(getAnnotationsMap(null, null));
-		assertTrue(getAnnotationsMap(null, null).isEmpty());
-		assertFalse(getAnnotationsMap(User.class, null).isEmpty());
-
+	public void testGetAllDeclaredFields() {
 		assertTrue(getAllDeclaredFields(null).isEmpty());
 		assertTrue(getAllDeclaredFields(null).isEmpty());
 		assertFalse(getAllDeclaredFields(User.class).isEmpty());
-
-		assertNotNull(annotationToValidation(null, null));
-		assertTrue(annotationToValidation(null, null).length == 0);
-	}
-
-	@Test
-	public void testGetNewId() {
-		assertFalse(getNewId().isEmpty());
 	}
 }

@@ -23,6 +23,7 @@ import com.erudika.para.core.Tag;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
+import com.erudika.para.utils.Constraint;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -900,6 +901,47 @@ public final class ParaClient {
 	 */
 	public Map<String, String> types() {
 		return getEntity(invokeGet("_types", null), Map.class);
+	}
+
+	/**
+	 * Returns the validation constraints map.
+	 * @return a map containing all validation constraints.
+	 */
+	public Map<String, ?> validationConstraints() {
+		return getEntity(invokeGet("_constraints", null), Map.class);
+	}
+
+	/**
+	 * Returns the validation constraints map.
+	 * @param type a type
+	 * @return a map containing all validation constraints.
+	 */
+	public Map<String, Map<String, Map<String, ?>>> validationConstraints(String type) {
+		return getEntity(invokeGet(Utils.formatMessage("_constraints/{0}", type), null), Map.class);
+	}
+
+	/**
+	 * Add a new constraint for a given field.
+	 * @param type a type
+	 * @param field a field name
+	 * @param c the constraint
+	 * @return a map containing all validation constraints for this type.
+	 */
+	public Map<String, Map<String, Map<String, ?>>> addValidationConstraint(String type, String field, Constraint c) {
+		return getEntity(invokePut(Utils.formatMessage("_constraints/{0}/{1}/{2}",
+				type, field, c.getName()), Entity.json(c.getPayload())), Map.class);
+	}
+
+	/**
+	 * Removes a validation constraint for a given field.
+	 * @param type a type
+	 * @param field a field name
+	 * @param constraintName the name of the constraint to remove
+	 * @return a map containing all validation constraints for this type.
+	 */
+	public Map<String, ?> removeValidationConstraint(String type, String field, String constraintName) {
+		return getEntity(invokeDelete(Utils.formatMessage("_constraints/{0}/{1}/{2}",
+				type, field, constraintName), null), Map.class);
 	}
 
 	/**

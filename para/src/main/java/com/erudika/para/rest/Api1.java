@@ -28,6 +28,8 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.HumanTime;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
+import com.erudika.para.utils.ValidationUtils;
+import com.erudika.para.utils.Constraint;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -117,6 +119,14 @@ public class Api1 extends ResourceConfig {
 		Resource.Builder idRes = Resource.builder("_id/{id}");
 		idRes.addMethod(GET).produces(JSON).handledBy(readIdHandler());
 		registerResources(idRes.build());
+
+		// validation
+		Resource.Builder valRes = Resource.builder("_constraints");
+		valRes.addMethod(GET).produces(JSON).handledBy(getConstrHandler());
+		valRes.addChildResource("{type}").addMethod(GET).produces(JSON).handledBy(getConstrHandler());
+		valRes.addChildResource("{type}/{field}/{cname}").addMethod(PUT).produces(JSON).handledBy(addConstrHandler());
+		valRes.addChildResource("{type}/{field}/{cname}").addMethod(DELETE).produces(JSON).handledBy(removeConstrHandler());
+		registerResources(valRes.build());
 
 		// util functions API
 		Resource.Builder utilsRes = Resource.builder("utils/{method}");
@@ -391,6 +401,56 @@ public class Api1 extends ResourceConfig {
 				App app = RestUtils.getPrincipalApp();
 				String id = pathParam(Config._ID, ctx);
 				return RestUtils.getReadResponse(dao.read(app.getAppIdentifier(), id));
+			}
+		};
+	}
+
+
+	protected final Inflector<ContainerRequestContext, Response> getConstrHandler() {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				App app = RestUtils.getPrincipalApp();
+				String type = pathParam(Config._TYPE, ctx);
+				if (type != null) {
+					return Response.ok(Utils.getJsonMapper().createObjectNode().putPOJO(StringUtils.capitalize(type),
+							ValidationUtils.getValidationConstraints(app, type))).build();
+				} else {
+					return Response.ok(ValidationUtils.getAllValidationConstraints(app)).build();
+				}
+			}
+		};
+	}
+
+	@SuppressWarnings("unchecked")
+	protected final Inflector<ContainerRequestContext, Response> addConstrHandler() {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				App app = RestUtils.getPrincipalApp();
+				String type = pathParam(Config._TYPE, ctx);
+				String field = pathParam("field", ctx);
+				String cname = pathParam("cname", ctx);
+				Response payloadRes = RestUtils.getEntity(ctx.getEntityStream(), Map.class);
+				if (payloadRes.getStatusInfo() == Response.Status.OK) {
+					Map<String, Object> payload = (Map<String, Object>) payloadRes.getEntity();
+					if (app.addValidationConstraint(type, field, Constraint.build(cname, payload))) {
+						app.update();
+					}
+				}
+				return Response.ok(app.getValidationConstraints().get(type)).build();
+			}
+		};
+	}
+
+	protected final Inflector<ContainerRequestContext, Response> removeConstrHandler() {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				App app = RestUtils.getPrincipalApp();
+				String type = pathParam(Config._TYPE, ctx);
+				String field = pathParam("field", ctx);
+				if (app.removeValidationConstraint(type, field, pathParam("cname", ctx))) {
+					app.update();
+				}
+				return Response.ok(app.getValidationConstraints().get(type)).build();
 			}
 		};
 	}

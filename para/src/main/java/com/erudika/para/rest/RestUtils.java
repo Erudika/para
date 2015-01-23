@@ -24,6 +24,7 @@ import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.User;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
+import com.erudika.para.utils.ValidationUtils;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
@@ -168,7 +169,7 @@ public final class RestUtils {
 				}
 			}
 		}
-		logger.info("Unauthenticated request - returning root App: '{}'", Config.APP_NAME_NS);
+		logger.info("Unauthenticated request - returning root App: {}", Config.APP_NAME_NS);
 		return Para.getDAO().read(Config.APP_NAME_NS, new App(Config.APP_NAME_NS).getId());
 	}
 
@@ -243,7 +244,7 @@ public final class RestUtils {
 				if (is.available() > Config.MAX_ENTITY_SIZE_BYTES) {
 					return getStatusResponse(Response.Status.BAD_REQUEST,
 							"Request is too large - the maximum is " +
-							(Config.MAX_ENTITY_SIZE_BYTES / 1024) + "MB.");
+							(Config.MAX_ENTITY_SIZE_BYTES / 1024) + " KB.");
 				}
 				entity = Utils.getJsonReader(type).readValue(is);
 			} else {
@@ -428,29 +429,22 @@ public final class RestUtils {
 			content = Utils.setAnnotatedFields(newContent);
 			content.setAppid(app.getAppIdentifier());
 			registerNewTypes(app, content);
-		} else {
-			return entityRes;
-		}
-		return getCreateResponse(content);
-	}
-
-	/**
-	 * Create response as JSON
-	 * @param content the object to create
-	 * @return a status code 201 or 400
-	 */
-	protected static Response getCreateResponse(ParaObject content) {
-		String[] errors = Utils.validateObject(content);
-		if (content != null && errors.length == 0) {
-			String id = content.create();
-			if (id == null) {
-				return getStatusResponse(Response.Status.BAD_REQUEST, "Failed to create object.");
-			} else {
-				return Response.created(URI.create(Utils.urlEncode(content.getObjectURI()))).entity(content).build();
+			// The reason why we do two validation passes is because we want to return
+			// the errors through the API and notify the end user.
+			// This is the primary validation pass (validates not only core POJOS but also user defined objects).
+			String[] errors = ValidationUtils.validateObject(app, content);
+			if (errors.length == 0) {
+				// Secondary validation pass: object is validated again before being created
+				String id = content.create();
+				if (id == null) {
+					return getStatusResponse(Response.Status.BAD_REQUEST, "Failed to create object.");
+				} else {
+					return Response.created(URI.create(Utils.urlEncode(content.getObjectURI()))).entity(content).build();
+				}
 			}
-		} else {
 			return getStatusResponse(Response.Status.BAD_REQUEST, errors);
 		}
+		return entityRes;
 	}
 
 	/**
@@ -470,31 +464,20 @@ public final class RestUtils {
 			} else {
 				return entityRes;
 			}
-			return getUpdateResponse(object, newContent);
-		} else {
-			return getStatusResponse(Response.Status.NOT_FOUND);
-		}
-	}
-
-	/**
-	 * Update response as JSON
-	 * @param object object to validate and update
-	 * @param newContent new updated content
-	 * @return a status code 200 or 400 or 404
-	 */
-	protected static Response getUpdateResponse(ParaObject object, Map<String, Object> newContent) {
-		if (object != null && object.getAppid() != null) {
-			Utils.setAnnotatedFields(object, newContent, Locked.class);
-			String[] errors = Utils.validateObject(object);
-			if (errors.length == 0) {
-				object.update();
-				return Response.ok(object).build();
-			} else {
+			if (object.getAppid() != null) {
+				Utils.setAnnotatedFields(object, newContent, Locked.class);
+				// This is the primary validation pass (validates not only core POJOS but also user defined objects).
+				String[] errors = ValidationUtils.validateObject(app, object);
+				if (errors.length == 0) {
+					// Secondary validation pass: object is validated again before being updated
+					object.update();
+					return Response.ok(object).build();
+				}
 				return getStatusResponse(Response.Status.BAD_REQUEST, errors);
 			}
-		} else {
-			return getStatusResponse(Response.Status.NOT_FOUND);
+			return getStatusResponse(Response.Status.BAD_REQUEST, "Missing appid. Object must belong to an app.");
 		}
+		return getStatusResponse(Response.Status.NOT_FOUND);
 	}
 
 	/**
@@ -541,7 +524,7 @@ public final class RestUtils {
 			List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
 			for (Map<String, Object> object : items) {
 				ParaObject pobj = Utils.setAnnotatedFields(object);
-				if (pobj != null && Utils.isValidObject(pobj)) {
+				if (pobj != null && ValidationUtils.isValidObject(pobj)) {
 					pobj.setAppid(app.getAppIdentifier());
 					objects.add(pobj);
 				}

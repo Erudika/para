@@ -26,6 +26,7 @@ import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
+import com.erudika.para.utils.Constraint;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,6 +36,7 @@ import java.util.Objects;
 import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
+import org.slf4j.LoggerFactory;
 
 /**
  * This is a representation of an application within Para.
@@ -58,7 +60,7 @@ public class App implements ParaObject {
 	private static final long serialVersionUID = 1L;
 	private static final String prefix = Utils.type(App.class).concat(Config.SEPARATOR);
 
-	@Stored @Locked private String id;
+	@Stored @Locked @NotBlank private String id;
 	@Stored @Locked private Long timestamp;
 	@Stored @Locked private String type;
 	@Stored @Locked private String appid;
@@ -75,6 +77,8 @@ public class App implements ParaObject {
 	@Stored @Locked @NotBlank private String secret;
 	@Stored @Locked private Boolean readOnly;
 	@Stored private Map<String, String> datatypes;
+	// type -> field -> constraint -> property -> value
+	@Stored private Map<String, Map<String, Map<String, Map<String, Object>>>> validationConstraints;
 	@Stored private Boolean active;
 	@Stored private Long deleteOn;
 
@@ -97,6 +101,34 @@ public class App implements ParaObject {
 		this.active = true;
 		setId(id);
 		setName(getName());
+	}
+
+	@Override
+	public final void setId(String id) {
+		if (StringUtils.startsWith(id, prefix)) {
+			this.id = prefix.concat(Utils.noSpaces(Utils.stripAndTrim(id.replaceAll(prefix, ""), " "), "-"));
+		} else if (id != null) {
+			this.id = prefix.concat(Utils.noSpaces(Utils.stripAndTrim(id, " "), "-"));
+		}
+	}
+
+	/**
+	 * Returns a map of user-defined data types and their validation annotations.
+	 * @return the constraints map
+	 */
+	public Map<String, Map<String, Map<String, Map<String, Object>>>> getValidationConstraints() {
+		if (validationConstraints == null) {
+			validationConstraints = new HashMap<String, Map<String, Map<String, Map<String, Object>>>>();
+		}
+		return validationConstraints;
+	}
+
+	/**
+	 * Sets the validation constraints map.
+	 * @param validationConstraints the constraints map
+	 */
+	public void setValidationConstraints(Map<String, Map<String,Map<String, Map<String, Object>>>> validationConstraints) {
+		this.validationConstraints = validationConstraints;
 	}
 
 	/**
@@ -214,14 +246,67 @@ public class App implements ParaObject {
 	}
 
 	/**
+	 * Adds a new constraint to the list of constraints for a given field and type.
+	 * @param type the type
+	 * @param field the field
+	 * @param c the constraint
+	 * @return true if successful
+	 */
+	public boolean addValidationConstraint(String type, String field, Constraint c) {
+		if (!StringUtils.isBlank(type) && !StringUtils.isBlank(field) &&
+				c != null && !c.getPayload().isEmpty() &&
+				Constraint.isValidConstraintName(c.getName())) {
+			Map<String, Map<String, Map<String, Object>>> fieldMap = getValidationConstraints().get(type);
+			Map<String, Map<String, Object>> consMap;
+			if (fieldMap != null) {
+				consMap = fieldMap.get(field);
+				if (consMap == null) {
+					consMap = new HashMap<String, Map<String, Object>>();
+				}
+			} else {
+				fieldMap = new HashMap<String, Map<String, Map<String, Object>>>();
+				consMap = new HashMap<String, Map<String, Object>>();
+			}
+			consMap.put(c.getName(), c.getPayload());
+			fieldMap.put(field, consMap);
+			getValidationConstraints().put(type, fieldMap);
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Removes a constraint from the map.
+	 * @param type the type
+	 * @param field the field
+	 * @param constraintName the constraint name
+	 * @return true if successful
+	 */
+	public boolean removeValidationConstraint(String type, String field, String constraintName) {
+		if (!StringUtils.isBlank(type) && !StringUtils.isBlank(field) && constraintName != null) {
+			Map<String, Map<String, Map<String, Object>>> fieldsMap = getValidationConstraints().get(type);
+			if (fieldsMap != null && fieldsMap.containsKey(field) && fieldsMap.get(field).containsKey(constraintName)) {
+				fieldsMap.get(field).remove(constraintName);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Adds a user-defined data type to the types map.
 	 * @param pluralDatatype the plural form of the type
 	 * @param datatype a datatype, must not be null or empty
 	 */
 	public void addDatatype(String pluralDatatype, String datatype) {
-		if (!StringUtils.isBlank(pluralDatatype) && !StringUtils.isBlank(datatype) &&
-				!getDatatypes().containsValue(datatype)) {
-			getDatatypes().putIfAbsent(pluralDatatype, datatype);
+		if (getDatatypes().size() < Config.MAX_DATATYPES_PER_APP) {
+			if (!StringUtils.isBlank(pluralDatatype) && !StringUtils.isBlank(datatype) &&
+					!getDatatypes().containsValue(datatype)) {
+				getDatatypes().putIfAbsent(pluralDatatype, datatype);
+			}
+		} else {
+			LoggerFactory.getLogger(App.class).warn("Maximum number of types per app reached - {}.",
+					Config.MAX_DATATYPES_PER_APP);
 		}
 	}
 
@@ -279,15 +364,6 @@ public class App implements ParaObject {
 			}
 
 			getDao().delete(this);
-		}
-	}
-
-	@Override
-	public final void setId(String id) {
-		if (StringUtils.startsWith(id, prefix)) {
-			this.id = prefix.concat(Utils.noSpaces(Utils.stripAndTrim(id.replaceAll(prefix, ""), " "), "-"));
-		} else if (id != null) {
-			this.id = prefix.concat(Utils.noSpaces(Utils.stripAndTrim(id, " "), "-"));
 		}
 	}
 

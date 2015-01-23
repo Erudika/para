@@ -17,23 +17,36 @@
  */
 package com.erudika.para.rest;
 
+import com.erudika.para.Para;
+import com.erudika.para.cache.Cache;
+import com.erudika.para.cache.MockCache;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.Votable;
+import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
 import static com.erudika.para.rest.RestUtils.*;
+import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Utils;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.inject.Binder;
+import com.google.inject.Module;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
+import org.junit.AfterClass;
 import static org.junit.Assert.*;
+import org.junit.BeforeClass;
 import org.junit.Test;
-
+import org.mockito.Mockito;
 /**
  *
  * @author Alex Bogdanovski [alex@erudika.com]
@@ -43,6 +56,32 @@ public class RestUtilsTest {
 	public RestUtilsTest() {
 	}
 
+	@BeforeClass
+	public static void setUpClass() {
+		System.setProperty("para.env", "embedded");
+		System.setProperty("para.app_name", "para-test");
+		System.setProperty("para.print_logo", "false");
+		Para.initialize(new Module() {
+			public void configure(Binder binder) {
+				binder.bind(DAO.class).toInstance(new MockDAO());
+				binder.bind(Cache.class).toInstance(new MockCache());
+				binder.bind(Search.class).toInstance(Mockito.mock(Search.class));
+			}
+		});
+	}
+
+	@AfterClass
+	public static void tearDownClass() {
+		Para.destroy();
+	}
+
+	private InputStream getInputStream(Object obj) throws JsonProcessingException {
+		if (obj != null) {
+			return new ByteArrayInputStream(Utils.getJsonWriter().withType(obj.getClass()).writeValueAsBytes(obj));
+		}
+		return null;
+	}
+
 	@Test
 	public void testGetReadResponse() {
 		assertEquals(Status.NOT_FOUND.getStatusCode(), getReadResponse(null).getStatus());
@@ -50,20 +89,22 @@ public class RestUtilsTest {
 	}
 
 	@Test
-	public void testGetCreateUpdateDeleteResponse() {
+	public void testGetCreateUpdateDeleteResponse() throws JsonProcessingException {
 		Tag t = new Tag("tag");
-		t.setDao(new MockDAO());
+		App rootApp = new App(Config.APP_NAME_NS);
 		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(null, null, null).getStatus());
-		assertEquals(Status.CREATED.getStatusCode(), getCreateResponse(t).getStatus());
+
+		assertEquals(Status.CREATED.getStatusCode(),
+				getCreateResponse(rootApp, t.getType(), getInputStream(t)).getStatus());
 		assertNotNull(t.getDao().read(t.getId()));
 
 		Map<String, Object> map = new HashMap<String, Object>();
-		assertEquals(Status.NOT_FOUND.getStatusCode(), getUpdateResponse(null, map).getStatus());
-		assertEquals(Status.OK.getStatusCode(), getUpdateResponse(t, map).getStatus());
+		assertEquals(Status.NOT_FOUND.getStatusCode(), getUpdateResponse(rootApp, null, null).getStatus());
+		assertEquals(Status.OK.getStatusCode(), getUpdateResponse(rootApp, t, getInputStream(map)).getStatus());
 		assertNotNull(t.getDao().read(t.getId()));
 
-		assertEquals(Status.BAD_REQUEST.getStatusCode(), getDeleteResponse(new App(Config.PARA), null).getStatus());
-		assertEquals(Status.OK.getStatusCode(), getDeleteResponse(new App(Config.PARA), t).getStatus());
+		assertEquals(Status.BAD_REQUEST.getStatusCode(), getDeleteResponse(rootApp, null).getStatus());
+		assertEquals(Status.OK.getStatusCode(), getDeleteResponse(rootApp, t).getStatus());
 		assertNull(t.getDao().read(t.getId()));
 	}
 
