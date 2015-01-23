@@ -198,8 +198,8 @@ public class ValidationUtilsTest {
 		app.addValidationConstraint(s1.getType(), "future", future());
 		s1.addProperty("future", 1234);
 		assertFalse(validateObject(app, s1).length == 0);
-		s1.addProperty("future", System.currentTimeMillis());
-		assertFalse(validateObject(app, s1).length == 0);	// might fail on some machines
+//		s1.addProperty("future", System.currentTimeMillis());
+//		assertFalse(validateObject(app, s1).length == 0);	// might fail on some machines
 		s1.addProperty("future", System.currentTimeMillis() + 10000);
 		assertTrue(validateObject(app, s1).length == 0);
 		s1.addProperty("future", new Date(System.currentTimeMillis() + 10000));
@@ -211,8 +211,8 @@ public class ValidationUtilsTest {
 		assertFalse(validateObject(app, s1).length == 0);
 		s1.addProperty("past", 1234);
 		assertTrue(validateObject(app, s1).length == 0);
-		s1.addProperty("past", System.currentTimeMillis());
-		assertFalse(validateObject(app, s1).length == 0);	// might fail on some machines
+//		s1.addProperty("past", System.currentTimeMillis());
+//		assertFalse(validateObject(app, s1).length == 0);	// might fail on some machines
 		s1.addProperty("past", new Date(System.currentTimeMillis()-1));
 		assertTrue(validateObject(app, s1).length == 0);
 
