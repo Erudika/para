@@ -78,34 +78,50 @@ public final class Config {
 	/** {@value #_GROUPS} */
 	public static final String _GROUPS = "groups";
 
-	/** {@value #MAX_ITEMS_PER_PAGE} */
-	public static final int MAX_ITEMS_PER_PAGE = 30;
 	/** {@value #DEFAULT_LIMIT} */
 	public static final int	DEFAULT_LIMIT = Integer.MAX_VALUE;
-	/** {@value #MAX_PAGES} */
-	public static final int MAX_PAGES = 10000;
-	/** {@value #MAX_IMG_SIZE_PX} */
-	public static final int MAX_IMG_SIZE_PX = 1024;
-	/** {@value #MIN_PASS_LENGTH} */
-	public static final int MIN_PASS_LENGTH = 6;
-	/** {@value #MAX_ENTITY_SIZE_BYTES} */
-	public static final int MAX_ENTITY_SIZE_BYTES = 1024 * 1024;
-	/** {@value #SEPARATOR} */
-	public static final String SEPARATOR = ":";
-	/** {@value #DEFAULT_ENCODING} */
-	public static final String DEFAULT_ENCODING = "UTF-8";
-	/** {@value #FB_PREFIX} */
+	/** String separator - default is colon ':'. */
+	public static final String SEPARATOR = getConfigParam("default_separator", ":");
+	/** Facebook prefix - defaults to 'fb:'. */
 	public static final String FB_PREFIX = "fb" + SEPARATOR;
-	/** {@value #GPLUS_PREFIX} */
+	/** Google prefix - defaults to 'gp;'. */
 	public static final String GPLUS_PREFIX = "gp" + SEPARATOR;
-	/** {@value #LINKEDIN_PREFIX} */
+	/** LinkedIn prefix - defaults to 'in:'. */
 	public static final String LINKEDIN_PREFIX = "in" + SEPARATOR;
-	/** {@value #TWITTER_PREFIX} */
+	/** Twitter prefix - defaults to 'tw:'. */
 	public static final String TWITTER_PREFIX = "tw" + SEPARATOR;
-	/** {@value #GITHUB_PREFIX} */
+	/** GitHub prefix - defaults to 'gh;'. */
 	public static final String GITHUB_PREFIX = "gh" + SEPARATOR;
 
 	//////////  INITIALIZATION PARAMETERS  //////////////
+	/**
+	 * Maximum results per page - limits the number of items to show in search results. Default is 30.
+	 */
+	public static final int MAX_ITEMS_PER_PAGE = getConfigParamUnwrapped("max_items_per_page", 30);
+	/**
+	 * Pagination limit - default is 10 000.
+	 */
+	public static final int MAX_PAGES = getConfigParamUnwrapped("max_pages", 10000);
+	/**
+	 * Maximum image size (longest edge) - default is 1024 (pixels).
+	 */
+	public static final int MAX_IMG_SIZE_PX = getConfigParamUnwrapped("max_img_px", 1024);
+	/**
+	 * Minimum password length - default is 6 symbols.
+	 */
+	public static final int MIN_PASS_LENGTH = getConfigParamUnwrapped("min_password_length", 6);
+	/**
+	 * Maximum number of data types that can be defined per app - default is 256.
+	 */
+	public static final int MAX_DATATYPES_PER_APP = getConfigParamUnwrapped("max_datatypes_per_app", 256);
+	/**
+	 * Maximum size of incoming JSON objects - default is 1048576 (bytes).
+	 */
+	public static final int MAX_ENTITY_SIZE_BYTES = getConfigParamUnwrapped("max_entity_size_bytes", 1024 * 1024);
+	/**
+	 * Default character encoding - 'UTF-8'
+	 */
+	public static final String DEFAULT_ENCODING = getConfigParam("default_encoding", "UTF-8");
 	/**
 	 * For example: production, development, testing... etc.
 	 */

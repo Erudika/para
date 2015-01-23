@@ -22,7 +22,7 @@ import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
-import com.erudika.para.utils.Utils;
+import com.erudika.para.utils.ValidationUtils;
 import java.util.ArrayList;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -53,9 +53,9 @@ public class UserTest {
 
 	@Test
 	public void testSetEmail() {
-		assertTrue(Utils.isValidObject(u));
+		assertTrue(ValidationUtils.isValidObject(u));
 		u.setEmail("asd@asd");
-		assertFalse(Utils.isValidObject(u));
+		assertFalse(ValidationUtils.isValidObject(u));
 	}
 
 	@Test

@@ -420,7 +420,7 @@ public class AWSDynamoDAO implements DAO {
 	private void setRowKey(String key, Map<String, AttributeValue> row) {
 		if (row.containsKey(Config._KEY)) {
 			logger.warn("Attribute name conflict:  "
-				+ "attribute '{}' will be overwritten! '{}' is a reserved keyword.", Config._KEY);
+				+ "attribute {} will be overwritten! {} is a reserved keyword.", Config._KEY);
 		}
 		row.put(Config._KEY, new AttributeValue(key));
 	}

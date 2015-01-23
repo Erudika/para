@@ -51,6 +51,7 @@ public class OAuth1HmacSignerTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void testSign() {
 		Map<String, String[]> params1 = new TreeMap<String, String[]>();
 		params1.put("oauth_callback", new String[] {Utils.urlEncode("http://localhost/sign-in-with-twitter/")});
