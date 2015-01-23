@@ -445,6 +445,7 @@ public class ParaClientIT {
 
 	@Test
 	public void testMisc() {
+		String kittenType = "kitten";
 		Map<String, String> cred = pc.setup();
 		assertFalse(cred.containsKey("accessKey"));
 
@@ -458,18 +459,16 @@ public class ParaClientIT {
 		assertTrue(constraints.containsKey("User"));
 
 		Map<String, Map<String, Map<String, ?>>> constraint = pc.validationConstraints("app");
-		logger.info("{}", constraint);
 		assertFalse(constraint.isEmpty());
 		assertTrue(constraint.containsKey("App"));
 		assertEquals(1, constraint.size());
 
-		pc.addValidationConstraint(catsType, "paws", required());
-		constraint = pc.validationConstraints(catsType);
-		logger.info("> {}", constraint);
-		assertTrue(constraint.get(StringUtils.capitalize(catsType)).containsKey("paws"));
+		pc.addValidationConstraint(kittenType, "paws", required());
+		constraint = pc.validationConstraints(kittenType);
+		assertTrue(constraint.get(StringUtils.capitalize(kittenType)).containsKey("paws"));
 
-		Sysprop ct = new Sysprop("kitty");
-		ct.setType(catsType);
+		Sysprop ct = new Sysprop("felix");
+		ct.setType(kittenType);
 		Sysprop ct2 = null;
 		try {
 			// validation fails
@@ -480,9 +479,8 @@ public class ParaClientIT {
 		ct.addProperty("paws", "4");
 		assertNotNull(pc.create(ct));
 
-		pc.removeValidationConstraint(catsType, "paws", "required");
-		constraint = pc.validationConstraints(catsType);
-		logger.info("> {}", constraint);
-		assertFalse(constraint.get(StringUtils.capitalize(catsType)).isEmpty());
+		pc.removeValidationConstraint(kittenType, "paws", "required");
+		constraint = pc.validationConstraints(kittenType);
+		assertFalse(constraint.get(StringUtils.capitalize(kittenType)).isEmpty());
 	}
 }
