@@ -23,6 +23,7 @@ import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.User;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Constraint;
 import com.erudika.para.utils.Utils;
 import com.erudika.para.utils.ValidationUtils;
 import com.fasterxml.jackson.core.JsonParseException;
@@ -75,13 +76,13 @@ import org.springframework.util.ClassUtils;
  * A few helper methods for handling REST requests and responses.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
+@SuppressWarnings("unchecked")
 public final class RestUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(RestUtils.class);
 	private static final Signer signer = new Signer();
 	private static final Client apiClient;
 	// maps plural to singular type definitions
-	@SuppressWarnings("unchecked")
 	private static final Map<String, String> coreTypes = new DualHashBidiMap();
 	private static final CoreClassScanner scanner = new CoreClassScanner();
 	private static final DateTimeFormatter timeFormatter = DateTimeFormat.
@@ -416,7 +417,6 @@ public final class RestUtils {
 	 * @param app the app object
 	 * @return a status code 201 or 400
 	 */
-	@SuppressWarnings("unchecked")
 	public static Response getCreateResponse(App app, String type, InputStream is) {
 		ParaObject content;
 		Response entityRes = getEntity(is, Map.class);
@@ -454,7 +454,6 @@ public final class RestUtils {
 	 * @param app the app object
 	 * @return a status code 200 or 400 or 404
 	 */
-	@SuppressWarnings("unchecked")
 	public static Response getUpdateResponse(App app, ParaObject object, InputStream is) {
 		if (object != null) {
 			Map<String, Object> newContent;
@@ -516,7 +515,6 @@ public final class RestUtils {
 	 * @param is entity input stream
 	 * @return a status code 200 or 400
 	 */
-	@SuppressWarnings("unchecked")
 	public static Response getBatchCreateResponse(final App app, InputStream is) {
 		final ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
 		Response entityRes = getEntity(is, List.class);
@@ -549,7 +547,6 @@ public final class RestUtils {
 	 * @param is entity input stream
 	 * @return a status code 200 or 400
 	 */
-	@SuppressWarnings("unchecked")
 	public static Response getBatchUpdateResponse(App app, InputStream is) {
 		ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
 		Response entityRes = getEntity(is, List.class);
@@ -579,7 +576,6 @@ public final class RestUtils {
 	 * @param ids list of ids to delete
 	 * @return a status code 200 or 400
 	 */
-	@SuppressWarnings("unchecked")
 	public static Response getBatchDeleteResponse(App app, List<String> ids) {
 		ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
 		if (ids != null && !ids.isEmpty()) {
@@ -648,6 +644,63 @@ public final class RestUtils {
 		}
 	}
 
+	/**
+	 * Returns a list of validation constraints for the given app.
+	 * @param app the current App object
+	 * @param type the type
+	 * @return a response 200
+	 */
+	public static Response getConstraintsResponse(App app, String type) {
+		if (type != null) {
+			return Response.ok(Utils.getJsonMapper().createObjectNode().putPOJO(StringUtils.capitalize(type),
+					ValidationUtils.getValidationConstraints(app, type))).build();
+		} else {
+			return Response.ok(ValidationUtils.getAllValidationConstraints(app)).build();
+		}
+	}
+
+	/**
+	 * Adds a new constraint to the list of constraint for the given app.
+	 * @param app the current App object
+	 * @param type the type
+	 * @param field the field
+	 * @param cname the constraint name
+	 * @param in JSON payload
+	 * @return the updated list of constraints (code 200)
+	 */
+	public static Response addCostraintsResponse(App app, String type, String field, String cname, InputStream in) {
+		if (app != null) {
+			Response payloadRes = RestUtils.getEntity(in, Map.class);
+			if (payloadRes.getStatusInfo() == Response.Status.OK) {
+				Map<String, Object> payload = (Map<String, Object>) payloadRes.getEntity();
+				if (app.addValidationConstraint(type, field, Constraint.build(cname, payload))) {
+					app.update();
+				}
+			}
+			return Response.ok(app.getValidationConstraints().get(type)).build();
+		} else {
+			return getStatusResponse(Response.Status.NOT_FOUND);
+		}
+	}
+
+	/**
+	 * Removes a constraint from the list of constraint for the given app.
+	 * @param app the current App object
+	 * @param type the type
+	 * @param field the field
+	 * @param cname the constraint name
+	 * @return the updated list of constraints (code 200)
+	 */
+	public static Response removeCostraintsResponse(App app, String type, String field, String cname) {
+		if (app != null) {
+			if (app.removeValidationConstraint(type, field, cname)) {
+				app.update();
+			}
+			return Response.ok(app.getValidationConstraints().get(type)).build();
+		} else {
+			return getStatusResponse(Response.Status.NOT_FOUND);
+		}
+	}
 
 	/////////////////////////////////////////////
 	//				MISC METHODS
@@ -689,7 +742,6 @@ public final class RestUtils {
 			addIncludeFilter(new AssignableTypeFilter(ParaObject.class));
 		}
 
-		@SuppressWarnings("unchecked")
 		public final Set<Class<? extends ParaObject>> getComponentClasses(String basePackage) {
 			basePackage = (basePackage == null) ? "" : basePackage;
 			Set<Class<? extends ParaObject>> classes = new HashSet<Class<? extends ParaObject>>();

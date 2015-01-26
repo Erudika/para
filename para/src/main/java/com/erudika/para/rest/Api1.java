@@ -28,8 +28,6 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.HumanTime;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
-import com.erudika.para.utils.ValidationUtils;
-import com.erudika.para.utils.Constraint;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -409,19 +407,11 @@ public class Api1 extends ResourceConfig {
 	protected final Inflector<ContainerRequestContext, Response> getConstrHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = RestUtils.getPrincipalApp();
-				String type = pathParam(Config._TYPE, ctx);
-				if (type != null) {
-					return Response.ok(Utils.getJsonMapper().createObjectNode().putPOJO(StringUtils.capitalize(type),
-							ValidationUtils.getValidationConstraints(app, type))).build();
-				} else {
-					return Response.ok(ValidationUtils.getAllValidationConstraints(app)).build();
-				}
+				return RestUtils.getConstraintsResponse(RestUtils.getPrincipalApp(), pathParam(Config._TYPE, ctx));
 			}
 		};
 	}
 
-	@SuppressWarnings("unchecked")
 	protected final Inflector<ContainerRequestContext, Response> addConstrHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
@@ -429,14 +419,7 @@ public class Api1 extends ResourceConfig {
 				String type = pathParam(Config._TYPE, ctx);
 				String field = pathParam("field", ctx);
 				String cname = pathParam("cname", ctx);
-				Response payloadRes = RestUtils.getEntity(ctx.getEntityStream(), Map.class);
-				if (payloadRes.getStatusInfo() == Response.Status.OK) {
-					Map<String, Object> payload = (Map<String, Object>) payloadRes.getEntity();
-					if (app.addValidationConstraint(type, field, Constraint.build(cname, payload))) {
-						app.update();
-					}
-				}
-				return Response.ok(app.getValidationConstraints().get(type)).build();
+				return RestUtils.addCostraintsResponse(app, type, field, cname, ctx.getEntityStream());
 			}
 		};
 	}
@@ -447,10 +430,8 @@ public class Api1 extends ResourceConfig {
 				App app = RestUtils.getPrincipalApp();
 				String type = pathParam(Config._TYPE, ctx);
 				String field = pathParam("field", ctx);
-				if (app.removeValidationConstraint(type, field, pathParam("cname", ctx))) {
-					app.update();
-				}
-				return Response.ok(app.getValidationConstraints().get(type)).build();
+				String cname = pathParam("cname", ctx);
+				return RestUtils.removeCostraintsResponse(app, type, field, cname);
 			}
 		};
 	}
