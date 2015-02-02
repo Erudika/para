@@ -27,6 +27,7 @@ import com.amazonaws.services.dynamodbv2.model.KeyType;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
+import com.amazonaws.services.dynamodbv2.model.UpdateTableRequest;
 import com.erudika.para.Para;
 import com.erudika.para.utils.Config;
 import java.util.Collections;
@@ -133,6 +134,27 @@ public final class AWSDynamoUtils {
 					withKeySchema(new KeySchemaElement(Config._KEY, KeyType.HASH)).
 					withAttributeDefinitions(new AttributeDefinition().withAttributeName(Config._KEY).
 					withAttributeType(ScalarAttributeType.S)).
+					withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
+		} catch (Exception e) {
+			logger.error(null, e);
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Updates the table settings (read and write capacities)
+	 * @param appid name of the {@link com.erudika.para.core.App}
+	 * @param readCapacity read capacity
+	 * @param writeCapacity write capacity
+	 * @return true if updated
+	 */
+	public static boolean updateTable(String appid, Long readCapacity, Long writeCapacity) {
+		if (StringUtils.isBlank(appid) || StringUtils.containsWhitespace(appid) || existsTable(appid)) {
+			return false;
+		}
+		try {
+			getClient().updateTable(new UpdateTableRequest().withTableName(getTablNameForAppid(appid)).
 					withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
 		} catch (Exception e) {
 			logger.error(null, e);
