@@ -55,7 +55,7 @@ public final class AWSDynamoUtils {
 	 * Returns a client instance for AWS DynamoDB
 	 * @return a client that talks to DynamoDB
 	 */
-	protected static AmazonDynamoDBClient getClient() {
+	public static AmazonDynamoDBClient getClient() {
 		if (ddbClient != null) {
 			return ddbClient;
 		}

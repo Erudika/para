@@ -66,7 +66,7 @@ public final class ElasticSearchUtils {
 	 * Creates an instance of the client that talks to Elasticsearch.
 	 * @return a client instance
 	 */
-	protected static Client getClient() {
+	public static Client getClient() {
 		if (searchClient != null) {
 			return searchClient;
 		}

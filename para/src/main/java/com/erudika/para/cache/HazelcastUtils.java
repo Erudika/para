@@ -46,7 +46,7 @@ public final class HazelcastUtils {
 	 * Initializes a new Hazelcast instance with default settings.
 	 * @return a Hazelcast instance
 	 */
-	protected static HazelcastInstance getClient() {
+	public static HazelcastInstance getClient() {
 		if (hcInstance == null) {
 			hcInstance = Hazelcast.getHazelcastInstanceByName(getNodeName());
 			if (hcInstance != null) {
