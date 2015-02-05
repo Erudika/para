@@ -107,8 +107,8 @@ public class IndexBasedDAO implements DAO {
 		if (so != null && !StringUtils.isBlank(appid)) {
 			so.setUpdated(Utils.timestamp());
 			ParaObject soUpdated = getMap(appid).get(so.getId());
-			Utils.setAnnotatedFields(soUpdated, Utils.getAnnotatedFields(so), Locked.class);
-			getMap(appid).put(so.getId(), soUpdated);
+			getMap(appid).put(so.getId(), Utils.setAnnotatedFields(soUpdated,
+					Utils.getAnnotatedFields(so), Locked.class));
 			logger.debug("DAO.update() {}", so.getId());
 		}
 	}

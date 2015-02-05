@@ -51,6 +51,29 @@ public final class CoreUtils {
 		return (name == null) ? "ParaObject ".concat((id == null) ? System.currentTimeMillis() + "" : id) : name;
 	}
 
+	/**
+	 * Creates the object again (dangerous!)
+	 * @param obj an object
+	 * @return true if successful
+	 */
+	public static boolean overwrite(ParaObject obj) {
+		return overwrite(Config.APP_NAME_NS, obj);
+	}
+
+	/**
+	 * Creates the object again (dangerous!)
+	 * @param appid the app id
+	 * @param obj an object
+	 * @return true if successful
+	 */
+	public static boolean overwrite(String appid, ParaObject obj) {
+		if (obj != null && obj.getId() != null && obj.getTimestamp() != null) {
+			obj.setUpdated(System.currentTimeMillis());
+			return obj.getDao().create(appid, obj) != null;
+		}
+		return false;
+	}
+
 	///////////////////////////////////////
 	//	    	TAGGING METHODS
 	///////////////////////////////////////

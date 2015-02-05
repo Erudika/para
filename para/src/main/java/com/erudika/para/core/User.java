@@ -62,7 +62,7 @@ public class User implements ParaObject, UserDetails {
 
 	@Stored @NotBlank private String identifier;
 	@Stored @Locked @NotBlank private String groups;
-	@Stored @Locked private Boolean active;
+	@Stored private Boolean active;
 	@Stored @NotBlank @Email private String email;
 	@Stored private String currency;
 	@Stored private String picture;

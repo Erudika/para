@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * This is a representation of an application within Para.
  * <br>
  * It allows the user to create separate apps running on the same infrastructure.
- * The apps are separated by name and each {@link ParaObject} belongs to an app.
+ * Every {@link ParaObject} belongs to an app.
  * <br>
  * There can be two types of apps - dedicated and shared.
  * Shared apps use their own database table and cache, but share the same search index.

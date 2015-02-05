@@ -993,9 +993,9 @@ public final class Utils {
 			Map<String, Object> props = new HashMap<String, Object>(data);
 			for (Field field : fields) {
 				boolean dontSkip = ((filter == null) ? true : !field.isAnnotationPresent(filter));
+				String name = field.getName();
+				Object value = data.get(name);
 				if (field.isAnnotationPresent(Stored.class) && dontSkip) {
-					String name = field.getName();
-					Object value = data.get(name);
 					// try to read a default value from the bean if any
 					if (value == null && PropertyUtils.isReadable(pojo, name)) {
 						value = PropertyUtils.getProperty(pojo, name);
@@ -1007,17 +1007,17 @@ public final class Utils {
 					}
 					field.setAccessible(true);
 					BeanUtils.setProperty(pojo, name, value);
-					props.remove(name);
 				}
+				props.remove(name);
 			}
 			// handle unknown (user-defined) fields
-			if (!props.isEmpty()) {
+			if (!props.isEmpty() && pojo instanceof Sysprop) {
 				for (Entry<String, Object> entry : props.entrySet()) {
 					String name = entry.getKey();
 					Object value = entry.getValue();
 					// handle the case where we have custom user-defined properties
 					// which are not defined as Java class fields
-					if (!PropertyUtils.isReadable(pojo, name) && pojo instanceof Sysprop) {
+					if (!PropertyUtils.isReadable(pojo, name)) {
 						if (value == null) {
 							((Sysprop) pojo).removeProperty(name);
 						} else {

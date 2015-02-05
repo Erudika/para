@@ -19,6 +19,7 @@ package com.erudika.para.rest;
 
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
+import com.erudika.para.core.CoreUtils;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.User;
 import com.erudika.para.persistence.DAO;
@@ -454,7 +455,7 @@ public class Api1 extends ResourceConfig {
 				App app = RestUtils.getPrincipalApp();
 				if (app != null) {
 					app.resetSecret();
-					app.update();
+					CoreUtils.overwrite(app);
 					Map<String, String> creds = app.getCredentials();
 					creds.put("info", "Save the secret key! It is showed only once!");
 					return Response.ok(creds).build();

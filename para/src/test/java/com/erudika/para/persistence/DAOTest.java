@@ -17,6 +17,7 @@
  */
 package com.erudika.para.persistence;
 
+import com.erudika.para.core.App;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
@@ -114,6 +115,18 @@ public abstract class DAOTest {
 		User x = dao.read(u.getId());
 		assertEquals(u.getName(), x.getName());
 		assertNotNull(x.getUpdated());
+
+		// test updating locked fields
+		App app = new App("xyz");
+		assertNotNull(dao.create(app));
+		String secret = app.getSecret();
+		assertNotNull(secret);
+		app.resetSecret();
+		dao.update(app);
+
+		App app2 = dao.read(app.getId());
+		assertNotNull(app2);
+		assertEquals(secret, app2.getSecret());
 	}
 
 	@Test
