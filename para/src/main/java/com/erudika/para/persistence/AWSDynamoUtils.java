@@ -24,6 +24,7 @@ import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.DeleteTableRequest;
 import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
 import com.amazonaws.services.dynamodbv2.model.KeyType;
+import com.amazonaws.services.dynamodbv2.model.ListTablesResult;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
@@ -32,6 +33,7 @@ import com.erudika.para.Para;
 import com.erudika.para.utils.Config;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
@@ -209,11 +211,27 @@ public final class AWSDynamoUtils {
 		return Collections.emptyMap();
 	}
 
+	/**
+	 * Lists all table names for this account.
+	 * @return a list of DynamoDB tables
+	 */
+	public static List<String> listAllTables() {
+		ListTablesResult ltr = getClient().listTables(100);
+		List<String> tables = new LinkedList<String>();
+		String lastKey;
+		do {
+			tables.addAll(ltr.getTableNames());
+			lastKey = ltr.getLastEvaluatedTableName();
+		} while (!(ltr = getClient().listTables(lastKey, 100)).getTableNames().isEmpty());
+		return tables;
+	}
+
 	protected static String getTablNameForAppid(String appIdentifier) {
 		if (StringUtils.isBlank(appIdentifier)) {
 			return null;
 		} else {
-			return appIdentifier.equals(Config.APP_NAME_NS) ? appIdentifier : Config.PARA + "-" + appIdentifier;
+			return (appIdentifier.equals(Config.APP_NAME_NS) || appIdentifier.startsWith(Config.PARA.concat("-"))) ?
+					appIdentifier : Config.PARA + "-" + appIdentifier;
 		}
 	}
 }
