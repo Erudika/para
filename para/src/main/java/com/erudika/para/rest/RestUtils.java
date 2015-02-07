@@ -166,12 +166,12 @@ public final class RestUtils {
 				if (principal instanceof App) {
 					return (App) principal;
 				} else if (principal instanceof User) {
-					return Para.getDAO().read(Config.APP_NAME_NS, new App(((User) principal).getAppid()).getId());
+					return Para.getDAO().read(Config.APP_NAME_NS, App.id(((User) principal).getAppid()));
 				}
 			}
 		}
 		logger.info("Unauthenticated request - returning root App: {}", Config.APP_NAME_NS);
-		return Para.getDAO().read(Config.APP_NAME_NS, new App(Config.APP_NAME_NS).getId());
+		return Para.getDAO().read(Config.APP_NAME_NS, App.id(Config.APP_NAME_NS));
 	}
 
 	/**

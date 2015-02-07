@@ -103,13 +103,19 @@ public class App implements ParaObject {
 		setName(getName());
 	}
 
+	public static final String id(String id) {
+		if (StringUtils.startsWith(id, prefix)) {
+			return prefix.concat(Utils.noSpaces(Utils.stripAndTrim(id.replaceAll(prefix, ""), " "), "-"));
+		} else if (id != null) {
+			return prefix.concat(Utils.noSpaces(Utils.stripAndTrim(id, " "), "-"));
+		} else {
+			return null;
+		}
+	}
+
 	@Override
 	public final void setId(String id) {
-		if (StringUtils.startsWith(id, prefix)) {
-			this.id = prefix.concat(Utils.noSpaces(Utils.stripAndTrim(id.replaceAll(prefix, ""), " "), "-"));
-		} else if (id != null) {
-			this.id = prefix.concat(Utils.noSpaces(Utils.stripAndTrim(id, " "), "-"));
-		}
+		this.id = id(id);
 	}
 
 	/**
