@@ -36,23 +36,18 @@ Para is similar to [Dropwizard](https://dropwizard.github.io/dropwizard/) and
 
 <pre>
 +----------------------------------------------------------+
-|                                                          |
-|               Java Domain Objects (POJOs)                |
-|                                                          |
-+----------------------------------------------------------+
-+----------------------------------------------------------+
 |                  ____  ___ _ ____ ___ _                  |
 |                 / __ \/ __` / ___/ __` /                 |
 |                / /_/ / /_/ / /  / /_/ /                  |
 |               / .___/\__,_/_/   \__,_/                   |
 |              /_/                           +-------------+
 |                                            | Persistence |
-+--------+  +-------+  +-----------------+   +-------------+
-|REST API|  | Utils |  |     Search      |   |    Cache    |
-+----+---+--+-------+--+--------+--------+---+------+------+
-     |                          |                   |
-     |                          |                   |
-+----+--------------+  +--------+--------+   +------+------+
++-------------------+  +-----------------+   +-------------+
+|      REST API     |  |     Search      |   |    Cache    |
++---------+---------+--+--------+--------+---+------+------+
+          |                     |                   |
+          |                     |                   |
++---------+---------+  +--------+--------+   +------+------+
 |  Security and     |  |                 |   |             |
 |  Validation of    |  |  ElasticSearch  +---+ Data Store  |
 |  Signed Requests  |  |                 |   |             |
@@ -69,7 +64,7 @@ Para is similar to [Dropwizard](https://dropwizard.github.io/dropwizard/) and
 
 ## Getting started
 
-To get started quickly just (grab the JAR file)[https://github.com/Erudika/para/releases] and execute it with:
+To get started quickly just [grab the JAR file](https://github.com/Erudika/para/releases) and execute it with:
 
 1. [Download the JAR](https://github.com/Erudika/para/releases)
 2. Execute it with `java -jar para-X.Y.Z.jar`
