@@ -226,7 +226,12 @@ public final class AWSDynamoUtils {
 		return tables;
 	}
 
-	protected static String getTablNameForAppid(String appIdentifier) {
+	/**
+	 * Returns the table name for a given app id. Table names are usually in the form 'prefix-appid'.
+	 * @param appIdentifier app id
+	 * @return the table name
+	 */
+	public static String getTablNameForAppid(String appIdentifier) {
 		if (StringUtils.isBlank(appIdentifier)) {
 			return null;
 		} else {
