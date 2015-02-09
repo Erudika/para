@@ -129,7 +129,7 @@ public class Api1 extends ResourceConfig {
 
 		// util functions API
 		Resource.Builder utilsRes = Resource.builder("utils/{method}");
-		utilsRes.addMethod(GET).produces(JSON).handledBy(utilsHandler());
+		utilsRes.addMethod(GET).produces(MediaType.TEXT_PLAIN).handledBy(utilsHandler());
 		registerResources(utilsRes.build());
 
 		// register custom resources
@@ -221,7 +221,7 @@ public class Api1 extends ResourceConfig {
 					return Response.ok(Utils.stripAndTrim(str)).build();
 				} else if ("md2html".equals(method)) {
 					String md = params.getFirst("md");
-					return Response.ok(Utils.markdownToHtml(md)).build();
+					return Response.ok(Utils.markdownToHtml(md), MediaType.TEXT_HTML).build();
 				} else if ("timeago".equals(method)) {
 					String d = params.getFirst("delta");
 					long delta = NumberUtils.toLong(d, 1);
