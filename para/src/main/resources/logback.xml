@@ -32,6 +32,7 @@
   <logger name="org.openid4java" level="ERROR"/>
   <logger name="org.glassfish" level="WARN"/>
   <logger name="org.hibernate" level="WARN"/>
+  <logger name="com.hazelcast" level="WARN"/>
 
   <root level="INFO">
     <appender-ref ref="STDOUT" />
