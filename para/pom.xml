@@ -323,6 +323,11 @@
 			<artifactId>cors-filter</artifactId>
 			<version>1.0.1</version>
 		</dependency>
+		<dependency>
+			<groupId>com.github.spullara.mustache.java</groupId>
+			<artifactId>compiler</artifactId>
+			<version>0.8.17</version>
+		</dependency>
 
 		<!-- TESTING -->
 		<dependency>

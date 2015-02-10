@@ -97,6 +97,15 @@ public class UtilsTest {
 	}
 
 	@Test
+	public void testCompileMustache() {
+		assertNotNull(compileMustache(null, ""));
+		assertNotNull(compileMustache(new HashMap<String, Object>(), "test"));
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("test", "string");
+		assertEquals("<html>string</html>", compileMustache(map, "<html>{{test}}</html>"));
+	}
+
+	@Test
 	public void testAbbreviate() {
 		assertNotNull(abbreviate(null, 0));
 		assertNotNull(abbreviate("", 0));
@@ -448,7 +457,7 @@ public class UtilsTest {
 	public void testGetNewId() {
 		assertFalse(getNewId().isEmpty());
 	}
-	
+
 	@Test
 	public void testGetAllDeclaredFields() {
 		assertTrue(getAllDeclaredFields(null).isEmpty());

@@ -30,7 +30,11 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.rjeschke.txtmark.Configuration;
 import com.github.rjeschke.txtmark.Processor;
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -65,6 +69,8 @@ import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
+import org.elasticsearch.common.mustache.DefaultMustacheFactory;
+import org.elasticsearch.common.mustache.MustacheFactory;
 import org.geonames.FeatureClass;
 import org.geonames.Style;
 import org.geonames.Toponym;
@@ -89,6 +95,7 @@ public final class Utils {
 	private static final Pattern emailz = Pattern.compile(Email.EMAIL_PATTERN);
 	private static final ObjectReader jsonReader;
 	private static final ObjectWriter jsonWriter;
+	private static final MustacheFactory mustache;
 	private static HumanTime humantime;
 	private static Utils instance;
 
@@ -118,6 +125,7 @@ public final class Utils {
 		jsonMapper.disable(SerializationFeature.WRITE_NULL_MAP_VALUES);
 		jsonReader = jsonMapper.reader();
 		jsonWriter = jsonMapper.writer();
+		mustache = new DefaultMustacheFactory();
 	}
 
 	private Utils() { }
@@ -316,6 +324,29 @@ public final class Utils {
 	public static String markdownToHtml(String markdownString) {
 		return StringUtils.isBlank(markdownString) ? "" :
 				Processor.process(markdownString, Configuration.DEFAULT_SAFE);
+	}
+
+	/**
+	 * Compiles a mustache template with a given scope (map of fields and values).
+	 * @param scope a map of fields and values
+	 * @param template a Mustache template
+	 * @return the compiled template string
+	 */
+	public static String compileMustache(Map<String, Object> scope, String template) {
+		if (scope == null || StringUtils.isBlank(template)) {
+			return "";
+		}
+		Writer writer = new StringWriter();
+		try {
+			mustache.compile(new StringReader(template), MD5(template)).execute(writer, scope);
+		} finally {
+			try	{
+				writer.close();
+			} catch (IOException e) {
+				logger.error(null, e);
+			}
+		}
+		return writer.toString();
 	}
 
 	/**
