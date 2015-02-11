@@ -23,8 +23,8 @@ import com.erudika.para.utils.Config;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigValue;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -103,8 +103,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 		for (String key : c.keySet()) {
 			ConfigValue cv = c.get(key);
-			ArrayList<String> patterns = new ArrayList<String>();
-			ArrayList<String> roles = new ArrayList<String>();
+			LinkedList<String> patterns = new LinkedList<String>();
+			LinkedList<String> roles = new LinkedList<String>();
 
 			// if API security is disabled don't add any API related patterns
 			// to the list of protected resources

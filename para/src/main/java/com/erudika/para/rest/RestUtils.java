@@ -36,12 +36,12 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Modifier;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -516,7 +516,7 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getBatchCreateResponse(final App app, InputStream is) {
-		final ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
+		final LinkedList<ParaObject> objects = new LinkedList<ParaObject>();
 		Response entityRes = getEntity(is, List.class);
 		if (entityRes.getStatusInfo() == Response.Status.OK) {
 			List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
@@ -548,7 +548,7 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getBatchUpdateResponse(App app, InputStream is) {
-		ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
+		LinkedList<ParaObject> objects = new LinkedList<ParaObject>();
 		Response entityRes = getEntity(is, List.class);
 		if (entityRes.getStatusInfo() == Response.Status.OK) {
 			List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
@@ -577,7 +577,7 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getBatchDeleteResponse(App app, List<String> ids) {
-		ArrayList<ParaObject> objects = new ArrayList<ParaObject>();
+		LinkedList<ParaObject> objects = new LinkedList<ParaObject>();
 		if (ids != null && !ids.isEmpty()) {
 			if (ids.size() <= Config.MAX_ITEMS_PER_PAGE) {
 				for (ParaObject pobj : Para.getDAO().readAll(app.getAppIdentifier(), ids, false).values()) {

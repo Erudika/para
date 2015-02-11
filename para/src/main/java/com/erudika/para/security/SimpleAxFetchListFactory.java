@@ -17,7 +17,7 @@
  */
 package com.erudika.para.security;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import org.springframework.security.openid.AxFetchListFactory;
 import org.springframework.security.openid.OpenIDAttribute;
@@ -35,7 +35,7 @@ public class SimpleAxFetchListFactory implements AxFetchListFactory {
 	 * @return a list of attributes
 	 */
 	public List<OpenIDAttribute> createAttributeList(String identifier) {
-		List<OpenIDAttribute> list = new ArrayList<OpenIDAttribute>();
+		List<OpenIDAttribute> list = new LinkedList<OpenIDAttribute>();
 		if (identifier != null && identifier.matches("https://www.google.com/.*")) {
 			OpenIDAttribute email = new OpenIDAttribute("email", "http://axschema.org/contact/email");
 			OpenIDAttribute first = new OpenIDAttribute("firstname", "http://axschema.org/namePerson/first");

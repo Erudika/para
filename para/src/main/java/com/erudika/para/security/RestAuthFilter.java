@@ -94,29 +94,37 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 				if (!StringUtils.isBlank(appid)) {
 					if (!StringUtils.isBlank(date)) {
 						if (!requestExpired) {
-							App app = new App();
-							app.setId(appid);
-							app = app.getDao().read(appid);
+							App app = new App(appid);
+							app = app.getDao().read(app.getId());
 
 							if (app != null) {
 								if (app.getActive()) {
-									if (signer.isValidSignature(request, app.getSecret())) {
-										SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
+									if (!(app.getReadOnly() && isWriteRequest(request))) {
+										if (signer.isValidSignature(request, app.getSecret())) {
+											SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
+										} else {
+											RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+													"Request signature is invalid.");
+											return;
+										}
 									} else {
 										RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-												"Request signature is invalid.");
+												"App is in read-only mode.");
 										return;
 									}
 								} else {
-									RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN, "App not active.");
+									RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+											"App not active.");
 									return;
 								}
 							} else {
-								RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND, "App not found.");
+								RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND,
+										"App not found.");
 								return;
 							}
 						} else {
-							RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Request has expired.");
+							RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
+									"Request has expired.");
 							return;
 						}
 					} else {
@@ -125,7 +133,8 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 						return;
 					}
 				} else {
-					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Credentials are missing.");
+					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
+							"Credentials are missing.");
 					return;
 				}
 			}
@@ -201,6 +210,14 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		@Override
 		public void setReadListener(ReadListener rl) {
 		}
+	}
+
+	private boolean isWriteRequest(HttpServletRequest req) {
+		return req != null &&
+				("POST".equals(req.getMethod()) ||
+				"PUT".equals(req.getMethod()) ||
+				"DELETE".equals(req.getMethod()) ||
+				"PATCH".equals(req.getMethod()));
 	}
 
 }

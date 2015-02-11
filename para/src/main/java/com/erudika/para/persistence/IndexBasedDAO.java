@@ -23,7 +23,7 @@ import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -161,7 +161,7 @@ public class IndexBasedDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> List<P> readPage(String appid, Pager pager) {
-		return new ArrayList<P>();
+		return Collections.emptyList();
 	}
 
 	@Override

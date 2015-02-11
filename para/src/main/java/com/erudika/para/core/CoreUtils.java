@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -175,7 +176,7 @@ public final class CoreUtils {
 	 */
 	public static List<Linker> getLinks(ParaObject obj, String type2, Pager... pager) {
 		if (type2 == null) {
-			return new ArrayList<Linker>();
+			return Collections.emptyList();
 		}
 		Linker link = new Linker(obj.getType(), type2, null, null);
 		String idField = link.getIdFieldNameFor(obj.getType());
@@ -295,7 +296,7 @@ public final class CoreUtils {
 	@SuppressWarnings("unchecked")
 	public static <P extends ParaObject> List<P> getLinkedObjects(ParaObject obj, String type2, Pager... pager) {
 		List<Linker> links = getLinks(obj, type2, pager);
-		ArrayList<String> keys = new ArrayList<String>();
+		LinkedList<String> keys = new LinkedList<String>();
 		for (Linker link : links) {
 			if (link.isFirst(type2)) {
 				keys.add(link.getId1());

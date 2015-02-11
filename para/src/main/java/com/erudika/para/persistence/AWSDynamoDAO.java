@@ -287,7 +287,7 @@ public class AWSDynamoDAO implements DAO {
 			return;
 		}
 
-		List<WriteRequest> reqs = new ArrayList<WriteRequest>();
+		List<WriteRequest> reqs = new ArrayList<WriteRequest>(objects.size());
 		for (ParaObject object : objects) {
 			if (object != null) {
 				reqs.add(new WriteRequest().withDeleteRequest(new DeleteRequest().
@@ -354,7 +354,7 @@ public class AWSDynamoDAO implements DAO {
 			return;
 		}
 
-		List<WriteRequest> reqs = new ArrayList<WriteRequest>();
+		List<WriteRequest> reqs = new ArrayList<WriteRequest>(objects.size());
 		int batchSteps = 1;
 		if ((objects.size() > MAX_ITEMS_PER_BATCH)) {
 			batchSteps = (objects.size() / MAX_ITEMS_PER_BATCH) +

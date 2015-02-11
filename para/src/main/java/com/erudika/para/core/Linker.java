@@ -166,14 +166,6 @@ public final class Linker implements ParaObject {
 		this.metadata = metadata;
 	}
 
-//	public void delete() {
-//		ArrayList<String> keys = new ArrayList<String>();
-//		for (ParaObject link : search.findTerms(getType(), null, null, "id1", id1, "id2", id2)) {
-//			keys.add(link.getId());
-//		}
-//		AWSDynamoDAO.getInstance().deleteAll(keys);
-//	}
-
 	@Override
 	public boolean exists() {
 		return getDao().read(getAppid(), getId()) != null;

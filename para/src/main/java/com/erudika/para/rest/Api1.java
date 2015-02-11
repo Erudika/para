@@ -129,7 +129,7 @@ public class Api1 extends ResourceConfig {
 
 		// util functions API
 		Resource.Builder utilsRes = Resource.builder("utils/{method}");
-		utilsRes.addMethod(GET).produces(MediaType.TEXT_PLAIN).handledBy(utilsHandler());
+		utilsRes.addMethod(GET).produces(JSON).handledBy(utilsHandler());
 		registerResources(utilsRes.build());
 
 		// register custom resources

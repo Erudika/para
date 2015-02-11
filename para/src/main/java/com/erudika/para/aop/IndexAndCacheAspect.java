@@ -206,7 +206,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					List<ParaObject> deleteUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
 					removeSpecialClasses(deleteUs);
 					if (deleteUs != null && !deleteUs.isEmpty()) {
-						List<String> list = new ArrayList<String>();
+						List<String> list = new ArrayList<String>(deleteUs.size());
 						for (ParaObject paraObject : deleteUs) {
 							list.add(paraObject.getId());
 						}

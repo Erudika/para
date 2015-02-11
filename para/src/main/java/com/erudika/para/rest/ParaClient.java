@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -175,7 +176,7 @@ public final class ParaClient {
 	private <P extends ParaObject> List<P> getItemsFromList(List<?> result) {
 		if (result != null && !result.isEmpty()) {
 			// this isn't very efficient but there's no way to know what type of objects we're reading
-			ArrayList<P> objects = new ArrayList<P>();
+			ArrayList<P> objects = new ArrayList<P>(result.size());
 			for (Object map : result) {
 				P p = Utils.setAnnotatedFields((Map<String, Object>) map);
 				if (p != null) {
@@ -511,7 +512,7 @@ public final class ParaClient {
 		}
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
 		params.putSingle("matchall", Boolean.toString(matchAll));
-		ArrayList<String> list = new ArrayList<String>();
+		LinkedList<String> list = new LinkedList<String>();
 		for (Map.Entry<String, ? extends Object> term : terms.entrySet()) {
 			String key = term.getKey();
 			Object value = term.getValue();
@@ -569,7 +570,7 @@ public final class ParaClient {
 			return 0L;
 		}
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
-		ArrayList<String> list = new ArrayList<String>();
+		LinkedList<String> list = new LinkedList<String>();
 		for (Map.Entry<String, ? extends Object> term : terms.entrySet()) {
 			String key = term.getKey();
 			Object value = term.getValue();
@@ -593,7 +594,7 @@ public final class ParaClient {
 			String qType = StringUtils.isBlank(queryType) ? "" : "/".concat(queryType);
 			return getEntity(invokeGet("search".concat(qType), params), Map.class);
 		} else {
-			map.put("items", new ArrayList<P>());
+			map.put("items", Collections.emptyList());
 			map.put("totalHits", 0);
 		}
 		return map;
@@ -632,9 +633,8 @@ public final class ParaClient {
 	 */
 	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> getLinkedObjects(ParaObject obj, String type2, Pager... pager) {
-		ArrayList<P> list = new ArrayList<P>();
 		if (obj == null || obj.getId() == null || type2 == null) {
-			return list;
+			return Collections.emptyList();
 		}
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
 		return getItems((Map<String, Object>) getEntity(invokeGet(url, null), Map.class), pager);
@@ -743,9 +743,8 @@ public final class ParaClient {
 	 */
 	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, Pager... pager) {
-		ArrayList<P> list = new ArrayList<P>();
 		if (obj == null || obj.getId() == null || type2 == null) {
-			return list;
+			return Collections.emptyList();
 		}
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
 		params.putSingle("childrenonly", "true");
@@ -766,9 +765,8 @@ public final class ParaClient {
 	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, String field, String term,
 			Pager... pager) {
-		ArrayList<P> list = new ArrayList<P>();
 		if (obj == null || obj.getId() == null || type2 == null) {
-			return list;
+			return Collections.emptyList();
 		}
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
 		params.putSingle("childrenonly", "true");

@@ -18,7 +18,6 @@
 package com.erudika.para.aop;
 
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.persistence.DAO;

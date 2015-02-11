@@ -25,7 +25,9 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -196,7 +198,7 @@ public class ElasticSearch implements Search {
 	@Override
 	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> findByIds(String appid, List<String> ids) {
-		List<P> list = new ArrayList<P>();
+		List<P> list = new LinkedList<P>();
 		if (ids == null || ids.isEmpty()) {
 			return list;
 		}
@@ -224,7 +226,7 @@ public class ElasticSearch implements Search {
 	public <P extends ParaObject> List<P> findTermInList(String appid, String type,
 			String field, List<?> terms, Pager... pager) {
 		if (StringUtils.isBlank(field) || terms == null) {
-			return new ArrayList<P>();
+			return Collections.emptyList();
 		}
 		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(),
 				FilterBuilders.termsFilter(field, terms));
@@ -235,7 +237,7 @@ public class ElasticSearch implements Search {
 	public <P extends ParaObject> List<P> findPrefix(String appid, String type,
 			String field, String prefix, Pager... pager) {
 		if (StringUtils.isBlank(field) || StringUtils.isBlank(prefix)) {
-			return new ArrayList<P>();
+			return Collections.emptyList();
 		}
 		return searchQuery(appid, type, QueryBuilders.prefixQuery(field, prefix), pager);
 	}
@@ -244,7 +246,7 @@ public class ElasticSearch implements Search {
 	public <P extends ParaObject> List<P> findQuery(String appid, String type,
 			String query, Pager... pager) {
 		if (StringUtils.isBlank(query)) {
-			return new ArrayList<P>();
+			return Collections.emptyList();
 		}
 		QueryBuilder qb = QueryBuilders.queryString(query).allowLeadingWildcard(false);
 		return searchQuery(appid, type, qb, pager);
@@ -254,7 +256,7 @@ public class ElasticSearch implements Search {
 	public <P extends ParaObject> List<P> findWildcard(String appid, String type,
 			String field, String wildcard, Pager... pager) {
 		if (StringUtils.isBlank(field) || StringUtils.isBlank(wildcard)) {
-			return new ArrayList<P>();
+			return Collections.emptyList();
 		}
 		QueryBuilder qb = QueryBuilders.wildcardQuery(field, wildcard);
 		return searchQuery(appid, type, qb, pager);
@@ -264,7 +266,7 @@ public class ElasticSearch implements Search {
 	public <P extends ParaObject> List<P> findTagged(String appid, String type,
 			String[] tags, Pager... pager) {
 		if (tags == null || tags.length == 0 || StringUtils.isBlank(appid)) {
-			return new ArrayList<P>();
+			return Collections.emptyList();
 		}
 
 		BoolFilterBuilder tagFilter = FilterBuilders.boolFilter();
@@ -282,13 +284,13 @@ public class ElasticSearch implements Search {
 	public <P extends ParaObject> List<P> findTerms(String appid, String type,
 			Map<String, ?> terms, boolean mustMatchAll, Pager... pager) {
 		if (terms == null || terms.isEmpty()) {
-			return new ArrayList<P>();
+			return Collections.emptyList();
 		}
 
 		FilterBuilder fb = getTermsFilter(terms, mustMatchAll);
 
 		if (fb == null) {
-			return new ArrayList<P>();
+			return Collections.emptyList();
 		} else {
 			QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), fb);
 			return searchQuery(appid, type, qb, pager);
@@ -299,7 +301,7 @@ public class ElasticSearch implements Search {
 	public <P extends ParaObject> List<P> findSimilar(String appid, String type, String filterKey,
 			String[] fields, String liketext, Pager... pager) {
 		if (StringUtils.isBlank(liketext)) {
-			return new ArrayList<P>();
+			return Collections.emptyList();
 		}
 		QueryBuilder qb;
 		FilterBuilder fb;
@@ -320,7 +322,7 @@ public class ElasticSearch implements Search {
 	@Override
 	public <P extends ParaObject> List<P> findTags(String appid, String keyword, Pager... pager) {
 		if (StringUtils.isBlank(keyword)) {
-			return new ArrayList<P>();
+			return Collections.emptyList();
 		}
 		QueryBuilder qb = QueryBuilders.wildcardQuery("tag", keyword.concat("*"));
 //		SortBuilder sb = SortBuilders.fieldSort("count").order(SortOrder.DESC);
@@ -332,7 +334,7 @@ public class ElasticSearch implements Search {
 		String query, int radius, double lat, double lng, Pager... pager) {
 
 		if (StringUtils.isBlank(type) || StringUtils.isBlank(appid)) {
-			return new ArrayList<P>();
+			return Collections.emptyList();
 		}
 		if (StringUtils.isBlank(query)) {
 			query = "*";
@@ -345,7 +347,7 @@ public class ElasticSearch implements Search {
 		SearchHits hits1 = searchQueryRaw(appid, Utils.type(Address.class), qb1, pager);
 
 		if (hits1 == null) {
-			return new ArrayList<P>();
+			return Collections.emptyList();
 		}
 
 		// then find their parent objects
@@ -377,12 +379,11 @@ public class ElasticSearch implements Search {
 	 * @return the list of object found
 	 */
 	private <P extends ParaObject> List<P> searchQuery(String appid, SearchHits hits) {
-		ArrayList<P> results = new ArrayList<P>();
-		ArrayList<String> keys = new ArrayList<String>();
-
 		if (hits == null) {
-			return new ArrayList<P>();
+			return Collections.emptyList();
 		}
+		ArrayList<P> results = new ArrayList<P>(hits.getHits().length);
+		ArrayList<String> keys = new ArrayList<String>(hits.getHits().length);
 		try {
 			for (SearchHit hit : hits) {
 				keys.add(hit.getId());

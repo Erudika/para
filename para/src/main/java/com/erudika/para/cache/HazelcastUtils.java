@@ -62,6 +62,7 @@ public final class HazelcastUtils {
 			cfg.addMapConfig(mapcfg);
 			cfg.setProperty("hazelcast.jmx", Boolean.toString(isJMXOn()));
 			cfg.setProperty("hazelcast.logging.type", "slf4j");
+			cfg.setProperty("hazelcast.health.monitoring.level", "OFF");
 			if (Config.IN_PRODUCTION) {
 				cfg.setNetworkConfig(new NetworkConfig().setJoin(new JoinConfig().
 					setMulticastConfig(new MulticastConfig().setEnabled(false)).

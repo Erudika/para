@@ -27,9 +27,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import javax.validation.ConstraintViolation;
@@ -102,7 +102,7 @@ public final class ValidationUtils {
 		if (content == null) {
 			return new String[]{"Object cannot be null."};
 		}
-		ArrayList<String> list = new ArrayList<String>();
+		LinkedList<String> list = new LinkedList<String>();
 		try {
 			for (ConstraintViolation<ParaObject> constraintViolation : getValidator().validate(content)) {
 				String prop = "'".concat(constraintViolation.getPropertyPath().toString()).concat("'");
@@ -132,7 +132,7 @@ public final class ValidationUtils {
 				Map<String, Map<String, Map<String, Object>>> fieldsMap
 						= app.getValidationConstraints().get(type);
 				if (fieldsMap != null && !fieldsMap.isEmpty()) {
-					ArrayList<String> errors = new ArrayList<String>();
+					LinkedList<String> errors = new LinkedList<String>();
 					for (Map.Entry<String, Map<String, Map<String, Object>>> e : fieldsMap.entrySet()) {
 						String field = e.getKey();
 						Object actualValue = ((Sysprop) content).getProperty(field);

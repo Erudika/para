@@ -48,9 +48,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.text.DateFormatSymbols;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -835,7 +835,7 @@ public final class Utils {
 	 * @return a list of places
 	 */
 	public static List<Toponym> readLocationForKeyword(String q, Style style) {
-		List<Toponym> list = new ArrayList<Toponym>();
+		List<Toponym> list = new LinkedList<Toponym>();
 		ToponymSearchResult locationSearchResult;
 		ToponymSearchCriteria searchLocation = new ToponymSearchCriteria();
 		searchLocation.setMaxRows(7);
@@ -1199,7 +1199,7 @@ public final class Utils {
 	 * @return a list of fields including those of the parent classes excluding the Object class.
 	 */
 	public static List<Field> getAllDeclaredFields(Class<? extends ParaObject> clazz) {
-		ArrayList<Field> fields = new ArrayList<Field>();
+		LinkedList<Field> fields = new LinkedList<Field>();
 		if (clazz == null) {
 			return fields;
 		}
