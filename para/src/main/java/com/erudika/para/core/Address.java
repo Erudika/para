@@ -49,8 +49,6 @@ public class Address implements ParaObject {
 	@Stored private String name;
 	@Stored private List<String> tags;
 	@Stored private Integer votes;
-	@Stored @Locked private String plural;
-	@Stored @Locked private String objectURI;
 
 	@Stored @NotBlank @Size(min = 3, max = 255) private String address;
 	@Stored @NotBlank @Size(min = 2, max = 255) private String country;

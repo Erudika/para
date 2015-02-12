@@ -49,8 +49,6 @@ public class Translation implements ParaObject {
 	@Stored private String name;
 	@Stored private List<String> tags;
 	@Stored private Integer votes;
-	@Stored @Locked private String plural;
-	@Stored @Locked private String objectURI;
 
 	@Stored @Locked @NotBlank private String locale;	// actually a language code
 	@Stored @Locked @NotBlank private String thekey;

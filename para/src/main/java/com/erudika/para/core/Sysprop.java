@@ -51,8 +51,6 @@ public class Sysprop implements ParaObject {
 	@Stored private String name;
 	@Stored private List<String> tags;
 	@Stored private Integer votes;
-	@Stored @Locked private String plural;
-	@Stored @Locked private String objectURI;
 
 	@Stored private Map<String, Object> properties;
 

@@ -70,8 +70,6 @@ public class App implements ParaObject {
 	@Stored private String name;
 	@Stored private List<String> tags;
 	@Stored private Integer votes;
-	@Stored @Locked private String plural;
-	@Stored @Locked private String objectURI;
 
 	@Stored @Locked private boolean shared;
 	@Stored @Locked @NotBlank private String secret;

@@ -57,8 +57,6 @@ public class User implements ParaObject, UserDetails {
 	@Stored private String name;
 	@Stored private List<String> tags;
 	@Stored private Integer votes;
-	@Stored @Locked private String plural;
-	@Stored @Locked private String objectURI;
 
 	@Stored @NotBlank private String identifier;
 	@Stored @Locked @NotBlank private String groups;

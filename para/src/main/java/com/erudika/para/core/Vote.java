@@ -51,8 +51,6 @@ public class Vote implements ParaObject {
 	@Stored private String name;
 	@Stored private List<String> tags;
 	@Stored private Integer votes;
-	@Stored @Locked private String plural;
-	@Stored @Locked private String objectURI;
 
 	@Stored @NotBlank private String value;
 	@Stored @NotNull private Long expiresAfter;

@@ -46,8 +46,6 @@ public final class Linker implements ParaObject {
 	@Stored private String name;
 	@Stored private List<String> tags;
 	@Stored private Integer votes;
-	@Stored @Locked private String plural;
-	@Stored @Locked private String objectURI;
 
 	@Stored @Locked @NotBlank private String id1;
 	@Stored @Locked @NotBlank private String id2;
