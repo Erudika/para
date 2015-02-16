@@ -83,14 +83,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 
 /**
- * The core utility class.
+ * Misc. Para utilities.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 @SuppressWarnings("unchecked")
 public final class Utils {
 
 	private static final Logger logger = LoggerFactory.getLogger(Utils.class);
-	private static final ExecutorService exec = Executors.newFixedThreadPool(2);
+	private static final ExecutorService exec = Executors.newFixedThreadPool(Config.EXECUTOR_THREADS);
 	private static final ObjectMapper jsonMapper = new ObjectMapper();
 	private static final Pattern emailz = Pattern.compile(Email.EMAIL_PATTERN);
 	private static final ObjectReader jsonReader;

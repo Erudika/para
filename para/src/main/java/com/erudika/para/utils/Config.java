@@ -195,6 +195,10 @@ public final class Config {
 	 */
 	public static final String WORKER_ID = getConfigParam("worker_id", "1");
 	/**
+	 * The number of threads to use for the ExecutorService thread pool. Default is 2.
+	 */
+	public static final int EXECUTOR_THREADS = getConfigParamUnwrapped("executor_threads", 2);
+	/**
 	 * The name of the default application.
 	 */
 	public static final String APP_NAME = getConfigParam("app_name", PARA);
