@@ -105,10 +105,10 @@ public class Pager {
 
 	/**
 	 * The name of the field used when sorting the results.
-	 * @return the name of the field
+	 * @return the name of the field or "timestamp" as the default sorting
 	 */
 	public String getSortby() {
-		return sortby;
+		return (sortby == null) ? Config._TIMESTAMP : sortby;
 	}
 
 	/**
