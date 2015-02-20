@@ -21,10 +21,8 @@ import com.erudika.para.Para;
 import com.erudika.para.cache.Cache;
 import com.erudika.para.cache.MockCache;
 import com.erudika.para.core.App;
-import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
-import com.erudika.para.core.Votable;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
 import static com.erudika.para.rest.RestUtils.*;
@@ -37,9 +35,7 @@ import com.google.inject.Module;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 import org.junit.AfterClass;
@@ -111,16 +107,6 @@ public class RestUtilsTest {
 	@Test
 	public void testGetCoreTypes() {
 		assertEquals("user", getCoreTypes().get("users"));
-	}
-
-	@Test
-	public void testScanForDomainClasses() {
-		Set<Class<? extends ParaObject>> set = new HashSet<Class<? extends ParaObject>>();
-		scanForDomainClasses(set);
-		assertFalse(set.isEmpty());
-		assertTrue(set.contains(Tag.class));
-		assertFalse(set.contains(Votable.class));
-		assertFalse(set.contains(ParaObject.class));
 	}
 
 	@Test

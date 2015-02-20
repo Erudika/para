@@ -34,17 +34,14 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.HttpMethod;
@@ -65,12 +62,8 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.util.ClassUtils;
 
 /**
  * A few helper methods for handling REST requests and responses.
@@ -84,7 +77,6 @@ public final class RestUtils {
 	private static final Client apiClient;
 	// maps plural to singular type definitions
 	private static final Map<String, String> coreTypes = new DualHashBidiMap();
-	private static final CoreClassScanner scanner = new CoreClassScanner();
 	private static final DateTimeFormatter timeFormatter = DateTimeFormat.
 			forPattern("yyyyMMdd'T'HHmmss'Z'").withZoneUTC();
 
@@ -204,10 +196,8 @@ public final class RestUtils {
 	 */
 	public static Map<String, String> getCoreTypes() {
 		if (coreTypes.isEmpty()) {
-			Set<Class<? extends ParaObject>> coreClasses = new HashSet<Class<? extends ParaObject>>();
-			scanForDomainClasses(coreClasses);
 			try {
-				for (Class<? extends ParaObject> clazz : coreClasses) {
+				for (Class<? extends ParaObject> clazz : Utils.getCoreClassesMap().values()) {
 					ParaObject p = clazz.newInstance();
 					coreTypes.put(p.getPlural(), p.getType());
 				}
@@ -699,62 +689,6 @@ public final class RestUtils {
 			return Response.ok(app.getValidationConstraints().get(type)).build();
 		} else {
 			return getStatusResponse(Response.Status.NOT_FOUND);
-		}
-	}
-
-	/////////////////////////////////////////////
-	//				MISC METHODS
-	/////////////////////////////////////////////
-
-	/**
-	 * This scans a package for Para objects and adds them to the set.
-	 * @param classes a set
-	 */
-	static void scanForDomainClasses(Set<Class<? extends ParaObject>> classes) {
-		if (classes == null) {
-			return;
-		}
-		try {
-			Set<Class<? extends ParaObject>> s = scanner.getComponentClasses(ParaObject.class.getPackage().getName());
-			if (!Config.CORE_PACKAGE_NAME.isEmpty()) {
-				Set<Class<? extends ParaObject>> s2 = scanner.getComponentClasses(Config.CORE_PACKAGE_NAME);
-				s.addAll(s2);
-			}
-
-			for (Class<? extends ParaObject> coreClass : s) {
-				boolean isAbstract = Modifier.isAbstract(coreClass.getModifiers());
-				boolean isInterface = Modifier.isInterface(coreClass.getModifiers());
-				boolean isFinal = Modifier.isFinal(coreClass.getModifiers());
-				boolean isCoreObject = ParaObject.class.isAssignableFrom(coreClass);
-				if (isCoreObject && !isAbstract && !isInterface && !isFinal) {
-					classes.add(coreClass);
-				}
-			}
-			logger.debug("Found {} ParaObject classes: {}", classes.size(), classes);
-		} catch (Exception ex) {
-			logger.error(null, ex);
-		}
-	}
-
-	private static class CoreClassScanner extends ClassPathScanningCandidateComponentProvider {
-		public CoreClassScanner() {
-			super(false);
-			addIncludeFilter(new AssignableTypeFilter(ParaObject.class));
-		}
-
-		public final Set<Class<? extends ParaObject>> getComponentClasses(String basePackage) {
-			basePackage = (basePackage == null) ? "" : basePackage;
-			Set<Class<? extends ParaObject>> classes = new HashSet<Class<? extends ParaObject>>();
-			for (BeanDefinition candidate : findCandidateComponents(basePackage)) {
-				try {
-					Class<? extends ParaObject> cls = (Class<? extends ParaObject>) ClassUtils.
-							resolveClassName(candidate.getBeanClassName(), ClassUtils.getDefaultClassLoader());
-					classes.add(cls);
-				} catch (Exception ex) {
-					logger.error(null, ex);
-				}
-			}
-			return classes;
 		}
 	}
 

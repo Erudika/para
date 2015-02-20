@@ -22,14 +22,17 @@ import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
+import com.erudika.para.core.Votable;
 import static com.erudika.para.utils.Utils.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import static org.junit.Assert.*;
 import org.junit.Test;
@@ -410,6 +413,16 @@ public class UtilsTest {
 		assertEquals(Sysprop.class, toClass("test123"));
 		assertEquals(User.class, toClass(Utils.type(User.class)));
 		assertEquals(Tag.class, toClass(Utils.type(Tag.class)));
+	}
+
+	@Test
+	public void testGetCoreClassesMap() {
+		Set<Class<? extends ParaObject>> set = new HashSet<Class<? extends ParaObject>>();
+		set.addAll(getCoreClassesMap().values());
+		assertFalse(set.isEmpty());
+		assertTrue(set.contains(Tag.class));
+		assertFalse(set.contains(Votable.class));
+		assertFalse(set.contains(ParaObject.class));
 	}
 
 	@Test

@@ -49,13 +49,16 @@ import java.security.SecureRandom;
 import java.text.DateFormatSymbols;
 import java.text.MessageFormat;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
@@ -65,6 +68,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -80,7 +84,11 @@ import org.geonames.WebService;
 import org.jsoup.Jsoup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.security.crypto.bcrypt.BCrypt;
+import org.springframework.util.ClassUtils;
 
 /**
  * Misc. Para utilities.
@@ -90,6 +98,9 @@ import org.springframework.security.crypto.bcrypt.BCrypt;
 public final class Utils {
 
 	private static final Logger logger = LoggerFactory.getLogger(Utils.class);
+	// maps lowercase simple names to class objects
+	private static final Map<String, Class<? extends ParaObject>> coreClasses = new DualHashBidiMap();
+	private static final CoreClassScanner scanner = new CoreClassScanner();
 	private static final ExecutorService exec = Executors.newFixedThreadPool(Config.EXECUTOR_THREADS);
 	private static final ObjectMapper jsonMapper = new ObjectMapper();
 	private static final Pattern emailz = Pattern.compile(Email.EMAIL_PATTERN);
@@ -1087,40 +1098,81 @@ public final class Utils {
 	 * @see java.lang.Class#forName(java.lang.String)
 	 */
 	public static Class<? extends ParaObject> toClass(String type) {
-		return toClass(type, null, Sysprop.class);
+		return toClass(type, Sysprop.class);
 	}
 
 	/**
 	 * Converts a class name to a real {@link com.erudika.para.core.ParaObject} subclass.
 	 * Defaults to {@link com.erudika.para.core.Sysprop} if the class was not found in the core package path.
 	 * @param type the simple name of a class
-	 * @param scanPackagePath the package path of the class
 	 * @param defaultClass returns this type if the requested class was not found on the classpath.
 	 * @return the Class object. Returns null if defaultClass is null.
 	 * @see java.lang.Class#forName(java.lang.String)
 	 * @see com.erudika.para.core.Sysprop
 	 */
-	public static Class<? extends ParaObject> toClass(String type, String scanPackagePath,
-			Class<? extends ParaObject> defaultClass) {
-		String packagename = Config.CORE_PACKAGE_NAME;
-		String corepackage = StringUtils.isBlank(scanPackagePath) ? packagename : scanPackagePath;
+	public static Class<? extends ParaObject> toClass(String type, Class<? extends ParaObject> defaultClass) {
 		Class<? extends ParaObject> returnClass = defaultClass;
-		if (StringUtils.isBlank(type)) {
+		if (StringUtils.isBlank(type) || !getCoreClassesMap().containsKey(type)) {
 			return returnClass;
 		}
-		try {
-			returnClass = (Class<? extends ParaObject>) Class.forName(ParaObject.class.getPackage().getName().
-					concat(".").concat(StringUtils.capitalize(type)));
-		} catch (ClassNotFoundException ex) {
+		return getCoreClassesMap().get(type);
+	}
+
+	/**
+	 * Searches through the Para core package and {@code Config.CORE_PACKAGE_NAME} package
+	 * for {@link ParaObject} subclasses and adds their names them to the map.
+	 * @return a map of simple class names (lowercase) to class objects
+	 */
+	public static Map<String, Class<? extends ParaObject>> getCoreClassesMap() {
+		if (coreClasses.isEmpty()) {
 			try {
-				returnClass = (Class<? extends ParaObject>) Class.forName(corepackage.concat(".").
-						concat(StringUtils.capitalize(type)));
-			} catch (ClassNotFoundException ex1) {
-				// unknown type - fall back to Sysprop
-				returnClass = defaultClass;
+				Set<Class<? extends ParaObject>> s = scanner.getComponentClasses(ParaObject.class.getPackage().getName());
+				if (!Config.CORE_PACKAGE_NAME.isEmpty()) {
+					Set<Class<? extends ParaObject>> s2 = scanner.getComponentClasses(Config.CORE_PACKAGE_NAME);
+					s.addAll(s2);
+				}
+
+				for (Class<? extends ParaObject> coreClass : s) {
+					boolean isAbstract = Modifier.isAbstract(coreClass.getModifiers());
+					boolean isInterface = Modifier.isInterface(coreClass.getModifiers());
+					boolean isFinal = Modifier.isFinal(coreClass.getModifiers());
+					boolean isCoreObject = ParaObject.class.isAssignableFrom(coreClass);
+					if (isCoreObject && !isAbstract && !isInterface && !isFinal) {
+						coreClasses.put(coreClass.getSimpleName().toLowerCase(), coreClass);
+					}
+				}
+				logger.debug("Found {} ParaObject classes: {}", coreClasses.size(), coreClasses);
+			} catch (Exception ex) {
+				logger.error(null, ex);
 			}
 		}
-		return returnClass;
+		return Collections.unmodifiableMap(coreClasses);
+	}
+
+	/**
+	 * Helper class that lists all classes contained in a given package.
+	 */
+	private static class CoreClassScanner extends ClassPathScanningCandidateComponentProvider {
+
+		public CoreClassScanner() {
+			super(false);
+			addIncludeFilter(new AssignableTypeFilter(ParaObject.class));
+		}
+
+		public final Set<Class<? extends ParaObject>> getComponentClasses(String basePackage) {
+			basePackage = (basePackage == null) ? "" : basePackage;
+			Set<Class<? extends ParaObject>> classes = new HashSet<Class<? extends ParaObject>>();
+			for (BeanDefinition candidate : findCandidateComponents(basePackage)) {
+				try {
+					Class<? extends ParaObject> cls = (Class<? extends ParaObject>) ClassUtils.
+							resolveClassName(candidate.getBeanClassName(), ClassUtils.getDefaultClassLoader());
+					classes.add(cls);
+				} catch (Exception ex) {
+					logger.error(null, ex);
+				}
+			}
+			return classes;
+		}
 	}
 
 	/**
