@@ -1135,9 +1135,8 @@ public final class Utils {
 				for (Class<? extends ParaObject> coreClass : s) {
 					boolean isAbstract = Modifier.isAbstract(coreClass.getModifiers());
 					boolean isInterface = Modifier.isInterface(coreClass.getModifiers());
-					boolean isFinal = Modifier.isFinal(coreClass.getModifiers());
 					boolean isCoreObject = ParaObject.class.isAssignableFrom(coreClass);
-					if (isCoreObject && !isAbstract && !isInterface && !isFinal) {
+					if (isCoreObject && !isAbstract && !isInterface) {
 						coreClasses.put(coreClass.getSimpleName().toLowerCase(), coreClass);
 					}
 				}
