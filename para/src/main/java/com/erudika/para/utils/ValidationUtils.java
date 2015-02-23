@@ -246,7 +246,7 @@ public final class ValidationUtils {
 			for (String type : RestUtils.getAllTypes(app).values()) {
 				Map<?, ?> constraintsNode = getValidationConstraints(app, type);
 				if (constraintsNode.size() > 0) {
-					parentNode.putPOJO(StringUtils.capitalize(type), constraintsNode);
+					parentNode.putPOJO(type, constraintsNode);
 				}
 			}
 			json = Utils.getJsonWriter().writeValueAsString(parentNode);
