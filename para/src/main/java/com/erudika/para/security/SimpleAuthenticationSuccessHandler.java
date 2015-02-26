@@ -17,6 +17,7 @@
  */
 package com.erudika.para.security;
 
+import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
@@ -24,6 +25,7 @@ import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 
@@ -36,6 +38,13 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 	@Override
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 			Authentication authentication) throws IOException, ServletException {
+		if (authentication.getPrincipal() != null && authentication.getPrincipal() instanceof User) {
+			User u = (User) authentication.getPrincipal();
+			if (!StringUtils.equals(request.getRemoteAddr(), u.getLastIp())) {
+				u.setLastIp(request.getRemoteAddr());
+				u.update();
+			}
+		}
 		if (isRestRequest(request)) {
 			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NO_CONTENT, "Authentication success.");
 		} else {

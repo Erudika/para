@@ -64,6 +64,7 @@ public class User implements ParaObject, UserDetails {
 	@Stored @NotBlank @Email private String email;
 	@Stored private String currency;
 	@Stored private String picture;
+	@Stored private String lastIp;
 
 	private transient String password;
 	private transient DAO dao;
@@ -89,6 +90,23 @@ public class User implements ParaObject, UserDetails {
 	@Override
 	public ParaObject getParent() {
 		return this;
+	}
+
+	/**
+	 *	The IP address of the user recorded on last login.
+	 * @return the IP or null
+	 */
+	@JsonIgnore
+	public String getLastIp() {
+		return lastIp;
+	}
+
+	/**
+	 * Sets the IP of the user.
+	 * @param lastIp last known IP address
+	 */
+	public void setLastIp(String lastIp) {
+		this.lastIp = lastIp;
 	}
 
 	/**
