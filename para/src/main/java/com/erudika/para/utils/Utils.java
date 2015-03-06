@@ -478,7 +478,7 @@ public final class Utils {
 	 */
 	public static String formatDate(Long timestamp, String format, Locale loc) {
 		if (StringUtils.isBlank(format)) {
-			format = DateFormatUtils.ISO_DATETIME_FORMAT.getPattern();
+			format = DateFormatUtils.ISO_DATE_FORMAT.getPattern();
 		}
 		if (timestamp == null) {
 			timestamp = timestamp();
