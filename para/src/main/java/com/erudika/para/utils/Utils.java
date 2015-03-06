@@ -490,10 +490,10 @@ public final class Utils {
 	}
 
 	/**
-	 * Formats a date in a specific format.
+	 * Formats the date for today, in a specific format.
 	 * @param format the date format
 	 * @param loc the locale instance
-	 * @return a formatted date
+	 * @return today's date formatted
 	 */
 	public static String formatDate(String format, Locale loc) {
 		return formatDate(timestamp(), format, loc);
@@ -508,7 +508,7 @@ public final class Utils {
 	}
 
 	/**
-	 * Java time
+	 * Java timestamp
 	 * @return {@link java.lang.System#currentTimeMillis()}
 	 */
 	public static long timestamp() {
