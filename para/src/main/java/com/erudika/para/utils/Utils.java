@@ -39,6 +39,8 @@ import java.io.Writer;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -49,6 +51,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.text.DateFormatSymbols;
 import java.text.MessageFormat;
+import java.text.NumberFormat;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
@@ -102,6 +105,7 @@ public final class Utils {
 	private static final CoreClassScanner scanner = new CoreClassScanner();
 	private static final ObjectMapper jsonMapper = new ObjectMapper();
 	private static final Pattern emailz = Pattern.compile(Email.EMAIL_PATTERN);
+	private static final NumberFormat numberFormat = NumberFormat.getInstance();
 	private static final ObjectReader jsonReader;
 	private static final ObjectWriter jsonWriter;
 	private static final MustacheFactory mustache;
@@ -135,6 +139,8 @@ public final class Utils {
 		jsonReader = jsonMapper.reader();
 		jsonWriter = jsonMapper.writer();
 		mustache = new DefaultMustacheFactory();
+		numberFormat.setMinimumFractionDigits(2);
+		numberFormat.setMaximumFractionDigits(2);
 	}
 
 	private Utils() { }
@@ -537,6 +543,34 @@ public final class Utils {
 	 */
 	public static int round(float d) {
 		return Math.round(d);
+	}
+
+	/**
+	 * Returns the price with two fractional digits at the end
+	 * @param price a price
+	 * @return $###.##
+	 */
+	public static String formatPrice(double price) {
+		return numberFormat.format(price);
+	}
+
+	/**
+	 * Round up a double using the "half up" method
+	 * @param d a double
+	 * @return a double
+	 */
+	public static double roundHalfUp(double d) {
+		return roundHalfUp(d, 2);
+	}
+
+	/**
+	 * Round up a double using the "half up" method
+	 * @param d a double
+	 * @param scale the scale
+	 * @return a double
+	 */
+	public static double roundHalfUp(double d, int scale) {
+		return BigDecimal.valueOf(d).setScale(scale, RoundingMode.HALF_UP).doubleValue();
 	}
 
 	/**
