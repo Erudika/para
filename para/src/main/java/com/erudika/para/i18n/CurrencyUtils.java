@@ -86,7 +86,7 @@ public final class CurrencyUtils {
 			Locale locale = CURRENCY_TO_LOCALE_MAP.get(cur);
 			NumberFormat f = (locale == null) ? NumberFormat.getCurrencyInstance(Locale.US) :
 					NumberFormat.getCurrencyInstance(locale);
-
+			f.setMinimumFractionDigits(2);
 			formatted = f.format(price);
 		}
 		return formatted;
