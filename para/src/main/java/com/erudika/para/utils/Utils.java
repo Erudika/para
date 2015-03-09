@@ -17,6 +17,7 @@
  */
 package com.erudika.para.utils;
 
+import com.erudika.para.Para;
 import com.erudika.para.annotations.Email;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
@@ -59,8 +60,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -101,7 +100,6 @@ public final class Utils {
 	// maps lowercase simple names to class objects
 	private static final Map<String, Class<? extends ParaObject>> coreClasses = new DualHashBidiMap();
 	private static final CoreClassScanner scanner = new CoreClassScanner();
-	private static final ExecutorService exec = Executors.newFixedThreadPool(Config.EXECUTOR_THREADS);
 	private static final ObjectMapper jsonMapper = new ObjectMapper();
 	private static final Pattern emailz = Pattern.compile(Email.EMAIL_PATTERN);
 	private static final ObjectReader jsonReader;
@@ -887,12 +885,12 @@ public final class Utils {
 	}
 
 	/**
-	 * Executes a {@link java.util.concurrent.Callable} asynchronously
+	 * Executes a {@link java.lang.Runnable} asynchronously
 	 * @param runnable a task
 	 */
 	public static void asyncExecute(Runnable runnable) {
 		try {
-			exec.execute(runnable);
+			Para.getExecutorService().execute(runnable);
 		} catch (Exception ex) {
 			logger.warn(null, ex);
 		}

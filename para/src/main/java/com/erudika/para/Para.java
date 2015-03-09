@@ -44,6 +44,9 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -98,6 +101,7 @@ public class Para implements WebApplicationInitializer, Ordered {
 	private static final Logger logger = LoggerFactory.getLogger(Para.class);
 	private static final List<DestroyListener> destroyListeners = new ArrayList<DestroyListener>();
 	private static final List<InitializeListener> initListeners = new ArrayList<InitializeListener>();
+	private static final ExecutorService exec = Executors.newFixedThreadPool(Config.EXECUTOR_THREADS);
 	private static Injector injector;
 
 	public Para() { }
@@ -137,6 +141,8 @@ public class Para implements WebApplicationInitializer, Ordered {
 	public static void destroy() {
 		try {
 			logger.info("--- Para.destroy() ---");
+			exec.shutdown();
+			exec.awaitTermination(60, TimeUnit.SECONDS);
 			injector = null;
 			for (DestroyListener destroyListener : destroyListeners) {
 				destroyListener.onDestroy();
@@ -218,6 +224,14 @@ public class Para implements WebApplicationInitializer, Ordered {
 	 */
 	public static void addDestroyListener(DestroyListener dl) {
 		destroyListeners.add(dl);
+	}
+
+	/**
+	 * Returns the Para executor service
+	 * @return a fixed thread executor service
+	 */
+	public static ExecutorService getExecutorService() {
+		return exec;
 	}
 
 	/**
