@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
  * compatible with the original AWS SDK implementation.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class Signer extends AWS4Signer {
+public final class Signer extends AWS4Signer {
 
 	private static final Logger logger = LoggerFactory.getLogger(Signer.class);
 
@@ -56,6 +56,7 @@ public class Signer extends AWS4Signer {
 	 */
 	public Signer() {
 		super(false);
+		super.setServiceName(Config.PARA);
 	}
 
 	/**
@@ -123,31 +124,16 @@ public class Signer extends AWS4Signer {
 	}
 
 	@Override
-	public void setServiceName(String serviceName) {
-	}
-
-	@Override
 	public void setRegionName(String regionName) {
 	}
 
 	/**
 	 * The region name.
-	 * @param endpoint endpoint
-	 * @return "eu-west-1"
+	 * @return {@link Config#AWS_REGION}
 	 */
 	@Override
-	protected String extractRegionName(URI endpoint) {
+	public String getRegionName() {
 		return Config.AWS_REGION;
-	}
-
-	/**
-	 * The service name.
-	 * @param endpoint endpoint
-	 * @return {@link Config#PARA}
-	 */
-	@Override
-	protected String extractServiceName(URI endpoint) {
-		return Config.PARA;
 	}
 
 	private void resetDate() {

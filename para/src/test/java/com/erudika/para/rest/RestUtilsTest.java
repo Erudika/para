@@ -73,7 +73,7 @@ public class RestUtilsTest {
 
 	private InputStream getInputStream(Object obj) throws JsonProcessingException {
 		if (obj != null) {
-			return new ByteArrayInputStream(Utils.getJsonWriter().withType(obj.getClass()).writeValueAsBytes(obj));
+			return new ByteArrayInputStream(Utils.getJsonWriter().forType(obj.getClass()).writeValueAsBytes(obj));
 		}
 		return null;
 	}

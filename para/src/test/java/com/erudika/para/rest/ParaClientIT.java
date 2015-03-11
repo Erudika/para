@@ -455,8 +455,8 @@ public class ParaClientIT {
 
 		Map<String, ?> constraints = pc.validationConstraints();
 		assertFalse(constraints.isEmpty());
-		assertTrue(constraints.containsKey("App"));
-		assertTrue(constraints.containsKey("User"));
+		assertTrue(constraints.containsKey("app"));
+		assertTrue(constraints.containsKey("user"));
 
 		Map<String, Map<String, Map<String, ?>>> constraint = pc.validationConstraints("app");
 		assertFalse(constraint.isEmpty());

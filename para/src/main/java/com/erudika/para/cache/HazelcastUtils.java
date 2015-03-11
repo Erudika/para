@@ -20,6 +20,7 @@ package com.erudika.para.cache;
 import com.erudika.para.Para;
 import com.erudika.para.utils.Config;
 import com.hazelcast.config.AwsConfig;
+import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
@@ -101,9 +102,9 @@ public final class HazelcastUtils {
 		return Config.PARA.concat("-hc-").concat(Config.WORKER_ID);
 	}
 
-	private static MapConfig.EvictionPolicy getEvictionPolicy() {
+	private static EvictionPolicy getEvictionPolicy() {
 		return "LFU".equals(Config.getConfigParamUnwrapped("hc.eviction_policy", "LRU")) ?
-				MapConfig.EvictionPolicy.LFU : MapConfig.EvictionPolicy.LRU;
+				EvictionPolicy.LFU : EvictionPolicy.LRU;
 	}
 
 	private static int getEvictionPercentage() {

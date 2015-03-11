@@ -63,6 +63,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.regex.Pattern;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -181,7 +182,7 @@ public final class Utils {
 	 * @return JSON object reader
 	 */
 	public static ObjectReader getJsonReader(Class<?> type) {
-		return jsonReader.withType(type);
+		return jsonReader.forType(type);
 	}
 
 	/**
@@ -923,10 +924,17 @@ public final class Utils {
 	 * @param runnable a task
 	 */
 	public static void asyncExecute(Runnable runnable) {
-		try {
-			Para.getExecutorService().execute(runnable);
-		} catch (Exception ex) {
-			logger.warn(null, ex);
+		if (runnable != null) {
+			try {
+				Para.getExecutorService().execute(runnable);
+			} catch (RejectedExecutionException ex) {
+				logger.warn(ex.getMessage());
+				try {
+					runnable.run();
+				} catch (Exception e) {
+					logger.error(null, e);
+				}
+			}
 		}
 	}
 

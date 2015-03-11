@@ -265,7 +265,7 @@ public final class ElasticSearchUtils {
 						logger.info("rebuildIndex(): indexed {}, hasFailures: {}",
 								brb.numberOfActions(), resp.hasFailures());
 					}
-				} while(!(list = dao.readPage(appid, pager)).isEmpty());
+				} while (!(list = dao.readPage(appid, pager)).isEmpty());
 			}
 
 			// anything left after loop? index that too
