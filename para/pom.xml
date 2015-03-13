@@ -13,8 +13,8 @@
 
 	<properties>
 		<jerseyVer>2.16</jerseyVer>
-		<springVer>4.0.0.RC2</springVer>
-		<springVer2>1.2.2.RELEASE</springVer2>
+		<springVer>4.0.0.M2</springVer>
+		<springVer2>1.1.11.RELEASE</springVer2>
 		<jacksonVer>2.5.1</jacksonVer>
 		<hazelcastVer>3.4.1</hazelcastVer>
 		<awsJdkVer>1.9.22</awsJdkVer>
