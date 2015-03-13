@@ -129,11 +129,11 @@ public final class Config {
 	/**
 	 * AWS Access Key
 	 */
-	public static final String AWS_ACCESSKEY = getConfigParam("aws_access_key", getAwsCredentials()[0]);
+	public static final String AWS_ACCESSKEY = getAwsCredentials()[0];
 	/**
 	 * AWS ecret Key
 	 */
-	public static final String AWS_SECRETKEY = getConfigParam("aws_secret_key", getAwsCredentials()[1]);
+	public static final String AWS_SECRETKEY = getAwsCredentials()[1];
 	/**
 	 * AWS Region
 	 */
@@ -377,14 +377,24 @@ public final class Config {
 		return Boolean.parseBoolean(getConfigParam("search_enabled", "true"));
 	}
 
+	/**
+	 * Try loading the AWS credentials from the config file.
+	 * If they're missing try from the local metadata service.
+	 * @return
+	 */
 	private static String[] getAwsCredentials() {
-		InstanceProfileCredentialsProvider ipcp = new InstanceProfileCredentialsProvider();
-		try {
-			ipcp.refresh();
-			return new String[]{ipcp.getCredentials().getAWSAccessKeyId(), ipcp.getCredentials().getAWSSecretKey()};
-		} catch (Exception e) {
-			return new String[]{"", ""};
+		String accessK = getConfigParam("aws_access_key", "");
+		String secretK = getConfigParam("aws_secret_key", "");
+		if (StringUtils.isBlank(accessK) || StringUtils.isBlank(secretK)) {
+			InstanceProfileCredentialsProvider ipcp = new InstanceProfileCredentialsProvider();
+			try {
+				ipcp.refresh();
+				return new String[]{ipcp.getCredentials().getAWSAccessKeyId(), ipcp.getCredentials().getAWSSecretKey()};
+			} catch (Exception e) {
+				return new String[]{"x", "x"};
+			}
 		}
+		return new String[]{accessK, secretK};
 	}
 
 }

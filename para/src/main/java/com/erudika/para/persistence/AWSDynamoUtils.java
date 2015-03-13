@@ -63,7 +63,7 @@ public final class AWSDynamoUtils {
 		}
 
 		if (Config.IN_PRODUCTION) {
-			ddbClient = new AmazonDynamoDBClient();
+			ddbClient = new AmazonDynamoDBClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
 			ddbClient.setEndpoint(ENDPOINT);
 		} else {
 			ddbClient = new AmazonDynamoDBClient(new BasicAWSCredentials("local", "null"));
