@@ -23,10 +23,9 @@ import java.io.OutputStream;
 import javax.servlet.WriteListener;
 
 /**
- * GZip Filter. Adapted from JHipster: https://github.com/jhipster/generator-jhipster
- *
- * @author Julien Dubois
- * @author Jérôme Mirc
+ * A custom {@link javax.servlet.ServletOutputStream} for use by our filters
+ * @version $Id: FilterServletOutputStream.java 744 2008-08-16 20:10:49Z gregluck $
+ * @author <a href="mailto:gluck@thoughtworks.com">Greg Luck</a>
  */
 class GZipServletOutputStream extends ServletOutputStream {
 

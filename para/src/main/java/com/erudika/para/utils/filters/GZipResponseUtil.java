@@ -17,7 +17,9 @@
  */
 package com.erudika.para.utils.filters;
 
+import java.util.Collection;
 import javax.servlet.ServletException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,14 +27,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- * GZip Filter. Adapted from JHipster: https://github.com/jhipster/generator-jhipster
- *
- * @author Julien Dubois
- * @author Jérôme Mirc
+ * A collection of response processing utilities, which are shared between 2 or more filters
+ * @author Greg Luck
+ * @version $Id: ResponseUtil.java 744 2008-08-16 20:10:49Z gregluck $
  */
 public final class GZipResponseUtil {
 
-	private static final Logger LOG = LoggerFactory.getLogger(GZipResponseUtil.class);
+	private static final Logger log = LoggerFactory.getLogger(GZipResponseUtil.class);
 
 	/**
 	 * Gzipping an empty file or stream always results in a 20 byte output This is in java or elsewhere.
@@ -52,7 +53,6 @@ public final class GZipResponseUtil {
 	/**
 	 * Checks whether a gzipped body is actually empty and should just be zero. When the compressedBytes is
 	 * {@link #EMPTY_GZIPPED_CONTENT_SIZE} it should be zero.
-	 *
 	 * @param compressedBytes the gzipped response body
 	 * @param request the client HTTP request
 	 * @return true if the response should be 0, even if it is isn't.
@@ -61,8 +61,8 @@ public final class GZipResponseUtil {
 
 		//Check for 0 length body
 		if (compressedBytes.length == EMPTY_GZIPPED_CONTENT_SIZE) {
-			if (LOG.isTraceEnabled()) {
-				LOG.trace("{} resulted in an empty response.", request.getRequestURL());
+			if (log.isTraceEnabled()) {
+				log.trace("{} resulted in an empty response.", request.getRequestURL());
 			}
 			return true;
 		} else {
@@ -78,7 +78,6 @@ public final class GZipResponseUtil {
 	 * <li>If the response code is {@link javax.servlet.http.HttpServletResponse#SC_NOT_MODIFIED} then it is illegal for
 	 * the body to contain anything. See http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3.5
 	 * </ol>
-	 *
 	 * @param request the client HTTP request
 	 * @param responseStatus the responseStatus
 	 * @return true if the response should be 0, even if it is isn't.
@@ -87,8 +86,8 @@ public final class GZipResponseUtil {
 
 		//Check for NO_CONTENT
 		if (responseStatus == HttpServletResponse.SC_NO_CONTENT) {
-			if (LOG.isDebugEnabled()) {
-				LOG.debug("{} resulted in a {} response. Removing message body in accordance with RFC2616.",
+			if (log.isDebugEnabled()) {
+				log.debug("{} resulted in a {} response. Removing message body in accordance with RFC2616.",
 						request.getRequestURL(), HttpServletResponse.SC_NO_CONTENT);
 			}
 			return true;
@@ -96,8 +95,8 @@ public final class GZipResponseUtil {
 
 		//Check for NOT_MODIFIED
 		if (responseStatus == HttpServletResponse.SC_NOT_MODIFIED) {
-			if (LOG.isDebugEnabled()) {
-				LOG.debug("{} resulted in a {} response. Removing message body in accordance with RFC2616.",
+			if (log.isDebugEnabled()) {
+				log.debug("{} resulted in a {} response. Removing message body in accordance with RFC2616.",
 						request.getRequestURL(), HttpServletResponse.SC_NOT_MODIFIED);
 			}
 			return true;
@@ -106,8 +105,8 @@ public final class GZipResponseUtil {
 	}
 
 	/**
-	 * Adds the gzip HTTP header to the response.
-	 * This is need when a gzipped body is returned so that browsers can properly decompress it.
+	 * Adds the gzip HTTP header to the response. This is needed when a gzipped body is returned so that browsers can
+	 * properly decompress it.
 	 * @param response the response which will have a header added to it. I.e this method changes its parameter
 	 * @throws ServletException Either the response is committed or we were called using the
 	 * include method from a
@@ -121,4 +120,29 @@ public final class GZipResponseUtil {
 			throw new ServletException("Failure when attempting to set Content-Encoding: gzip");
 		}
 	}
+
+	/**
+	 * Adds the Vary: Accept-Encoding header to the response if needed
+	 * @param wrapper
+	 */
+	protected static void addVaryAcceptEncoding(final GZipServletResponseWrapper wrapper) {
+		Collection<String> headers = wrapper.getHeaderNames();
+
+		String varyHeader = null;
+		for (String header : headers) {
+			if (header.equals("Vary")) {
+				varyHeader = wrapper.getHeader(header);
+				break;
+			}
+		}
+
+		if (varyHeader == null) {
+			wrapper.setHeader("Vary", "Accept-Encoding");
+		} else {
+			if (!varyHeader.equals("*") && !varyHeader.contains("Accept-Encoding")) {
+				wrapper.setHeader("Vary", varyHeader + ",Accept-Encoding");
+			}
+		}
+	}
+
 }

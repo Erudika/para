@@ -26,10 +26,12 @@ import java.io.PrintWriter;
 import java.util.zip.GZIPOutputStream;
 
 /**
- * GZip Filter. Adapted from JHipster: https://github.com/jhipster/generator-jhipster
- *
- * @author Julien Dubois
- * @author Jérôme Mirc
+ * Provides a wrapper for {@link javax.servlet.http.HttpServletResponseWrapper}.
+ * It is used to wrap the real Response so that we can modify it after
+ * that the target of the request has delivered its response.
+ * It uses the Wrapper pattern.
+ * @author <a href="mailto:gluck@thoughtworks.com">Greg Luck</a>
+ * @version $Id: GenericResponseWrapper.java 793 2008-10-07 07:28:03Z gregluck $
  */
 class GZipServletResponseWrapper extends HttpServletResponseWrapper {
 

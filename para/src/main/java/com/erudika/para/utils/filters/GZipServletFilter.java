@@ -28,10 +28,12 @@ import java.io.IOException;
 import java.util.zip.GZIPOutputStream;
 
 /**
- * GZip Filter. Adapted from JHipster: https://github.com/jhipster/generator-jhipster
- *
- * @author Julien Dubois
- * @author Jérôme Mirc
+ * Provides GZIP compression of responses.
+ * See the filter-mappings.xml entry for the gzip filter for the URL patterns which will be gzipped. At present this
+ * includes .jsp, .js and .css.
+ * @author <a href="mailto:gluck@thoughtworks.com">Greg Luck</a>
+ * @author <a href="mailto:amurdoch@thoughtworks.com">Adam Murdoch</a>
+ * @version $Id: GzipFilter.java 744 2008-08-16 20:10:49Z gregluck $
  */
 public class GZipServletFilter implements Filter {
 
@@ -72,7 +74,7 @@ public class GZipServletFilter implements Filter {
 
 			gzout.close();
 
-			// double check one more time before writing out
+            // double check one more time before writing out
 			// repsonse might have been committed due to error
 			if (response.isCommitted()) {
 				return;
@@ -92,7 +94,7 @@ public class GZipServletFilter implements Filter {
 			boolean shouldGzippedBodyBeZero = GZipResponseUtil.shouldGzippedBodyBeZero(compressedBytes, httpRequest);
 			boolean shouldBodyBeZero = GZipResponseUtil.shouldBodyBeZero(httpRequest, wrapper.getStatus());
 			if (shouldGzippedBodyBeZero || shouldBodyBeZero) {
-				// No reason to add GZIP headers or write body if no content was written or status code specifies no
+                // No reason to add GZIP headers or write body if no content was written or status code specifies no
 				// content
 				response.setContentLength(0);
 				return;
@@ -101,14 +103,17 @@ public class GZipServletFilter implements Filter {
 			// Write the zipped body
 			GZipResponseUtil.addGzipHeader(httpResponse);
 
+			// Only write out header Vary as needed
+			GZipResponseUtil.addVaryAcceptEncoding(wrapper);
+
 			response.setContentLength(compressedBytes.length);
 
 			response.getOutputStream().write(compressedBytes);
-
 		} else {
 			// Client does not accept zipped content - don't bother zipping
 			if (log.isTraceEnabled()) {
-				log.trace("{} Written without gzip compression because the request does not accept gzip", httpRequest.getRequestURL());
+				log.trace("{} Written without gzip compression because the request does not accept gzip",
+						httpRequest.getRequestURL());
 			}
 			chain.doFilter(request, response);
 		}
