@@ -255,13 +255,13 @@ public final class Config {
 	 */
 	public static final boolean CORS_ENABLED = Boolean.parseBoolean(getConfigParam("cors_enabled", "true"));
 	/**
-	 * Enable the GZIP filter for API requests. Default: true
+	 * Enable the GZIP filter for API requests. Default: false
 	 */
-	public static final boolean GZIP_ENABLED = Boolean.parseBoolean(getConfigParam("gzip_enabled", "true"));
+	public static final boolean GZIP_ENABLED = Boolean.parseBoolean(getConfigParam("gzip_enabled", "false"));
 	/**
-	 * Read objects from index, not the data store. This WILL override the cache.
+	 * Read objects from index, not the data store. This WILL override the cache! Default: false
 	 */
-	public static final boolean READ_FROM_INDEX = Boolean.parseBoolean(getConfigParam("read_from_index", "true"));
+	public static final boolean READ_FROM_INDEX = Boolean.parseBoolean(getConfigParam("read_from_index", "false"));
 	/**
 	 * Production environment flag.
 	 */
