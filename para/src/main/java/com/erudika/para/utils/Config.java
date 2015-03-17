@@ -123,9 +123,9 @@ public final class Config {
 	 */
 	public static final String DEFAULT_ENCODING = getConfigParam("default_encoding", "UTF-8");
 	/**
-	 * For example: production, development, testing... etc.
+	 * For example: production, development, testing... etc. Default: "embedded"
 	 */
-	public static final String ENVIRONMENT = getConfigParam("env", "");
+	public static final String ENVIRONMENT = getConfigParam("env", "embedded");
 	/**
 	 * AWS Access Key
 	 */

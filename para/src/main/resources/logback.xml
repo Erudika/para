@@ -22,6 +22,7 @@
     </encoder>
   </appender>
 
+  <logger name="ch.qos.logback" level="WARN"/>
   <logger name="org.apache" level="WARN"/>
   <logger name="org.elasticsearch" level="INFO"/>
   <logger name="org.springframework" level="WARN"/>
