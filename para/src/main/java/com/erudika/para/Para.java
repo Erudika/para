@@ -362,7 +362,10 @@ public class Para implements WebApplicationInitializer, Ordered {
 
 	@Override
 	public void onStartup(ServletContext sc) throws ServletException {
-		WebApplicationContext rootAppContext = createRootApplicationContext(sc);
+		runAsWAR(sc, Para.class);
+	}
+
+	private static WebApplicationContext registerApplicationWithSpringBoot(ServletContext sc, WebApplicationContext rootAppContext) {
 		if (rootAppContext != null) {
 			sc.addListener(new ContextLoaderListener(rootAppContext) {
 				@Override
@@ -374,47 +377,59 @@ public class Para implements WebApplicationInitializer, Ordered {
 			sc.getSessionCookieConfig().setMaxAge(1);
 			sc.getSessionCookieConfig().setHttpOnly(true);
 			sc.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
-		} else {
-			logger.debug("No ContextLoaderListener registered, as "
-					+ "createRootApplicationContext() did not "
-					+ "return an application context");
 		}
+		return rootAppContext;
 	}
 
-	protected WebApplicationContext createRootApplicationContext(ServletContext servletContext) {
+	/**
+	 * This is the initializing method when running Para as WAR,
+	 * deployed to a servlet container.
+	 * @param sc the ServletContext instance
+	 * @param sources the application classes that will be scanned
+	 * @return the application context
+	 */
+	protected static WebApplicationContext runAsWAR(ServletContext sc, Object... sources) {
 		ApplicationContext parent = null;
-		Object object = servletContext.getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
+		Object object = sc.getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
 		if (object instanceof ApplicationContext) {
 			logger.info("Root context already created (using as parent).");
 			parent = (ApplicationContext) object;
-			servletContext.setAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE, null);
+			sc.setAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE, null);
 		}
 		SpringApplicationBuilder application = new SpringApplicationBuilder();
 		if (parent != null) {
 			application.initializers(new ParentContextApplicationContextInitializer(parent));
 		}
-		application.initializers(new ServletContextApplicationContextInitializer(servletContext));
+		application.initializers(new ServletContextApplicationContextInitializer(sc));
 		application.contextClass(AnnotationConfigEmbeddedWebApplicationContext.class);
-		application = configure(application);
-		// Ensure error pages are registered
-		application.sources(ErrorFilter.class);
-		return (WebApplicationContext) application.run();
-	}
 
-	protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
 		// entry point (WAR)
 		application.web(true);
 		application.showBanner(false);
 		initialize();
-		return application.sources(Para.class);
+		application.sources(sources);
+		// Ensure error pages are registered
+		application.sources(ErrorFilter.class);
+
+		return registerApplicationWithSpringBoot(sc, (WebApplicationContext) application.run());
 	}
 
-	public static void main(String[] args) {
+	/**
+	 * This is the initializing method when running Para as executable JAR (or WAR),
+	 * from the command line: java -jara para.jar
+	 * @param args command line arguments array (same as those in {@code void main(String[] args)} )
+	 * @param sources the application classes that will be scanned
+	 */
+	protected static void runAsJAR(String[] args, Object... sources) {
 		// entry point (JAR)
-		SpringApplication app = new SpringApplication(Para.class);
+		SpringApplication app = new SpringApplication(sources);
 		app.setWebEnvironment(true);
 		app.setShowBanner(false);
 		initialize();
 		app.run(args);
+	}
+
+	public static void main(String[] args) {
+		runAsJAR(args, Para.class);
 	}
 }
