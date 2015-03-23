@@ -7,6 +7,11 @@
     </encoder>
   </appender>
 
+	<appender name="SYSLOG" class="ch.qos.logback.classic.net.SyslogAppender">
+		<facility>LOCAL0</facility>
+		<suffixPattern>[%-5level] %msg%n</suffixPattern>
+	</appender>
+
 	<appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>para.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -37,6 +42,7 @@
 
   <root level="INFO">
     <appender-ref ref="STDOUT" />
+    <appender-ref ref="SYSLOG" />
     <appender-ref ref="ROLLING" />
   </root>
 </configuration>
