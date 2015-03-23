@@ -393,9 +393,11 @@ public class ElasticSearch implements Search {
 				}
 			}
 
-			if (!Config.READ_FROM_INDEX) {
+			if (!Config.READ_FROM_INDEX && !keys.isEmpty()) {
 				Map<String, P> fromDB = dao.readAll(appid, keys, true);
-				results.addAll(fromDB.values());
+				if (!fromDB.isEmpty()) {
+					results.addAll(fromDB.values());
+				}
 			}
 			logger.debug("Search.searchQuery() {}", results.size());
 		} catch (Exception e) {

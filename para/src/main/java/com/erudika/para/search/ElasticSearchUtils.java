@@ -71,6 +71,7 @@ public final class ElasticSearchUtils {
 			return searchClient;
 		}
 		boolean localNode = Config.getConfigParamUnwrapped("es.local_node", true);
+		boolean dataNode = Config.getConfigParamUnwrapped("es.data_node", true);
 		boolean corsEnabled = Config.getConfigParamUnwrapped("es.cors_enabled", !Config.IN_PRODUCTION);
 		String esHome = Config.getConfigParam("es.dir", "");
 
@@ -91,11 +92,11 @@ public final class ElasticSearchUtils {
 			settings.put("network.tcp.keep_alive", true);
 			settings.put("discovery.type", Config.getConfigParam("discovery_type", "ec2"));
 			settings.put("discovery.ec2.groups", "elasticsearch");
-			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(localNode).node();
+			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(localNode).data(dataNode).node();
 			searchClient = searchNode.client();
 		} else if ("embedded".equals(Config.ENVIRONMENT)) {
 			// for local develoment only
-			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(localNode).data(true).node();
+			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(localNode).data(dataNode).node();
 			searchClient = searchNode.client();
 		} else {
 			searchClient = new TransportClient(settings);
