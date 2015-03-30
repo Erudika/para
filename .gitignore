@@ -13,6 +13,6 @@ Tomcat.dpf
 release.properties
 nb-configuration.xml
 /target/
-/para/target/
-/para/data/
-/para-web/target/
+**/target/
+**/data/
+

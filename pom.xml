@@ -16,8 +16,10 @@
 	<url>http://paraio.org</url>
 
 	<modules>
-		<module>para</module>
+		<module>para-server</module>
 		<module>para-web</module>
+		<module>para-core</module>
+	 <module>para-client</module>
 	</modules>
 
 	<licenses>
@@ -68,7 +70,7 @@
 		<skipTests>false</skipTests>
 		<skipITs>${skipTests}</skipITs>
 		<skipUTs>${skipTests}</skipUTs>
-		<deployPluginVer>2.8.1</deployPluginVer>
+		<deployPluginVer>2.8.2</deployPluginVer>
 		<slf4jVer>1.7.10</slf4jVer>
 		<logbackVer>1.1.2</logbackVer>
 	</properties>
