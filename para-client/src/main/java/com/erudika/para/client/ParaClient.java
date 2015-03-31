@@ -70,7 +70,6 @@ public final class ParaClient {
 	public ParaClient(String accessKey, String secretKey) {
 		this.accessKey = accessKey;
 		this.secretKey = secretKey;
-		apiClient = getApiClient();
 	}
 
 	protected Client getApiClient() {
@@ -166,22 +165,22 @@ public final class ParaClient {
 	}
 
 	private Response invokeGet(String resourcePath, MultivaluedMap<String, String> params) {
-		return signer.invokeSignedRequest(apiClient, accessKey, secretKey, GET,
+		return signer.invokeSignedRequest(getApiClient(), accessKey, secretKey, GET,
 				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
 	}
 
 	private Response invokePost(String resourcePath, Entity<?> entity) {
-		return signer.invokeSignedRequest(apiClient, accessKey, secretKey, POST,
+		return signer.invokeSignedRequest(getApiClient(), accessKey, secretKey, POST,
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
 	private Response invokePut(String resourcePath, Entity<?> entity) {
-		return signer.invokeSignedRequest(apiClient, accessKey, secretKey, PUT,
+		return signer.invokeSignedRequest(getApiClient(), accessKey, secretKey, PUT,
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
 	private Response invokeDelete(String resourcePath, MultivaluedMap<String, String> params) {
-		return signer.invokeSignedRequest(apiClient, accessKey, secretKey, DELETE,
+		return signer.invokeSignedRequest(getApiClient(), accessKey, secretKey, DELETE,
 				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
 	}
 
