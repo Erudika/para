@@ -92,6 +92,15 @@ public final class ParaClient {
 	}
 
 	/**
+	 * Closes the underlying Jersey client and releases resources.
+	 */
+	public void close() {
+		if (apiClient != null) {
+			apiClient.close();
+		}
+	}
+
+	/**
 	 * Returns the {@link App} for the current access key (appid).
 	 * @return the App object
 	 */
@@ -148,7 +157,7 @@ public final class ParaClient {
 				if (error != null && error.containsKey("code")) {
 					String msg = error.containsKey("message") ? (String) error.get("message") : "error";
 					msg = msg.concat(" ").concat(Integer.toString((Integer) error.get("code")));
-					throw new WebApplicationException(msg, (Integer) error.get("code"));
+					logger.error(msg, new WebApplicationException((Integer) error.get("code")));
 				}
 			}
 		}
