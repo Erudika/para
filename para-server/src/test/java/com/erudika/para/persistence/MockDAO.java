@@ -105,10 +105,10 @@ public class MockDAO implements DAO {
 	@Override
 	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> Map<String, P> readAll(String appid, List<String> keys, boolean getAllColumns) {
-		Map<String, P> results = new LinkedHashMap<String, P>();
 		if (keys == null || StringUtils.isBlank(appid)) {
-			return results;
+			return Collections.emptyMap();
 		}
+		Map<String, P> results = new LinkedHashMap<String, P>(keys.size());
 		for (String key : keys) {
 			if (getMap(appid).containsKey(key)) {
 				results.put(key, (P) read(key));

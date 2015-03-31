@@ -96,6 +96,7 @@ public class App implements ParaObject {
 	public App(String id) {
 		this.shared = true;
 		this.active = true;
+		this.readOnly = false;
 		setId(id);
 		setName(getName());
 	}

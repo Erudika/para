@@ -89,7 +89,7 @@ public class HazelcastCache implements Cache {
 	@Override
 	public <T> void putAll(String appid, Map<String, T> objects) {
 		if (objects != null && !objects.isEmpty() && !StringUtils.isBlank(appid)) {
-			Map<String, T> cleanMap = new LinkedHashMap<String, T>();
+			Map<String, T> cleanMap = new LinkedHashMap<String, T>(objects.size());
 			for (Entry<String, T> entry : objects.entrySet()) {
 				if (!StringUtils.isBlank(entry.getKey()) && entry.getValue() != null) {
 					cleanMap.put(entry.getKey(), entry.getValue());

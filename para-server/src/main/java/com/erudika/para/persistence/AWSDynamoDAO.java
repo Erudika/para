@@ -209,7 +209,7 @@ public class AWSDynamoDAO implements DAO {
 			return new LinkedHashMap<String, P>();
 		}
 
-		Map<String, P> results = new LinkedHashMap<String, P>();
+		Map<String, P> results = new LinkedHashMap<String, P>(keys.size(), 0.75f, true);
 		ArrayList<Map<String, AttributeValue>> keyz = new ArrayList<Map<String, AttributeValue>>(keys.size());
 
 		for (String key : keys) {

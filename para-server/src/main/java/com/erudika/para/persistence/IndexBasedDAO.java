@@ -136,10 +136,10 @@ public class IndexBasedDAO implements DAO {
 	@Override
 	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> Map<String, P> readAll(String appid, List<String> keys, boolean getAllColumns) {
-		Map<String, P> results = new LinkedHashMap<String, P>();
 		if (keys == null || StringUtils.isBlank(appid)) {
-			return results;
+			return Collections.emptyMap();
 		}
+		Map<String, P> results = new LinkedHashMap<String, P>(keys.size());
 		List<P> list = search.findByIds(getAppidWithRouting(appid), keys);
 
 		if (list.isEmpty()) {

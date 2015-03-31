@@ -209,6 +209,7 @@ public class ParaClientIT {
 		List<Sysprop> l2 = pc.readAll(nl);
 		assertEquals(3, l2.size());
 		assertEquals(l1.get(0).getId(), l2.get(0).getId());
+		assertEquals(l1.get(1).getId(), l2.get(1).getId());
 		assertTrue(l2.get(0).hasProperty("foo"));
 		assertEquals("bark!", l2.get(0).getProperty("foo"));
 

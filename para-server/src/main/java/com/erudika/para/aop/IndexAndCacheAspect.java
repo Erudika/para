@@ -194,7 +194,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					List<ParaObject> putUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
 					removeSpecialClasses(putUs);
 					if (putUs != null && !putUs.isEmpty()) {
-						Map<String, ParaObject> map1 = new LinkedHashMap<String, ParaObject>();
+						Map<String, ParaObject> map1 = new LinkedHashMap<String, ParaObject>(putUs.size());
 						for (ParaObject paraObject : putUs) {
 							map1.put(paraObject.getId(), paraObject);
 						}
