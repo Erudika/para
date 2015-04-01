@@ -45,7 +45,6 @@ import org.springframework.security.openid.OpenIDAuthenticationProvider;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
-import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 /**
@@ -129,12 +128,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 			http.csrf().requireCsrfProtectionMatcher(new RequestMatcher() {
 				private final Pattern allowedMethods = Pattern.compile("^(GET|HEAD|TRACE|OPTIONS)$");
-				private final RegexRequestMatcher authEndpoints = new RegexRequestMatcher("^/\\w+_auth$", null);
+				private final Pattern authEndpoints = Pattern.compile("^/\\w+_auth$");
 
 				public boolean matches(HttpServletRequest request) {
 					boolean matches = !RestRequestMatcher.INSTANCE.matches(request)
 							&& !IgnoredRequestMatcher.INSTANCE.matches(request)
-							&& !authEndpoints.matches(request)
+							&& !authEndpoints.matcher(request.getRequestURI()).matches()
 							&& !allowedMethods.matcher(request.getMethod()).matches();
 					return matches;
 				}

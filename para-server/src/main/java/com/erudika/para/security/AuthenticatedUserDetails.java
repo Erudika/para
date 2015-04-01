@@ -35,10 +35,28 @@ public class AuthenticatedUserDetails implements UserDetails {
 
 	private User user;
 
-	private AuthenticatedUserDetails() { }
-
+	/**
+	 * Default constructor
+	 * @param user an authenticated user object (principal)
+	 */
 	public AuthenticatedUserDetails(User user) {
 		assert user != null;
+		this.user = user;
+	}
+
+	/**
+	 * Returns the underlying principal.
+	 * @return a {@link User} object
+	 */
+	public User getUser() {
+		return user;
+	}
+
+	/**
+	 * Sets the principal object.
+	 * @param user a user
+	 */
+	public void setUser(User user) {
 		this.user = user;
 	}
 

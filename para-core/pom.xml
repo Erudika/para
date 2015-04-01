@@ -57,11 +57,6 @@
 			<artifactId>jersey-server</artifactId>
 			<version>${jerseyVer}</version>
 		</dependency>
-		<!--		<dependency>
-			<groupId>org.glassfish.jersey.containers</groupId>
-			<artifactId>jersey-container-servlet</artifactId>
-			<version>${jerseyVer}</version>
-		</dependency>-->
 		<dependency>
 			<groupId>org.glassfish.jersey.containers</groupId>
 			<artifactId>jersey-container-jetty-servlet</artifactId>

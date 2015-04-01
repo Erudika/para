@@ -30,8 +30,7 @@ public class UserAuthentication implements Authentication {
 	private static final long serialVersionUID = 1L;
 
 	private final AuthenticatedUserDetails principal;
-	private final Object details;
-	private boolean authenticated;
+	private final boolean authenticated;
 
 	/**
 	 * Default constructor
@@ -39,7 +38,6 @@ public class UserAuthentication implements Authentication {
 	 */
 	public UserAuthentication(AuthenticatedUserDetails principal) {
 		this.principal = principal;
-		this.details = principal;
 		this.authenticated = true;
 	}
 
@@ -60,15 +58,15 @@ public class UserAuthentication implements Authentication {
 	}
 
 	/**
-	 * The user object
+	 * The user details object
 	 * @return the user
 	 */
 	public Object getDetails() {
-		return details;
+		return principal;
 	}
 
 	/**
-	 * The user object
+	 * The user details object
 	 * @return the user
 	 */
 	public Object getPrincipal() {

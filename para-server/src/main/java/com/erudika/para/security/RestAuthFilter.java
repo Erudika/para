@@ -38,7 +38,6 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.GenericFilterBean;
 
@@ -76,10 +75,9 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		HttpServletResponse response = (HttpServletResponse) res;
 
 		if (RestRequestMatcher.INSTANCE.matches(request)) {
-			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-			if (auth != null && auth.getPrincipal() instanceof User && request.getHeader("Authorization") == null) {
-				User u = SecurityUtils.getAuthenticatedUser();
-				if (u == null || !u.getActive()) {
+			User u = SecurityUtils.getAuthenticatedUser();
+			if (u != null && request.getHeader("Authorization") == null) {
+				if (!u.getActive()) {
 					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
 							"User doesn't have permission to access this resource.");
 					return;

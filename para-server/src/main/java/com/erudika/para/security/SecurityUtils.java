@@ -17,6 +17,7 @@
  */
 package com.erudika.para.security;
 
+import com.erudika.para.core.App;
 import com.erudika.para.core.User;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -36,14 +37,35 @@ public final class SecurityUtils {
 	 * @return an authenticated user or null if a user is not authenticated
 	 */
 	public static User getAuthenticatedUser() {
-		User u = null;
+		return getAuthenticatedUser(SecurityContextHolder.getContext().getAuthentication());
+	}
+
+	/**
+	 * Extracts a User object from the security context
+	 * @param authentication object
+	 * @return an authenticated user or null if a user is not authenticated
+	 */
+	public static User getAuthenticatedUser(Authentication auth) {
+		User user = null;
+		if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof AuthenticatedUserDetails) {
+			user = ((AuthenticatedUserDetails) auth.getPrincipal()).getUser();
+		}
+		return user;
+	}
+
+	/**
+	 * Extracts a App object from the security context
+	 * @return an authenticated app or null if a app is not authenticated
+	 */
+	public static App getAuthenticatedApp() {
+		App app = null;
 		if (SecurityContextHolder.getContext().getAuthentication() != null) {
 			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-			if (auth.isAuthenticated() && auth.getPrincipal() instanceof User) {
-				u = (User) auth.getPrincipal();
+			if (auth.isAuthenticated() && auth.getPrincipal() instanceof App) {
+				app = (App) auth.getPrincipal();
 			}
 		}
-		return u;
+		return app;
 	}
 
 	/**

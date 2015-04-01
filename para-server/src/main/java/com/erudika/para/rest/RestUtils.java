@@ -23,6 +23,7 @@ import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.ParaObjectUtils;
 import com.erudika.para.core.User;
+import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.validation.Constraint;
 import com.erudika.para.utils.Utils;
@@ -46,8 +47,6 @@ import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
  * A few helper methods for handling REST requests and responses.
@@ -111,16 +110,12 @@ public final class RestUtils {
 	 * @return an App object or null
 	 */
 	public static App getPrincipalApp() {
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		if (auth != null) {
-			Object principal = auth.getPrincipal();
-			if (principal != null) {
-				if (principal instanceof App) {
-					return (App) principal;
-				} else if (principal instanceof User) {
-					return Para.getDAO().read(Config.APP_NAME_NS, App.id(((User) principal).getAppid()));
-				}
-			}
+		App app = SecurityUtils.getAuthenticatedApp();
+		User user = SecurityUtils.getAuthenticatedUser();
+		if (app != null) {
+			return app;
+		} else if (user != null) {
+			return Para.getDAO().read(Config.APP_NAME_NS, App.id(user.getAppid()));
 		}
 		logger.info("Unauthenticated request - returning root App: {}", Config.APP_NAME_NS);
 		return Para.getDAO().read(Config.APP_NAME_NS, App.id(Config.APP_NAME_NS));

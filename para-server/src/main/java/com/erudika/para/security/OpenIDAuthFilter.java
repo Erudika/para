@@ -79,8 +79,9 @@ public class OpenIDAuthFilter extends OpenIDAuthenticationFilter {
 				return null;
 			} else {
 				//success!
-				user = (User) oidAuth.getPrincipal();
-				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+				AuthenticatedUserDetails userDetails = (AuthenticatedUserDetails) oidAuth.getPrincipal();
+				userAuth = new UserAuthentication(userDetails);
+				user = userDetails.getUser();
 			}
 		}
 

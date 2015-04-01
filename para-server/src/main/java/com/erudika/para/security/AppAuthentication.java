@@ -33,7 +33,7 @@ public class AppAuthentication implements Authentication {
 
 	private final App principal;
 	private final Object details;
-	private boolean authenticated;
+	private final boolean authenticated;
 
 	/**
 	 * Default constructor

@@ -49,7 +49,7 @@ public class SimpleUserService implements UserDetailsService,
 			throw new UsernameNotFoundException(ident);
 		}
 
-		return (UserDetails) user;
+		return new AuthenticatedUserDetails(user);
 	}
 
 	/**
@@ -109,10 +109,15 @@ public class SimpleUserService implements UserDetailsService,
 			}
 		}
 
-		return (UserDetails) user;
+		return new AuthenticatedUserDetails(user);
 	}
 
 	private User loadUser(User u) {
-		return User.readUserForIdentifier(u);
+		User authUser = SecurityUtils.getAuthenticatedUser();
+		if (authUser != null) {
+			return authUser;
+		} else {
+			return User.readUserForIdentifier(u);
+		}
 	}
 }

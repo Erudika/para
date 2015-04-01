@@ -38,8 +38,8 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 	@Override
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 			Authentication authentication) throws IOException, ServletException {
-		if (authentication.getPrincipal() != null && authentication.getPrincipal() instanceof User) {
-			User u = (User) authentication.getPrincipal();
+		User u = SecurityUtils.getAuthenticatedUser(authentication);
+		if (u != null) {
 			if (!StringUtils.equals(request.getRemoteAddr(), u.getLastIp())) {
 				u.setLastIp(request.getRemoteAddr());
 				u.update();

@@ -43,13 +43,10 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 
 	private static final Logger logger = LoggerFactory.getLogger(CachedCsrfTokenRepository.class);
 
-	private static final String DEFAULT_CSRF_PARAMETER_NAME = "_csrf";
-	private static final String DEFAULT_CSRF_HEADER_NAME = "X-CSRF-TOKEN";
-
-	private String parameterName = DEFAULT_CSRF_PARAMETER_NAME;
-	private String headerName = DEFAULT_CSRF_HEADER_NAME;
-
-	private Map<String, Object[]> localCache = new HashMap<String, Object[]>();
+	private String parameterName = "_csrf";
+	private final String headerName = "X-CSRF-TOKEN";
+	private final String cookieName = Config.getConfigParam("security.csrf_cookie", "para-csrf-token");
+	private final Map<String, Object[]> localCache = new HashMap<String, Object[]>();
 
 	private Cache cache;
 
@@ -78,17 +75,19 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	 * @see org.springframework.security.web.csrf.CsrfTokenRepository#saveToken(org.springframework.security.web.csrf.CsrfToken, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
 	 */
 	public void saveToken(CsrfToken token, HttpServletRequest request, HttpServletResponse response) {
-		if (token != null) {
-			String ident = getIdentifierFromCookie(request);
-			if (ident != null) {
+		String ident = getIdentifierFromCookie(request);
+		if (ident != null) {
+			String key = ident.concat(parameterName);
+			token = loadToken(request);
+			if (token == null) {
+				token = generateToken(null);
 				if (Config.isCacheEnabled()) {
-					String key = ident.concat(parameterName);
-					storeTokenAsCookie((CsrfToken) cache.get(Config.APP_NAME_NS, key), request, response);
+					cache.put(Config.APP_NAME_NS, key, token, Config.SESSION_TIMEOUT_SEC);
 				} else {
-					String key = Config.APP_NAME_NS.concat(ident).concat(parameterName);
-					storeTokenAsCookie((CsrfToken) localCache.get(key)[0], request, response);
+					localCache.put(key, new Object[]{token, System.currentTimeMillis()});
 				}
 			}
+			storeTokenAsCookie(token, request, response);
 		}
 	}
 
@@ -99,17 +98,13 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	 * @see org.springframework.security.web.csrf.CsrfTokenRepository#loadToken(javax.servlet.http.HttpServletRequest)
 	 */
 	public CsrfToken loadToken(HttpServletRequest request) {
-		String ident = getIdentifierFromCookie(request);
 		CsrfToken token = null;
+		String ident = getIdentifierFromCookie(request);
 		if (ident != null) {
+			String key = ident.concat(parameterName);
 			if (Config.isCacheEnabled()) {
-				String key = ident.concat(parameterName);
 				token = cache.get(Config.APP_NAME_NS, key);
-				if (token == null) {
-					cache.put(Config.APP_NAME_NS, key, generateToken(null), Config.SESSION_TIMEOUT_SEC);
-				}
 			} else {
-				String key = Config.APP_NAME_NS.concat(ident).concat(parameterName);
 				Object[] arr = localCache.get(key);
 				if (arr != null && arr.length == 2) {
 					boolean expired = (((Long) arr[1]) + Config.SESSION_TIMEOUT_SEC * 1000) < System.currentTimeMillis();
@@ -118,15 +113,17 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 					} else {
 						token = (CsrfToken) arr[0];
 					}
-				} else {
-					localCache.put(key, new Object[]{generateToken(null), System.currentTimeMillis()});
 				}
 			}
 		}
-		if (token == null) {
-			String t = request.getParameter(parameterName);
-			token = (t == null) ? null : new DefaultCsrfToken(headerName, parameterName, t);
-		}
+//		if (token == null) {
+//			String t = request.getParameter(parameterName);
+//			if (t == null) {
+//				token = (CsrfToken) request.getAttribute(parameterName);
+//			} else {
+//				token = (t == null) ? null : new DefaultCsrfToken(headerName, parameterName, t);
+//			}
+//		}
 		return token;
 	}
 
@@ -140,17 +137,28 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 		return ident;
 	}
 
-	private void storeTokenAsCookie(CsrfToken token, HttpServletRequest request, HttpServletResponse response) {
-		String cookieName = Config.getConfigParam("security.csrf_cookie", "");
-		if (!StringUtils.isBlank(cookieName) && token != null) {
-			String storedToken = Utils.getStateParam(cookieName, request);
-			if (!StringUtils.equals(storedToken, token.getToken())) {
-				Cookie c = new Cookie(cookieName, token.getToken());
-				c.setMaxAge(Config.SESSION_TIMEOUT_SEC.intValue());
-				c.setPath("/");
-				response.addCookie(c);
-			}
+	private String getTokenFromCookie(HttpServletRequest request) {
+		String tokenInCookie = Utils.getStateParam(cookieName, request);
+		if (!StringUtils.isBlank(tokenInCookie)) {
+			return tokenInCookie;
 		}
+		return "";
+	}
+
+	private void storeTokenAsCookie(CsrfToken token, HttpServletRequest request, HttpServletResponse response) {
+		if (isValidButNotInCookie(token, request)) {
+			Cookie c = new Cookie(cookieName, token.getToken());
+			c.setMaxAge(Config.SESSION_TIMEOUT_SEC.intValue());
+			// don't enable HttpOnly - javascript can't access the cookie if enabled
+			c.setHttpOnly(false);
+			c.setPath("/");
+			response.addCookie(c);
+		}
+	}
+
+	private boolean isValidButNotInCookie(CsrfToken token, HttpServletRequest request) {
+		return token != null && !StringUtils.isBlank(token.getToken()) &&
+				!StringUtils.equals(getTokenFromCookie(request), token.getToken());
 	}
 
 	/**
