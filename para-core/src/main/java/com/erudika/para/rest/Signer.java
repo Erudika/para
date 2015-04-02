@@ -236,6 +236,7 @@ public final class Signer extends AWS4Signer {
 	/**
 	 * Builds, signs and executes a request to an API endpoint using the provided credentials.
 	 * Signs the request using the Amazon Signature 4 algorithm and returns the response.
+	 * @param apiClient Jersey Client object
 	 * @param accessKey access key
 	 * @param secretKey secret key
 	 * @param httpMethod the method (GET, POST...)
@@ -265,6 +266,7 @@ public final class Signer extends AWS4Signer {
 	/**
 	 * Builds, signs and executes a request to an API endpoint using the provided credentials.
 	 * Signs the request using the Amazon Signature 4 algorithm and returns the response.
+	 * @param apiClient Jersey Client object
 	 * @param accessKey access key
 	 * @param secretKey secret key
 	 * @param httpMethod the method (GET, POST...)
