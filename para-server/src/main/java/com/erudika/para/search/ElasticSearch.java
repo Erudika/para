@@ -37,8 +37,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
-import org.elasticsearch.action.deletebyquery.DeleteByQueryRequestBuilder;
 import org.elasticsearch.action.get.GetRequestBuilder;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.get.MultiGetItemResponse;
@@ -47,9 +48,11 @@ import org.elasticsearch.action.get.MultiGetRequestBuilder;
 import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.DistanceUnit;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.AndFilterBuilder;
 import org.elasticsearch.index.query.BaseFilterBuilder;
 import org.elasticsearch.index.query.BoolFilterBuilder;
@@ -176,12 +179,32 @@ public class ElasticSearch implements Search {
 		if (StringUtils.isBlank(appid) || terms == null || terms.isEmpty()) {
 			return;
 		}
-		DeleteByQueryRequestBuilder dqrb = client().prepareDeleteByQuery(appid);
-		dqrb.setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), getTermsFilter(terms, matchAll)));
-		if (isAsyncEnabled()) {
-			dqrb.execute();
-		} else {
-			dqrb.execute().actionGet();
+		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), getTermsFilter(terms, matchAll));
+		SearchResponse scrollResp = client().prepareSearch(getIndexName(appid))
+				.setSearchType(SearchType.SCAN)
+				.setScroll(new TimeValue(60000))
+				.setQuery(qb)
+				.setSize(100).execute().actionGet();
+
+		while (true) {
+			BulkRequestBuilder brb = new BulkRequestBuilder(client());
+			for (SearchHit hit : scrollResp.getHits().getHits()) {
+				brb.add(new DeleteRequest(getIndexName(appid), hit.getType(), hit.getId()));
+			}
+			BulkResponse result = brb.execute().actionGet();
+			if (result.hasFailures()) {
+				logger.warn("Unindexed 100 documents with failures ({}), took {}s.",
+						result.buildFailureMessage(), result.getTook().seconds());
+			} else {
+				logger.info("Unindexed 100 documents without failures, took {}s.", result.getTook().seconds());
+			}
+			// next page
+			scrollResp = client().prepareSearchScroll(scrollResp.getScrollId()).
+					setScroll(new TimeValue(600000)).execute().actionGet();
+
+			if (scrollResp.getHits().getHits().length == 0) {
+				break;
+			}
 		}
 		logger.debug("Search.unindexAll() {}", terms.size());
 	}
@@ -249,7 +272,7 @@ public class ElasticSearch implements Search {
 		if (StringUtils.isBlank(query)) {
 			return Collections.emptyList();
 		}
-		QueryBuilder qb = QueryBuilders.queryString(query).allowLeadingWildcard(false);
+		QueryBuilder qb = QueryBuilders.queryStringQuery(query).allowLeadingWildcard(false);
 		return searchQuery(appid, type, qb, pager);
 	}
 
@@ -360,7 +383,7 @@ public class ElasticSearch implements Search {
 			}
 		}
 
-		QueryBuilder qb2 = QueryBuilders.filteredQuery(QueryBuilders.queryString(query),
+		QueryBuilder qb2 = QueryBuilders.filteredQuery(QueryBuilders.queryStringQuery(query),
 				FilterBuilders.idsFilter(type).ids(ridsarr));
 		SearchHits hits2 = searchQueryRaw(appid, type, qb2, pager);
 

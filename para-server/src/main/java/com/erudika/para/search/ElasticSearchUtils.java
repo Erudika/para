@@ -344,6 +344,9 @@ public final class ElasticSearchUtils {
 	 * @return true if acknowledged
 	 */
 	public static boolean addIndexAlias(String indexName, final String alias, boolean setRouting) {
+		if (!existsIndex(indexName)) {
+			return false;
+		}
 		AliasAction act = new AliasAction(AliasAction.Type.ADD, indexName, alias);
 		if (setRouting) {
 			act.searchRouting(alias);

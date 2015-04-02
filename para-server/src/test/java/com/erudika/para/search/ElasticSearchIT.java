@@ -153,7 +153,7 @@ public class ElasticSearchIT extends SearchTest {
 		assertEquals(2, s.getCount(app1, "tag").intValue());
 		assertEquals(1, s.getCount(app2, "tag").intValue());
 
-		List<Tag> l1 = s.findQuery(app1, "tag", "*");
+		List<Tag> l1 = s.findQuery(app1, "tag", "");
 		assertEquals(2, l1.size());
 		List<Tag> l2 = s.findQuery(app2, "tag", "*");
 		assertEquals(l2.get(0), t2);
