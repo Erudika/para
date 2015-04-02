@@ -79,6 +79,7 @@ public final class ElasticSearchUtils {
 		ImmutableSettings.Builder settings = ImmutableSettings.settingsBuilder();
 		settings.put("node.name", getNodeName());
 		settings.put("client.transport.sniff", true);
+		settings.put("script.disable_dynamic", true);
 		settings.put("action.disable_delete_all_indices", true);
 		settings.put("cluster.name", Config.CLUSTER_NAME);
 		settings.put("http.cors.enabled", corsEnabled);

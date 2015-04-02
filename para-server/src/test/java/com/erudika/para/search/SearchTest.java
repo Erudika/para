@@ -328,7 +328,7 @@ public abstract class SearchTest {
 	}
 
 	@Test
-	public void testIndexAllUnindexAll() {
+	public void testIndexAllUnindexAll() throws InterruptedException {
 		Tag tt1 = new Tag("test-all1");
 		tt1.setSearch(s);
 		Tag tt2 = new Tag("test-all2");
@@ -361,18 +361,18 @@ public abstract class SearchTest {
 		sp1.setTimestamp(123L);
 		sp2.setTimestamp(123L);
 		sp3.setTimestamp(1234L);
-		List<Sysprop> sps = new ArrayList<Sysprop>();
-		sps.add(sp1);
-		sps.add(sp2);
-		sps.add(sp3);
+		s.index(sp1);
+		s.index(sp2);
+		s.index(sp3);
 
-		s.indexAll(sps);
+		Thread.sleep(1000);
 
 		Map<String, Object> terms = new HashMap<String, Object>();
 		terms.put(Config._NAME, "xx");
 		terms.put(Config._TIMESTAMP, 123L);
 
 		s.unindexAll(terms, true);
+		Thread.sleep(1000);
 
 		assertNull(s.findById(sp1.getId()));
 		assertNull(s.findById(sp2.getId()));

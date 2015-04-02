@@ -20,6 +20,7 @@ package com.erudika.para.cache;
 import com.erudika.para.utils.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -113,14 +114,17 @@ public class HazelcastCache implements Cache {
 
 	@Override
 	public <T> Map<String, T> getAll(String appid, List<String> ids) {
-		Map<String, T> result = new LinkedHashMap<String, T>();
 		if (ids == null || StringUtils.isBlank(appid)) {
-			return result;
+			return Collections.emptyMap();
 		}
+		Map<String, T> result = new LinkedHashMap<String, T>(ids.size(), 0.75f, true);
 		ids.remove(null);
 		IMap<String, T> imap = client().getMap(appid);
-		for (Entry<String, T> entry : imap.getAll(new TreeSet<String>(ids)).entrySet()) {
-			result.put(entry.getKey(), entry.getValue());
+		Map<String, T> res = imap.getAll(new TreeSet<String>(ids));
+		for (String id : ids) {
+			if (res.containsKey(id)) {
+				result.put(id, res.get(id));
+			}
 		}
 		logger.debug("Cache.getAll() {} {}", appid, ids.size());
 		return result;

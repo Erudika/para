@@ -149,10 +149,12 @@ public class ElasticSearch implements Search {
 			brb.add(client().prepareIndex(getIndexName(appid), po.getType(), po.getId()).
 					setSource(ParaObjectUtils.getAnnotatedFields(po, null, false)));
 		}
-		if (isAsyncEnabled()) {
-			brb.execute();
-		} else {
-			brb.execute().actionGet();
+		if (brb.numberOfActions() > 0) {
+			if (isAsyncEnabled()) {
+				brb.execute();
+			} else {
+				brb.execute().actionGet();
+			}
 		}
 		logger.debug("Search.indexAll() {}", objects.size());
 	}
@@ -166,10 +168,12 @@ public class ElasticSearch implements Search {
 		for (ParaObject po : objects) {
 			brb.add(client().prepareDelete(getIndexName(appid), po.getType(), po.getId()));
 		}
-		if (isAsyncEnabled()) {
-			brb.execute();
-		} else {
-			brb.execute().actionGet();
+		if (brb.numberOfActions() > 0) {
+			if (isAsyncEnabled()) {
+				brb.execute();
+			} else {
+				brb.execute().actionGet();
+			}
 		}
 		logger.debug("Search.unindexAll() {}", objects.size());
 	}
@@ -186,17 +190,10 @@ public class ElasticSearch implements Search {
 				.setQuery(qb)
 				.setSize(100).execute().actionGet();
 
+		BulkRequestBuilder brb = new BulkRequestBuilder(client());
 		while (true) {
-			BulkRequestBuilder brb = new BulkRequestBuilder(client());
-			for (SearchHit hit : scrollResp.getHits().getHits()) {
+			for (SearchHit hit : scrollResp.getHits()) {
 				brb.add(new DeleteRequest(getIndexName(appid), hit.getType(), hit.getId()));
-			}
-			BulkResponse result = brb.execute().actionGet();
-			if (result.hasFailures()) {
-				logger.warn("Unindexed 100 documents with failures ({}), took {}s.",
-						result.buildFailureMessage(), result.getTook().seconds());
-			} else {
-				logger.info("Unindexed 100 documents without failures, took {}s.", result.getTook().seconds());
 			}
 			// next page
 			scrollResp = client().prepareSearchScroll(scrollResp.getScrollId()).
@@ -206,7 +203,16 @@ public class ElasticSearch implements Search {
 				break;
 			}
 		}
-		logger.debug("Search.unindexAll() {}", terms.size());
+		if (brb.numberOfActions() > 0) {
+			BulkResponse result = brb.execute().actionGet();
+			if (result.hasFailures()) {
+				logger.warn("Unindexed {} documents with failures ({}), took {}s.", brb.numberOfActions(),
+						result.buildFailureMessage(), result.getTook().seconds());
+			} else {
+				logger.info("Unindexed {} documents without failures, took {}s.",
+						brb.numberOfActions(), result.getTook().seconds());
+			}
+		}
 	}
 
 	@Override
@@ -500,7 +506,10 @@ public class ElasticSearch implements Search {
 				grb.setType(type);
 			}
 
-			map = grb.execute().actionGet().getSource();
+			GetResponse gres = grb.execute().actionGet();
+			if (gres.isExists()) {
+				map = gres.getSource();
+			}
 		} catch (Exception e) {
 			logger.warn(null, e);
 		}
@@ -569,35 +578,42 @@ public class ElasticSearch implements Search {
 	 */
 	private FilterBuilder getTermsFilter(Map<String, ?> terms, boolean mustMatchAll) {
 		FilterBuilder fb = mustMatchAll ? FilterBuilders.andFilter() : FilterBuilders.orFilter();
+		int addedTerms = 0;
 		boolean noop = true;
-		boolean one = terms.size() == 1;
+		BaseFilterBuilder bfb = null;
 
 		for (Map.Entry<String, ?> term : terms.entrySet()) {
-			if (!StringUtils.isBlank(term.getKey()) && term.getValue() != null) {
+			Object val = term.getValue();
+			if (!StringUtils.isBlank(term.getKey()) && val != null) {
+				if (val instanceof String && StringUtils.isBlank((String) val)) {
+					continue;
+				}
 				Matcher matcher = Pattern.compile(".*(<|>|<=|>=)$").matcher(term.getKey().trim());
-				BaseFilterBuilder bfb = FilterBuilders.termFilter(term.getKey(), term.getValue());
+				bfb = FilterBuilders.termFilter(term.getKey(), val);
 				if (matcher.matches()) {
 					String key = term.getKey().replaceAll("[<>=\\s]+$", "");
 					RangeFilterBuilder rfb = FilterBuilders.rangeFilter(key);
 					if (">".equals(matcher.group(1))) {
-						bfb = rfb.gt(term.getValue());
+						bfb = rfb.gt(val);
 					} else if ("<".equals(matcher.group(1))) {
-						bfb = rfb.lt(term.getValue());
+						bfb = rfb.lt(val);
 					} else if (">=".equals(matcher.group(1))) {
-						bfb = rfb.gte(term.getValue());
+						bfb = rfb.gte(val);
 					} else if ("<=".equals(matcher.group(1))) {
-						bfb = rfb.lte(term.getValue());
+						bfb = rfb.lte(val);
 					}
 				}
-				if (one) {
-					fb = bfb;
-				} else if (mustMatchAll) {
+				if (mustMatchAll) {
 					((AndFilterBuilder) fb).add(bfb);
 				} else {
 					((OrFilterBuilder) fb).add(bfb);
 				}
+				addedTerms++;
 				noop = false;
 			}
+		}
+		if (addedTerms == 1 && bfb != null) {
+			fb = bfb;
 		}
 		return noop ? null : fb;
 	}

@@ -43,6 +43,7 @@ public class ElasticSearchIT extends SearchTest {
 		System.setProperty("para.env", "embedded");
 		System.setProperty("para.app_name", "para-test");
 		System.setProperty("para.cluster_name", "para-test");
+		System.setProperty("para.es.shards", "2");
 		s = new ElasticSearch(mock(DAO.class));
 		ElasticSearchUtils.createIndex(Config.APP_NAME_NS);
 		ElasticSearchUtils.createIndex(appid1);
@@ -62,7 +63,7 @@ public class ElasticSearchIT extends SearchTest {
 	}
 
 	@Test
-	public void testCreateDeleteExistsIndex() throws InterruptedException {
+	public void testCreateDeleteExistsIndex() {
 		String appid3 = "test-index";
 		String badAppid = "test index 123";
 
@@ -153,7 +154,7 @@ public class ElasticSearchIT extends SearchTest {
 		assertEquals(2, s.getCount(app1, "tag").intValue());
 		assertEquals(1, s.getCount(app2, "tag").intValue());
 
-		List<Tag> l1 = s.findQuery(app1, "tag", "");
+		List<Tag> l1 = s.findQuery(app1, "tag", "*");
 		assertEquals(2, l1.size());
 		List<Tag> l2 = s.findQuery(app2, "tag", "*");
 		assertEquals(l2.get(0), t2);

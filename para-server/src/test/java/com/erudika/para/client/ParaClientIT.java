@@ -474,7 +474,7 @@ public class ParaClientIT {
 		Sysprop ct2 = null;
 		try {
 			// validation fails
-			ct = pc.create(ct);
+			ct2 = pc.create(ct);
 		} catch (Exception e) {}
 
 		assertNull(ct2);

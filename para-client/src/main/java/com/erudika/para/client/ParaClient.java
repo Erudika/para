@@ -156,8 +156,7 @@ public final class ParaClient {
 				Map<String, Object> error = res.hasEntity() ? res.readEntity(Map.class) : null;
 				if (error != null && error.containsKey("code")) {
 					String msg = error.containsKey("message") ? (String) error.get("message") : "error";
-					msg = msg.concat(" ").concat(Integer.toString((Integer) error.get("code")));
-					logger.error(msg, new WebApplicationException((Integer) error.get("code")));
+					logger.error(msg + " - {}", new WebApplicationException((Integer) error.get("code")).getMessage());
 				}
 			}
 		}

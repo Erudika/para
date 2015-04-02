@@ -36,6 +36,7 @@ public final class Config {
 	private static final Logger logger = LoggerFactory.getLogger(Config.class);
 	private static com.typesafe.config.Config config;
 	private static Map<String, String> configMap;
+
 	// GLOBAL SETTINGS
 	/** {@value #PARA} */
 	public static final String PARA = "para";
@@ -72,12 +73,8 @@ public final class Config {
 	/** {@value #_GROUPS} */
 	public static final String _GROUPS = "groups";
 
-	private static final com.typesafe.config.Config emptyConfig =
-			com.typesafe.config.ConfigFactory.empty().withValue(PARA,
-					com.typesafe.config.ConfigValueFactory.fromMap(new HashMap<String, Object>(0)));
-
 	static {
-		init(emptyConfig);
+		init(null);
 	}
 
 	/** {@value #DEFAULT_LIMIT} */
@@ -263,7 +260,7 @@ public final class Config {
 	/**
 	 * Read objects from index, not the data store. This WILL override the cache! Default: false
 	 */
-	public static final boolean READ_FROM_INDEX = Boolean.parseBoolean(getConfigParam("read_from_index", "false"));
+	public static final boolean READ_FROM_INDEX = Boolean.parseBoolean(getConfigParam("read_from_index", "true"));
 	/**
 	 * Production environment flag.
 	 */
@@ -283,7 +280,12 @@ public final class Config {
 	 */
 	public static void init(com.typesafe.config.Config conf) {
 		try {
-			config = ConfigFactory.load().getConfig(PARA).withFallback((conf == null) ? emptyConfig : conf);
+			config = ConfigFactory.load().getConfig(PARA);
+
+			if (conf != null) {
+				config = conf.withFallback(config);
+			}
+
 			configMap = new HashMap<String, String>();
 			for (Map.Entry<String, ConfigValue> con : config.entrySet()) {
 				if (con.getValue().valueType() != ConfigValueType.LIST) {
@@ -292,7 +294,7 @@ public final class Config {
 			}
 		} catch (Exception ex) {
 			logger.warn("Para configuration file 'application.(conf|json|properties)' is missing from classpath.");
-			config = emptyConfig;
+			config = com.typesafe.config.ConfigFactory.empty();
 		}
 	}
 
@@ -306,7 +308,7 @@ public final class Config {
 	@SuppressWarnings("unchecked")
 	public static <V> V getConfigParamUnwrapped(String key, V defaultValue) {
 		if (config == null) {
-			init(emptyConfig);
+			init(null);
 		}
 		if (StringUtils.isBlank(key)) {
 			return defaultValue;
@@ -324,7 +326,7 @@ public final class Config {
 	 */
 	public static String getConfigParam(String key, String defaultValue) {
 		if (config == null) {
-			init(emptyConfig);
+			init(null);
 		}
 		if (StringUtils.isBlank(key)) {
 			return null;
@@ -343,7 +345,7 @@ public final class Config {
 	 */
 	public static Map<String, String> getConfigMap() {
 		if (configMap == null) {
-			init(emptyConfig);
+			init(null);
 		}
 		return configMap;
 	}
@@ -354,7 +356,7 @@ public final class Config {
 	 */
 	public static com.typesafe.config.Config getConfig() {
 		if (config == null) {
-			init(emptyConfig);
+			init(null);
 		}
 		return config;
 	}
