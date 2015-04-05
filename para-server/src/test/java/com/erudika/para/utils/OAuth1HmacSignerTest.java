@@ -17,6 +17,7 @@
  */
 package com.erudika.para.utils;
 
+import com.erudika.para.security.OAuth1HmacSigner;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;

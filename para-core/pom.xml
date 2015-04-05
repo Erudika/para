@@ -218,6 +218,27 @@
 					</execution>
 				</executions>
 			</plugin>
+			
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.10.2</version>
+				<executions>
+					<execution>
+						<id>javadocs</id>
+						<goals>
+							<goal>javadoc</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<stylesheetfile>src/main/javadoc/stylesheet.css</stylesheetfile>
+					<show>public</show>
+					<aggregate>true</aggregate>
+					<quiet>true</quiet>
+					<docfilessubdirs>true</docfilessubdirs>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 

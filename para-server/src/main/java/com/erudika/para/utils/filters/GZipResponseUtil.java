@@ -123,7 +123,7 @@ public final class GZipResponseUtil {
 
 	/**
 	 * Adds the Vary: Accept-Encoding header to the response if needed
-	 * @param wrapper
+	 * @param wrapper response
 	 */
 	protected static void addVaryAcceptEncoding(final GZipServletResponseWrapper wrapper) {
 		Collection<String> headers = wrapper.getHeaderNames();

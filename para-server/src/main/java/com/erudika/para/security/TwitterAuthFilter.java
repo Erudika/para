@@ -21,7 +21,6 @@ import com.eaio.uuid.UUID;
 import com.erudika.para.core.ParaObjectUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.utils.Config;
-import com.erudika.para.utils.OAuth1HmacSigner;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;

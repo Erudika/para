@@ -309,7 +309,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<stylesheetfile>${basedir}/src/main/javadoc/stylesheet.css</stylesheetfile>
+					<stylesheetfile>../para-core/src/main/javadoc/stylesheet.css</stylesheetfile>
 					<show>public</show>
 					<aggregate>true</aggregate>
 					<quiet>true</quiet>

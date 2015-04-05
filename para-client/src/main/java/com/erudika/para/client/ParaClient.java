@@ -51,8 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The Java REST client.
- *
+ * The Java REST client for communicating with a Para API server.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public final class ParaClient {
@@ -105,7 +104,7 @@ public final class ParaClient {
 	 * @return the App object
 	 */
 	public App getApp() {
-		return read(Utils.type(App.class), accessKey);
+		return (App) read(Utils.type(App.class), accessKey);
 	}
 
 	/**

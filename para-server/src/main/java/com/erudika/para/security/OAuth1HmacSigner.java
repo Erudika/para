@@ -15,8 +15,10 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.utils;
+package com.erudika.para.security;
 
+import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Utils;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;

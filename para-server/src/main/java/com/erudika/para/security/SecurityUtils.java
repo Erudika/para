@@ -42,7 +42,7 @@ public final class SecurityUtils {
 
 	/**
 	 * Extracts a User object from the security context
-	 * @param authentication object
+	 * @param auth the authentication object
 	 * @return an authenticated user or null if a user is not authenticated
 	 */
 	public static User getAuthenticatedUser(Authentication auth) {
