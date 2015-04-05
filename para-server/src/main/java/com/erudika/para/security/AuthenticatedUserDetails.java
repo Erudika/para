@@ -76,9 +76,9 @@ public class AuthenticatedUserDetails implements UserDetails {
 	}
 
 	/**
-	 * The username. Same as {@link #getIdentifier()}
-	 * @return {@link #getIdentifier()}
-	 * @see #getIdentifier()
+	 * The username. Same as {@link User#getIdentifier()}
+	 * @return {@link User#getIdentifier()}
+	 * @see User#getIdentifier()
 	 */
 	@JsonIgnore
 	public String getUsername() {
@@ -86,9 +86,9 @@ public class AuthenticatedUserDetails implements UserDetails {
 	}
 
 	/**
-	 * Same as {@link #getActive() }
+	 * Same as {@link User#getActive() }
 	 * @return true if active
-	 * @see #getActive()
+	 * @see User#getActive()
 	 */
 	@JsonIgnore
 	public boolean isAccountNonExpired() {
@@ -96,9 +96,9 @@ public class AuthenticatedUserDetails implements UserDetails {
 	}
 
 	/**
-	 * Same as {@link #getActive() }
+	 * Same as {@link User#getActive() }
 	 * @return true if active
-	 * @see #getActive()
+	 * @see User#getActive()
 	 */
 	@JsonIgnore
 	public boolean isAccountNonLocked() {
@@ -106,9 +106,9 @@ public class AuthenticatedUserDetails implements UserDetails {
 	}
 
 	/**
-	 * Same as {@link #getActive() }
+	 * Same as {@link User#getActive() }
 	 * @return true if active
-	 * @see #getActive()
+	 * @see User#getActive()
 	 */
 	@JsonIgnore
 	public boolean isCredentialsNonExpired() {
@@ -116,9 +116,9 @@ public class AuthenticatedUserDetails implements UserDetails {
 	}
 
 	/**
-	 * Same as {@link #getActive() }
+	 * Same as {@link User#getActive() }
 	 * @return true if active
-	 * @see #getActive()
+	 * @see User#getActive()
 	 */
 	@JsonIgnore
 	public boolean isEnabled() {
