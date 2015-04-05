@@ -111,7 +111,7 @@ Here's the Maven snippet to include in your `pom.xml`:
 ```xml
 <dependency>
   <groupId>com.erudika</groupId>
-  <artifactId>para</artifactId>
+  <artifactId>para-server</artifactId>
   <version>1.13</version>
 </dependency>
 ```

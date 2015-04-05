@@ -14,7 +14,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.erudika</groupId>
-			<artifactId>para</artifactId>
+			<artifactId>para-server</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
