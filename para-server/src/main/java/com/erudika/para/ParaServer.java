@@ -35,6 +35,10 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletException;
 import org.ebaysf.web.cors.CORSFilter;
+import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Server;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,8 +48,11 @@ import org.springframework.boot.autoconfigure.MessageSourceAutoConfiguration;
 import org.springframework.boot.builder.ParentContextApplicationContextInitializer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.embedded.AnnotationConfigEmbeddedWebApplicationContext;
+import org.springframework.boot.context.embedded.EmbeddedServletContainerFactory;
 import org.springframework.boot.context.embedded.FilterRegistrationBean;
 import org.springframework.boot.context.embedded.ServletRegistrationBean;
+import org.springframework.boot.context.embedded.jetty.JettyEmbeddedServletContainerFactory;
+import org.springframework.boot.context.embedded.jetty.JettyServerCustomizer;
 import org.springframework.boot.context.web.ServletContextApplicationContextInitializer;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -124,6 +131,24 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		return frb;
 	}
 
+	@Bean
+	public EmbeddedServletContainerFactory jettyConfigBean() {
+		JettyEmbeddedServletContainerFactory jef = new JettyEmbeddedServletContainerFactory();
+		jef.addServerCustomizers(new JettyServerCustomizer() {
+			public void customize(Server server) {
+				// Disable Jetty version header
+				for (Connector y : server.getConnectors()) {
+					for (ConnectionFactory x : y.getConnectionFactories()) {
+						if (x instanceof HttpConnectionFactory) {
+							((HttpConnectionFactory) x).getHttpConfiguration().setSendServerVersion(false);
+						}
+					}
+				}
+			}
+		});
+		return jef;
+	}
+
 	/**
 	 * Called before shutdown.
 	 */
@@ -155,7 +180,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 
 	/**
 	 * This is the initializing method when running ParaServer as WAR,
- deployed to a servlet container.
+	 * deployed to a servlet container.
 	 * @param sc the ServletContext instance
 	 * @param sources the application classes that will be scanned
 	 * @return the application context
@@ -188,7 +213,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 
 	/**
 	 * This is the initializing method when running ParaServer as executable JAR (or WAR),
- from the command line: java -jara para.jar
+	 * from the command line: java -jara para.jar
 	 * @param args command line arguments array (same as those in {@code void main(String[] args)} )
 	 * @param sources the application classes that will be scanned
 	 */
