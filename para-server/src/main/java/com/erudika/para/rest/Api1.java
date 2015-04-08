@@ -381,13 +381,11 @@ public class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				if (GET.equals(ctx.getMethod())) {
 					User user = SecurityUtils.getAuthenticatedUser();
+					App app = SecurityUtils.getAuthenticatedApp();
 					if (user != null) {
 						return Response.ok(user).build();
-					} else {
-						App app = RestUtils.getPrincipalApp();
-						if (app != null) {
-							return Response.ok(app).build();
-						}
+					} else if (app != null) {
+						return Response.ok(app).build();
 					}
 				}
 				return Response.status(Response.Status.UNAUTHORIZED).build();
