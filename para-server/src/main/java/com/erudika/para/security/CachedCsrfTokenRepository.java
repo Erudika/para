@@ -72,7 +72,6 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	 * @param token the token
 	 * @param request HTTP request
 	 * @param response HTTP response
-	 * @see org.springframework.security.web.csrf.CsrfTokenRepository#saveToken(org.springframework.security.web.csrf.CsrfToken, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
 	 */
 	public void saveToken(CsrfToken token, HttpServletRequest request, HttpServletResponse response) {
 		String ident = getIdentifierFromCookie(request);
@@ -95,7 +94,6 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	 * Loads a CSRF token from cache.
 	 * @param request HTTP request
 	 * @return the token
-	 * @see org.springframework.security.web.csrf.CsrfTokenRepository#loadToken(javax.servlet.http.HttpServletRequest)
 	 */
 	public CsrfToken loadToken(HttpServletRequest request) {
 		CsrfToken token = null;
@@ -116,14 +114,6 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 				}
 			}
 		}
-//		if (token == null) {
-//			String t = request.getParameter(parameterName);
-//			if (t == null) {
-//				token = (CsrfToken) request.getAttribute(parameterName);
-//			} else {
-//				token = (t == null) ? null : new DefaultCsrfToken(headerName, parameterName, t);
-//			}
-//		}
 		return token;
 	}
 
@@ -165,7 +155,6 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	 * Generates a CSRF token string.
 	 * @param request HTTP request
 	 * @return a new token
-	 * @see org.springframework.security.web.csrf.CsrfTokenRepository#generateToken(javax.servlet.http.HttpServletRequest)
 	 */
 	public CsrfToken generateToken(HttpServletRequest request) {
 		return new DefaultCsrfToken(headerName, parameterName, new UUID().toString());
@@ -181,8 +170,8 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	}
 
 	/**
-	 * Sets the header name that the {@link CsrfToken} is expected to appear on and the header that the response will
-	 * contain the {@link CsrfToken}.
+	 * Sets the header name that the {@link CsrfToken} is expected to appear on
+	 * and the header that the response will contain the {@link CsrfToken}.
 	 *
 	 * @param parameterName the new parameter name to use
 	 */
