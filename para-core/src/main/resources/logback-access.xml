@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+	<appender name="ACCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>para-access.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<!-- rollover monthly -->
+      <fileNamePattern>access.%d{yyyy-MM}.%i.log.zip</fileNamePattern>
+			<timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+				<!-- or whenever the file size reaches 50MB -->
+				<maxFileSize>50MB</maxFileSize>
+			</timeBasedFileNamingAndTriggeringPolicy>
+    </rollingPolicy>
+    <encoder>
+      <pattern>combined</pattern>
+    </encoder>
+  </appender>
+
+	<appender-ref ref="ACCESS" />
+</configuration>

@@ -17,6 +17,7 @@
  */
 package com.erudika.para;
 
+import ch.qos.logback.access.jetty.RequestLogImpl;
 import com.erudika.para.aop.AOPModule;
 import com.erudika.para.cache.CacheModule;
 import com.erudika.para.email.EmailModule;
@@ -37,8 +38,11 @@ import javax.servlet.ServletException;
 import org.ebaysf.web.cors.CORSFilter;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,6 +140,20 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		JettyEmbeddedServletContainerFactory jef = new JettyEmbeddedServletContainerFactory();
 		jef.addServerCustomizers(new JettyServerCustomizer() {
 			public void customize(Server server) {
+				// enable access log via Logback
+				HandlerCollection handlers = new HandlerCollection();
+				for (Handler handler : server.getHandlers()) {
+					handlers.addHandler(handler);
+				}
+				RequestLogHandler reqLogs = new RequestLogHandler();
+				reqLogs.setServer(server);
+				RequestLogImpl rli = new RequestLogImpl();
+				rli.setResource("/logback-access.xml");
+				rli.setQuiet(true);
+				reqLogs.setRequestLog(rli);
+				handlers.addHandler(reqLogs);
+				server.setHandler(handlers);
+
 				// Disable Jetty version header
 				for (Connector y : server.getConnectors()) {
 					for (ConnectionFactory x : y.getConnectionFactories()) {
@@ -213,7 +231,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 
 	/**
 	 * This is the initializing method when running ParaServer as executable JAR (or WAR),
-	 * from the command line: java -jara para.jar
+	 * from the command line: java -jar para.jar
 	 * @param args command line arguments array (same as those in {@code void main(String[] args)} )
 	 * @param sources the application classes that will be scanned
 	 */

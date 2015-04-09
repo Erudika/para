@@ -3,7 +3,7 @@
 
 	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
 		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-			<pattern>%-30(%d{HH:mm:ss} %highlight([%-5level])) %msg%n</pattern>
+			<pattern>%-20(%d{HH:mm} %highlight([%-5level])) %msg%n</pattern>
 		</encoder>
 	</appender>
 
@@ -16,14 +16,14 @@
 		<file>para.log</file>
 		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
 			<!-- rollover monthly -->
-			<fileNamePattern>para-%d{yyyy-MM}.%i.log</fileNamePattern>
+			<fileNamePattern>para-%d{yyyy-MM}.%i.log.zip</fileNamePattern>
 			<timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
 				<!-- or whenever the file size reaches 50MB -->
 				<maxFileSize>50MB</maxFileSize>
 			</timeBasedFileNamingAndTriggeringPolicy>
 		</rollingPolicy>
 		<encoder>
-			<pattern>%-30(%d [%-5level]) %msg%n</pattern>
+			<pattern>%-26(%d [%-5level]) %msg%n</pattern>
 		</encoder>
 	</appender>
 

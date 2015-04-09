@@ -126,6 +126,11 @@
 			<artifactId>logback-classic</artifactId>
 			<version>${logbackVer}</version>
 		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-access</artifactId>
+			<version>${logbackVer}</version>
+		</dependency>
 
 		<!-- OTHER -->
 		<dependency>
@@ -218,7 +223,7 @@
 					</execution>
 				</executions>
 			</plugin>
-			
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
