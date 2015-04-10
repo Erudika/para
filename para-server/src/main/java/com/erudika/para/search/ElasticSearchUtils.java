@@ -106,10 +106,6 @@ public final class ElasticSearchUtils {
 						new InetSocketTransportAddress("localhost", 9300));
 		}
 
-		if (!existsIndex(Config.APP_NAME_NS)) {
-			createIndex(Config.APP_NAME_NS);
-		}
-
 		Para.addDestroyListener(new Para.DestroyListener() {
 			public void onDestroy() {
 				shutdownClient();
@@ -118,6 +114,10 @@ public final class ElasticSearchUtils {
 
 		// wait for the shards to initialize to prevent NoShardAvailableActionException
 		searchClient.admin().cluster().prepareHealth(Config.APP_NAME_NS).setWaitForGreenStatus().execute().actionGet();
+
+		if (!existsIndex(Config.APP_NAME_NS)) {
+			createIndex(Config.APP_NAME_NS);
+		}
 
 		return searchClient;
 	}

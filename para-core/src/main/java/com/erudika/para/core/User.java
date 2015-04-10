@@ -597,9 +597,9 @@ public class User implements ParaObject {
 		if (StringUtils.isBlank(picture)) {
 			if (email != null) {
 				String emailHash = DigestUtils.md5DigestAsHex(email.getBytes());
-				setPicture("http://www.gravatar.com/avatar/" + emailHash + "?size=200&d=mm&r=pg");
+				setPicture("http://www.gravatar.com/avatar/" + emailHash + "?size=400&d=mm&r=pg");
 			} else {
-				setPicture("http://www.gravatar.com/avatar?d=mm&size=200");
+				setPicture("http://www.gravatar.com/avatar?d=mm&size=400");
 			}
 		}
 	}
