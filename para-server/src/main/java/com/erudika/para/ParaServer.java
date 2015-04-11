@@ -140,19 +140,21 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		JettyEmbeddedServletContainerFactory jef = new JettyEmbeddedServletContainerFactory();
 		jef.addServerCustomizers(new JettyServerCustomizer() {
 			public void customize(Server server) {
-				// enable access log via Logback
-				HandlerCollection handlers = new HandlerCollection();
-				for (Handler handler : server.getHandlers()) {
-					handlers.addHandler(handler);
+				if (Config.getConfigParamUnwrapped("access_log_enabled", true)) {
+					// enable access log via Logback
+					HandlerCollection handlers = new HandlerCollection();
+					for (Handler handler : server.getHandlers()) {
+						handlers.addHandler(handler);
+					}
+					RequestLogHandler reqLogs = new RequestLogHandler();
+					reqLogs.setServer(server);
+					RequestLogImpl rli = new RequestLogImpl();
+					rli.setResource("/logback-access.xml");
+					rli.setQuiet(true);
+					reqLogs.setRequestLog(rli);
+					handlers.addHandler(reqLogs);
+					server.setHandler(handlers);
 				}
-				RequestLogHandler reqLogs = new RequestLogHandler();
-				reqLogs.setServer(server);
-				RequestLogImpl rli = new RequestLogImpl();
-				rli.setResource("/logback-access.xml");
-				rli.setQuiet(true);
-				reqLogs.setRequestLog(rli);
-				handlers.addHandler(reqLogs);
-				server.setHandler(handlers);
 
 				// Disable Jetty version header
 				for (Connector y : server.getConnectors()) {

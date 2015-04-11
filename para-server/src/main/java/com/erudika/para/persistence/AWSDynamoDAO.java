@@ -68,7 +68,8 @@ import static com.erudika.para.persistence.AWSDynamoUtils.*;
 public class AWSDynamoDAO implements DAO {
 
 	private static final Logger logger = LoggerFactory.getLogger(AWSDynamoDAO.class);
-	private static final int MAX_ITEMS_PER_BATCH = 4; // Amazon DynamoDB limit ~= WRITE CAP
+	private static final int MAX_ITEMS_PER_WRITE = 10; // Amazon DynamoDB limit ~= WRITE CAP
+	private static final int MAX_KEYS_PER_READ = 100; // Amazon DynamoDB limit = 100
 
 	/**
 	 * No-args constructor
@@ -210,20 +211,34 @@ public class AWSDynamoDAO implements DAO {
 		}
 
 		Map<String, P> results = new LinkedHashMap<String, P>(keys.size(), 0.75f, true);
-		ArrayList<Map<String, AttributeValue>> keyz = new ArrayList<Map<String, AttributeValue>>(keys.size());
+		ArrayList<Map<String, AttributeValue>> keyz = new ArrayList<Map<String, AttributeValue>>(MAX_KEYS_PER_READ);
 
-		for (String key : keys) {
-			results.put(key, null);
-			keyz.add(Collections.singletonMap(Config._KEY, new AttributeValue(key)));
+		int batchSteps = 1;
+		if ((keys.size() > MAX_KEYS_PER_READ)) {
+			batchSteps = (keys.size() / MAX_KEYS_PER_READ)
+					+ ((keys.size() % MAX_KEYS_PER_READ > 0) ? 1 : 0);
 		}
 
-		KeysAndAttributes kna = new KeysAndAttributes().withKeys(keyz);
-		if (!getAllColumns) {
-			kna.setAttributesToGet(Arrays.asList(Config._KEY, Config._TYPE));
+		Iterator<String> it = keys.iterator();
+		int j = 0;
+
+		for (int i = 0; i < batchSteps; i++) {
+			while (it.hasNext() && j < MAX_KEYS_PER_READ) {
+				String key = it.next();
+				results.put(key, null);
+				keyz.add(Collections.singletonMap(Config._KEY, new AttributeValue(key)));
+				j++;
+			}
+
+			KeysAndAttributes kna = new KeysAndAttributes().withKeys(keyz);
+			if (!getAllColumns) {
+				kna.setAttributesToGet(Arrays.asList(Config._KEY, Config._TYPE));
+			}
+
+			batchGet(Collections.singletonMap(getTablNameForAppid(appid), kna), results);
+			keyz.clear();
+			j = 0;
 		}
-
-		batchGet(Collections.singletonMap(getTablNameForAppid(appid), kna), results);
-
 		logger.debug("DAO.readAll() {}", results.size());
 		return results;
 	}
@@ -357,16 +372,16 @@ public class AWSDynamoDAO implements DAO {
 
 		List<WriteRequest> reqs = new ArrayList<WriteRequest>(objects.size());
 		int batchSteps = 1;
-		if ((objects.size() > MAX_ITEMS_PER_BATCH)) {
-			batchSteps = (objects.size() / MAX_ITEMS_PER_BATCH) +
-					((objects.size() % MAX_ITEMS_PER_BATCH > 0) ? 1 : 0);
+		if ((objects.size() > MAX_ITEMS_PER_WRITE)) {
+			batchSteps = (objects.size() / MAX_ITEMS_PER_WRITE) +
+					((objects.size() % MAX_ITEMS_PER_WRITE > 0) ? 1 : 0);
 		}
 
 		Iterator<P> it = objects.iterator();
 		int j = 0;
 
 		for (int i = 0; i < batchSteps; i++) {
-			while (it.hasNext() && j < MAX_ITEMS_PER_BATCH) {
+			while (it.hasNext() && j < MAX_ITEMS_PER_WRITE) {
 				ParaObject object = it.next();
 				if (StringUtils.isBlank(object.getId())) {
 					object.setId(Utils.getNewId());
