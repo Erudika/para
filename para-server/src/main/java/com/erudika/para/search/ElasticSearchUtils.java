@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.action.admin.cluster.node.info.NodeInfo;
 import org.elasticsearch.action.admin.cluster.node.info.NodesInfoRequest;
 import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
@@ -113,7 +114,8 @@ public final class ElasticSearchUtils {
 		});
 
 		// wait for the shards to initialize to prevent NoShardAvailableActionException
-		searchClient.admin().cluster().prepareHealth(Config.APP_NAME_NS).setWaitForGreenStatus().execute().actionGet();
+		searchClient.admin().cluster().prepareHealth(Config.APP_NAME_NS).
+				setWaitForGreenStatus().setTimeout("2m").execute().actionGet();
 
 		if (!existsIndex(Config.APP_NAME_NS)) {
 			createIndex(Config.APP_NAME_NS);
@@ -405,6 +407,15 @@ public final class ElasticSearchUtils {
 			return aliases.keysIt().next();
 		}
 		return null;
+	}
+
+	/**
+	 * Check if cluster status is green or yellow.
+	 * @return false if status is red
+	 */
+	public static boolean isClusterOK() {
+		return !getClient().admin().cluster().prepareClusterStats().execute().actionGet().
+				getStatus().equals(ClusterHealthStatus.RED);
 	}
 
 	/**
