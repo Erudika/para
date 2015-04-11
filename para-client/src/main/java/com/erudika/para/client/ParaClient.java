@@ -69,16 +69,14 @@ public final class ParaClient {
 	public ParaClient(String accessKey, String secretKey) {
 		this.accessKey = accessKey;
 		this.secretKey = secretKey;
+		ClientConfig clientConfig = new ClientConfig();
+		clientConfig.register(GenericExceptionMapper.class);
+		clientConfig.register(new JacksonJsonProvider(ParaObjectUtils.getJsonMapper()));
+		clientConfig.connectorProvider(new JettyConnectorProvider());
+		apiClient = ClientBuilder.newClient(clientConfig);
 	}
 
 	protected Client getApiClient() {
-		if (apiClient == null) {
-			ClientConfig clientConfig = new ClientConfig();
-			clientConfig.register(GenericExceptionMapper.class);
-			clientConfig.register(new JacksonJsonProvider(ParaObjectUtils.getJsonMapper()));
-			clientConfig.connectorProvider(new JettyConnectorProvider());
-			apiClient = ClientBuilder.newClient(clientConfig);
-		}
 		return apiClient;
 	}
 
