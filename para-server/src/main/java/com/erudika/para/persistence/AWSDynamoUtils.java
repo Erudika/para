@@ -22,6 +22,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.DeleteTableRequest;
+import com.amazonaws.services.dynamodbv2.model.DescribeTableResult;
 import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
 import com.amazonaws.services.dynamodbv2.model.KeyType;
 import com.amazonaws.services.dynamodbv2.model.ListTablesResult;
@@ -104,8 +105,8 @@ public final class AWSDynamoUtils {
 			return false;
 		}
 		try {
-			List<String> tables = getClient().listTables().getTableNames();
-			return tables != null && tables.contains(getTablNameForAppid(appid));
+			DescribeTableResult res = getClient().describeTable(getTableNameForAppid(appid));
+			return res != null;
 		} catch (Exception e) {
 			return false;
 		}
@@ -132,7 +133,7 @@ public final class AWSDynamoUtils {
 			return false;
 		}
 		try {
-			getClient().createTable(new CreateTableRequest().withTableName(getTablNameForAppid(appid)).
+			getClient().createTable(new CreateTableRequest().withTableName(getTableNameForAppid(appid)).
 					withKeySchema(new KeySchemaElement(Config._KEY, KeyType.HASH)).
 					withAttributeDefinitions(new AttributeDefinition().withAttributeName(Config._KEY).
 					withAttributeType(ScalarAttributeType.S)).
@@ -152,11 +153,11 @@ public final class AWSDynamoUtils {
 	 * @return true if updated
 	 */
 	public static boolean updateTable(String appid, Long readCapacity, Long writeCapacity) {
-		if (StringUtils.isBlank(appid) || StringUtils.containsWhitespace(appid) || existsTable(appid)) {
+		if (StringUtils.isBlank(appid) || StringUtils.containsWhitespace(appid) || !existsTable(appid)) {
 			return false;
 		}
 		try {
-			getClient().updateTable(new UpdateTableRequest().withTableName(getTablNameForAppid(appid)).
+			getClient().updateTable(new UpdateTableRequest().withTableName(getTableNameForAppid(appid)).
 					withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -175,7 +176,7 @@ public final class AWSDynamoUtils {
 			return false;
 		}
 		try {
-			getClient().deleteTable(new DeleteTableRequest().withTableName(getTablNameForAppid(appid)));
+			getClient().deleteTable(new DeleteTableRequest().withTableName(getTableNameForAppid(appid)));
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;
@@ -193,7 +194,7 @@ public final class AWSDynamoUtils {
 			return Collections.emptyMap();
 		}
 		try {
-			final TableDescription td = getClient().describeTable(getTablNameForAppid(appid)).getTable();
+			final TableDescription td = getClient().describeTable(getTableNameForAppid(appid)).getTable();
 			return new HashMap<String, Object>() {
 				{
 					put("id", appid);
@@ -231,7 +232,7 @@ public final class AWSDynamoUtils {
 	 * @param appIdentifier app id
 	 * @return the table name
 	 */
-	public static String getTablNameForAppid(String appIdentifier) {
+	public static String getTableNameForAppid(String appIdentifier) {
 		if (StringUtils.isBlank(appIdentifier)) {
 			return null;
 		} else {
