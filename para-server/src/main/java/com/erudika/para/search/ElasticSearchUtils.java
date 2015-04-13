@@ -116,7 +116,8 @@ public final class ElasticSearchUtils {
 		});
 
 		// wait for the shards to initialize to prevent NoShardAvailableActionException
-		isClusterOK();
+		searchClient.admin().cluster().prepareHealth(Config.APP_NAME_NS).
+				setWaitForGreenStatus().setTimeout("2m").execute().actionGet();
 
 		if (!existsIndex(Config.APP_NAME_NS)) {
 			createIndex(Config.APP_NAME_NS);
