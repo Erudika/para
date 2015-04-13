@@ -114,8 +114,7 @@ public final class ElasticSearchUtils {
 		});
 
 		// wait for the shards to initialize to prevent NoShardAvailableActionException
-		searchClient.admin().cluster().prepareHealth(Config.APP_NAME_NS).
-				setWaitForGreenStatus().setTimeout("2m").execute().actionGet();
+		isClusterOK();
 
 		if (!existsIndex(Config.APP_NAME_NS)) {
 			createIndex(Config.APP_NAME_NS);
@@ -367,6 +366,9 @@ public final class ElasticSearchUtils {
 	 * @return true if acknowledged
 	 */
 	public static boolean removeIndexAlias(String indexName, String alias) {
+		if (!existsIndex(alias)) {
+			return false;
+		}
 		return getClient().admin().indices().prepareAliases().removeAlias(indexName, alias).
 				execute().actionGet().isAcknowledged();
 	}

@@ -188,15 +188,15 @@ public final class AWSDynamoUtils {
 	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @return a map
 	 */
-	public static Map<String, Object> getTableStatus(String appid) {
+	public static Map<String, Object> getTableStatus(final String appid) {
 		if (StringUtils.isBlank(appid)) {
 			return Collections.emptyMap();
 		}
 		try {
-			Map<String, Object> map = new HashMap<String, Object>();
 			final TableDescription td = getClient().describeTable(getTablNameForAppid(appid)).getTable();
 			return new HashMap<String, Object>() {
 				{
+					put("id", appid);
 					put("status", td.getTableStatus());
 					put("created", td.getCreationDateTime().getTime());
 					put("sizeBytes", td.getTableSizeBytes());
