@@ -76,6 +76,10 @@ public final class ElasticSearchUtils {
 		boolean dataNode = Config.getConfigParamUnwrapped("es.data_node", true);
 		boolean corsEnabled = Config.getConfigParamUnwrapped("es.cors_enabled", !Config.IN_PRODUCTION);
 		String esHome = Config.getConfigParam("es.dir", "");
+		String esHost = Config.getConfigParam("es.transportclient_host", "localhost");
+		int esPort = Config.getConfigParamUnwrapped("es.transportclient_port", 9300);
+		boolean useTransportClient = !"embedded".equals(Config.ENVIRONMENT) &&
+				Config.getConfigParamUnwrapped("es.use_transportclient", false);
 
 		ImmutableSettings.Builder settings = ImmutableSettings.settingsBuilder();
 		settings.put("node.name", getNodeName());
@@ -95,16 +99,14 @@ public final class ElasticSearchUtils {
 			settings.put("network.tcp.keep_alive", true);
 			settings.put("discovery.type", Config.getConfigParam("discovery_type", "ec2"));
 			settings.put("discovery.ec2.groups", "elasticsearch");
-			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(localNode).data(dataNode).node();
-			searchClient = searchNode.client();
-		} else if ("embedded".equals(Config.ENVIRONMENT)) {
-			// for local develoment only
-			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(localNode).data(dataNode).node();
-			searchClient = searchNode.client();
-		} else {
+		}
+
+		if (useTransportClient) {
 			searchClient = new TransportClient(settings);
-				((TransportClient) searchClient).addTransportAddress(
-						new InetSocketTransportAddress("localhost", 9300));
+			((TransportClient) searchClient).addTransportAddress(new InetSocketTransportAddress(esHost, esPort));
+		} else {
+			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(localNode).data(dataNode).node();
+			searchClient = searchNode.client();
 		}
 
 		Para.addDestroyListener(new Para.DestroyListener() {
