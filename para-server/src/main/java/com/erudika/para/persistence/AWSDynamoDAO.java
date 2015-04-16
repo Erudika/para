@@ -17,8 +17,6 @@
  */
 package com.erudika.para.persistence;
 
-import com.amazonaws.handlers.AsyncHandler;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClient;
 import com.erudika.para.annotations.Locked;
 import com.amazonaws.services.dynamodbv2.model.AttributeAction;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
@@ -141,11 +139,7 @@ public class AWSDynamoDAO implements DAO {
 		try {
 			setRowKey(key, row);
 			PutItemRequest putItemRequest = new PutItemRequest(getTableNameForAppid(appid), row);
-			if (isAsyncEnabled()) {
-				((AmazonDynamoDBAsyncClient) client()).putItemAsync(putItemRequest);
-			} else {
-				client().putItem(putItemRequest);
-			}
+			client().putItem(putItemRequest);
 		} catch (Exception e) {
 			logger.error(null, e);
 		}
@@ -163,11 +157,7 @@ public class AWSDynamoDAO implements DAO {
 			}
 			UpdateItemRequest updateItemRequest = new UpdateItemRequest(getTableNameForAppid(appid),
 					Collections.singletonMap(Config._KEY, new AttributeValue(key)), rou);
-			if (isAsyncEnabled()) {
-				((AmazonDynamoDBAsyncClient) client()).updateItemAsync(updateItemRequest);
-			} else {
-				client().updateItem(updateItemRequest);
-			}
+			client().updateItem(updateItemRequest);
 		} catch (Exception e) {
 			logger.error(null, e);
 		}
@@ -198,11 +188,7 @@ public class AWSDynamoDAO implements DAO {
 		try {
 			DeleteItemRequest delItemRequest = new DeleteItemRequest(getTableNameForAppid(appid),
 					Collections.singletonMap(Config._KEY, new AttributeValue(key)));
-			if (isAsyncEnabled()) {
-				((AmazonDynamoDBAsyncClient) client()).deleteItemAsync(delItemRequest);
-			} else {
-				client().deleteItem(delItemRequest);
-			}
+			client().deleteItem(delItemRequest);
 		} catch (Exception e) {
 			logger.error(null, e);
 		}
@@ -361,38 +347,18 @@ public class AWSDynamoDAO implements DAO {
 		if (items == null || items.isEmpty()) {
 			return;
 		}
-		BatchWriteItemResult result;
-		if (isAsyncEnabled()) {
-			((AmazonDynamoDBAsyncClient) client()).batchWriteItemAsync(
-					new BatchWriteItemRequest().
-						withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL).
-						withRequestItems(items),
-					new AsyncHandler<BatchWriteItemRequest, BatchWriteItemResult>() {
-
-				public void onError(Exception exception) {
-					logger.error(null, exception);
-				}
-
-				public void onSuccess(BatchWriteItemRequest request, BatchWriteItemResult result) {
-					batchWriteSuccessHandler(result);
-				}
-			});
-		} else {
-			result = client().batchWriteItem(new BatchWriteItemRequest().
-					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL).withRequestItems(items));
-			batchWriteSuccessHandler(result);
-		}
-	}
-
-	private void batchWriteSuccessHandler(BatchWriteItemResult result) {
 		try {
-			if (result != null) {
-				logger.debug("batchWrite() CC: {}", result.getConsumedCapacity());
-				if (result.getUnprocessedItems() != null && !result.getUnprocessedItems().isEmpty()) {
-					Thread.sleep(1000);
-					logger.warn("UNPROCESSED {0}", result.getUnprocessedItems().size());
-					batchWrite(result.getUnprocessedItems());
-				}
+			BatchWriteItemResult result = client().batchWriteItem(new BatchWriteItemRequest().
+					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL).withRequestItems(items));
+			if (result == null) {
+				return;
+			}
+			logger.debug("batchWrite() CC: {}", result.getConsumedCapacity());
+
+			if (result.getUnprocessedItems() != null && !result.getUnprocessedItems().isEmpty()) {
+				Thread.sleep(1000);
+				logger.warn("UNPROCESSED {0}", result.getUnprocessedItems().size());
+				batchWrite(result.getUnprocessedItems());
 			}
 		} catch (Exception e) {
 			logger.error(null, e);

@@ -18,7 +18,6 @@
 package com.erudika.para.persistence;
 
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
@@ -65,10 +64,10 @@ public final class AWSDynamoUtils {
 		}
 
 		if (Config.IN_PRODUCTION) {
-			ddbClient = new AmazonDynamoDBAsyncClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
+			ddbClient = new AmazonDynamoDBClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
 			ddbClient.setEndpoint(ENDPOINT);
 		} else {
-			ddbClient = new AmazonDynamoDBAsyncClient(new BasicAWSCredentials("local", "null"));
+			ddbClient = new AmazonDynamoDBClient(new BasicAWSCredentials("local", "null"));
 			ddbClient.setEndpoint(LOCAL_ENDPOINT);
 		}
 
@@ -129,7 +128,7 @@ public final class AWSDynamoUtils {
 	 * @param writeCapacity write capacity
 	 * @return true if created
 	 */
-	public static boolean createTable(String appid, Long readCapacity, Long writeCapacity) {
+	public static boolean createTable(String appid, long readCapacity, long writeCapacity) {
 		if (StringUtils.isBlank(appid) || StringUtils.containsWhitespace(appid) || existsTable(appid)) {
 			return false;
 		}
@@ -153,13 +152,19 @@ public final class AWSDynamoUtils {
 	 * @param writeCapacity write capacity
 	 * @return true if updated
 	 */
-	public static boolean updateTable(String appid, Long readCapacity, Long writeCapacity) {
-		if (StringUtils.isBlank(appid) || StringUtils.containsWhitespace(appid) || !existsTable(appid)) {
+	public static boolean updateTable(String appid, long readCapacity, long writeCapacity) {
+		if (StringUtils.isBlank(appid) || StringUtils.containsWhitespace(appid)) {
 			return false;
 		}
 		try {
-			getClient().updateTable(new UpdateTableRequest().withTableName(getTableNameForAppid(appid)).
-					withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
+			Map<String, Object> dbStats = getTableStatus(appid);
+			long currentReadCapacity = (Long) dbStats.get("readCapacityUnits");
+			long currentWriteCapacity = (Long) dbStats.get("writeCapacityUnits");
+			// AWS throws an exception if the new read/write capacity values are the same as the current ones
+			if (!dbStats.isEmpty() && readCapacity != currentReadCapacity && writeCapacity != currentWriteCapacity) {
+				getClient().updateTable(new UpdateTableRequest().withTableName(getTableNameForAppid(appid)).
+						withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
+			}
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;
@@ -242,10 +247,4 @@ public final class AWSDynamoUtils {
 		}
 	}
 
-	/**
-	 * @return true if asynchronous DB client is enabled.
-	 */
-	protected static boolean isAsyncEnabled() {
-		return Config.getConfigParamUnwrapped("ad.async_enabled", false);
-	}
 }
