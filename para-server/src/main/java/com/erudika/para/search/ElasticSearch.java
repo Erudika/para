@@ -429,6 +429,15 @@ public class ElasticSearch implements Search {
 					results.addAll(fromDB.values());
 				}
 			}
+
+			int	sizeBefore = results.size();
+			results.removeAll(Collections.singleton(null));
+			int	sizeAfter = results.size();
+
+			if (sizeBefore > (sizeAfter + 1)) {
+				logger.warn("Found {} objects that are indexed but no longer exist in the database.",
+						sizeBefore - sizeAfter);
+			}
 			logger.debug("Search.searchQuery() {}", results.size());
 		} catch (Exception e) {
 			logger.warn(null, e);
