@@ -18,6 +18,7 @@
 package com.erudika.para.persistence;
 
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
@@ -64,10 +65,10 @@ public final class AWSDynamoUtils {
 		}
 
 		if (Config.IN_PRODUCTION) {
-			ddbClient = new AmazonDynamoDBClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
+			ddbClient = new AmazonDynamoDBAsyncClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
 			ddbClient.setEndpoint(ENDPOINT);
 		} else {
-			ddbClient = new AmazonDynamoDBClient(new BasicAWSCredentials("local", "null"));
+			ddbClient = new AmazonDynamoDBAsyncClient(new BasicAWSCredentials("local", "null"));
 			ddbClient.setEndpoint(LOCAL_ENDPOINT);
 		}
 
@@ -239,5 +240,12 @@ public final class AWSDynamoUtils {
 			return (appIdentifier.equals(Config.APP_NAME_NS) || appIdentifier.startsWith(Config.PARA.concat("-"))) ?
 					appIdentifier : Config.PARA + "-" + appIdentifier;
 		}
+	}
+
+	/**
+	 * @return true if asynchronous DB client is enabled.
+	 */
+	protected static boolean isAsyncEnabled() {
+		return Config.getConfigParamUnwrapped("ad.async_enabled", false);
 	}
 }
