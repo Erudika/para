@@ -93,12 +93,16 @@ public final class ElasticSearchUtils {
 		settings.put("path.logs", esHome + "logs");
 
 		if (Config.IN_PRODUCTION) {
+			String discoveryType = Config.getConfigParam("es.discovery_type", "ec2");
 			settings.put("cloud.aws.access_key", Config.AWS_ACCESSKEY);
 			settings.put("cloud.aws.secret_key", Config.AWS_SECRETKEY);
 			settings.put("cloud.aws.region", Config.AWS_REGION);
 			settings.put("network.tcp.keep_alive", true);
-			settings.put("discovery.type", Config.getConfigParam("discovery_type", "ec2"));
-			settings.put("discovery.ec2.groups", "elasticsearch");
+			settings.put("discovery.type", discoveryType);
+			settings.put("discovery.ec2.ping_timeout", "10s");
+			if ("ec2".equals(discoveryType)) {
+				settings.put("discovery.ec2.groups", Config.getConfigParam("es.discovery_group", "elasticsearch"));
+			}
 		}
 
 		if (useTransportClient) {

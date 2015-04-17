@@ -64,7 +64,7 @@ public final class HazelcastUtils {
 			cfg.setProperty("hazelcast.jmx", Boolean.toString(isJMXOn()));
 			cfg.setProperty("hazelcast.logging.type", "slf4j");
 			cfg.setProperty("hazelcast.health.monitoring.level", "OFF");
-			if (Config.IN_PRODUCTION) {
+			if (Config.IN_PRODUCTION && Config.getConfigParamUnwrapped("hc.ec2_discovery_enabled", true)) {
 				cfg.setNetworkConfig(new NetworkConfig().setJoin(new JoinConfig().
 					setMulticastConfig(new MulticastConfig().setEnabled(false)).
 						setTcpIpConfig(new TcpIpConfig().setEnabled(false)).
@@ -72,7 +72,7 @@ public final class HazelcastUtils {
 							setAccessKey(Config.AWS_ACCESSKEY).
 							setSecretKey(Config.AWS_SECRETKEY).
 							setRegion(Config.AWS_REGION).
-							setSecurityGroupName(Config.APP_NAME_NS))));
+							setSecurityGroupName(Config.getConfigParam("hc.discovery_group", "hazelcast")))));
 			}
 
 			hcInstance = Hazelcast.newHazelcastInstance(cfg);
