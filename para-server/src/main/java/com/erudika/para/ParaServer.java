@@ -38,7 +38,9 @@ import javax.servlet.ServletException;
 import org.ebaysf.web.cors.CORSFilter;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -156,11 +158,18 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 					server.setHandler(handlers);
 				}
 
-				// Disable Jetty version header
 				for (Connector y : server.getConnectors()) {
-					for (ConnectionFactory x : y.getConnectionFactories()) {
-						if (x instanceof HttpConnectionFactory) {
-							((HttpConnectionFactory) x).getHttpConfiguration().setSendServerVersion(false);
+					for (ConnectionFactory cf : y.getConnectionFactories()) {
+						if (cf instanceof HttpConnectionFactory) {
+							HttpConnectionFactory dcf = (HttpConnectionFactory) cf;
+							// support for X-Forwarded-Proto
+							// redirect back to https if original request uses it
+							if (Config.IN_PRODUCTION) {
+								HttpConfiguration httpConfiguration = dcf.getHttpConfiguration();
+								httpConfiguration.addCustomizer(new ForwardedRequestCustomizer());
+							}
+							// Disable Jetty version header
+							dcf.getHttpConfiguration().setSendServerVersion(false);
 						}
 					}
 				}
