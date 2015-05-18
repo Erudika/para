@@ -13,11 +13,11 @@
 
 	<properties>
 		<jerseyVer>2.16</jerseyVer>
-		<springVer>4.0.0.RELEASE</springVer>
-		<springVer2>1.2.2.RELEASE</springVer2>
+		<springVer>4.0.1.RELEASE</springVer>
+		<springVer2>1.2.3.RELEASE</springVer2>
 		<jacksonVer>2.5.1</jacksonVer>
 		<hazelcastVer>3.4.2</hazelcastVer>
-		<awsJdkVer>1.9.24</awsJdkVer>
+		<awsJdkVer>1.9.34</awsJdkVer>
 	</properties>
 
 	<dependencies>
@@ -82,7 +82,7 @@
 		<dependency>
 			<groupId>org.elasticsearch</groupId>
 			<artifactId>elasticsearch</artifactId>
-			<version>1.5.1</version>
+			<version>1.5.2</version>
 		</dependency>
 
 		<!-- HAZELCAST -->
