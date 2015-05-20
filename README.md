@@ -3,7 +3,7 @@
 
 > ### A general-purpose back-end framework for the cloud.
 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.erudika/para/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.erudika/para)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-core)
 
 ## What is this?
 
@@ -112,7 +112,7 @@ Here's the Maven snippet to include in your `pom.xml`:
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para-server</artifactId>
-  <version>1.14</version>
+  <version>1.14.1</version>
 </dependency>
 ```
 

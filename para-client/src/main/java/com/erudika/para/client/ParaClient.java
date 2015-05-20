@@ -45,8 +45,11 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.glassfish.jersey.apache.connector.ApacheClientProperties;
+import org.glassfish.jersey.apache.connector.ApacheConnectorProvider;
 import org.glassfish.jersey.client.ClientConfig;
-import org.glassfish.jersey.jetty.connector.JettyConnectorProvider;
+//import org.glassfish.jersey.jetty.connector.JettyConnectorProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +60,7 @@ import org.slf4j.LoggerFactory;
 public final class ParaClient {
 
 	private static final Logger logger = LoggerFactory.getLogger(ParaClient.class);
-	private static final String DEFAULT_ENDPOINT = "http://localhost:8080";
+	private static final String DEFAULT_ENDPOINT = "https://paraio.com";
 	private static final String DEFAULT_PATH = "/v1/";
 	private String endpoint;
 	private String path;
@@ -72,7 +75,8 @@ public final class ParaClient {
 		ClientConfig clientConfig = new ClientConfig();
 		clientConfig.register(GenericExceptionMapper.class);
 		clientConfig.register(new JacksonJsonProvider(ParaObjectUtils.getJsonMapper()));
-		clientConfig.connectorProvider(new JettyConnectorProvider());
+		clientConfig.property(ApacheClientProperties.CONNECTION_MANAGER, new PoolingHttpClientConnectionManager());
+		clientConfig.connectorProvider(new ApacheConnectorProvider());
 		apiClient = ClientBuilder.newClient(clientConfig);
 	}
 
