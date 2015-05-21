@@ -36,6 +36,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import javax.net.ssl.SSLContext;
 import static javax.ws.rs.HttpMethod.*;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
@@ -45,11 +46,8 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.glassfish.jersey.apache.connector.ApacheClientProperties;
-import org.glassfish.jersey.apache.connector.ApacheConnectorProvider;
+import org.glassfish.jersey.SslConfigurator;
 import org.glassfish.jersey.client.ClientConfig;
-//import org.glassfish.jersey.jetty.connector.JettyConnectorProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,9 +73,8 @@ public final class ParaClient {
 		ClientConfig clientConfig = new ClientConfig();
 		clientConfig.register(GenericExceptionMapper.class);
 		clientConfig.register(new JacksonJsonProvider(ParaObjectUtils.getJsonMapper()));
-		clientConfig.property(ApacheClientProperties.CONNECTION_MANAGER, new PoolingHttpClientConnectionManager());
-		clientConfig.connectorProvider(new ApacheConnectorProvider());
-		apiClient = ClientBuilder.newClient(clientConfig);
+		SSLContext sslContext = SslConfigurator.newInstance().securityProtocol("TLSv1.2").createSSLContext();
+		apiClient = ClientBuilder.newBuilder().sslContext(sslContext).withConfig(clientConfig).build();
 	}
 
 	protected Client getApiClient() {

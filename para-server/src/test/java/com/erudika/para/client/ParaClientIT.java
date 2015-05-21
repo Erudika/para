@@ -73,13 +73,16 @@ public class ParaClientIT {
 		System.setProperty("para.env", "embedded");
 		System.setProperty("para.app_name", "para-client-test");
 		System.setProperty("para.cluster_name", "para-test");
+		String endpoint = "http://localhost:8080";
 		ParaServer.main(new String[0]);
-		ParaClient temp = new ParaClient("", "");
+		ParaClient temp = new ParaClient("x", "x");
+		temp.setEndpoint(endpoint);
 		Map<String, String> credentials = temp.setup();
 		if (credentials != null && credentials.containsKey("accessKey")) {
 			String accessKey = credentials.get("accessKey");
 			String secretKey = credentials.get("secretKey");
 			pc = new ParaClient(accessKey, secretKey);
+			pc.setEndpoint(endpoint);
 			logger.info("accessKey: {}, secretKey: {}", accessKey, secretKey);
 		}
 

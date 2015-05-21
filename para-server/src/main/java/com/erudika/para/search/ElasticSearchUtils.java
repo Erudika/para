@@ -120,7 +120,7 @@ public final class ElasticSearchUtils {
 		});
 
 		// wait for the shards to initialize to prevent NoShardAvailableActionException
-		String timeout = Config.IN_PRODUCTION ? "1m" : "2s";
+		String timeout = Config.IN_PRODUCTION ? "1m" : "5s";
 		searchClient.admin().cluster().prepareHealth(Config.APP_NAME_NS).
 				setWaitForGreenStatus().setTimeout(timeout).execute().actionGet();
 
