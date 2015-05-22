@@ -135,7 +135,7 @@ Here's the Maven snippet to include in your `pom.xml`:
 Please try to respect the code style of this project. To check your code, run it through the style checker:
 
 ```sh
-mvn -f para validate
+mvn validate
 ```
 
 For more information see [CONTRIBUTING.md](https://github.com/Erudika/para/blob/master/CONTRIBUTING.md)
