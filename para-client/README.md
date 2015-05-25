@@ -1,7 +1,7 @@
 ![Logo](https://s3-eu-west-1.amazonaws.com/org.paraio/para.png)
 ============================
 
-### Java Client for Para
+# Java Client for Para
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-client/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-client)
 
