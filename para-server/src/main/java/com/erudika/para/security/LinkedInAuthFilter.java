@@ -121,15 +121,12 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 									user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 									user.setPassword(new UUID().toString());
 									user.setIdentifier(Config.LINKEDIN_PREFIX.concat(linkedInID));
-									if (pic != null) {
-										user.setPicture(pic);
-									}
-
 									String id = user.create();
 									if (id == null) {
 										throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 									}
 								}
+								user.setPicture(pic);
 								userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 							}
 							EntityUtils.consumeQuietly(resp2.getEntity());

@@ -127,20 +127,12 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 									user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 									user.setPassword(new UUID().toString());
 									user.setIdentifier(Config.GITHUB_PREFIX + githubId);
-									if (pic != null) {
-										if (pic.indexOf("?") > 0) {
-											// user picture migth contain size parameters - remove them
-											user.setPicture(pic.substring(0, pic.indexOf("?")));
-										} else {
-											user.setPicture(pic);
-										}
-									}
-
 									String id = user.create();
 									if (id == null) {
 										throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 									}
 								}
+								user.setPicture(getPicture(pic));
 								userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 							}
 							EntityUtils.consumeQuietly(resp2.getEntity());
@@ -157,5 +149,17 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 			throw new LockedException("Account is locked.");
 		}
 		return userAuth;
+	}
+
+	private static String getPicture(String pic) {
+		if (pic != null) {
+			if (pic.indexOf("?") > 0) {
+				// user picture migth contain size parameters - remove them
+				return pic.substring(0, pic.indexOf("?"));
+			} else {
+				return pic;
+			}
+		}
+		return null;
 	}
 }

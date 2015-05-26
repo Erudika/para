@@ -158,21 +158,12 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 									user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 									user.setPassword(new UUID().toString());
 									user.setIdentifier(Config.TWITTER_PREFIX + twitterId);
-									if (pic != null) {
-										pic = pic.replace("_normal", "");
-										if (pic.indexOf("?") > 0) {
-											// user picture migth contain size parameters - remove them
-											user.setPicture(pic.substring(0, pic.indexOf("?")));
-										} else {
-											user.setPicture(pic);
-										}
-									}
-
 									String id = user.create();
 									if (id == null) {
 										throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 									}
 								}
+								user.setPicture(getPicture(pic));
 								userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 							}
 						}
@@ -189,4 +180,16 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 		return userAuth;
 	}
 
+	private static String getPicture(String pic) {
+		if (pic != null) {
+			pic = pic.replace("_normal", "");
+			if (pic.indexOf("?") > 0) {
+				// user picture migth contain size parameters - remove them
+				return pic.substring(0, pic.indexOf("?"));
+			} else {
+				return pic;
+			}
+		}
+		return null;
+	}
 }

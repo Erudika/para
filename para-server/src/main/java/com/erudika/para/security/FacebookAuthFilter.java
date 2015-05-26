@@ -119,22 +119,12 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 									user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 									user.setPassword(new UUID().toString());
 									user.setIdentifier(Config.FB_PREFIX.concat(fbId));
-									if (pic != null) {
-										Map<String, Object> data = (Map<String, Object>) pic.get("data");
-										// try to get the direct url to the profile pic
-										if (data != null && data.containsKey("url")) {
-											user.setPicture((String) data.get("url"));
-										} else {
-											user.setPicture("http://graph.facebook.com/" + fbId +
-													"/picture?width=400&height=400&type=square");
-										}
-									}
-
 									String id = user.create();
 									if (id == null) {
 										throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 									}
 								}
+								user.setPicture(getPicture(fbId, pic));
 								userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 							}
 							EntityUtils.consumeQuietly(resp2.getEntity());
@@ -151,5 +141,18 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 			throw new LockedException("Account is locked.");
 		}
 		return userAuth;
+	}
+
+	private static String getPicture(String fbId, Map<String, Object> pic) {
+		if (pic != null) {
+			Map<String, Object> data = (Map<String, Object>) pic.get("data");
+			// try to get the direct url to the profile pic
+			if (data != null && data.containsKey("url")) {
+				return (String) data.get("url");
+			} else {
+				return "http://graph.facebook.com/" + fbId + "/picture?width=400&height=400&type=square";
+			}
+		}
+		return null;
 	}
 }
