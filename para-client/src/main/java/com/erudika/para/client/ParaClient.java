@@ -103,7 +103,7 @@ public final class ParaClient {
 	 * @return the App object
 	 */
 	public App getApp() {
-		return (App) read(Utils.type(App.class), accessKey);
+		return me();
 	}
 
 	/**

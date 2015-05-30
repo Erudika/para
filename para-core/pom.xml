@@ -6,13 +6,14 @@
 		<artifactId>para-parent</artifactId>
 		<version>1.15-SNAPSHOT</version>
 	</parent>
+
 	<artifactId>para-core</artifactId>
 	<packaging>jar</packaging>
-
+	<name>para-core</name>
+	
 	<properties>
 		<jerseyVer>2.17</jerseyVer>
 		<jacksonVer>2.5.1</jacksonVer>
-		<awsJdkVer>1.9.24</awsJdkVer>
 		<springVer>4.1.6.RELEASE</springVer>
 <!--		<springVer>4.0.0.M2</springVer>
 		<springVer2>1.1.11.RELEASE</springVer2>

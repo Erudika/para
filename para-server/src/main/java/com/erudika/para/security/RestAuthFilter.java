@@ -74,67 +74,66 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		BufferedRequestWrapper request = new BufferedRequestWrapper((HttpServletRequest) req);
 		HttpServletResponse response = (HttpServletResponse) res;
 
-		if (RestRequestMatcher.INSTANCE.matches(request)) {
-			User u = SecurityUtils.getAuthenticatedUser();
-			if (u != null && request.getHeader("Authorization") == null) {
-				if (!u.getActive()) {
-					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-							"User doesn't have permission to access this resource.");
-					return;
-				}
-			} else {
-				String appid = RestUtils.extractAccessKey(request);
-				String date = RestUtils.extractDate(request);
-				Date d = Signer.parseAWSDate(date);
-				boolean requestExpired = (d != null) && (System.currentTimeMillis() >
-						(d.getTime() + (Config.REQUEST_EXPIRES_AFTER_SEC * 1000)));
+		User u = SecurityUtils.getAuthenticatedUser();
+		String appid = RestUtils.extractAccessKey(request);
+		boolean isUser = u != null;
+		boolean isApp = !StringUtils.isBlank(appid);
 
-				if (!StringUtils.isBlank(appid)) {
-					if (!StringUtils.isBlank(date)) {
-						if (!requestExpired) {
-							App app = new App(appid);
-							app = app.getDao().read(app.getId());
+		if (isUser && !isApp && RestRequestMatcher.INSTANCE.matches(request) && !u.getActive()) {
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+					"User doesn't have permission to access this resource.");
+			return;
+		} else if(isApp && RestRequestMatcher.INSTANCE_STRICT.matches(request)) {
+			String date = RestUtils.extractDate(request);
+			Date d = Signer.parseAWSDate(date);
+			boolean requestExpired = (d != null) && (System.currentTimeMillis() >
+					(d.getTime() + (Config.REQUEST_EXPIRES_AFTER_SEC * 1000)));
 
-							if (app != null) {
-								if (app.getActive()) {
-									if (!(app.getReadOnly() && isWriteRequest(request))) {
-										if (signer.isValidSignature(request, app.getSecret())) {
-											SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
-										} else {
-											RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-													"Request signature is invalid.");
-											return;
-										}
+			if (!StringUtils.isBlank(appid)) {
+				if (!StringUtils.isBlank(date)) {
+					if (!requestExpired) {
+						App app = new App(appid);
+						app = app.getDao().read(app.getId());
+
+						if (app != null) {
+							if (app.getActive()) {
+								if (!(app.getReadOnly() && isWriteRequest(request))) {
+									if (signer.isValidSignature(request, app.getSecret())) {
+										SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
 									} else {
 										RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-												"App is in read-only mode.");
+												"Request signature is invalid.");
 										return;
 									}
 								} else {
 									RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-											"App not active.");
+											"App is in read-only mode.");
 									return;
 								}
 							} else {
-								RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND,
-										"App not found.");
+								RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+										"App not active.");
 								return;
 							}
 						} else {
-							RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-									"Request has expired.");
+							RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND,
+									"App not found.");
 							return;
 						}
 					} else {
 						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-								"'X-Amz-Date' header/parameter is not set!");
+								"Request has expired.");
 						return;
 					}
 				} else {
-					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
-							"Credentials are missing.");
+					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
+							"'X-Amz-Date' header/parameter is not set!");
 					return;
 				}
+			} else {
+				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
+						"Credentials are missing.");
+				return;
 			}
 		}
 

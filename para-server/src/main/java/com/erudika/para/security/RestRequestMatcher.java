@@ -31,14 +31,24 @@ public final class RestRequestMatcher implements RequestMatcher {
 	 * An instance of this class.
 	 */
 	public static final RequestMatcher INSTANCE = new RestRequestMatcher();
+	public static final RequestMatcher INSTANCE_STRICT = new RestRequestMatcher(true);
 	private static final RegexRequestMatcher regex = new RegexRequestMatcher("^/v\\d[\\.\\d]*/(?!(_me)).*", null, true);
+	private static final RegexRequestMatcher regex_strict = new RegexRequestMatcher("^/v\\d[\\.\\d]*/.*", null, true);
 
-	private RestRequestMatcher() { }
+	private final boolean strict;
+
+	private RestRequestMatcher() {
+		this.strict = false;
+	}
+
+	private RestRequestMatcher(boolean strict) {
+		this.strict = strict;
+	}
 
 	@Override
 	public boolean matches(HttpServletRequest request) {
 		// Determine if the request is RESTful.
-		return regex.matches(request);
+		return strict ? regex_strict.matches(request) : regex.matches(request);
 	}
 
 }

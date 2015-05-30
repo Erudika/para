@@ -17,7 +17,6 @@
 		<springVer2>1.2.3.RELEASE</springVer2>
 		<jacksonVer>2.5.1</jacksonVer>
 		<hazelcastVer>3.4.2</hazelcastVer>
-		<awsJdkVer>1.9.34</awsJdkVer>
 	</properties>
 
 	<dependencies>
