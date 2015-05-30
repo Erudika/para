@@ -273,6 +273,12 @@ public class ParaClientIT {
 		assertFalse(list2.isEmpty());
 		assertEquals(2, list2.size());
 
+		ArrayList<String> nl = new ArrayList<String>(3);
+		nl.add(cats.get(0).getId());
+		nl.add(cats.get(1).getId());
+		nl.add(cats.get(2).getId());
+		pc.deleteAll(nl);
+
 		assertTrue(pc.getApp().getDatatypes().containsValue(catsType));
 	}
 
