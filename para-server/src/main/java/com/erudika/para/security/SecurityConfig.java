@@ -159,7 +159,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		SimpleAuthenticationSuccessHandler successHandler = new SimpleAuthenticationSuccessHandler();
 		successHandler.setDefaultTargetUrl(confMap.get("security.signin_success"));
 		successHandler.setTargetUrlParameter(confMap.get("security.returnto"));
-		successHandler.setUseReferer(true);
+		successHandler.setUseReferer(false);
 
 		SimpleAuthenticationFailureHandler failureHandler = new SimpleAuthenticationFailureHandler();
 		failureHandler.setDefaultFailureUrl(confMap.get("security.signin_failure"));
