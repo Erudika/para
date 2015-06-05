@@ -133,7 +133,7 @@ public final class CoreUtils {
 	 * @return the id of the {@link com.erudika.para.core.Linker} object that is created
 	 */
 	public static String link(ParaObject obj, String id2) {
-		ParaObject second = obj.getDao().read(id2);
+		ParaObject second = obj.getDao().read(obj.getAppid(), id2);
 		if (second == null || obj.getId() == null) {
 			return null;
 		}

@@ -207,7 +207,7 @@ public class Api1 extends ResourceConfig {
 				} else if ("formatdate".equals(method)) {
 					String format = params.getFirst("format");
 					String locale = params.getFirst("locale");
-					Locale loc = LocaleUtils.toLocale(locale);
+					Locale loc = getLocale(locale);
 					return Response.ok(Utils.formatDate(format, loc)).build();
 				} else if ("formatmessage".equals(method)) {
 					String msg = params.getFirst("message");
@@ -672,5 +672,13 @@ public class Api1 extends ResourceConfig {
 
 	protected boolean hasQueryParam(String param, ContainerRequestContext ctx) {
 		return ctx.getUriInfo().getQueryParameters().containsKey(param);
+	}
+
+	private Locale getLocale(String localeStr) {
+		try {
+			return LocaleUtils.toLocale(localeStr);
+		} catch (Exception e) {
+			return Locale.US;
+		}
 	}
 }
