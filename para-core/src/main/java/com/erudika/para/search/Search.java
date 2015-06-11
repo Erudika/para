@@ -106,6 +106,7 @@ public interface Search {
 
 	/**
 	 * Removes multiple objects from the index matching a set of terms.
+	 * If the terms parameter is empty or null, all objects should be removed from index.
 	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param matchAll if true all terms must match ('AND' operation)
 	 * @param terms a list of terms

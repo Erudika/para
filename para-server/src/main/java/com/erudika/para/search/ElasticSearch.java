@@ -180,10 +180,12 @@ public class ElasticSearch implements Search {
 
 	@Override
 	public void unindexAll(String appid, Map<String, ?> terms, boolean matchAll) {
-		if (StringUtils.isBlank(appid) || terms == null || terms.isEmpty()) {
+		if (StringUtils.isBlank(appid)) {
 			return;
 		}
-		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), getTermsFilter(terms, matchAll));
+		FilterBuilder fb = (terms == null || terms.isEmpty()) ?
+				FilterBuilders.matchAllFilter() : getTermsFilter(terms, matchAll);
+		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), fb);
 		SearchResponse scrollResp = client().prepareSearch(getIndexName(appid))
 				.setSearchType(SearchType.SCAN)
 				.setScroll(new TimeValue(60000))
