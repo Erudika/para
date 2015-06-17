@@ -219,11 +219,10 @@ public class User implements ParaObject {
 		if (obj == null || id == null) {
 			return false;
 		} else {
-			boolean appsMatch = StringUtils.equalsIgnoreCase(appid, obj.getAppid());
 			boolean isCreatedByMe = obj.getCreatorid() != null &&
 					(obj.getCreatorid().startsWith(id + Config.SEPARATOR) || id.equals(obj.getCreatorid()));
 			boolean mine = isCreatedByMe || id.equals(obj.getId()) || id.equals(obj.getParentid());
-			return appsMatch && (mine || isAdmin());
+			return (mine || isAdmin());
 		}
 	}
 
