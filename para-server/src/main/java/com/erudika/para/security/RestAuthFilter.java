@@ -83,7 +83,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
 					"User doesn't have permission to access this resource.");
 			return;
-		} else if(isApp && RestRequestMatcher.INSTANCE_STRICT.matches(request)) {
+		} else if (isApp && RestRequestMatcher.INSTANCE_STRICT.matches(request)) {
 			String date = RestUtils.extractDate(request);
 			Date d = Signer.parseAWSDate(date);
 			boolean requestExpired = (d != null) && (System.currentTimeMillis() >
