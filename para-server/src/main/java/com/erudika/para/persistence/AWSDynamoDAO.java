@@ -252,16 +252,17 @@ public class AWSDynamoDAO implements DAO {
 		if (pager == null) {
 			pager = new Pager();
 		}
+		Map<String, AttributeValue> lastKeyEvaluated = null;
+		if (!StringUtils.isBlank(pager.getLastKey())) {
+			lastKeyEvaluated = Collections.singletonMap(Config._KEY, new AttributeValue(pager.getLastKey()));
+		}
+
 		try {
 			ScanRequest scanRequest = new ScanRequest().
 					withTableName(getTableNameForAppid(appid)).
 					withLimit(pager.getLimit()).
+					withExclusiveStartKey(lastKeyEvaluated).
 					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
-
-			if (!StringUtils.isBlank(pager.getLastKey())) {
-				scanRequest.setExclusiveStartKey(Collections.singletonMap(Config._KEY,
-						new AttributeValue(pager.getLastKey())));
-			}
 
 			ScanResult result = client().scan(scanRequest);
 			logger.debug("readPage() CC: {}", result.getConsumedCapacity());
@@ -272,9 +273,11 @@ public class AWSDynamoDAO implements DAO {
 					results.add(obj);
 				}
 			}
-			if (result.getCount() > 0 && results.isEmpty() && result.getLastEvaluatedKey() != null) {
-				pager.setLastKey(result.getLastEvaluatedKey().get(Config._KEY).getS());
-				return readPage(appid, pager);
+			lastKeyEvaluated = result.getLastEvaluatedKey();
+			if (lastKeyEvaluated != null) {
+				pager.setLastKey(lastKeyEvaluated.get(Config._KEY).getS());
+			} else {
+				pager.setLastKey(null);
 			}
 		} catch (Exception e) {
 			logger.error(null, e);

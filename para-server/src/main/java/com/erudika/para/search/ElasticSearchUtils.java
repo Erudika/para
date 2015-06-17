@@ -262,23 +262,20 @@ public final class ElasticSearchUtils {
 			BulkResponse resp = null;
 			Pager pager = new Pager();
 
-			List<ParaObject> list = dao.readPage(appid, null);
-
-			if (!list.isEmpty()) {
-				do {
-					for (ParaObject obj : list) {
-						brb.add(getClient().prepareIndex(appid, obj.getType(), obj.getId()).
-								setSource(ParaObjectUtils.getAnnotatedFields(obj)));
-						pager.setLastKey(obj.getId());
-					}
-					// bulk index 1000 objects
-					if (brb.numberOfActions() > 100) {
-						resp = brb.execute().actionGet();
-						logger.info("rebuildIndex(): indexed {}, hasFailures: {}",
-								brb.numberOfActions(), resp.hasFailures());
-					}
-				} while (!(list = dao.readPage(appid, pager)).isEmpty());
-			}
+			do {
+				List<ParaObject> list = dao.readPage(appid, pager);
+				for (ParaObject obj : list) {
+					brb.add(getClient().prepareIndex(appid, obj.getType(), obj.getId()).
+							setSource(ParaObjectUtils.getAnnotatedFields(obj)));
+					pager.setLastKey(obj.getId());
+				}
+				// bulk index 1000 objects
+				if (brb.numberOfActions() > 100) {
+					resp = brb.execute().actionGet();
+					logger.info("rebuildIndex(): indexed {}, hasFailures: {}",
+							brb.numberOfActions(), resp.hasFailures());
+				}
+			} while (pager.getLastKey() != null);
 
 			// anything left after loop? index that too
 			if (brb.numberOfActions() > 0) {
