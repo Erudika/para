@@ -17,9 +17,6 @@ Para to power your mobile or web application back-end.
 Para can be used in two ways - as the backbone of your JVM-based application or as a standalone server supporting
 multiple applications and clients written in any programming language.
 
-Para is similar to [Dropwizard](https://dropwizard.github.io/dropwizard/) and
-[Deployd](https://github.com/deployd/deployd).
-
 ### Features
 
 - Standalone executable JAR with embedded Jetty (WAR also available).
@@ -115,6 +112,15 @@ Here's the Maven snippet to include in your `pom.xml`:
   <version>1.15</version>
 </dependency>
 ```
+
+## API clients
+
+API clients help you quickly integrate your project with Para and we're hoping to write more
+clients for popular languages soon.
+
+- **PHP** [para-client-php](https://github.com/erudika/para-client-php)
+- **JavaScript / Node.js** [para-client-js](https://github.com/erudika/para-client-js)
+- **Java** [para-client](https://github.com/erudika/para/tree/master/para-client)
 
 ## Wishlist / Plans
 
