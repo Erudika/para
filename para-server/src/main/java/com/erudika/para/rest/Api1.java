@@ -201,32 +201,32 @@ public class Api1 extends ResourceConfig {
 				String method = pathParam("method", ctx);
 				method = StringUtils.isBlank(method) ? params.getFirst("method") : method;
 				if ("newid".equals(method)) {
-					return Response.ok(Utils.getNewId()).build();
+					return Response.ok(Utils.getNewId(), MediaType.TEXT_PLAIN_TYPE).build();
 				} else if ("timestamp".equals(method)) {
-					return Response.ok(Utils.timestamp()).build();
+					return Response.ok(Utils.timestamp(), MediaType.TEXT_PLAIN_TYPE).build();
 				} else if ("formatdate".equals(method)) {
 					String format = params.getFirst("format");
 					String locale = params.getFirst("locale");
 					Locale loc = getLocale(locale);
-					return Response.ok(Utils.formatDate(format, loc)).build();
+					return Response.ok(Utils.formatDate(format, loc), MediaType.TEXT_PLAIN_TYPE).build();
 				} else if ("formatmessage".equals(method)) {
 					String msg = params.getFirst("message");
 					Object[] paramz = params.get("fields").toArray();
-					return Response.ok(Utils.formatMessage(msg, paramz)).build();
+					return Response.ok(Utils.formatMessage(msg, paramz), MediaType.TEXT_PLAIN_TYPE).build();
 				} else if ("nospaces".equals(method)) {
 					String str = params.getFirst("string");
 					String repl = params.getFirst("replacement");
-					return Response.ok(Utils.noSpaces(str, repl)).build();
+					return Response.ok(Utils.noSpaces(str, repl), MediaType.TEXT_PLAIN_TYPE).build();
 				} else if ("nosymbols".equals(method)) {
 					String str = params.getFirst("string");
-					return Response.ok(Utils.stripAndTrim(str)).build();
+					return Response.ok(Utils.stripAndTrim(str), MediaType.TEXT_PLAIN_TYPE).build();
 				} else if ("md2html".equals(method)) {
 					String md = params.getFirst("md");
 					return Response.ok(Utils.markdownToHtml(md), MediaType.TEXT_HTML).build();
 				} else if ("timeago".equals(method)) {
 					String d = params.getFirst("delta");
 					long delta = NumberUtils.toLong(d, 1);
-					return Response.ok(HumanTime.approximately(delta)).build();
+					return Response.ok(HumanTime.approximately(delta), MediaType.TEXT_PLAIN_TYPE).build();
 				}
 				return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, "Unknown method: " +
 						((method == null) ? "empty" : method));
@@ -319,7 +319,7 @@ public class Api1 extends ResourceConfig {
 								return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST,
 										"Failed to create link.");
 							} else {
-								return Response.ok(linkid).build();
+								return Response.ok(linkid, MediaType.TEXT_PLAIN_TYPE).build();
 							}
 						} else {
 							return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST,
@@ -329,7 +329,7 @@ public class Api1 extends ResourceConfig {
 						Map<String, Object> result = new HashMap<String, Object>();
 						if (type2 != null) {
 							if (id2 != null) {
-								return Response.ok(pobj.isLinked(type2, id2)).build();
+								return Response.ok(pobj.isLinked(type2, id2), MediaType.TEXT_PLAIN_TYPE).build();
 							} else {
 								List<ParaObject> items = new ArrayList<ParaObject>();
 								if (childrenOnly == null) {
