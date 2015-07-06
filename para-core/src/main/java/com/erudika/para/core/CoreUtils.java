@@ -53,26 +53,30 @@ public final class CoreUtils {
 	}
 
 	/**
-	 * Creates the object again (dangerous!)
+	 * Creates the object again (dangerous!).
+	 * Same as {@link com.erudika.para.persistence.DAO#create(com.erudika.para.core.ParaObject)}.
 	 * @param obj an object
-	 * @return true if successful
+	 * @return the object id or null
 	 */
-	public static boolean overwrite(ParaObject obj) {
+	public static String overwrite(ParaObject obj) {
 		return overwrite(Config.APP_NAME_NS, obj);
 	}
 
 	/**
-	 * Creates the object again (dangerous!)
+	 * Creates the object again (dangerous!).
+	 * Same as {@link com.erudika.para.persistence.DAO#create(java.lang.String, com.erudika.para.core.ParaObject)}.
 	 * @param appid the app id
 	 * @param obj an object
-	 * @return true if successful
+	 * @return the object id or null
 	 */
-	public static boolean overwrite(String appid, ParaObject obj) {
-		if (obj != null && obj.getId() != null && obj.getTimestamp() != null) {
-			obj.setUpdated(System.currentTimeMillis());
-			return obj.getDao().create(appid, obj) != null;
+	public static String overwrite(String appid, ParaObject obj) {
+		if (obj != null && obj.getId() != null) {
+			if (obj.getUpdated() == null) {
+				obj.setUpdated(System.currentTimeMillis());
+			}
+			return obj.getDao().create(appid, obj);
 		}
-		return false;
+		return null;
 	}
 
 	///////////////////////////////////////

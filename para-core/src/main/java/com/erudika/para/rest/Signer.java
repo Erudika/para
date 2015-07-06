@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -182,7 +183,11 @@ public final class Signer extends AWS4Signer {
 			r.setHeaders(headers);
 		}
 		if (params != null) {
-			r.setParameters(params);
+			Map<String, List<String>> paramz = new HashMap<String, List<String>>();
+			for (Map.Entry<String, String> param : params.entrySet()) {
+				paramz.put(param.getKey(), Collections.singletonList(param.getValue()));
+			}
+			r.setParameters(paramz);
 		}
 		if (entity != null && (httpMethod.equals(HttpMethod.POST) || httpMethod.equals(HttpMethod.PUT))) {
 			r.setContent(entity);
