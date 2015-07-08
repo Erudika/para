@@ -182,6 +182,7 @@ public class Api1 extends ResourceConfig {
 		core.addChildResource("{id}/links/{type2}/{id2}").addMethod(GET).produces(JSON).handledBy(linksHandler);
 		core.addChildResource("{id}/links/{type2}").addMethod(GET).produces(JSON).handledBy(linksHandler);
 		core.addChildResource("{id}/links/{id2}").addMethod(POST).produces(JSON).handledBy(linksHandler);
+		core.addChildResource("{id}/links/{id2}").addMethod(PUT).produces(JSON).handledBy(linksHandler);
 		core.addChildResource("{id}/links/{type2}/{id2}").addMethod(DELETE).produces(JSON).handledBy(linksHandler);
 		core.addChildResource("{id}/links").addMethod(DELETE).produces(JSON).handledBy(linksHandler);
 		// CRUD endpoints (batch)
@@ -317,7 +318,7 @@ public class Api1 extends ResourceConfig {
 				String childrenOnly = params.getFirst("childrenonly");
 
 				if (pobj != null) {
-					if (POST.equals(ctx.getMethod())) {
+					if (POST.equals(ctx.getMethod()) || PUT.equals(ctx.getMethod())) {
 						if (id2 != null) {
 							String linkid = pobj.link(id2);
 							if (linkid == null) {
