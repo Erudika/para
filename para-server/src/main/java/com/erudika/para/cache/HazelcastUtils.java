@@ -72,6 +72,7 @@ public final class HazelcastUtils {
 							setAccessKey(Config.AWS_ACCESSKEY).
 							setSecretKey(Config.AWS_SECRETKEY).
 							setRegion(Config.AWS_REGION).
+							setHostHeader("ec2." + Config.AWS_REGION + ".amazonaws.com").
 							setSecurityGroupName(Config.getConfigParam("hc.discovery_group", "hazelcast")))));
 			}
 
