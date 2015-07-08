@@ -48,6 +48,7 @@ import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.SslConfigurator;
 import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.client.HttpUrlConnectorProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,8 +74,11 @@ public final class ParaClient {
 		ClientConfig clientConfig = new ClientConfig();
 		clientConfig.register(GenericExceptionMapper.class);
 		clientConfig.register(new JacksonJsonProvider(ParaObjectUtils.getJsonMapper()));
+		clientConfig.connectorProvider(new HttpUrlConnectorProvider().useSetMethodWorkaround());
 		SSLContext sslContext = SslConfigurator.newInstance().securityProtocol("TLSv1.2").createSSLContext();
-		apiClient = ClientBuilder.newBuilder().sslContext(sslContext).withConfig(clientConfig).build();
+		apiClient = ClientBuilder.newBuilder().
+				sslContext(sslContext).
+				withConfig(clientConfig).build();
 	}
 
 	protected Client getApiClient() {
@@ -185,6 +189,11 @@ public final class ParaClient {
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
+	private Response invokePatch(String resourcePath, Entity<?> entity) {
+		return signer.invokeSignedRequest(getApiClient(), accessKey, secretKey, "PATCH",
+				getEndpoint(), getFullPath(resourcePath), null, null, entity);
+	}
+
 	private Response invokeDelete(String resourcePath, MultivaluedMap<String, String> params) {
 		return signer.invokeSignedRequest(getApiClient(), accessKey, secretKey, DELETE,
 				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
@@ -238,7 +247,9 @@ public final class ParaClient {
 	/////////////////////////////////////////////
 
 	/**
-	 * Persists an object to the data store.
+	 * Persists an object to the data store. If the object's type and id are given,
+	 * then the request will be a {@code PUT} request and any existing object will be
+	 * overwritten.
 	 * @param <P> the type of object
 	 * @param obj the domain object
 	 * @return the same object with assigned id or null if not created.
@@ -247,7 +258,11 @@ public final class ParaClient {
 		if (obj == null) {
 			return null;
 		}
-		return getEntity(invokePost(obj.getType(), Entity.json(obj)), obj.getClass());
+		if (StringUtils.isBlank(obj.getId()) || StringUtils.isBlank(obj.getType())) {
+			return getEntity(invokePost(obj.getType(), Entity.json(obj)), obj.getClass());
+		} else {
+			return getEntity(invokePut(obj.getType().concat("/").concat(obj.getId()), Entity.json(obj)), obj.getClass());
+		}
 	}
 
 	/**
@@ -280,7 +295,7 @@ public final class ParaClient {
 	}
 
 	/**
-	 * Updates an object permanently.
+	 * Updates an object permanently. Supports partial updates.
 	 * @param <P> the type of object
 	 * @param obj the object to update
 	 * @return the updated object
@@ -289,7 +304,7 @@ public final class ParaClient {
 		if (obj == null) {
 			return null;
 		}
-		return getEntity(invokePut(obj.getObjectURI(), Entity.json(obj)), obj.getClass());
+		return getEntity(invokePatch(obj.getObjectURI(), Entity.json(obj)), obj.getClass());
 	}
 
 	/**
@@ -342,7 +357,7 @@ public final class ParaClient {
 		if (objects == null || objects.isEmpty()) {
 			return Collections.emptyList();
 		}
-		return getItemsFromList((List<?>) getEntity(invokePut("_batch", Entity.json(objects)), List.class));
+		return getItemsFromList((List<?>) getEntity(invokePatch("_batch", Entity.json(objects)), List.class));
 	}
 
 	/**

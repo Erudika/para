@@ -28,6 +28,7 @@ import com.erudika.para.rest.Api1;
 import com.erudika.para.search.SearchModule;
 import com.erudika.para.storage.StorageModule;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.filters.CORSFilter;
 import com.erudika.para.utils.filters.ErrorFilter;
 import com.erudika.para.utils.filters.GZipServletFilter;
 import com.google.inject.Module;
@@ -35,7 +36,6 @@ import javax.annotation.PreDestroy;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletException;
-import org.ebaysf.web.cors.CORSFilter;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
@@ -125,7 +125,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	public FilterRegistrationBean corsFilterRegistrationBean() {
 		FilterRegistrationBean frb = new FilterRegistrationBean(new CORSFilter());
 		frb.addUrlPatterns(Api1.PATH + "*");
-		frb.addInitParameter("cors.allowed.methods", "GET,POST,PUT,DELETE,HEAD,OPTIONS");
+		frb.addInitParameter("cors.allowed.methods", "GET,POST,PATCH,PUT,DELETE,HEAD,OPTIONS");
 		frb.addInitParameter("cors.exposed.headers", "Cache-Control,Content-Length,Content-Type,Date,ETag,Expires");
 		frb.addInitParameter("cors.allowed.headers", "Origin,Accept,X-Requested-With,Content-Type,"
 				+ "Access-Control-Request-Method,Access-Control-Request-Headers,X-Amz-Credential,"

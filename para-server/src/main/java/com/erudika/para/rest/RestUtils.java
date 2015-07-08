@@ -20,6 +20,7 @@ package com.erudika.para.rest;
 import com.erudika.para.Para;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.core.App;
+import com.erudika.para.core.CoreUtils;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.ParaObjectUtils;
 import com.erudika.para.core.User;
@@ -225,7 +226,7 @@ public final class RestUtils {
 
 	/**
 	 * Create response as JSON
-	 * @param type type of the object to create (not used)
+	 * @param type type of the object to create
 	 * @param is entity input stream
 	 * @param app the app object
 	 * @return a status code 201 or 400
@@ -235,27 +236,66 @@ public final class RestUtils {
 		Response entityRes = getEntity(is, Map.class);
 		if (entityRes.getStatusInfo() == Response.Status.OK) {
 			Map<String, Object> newContent = (Map<String, Object>) entityRes.getEntity();
-			// type is not fount in datatypes (try to get it from req. body)
 			if (!StringUtils.isBlank(type)) {
 				newContent.put(Config._TYPE, type);
 			}
 			content = ParaObjectUtils.setAnnotatedFields(newContent);
-			content.setAppid(app.getAppIdentifier());
-			registerNewTypes(app, content);
-			// The reason why we do two validation passes is because we want to return
-			// the errors through the API and notify the end user.
-			// This is the primary validation pass (validates not only core POJOS but also user defined objects).
-			String[] errors = ValidationUtils.validateObject(app, content);
-			if (errors.length == 0) {
-				// Secondary validation pass: object is validated again before being created
-				String id = content.create();
-				if (id == null) {
-					return getStatusResponse(Response.Status.BAD_REQUEST, "Failed to create object.");
-				} else {
-					return Response.created(URI.create(Utils.urlEncode(content.getObjectURI()))).entity(content).build();
+			if (content != null) {
+				content.setAppid(app.getAppIdentifier());
+				content.setId(null); // id is useless in a POST request
+				registerNewTypes(app, content);
+				// The reason why we do two validation passes is because we want to return
+				// the errors through the API and notify the end user.
+				// This is the primary validation pass (validates not only core POJOS but also user defined objects).
+				String[] errors = ValidationUtils.validateObject(app, content);
+				if (errors.length == 0) {
+					// Secondary validation pass: object is validated again before being created
+					String id = content.create();
+					if (id != null) {
+						return Response.created(URI.create(Utils.urlEncode(content.getObjectURI()))).
+								entity(content).build();
+					}
 				}
+				return getStatusResponse(Response.Status.BAD_REQUEST, errors);
 			}
-			return getStatusResponse(Response.Status.BAD_REQUEST, errors);
+			return getStatusResponse(Response.Status.BAD_REQUEST, "Failed to create object.");
+		}
+		return entityRes;
+	}
+
+	/**
+	 * Overwrite response as JSON
+	 * @param id the object id
+	 * @param type type of the object to create
+	 * @param is entity input stream
+	 * @param app the app object
+	 * @return a status code 200 or 400
+	 */
+	public static Response getOverwriteResponse(App app, String id, String type, InputStream is) {
+		ParaObject content;
+		Response entityRes = getEntity(is, Map.class);
+		if (entityRes.getStatusInfo() == Response.Status.OK) {
+			Map<String, Object> newContent = (Map<String, Object>) entityRes.getEntity();
+			if (!StringUtils.isBlank(type)) {
+				newContent.put(Config._TYPE, type);
+			}
+			content = ParaObjectUtils.setAnnotatedFields(newContent);
+			if (content != null && !StringUtils.isBlank(id)) {
+				content.setAppid(app.getAppIdentifier());
+				content.setId(id);
+				registerNewTypes(app, content);
+				// The reason why we do two validation passes is because we want to return
+				// the errors through the API and notify the end user.
+				// This is the primary validation pass (validates not only core POJOS but also user defined objects).
+				String[] errors = ValidationUtils.validateObject(app, content);
+				if (errors.length == 0) {
+					// Secondary validation pass: object is validated again before being created
+					CoreUtils.overwrite(app.getAppIdentifier(), content);
+					return Response.ok(content).build();
+				}
+				return getStatusResponse(Response.Status.BAD_REQUEST, errors);
+			}
+			return getStatusResponse(Response.Status.BAD_REQUEST, "Failed to create object.");
 		}
 		return entityRes;
 	}

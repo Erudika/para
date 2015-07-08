@@ -14,9 +14,9 @@
 	<properties>
 		<jerseyVer>2.16</jerseyVer>
 		<springVer>4.0.1.RELEASE</springVer>
-		<springVer2>1.2.3.RELEASE</springVer2>
+		<springVer2>1.2.4.RELEASE</springVer2>
 		<jacksonVer>2.5.1</jacksonVer>
-		<hazelcastVer>3.4.2</hazelcastVer>
+		<hazelcastVer>3.5</hazelcastVer>
 	</properties>
 
 	<dependencies>
@@ -81,7 +81,7 @@
 		<dependency>
 			<groupId>org.elasticsearch</groupId>
 			<artifactId>elasticsearch</artifactId>
-			<version>1.5.2</version>
+			<version>1.6.0</version>
 		</dependency>
 
 		<!-- HAZELCAST -->
@@ -143,11 +143,6 @@
 			<version>7.0</version>
 			<scope>provided</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.ebaysf.web</groupId>
-			<artifactId>cors-filter</artifactId>
-			<version>1.0.1</version>
-		</dependency>
 
 		<!-- TESTING -->
 		<dependency>
@@ -166,7 +161,6 @@
 			<groupId>org.glassfish.jersey.test-framework.providers</groupId>
 			<artifactId>jersey-test-framework-provider-inmemory</artifactId>
 			<version>${jerseyVer}</version>
-
 			<!--<scope>test</scope>-->
 		</dependency>
 	</dependencies>
@@ -187,7 +181,7 @@
 			<plugin>
 				<groupId>org.eclipse.jetty</groupId>
 				<artifactId>jetty-maven-plugin</artifactId>
-				<version>9.2.10.v20150310</version>
+				<version>9.3.0.v20150612</version>
 				<configuration>
 					<systemProperties>
 						<systemProperty>

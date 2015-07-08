@@ -73,7 +73,7 @@
 		<deployPluginVer>2.8.2</deployPluginVer>
 		<slf4jVer>1.7.12</slf4jVer>
 		<logbackVer>1.1.3</logbackVer>
-		<awsJdkVer>1.9.40</awsJdkVer>
+		<awsJdkVer>1.10.2</awsJdkVer>
 	</properties>
 
 	<dependencies>

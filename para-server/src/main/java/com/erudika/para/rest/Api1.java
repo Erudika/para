@@ -67,6 +67,7 @@ public class Api1 extends ResourceConfig {
 	private static final String PUT = HttpMethod.PUT;
 	private static final String POST = HttpMethod.POST;
 	private static final String DELETE = HttpMethod.DELETE;
+	private static final String PATCH = "PATCH";
 
 	private final DAO dao;
 	private final Search search;
@@ -175,6 +176,7 @@ public class Api1 extends ResourceConfig {
 		core.addMethod(POST).produces(JSON).consumes(JSON).handledBy(handler);
 		core.addChildResource("{id}").addMethod(GET).produces(JSON).handledBy(handler);
 		core.addChildResource("{id}").addMethod(PUT).produces(JSON).consumes(JSON).handledBy(handler);
+		core.addChildResource("{id}").addMethod(PATCH).produces(JSON).consumes(JSON).handledBy(handler);
 		core.addChildResource("{id}").addMethod(DELETE).produces(JSON).handledBy(handler);
 		// links CRUD endpoints
 		core.addChildResource("{id}/links/{type2}/{id2}").addMethod(GET).produces(JSON).handledBy(linksHandler);
@@ -186,7 +188,8 @@ public class Api1 extends ResourceConfig {
 		Resource.Builder batch = Resource.builder("_batch");
 		batch.addMethod(POST).produces(JSON).consumes(JSON).handledBy(batchCreateHandler());
 		batch.addMethod(GET).produces(JSON).handledBy(batchReadHandler());
-		batch.addMethod(PUT).produces(JSON).consumes(JSON).handledBy(batchUpdateHandler());
+		batch.addMethod(PUT).produces(JSON).consumes(JSON).handledBy(batchCreateHandler());
+		batch.addMethod(PATCH).produces(JSON).consumes(JSON).handledBy(batchUpdateHandler());
 		batch.addMethod(DELETE).produces(JSON).handledBy(batchDeleteHandler());
 
 		registerResources(logo.build());
@@ -272,6 +275,8 @@ public class Api1 extends ResourceConfig {
 					if (GET.equals(ctx.getMethod())) {
 						return readHandler(app, type).apply(ctx);
 					} else if (PUT.equals(ctx.getMethod())) {
+						return overwriteHandler(app, type).apply(ctx);
+					} else if (PATCH.equals(ctx.getMethod())) {
 						return updateHandler(app, type).apply(ctx);
 					} else if (DELETE.equals(ctx.getMethod())) {
 						return deleteHandler(app, type).apply(ctx);
@@ -508,6 +513,14 @@ public class Api1 extends ResourceConfig {
 				obj.setId(pathParam(Config._ID, ctx));
 				return RestUtils.getUpdateResponse(app, dao.read(app.getAppIdentifier(), obj.getId()),
 						ctx.getEntityStream());
+			}
+		};
+	}
+
+	protected final Inflector<ContainerRequestContext, Response> overwriteHandler(final App app, final String type) {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				return RestUtils.getOverwriteResponse(app, pathParam(Config._ID, ctx), type, ctx.getEntityStream());
 			}
 		};
 	}
