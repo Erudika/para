@@ -39,7 +39,6 @@ import javax.servlet.http.HttpServletResponse;
  * specification, and appropriate response headers are added to {@link HttpServletResponse}.
  * </p>
  *
- * <p>
  * By default, it also sets following request attributes, that helps to determine nature of request downstream.
  * <ul>
  * <li><b>cors.isCorsRequest:</b> Flag to determine if request is a CORS request. Set to <code>true</code> if CORS
@@ -50,7 +49,6 @@ import javax.servlet.http.HttpServletResponse;
  * <li><b>cors.request.headers:</b> Request headers sent as 'Access-Control-Request-Headers' header, for pre-flight
  * request.</li>
  * </ul>
- * </p>
  *
  * @author Mohit Soni
  * @see <a href="http://www.w3.org/TR/cors/">CORS specification</a>
@@ -213,8 +211,8 @@ public final class CORSFilter implements Filter {
 	 * @param request The {@link HttpServletRequest} object.
 	 * @param response The {@link HttpServletResponse} object.
 	 * @param filterChain The {@link FilterChain} object.
-	 * @throws IOException
-	 * @throws ServletException
+	 * @throws IOException ex
+	 * @throws ServletException ex
 	 * @see <a href="http://www.w3.org/TR/cors/#resource-requests">Simple Cross-Origin Request, Actual Request, and
 	 * Redirects</a>
 	 */
@@ -295,8 +293,8 @@ public final class CORSFilter implements Filter {
 	 * @param request The {@link HttpServletRequest} object.
 	 * @param response The {@link HttpServletResponse} object.
 	 * @param filterChain The {@link FilterChain} object.
-	 * @throws IOException
-	 * @throws ServletException
+	 * @throws IOException ex
+	 * @throws ServletException ex
 	 */
 	public void handlePreflightCORS(final HttpServletRequest request,
 			final HttpServletResponse response, final FilterChain filterChain)
@@ -407,8 +405,8 @@ public final class CORSFilter implements Filter {
 	 * @param request The {@link HttpServletRequest} object.
 	 * @param response The {@link HttpServletResponse} object.
 	 * @param filterChain The {@link FilterChain} object.
-	 * @throws IOException
-	 * @throws ServletException
+	 * @throws IOException ex
+	 * @throws ServletException ex
 	 */
 	public void handleNonCORS(final HttpServletRequest request,
 			final HttpServletResponse response, final FilterChain filterChain)
@@ -423,8 +421,6 @@ public final class CORSFilter implements Filter {
 	 * @param request The {@link HttpServletRequest} object.
 	 * @param response The {@link HttpServletResponse} object.
 	 * @param filterChain The {@link FilterChain} object.
-	 * @throws IOException
-	 * @throws ServletException
 	 */
 	public void handleInvalidCORS(final HttpServletRequest request,
 			final HttpServletResponse response, final FilterChain filterChain) {
@@ -561,9 +557,8 @@ public final class CORSFilter implements Filter {
 
 	/**
 	 * Determines the request type.
-	 *
-	 * @param request
-	 * @return
+	 * @param request req
+	 * @return CORS request type
 	 */
 	public CORSRequestType checkRequestType(final HttpServletRequest request) {
 		CORSRequestType requestType = CORSRequestType.INVALID_CORS;
@@ -651,7 +646,7 @@ public final class CORSFilter implements Filter {
 	 * @param preflightMaxAge The amount of seconds the user agent is allowed to cache the result of the pre-flight
 	 * request.
 	 * @param loggingEnabled Flag to control logging to access log.
-	 * @throws ServletException
+	 * @throws ServletException ex
 	 */
 	private void parseAndStore(final String allowedOrigins,
 			final String allowedHttpMethods, final String allowedHttpHeaders,
@@ -757,9 +752,9 @@ public final class CORSFilter implements Filter {
 	 * <li>Origin should be a valid {@link URI}</li>
 	 * </ul>
 	 *
-	 * @param origin
+	 * @param origin origin
 	 * @see <a href="http://tools.ietf.org/html/rfc952">RFC952</a>
-	 * @return
+	 * @return boolean
 	 */
 	public static boolean isValidOrigin(String origin) {
 		// Checks for encoded characters. Helps prevent CRLF injection.
@@ -801,7 +796,7 @@ public final class CORSFilter implements Filter {
 	/**
 	 * Returns a {@link Set} of headers that should be exposed by browser.
 	 *
-	 * @return
+	 * @return list
 	 */
 	public Collection<String> getExposedHeaders() {
 		return exposedHeaders;
@@ -810,7 +805,7 @@ public final class CORSFilter implements Filter {
 	/**
 	 * Determines is supports credentials is enabled
 	 *
-	 * @return
+	 * @return boolean
 	 */
 	public boolean isSupportsCredentials() {
 		return supportsCredentials;
@@ -977,7 +972,7 @@ public final class CORSFilter implements Filter {
 	/**
 	 * {@link Collection} of HTTP methods. Case sensitive.
 	 *
-	 * @see http://tools.ietf.org/html/rfc2616#section-5.1.1
+	 * see http://tools.ietf.org/html/rfc2616#section-5.1.1
 	 */
 	public static final Collection<String> HTTP_METHODS = new HashSet<String>(
 			Arrays.asList("OPTIONS", "GET", "HEAD", "POST", "PUT", "PATCH", "DELETE",
@@ -991,7 +986,7 @@ public final class CORSFilter implements Filter {
 	/**
 	 * {@link Collection} of Simple HTTP methods. Case sensitive.
 	 *
-	 * @see http://www.w3.org/TR/cors/#terminology
+	 * see http://www.w3.org/TR/cors/#terminology
 	 */
 	public static final Collection<String> SIMPLE_HTTP_METHODS
 			= new HashSet<String>(
@@ -1000,7 +995,7 @@ public final class CORSFilter implements Filter {
 	/**
 	 * {@link Collection} of Simple HTTP request headers. Case in-sensitive.
 	 *
-	 * @see http://www.w3.org/TR/cors/#terminology
+	 * see http://www.w3.org/TR/cors/#terminology
 	 */
 	public static final Collection<String> SIMPLE_HTTP_REQUEST_HEADERS
 			= new HashSet<String>(Arrays.asList("Accept", "Accept-Language",
@@ -1009,7 +1004,7 @@ public final class CORSFilter implements Filter {
 	/**
 	 * {@link Collection} of Simple HTTP request headers. Case in-sensitive.
 	 *
-	 * @see http://www.w3.org/TR/cors/#terminology
+	 * see http://www.w3.org/TR/cors/#terminology
 	 */
 	public static final Collection<String> SIMPLE_HTTP_RESPONSE_HEADERS
 			= new HashSet<String>(Arrays.asList("Cache-Control",
@@ -1019,7 +1014,7 @@ public final class CORSFilter implements Filter {
 	/**
 	 * {@link Collection} of Simple HTTP request headers. Case in-sensitive.
 	 *
-	 * @see http://www.w3.org/TR/cors/#terminology
+	 * see http://www.w3.org/TR/cors/#terminology
 	 */
 	public static final Collection<String> SIMPLE_HTTP_REQUEST_CONTENT_TYPE_VALUES
 			= new HashSet<String>(Arrays.asList(
