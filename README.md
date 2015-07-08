@@ -23,10 +23,11 @@ multiple applications and clients written in any programming language.
 - RESTful JSON API for your objects secured with Amazon's Signature 4 algorithm.
 - Full text search (current implementation is based on ElasticSearch).
 - Distributed object cache support (implemented with Hazelcast).
+- Multi-app support, each with its own table, index and cache.
 - Flexible security based on Spring Security (OpenID and Facebook login, CSRF protection, etc.).
 - Robust constraint validation mechanism based on JSR-303 and Hibernate Validator.
 - Support for scalable data stores (Amazon DynamoDB, Cassandra).
-- Modular design based on Google Guice.
+- Modular design powered by Google Guice.
 - I18n utilities for translating language packs into different languages.
 
 ### Architecture
@@ -51,7 +52,7 @@ multiple applications and clients written in any programming language.
 +----+---------^----+  +-----------------+   +-------------+
      |         |
 +----v---------+-------------------------------------------+
-|        Clients : JavaScript, Ruby, Python, PHP, etc.     |
+|        Clients : JavaScript, PHP, Ruby, C#, etc.         |
 +----------------------------------------------------------+
 </pre>
 
@@ -109,7 +110,7 @@ Here's the Maven snippet to include in your `pom.xml`:
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para-server</artifactId>
-  <version>1.15</version>
+  <version>1.16</version>
 </dependency>
 ```
 
@@ -126,8 +127,7 @@ clients for popular languages soon.
 
 - Add `DAO` implementations for popular databases like MongoDB, PostgreSQL, etc.
 - Write API clients in JavaScript, PHP, Ruby, Python, C#, Swift, etc.
-- Separate implementations from core
-- Add integrations with Google App Engine, Heroku, JOOQ, Comsat, Quasar, Ionic Framework
+- Add integrations with Google App Engine, Heroku, JOOQ, Comsat, Quasar
 
 ## Contributing
 
