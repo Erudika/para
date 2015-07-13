@@ -30,6 +30,7 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.HumanTime;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
+import com.erudika.para.utils.filters.FieldFilter;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -87,6 +88,7 @@ public class Api1 extends ResourceConfig {
 
 		register(GenericExceptionMapper.class);
 		register(new JacksonJsonProvider(ParaObjectUtils.getJsonMapper()));
+		register(FieldFilter.class);
 
 		// core objects CRUD API
 		registerCrudApi("{type}", typeCrudHandler(), linksHandler());
