@@ -31,6 +31,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.ext.Provider;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.LoggerFactory;
 
 /**
  * Filter response entities dynamically, based on a list of selected fields. Returns partial objects.
@@ -77,7 +78,9 @@ public class FieldFilter implements ContainerResponseFilter {
 					if (!fields.contains(fieldName)) {
 						field.set(entity, null);
 					}
-				} catch (Exception e) {	}
+				} catch (Exception e) {
+					LoggerFactory.getLogger(this.getClass()).warn(null, e);
+				}
 			}
 		}
 	}

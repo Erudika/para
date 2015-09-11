@@ -242,7 +242,6 @@ public final class RestUtils {
 			content = ParaObjectUtils.setAnnotatedFields(newContent);
 			if (content != null) {
 				content.setAppid(app.getAppIdentifier());
-				content.setId(null); // id is useless in a POST request
 				registerNewTypes(app, content);
 				// The reason why we do two validation passes is because we want to return
 				// the errors through the API and notify the end user.

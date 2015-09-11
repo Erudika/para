@@ -412,7 +412,7 @@ public final class ParaClient {
 	 * Simple multi id search.
 	 * @param <P> type of the object
 	 * @param ids a list of ids to search for
-	 * @return the object if found or null
+	 * @return a list of object found
 	 */
 	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> findByIds(List<String> ids) {
@@ -751,8 +751,8 @@ public final class ParaClient {
 	/**
 	 * Unlinks all objects that are linked to this one.
 	 * @param obj the object to execute this method on
-	 * Deletes all {@link com.erudika.para.core.Linker} objects.
-	 * Only the links are deleted. Objects are left untouched.
+	 * Only {@link com.erudika.para.core.Linker} objects are deleted.
+	 * {@link com.erudika.para.core.ParaObject}s are left untouched.
 	 */
 	public void unlinkAll(ParaObject obj) {
 		if (obj == null || obj.getId() == null) {
