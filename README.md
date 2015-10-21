@@ -17,6 +17,8 @@ Para to power your mobile or web application back-end.
 Para can be used in two ways - as the backbone of your JVM-based application or as a standalone server supporting
 multiple applications and clients written in any programming language.
 
+See how Para [compares to other open source back-end frameworks](http://www.erudika.com/blog/2015/10/21/backend-frameworks-usergrid-loopback-para-baasbox-deployd-telepat/).
+
 ### Features
 
 - Standalone executable JAR with embedded Jetty (WAR also available).
@@ -122,6 +124,7 @@ clients for popular languages soon.
 - **PHP** [para-client-php](https://github.com/erudika/para-client-php)
 - **JavaScript / Node.js** [para-client-js](https://github.com/erudika/para-client-js)
 - **Java** [para-client](https://github.com/erudika/para/tree/master/para-client)
+- **.NET** [para-client-csharp](https://github.com/erudika/para-client-csharp)
 
 ## Wishlist / Plans
 
