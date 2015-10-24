@@ -22,6 +22,7 @@ import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
+import com.erudika.para.security.ResourcePermissions;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -76,6 +77,7 @@ public class App implements ParaObject {
 	@Stored private Map<String, String> datatypes;
 	// type -> field -> constraint -> property -> value
 	@Stored private Map<String, Map<String, Map<String, Map<String, Object>>>> validationConstraints;
+	@Stored private Map<String, ResourcePermissions> permissions;
 	@Stored private Boolean active;
 	@Stored private Long deleteOn;
 

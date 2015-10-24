@@ -18,15 +18,12 @@
 
 package com.erudika.para.web;
 
-import java.util.EnumSet;
-import javax.servlet.DispatcherType;
-import javax.servlet.FilterRegistration;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
+import javax.servlet.ServletRegistration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tuckey.web.filters.urlrewrite.UrlRewriteFilter;
 
 /**
  *
@@ -43,13 +40,9 @@ public class DefaultServletContextListener implements ServletContextListener {
 	@Override
 	public void contextInitialized(ServletContextEvent sce) {
 		logger.info("Para WAR: contextInitialized()");
-		// UrlRewriteFilter (nice URLs)
 		ServletContext sc = sce.getServletContext();
-		FilterRegistration.Dynamic urf = sc.addFilter("urlRewriteFilter", UrlRewriteFilter.class);
-		urf.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST,
-				DispatcherType.ERROR, DispatcherType.FORWARD), false, "/*");
-		urf.setInitParameter("statusEnabled", "false");
-		urf.setInitParameter("logLevel", "slf4j");
+		ServletRegistration.Dynamic sr = sc.addServlet("default", DefaultParaServlet.class);
+		sr.setLoadOnStartup(1);
 	}
 
 	/**
