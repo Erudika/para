@@ -23,12 +23,15 @@ import com.erudika.para.annotations.Stored;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.security.ResourcePermissions;
+import com.erudika.para.security.ResourcePermissions.Value;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import com.erudika.para.validation.Constraint;
+import com.erudika.para.validation.ValidationConstraints;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,8 +79,8 @@ public class App implements ParaObject {
 	@Stored @Locked private Boolean readOnly;
 	@Stored private Map<String, String> datatypes;
 	// type -> field -> constraint -> property -> value
-	@Stored private Map<String, Map<String, Map<String, Map<String, Object>>>> validationConstraints;
-	@Stored private Map<String, ResourcePermissions> permissions;
+	@Stored private Map<String, ValidationConstraints> validationConstraints;
+	@Stored private Map<String, ResourcePermissions> resourcePermissions;
 	@Stored private Boolean active;
 	@Stored private Long deleteOn;
 
@@ -122,9 +125,9 @@ public class App implements ParaObject {
 	 * Returns a map of user-defined data types and their validation annotations.
 	 * @return the constraints map
 	 */
-	public Map<String, Map<String, Map<String, Map<String, Object>>>> getValidationConstraints() {
+	public Map<String, ValidationConstraints> getValidationConstraints() {
 		if (validationConstraints == null) {
-			validationConstraints = new HashMap<String, Map<String, Map<String, Map<String, Object>>>>();
+			validationConstraints = new HashMap<String, ValidationConstraints>();
 		}
 		return validationConstraints;
 	}
@@ -133,8 +136,27 @@ public class App implements ParaObject {
 	 * Sets the validation constraints map.
 	 * @param validationConstraints the constraints map
 	 */
-	public void setValidationConstraints(Map<String, Map<String,Map<String, Map<String, Object>>>> validationConstraints) {
+	public void setValidationConstraints(Map<String, ValidationConstraints> validationConstraints) {
 		this.validationConstraints = validationConstraints;
+	}
+
+	/**
+	 * Returns a map of resource permissions.
+	 * @return the permissions map
+	 */
+	public Map<String, ResourcePermissions> getResourcePermissions() {
+		if (resourcePermissions == null) {
+			resourcePermissions = new HashMap<String, ResourcePermissions>();
+		}
+		return resourcePermissions;
+	}
+
+	/**
+	 * Sets the permissions map
+	 * @param resourcePermissions
+	 */
+	public void setResourcePermissions(Map<String, ResourcePermissions> resourcePermissions) {
+		this.resourcePermissions = resourcePermissions;
 	}
 
 	/**
@@ -262,19 +284,19 @@ public class App implements ParaObject {
 		if (!StringUtils.isBlank(type) && !StringUtils.isBlank(field) &&
 				c != null && !c.getPayload().isEmpty() &&
 				Constraint.isValidConstraintName(c.getName())) {
-			Map<String, Map<String, Map<String, Object>>> fieldMap = getValidationConstraints().get(type);
+			ValidationConstraints fieldMap = getValidationConstraints().get(type);
 			Map<String, Map<String, Object>> consMap;
 			if (fieldMap != null) {
-				consMap = fieldMap.get(field);
+				consMap = fieldMap.get().get(field);
 				if (consMap == null) {
 					consMap = new HashMap<String, Map<String, Object>>();
 				}
 			} else {
-				fieldMap = new HashMap<String, Map<String, Map<String, Object>>>();
+				fieldMap = new ValidationConstraints();
 				consMap = new HashMap<String, Map<String, Object>>();
 			}
 			consMap.put(c.getName(), c.getPayload());
-			fieldMap.put(field, consMap);
+			fieldMap.get().put(field, consMap);
 			getValidationConstraints().put(type, fieldMap);
 			return true;
 		}
@@ -290,9 +312,48 @@ public class App implements ParaObject {
 	 */
 	public boolean removeValidationConstraint(String type, String field, String constraintName) {
 		if (!StringUtils.isBlank(type) && !StringUtils.isBlank(field) && constraintName != null) {
-			Map<String, Map<String, Map<String, Object>>> fieldsMap = getValidationConstraints().get(type);
-			if (fieldsMap != null && fieldsMap.containsKey(field) && fieldsMap.get(field).containsKey(constraintName)) {
-				fieldsMap.get(field).remove(constraintName);
+			ValidationConstraints fieldsMap = getValidationConstraints().get(type);
+			if (fieldsMap != null && fieldsMap.get().containsKey(field) && fieldsMap.get().get(field).containsKey(constraintName)) {
+				fieldsMap.get().get(field).remove(constraintName);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Grants a new permission for a given subject and resource.
+	 * @param subjectid the subject to give permissions to
+	 * @param resourceName the resource name/type
+	 * @param permissions the set or HTTP methods allowed
+	 * @return true if successful
+	 */
+	public boolean grantResourcePermission(String subjectid, String resourceName, EnumSet<Value> permissions) {
+		if (!StringUtils.isBlank(subjectid) &&
+				(getDatatypes().containsKey(resourceName) || getDatatypes().containsValue(resourceName))) {
+			ResourcePermissions rp = getResourcePermissions().get(subjectid);
+			if (rp == null) {
+				rp = new ResourcePermissions();
+			}
+			rp.grantPermission(resourceName, permissions);
+			getResourcePermissions().put(subjectid, rp);
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Revokes a given permission
+	 * @param subjectid
+	 * @param resourceName
+	 * @return true if successful
+	 */
+	public boolean revokeResourcePermission(String subjectid, String resourceName) {
+		if (!StringUtils.isBlank(subjectid) &&
+				(getDatatypes().containsKey(resourceName) || getDatatypes().containsValue(resourceName))) {
+			ResourcePermissions rp = getResourcePermissions().get(subjectid);
+			if (rp != null) {
+				rp.revokePermission(resourceName);
 				return true;
 			}
 		}

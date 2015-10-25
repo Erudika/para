@@ -84,7 +84,7 @@ public class ValidationUtilsTest {
 
 		// required
 		app.addValidationConstraint(s1.getType(), "paws", required());
-		assertFalse(getValidationConstraints(app, s1.getType()).isEmpty());
+		assertFalse(getValidationConstraints(app, s1.getType()).get().isEmpty());
 		assertFalse(validateObject(app, s1).length == 0);
 		s1.addProperty("paws", 2);
 		assertTrue(validateObject(app, s1).length == 0);
@@ -237,8 +237,8 @@ public class ValidationUtilsTest {
 	@Test
 	public void testGetValidationConstraints() {
 		App app = new App(Config.PARA);
-		assertTrue(ValidationUtils.getValidationConstraints(app, null).isEmpty());
-		assertFalse(ValidationUtils.getValidationConstraints(app, "tag").isEmpty());
+		assertTrue(ValidationUtils.getValidationConstraints(app, null).get().isEmpty());
+		assertFalse(ValidationUtils.getValidationConstraints(app, "tag").get().isEmpty());
 	}
 
 	@Test
@@ -247,13 +247,13 @@ public class ValidationUtilsTest {
 
 		// add
 		app.addValidationConstraint("testtype", "urlField", url());
-		assertTrue(ValidationUtils.getValidationConstraints(app, "testtype").containsKey("urlField"));
-		assertTrue(ValidationUtils.getValidationConstraints(app, "testtype").get("urlField").containsKey("url"));
+		assertTrue(ValidationUtils.getValidationConstraints(app, "testtype").get().containsKey("urlField"));
+		assertTrue(ValidationUtils.getValidationConstraints(app, "testtype").get().get("urlField").containsKey("url"));
 
 		// remove
 		app.removeValidationConstraint("testtype", "urlField", "url");
-		assertTrue(ValidationUtils.getValidationConstraints(app, "testtype").containsKey("urlField"));
-		assertTrue(ValidationUtils.getValidationConstraints(app, "testtype").get("urlField").isEmpty());
-		assertFalse(ValidationUtils.getValidationConstraints(app, "testtype").get("urlField").containsKey("url"));
+		assertTrue(ValidationUtils.getValidationConstraints(app, "testtype").get().containsKey("urlField"));
+		assertTrue(ValidationUtils.getValidationConstraints(app, "testtype").get().get("urlField").isEmpty());
+		assertFalse(ValidationUtils.getValidationConstraints(app, "testtype").get().get("urlField").containsKey("url"));
 	}
 }

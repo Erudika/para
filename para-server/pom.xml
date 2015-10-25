@@ -13,10 +13,10 @@
 
 	<properties>
 		<jerseyVer>2.16</jerseyVer>
-		<springVer>4.0.1.RELEASE</springVer>
-		<springVer2>1.2.4.RELEASE</springVer2>
+		<springVer>4.0.2.RELEASE</springVer>
+		<springVer2>1.2.7.RELEASE</springVer2>
 		<jacksonVer>2.5.1</jacksonVer>
-		<hazelcastVer>3.5</hazelcastVer>
+		<hazelcastVer>3.5.3</hazelcastVer>
 	</properties>
 
 	<dependencies>
@@ -81,7 +81,7 @@
 		<dependency>
 			<groupId>org.elasticsearch</groupId>
 			<artifactId>elasticsearch</artifactId>
-			<version>1.6.0</version>
+			<version>1.7.3</version>
 		</dependency>
 
 		<!-- HAZELCAST -->

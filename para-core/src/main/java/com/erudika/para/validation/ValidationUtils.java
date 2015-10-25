@@ -131,11 +131,11 @@ public final class ValidationUtils {
 			boolean isCustomType = (content instanceof Sysprop) && !type.equals(Utils.type(Sysprop.class));
 			// Validate custom types and user-defined properties
 			if (!app.getValidationConstraints().isEmpty() && isCustomType) {
-				Map<String, Map<String, Map<String, Object>>> fieldsMap
-						= app.getValidationConstraints().get(type);
-				if (fieldsMap != null && !fieldsMap.isEmpty()) {
+				ValidationConstraints fieldsMap = app.getValidationConstraints().get(type);
+				if (fieldsMap != null && !fieldsMap.get().isEmpty()) {
 					LinkedList<String> errors = new LinkedList<String>();
-					for (Map.Entry<String, Map<String, Map<String, Object>>> e : fieldsMap.entrySet()) {
+					for (Map.Entry<String, Map<String, Map<String, Object>>> e :
+							fieldsMap.get().entrySet()) {
 						String field = e.getKey();
 						Object actualValue = ((Sysprop) content).getProperty(field);
 						// overriding core property validation rules is allowed
@@ -200,9 +200,8 @@ public final class ValidationUtils {
 	 * @param type a valid Para data type
 	 * @return a JSON Node object
 	 */
-	public static Map<String, Map<String, Map<String, Object>>> getValidationConstraints(App app, String type) {
-		Map<String, Map<String, Map<String, Object>>> fieldsMap
-				= new HashMap<String, Map<String, Map<String, Object>>>();
+	public static ValidationConstraints getValidationConstraints(App app, String type) {
+		ValidationConstraints fieldsMap = new ValidationConstraints();
 		if (app != null && !StringUtils.isBlank(type)) {
 			try {
 				List<Field> fieldlist = Utils.getAllDeclaredFields(ParaObjectUtils.toClass(type));
@@ -219,13 +218,13 @@ public final class ValidationUtils {
 							}
 						}
 						if (consMap.size() > 0) {
-							fieldsMap.put(field.getName(), consMap);
+							fieldsMap.get().put(field.getName(), consMap);
 						}
 					}
 				}
-				Map<String, Map<String, Map<String, Object>>> appConstraints = app.getValidationConstraints().get(type);
-				if (appConstraints != null && !appConstraints.isEmpty()) {
-					fieldsMap.putAll(appConstraints);
+				ValidationConstraints appConstraints = app.getValidationConstraints().get(type);
+				if (appConstraints != null && !appConstraints.get().isEmpty()) {
+					fieldsMap.get().putAll(appConstraints.get());
 				}
 			} catch (Exception ex) {
 				logger.error(null, ex);
@@ -247,8 +246,8 @@ public final class ValidationUtils {
 			try {
 				ObjectNode parentNode = ParaObjectUtils.getJsonMapper().createObjectNode();
 				for (String type : allTypes) {
-					Map<?, ?> constraintsNode = getValidationConstraints(app, type);
-					if (constraintsNode.size() > 0) {
+					ValidationConstraints constraintsNode = getValidationConstraints(app, type);
+					if (constraintsNode.get().size() > 0) {
 						parentNode.putPOJO(type, constraintsNode);
 					}
 				}
