@@ -25,12 +25,15 @@ import com.erudika.para.core.ParaObjectUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
+import com.erudika.para.security.ResourcePermissions;
 import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.HumanTime;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import com.erudika.para.utils.filters.FieldFilter;
+import com.erudika.para.validation.Constraint;
+import com.erudika.para.validation.ValidationUtils;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -130,6 +133,14 @@ public class Api1 extends ResourceConfig {
 		valRes.addChildResource("{type}/{field}/{cname}").addMethod(PUT).produces(JSON).handledBy(addConstrHandler());
 		valRes.addChildResource("{type}/{field}/{cname}").addMethod(DELETE).produces(JSON).handledBy(removeConstrHandler());
 		registerResources(valRes.build());
+
+		// permissions
+		Resource.Builder permRes = Resource.builder("_permissions");
+		permRes.addMethod(GET).produces(JSON).handledBy(getPermitHandler());
+		permRes.addChildResource("{subjectid}").addMethod(GET).produces(JSON).handledBy(getPermitHandler());
+		permRes.addChildResource("{subjectid}").addMethod(PUT).produces(JSON).handledBy(grantPermitHandler());
+		permRes.addChildResource("{subjectid}/{type}").addMethod(DELETE).produces(JSON).handledBy(revokePermitHandler());
+		registerResources(permRes.build());
 
 		// util functions API
 		Resource.Builder utilsRes = Resource.builder("utils/{method}");
@@ -247,7 +258,7 @@ public class Api1 extends ResourceConfig {
 				App app = RestUtils.getPrincipalApp();
 				if (app != null) {
 					if (!StringUtils.isBlank(typePlural)) {
-						String type = RestUtils.getAllTypes(app).get(typePlural);
+						String type = ParaObjectUtils.getAllTypes(app).get(typePlural);
 						if (type == null) {
 							type = typePlural;
 						}
@@ -301,7 +312,11 @@ public class Api1 extends ResourceConfig {
 				String type2 = pathp.getFirst("type2");
 				App app = RestUtils.getPrincipalApp();
 
-				String typeSingular = (type == null) ? null : RestUtils.getAllTypes(app).get(type);
+				if (app == null) {
+					return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST);
+				}
+
+				String typeSingular = (type == null) ? null : ParaObjectUtils.getAllTypes(app).get(type);
 				type = (typeSingular == null) ? type : typeSingular;
 
 				id2 = StringUtils.isBlank(id2) ? params.getFirst(Config._ID) : id2;
@@ -406,7 +421,10 @@ public class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = RestUtils.getPrincipalApp();
 				String id = pathParam(Config._ID, ctx);
-				return RestUtils.getReadResponse(dao.read(app.getAppIdentifier(), id));
+				if (app != null) {
+					return RestUtils.getReadResponse(dao.read(app.getAppIdentifier(), id));
+				}
+				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
@@ -415,11 +433,24 @@ public class Api1 extends ResourceConfig {
 	protected final Inflector<ContainerRequestContext, Response> getConstrHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				return RestUtils.getConstraintsResponse(RestUtils.getPrincipalApp(), pathParam(Config._TYPE, ctx));
+				App app = RestUtils.getPrincipalApp();
+				String type = pathParam(Config._TYPE, ctx);
+				if (app != null) {
+					if (type != null) {
+						return Response.ok(ParaObjectUtils.getJsonMapper().
+								createObjectNode().putPOJO(StringUtils.capitalize(type),
+								ValidationUtils.getValidationConstraints(app, type))).build();
+					} else {
+						return Response.ok(ValidationUtils.getAllValidationConstraints(app,
+								ParaObjectUtils.getAllTypes(app).values())).build();
+					}
+				}
+				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
 
+	@SuppressWarnings("unchecked")
 	protected final Inflector<ContainerRequestContext, Response> addConstrHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
@@ -427,7 +458,17 @@ public class Api1 extends ResourceConfig {
 				String type = pathParam(Config._TYPE, ctx);
 				String field = pathParam("field", ctx);
 				String cname = pathParam("cname", ctx);
-				return RestUtils.addCostraintsResponse(app, type, field, cname, ctx.getEntityStream());
+				if (app != null) {
+					Response payloadRes = RestUtils.getEntity(ctx.getEntityStream(), Map.class);
+					if (payloadRes.getStatusInfo() == Response.Status.OK) {
+						Map<String, Object> payload = (Map<String, Object>) payloadRes.getEntity();
+						if (app.addValidationConstraint(type, field, Constraint.build(cname, payload))) {
+							app.update();
+						}
+					}
+					return Response.ok(app.getValidationConstraints().get(type)).build();
+				}
+				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
@@ -439,7 +480,69 @@ public class Api1 extends ResourceConfig {
 				String type = pathParam(Config._TYPE, ctx);
 				String field = pathParam("field", ctx);
 				String cname = pathParam("cname", ctx);
-				return RestUtils.removeCostraintsResponse(app, type, field, cname);
+				if (app != null) {
+					if (app.removeValidationConstraint(type, field, cname)) {
+						app.update();
+					}
+					return Response.ok(app.getValidationConstraints().get(type)).build();
+				}
+				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+			}
+		};
+	}
+
+	protected final Inflector<ContainerRequestContext, Response> getPermitHandler() {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				App app = RestUtils.getPrincipalApp();
+				String subjectid = pathParam("subjectid", ctx);
+				if (app != null) {
+					if (subjectid != null) {
+						return Response.ok(app.getResourcePermissions().get(subjectid)).build();
+					} else {
+						return Response.ok(app.getResourcePermissions()).build();
+					}
+				}
+				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+			}
+		};
+	}
+
+	protected final Inflector<ContainerRequestContext, Response> grantPermitHandler() {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				App app = RestUtils.getPrincipalApp();
+				String subjectid = pathParam("subjectid", ctx);
+				if (app != null) {
+					Response resp = RestUtils.getEntity(ctx.getEntityStream(), ResourcePermissions.class);
+					if (resp.getStatusInfo() == Response.Status.OK) {
+						ResourcePermissions permissions = (ResourcePermissions) resp.getEntity();
+						app.grantResourcePermissions(subjectid, permissions);
+						return Response.ok(app.getResourcePermissions()).build();
+					} else {
+						return resp;
+					}
+				}
+				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+			}
+		};
+	}
+
+	protected final Inflector<ContainerRequestContext, Response> revokePermitHandler() {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				App app = RestUtils.getPrincipalApp();
+				String subjectid = pathParam("subjectid", ctx);
+				String type = pathParam(Config._TYPE, ctx);
+				if (app != null) {
+					if (type != null) {
+						app.revokeResourcePermission(subjectid, type);
+					} else {
+						app.revokeAllResourcePermissions(subjectid);
+					}
+					return Response.ok(app.getResourcePermissions()).build();
+				}
+				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
@@ -449,7 +552,7 @@ public class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = RestUtils.getPrincipalApp();
 				if (app != null) {
-					return Response.ok(RestUtils.getAllTypes(app)).build();
+					return Response.ok(ParaObjectUtils.getAllTypes(app)).build();
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}

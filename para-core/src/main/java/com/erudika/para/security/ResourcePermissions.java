@@ -19,6 +19,7 @@ package com.erudika.para.security;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -85,20 +86,20 @@ public final class ResourcePermissions {
 		}
 	}
 
+	/**
+	 * A wildcard to indicate full permission.
+	 */
 	public static String ALLOW_ALL = "*";
 	private Map<String, Set<String>> resourcePermissions;
+	private Map<String, EnumSet<Value>> enumValuesMap;
 
 	/**
 	 * No-args constructor
 	 */
 	public ResourcePermissions() {
 		resourcePermissions = new HashMap<String, Set<String>>();
-//		this(ALLOW_ALL, EnumSet.of(Value.READ_WRITE));
+		enumValuesMap = new HashMap<String, EnumSet<Value>>();
 	}
-
-//	public ResourcePermissions(String resource, EnumSet<Value> permissions) {
-//		grantPermission(resource, permissions);
-//	}
 
 	/**
 	 * Grants a permission for a given resource/type.
@@ -133,6 +134,7 @@ public final class ResourcePermissions {
 		}
 		if (!StringUtils.isBlank(resourceName)) {
 			resourcePermissions.put(resourceName, methodsAllowed);
+			enumValuesMap.put(resourceName, permissions);
 		}
 	}
 
@@ -140,6 +142,25 @@ public final class ResourcePermissions {
 		if (!StringUtils.isBlank(resource)) {
 			resourcePermissions.remove(resource);
 		}
+	}
+
+	/**
+	 * Get the value of enumValuesMap
+	 *
+	 * @return the value of enumValuesMap
+	 */
+	@JsonIgnore
+	public Map<String, EnumSet<Value>> getEnumValuesMap() {
+		return enumValuesMap;
+	}
+
+	/**
+	 * Set the value of enumValuesMap
+	 *
+	 * @param enumValuesMap new value of enumValuesMap
+	 */
+	public void setEnumValuesMap(Map<String, EnumSet<Value>> enumValuesMap) {
+		this.enumValuesMap = enumValuesMap;
 	}
 
 	/**
