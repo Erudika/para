@@ -26,7 +26,6 @@ import com.erudika.para.core.ParaObjectUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.utils.Config;
-import com.erudika.para.validation.Constraint;
 import com.erudika.para.utils.Utils;
 import com.erudika.para.validation.ValidationUtils;
 import com.fasterxml.jackson.core.JsonParseException;
@@ -34,8 +33,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +41,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,8 +53,6 @@ import org.slf4j.LoggerFactory;
 public final class RestUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(RestUtils.class);
-	// maps plural to singular type definitions
-	private static final Map<String, String> coreTypes = new DualHashBidiMap();
 
 	private RestUtils() { }
 
@@ -120,61 +114,6 @@ public final class RestUtils {
 		}
 		logger.info("Unauthenticated request - returning root App: {}", Config.APP_NAME_NS);
 		return Para.getDAO().read(Config.APP_NAME_NS, App.id(Config.APP_NAME_NS));
-	}
-
-	/**
-	 * Adds unknown types to this App's list of data types. Called on create().
-	 * @param app the current app
-	 * @param objects a list of new objects
-	 */
-	protected static void registerNewTypes(App app, ParaObject... objects) {
-		// register a new data type
-		if (app != null && objects != null && objects.length > 0) {
-			boolean update = false;
-			for (ParaObject obj : objects) {
-				if (obj != null && obj.getType() != null &&
-						!getCoreTypes().containsKey(obj.getPlural()) &&
-						!app.getDatatypes().containsKey(obj.getPlural())) {
-
-					app.addDatatype(obj.getPlural(), obj.getType());
-					update = true;
-				}
-			}
-			if (update) {
-				app.update();
-			}
-		}
-	}
-
-	/**
-	 * Returns a map of the core data types.
-	 * @return a map of type plural - type singular form
-	 */
-	public static Map<String, String> getCoreTypes() {
-		if (coreTypes.isEmpty()) {
-			try {
-				for (Class<? extends ParaObject> clazz : ParaObjectUtils.getCoreClassesMap().values()) {
-					ParaObject p = clazz.newInstance();
-					coreTypes.put(p.getPlural(), p.getType());
-				}
-			} catch (Exception ex) {
-				logger.error(null, ex);
-			}
-		}
-		return Collections.unmodifiableMap(coreTypes);
-	}
-
-	/**
-	 * Returns a map of all registered types.
-	 * @param app the app to search for custom types
-	 * @return a map of plural - singular form of type names
-	 */
-	public static Map<String, String> getAllTypes(App app) {
-		Map<String, String> map = new HashMap<String, String>(getCoreTypes());
-		if (app != null) {
-			map.putAll(app.getDatatypes());
-		}
-		return map;
 	}
 
 	/**
@@ -242,15 +181,21 @@ public final class RestUtils {
 			content = ParaObjectUtils.setAnnotatedFields(newContent);
 			if (content != null) {
 				content.setAppid(app.getAppIdentifier());
-				registerNewTypes(app, content);
+				int typesCount = app.getDatatypes().size();
+				app.addDatatypes(content);
 				// The reason why we do two validation passes is because we want to return
 				// the errors through the API and notify the end user.
 				// This is the primary validation pass (validates not only core POJOS but also user defined objects).
 				String[] errors = ValidationUtils.validateObject(app, content);
 				if (errors.length == 0) {
-					// Secondary validation pass: object is validated again before being created
+					// Secondary validation pass called here. Object is validated again before being created
+					// See: IndexAndCacheAspect.java
 					String id = content.create();
 					if (id != null) {
+						// new type added so update app object
+						if (typesCount < app.getDatatypes().size()) {
+							app.update();
+						}
 						return Response.created(URI.create(Utils.urlEncode(content.getObjectURI()))).
 								entity(content).build();
 					}
@@ -282,14 +227,20 @@ public final class RestUtils {
 			if (content != null && !StringUtils.isBlank(id)) {
 				content.setAppid(app.getAppIdentifier());
 				content.setId(id);
-				registerNewTypes(app, content);
+				int typesCount = app.getDatatypes().size();
+				app.addDatatypes(content);
 				// The reason why we do two validation passes is because we want to return
 				// the errors through the API and notify the end user.
 				// This is the primary validation pass (validates not only core POJOS but also user defined objects).
 				String[] errors = ValidationUtils.validateObject(app, content);
 				if (errors.length == 0) {
-					// Secondary validation pass: object is validated again before being created
+					// Secondary validation pass called here. Object is validated again before being created
+					// See: IndexAndCacheAspect.java
 					CoreUtils.overwrite(app.getAppIdentifier(), content);
+					// new type added so update app object
+					if (typesCount < app.getDatatypes().size()) {
+						app.update();
+					}
 					return Response.ok(content).build();
 				}
 				return getStatusResponse(Response.Status.BAD_REQUEST, errors);
@@ -384,7 +335,11 @@ public final class RestUtils {
 
 			Para.asyncExecute(new Runnable() {
 				public void run() {
-					registerNewTypes(app, objects.toArray(new ParaObject[objects.size()]));
+					int typesCount = app.getDatatypes().size();
+					app.addDatatypes(objects.toArray(new ParaObject[objects.size()]));
+					if (typesCount < app.getDatatypes().size()) {
+						app.update();
+					}
 				}
 			});
 		} else {
@@ -493,64 +448,6 @@ public final class RestUtils {
 			if (out != null) {
 				out.close();
 			}
-		}
-	}
-
-	/**
-	 * Returns a list of validation constraints for the given app.
-	 * @param app the current App object
-	 * @param type the type
-	 * @return a response 200
-	 */
-	public static Response getConstraintsResponse(App app, String type) {
-		if (type != null) {
-			return Response.ok(ParaObjectUtils.getJsonMapper().createObjectNode().putPOJO(StringUtils.capitalize(type),
-					ValidationUtils.getValidationConstraints(app, type))).build();
-		} else {
-			return Response.ok(ValidationUtils.getAllValidationConstraints(app, getAllTypes(app).values())).build();
-		}
-	}
-
-	/**
-	 * Adds a new constraint to the list of constraint for the given app.
-	 * @param app the current App object
-	 * @param type the type
-	 * @param field the field
-	 * @param cname the constraint name
-	 * @param in JSON payload
-	 * @return the updated list of constraints (code 200)
-	 */
-	public static Response addCostraintsResponse(App app, String type, String field, String cname, InputStream in) {
-		if (app != null) {
-			Response payloadRes = RestUtils.getEntity(in, Map.class);
-			if (payloadRes.getStatusInfo() == Response.Status.OK) {
-				Map<String, Object> payload = (Map<String, Object>) payloadRes.getEntity();
-				if (app.addValidationConstraint(type, field, Constraint.build(cname, payload))) {
-					app.update();
-				}
-			}
-			return Response.ok(app.getValidationConstraints().get(type)).build();
-		} else {
-			return getStatusResponse(Response.Status.NOT_FOUND);
-		}
-	}
-
-	/**
-	 * Removes a constraint from the list of constraint for the given app.
-	 * @param app the current App object
-	 * @param type the type
-	 * @param field the field
-	 * @param cname the constraint name
-	 * @return the updated list of constraints (code 200)
-	 */
-	public static Response removeCostraintsResponse(App app, String type, String field, String cname) {
-		if (app != null) {
-			if (app.removeValidationConstraint(type, field, cname)) {
-				app.update();
-			}
-			return Response.ok(app.getValidationConstraints().get(type)).build();
-		} else {
-			return getStatusResponse(Response.Status.NOT_FOUND);
 		}
 	}
 

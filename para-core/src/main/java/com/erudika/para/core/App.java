@@ -328,15 +328,16 @@ public class App implements ParaObject {
 	 * @param permissions the set or HTTP methods allowed
 	 * @return true if successful
 	 */
-	public boolean grantResourcePermission(String subjectid, String resourceName, EnumSet<Value> permissions) {
-		if (!StringUtils.isBlank(subjectid) &&
-				(getDatatypes().containsKey(resourceName) || getDatatypes().containsValue(resourceName))) {
+	public boolean grantResourcePermissions(String subjectid, ResourcePermissions permissions) {
+		if (!StringUtils.isBlank(subjectid) && permissions != null && !permissions.get().isEmpty()) {
 			ResourcePermissions rp = getResourcePermissions().get(subjectid);
 			if (rp == null) {
-				rp = new ResourcePermissions();
+				getResourcePermissions().put(subjectid, permissions);
+			} else {
+				for (Map.Entry<String, EnumSet<Value>> perm : permissions.getEnumValuesMap().entrySet()) {
+					rp.grantPermission(perm.getKey(), perm.getValue());
+				}
 			}
-			rp.grantPermission(resourceName, permissions);
-			getResourcePermissions().put(subjectid, rp);
 			return true;
 		}
 		return false;
@@ -361,6 +362,19 @@ public class App implements ParaObject {
 	}
 
 	/**
+	 * Revokes all permissions for a subject id
+	 * @param subjectid
+	 * @return true if successful
+	 */
+	public boolean revokeAllResourcePermissions(String subjectid) {
+		if (!StringUtils.isBlank(subjectid) && getResourcePermissions().containsKey(subjectid)) {
+			getResourcePermissions().remove(subjectid);
+			return true;
+		}
+		return false;
+	}
+
+	/**
 	 * Adds a user-defined data type to the types map.
 	 * @param pluralDatatype the plural form of the type
 	 * @param datatype a datatype, must not be null or empty
@@ -368,12 +382,29 @@ public class App implements ParaObject {
 	public void addDatatype(String pluralDatatype, String datatype) {
 		if (getDatatypes().size() < Config.MAX_DATATYPES_PER_APP) {
 			if (!StringUtils.isBlank(pluralDatatype) && !StringUtils.isBlank(datatype) &&
-					!getDatatypes().containsValue(datatype)) {
+					!getDatatypes().containsValue(datatype) &&
+					!ParaObjectUtils.getCoreTypes().containsKey(pluralDatatype)) {
 				getDatatypes().putIfAbsent(pluralDatatype, datatype);
 			}
 		} else {
 			LoggerFactory.getLogger(App.class).warn("Maximum number of types per app reached - {}.",
 					Config.MAX_DATATYPES_PER_APP);
+		}
+	}
+
+	/**
+	 * Adds unknown types to this App's list of data types. Called on create().
+	 * @param app the current app
+	 * @param objects a list of new objects
+	 */
+	public void addDatatypes(ParaObject... objects) {
+		// register a new data type
+		if (objects != null && objects.length > 0) {
+			for (ParaObject obj : objects) {
+				if (obj != null && obj.getType() != null) {
+					addDatatype(obj.getPlural(), obj.getType());
+				}
+			}
 		}
 	}
 

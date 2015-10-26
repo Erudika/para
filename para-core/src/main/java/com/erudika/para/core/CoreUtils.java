@@ -31,7 +31,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -339,7 +338,7 @@ public final class CoreUtils {
 		if (saved != null) {
 			boolean isUpvote = upDown.equals(VoteValue.UP);
 			boolean wasUpvote = VoteValue.UP.toString().equals(saved.getValue());
-			boolean voteHasChanged = BooleanUtils.xor(new boolean[]{isUpvote, wasUpvote});
+			boolean voteHasChanged = isUpvote ^ wasUpvote;
 
 			if (saved.isExpired()) {
 				done = votable.getDao().create(votable.getAppid(), v) != null;

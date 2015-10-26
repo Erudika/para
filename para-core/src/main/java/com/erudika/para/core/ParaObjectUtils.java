@@ -56,6 +56,8 @@ import org.springframework.util.ClassUtils;
 public final class ParaObjectUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(ParaObjectUtils.class);
+	// maps plural to singular type definitions
+	private static final Map<String, String> coreTypes = new DualHashBidiMap();
 	// maps lowercase simple names to class objects
 	private static final Map<String, Class<? extends ParaObject>> coreClasses = new DualHashBidiMap();
 	private static final CoreClassScanner scanner = new CoreClassScanner();
@@ -116,6 +118,7 @@ public final class ParaObjectUtils {
 	/////////////////////////////////////////////
 	//	     OBJECT MAPPING & CLASS UTILS
 	/////////////////////////////////////////////
+
 	/**
 	 * Populates an object with an array of query parameters (dangerous!).
 	 * <b>This method might be deprecated in the future.</b>
@@ -148,6 +151,37 @@ public final class ParaObjectUtils {
 	}
 
 	/**
+	 * Returns a map of the core data types.
+	 * @return a map of type plural - type singular form
+	 */
+	public static Map<String, String> getCoreTypes() {
+		if (coreTypes.isEmpty()) {
+			try {
+				for (Class<? extends ParaObject> clazz : ParaObjectUtils.getCoreClassesMap().values()) {
+					ParaObject p = clazz.newInstance();
+					coreTypes.put(p.getPlural(), p.getType());
+				}
+			} catch (Exception ex) {
+				logger.error(null, ex);
+			}
+		}
+		return Collections.unmodifiableMap(coreTypes);
+	}
+
+	/**
+	 * Returns a map of all registered types.
+	 * @param app the app to search for custom types
+	 * @return a map of plural - singular form of type names
+	 */
+	public static Map<String, String> getAllTypes(App app) {
+		Map<String, String> map = new HashMap<String, String>(getCoreTypes());
+		if (app != null) {
+			map.putAll(app.getDatatypes());
+		}
+		return map;
+	}
+
+	/**
 	 * Checks if the type of an object matches its real Class name.
 	 *
 	 * @param so an object
@@ -157,10 +191,23 @@ public final class ParaObjectUtils {
 		return (so == null) ? false : so.getClass().equals(toClass(so.getType()));
 	}
 
+	/**
+	 * @see #getAnnotatedFields(com.erudika.para.core.ParaObject, java.lang.Class, boolean)
+	 * @param <P> the object type
+	 * @param pojo the object to convert to a map
+	 * @return a map of fields and their values
+	 */
 	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P pojo) {
 		return getAnnotatedFields(pojo, null);
 	}
 
+	/**
+	 * @see #getAnnotatedFields(com.erudika.para.core.ParaObject, java.lang.Class, boolean)
+	 * @param <P> the object type
+	 * @param pojo the object to convert to a map
+	 * @param filter a filter annotation. fields that have it will be skipped
+	 * @return a map of fields and their values
+	 */
 	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P pojo,
 			Class<? extends Annotation> filter) {
 		return getAnnotatedFields(pojo, filter, true);
@@ -209,6 +256,12 @@ public final class ParaObjectUtils {
 		return map;
 	}
 
+	/**
+	 * @see #setAnnotatedFields(com.erudika.para.core.ParaObject, java.util.Map, java.lang.Class)
+	 * @param <P> the object type
+	 * @param data the map of fields/values
+	 * @return the populated object
+	 */
 	public static <P extends ParaObject> P setAnnotatedFields(Map<String, Object> data) {
 		return setAnnotatedFields(null, data, null);
 	}
