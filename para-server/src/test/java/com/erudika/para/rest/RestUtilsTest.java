@@ -105,11 +105,6 @@ public class RestUtilsTest {
 	}
 
 	@Test
-	public void testGetCoreTypes() {
-		assertEquals("user", getCoreTypes().get("users"));
-	}
-
-	@Test
 	public void testRegisterNewTypes() {
 		App app = new App("test");
 		app.setDao(new MockDAO());
