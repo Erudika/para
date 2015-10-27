@@ -36,6 +36,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 import org.junit.AfterClass;
@@ -110,7 +111,7 @@ public class RestUtilsTest {
 		app.setDao(new MockDAO());
 		Sysprop custom = new Sysprop("ctype");
 		custom.setType("cat");
-		registerNewTypes(app, custom);
+		app.addDatatypes(custom);
 		assertEquals("cat", app.getDatatypes().get("cats"));
 	}
 
@@ -124,5 +125,28 @@ public class RestUtilsTest {
 	public void testGetExceptionResponse() {
 		assertEquals(Status.FORBIDDEN.getStatusCode(), GenericExceptionMapper.getExceptionResponse(403, null).getStatus());
 		assertEquals(MediaType.APPLICATION_JSON, GenericExceptionMapper.getExceptionResponse(403, "").getMediaType().toString());
+	}
+
+	@Test
+	public void testExtractResourceName() {
+		HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
+		Mockito.when(req.getRequestURI()).thenReturn("");
+		assertEquals(extractResourceName(null), "");
+		assertEquals(extractResourceName(req), "");
+
+		Mockito.when(req.getRequestURI()).thenReturn("/v1");
+		assertEquals("", extractResourceName(req));
+
+		Mockito.when(req.getRequestURI()).thenReturn("/v1/");
+		assertEquals("", extractResourceName(req));
+
+		Mockito.when(req.getRequestURI()).thenReturn("/v1/_");
+		assertEquals("_", extractResourceName(req));
+
+		Mockito.when(req.getRequestURI()).thenReturn("/v1/_test");
+		assertEquals("_test", extractResourceName(req));
+
+		Mockito.when(req.getRequestURI()).thenReturn("/v1/_test/dont_need/this");
+		assertEquals("_test", extractResourceName(req));
 	}
 }

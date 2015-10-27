@@ -101,6 +101,31 @@ public final class RestUtils {
 	}
 
 	/**
+	 * Extracts the resource name, for example '/v1/_some_resource_name'
+	 * returns '_some_resource_name'.
+	 * @param request a request
+	 * @return the resource name
+	 */
+	public static String extractResourceName(HttpServletRequest request) {
+		if (request == null || request.getRequestURI().length() <= 3) {
+			return "";
+		}
+		String uri = request.getRequestURI().substring(1);
+		int start = uri.indexOf("/");
+
+		if (start >= 0 && start + 1 < uri.length()) {
+			int end = uri.substring(start + 1).indexOf("/") + start + 1;
+			if (end > start) {
+				return uri.substring(start + 1, end);
+			} else {
+				return uri.substring(start + 1);
+			}
+		} else {
+			return "";
+		}
+	}
+
+	/**
 	 * Returns the current authenticated {@link App} object.
 	 * @return an App object or null
 	 */
