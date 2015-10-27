@@ -23,7 +23,7 @@ import com.erudika.para.annotations.Stored;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.security.ResourcePermissions;
-import com.erudika.para.security.ResourcePermissions.Value;
+import com.erudika.para.security.ResourcePermissions.Values;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -334,7 +334,7 @@ public class App implements ParaObject {
 			if (rp == null) {
 				getResourcePermissions().put(subjectid, permissions);
 			} else {
-				for (Map.Entry<String, EnumSet<Value>> perm : permissions.getEnumValuesMap().entrySet()) {
+				for (Map.Entry<String, EnumSet<Values>> perm : permissions.getEnumValuesMap().entrySet()) {
 					rp.grantPermission(perm.getKey(), perm.getValue());
 				}
 			}
@@ -370,6 +370,17 @@ public class App implements ParaObject {
 		if (!StringUtils.isBlank(subjectid) && getResourcePermissions().containsKey(subjectid)) {
 			getResourcePermissions().remove(subjectid);
 			return true;
+		}
+		return false;
+	}
+
+	public boolean isAllowedTo(String subjectid, String resourceName, String httpMethod) {
+		if (getResourcePermissions().isEmpty()) {
+			return true;
+		} else if (getResourcePermissions().containsKey(subjectid)) {
+			return getResourcePermissions().get(subjectid).isMethodAllowed(resourceName, httpMethod);
+		} else  if (getResourcePermissions().containsKey(ResourcePermissions.ALLOW_ALL)) {
+			return getResourcePermissions().get(ResourcePermissions.ALLOW_ALL).isMethodAllowed(resourceName, httpMethod);
 		}
 		return false;
 	}

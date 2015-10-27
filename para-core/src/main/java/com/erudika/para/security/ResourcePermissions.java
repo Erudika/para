@@ -37,7 +37,10 @@ import org.apache.commons.lang3.StringUtils;
  */
 public final class ResourcePermissions {
 
-	public static enum Value {
+	/**
+	 * Allowed operations - GET, PUT, POST, DELETE, PATCH, *
+	 */
+	public static enum Values {
 
 		/**
 		 * Allows all HTTP methods (full access)
@@ -72,7 +75,7 @@ public final class ResourcePermissions {
 		 */
 		WRITE_ONLY;
 
-		public static final EnumSet<Value> ALL_VALUES = EnumSet.of(GET, POST, PUT, PATCH, DELETE);
+		public static final EnumSet<Values> ALL_VALUES = EnumSet.of(GET, POST, PUT, PATCH, DELETE);
 
 		@Override
 		@JsonValue
@@ -91,14 +94,14 @@ public final class ResourcePermissions {
 	 */
 	public static String ALLOW_ALL = "*";
 	private Map<String, Set<String>> resourcePermissions;
-	private Map<String, EnumSet<Value>> enumValuesMap;
+	private Map<String, EnumSet<Values>> enumValuesMap;
 
 	/**
 	 * No-args constructor
 	 */
 	public ResourcePermissions() {
 		resourcePermissions = new HashMap<String, Set<String>>();
-		enumValuesMap = new HashMap<String, EnumSet<Value>>();
+		enumValuesMap = new HashMap<String, EnumSet<Values>>();
 	}
 
 	/**
@@ -107,27 +110,27 @@ public final class ResourcePermissions {
 	 * @param permissions the HTTP methods allowed
 	 */
 	@JsonAnySetter
-	public void grantPermission(String resourceName, EnumSet<Value> permissions) {
+	public void grantPermission(String resourceName, EnumSet<Values> permissions) {
 		Set<String> methodsAllowed;
 		if (permissions == null || permissions.isEmpty()
-				|| permissions.containsAll(Value.ALL_VALUES)
-				|| permissions.contains(Value.READ_WRITE)
-				|| (permissions.contains(Value.READ_ONLY) && permissions.contains(Value.WRITE_ONLY))
-				|| (permissions.contains(Value.GET) && permissions.contains(Value.WRITE_ONLY))) {
+				|| permissions.containsAll(Values.ALL_VALUES)
+				|| permissions.contains(Values.READ_WRITE)
+				|| (permissions.contains(Values.READ_ONLY) && permissions.contains(Values.WRITE_ONLY))
+				|| (permissions.contains(Values.GET) && permissions.contains(Values.WRITE_ONLY))) {
 			methodsAllowed = Collections.singleton(ALLOW_ALL);
 		} else {
-			if (permissions.contains(Value.WRITE_ONLY)) {
+			if (permissions.contains(Values.WRITE_ONLY)) {
 				methodsAllowed = new HashSet<String>() {{
-					add(Value.POST.name());
-					add(Value.PUT.name());
-					add(Value.PATCH.name());
-					add(Value.DELETE.name());
+					add(Values.POST.name());
+					add(Values.PUT.name());
+					add(Values.PATCH.name());
+					add(Values.DELETE.name());
 				}};
-			} else if(permissions.contains(Value.READ_ONLY)) {
-				methodsAllowed = Collections.singleton(Value.GET.toString());
+			} else if(permissions.contains(Values.READ_ONLY)) {
+				methodsAllowed = Collections.singleton(Values.GET.toString());
 			} else {
 				methodsAllowed = new HashSet<String>(permissions.size());
-				for (Value permission : permissions) {
+				for (Values permission : permissions) {
 					methodsAllowed.add(permission.toString());
 				}
 			}
@@ -150,7 +153,7 @@ public final class ResourcePermissions {
 	 * @return the value of enumValuesMap
 	 */
 	@JsonIgnore
-	public Map<String, EnumSet<Value>> getEnumValuesMap() {
+	public Map<String, EnumSet<Values>> getEnumValuesMap() {
 		return enumValuesMap;
 	}
 
@@ -159,7 +162,7 @@ public final class ResourcePermissions {
 	 *
 	 * @param enumValuesMap new value of enumValuesMap
 	 */
-	public void setEnumValuesMap(Map<String, EnumSet<Value>> enumValuesMap) {
+	public void setEnumValuesMap(Map<String, EnumSet<Values>> enumValuesMap) {
 		this.enumValuesMap = enumValuesMap;
 	}
 
@@ -173,4 +176,22 @@ public final class ResourcePermissions {
 		return resourcePermissions;
 	}
 
+	/**
+	 * Checks if a subject is allowed to call method X on resource Y
+	 * @param resourceName resource name (type)
+	 * @param httpMethod HTTP method name
+	 * @return true if allowed
+	 */
+	public boolean isMethodAllowed(String resourceName, String httpMethod) {
+		if (!StringUtils.isBlank(resourceName) && !StringUtils.isBlank(httpMethod)) {
+			if (get().isEmpty() ||
+					get().get(resourceName).contains(httpMethod.toUpperCase()) ||
+					get().get(ALLOW_ALL).contains(httpMethod.toUpperCase()) ||
+					get().get(resourceName).contains(ALLOW_ALL) ||
+					get().get(ALLOW_ALL).contains(ALLOW_ALL)) {
+				return true;
+			}
+		}
+		return false;
+	}
 }
