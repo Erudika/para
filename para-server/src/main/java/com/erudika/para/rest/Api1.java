@@ -128,10 +128,10 @@ public class Api1 extends ResourceConfig {
 
 		// validation
 		Resource.Builder valRes = Resource.builder("_constraints");
-		valRes.addMethod(GET).produces(JSON).handledBy(getConstrHandler());
-		valRes.addChildResource("{type}").addMethod(GET).produces(JSON).handledBy(getConstrHandler());
-		valRes.addChildResource("{type}/{field}/{cname}").addMethod(PUT).produces(JSON).handledBy(addConstrHandler());
-		valRes.addChildResource("{type}/{field}/{cname}").addMethod(DELETE).produces(JSON).handledBy(removeConstrHandler());
+		valRes.addMethod(GET).produces(JSON).handledBy(getConstrHandler(null));
+		valRes.addChildResource("{type}").addMethod(GET).produces(JSON).handledBy(getConstrHandler(null));
+		valRes.addChildResource("{type}/{field}/{cname}").addMethod(PUT).produces(JSON).handledBy(addConstrHandler(null));
+		valRes.addChildResource("{type}/{field}/{cname}").addMethod(DELETE).produces(JSON).handledBy(removeConstrHandler(null));
 		registerResources(valRes.build());
 
 		// permissions
@@ -429,11 +429,10 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-
-	protected final Inflector<ContainerRequestContext, Response> getConstrHandler() {
+	protected final Inflector<ContainerRequestContext, Response> getConstrHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : RestUtils.getPrincipalApp();
 				String type = pathParam(Config._TYPE, ctx);
 				if (app != null) {
 					if (type != null) {
@@ -451,10 +450,10 @@ public class Api1 extends ResourceConfig {
 	}
 
 	@SuppressWarnings("unchecked")
-	protected final Inflector<ContainerRequestContext, Response> addConstrHandler() {
+	protected final Inflector<ContainerRequestContext, Response> addConstrHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : RestUtils.getPrincipalApp();
 				String type = pathParam(Config._TYPE, ctx);
 				String field = pathParam("field", ctx);
 				String cname = pathParam("cname", ctx);
@@ -473,10 +472,10 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> removeConstrHandler() {
+	protected final Inflector<ContainerRequestContext, Response> removeConstrHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : RestUtils.getPrincipalApp();
 				String type = pathParam(Config._TYPE, ctx);
 				String field = pathParam("field", ctx);
 				String cname = pathParam("cname", ctx);

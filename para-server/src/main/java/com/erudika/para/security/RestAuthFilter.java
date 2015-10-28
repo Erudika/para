@@ -42,7 +42,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.GenericFilterBean;
 
 /**
- * Authenticates an {@link com.erudika.para.core.App} by verifying its credentials.
+ * Authenticates API access for {@link com.erudika.para.core.App} and {@link com.erudika.para.core.User} objects.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class RestAuthFilter extends GenericFilterBean implements InitializingBean {
@@ -76,13 +76,27 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 
 		User u = SecurityUtils.getAuthenticatedUser();
 		String appid = RestUtils.extractAccessKey(request);
-		boolean isUser = u != null;
 		boolean isApp = !StringUtils.isBlank(appid);
 
-		if (isUser && !isApp && RestRequestMatcher.INSTANCE.matches(request) && !u.getActive()) {
-			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-					"User doesn't have permission to access this resource.");
-			return;
+		// users are allowed to GET '/_me' - used on the client-side for checking authentication
+		if (u != null && !isApp && RestRequestMatcher.INSTANCE.matches(request)) {
+			if (u.getActive()) {
+				App parentApp = u.getDao().read(u.getAppid());
+				if (parentApp != null) {
+					if (!parentApp.isAllowedTo(u.getId(), RestUtils.extractResourceName(request), request.getMethod())) {
+						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+								"User doesn't have permission to access this resource.");
+						return;
+					}
+				} else {
+					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND, "App not found.");
+					return;
+				}
+			} else {
+				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+						"User doesn't have permission to access this resource.");
+				return;
+			}
 		} else if (isApp && RestRequestMatcher.INSTANCE_STRICT.matches(request)) {
 			String date = RestUtils.extractDate(request);
 			Date d = Signer.parseAWSDate(date);
