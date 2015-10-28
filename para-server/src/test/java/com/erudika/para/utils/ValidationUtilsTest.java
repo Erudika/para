@@ -19,10 +19,10 @@ package com.erudika.para.utils;
 
 import com.erudika.para.validation.ValidationUtils;
 import com.erudika.para.core.App;
+import com.erudika.para.core.ParaObjectUtils;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
-import com.erudika.para.rest.RestUtils;
 import static com.erudika.para.validation.ValidationUtils.*;
 import static com.erudika.para.validation.Constraint.*;
 import java.util.ArrayList;
@@ -230,7 +230,7 @@ public class ValidationUtilsTest {
 
 	@Test
 	public void testGetAllValidationConstraints() {
-		assertTrue(getAllValidationConstraints(null, RestUtils.getCoreTypes().values()).length() > 2);
+		assertTrue(getAllValidationConstraints(null, ParaObjectUtils.getCoreTypes().values()).length() > 2);
 //		assertTrue(getAllValidationConstraints(null).length() > 2);
 	}
 
