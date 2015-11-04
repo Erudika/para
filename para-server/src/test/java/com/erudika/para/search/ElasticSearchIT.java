@@ -73,8 +73,6 @@ public class ElasticSearchIT extends SearchTest {
 		ElasticSearchUtils.createIndex(appid3);
 		assertTrue(ElasticSearchUtils.existsIndex(appid3));
 
-		assertTrue(ElasticSearchUtils.optimizeIndex(appid3));
-
 		ElasticSearchUtils.deleteIndex(appid3);
 		assertFalse(ElasticSearchUtils.existsIndex(appid3));
 

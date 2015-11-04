@@ -24,6 +24,10 @@ import com.erudika.para.persistence.DAO;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
+import java.io.File;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +38,6 @@ import org.elasticsearch.action.admin.cluster.node.info.NodesInfoRequest;
 import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
-import org.elasticsearch.action.admin.indices.optimize.OptimizeResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
@@ -42,11 +45,11 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.cluster.metadata.AliasAction;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
 import org.elasticsearch.common.collect.ImmutableOpenMap;
-import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.index.query.FilterBuilders;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.slf4j.Logger;
@@ -75,21 +78,24 @@ public final class ElasticSearchUtils {
 		boolean localNode = Config.getConfigParamUnwrapped("es.local_node", true);
 		boolean dataNode = Config.getConfigParamUnwrapped("es.data_node", true);
 		boolean corsEnabled = Config.getConfigParamUnwrapped("es.cors_enabled", !Config.IN_PRODUCTION);
-		String esHome = Config.getConfigParam("es.dir", "");
+		String corsAllowOrigin = Config.getConfigParam("es.cors_allow_origin", "/https?:\\/\\/localhost(:[0-9]+)?/");
+		String esHome = Config.getConfigParam("es.dir", Paths.get(".").toAbsolutePath().normalize().toString());
 		String esHost = Config.getConfigParam("es.transportclient_host", "localhost");
 		int esPort = Config.getConfigParamUnwrapped("es.transportclient_port", 9300);
 		boolean useTransportClient = !"embedded".equals(Config.ENVIRONMENT) &&
 				Config.getConfigParamUnwrapped("es.use_transportclient", false);
 
-		ImmutableSettings.Builder settings = ImmutableSettings.settingsBuilder();
+		Settings.Builder settings = Settings.builder();
 		settings.put("node.name", getNodeName());
 		settings.put("client.transport.sniff", true);
 		settings.put("action.disable_delete_all_indices", true);
 		settings.put("cluster.name", Config.CLUSTER_NAME);
 		settings.put("http.cors.enabled", corsEnabled);
-		settings.put("path.data", esHome + "data");
-		settings.put("path.work", esHome + "work");
-		settings.put("path.logs", esHome + "logs");
+		settings.put("http.cors.allow-origin", corsAllowOrigin);
+		settings.put("path.home", esHome);
+		settings.put("path.data", esHome + File.separator + "data");
+		settings.put("path.work", esHome + File.separator + "work");
+		settings.put("path.logs", esHome + File.separator + "logs");
 
 		if (Config.IN_PRODUCTION) {
 			String discoveryType = Config.getConfigParam("es.discovery_type", "ec2");
@@ -105,10 +111,17 @@ public final class ElasticSearchUtils {
 		}
 
 		if (useTransportClient) {
-			searchClient = new TransportClient(settings);
-			((TransportClient) searchClient).addTransportAddress(new InetSocketTransportAddress(esHost, esPort));
+			searchClient = TransportClient.builder().settings(settings).build();
+			InetSocketTransportAddress addr;
+			try {
+				addr = new InetSocketTransportAddress(InetAddress.getByName(esHost), esPort);
+			} catch (UnknownHostException ex) {
+				addr = new InetSocketTransportAddress(InetAddress.getLoopbackAddress(), esPort);
+				logger.warn("Unknown host: " + esHost, ex);
+			}
+			((TransportClient) searchClient).addTransportAddress(addr);
 		} else {
-			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(localNode).data(dataNode).node();
+			searchNode = NodeBuilder.nodeBuilder().settings(settings).local(localNode).data(dataNode).node().start();
 			searchClient = searchNode.client();
 		}
 
@@ -293,27 +306,6 @@ public final class ElasticSearchUtils {
 	}
 
 	/**
-	 * Optimizes an index. This method might be deprecated in the future.
-	 * @param appid the index name (alias)
-	 * @return true if successful
-	 */
-	public static boolean optimizeIndex(String appid) {
-		if (StringUtils.isBlank(appid)) {
-			return false;
-		}
-		boolean result = false;
-		try {
-			OptimizeResponse resp = getClient().admin().indices().
-					prepareOptimize(appid).execute().actionGet();
-
-			result = resp.getFailedShards() == 0;
-		} catch (Exception e) {
-			logger.warn(null, e);
-		}
-		return result;
-	}
-
-	/**
 	 * Returns information about a cluster.
 	 * @return a map of key value pairs containing cluster information
 	 */
@@ -357,7 +349,7 @@ public final class ElasticSearchUtils {
 		if (setRouting) {
 			act.searchRouting(alias);
 			act.indexRouting(alias);
-			act.filter(FilterBuilders.termFilter(Config._APPID, alias));
+			act.filter(QueryBuilders.termQuery(Config._APPID, alias));
 		}
 		return getClient().admin().indices().prepareAliases().addAliasAction(act).
 				execute().actionGet().isAcknowledged();

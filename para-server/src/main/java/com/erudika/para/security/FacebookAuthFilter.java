@@ -143,6 +143,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 		return userAuth;
 	}
 
+	@SuppressWarnings("unchecked")
 	private static String getPicture(String fbId, Map<String, Object> pic) {
 		if (pic != null) {
 			Map<String, Object> data = (Map<String, Object>) pic.get("data");

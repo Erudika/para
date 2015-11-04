@@ -53,15 +53,10 @@ import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.AndFilterBuilder;
-import org.elasticsearch.index.query.BaseFilterBuilder;
-import org.elasticsearch.index.query.BoolFilterBuilder;
-import org.elasticsearch.index.query.FilterBuilder;
-import org.elasticsearch.index.query.FilterBuilders;
-import org.elasticsearch.index.query.OrFilterBuilder;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeFilterBuilder;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.sort.SortBuilder;
@@ -103,7 +98,7 @@ public class ElasticSearch implements Search {
 		if (po == null || StringUtils.isBlank(appid)) {
 			return;
 		}
-		Map<String, Object> data = ParaObjectUtils.getAnnotatedFields(po, null, false);
+		Map<String, Object> data = ParaObjectUtils.getAnnotatedFields(po, null, true);
 		try {
 			IndexRequestBuilder irb = client().prepareIndex(getIndexName(appid), po.getType(), po.getId()).
 					setSource(data);
@@ -147,7 +142,7 @@ public class ElasticSearch implements Search {
 		BulkRequestBuilder brb = client().prepareBulk();
 		for (ParaObject po : objects) {
 			brb.add(client().prepareIndex(getIndexName(appid), po.getType(), po.getId()).
-					setSource(ParaObjectUtils.getAnnotatedFields(po, null, false)));
+					setSource(ParaObjectUtils.getAnnotatedFields(po, null, true)));
 		}
 		if (brb.numberOfActions() > 0) {
 			if (isAsyncEnabled()) {
@@ -183,16 +178,15 @@ public class ElasticSearch implements Search {
 		if (StringUtils.isBlank(appid)) {
 			return;
 		}
-		FilterBuilder fb = (terms == null || terms.isEmpty()) ?
-				FilterBuilders.matchAllFilter() : getTermsFilter(terms, matchAll);
-		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), fb);
+
+		QueryBuilder fb = (terms == null || terms.isEmpty()) ?
+				QueryBuilders.matchAllQuery() : getTermsQuery(terms, matchAll);
 		SearchResponse scrollResp = client().prepareSearch(getIndexName(appid))
-				.setSearchType(SearchType.SCAN)
 				.setScroll(new TimeValue(60000))
-				.setQuery(qb)
+				.setQuery(fb)
 				.setSize(100).execute().actionGet();
 
-		BulkRequestBuilder brb = new BulkRequestBuilder(client());
+		BulkRequestBuilder brb = client().prepareBulk();
 		while (true) {
 			for (SearchHit hit : scrollResp.getHits()) {
 				brb.add(new DeleteRequest(getIndexName(appid), hit.getType(), hit.getId()));
@@ -260,8 +254,7 @@ public class ElasticSearch implements Search {
 		if (StringUtils.isBlank(field) || terms == null) {
 			return Collections.emptyList();
 		}
-		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(),
-				FilterBuilders.termsFilter(field, terms));
+		QueryBuilder qb = QueryBuilders.termsQuery(field, terms);
 		return searchQuery(appid, type, qb, pager);
 	}
 
@@ -301,14 +294,13 @@ public class ElasticSearch implements Search {
 			return Collections.emptyList();
 		}
 
-		BoolFilterBuilder tagFilter = FilterBuilders.boolFilter();
+		BoolQueryBuilder tagFilter = QueryBuilders.boolQuery();
 		//assuming clean & safe tags here
 		for (String tag : tags) {
-			tagFilter.must(FilterBuilders.termFilter(Config._TAGS, tag));
+			tagFilter.must(QueryBuilders.termQuery(Config._TAGS, tag));
 		}
-		QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), tagFilter);
 		// The filter looks like this: ("tag1" OR "tag2" OR "tag3") AND "type"
-		return searchQuery(appid, type, qb, pager);
+		return searchQuery(appid, type, tagFilter, pager);
 	}
 
 	@Override
@@ -319,13 +311,12 @@ public class ElasticSearch implements Search {
 			return Collections.emptyList();
 		}
 
-		FilterBuilder fb = getTermsFilter(terms, mustMatchAll);
+		QueryBuilder fb = getTermsQuery(terms, mustMatchAll);
 
 		if (fb == null) {
 			return Collections.emptyList();
 		} else {
-			QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), fb);
-			return searchQuery(appid, type, qb, pager);
+			return searchQuery(appid, type, fb, pager);
 		}
 	}
 
@@ -336,17 +327,15 @@ public class ElasticSearch implements Search {
 			return Collections.emptyList();
 		}
 		QueryBuilder qb;
-		FilterBuilder fb;
 
 		if (fields == null || fields.length == 0) {
-			qb = QueryBuilders.moreLikeThisQuery().likeText(liketext).minDocFreq(1).minTermFreq(1);
+			qb = QueryBuilders.moreLikeThisQuery().like(liketext).minDocFreq(1).minTermFreq(1);
 		} else {
-			qb = QueryBuilders.moreLikeThisQuery(fields).likeText(liketext).minDocFreq(1).minTermFreq(1);
+			qb = QueryBuilders.moreLikeThisQuery(fields).like(liketext).minDocFreq(1).minTermFreq(1);
 		}
 
 		if (!StringUtils.isBlank(filterKey)) {
-			fb = FilterBuilders.notFilter(FilterBuilders.inFilter(Config._ID, filterKey));
-			qb = QueryBuilders.filteredQuery(qb, fb);
+			qb = QueryBuilders.boolQuery().mustNot(QueryBuilders.termQuery(Config._ID, filterKey)).filter(qb);
 		}
 		return searchQuery(appid, searchQueryRaw(appid, type, qb, pager));
 	}
@@ -372,9 +361,8 @@ public class ElasticSearch implements Search {
 			query = "*";
 		}
 		// find nearby Address objects
-		QueryBuilder qb1 = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(),
-				FilterBuilders.geoDistanceFilter("latlng").point(lat, lng).
-				distance(radius, DistanceUnit.KILOMETERS));
+		QueryBuilder qb1 = QueryBuilders.geoDistanceQuery("latlng").point(lat, lng).
+				distance(radius, DistanceUnit.KILOMETERS);
 
 		SearchHits hits1 = searchQueryRaw(appid, Utils.type(Address.class), qb1, pager);
 
@@ -391,8 +379,8 @@ public class ElasticSearch implements Search {
 			}
 		}
 
-		QueryBuilder qb2 = QueryBuilders.filteredQuery(QueryBuilders.queryStringQuery(query),
-				FilterBuilders.idsFilter(type).ids(ridsarr));
+		QueryBuilder qb2 = QueryBuilders.boolQuery().must(QueryBuilders.queryStringQuery(query)).
+				filter(QueryBuilders.idsQuery(type).ids(ridsarr));
 		SearchHits hits2 = searchQueryRaw(appid, type, qb2, pager);
 
 		return searchQuery(appid, hits2);
@@ -539,8 +527,8 @@ public class ElasticSearch implements Search {
 		if (StringUtils.isBlank(appid)) {
 			return 0L;
 		}
-		SearchRequestBuilder crb = client().prepareSearch(appid).
-				setSearchType(SearchType.COUNT).setQuery(QueryBuilders.matchAllQuery());
+		SearchRequestBuilder crb = client().prepareSearch(appid).setSize(0).
+				setQuery(QueryBuilders.matchAllQuery());
 
 		if (!StringUtils.isBlank(type)) {
 			crb.setTypes(type);
@@ -554,14 +542,11 @@ public class ElasticSearch implements Search {
 		if (StringUtils.isBlank(appid) || terms == null || terms.isEmpty()) {
 			return 0L;
 		}
-		FilterBuilder fb = getTermsFilter(terms, true);
+		QueryBuilder fb = getTermsQuery(terms, true);
 		if (fb == null) {
 			return 0L;
 		} else {
-			QueryBuilder qb = QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), fb);
-			SearchRequestBuilder crb = client().prepareSearch(getIndexName(appid)).
-					setSearchType(SearchType.COUNT).
-					setQuery(qb);
+			SearchRequestBuilder crb = client().prepareSearch(getIndexName(appid)).setSize(0).setQuery(fb);
 
 			if (!StringUtils.isBlank(type)) {
 				crb.setTypes(type);
@@ -594,11 +579,11 @@ public class ElasticSearch implements Search {
 	 * @param mustMatchAll if true all terms must match ('AND' operation)
 	 * @return the filter
 	 */
-	private FilterBuilder getTermsFilter(Map<String, ?> terms, boolean mustMatchAll) {
-		FilterBuilder fb = mustMatchAll ? FilterBuilders.andFilter() : FilterBuilders.orFilter();
+	private QueryBuilder getTermsQuery(Map<String, ?> terms, boolean mustMatchAll) {
+		BoolQueryBuilder fb = QueryBuilders.boolQuery();
 		int addedTerms = 0;
 		boolean noop = true;
-		BaseFilterBuilder bfb = null;
+		QueryBuilder bfb = null;
 
 		for (Map.Entry<String, ?> term : terms.entrySet()) {
 			Object val = term.getValue();
@@ -607,10 +592,10 @@ public class ElasticSearch implements Search {
 					continue;
 				}
 				Matcher matcher = Pattern.compile(".*(<|>|<=|>=)$").matcher(term.getKey().trim());
-				bfb = FilterBuilders.termFilter(term.getKey(), val);
+				bfb = QueryBuilders.termQuery(term.getKey(), val);
 				if (matcher.matches()) {
 					String key = term.getKey().replaceAll("[<>=\\s]+$", "");
-					RangeFilterBuilder rfb = FilterBuilders.rangeFilter(key);
+					RangeQueryBuilder rfb = QueryBuilders.rangeQuery(key);
 					if (">".equals(matcher.group(1))) {
 						bfb = rfb.gt(val);
 					} else if ("<".equals(matcher.group(1))) {
@@ -622,16 +607,16 @@ public class ElasticSearch implements Search {
 					}
 				}
 				if (mustMatchAll) {
-					((AndFilterBuilder) fb).add(bfb);
+					fb.must(bfb);
 				} else {
-					((OrFilterBuilder) fb).add(bfb);
+					fb.should(bfb);
 				}
 				addedTerms++;
 				noop = false;
 			}
 		}
 		if (addedTerms == 1 && bfb != null) {
-			fb = bfb;
+			return bfb;
 		}
 		return noop ? null : fb;
 	}
