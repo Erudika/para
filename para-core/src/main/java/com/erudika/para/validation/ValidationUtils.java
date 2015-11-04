@@ -24,11 +24,8 @@ import com.erudika.para.core.ParaObjectUtils;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.utils.Utils;
 import static com.erudika.para.validation.Constraint.*;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -47,7 +44,6 @@ import javax.validation.constraints.Past;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import org.apache.commons.beanutils.PropertyUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.URL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +56,8 @@ import org.slf4j.LoggerFactory;
 public final class ValidationUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(ValidationUtils.class);
+	private static final Map<String, Map<String, Map<String, Map<String, ?>>>> coreValidationConstraints =
+			new HashMap<String, Map<String, Map<String, Map<String, ?>>>>();
 	private static Validator validator;
 
 	private ValidationUtils() {
@@ -131,21 +129,20 @@ public final class ValidationUtils {
 			boolean isCustomType = (content instanceof Sysprop) && !type.equals(Utils.type(Sysprop.class));
 			// Validate custom types and user-defined properties
 			if (!app.getValidationConstraints().isEmpty() && isCustomType) {
-				ValidationConstraints fieldsMap = app.getValidationConstraints().get(type);
-				if (fieldsMap != null && !fieldsMap.get().isEmpty()) {
+				Map<String, Map<String, Map<String, ?>>> fieldsMap = app.getValidationConstraints().get(type);
+				if (fieldsMap != null && !fieldsMap.isEmpty()) {
 					LinkedList<String> errors = new LinkedList<String>();
-					for (Map.Entry<String, Map<String, Map<String, Object>>> e :
-							fieldsMap.get().entrySet()) {
+					for (Map.Entry<String, Map<String, Map<String, ?>>> e : fieldsMap.entrySet()) {
 						String field = e.getKey();
 						Object actualValue = ((Sysprop) content).getProperty(field);
 						// overriding core property validation rules is allowed
 						if (actualValue == null && PropertyUtils.isReadable(content, field)) {
 							actualValue = PropertyUtils.getProperty(content, field);
 						}
-						Map<String, Map<String, Object>> consMap = e.getValue();
-						for (Map.Entry<String, Map<String, Object>> constraint : consMap.entrySet()) {
+						Map<String, Map<String, ?>> consMap = e.getValue();
+						for (Map.Entry<String, Map<String, ?>> constraint : consMap.entrySet()) {
 							String consName = constraint.getKey();
-							Map<String, Object> vals = constraint.getValue();
+							Map<String, ?> vals = constraint.getValue();
 							if (vals == null) {
 								vals = Collections.emptyMap();
 							}
@@ -195,67 +192,37 @@ public final class ValidationUtils {
 	}
 
 	/**
-	 * Returns the JSON Node representation of all validation constraints for a single type.
-	 * @param app the app
-	 * @param type a valid Para data type
-	 * @return a JSON Node object
+	 * Returns all validation constraints that are defined by Java annotation in the core classes.
+	 *
+	 * @return a map of all core types to all core annotated constraints. See JSR-303.
 	 */
-	public static ValidationConstraints getValidationConstraints(App app, String type) {
-		ValidationConstraints fieldsMap = new ValidationConstraints();
-		if (app != null && !StringUtils.isBlank(type)) {
-			try {
-				List<Field> fieldlist = Utils.getAllDeclaredFields(ParaObjectUtils.toClass(type));
+	public static Map<String, Map<String, Map<String, Map<String, ?>>>> getCoreValidationConstraints() {
+		if (coreValidationConstraints.isEmpty()) {
+			for (Map.Entry<String, Class<? extends ParaObject>> e : ParaObjectUtils.getCoreClassesMap().entrySet()) {
+				String type = e.getKey();
+				List<Field> fieldlist = Utils.getAllDeclaredFields(e.getValue());
 				for (Field field : fieldlist) {
 					Annotation[] annos = field.getAnnotations();
 					if (annos.length > 1) {
-						Map<String, Map<String, Object>> consMap = new HashMap<String, Map<String, Object>>();
+						Map<String, Map<String, ?>> constrMap = new HashMap<String, Map<String, ?>>();
 						for (Annotation anno : annos) {
 							if (isValidConstraintType(anno.annotationType())) {
 								Constraint c = fromAnnotation(anno);
 								if (c != null) {
-									consMap.put(c.getName(), c.getPayload());
+									constrMap.put(c.getName(), c.getPayload());
 								}
 							}
 						}
-						if (consMap.size() > 0) {
-							fieldsMap.get().put(field.getName(), consMap);
+						if (!constrMap.isEmpty()) {
+							if (!coreValidationConstraints.containsKey(type)) {
+								coreValidationConstraints.put(type, new HashMap<String, Map<String, Map<String, ?>>>());
+							}
+							coreValidationConstraints.get(type).put(field.getName(), constrMap);
 						}
 					}
 				}
-				ValidationConstraints appConstraints = app.getValidationConstraints().get(type);
-				if (appConstraints != null && !appConstraints.get().isEmpty()) {
-					fieldsMap.get().putAll(appConstraints.get());
-				}
-			} catch (Exception ex) {
-				logger.error(null, ex);
 			}
 		}
-		return fieldsMap;
-	}
-
-	/**
-	 * Returns the JSON object containing all validation constraints for
-	 * all the core Para classes and classes defined by the given app.
-	 * @param app an app
-	 * @param allTypes a collection of object types in singular form
-	 * @return JSON string
-	 */
-	public static String getAllValidationConstraints(App app, Collection<String> allTypes) {
-		String json = "{}";
-		if (allTypes != null && !allTypes.isEmpty()) {
-			try {
-				ObjectNode parentNode = ParaObjectUtils.getJsonMapper().createObjectNode();
-				for (String type : allTypes) {
-					ValidationConstraints constraintsNode = getValidationConstraints(app, type);
-					if (constraintsNode.get().size() > 0) {
-						parentNode.putPOJO(type, constraintsNode);
-					}
-				}
-				json = ParaObjectUtils.getJsonWriter().writeValueAsString(parentNode);
-			} catch (IOException ex) {
-				logger.error(null, ex);
-			}
-		}
-		return json;
+		return Collections.unmodifiableMap(coreValidationConstraints);
 	}
 }

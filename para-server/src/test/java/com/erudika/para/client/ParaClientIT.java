@@ -45,7 +45,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StringUtils;
 
 /**
  *
@@ -469,14 +468,14 @@ public class ParaClientIT {
 		assertTrue(constraints.containsKey("app"));
 		assertTrue(constraints.containsKey("user"));
 
-		Map<String, Map<String, Map<String, ?>>> constraint = pc.validationConstraints("app");
+		Map<String, Map<String, Map<String, Map<String, ?>>>> constraint = pc.validationConstraints("app");
 		assertFalse(constraint.isEmpty());
-		assertTrue(constraint.containsKey("App"));
+		assertTrue(constraint.containsKey("app"));
 		assertEquals(1, constraint.size());
 
-		pc.addValidationConstraint(kittenType, "paws", required());
+ 		pc.addValidationConstraint(kittenType, "paws", required());
 		constraint = pc.validationConstraints(kittenType);
-		assertTrue(constraint.get(StringUtils.capitalize(kittenType)).containsKey("paws"));
+		assertTrue(constraint.get(kittenType).containsKey("paws"));
 
 		Sysprop ct = new Sysprop("felix");
 		ct.setType(kittenType);
@@ -492,6 +491,6 @@ public class ParaClientIT {
 
 		pc.removeValidationConstraint(kittenType, "paws", "required");
 		constraint = pc.validationConstraints(kittenType);
-		assertFalse(constraint.get(StringUtils.capitalize(kittenType)).isEmpty());
+		assertFalse(constraint.get(kittenType).isEmpty());
 	}
 }

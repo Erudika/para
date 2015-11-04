@@ -18,6 +18,8 @@
 
 package com.erudika.para.core;
 
+import com.erudika.para.utils.Config;
+import static com.erudika.para.validation.Constraint.url;
 import static org.junit.Assert.*;
 import org.junit.Test;
 
@@ -83,6 +85,32 @@ public class AppTest {
 		assertFalse(app.getDatatypes().containsValue("typee"));
 	}
 
+	@Test
+	public void testGetAllValidationConstraints() {
+		App app = new App(Config.PARA);
+		assertTrue(app.getAllValidationConstraints().size() > 2);
+		assertTrue(app.getAllValidationConstraints().size() > 2);
+		assertTrue(app.getAllValidationConstraints().containsKey("app"));
+		assertTrue(app.getAllValidationConstraints(new String[]{null}).isEmpty());
+		assertTrue(app.getAllValidationConstraints("123").isEmpty());
+		assertFalse(app.getAllValidationConstraints(new String[0]).isEmpty());
+		assertFalse(app.getAllValidationConstraints().isEmpty());
+		assertFalse(app.getAllValidationConstraints("tag").isEmpty());
+	}
 
+	@Test
+	public void testAddRemoveValidationConstraint() {
+		App app = new App(Config.PARA);
 
+		// add
+		app.addValidationConstraint("testtype", "urlField", url());
+		assertTrue(app.getValidationConstraints().get("testtype").containsKey("urlField"));
+		assertTrue(app.getValidationConstraints().get("testtype").get("urlField").containsKey("url"));
+
+		// remove
+		app.removeValidationConstraint("testtype", "urlField", "url");
+		assertTrue(app.getValidationConstraints().get("testtype").containsKey("urlField"));
+		assertTrue(app.getValidationConstraints().get("testtype").get("urlField").isEmpty());
+		assertFalse(app.getValidationConstraints().get("testtype").get("urlField").containsKey("url"));
+	}
 }

@@ -19,13 +19,13 @@ package com.erudika.para.rest;
 
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
+import com.erudika.para.core.App.AllowedMethods;
 import com.erudika.para.core.CoreUtils;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.ParaObjectUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
-import com.erudika.para.security.ResourcePermissions;
 import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.HumanTime;
@@ -33,10 +33,10 @@ import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import com.erudika.para.utils.filters.FieldFilter;
 import com.erudika.para.validation.Constraint;
-import com.erudika.para.validation.ValidationUtils;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -121,7 +121,7 @@ public class Api1 extends ResourceConfig {
 		meRes.addMethod(GET).produces(JSON).handledBy(meHandler());
 		registerResources(meRes.build());
 
-		// get by id
+		// getValidationConstraints by id
 		Resource.Builder idRes = Resource.builder("_id/{id}");
 		idRes.addMethod(GET).produces(JSON).handledBy(readIdHandler());
 		registerResources(idRes.build());
@@ -436,12 +436,9 @@ public class Api1 extends ResourceConfig {
 				String type = pathParam(Config._TYPE, ctx);
 				if (app != null) {
 					if (type != null) {
-						return Response.ok(ParaObjectUtils.getJsonMapper().
-								createObjectNode().putPOJO(StringUtils.capitalize(type),
-								ValidationUtils.getValidationConstraints(app, type))).build();
+						return Response.ok(app.getAllValidationConstraints(type)).build();
 					} else {
-						return Response.ok(ValidationUtils.getAllValidationConstraints(app,
-								ParaObjectUtils.getAllTypes(app).values())).build();
+						return Response.ok(app.getAllValidationConstraints()).build();
 					}
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
@@ -465,7 +462,7 @@ public class Api1 extends ResourceConfig {
 							app.update();
 						}
 					}
-					return Response.ok(app.getValidationConstraints().get(type)).build();
+					return Response.ok(app.getAllValidationConstraints(type)).build();
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
@@ -483,7 +480,7 @@ public class Api1 extends ResourceConfig {
 					if (app.removeValidationConstraint(type, field, cname)) {
 						app.update();
 					}
-					return Response.ok(app.getValidationConstraints().get(type)).build();
+					return Response.ok(app.getAllValidationConstraints(type)).build();
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
@@ -507,15 +504,17 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
+	@SuppressWarnings("unchecked")
 	protected final Inflector<ContainerRequestContext, Response> grantPermitHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = RestUtils.getPrincipalApp();
 				String subjectid = pathParam("subjectid", ctx);
 				if (app != null) {
-					Response resp = RestUtils.getEntity(ctx.getEntityStream(), ResourcePermissions.class);
+					Response resp = RestUtils.getEntity(ctx.getEntityStream(), Map.class);
 					if (resp.getStatusInfo() == Response.Status.OK) {
-						ResourcePermissions permissions = (ResourcePermissions) resp.getEntity();
+						Map<String, EnumSet<AllowedMethods>> permissions =
+								(Map<String, EnumSet<AllowedMethods>>) resp.getEntity();
 						app.grantResourcePermissions(subjectid, permissions);
 						return Response.ok(app.getResourcePermissions()).build();
 					} else {

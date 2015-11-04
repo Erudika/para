@@ -17,9 +17,7 @@
  */
 package com.erudika.para.utils;
 
-import com.erudika.para.validation.ValidationUtils;
 import com.erudika.para.core.App;
-import com.erudika.para.core.ParaObjectUtils;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
@@ -84,7 +82,7 @@ public class ValidationUtilsTest {
 
 		// required
 		app.addValidationConstraint(s1.getType(), "paws", required());
-		assertFalse(getValidationConstraints(app, s1.getType()).get().isEmpty());
+		assertFalse(app.getValidationConstraints().get(s1.getType()).isEmpty());
 		assertFalse(validateObject(app, s1).length == 0);
 		s1.addProperty("paws", 2);
 		assertTrue(validateObject(app, s1).length == 0);
@@ -229,31 +227,7 @@ public class ValidationUtilsTest {
 	}
 
 	@Test
-	public void testGetAllValidationConstraints() {
-		assertTrue(getAllValidationConstraints(null, ParaObjectUtils.getCoreTypes().values()).length() > 2);
-//		assertTrue(getAllValidationConstraints(null).length() > 2);
-	}
-
-	@Test
-	public void testGetValidationConstraints() {
-		App app = new App(Config.PARA);
-		assertTrue(ValidationUtils.getValidationConstraints(app, null).get().isEmpty());
-		assertFalse(ValidationUtils.getValidationConstraints(app, "tag").get().isEmpty());
-	}
-
-	@Test
-	public void testAddRemoveValidationConstraint() {
-		App app = new App(Config.PARA);
-
-		// add
-		app.addValidationConstraint("testtype", "urlField", url());
-		assertTrue(ValidationUtils.getValidationConstraints(app, "testtype").get().containsKey("urlField"));
-		assertTrue(ValidationUtils.getValidationConstraints(app, "testtype").get().get("urlField").containsKey("url"));
-
-		// remove
-		app.removeValidationConstraint("testtype", "urlField", "url");
-		assertTrue(ValidationUtils.getValidationConstraints(app, "testtype").get().containsKey("urlField"));
-		assertTrue(ValidationUtils.getValidationConstraints(app, "testtype").get().get("urlField").isEmpty());
-		assertFalse(ValidationUtils.getValidationConstraints(app, "testtype").get().get("urlField").containsKey("url"));
+	public void testGetCoreValidationConstraints() {
+		assertTrue(getCoreValidationConstraints().containsKey("app"));
 	}
 }

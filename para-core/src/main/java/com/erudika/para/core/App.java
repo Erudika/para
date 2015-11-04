@@ -22,14 +22,13 @@ import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
-import com.erudika.para.security.ResourcePermissions;
-import com.erudika.para.security.ResourcePermissions.Values;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import com.erudika.para.validation.Constraint;
-import com.erudika.para.validation.ValidationConstraints;
+import com.erudika.para.validation.ValidationUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -39,6 +38,7 @@ import java.util.Objects;
 import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -60,8 +60,10 @@ import org.slf4j.LoggerFactory;
 public class App implements ParaObject {
 
 	public static final String APP_ROLE = "ROLE_APP";
+	public static final String ALLOW_ALL = "*";
 	private static final long serialVersionUID = 1L;
 	private static final String prefix = Utils.type(App.class).concat(Config.SEPARATOR);
+	private static final Logger logger = LoggerFactory.getLogger(App.class);
 
 	@Stored @Locked @NotBlank private String id;
 	@Stored @Locked private Long timestamp;
@@ -79,8 +81,9 @@ public class App implements ParaObject {
 	@Stored @Locked private Boolean readOnly;
 	@Stored private Map<String, String> datatypes;
 	// type -> field -> constraint -> property -> value
-	@Stored private Map<String, ValidationConstraints> validationConstraints;
-	@Stored private Map<String, ResourcePermissions> resourcePermissions;
+	@Stored private Map<String, Map<String, Map<String, Map<String, ?>>>> validationConstraints;
+	// subject_id -> resource_name -> [http_methods_allowed]
+	@Stored private Map<String, Map<String, EnumSet<AllowedMethods>>> resourcePermissions;
 	@Stored private Boolean active;
 	@Stored private Long deleteOn;
 
@@ -125,9 +128,9 @@ public class App implements ParaObject {
 	 * Returns a map of user-defined data types and their validation annotations.
 	 * @return the constraints map
 	 */
-	public Map<String, ValidationConstraints> getValidationConstraints() {
+	public Map<String, Map<String, Map<String, Map<String, ?>>>> getValidationConstraints() {
 		if (validationConstraints == null) {
-			validationConstraints = new HashMap<String, ValidationConstraints>();
+			validationConstraints = new HashMap<String, Map<String, Map<String, Map<String, ?>>>>();
 		}
 		return validationConstraints;
 	}
@@ -136,7 +139,7 @@ public class App implements ParaObject {
 	 * Sets the validation constraints map.
 	 * @param validationConstraints the constraints map
 	 */
-	public void setValidationConstraints(Map<String, ValidationConstraints> validationConstraints) {
+	public void setValidationConstraints(Map<String, Map<String, Map<String, Map<String, ?>>>> validationConstraints) {
 		this.validationConstraints = validationConstraints;
 	}
 
@@ -144,9 +147,9 @@ public class App implements ParaObject {
 	 * Returns a map of resource permissions.
 	 * @return the permissions map
 	 */
-	public Map<String, ResourcePermissions> getResourcePermissions() {
+	public Map<String, Map<String, EnumSet<AllowedMethods>>> getResourcePermissions() {
 		if (resourcePermissions == null) {
-			resourcePermissions = new HashMap<String, ResourcePermissions>();
+			resourcePermissions = new HashMap<String, Map<String, EnumSet<AllowedMethods>>>();
 		}
 		return resourcePermissions;
 	}
@@ -155,7 +158,7 @@ public class App implements ParaObject {
 	 * Sets the permissions map
 	 * @param resourcePermissions
 	 */
-	public void setResourcePermissions(Map<String, ResourcePermissions> resourcePermissions) {
+	public void setResourcePermissions(Map<String, Map<String, EnumSet<AllowedMethods>>> resourcePermissions) {
 		this.resourcePermissions = resourcePermissions;
 	}
 
@@ -274,6 +277,39 @@ public class App implements ParaObject {
 	}
 
 	/**
+	 * Returns the JSON Node representation of all validation constraints for a single type.
+	 * @param types a list of valid Para data types
+	 * @return a map of validation constraints for given types
+	 */
+	public Map<String, Map<String, Map<String, Map<String, ?>>>> getAllValidationConstraints(String... types) {
+		Map<String, Map<String, Map<String, Map<String, ?>>>> allConstr =
+				new HashMap<String, Map<String, Map<String, Map<String, ?>>>>();
+		if (types == null || types.length == 0) {
+			types = ParaObjectUtils.getAllTypes(this).values().toArray(new String[0]);
+		}
+		try {
+			for (String aType : types) {
+				Map<String, Map<String, Map<String, ?>>> vc = new HashMap<String, Map<String, Map<String, ?>>>();
+				// add all core constraints first
+				if (ValidationUtils.getCoreValidationConstraints().containsKey(aType)) {
+					vc.putAll(ValidationUtils.getCoreValidationConstraints().get(aType));
+				}
+				// also add the ones that are defined locally for this app
+				Map<String, Map<String, Map<String, ?>>> appConstraints = getValidationConstraints().get(aType);
+				if (appConstraints != null && !appConstraints.isEmpty()) {
+					vc.putAll(appConstraints);
+				}
+				if (!vc.isEmpty()) {
+					allConstr.put(aType, vc);
+				}
+			}
+		} catch (Exception ex) {
+			logger.error(null, ex);
+		}
+		return allConstr;
+	}
+
+	/**
 	 * Adds a new constraint to the list of constraints for a given field and type.
 	 * @param type the type
 	 * @param field the field
@@ -284,19 +320,19 @@ public class App implements ParaObject {
 		if (!StringUtils.isBlank(type) && !StringUtils.isBlank(field) &&
 				c != null && !c.getPayload().isEmpty() &&
 				Constraint.isValidConstraintName(c.getName())) {
-			ValidationConstraints fieldMap = getValidationConstraints().get(type);
-			Map<String, Map<String, Object>> consMap;
+			Map<String, Map<String, Map<String, ?>>> fieldMap = getValidationConstraints().get(type);
+			Map<String, Map<String, ?>> consMap;
 			if (fieldMap != null) {
-				consMap = fieldMap.get().get(field);
+				consMap = fieldMap.get(field);
 				if (consMap == null) {
-					consMap = new HashMap<String, Map<String, Object>>();
+					consMap = new HashMap<String, Map<String, ?>>();
 				}
 			} else {
-				fieldMap = new ValidationConstraints();
-				consMap = new HashMap<String, Map<String, Object>>();
+				fieldMap = new HashMap<String, Map<String, Map<String, ?>>>();
+				consMap = new HashMap<String, Map<String, ?>>();
 			}
 			consMap.put(c.getName(), c.getPayload());
-			fieldMap.get().put(field, consMap);
+			fieldMap.put(field, consMap);
 			getValidationConstraints().put(type, fieldMap);
 			return true;
 		}
@@ -312,9 +348,9 @@ public class App implements ParaObject {
 	 */
 	public boolean removeValidationConstraint(String type, String field, String constraintName) {
 		if (!StringUtils.isBlank(type) && !StringUtils.isBlank(field) && constraintName != null) {
-			ValidationConstraints fieldsMap = getValidationConstraints().get(type);
-			if (fieldsMap != null && fieldsMap.get().containsKey(field) && fieldsMap.get().get(field).containsKey(constraintName)) {
-				fieldsMap.get().get(field).remove(constraintName);
+			Map<String, Map<String, Map<String, ?>>> fieldsMap = getValidationConstraints().get(type);
+			if (fieldsMap != null && fieldsMap.containsKey(field) && fieldsMap.get(field).containsKey(constraintName)) {
+				fieldsMap.get(field).remove(constraintName);
 				return true;
 			}
 		}
@@ -328,14 +364,53 @@ public class App implements ParaObject {
 	 * @param permissions the set or HTTP methods allowed
 	 * @return true if successful
 	 */
-	public boolean grantResourcePermissions(String subjectid, ResourcePermissions permissions) {
-		if (!StringUtils.isBlank(subjectid) && permissions != null && !permissions.get().isEmpty()) {
-			ResourcePermissions rp = getResourcePermissions().get(subjectid);
+	public boolean grantResourcePermissions(String subjectid, Map<String, EnumSet<AllowedMethods>> permissions) {
+		if (!StringUtils.isBlank(subjectid) && permissions != null && !permissions.isEmpty()) {
+			Map<String, EnumSet<AllowedMethods>> rp = getResourcePermissions().get(subjectid);
 			if (rp == null) {
 				getResourcePermissions().put(subjectid, permissions);
 			} else {
-				for (Map.Entry<String, EnumSet<Values>> perm : permissions.getEnumValuesMap().entrySet()) {
-					rp.grantPermission(perm.getKey(), perm.getValue());
+				for (Map.Entry<String, EnumSet<AllowedMethods>> perm : permissions.entrySet()) {
+//					grantPermission(perm.getKey(), perm.getValue());
+					String resourceName = perm.getKey();
+					EnumSet<AllowedMethods> permission = perm.getValue();
+					if (!StringUtils.isBlank(resourceName)) {
+
+						//		Set<String> methodsAllowed;
+						if (permission == null || permission.isEmpty()
+								|| permission.containsAll(AllowedMethods.ALL_VALUES)
+								|| permission.contains(AllowedMethods.READ_WRITE)
+								|| (permission.contains(AllowedMethods.READ_ONLY) &&
+									permission.contains(AllowedMethods.WRITE_ONLY))
+								|| (permission.contains(AllowedMethods.GET) &&
+									permission.contains(AllowedMethods.WRITE_ONLY))) {
+							permission = AllowedMethods.READ_AND_WRITE;
+	//			methodsAllowed = Collections.singleton(ALLOW_ALL);
+						} else {
+							if (permission.contains(AllowedMethods.WRITE_ONLY)) {
+								permission = AllowedMethods.WRITE;
+	//				methodsAllowed = new HashSet<String>() {
+	//					{
+	//						add(AllowedMethods.POST.name());
+	//						add(AllowedMethods.PUT.name());
+	//						add(AllowedMethods.PATCH.name());
+	//						add(AllowedMethods.DELETE.name());
+	//					}
+	//				};
+							} else if (permission.contains(AllowedMethods.READ_ONLY)) {
+								permission = AllowedMethods.READ;
+	//				methodsAllowed = Collections.singleton(AllowedMethods.GET.toString());
+							}
+	//			else {
+	//
+	//				methodsAllowed = new HashSet<String>(permissions.size());
+	//				for (AllowedMethods permission : permissions) {
+	//					methodsAllowed.add(permission.toString());
+	//				}
+	//			}
+						}
+						rp.put(resourceName, permission);
+					}
 				}
 			}
 			return true;
@@ -350,13 +425,11 @@ public class App implements ParaObject {
 	 * @return true if successful
 	 */
 	public boolean revokeResourcePermission(String subjectid, String resourceName) {
-		if (!StringUtils.isBlank(subjectid) &&
-				(getDatatypes().containsKey(resourceName) || getDatatypes().containsValue(resourceName))) {
-			ResourcePermissions rp = getResourcePermissions().get(subjectid);
-			if (rp != null) {
-				rp.revokePermission(resourceName);
-				return true;
-			}
+		if ((getDatatypes().containsKey(resourceName) || getDatatypes().containsValue(resourceName)) &&
+				!StringUtils.isBlank(subjectid) && getResourcePermissions().containsKey(subjectid) &&
+				!StringUtils.isBlank(resourceName)) {
+			getResourcePermissions().get(subjectid).remove(resourceName);
+			return true;
 		}
 		return false;
 	}
@@ -374,13 +447,32 @@ public class App implements ParaObject {
 		return false;
 	}
 
+	/**
+	 * Checks if a subject is allowed to call method X on resource Y.
+	 * @param subjectid subject id
+	 * @param resourceName resource name (type)
+	 * @param httpMethod HTTP method name
+	 * @return true if allowed
+	 */
 	public boolean isAllowedTo(String subjectid, String resourceName, String httpMethod) {
-		if (getResourcePermissions().isEmpty()) {
-			return true;
-		} else if (getResourcePermissions().containsKey(subjectid)) {
-			return getResourcePermissions().get(subjectid).isMethodAllowed(resourceName, httpMethod);
-		} else  if (getResourcePermissions().containsKey(ResourcePermissions.ALLOW_ALL)) {
-			return getResourcePermissions().get(ResourcePermissions.ALLOW_ALL).isMethodAllowed(resourceName, httpMethod);
+		if (!StringUtils.isBlank(resourceName) && !StringUtils.isBlank(httpMethod)) {
+			if (getResourcePermissions().isEmpty()) {
+				return true;
+			}
+			httpMethod = httpMethod.toUpperCase();
+			String sid = null;
+			if (getResourcePermissions().containsKey(subjectid)) {
+				sid = subjectid;
+			} else if (getResourcePermissions().containsKey(ALLOW_ALL)) {
+				sid = ALLOW_ALL;
+			}
+			if (sid != null &&
+					(getResourcePermissions().get(sid).get(resourceName).contains(AllowedMethods.valueOf(httpMethod)) ||
+					getResourcePermissions().get(sid).get(ALLOW_ALL).contains(AllowedMethods.valueOf(httpMethod)) ||
+					getResourcePermissions().get(sid).get(resourceName).contains(AllowedMethods.READ_WRITE) ||
+					getResourcePermissions().get(sid).get(ALLOW_ALL).contains(AllowedMethods.READ_WRITE))) {
+				return true;
+			}
 		}
 		return false;
 	}
@@ -722,5 +814,68 @@ public class App implements ParaObject {
 	@Override
 	public String toString() {
 		return ParaObjectUtils.toJSON(this);
+	}
+
+	/**
+	 * Represents HTTP methods allowed to be executed on a specific resource/type.
+	 * For example; the 'books' type can have a permission '{ "*" : ["GET"] }' which means
+	 * "give read-only permissions to everyone". It is backed by a map of resource names
+	 * (object types) to a set of allowed HTTP methods.
+	 */
+	public static enum AllowedMethods {
+
+		/**
+		 * Allows all HTTP methods (full access)
+		 */
+		READ_WRITE,
+		/**
+		 * Allows GET method only
+		 */
+		GET,
+		/**
+		 * Allows POST method only
+		 */
+		POST,
+		/**
+		 * Allows PUT method only
+		 */
+		PUT,
+		/**
+		 * ALlows PATCH method only
+		 */
+		PATCH,
+		/**
+		 * Allows DELETE method only
+		 */
+		DELETE,
+		/**
+		 * Allows read methods: GET, same as {@link #HTTP_GET}
+		 */
+		READ_ONLY,
+		/**
+		 * Allows write methods: POST, PUT, PATCH and DELETE
+		 */
+		WRITE_ONLY;
+
+		public static final EnumSet<AllowedMethods> ALL_VALUES = EnumSet.of(GET, POST, PUT, PATCH, DELETE);
+		public static final EnumSet<AllowedMethods> READ_AND_WRITE = EnumSet.of(READ_WRITE);
+		public static final EnumSet<AllowedMethods> READ = EnumSet.of(GET);
+		public static final EnumSet<AllowedMethods> WRITE = EnumSet.of(POST, PUT, PATCH, DELETE);
+		public static final EnumSet<AllowedMethods> ALL_EXCEPT_DELETE = EnumSet.of(GET, POST, PUT, PATCH);
+
+		@Override
+		@JsonValue
+		public String toString() {
+			switch (this) {
+				case READ_WRITE:
+					return ALLOW_ALL;
+				case READ_ONLY:
+					return GET.name();
+				case WRITE_ONLY:
+					return "w";
+				default:
+					return this.name();
+			}
+		}
 	}
 }

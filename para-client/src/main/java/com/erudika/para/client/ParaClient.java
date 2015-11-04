@@ -954,16 +954,16 @@ public final class ParaClient {
 	 * Returns the validation constraints map.
 	 * @return a map containing all validation constraints.
 	 */
-	public Map<String, ?> validationConstraints() {
+	public Map<String, Map<String, Map<String, Map<String, ?>>>> validationConstraints() {
 		return getEntity(invokeGet("_constraints", null), Map.class);
 	}
 
 	/**
 	 * Returns the validation constraints map.
 	 * @param type a type
-	 * @return a map containing all validation constraints.
+	 * @return a map containing all validation constraints for this type.
 	 */
-	public Map<String, Map<String, Map<String, ?>>> validationConstraints(String type) {
+	public Map<String, Map<String, Map<String, Map<String, ?>>>> validationConstraints(String type) {
 		return getEntity(invokeGet(Utils.formatMessage("_constraints/{0}", type), null), Map.class);
 	}
 
@@ -974,9 +974,13 @@ public final class ParaClient {
 	 * @param c the constraint
 	 * @return a map containing all validation constraints for this type.
 	 */
-	public Map<String, Map<String, Map<String, ?>>> addValidationConstraint(String type, String field, Constraint c) {
-		return getEntity(invokePut(Utils.formatMessage("_constraints/{0}/{1}/{2}",
-				type, field, c.getName()), Entity.json(c.getPayload())), Map.class);
+	public Map<String, Map<String, Map<String, Map<String, ?>>>> addValidationConstraint(String type,
+			String field, Constraint c) {
+		if (type == null || field == null || c == null) {
+			return Collections.emptyMap();
+		}
+		return getEntity(invokePut(Utils.formatMessage("_constraints/{0}/{1}/{2}", type,
+				field, c.getName()), Entity.json(c.getPayload())), Map.class);
 	}
 
 	/**
@@ -986,9 +990,10 @@ public final class ParaClient {
 	 * @param constraintName the name of the constraint to remove
 	 * @return a map containing all validation constraints for this type.
 	 */
-	public Map<String, ?> removeValidationConstraint(String type, String field, String constraintName) {
-		return getEntity(invokeDelete(Utils.formatMessage("_constraints/{0}/{1}/{2}",
-				type, field, constraintName), null), Map.class);
+	public Map<String, Map<String, Map<String, Map<String, ?>>>> removeValidationConstraint(String type,
+			String field, String constraintName) {
+		return getEntity(invokeDelete(Utils.formatMessage("_constraints/{0}/{1}/{2}", type,
+				field, constraintName), null), Map.class);
 	}
 
 	/**

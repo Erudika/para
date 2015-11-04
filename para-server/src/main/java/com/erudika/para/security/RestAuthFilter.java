@@ -17,6 +17,7 @@
  */
 package com.erudika.para.security;
 
+import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
@@ -77,13 +78,15 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		User u = SecurityUtils.getAuthenticatedUser();
 		String appid = RestUtils.extractAccessKey(request);
 		boolean isApp = !StringUtils.isBlank(appid);
-
 		// users are allowed to GET '/_me' - used on the client-side for checking authentication
 		if (u != null && !isApp && RestRequestMatcher.INSTANCE.matches(request)) {
 			if (u.getActive()) {
-				App parentApp = u.getDao().read(u.getAppid());
+				App parentApp = u.getDao().read(App.id(u.getAppid()));
 				if (parentApp != null) {
-					if (!parentApp.isAllowedTo(u.getId(), RestUtils.extractResourceName(request), request.getMethod())) {
+					boolean isRootApp = parentApp.getId().equals(App.id(Config.APP_NAME_NS));
+					boolean isUserAllowed = parentApp.isAllowedTo(u.getId(),
+							RestUtils.extractResourceName(request), request.getMethod());
+					if ((isRootApp && !u.isAdmin()) || !isUserAllowed) {
 						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
 								"User doesn't have permission to access this resource.");
 						return;
@@ -106,8 +109,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 			if (!StringUtils.isBlank(appid)) {
 				if (!StringUtils.isBlank(date)) {
 					if (!requestExpired) {
-						App app = new App(appid);
-						app = app.getDao().read(app.getId());
+						App app = Para.getDAO().read(App.id(appid));
 
 						if (app != null) {
 							if (app.getActive()) {
