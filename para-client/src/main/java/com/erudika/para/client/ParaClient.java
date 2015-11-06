@@ -18,6 +18,7 @@
 package com.erudika.para.client;
 
 import com.erudika.para.core.App;
+import com.erudika.para.core.App.AllowedMethods;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.ParaObjectUtils;
 import com.erudika.para.core.Tag;
@@ -31,6 +32,7 @@ import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -994,6 +996,56 @@ public final class ParaClient {
 			String field, String constraintName) {
 		return getEntity(invokeDelete(Utils.formatMessage("_constraints/{0}/{1}/{2}", type,
 				field, constraintName), null), Map.class);
+	}
+
+	/**
+	 * Returns the permissions for all subjects and resources for current app.
+	 * @return a map of subject ids to resource names to a list of allowed methods
+	 */
+	public Map<String, Map<String, EnumSet<AllowedMethods>>> resourcePermissions() {
+		return getEntity(invokeGet("_permissions", null), Map.class);
+	}
+
+	/**
+	 * Returns only the permissions for a given subject (user) of the current app.
+	 * @param subjectid the subject id (user id)
+	 * @return a map of subject ids to resource names to a list of allowed methods
+	 */
+	public Map<String, Map<String, EnumSet<AllowedMethods>>> resourcePermissions(String subjectid) {
+		return getEntity(invokeGet(Utils.formatMessage("_permissions/{0}", subjectid), null), Map.class);
+	}
+
+	/**
+	 * Grants a permission to a subject that allows them to call the specified HTTP methods on a given resource.
+	 * @param subjectid subject id (user id)
+	 * @param resourceName resource name or object type
+	 * @param permission a set of HTTP methods
+	 * @return a map of the permissions for this subject id
+	 */
+	public Map<String, Map<String, EnumSet<AllowedMethods>>> grantResourcePermission(String subjectid, String resourceName,
+			EnumSet<AllowedMethods> permission) {
+		return getEntity(invokePut(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourceName),
+				Entity.json(permission)), Map.class);
+	}
+
+	/**
+	 * Revokes a permission for a subject, meaning they no longer will be able to access the given resource.
+	 * @param subjectid subject id (user id)
+	 * @param resourceName resource name or object type
+	 * @return a map of the permissions for this subject id
+	 */
+	public Map<String, Map<String, EnumSet<AllowedMethods>>> revokeResourcePermission(String subjectid, String resourceName) {
+		return getEntity(invokeDelete(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourceName),
+				null), Map.class);
+	}
+
+	/**
+	 * Revokes all permission for a subject.
+	 * @param subjectid subject id (user id)
+	 * @return a map of the permissions for this subject id
+	 */
+	public Map<String, Map<String, EnumSet<AllowedMethods>>> revokeAllResourcePermissions(String subjectid) {
+		return getEntity(invokeDelete(Utils.formatMessage("_permissions/{0}", subjectid), null), Map.class);
 	}
 
 	/**

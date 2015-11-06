@@ -277,7 +277,7 @@ public class App implements ParaObject {
 	}
 
 	/**
-	 * Returns the JSON Node representation of all validation constraints for a single type.
+	 * Returns all validation constraints for a list of types.
 	 * @param types a list of valid Para data types
 	 * @return a map of validation constraints for given types
 	 */
@@ -358,27 +358,51 @@ public class App implements ParaObject {
 	}
 
 	/**
+	 * Returns all resource permission for a list of subjects ids.
+	 * @param subjectids subject ids (user ids)
+	 * @return a map of all resource permissions per subject
+	 */
+	public Map<String, Map<String, EnumSet<AllowedMethods>>> getAllResourcePermissions(String... subjectids) {
+		Map<String, Map<String, EnumSet<AllowedMethods>>> allPermits =
+				new HashMap<String, Map<String, EnumSet<AllowedMethods>>>();
+		if (subjectids == null || subjectids.length == 0) {
+			return getResourcePermissions();
+		}
+		try {
+			for (String subjectid : subjectids) {
+				if (getResourcePermissions().containsKey(subjectid)) {
+					allPermits.get(subjectid).putAll(getResourcePermissions().get(subjectid));
+				}
+			}
+		} catch (Exception ex) {
+			logger.error(null, ex);
+		}
+		return allPermits;
+	}
+
+	/**
 	 * Grants a new permission for a given subject and resource.
 	 * @param subjectid the subject to give permissions to
 	 * @param resourceName the resource name/type
 	 * @param permissions the set or HTTP methods allowed
 	 * @return true if successful
 	 */
-	public boolean grantResourcePermissions(String subjectid, Map<String, EnumSet<AllowedMethods>> permissions) {
-		if (!StringUtils.isBlank(subjectid) && permissions != null && !permissions.isEmpty()) {
-			Map<String, EnumSet<AllowedMethods>> rp = getResourcePermissions().get(subjectid);
-			if (rp == null) {
-				getResourcePermissions().put(subjectid, permissions);
+	public boolean grantResourcePermission(String subjectid, String resourceName, EnumSet<AllowedMethods> permission) {
+		if (!StringUtils.isBlank(subjectid) && !StringUtils.isBlank(resourceName) &&
+				permission != null && !permission.isEmpty()) {
+//			Map<String, EnumSet<AllowedMethods>> rp = getResourcePermissions().get(subjectid);
+			if (!getResourcePermissions().containsKey(subjectid)) {
+				Map<String, EnumSet<AllowedMethods>> perm = new HashMap<String, EnumSet<AllowedMethods>>();
+				perm.put(resourceName, permission);
+				getResourcePermissions().put(subjectid, perm);
 			} else {
-				for (Map.Entry<String, EnumSet<AllowedMethods>> perm : permissions.entrySet()) {
+//				for (Map.Entry<String, EnumSet<AllowedMethods>> perm : permissions.entrySet()) {
 //					grantPermission(perm.getKey(), perm.getValue());
-					String resourceName = perm.getKey();
-					EnumSet<AllowedMethods> permission = perm.getValue();
-					if (!StringUtils.isBlank(resourceName)) {
+//					String resourceName = perm.getKey();
+//					EnumSet<AllowedMethods> permission = perm.getValue();
 
 						//		Set<String> methodsAllowed;
-						if (permission == null || permission.isEmpty()
-								|| permission.containsAll(AllowedMethods.ALL_VALUES)
+						if (permission.containsAll(AllowedMethods.ALL_VALUES)
 								|| permission.contains(AllowedMethods.READ_WRITE)
 								|| (permission.contains(AllowedMethods.READ_ONLY) &&
 									permission.contains(AllowedMethods.WRITE_ONLY))
@@ -409,9 +433,8 @@ public class App implements ParaObject {
 	//				}
 	//			}
 						}
-						rp.put(resourceName, permission);
-					}
-				}
+						getResourcePermissions().get(subjectid).put(resourceName, permission);
+//				}
 			}
 			return true;
 		}
@@ -419,14 +442,13 @@ public class App implements ParaObject {
 	}
 
 	/**
-	 * Revokes a given permission
-	 * @param subjectid
-	 * @param resourceName
+	 * Revokes a permission for given subject.
+	 * @param subjectid subject id
+	 * @param resourceName resource name or type
 	 * @return true if successful
 	 */
 	public boolean revokeResourcePermission(String subjectid, String resourceName) {
-		if ((getDatatypes().containsKey(resourceName) || getDatatypes().containsValue(resourceName)) &&
-				!StringUtils.isBlank(subjectid) && getResourcePermissions().containsKey(subjectid) &&
+		if (!StringUtils.isBlank(subjectid) && getResourcePermissions().containsKey(subjectid) &&
 				!StringUtils.isBlank(resourceName)) {
 			getResourcePermissions().get(subjectid).remove(resourceName);
 			return true;
@@ -442,6 +464,7 @@ public class App implements ParaObject {
 	public boolean revokeAllResourcePermissions(String subjectid) {
 		if (!StringUtils.isBlank(subjectid) && getResourcePermissions().containsKey(subjectid)) {
 			getResourcePermissions().remove(subjectid);
+			getResourcePermissions().put(subjectid, new HashMap<String, EnumSet<AllowedMethods>>());
 			return true;
 		}
 		return false;
@@ -457,21 +480,29 @@ public class App implements ParaObject {
 	public boolean isAllowedTo(String subjectid, String resourceName, String httpMethod) {
 		if (!StringUtils.isBlank(resourceName) && !StringUtils.isBlank(httpMethod)) {
 			if (getResourcePermissions().isEmpty()) {
-				return true;
+				// Default permission is "deny all". Returning true here would make it "allow all".
+				return false;
 			}
-			httpMethod = httpMethod.toUpperCase();
 			String sid = null;
 			if (getResourcePermissions().containsKey(subjectid)) {
 				sid = subjectid;
 			} else if (getResourcePermissions().containsKey(ALLOW_ALL)) {
 				sid = ALLOW_ALL;
 			}
-			if (sid != null &&
-					(getResourcePermissions().get(sid).get(resourceName).contains(AllowedMethods.valueOf(httpMethod)) ||
-					getResourcePermissions().get(sid).get(ALLOW_ALL).contains(AllowedMethods.valueOf(httpMethod)) ||
-					getResourcePermissions().get(sid).get(resourceName).contains(AllowedMethods.READ_WRITE) ||
-					getResourcePermissions().get(sid).get(ALLOW_ALL).contains(AllowedMethods.READ_WRITE))) {
-				return true;
+			try {
+				AllowedMethods method = AllowedMethods.valueOf(httpMethod.toUpperCase());
+				if (sid != null && getResourcePermissions().containsKey(sid)) {
+					boolean allowedForResource = getResourcePermissions().get(sid).containsKey(resourceName) && (
+							getResourcePermissions().get(sid).get(resourceName).contains(method) ||
+							getResourcePermissions().get(sid).get(resourceName).contains(AllowedMethods.READ_WRITE));
+					boolean allowedForAll = getResourcePermissions().get(sid).containsKey(ALLOW_ALL) && (
+							getResourcePermissions().get(sid).get(ALLOW_ALL).contains(method) ||
+							getResourcePermissions().get(sid).get(ALLOW_ALL).contains(AllowedMethods.READ_WRITE));
+
+					return allowedForResource || allowedForAll;
+				}
+			} catch (Exception e) {
+				return false;
 			}
 		}
 		return false;
