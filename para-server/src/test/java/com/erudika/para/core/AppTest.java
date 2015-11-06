@@ -20,6 +20,7 @@ package com.erudika.para.core;
 
 import com.erudika.para.utils.Config;
 import static com.erudika.para.validation.Constraint.url;
+import java.util.EnumSet;
 import static org.junit.Assert.*;
 import org.junit.Test;
 
@@ -113,4 +114,62 @@ public class AppTest {
 		assertTrue(app.getValidationConstraints().get("testtype").get("urlField").isEmpty());
 		assertFalse(app.getValidationConstraints().get("testtype").get("urlField").containsKey("url"));
 	}
+
+	@Test
+	public void testGetAllResourcePermissions() {
+		App app = new App(Config.PARA);
+		assertTrue(app.getAllResourcePermissions().isEmpty());
+		app.grantResourcePermission("123", App.ALLOW_ALL, App.AllowedMethods.READ);
+		assertTrue(app.getAllResourcePermissions().containsKey("123"));
+		assertTrue(app.getAllResourcePermissions(new String[]{null}).isEmpty());
+		assertFalse(app.getAllResourcePermissions("123").isEmpty());
+		assertFalse(app.getAllResourcePermissions(new String[0]).isEmpty());
+		assertFalse(app.getAllResourcePermissions().isEmpty());
+	}
+
+	@Test
+	public void testIsAllowedTo() {
+		App app = new App(Config.PARA);
+		assertFalse(app.isAllowedTo(null, null, null));
+		assertFalse(app.isAllowedTo("", " ", ""));
+		assertFalse(app.isAllowedTo(App.ALLOW_ALL, App.ALLOW_ALL, App.AllowedMethods.GET.toString()));
+
+		app.grantResourcePermission("123", App.ALLOW_ALL, App.AllowedMethods.READ);
+		assertFalse(app.isAllowedTo("123", App.ALLOW_ALL, App.AllowedMethods.POST.toString()));
+		assertTrue(app.isAllowedTo("123", "_test", App.AllowedMethods.GET.toString()));
+		assertTrue(app.isAllowedTo("123", "_test1", App.AllowedMethods.READ_ONLY.toString()));
+
+		app.revokeAllResourcePermissions("123");
+		assertFalse(app.isAllowedTo("123", "_test", App.AllowedMethods.GET.toString()));
+		assertFalse(app.isAllowedTo("123", "_test1", App.AllowedMethods.READ_ONLY.toString()));
+	}
+
+	@Test
+	public void testGrantRevokeResourcePermission() {
+		App app = new App(Config.PARA);
+		assertFalse(app.isAllowedTo(App.ALLOW_ALL, App.ALLOW_ALL, App.AllowedMethods.GET.toString()));
+
+		app.grantResourcePermission(null, App.ALLOW_ALL, App.AllowedMethods.READ);
+		assertTrue(app.getResourcePermissions().isEmpty());
+		app.grantResourcePermission("", App.ALLOW_ALL, App.AllowedMethods.READ);
+		assertTrue(app.getResourcePermissions().isEmpty());
+		app.grantResourcePermission("123", "", App.AllowedMethods.READ);
+		assertTrue(app.getResourcePermissions().isEmpty());
+		app.grantResourcePermission("123", App.ALLOW_ALL, EnumSet.noneOf(App.AllowedMethods.class));
+		assertTrue(app.getResourcePermissions().isEmpty());
+
+		app.grantResourcePermission("123", App.ALLOW_ALL, App.AllowedMethods.READ);
+		assertTrue(app.isAllowedTo("123", App.ALLOW_ALL, App.AllowedMethods.READ_ONLY.toString()));
+		assertFalse(app.isAllowedTo("1234", App.ALLOW_ALL, App.AllowedMethods.READ_ONLY.toString()));
+
+		app.revokeResourcePermission("123", "_test");
+		assertTrue(app.isAllowedTo("123", App.ALLOW_ALL, App.AllowedMethods.READ_ONLY.toString()));
+		app.revokeResourcePermission(App.ALLOW_ALL, App.ALLOW_ALL);
+		assertTrue(app.isAllowedTo("123", App.ALLOW_ALL, App.AllowedMethods.READ_ONLY.toString()));
+		assertTrue(app.isAllowedTo("123", App.ALLOW_ALL, "get"));
+		assertFalse(app.isAllowedTo("123", App.ALLOW_ALL, "bad_method"));
+		app.revokeResourcePermission("123", App.ALLOW_ALL);
+		assertFalse(app.isAllowedTo("123", App.ALLOW_ALL, App.AllowedMethods.READ_ONLY.toString()));
+	}
+
 }

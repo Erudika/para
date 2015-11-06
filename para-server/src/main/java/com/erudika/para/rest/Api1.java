@@ -136,10 +136,10 @@ public class Api1 extends ResourceConfig {
 
 		// permissions
 		Resource.Builder permRes = Resource.builder("_permissions");
-		permRes.addMethod(GET).produces(JSON).handledBy(getPermitHandler());
-		permRes.addChildResource("{subjectid}").addMethod(GET).produces(JSON).handledBy(getPermitHandler());
-		permRes.addChildResource("{subjectid}").addMethod(PUT).produces(JSON).handledBy(grantPermitHandler());
-		permRes.addChildResource("{subjectid}/{type}").addMethod(DELETE).produces(JSON).handledBy(revokePermitHandler());
+		permRes.addMethod(GET).produces(JSON).handledBy(getPermitHandler(null));
+		permRes.addChildResource("{subjectid}").addMethod(GET).produces(JSON).handledBy(getPermitHandler(null));
+		permRes.addChildResource("{subjectid}/{type}").addMethod(PUT).produces(JSON).handledBy(grantPermitHandler(null));
+		permRes.addChildResource("{subjectid}/{type}").addMethod(DELETE).produces(JSON).handledBy(revokePermitHandler(null));
 		registerResources(permRes.build());
 
 		// util functions API
@@ -487,16 +487,16 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> getPermitHandler() {
+	protected final Inflector<ContainerRequestContext, Response> getPermitHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : RestUtils.getPrincipalApp();
 				String subjectid = pathParam("subjectid", ctx);
 				if (app != null) {
 					if (subjectid != null) {
-						return Response.ok(app.getResourcePermissions().get(subjectid)).build();
+						return Response.ok(app.getAllResourcePermissions(subjectid)).build();
 					} else {
-						return Response.ok(app.getResourcePermissions()).build();
+						return Response.ok(app.getAllResourcePermissions()).build();
 					}
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
@@ -505,18 +505,20 @@ public class Api1 extends ResourceConfig {
 	}
 
 	@SuppressWarnings("unchecked")
-	protected final Inflector<ContainerRequestContext, Response> grantPermitHandler() {
+	protected final Inflector<ContainerRequestContext, Response> grantPermitHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : RestUtils.getPrincipalApp();
 				String subjectid = pathParam("subjectid", ctx);
+				String resourceName = pathParam(Config._TYPE, ctx);
 				if (app != null) {
 					Response resp = RestUtils.getEntity(ctx.getEntityStream(), Map.class);
 					if (resp.getStatusInfo() == Response.Status.OK) {
-						Map<String, EnumSet<AllowedMethods>> permissions =
-								(Map<String, EnumSet<AllowedMethods>>) resp.getEntity();
-						app.grantResourcePermissions(subjectid, permissions);
-						return Response.ok(app.getResourcePermissions()).build();
+						EnumSet<AllowedMethods> permission = (EnumSet<AllowedMethods>) resp.getEntity();
+						if (app.grantResourcePermission(subjectid, resourceName, permission)) {
+							app.update();
+						}
+						return Response.ok(app.getAllResourcePermissions(subjectid)).build();
 					} else {
 						return resp;
 					}
@@ -526,10 +528,10 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> revokePermitHandler() {
+	protected final Inflector<ContainerRequestContext, Response> revokePermitHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : RestUtils.getPrincipalApp();
 				String subjectid = pathParam("subjectid", ctx);
 				String type = pathParam(Config._TYPE, ctx);
 				if (app != null) {
@@ -538,7 +540,7 @@ public class Api1 extends ResourceConfig {
 					} else {
 						app.revokeAllResourcePermissions(subjectid);
 					}
-					return Response.ok(app.getResourcePermissions()).build();
+					return Response.ok(app.getAllResourcePermissions(subjectid)).build();
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}

@@ -21,6 +21,7 @@ import com.erudika.para.Para;
 import com.erudika.para.ParaServer;
 import com.erudika.para.core.Address;
 import com.erudika.para.core.App;
+import com.erudika.para.core.App.AllowedMethods;
 import com.erudika.para.core.CoreUtils;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
@@ -35,6 +36,7 @@ import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -463,6 +465,9 @@ public class ParaClientIT {
 		assertFalse(types.isEmpty());
 		assertTrue(types.containsKey(new User().getPlural()));
 
+		assertTrue(pc.me().getId().equals(App.id(System.getProperty("para.app_name"))));
+
+		// Validations
 		Map<String, ?> constraints = pc.validationConstraints();
 		assertFalse(constraints.isEmpty());
 		assertTrue(constraints.containsKey("app"));
@@ -492,5 +497,41 @@ public class ParaClientIT {
 		pc.removeValidationConstraint(kittenType, "paws", "required");
 		constraint = pc.validationConstraints(kittenType);
 		assertFalse(constraint.get(kittenType).isEmpty());
+
+		// Permissions
+		App app = pc.me();
+		Map<String, Map<String, EnumSet<AllowedMethods>>> permits = pc.resourcePermissions();
+		assertTrue(permits.isEmpty());
+
+		assertTrue(pc.grantResourcePermission(null, dogsType, EnumSet.noneOf(AllowedMethods.class)).isEmpty());
+		assertTrue(pc.grantResourcePermission(" ", "", EnumSet.noneOf(AllowedMethods.class)).isEmpty());
+
+		pc.grantResourcePermission(u1.getId(), dogsType, AllowedMethods.READ);
+		permits = pc.resourcePermissions(u1.getId());
+		assertTrue(permits.containsKey(u1.getId()));
+		assertTrue(permits.get(u1.getId()).containsKey(dogsType));
+		assertTrue(app.isAllowedTo(u1.getId(), dogsType, AllowedMethods.GET.toString()));
+		assertFalse(app.isAllowedTo(u1.getId(), dogsType, AllowedMethods.POST.toString()));
+
+		permits = pc.resourcePermissions();
+		assertTrue(permits.containsKey(u1.getId()));
+		assertTrue(permits.get(u1.getId()).containsKey(dogsType));
+
+		pc.revokeResourcePermission(u1.getId(), dogsType);
+		assertFalse(permits.containsKey(u1.getId()));
+		assertFalse(permits.get(u1.getId()).containsKey(dogsType));
+		assertFalse(app.isAllowedTo(u1.getId(), dogsType, AllowedMethods.GET.toString()));
+		assertFalse(app.isAllowedTo(u1.getId(), dogsType, AllowedMethods.POST.toString()));
+
+
+		pc.grantResourcePermission(u2.getId(), App.ALLOW_ALL, AllowedMethods.WRITE);
+		assertTrue(app.isAllowedTo(u2.getId(), dogsType, AllowedMethods.PUT.toString()));
+		assertTrue(app.isAllowedTo(u2.getId(), dogsType, AllowedMethods.PATCH.toString()));
+
+		pc.revokeAllResourcePermissions(u2.getId());
+		permits = pc.resourcePermissions();
+		assertFalse(app.isAllowedTo(u2.getId(), dogsType, AllowedMethods.PUT.toString()));
+		assertTrue(permits.containsKey(u2.getId()));
+		assertTrue(permits.get(u2.getId()).isEmpty());
 	}
 }
