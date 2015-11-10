@@ -535,30 +535,26 @@ public class ParaClientIT {
 		pc.grantResourcePermission(u1.getId(), dogsType, AllowedMethods.WRITE);
 		pc.grantResourcePermission(App.ALLOW_ALL, catsType, AllowedMethods.WRITE);
 		pc.grantResourcePermission(App.ALLOW_ALL, App.ALLOW_ALL, AllowedMethods.READ);
-//		permits = pc.resourcePermissions(u1.getId());
+		// user-specific permissions are in effect
 		assertTrue(pc.isAllowedTo(u1.getId(), dogsType, AllowedMethods.PUT.toString()));
-		assertTrue(pc.isAllowedTo(u1.getId(), dogsType, AllowedMethods.GET.toString()));
+		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, AllowedMethods.GET.toString()));
 		assertTrue(pc.isAllowedTo(u1.getId(), catsType, AllowedMethods.PUT.toString()));
 		assertTrue(pc.isAllowedTo(u1.getId(), catsType, AllowedMethods.GET.toString()));
 
 		pc.revokeAllResourcePermissions(u1.getId());
+		// user-specific permissions not found so check wildcard
 		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, AllowedMethods.PUT.toString()));
 		assertTrue(pc.isAllowedTo(u1.getId(), dogsType, AllowedMethods.GET.toString()));
+		assertTrue(pc.isAllowedTo(u1.getId(), catsType, AllowedMethods.PUT.toString()));
 		assertTrue(pc.isAllowedTo(u1.getId(), catsType, AllowedMethods.GET.toString()));
 
 		pc.revokeResourcePermission(App.ALLOW_ALL, catsType);
+		// resource-specific permissions not found so check wildcard
 		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, AllowedMethods.PUT.toString()));
 		assertFalse(pc.isAllowedTo(u1.getId(), catsType, AllowedMethods.PUT.toString()));
 		assertTrue(pc.isAllowedTo(u1.getId(), dogsType, AllowedMethods.GET.toString()));
 		assertTrue(pc.isAllowedTo(u1.getId(), catsType, AllowedMethods.GET.toString()));
 		assertTrue(pc.isAllowedTo(u2.getId(), dogsType, AllowedMethods.GET.toString()));
 		assertTrue(pc.isAllowedTo(u2.getId(), catsType, AllowedMethods.GET.toString()));
-
-//		assertTrue(permits.containsKey(u1.getId()));
-//		assertTrue(permits.get(u1.getId()).containsKey(dogsType));
-		// TODO
-		// add 2 perms *-> and subjectid->
-		// check then remove subjectid
-		// check if still has perms because of *
 	}
 }

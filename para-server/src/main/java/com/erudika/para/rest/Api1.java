@@ -19,7 +19,6 @@ package com.erudika.para.rest;
 
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
-import com.erudika.para.core.App.AllowedMethods;
 import com.erudika.para.core.CoreUtils;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.ParaObjectUtils;
@@ -38,9 +37,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.MediaType;
@@ -138,8 +139,10 @@ public class Api1 extends ResourceConfig {
 		Resource.Builder permRes = Resource.builder("_permissions");
 		permRes.addMethod(GET).produces(JSON).handledBy(getPermitHandler(null));
 		permRes.addChildResource("{subjectid}").addMethod(GET).produces(JSON).handledBy(getPermitHandler(null));
+		permRes.addChildResource("{subjectid}/{type}/{method}").addMethod(GET).produces(JSON).handledBy(validPermitHandler(null));
 		permRes.addChildResource("{subjectid}/{type}").addMethod(PUT).produces(JSON).handledBy(grantPermitHandler(null));
 		permRes.addChildResource("{subjectid}/{type}").addMethod(DELETE).produces(JSON).handledBy(revokePermitHandler(null));
+		permRes.addChildResource("{subjectid}").addMethod(DELETE).produces(JSON).handledBy(revokePermitHandler(null));
 		registerResources(permRes.build());
 
 		// util functions API
@@ -504,6 +507,22 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
+	protected final Inflector<ContainerRequestContext, Response> validPermitHandler(final App a) {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				App app = (a != null) ? a : RestUtils.getPrincipalApp();
+				String subjectid = pathParam("subjectid", ctx);
+				String resourceName = pathParam(Config._TYPE, ctx);
+				String httpMethod = pathParam("method", ctx);
+				if (app != null) {
+					return Response.ok(app.isAllowedTo(subjectid, resourceName, httpMethod),
+							MediaType.TEXT_PLAIN_TYPE).build();
+				}
+				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+			}
+		};
+	}
+
 	@SuppressWarnings("unchecked")
 	protected final Inflector<ContainerRequestContext, Response> grantPermitHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
@@ -512,10 +531,14 @@ public class Api1 extends ResourceConfig {
 				String subjectid = pathParam("subjectid", ctx);
 				String resourceName = pathParam(Config._TYPE, ctx);
 				if (app != null) {
-					Response resp = RestUtils.getEntity(ctx.getEntityStream(), Map.class);
+					Response resp = RestUtils.getEntity(ctx.getEntityStream(), List.class);
 					if (resp.getStatusInfo() == Response.Status.OK) {
-						EnumSet<AllowedMethods> permission = (EnumSet<AllowedMethods>) resp.getEntity();
-						if (app.grantResourcePermission(subjectid, resourceName, permission)) {
+						List<String> permission = (List<String>) resp.getEntity();
+						Set<App.AllowedMethods> set = new HashSet<App.AllowedMethods>(permission.size());
+						for (String perm : permission) {
+							set.add(App.AllowedMethods.fromString(perm));
+						}
+						if (app.grantResourcePermission(subjectid, resourceName, EnumSet.copyOf(set))) {
 							app.update();
 						}
 						return Response.ok(app.getAllResourcePermissions(subjectid)).build();
@@ -535,10 +558,14 @@ public class Api1 extends ResourceConfig {
 				String subjectid = pathParam("subjectid", ctx);
 				String type = pathParam(Config._TYPE, ctx);
 				if (app != null) {
+					boolean revoked;
 					if (type != null) {
-						app.revokeResourcePermission(subjectid, type);
+						revoked = app.revokeResourcePermission(subjectid, type);
 					} else {
-						app.revokeAllResourcePermissions(subjectid);
+						revoked = app.revokeAllResourcePermissions(subjectid);
+					}
+					if (revoked) {
+						app.update();
 					}
 					return Response.ok(app.getAllResourcePermissions(subjectid)).build();
 				}
