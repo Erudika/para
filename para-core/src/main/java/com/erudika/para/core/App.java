@@ -867,7 +867,7 @@ public class App implements ParaObject {
 		 */
 		DELETE,
 		/**
-		 * Allows read methods: GET, same as {@link #HTTP_GET}
+		 * Allows read methods: GET, same as {@link #GET}
 		 */
 		READ_ONLY,
 		/**

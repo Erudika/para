@@ -476,4 +476,28 @@ public final class RestUtils {
 		}
 	}
 
+	/**
+	 * A generic JSON response returning an object. Status code is always {@code 200}.
+	 * @param response the response to write to
+	 * @param obj an object
+	 */
+	public static void returnObjectResponse(HttpServletResponse response, Object obj) {
+		if (response == null) {
+			return;
+		}
+		PrintWriter out = null;
+		try {
+			response.setStatus(HttpServletResponse.SC_OK);
+			response.setContentType(MediaType.APPLICATION_JSON);
+			out = response.getWriter();
+			ParaObjectUtils.getJsonWriter().writeValue(out, obj);
+		} catch (Exception ex) {
+			logger.error(null, ex);
+		} finally {
+			if (out != null) {
+				out.close();
+			}
+		}
+	}
+
 }

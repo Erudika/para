@@ -75,87 +75,98 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		BufferedRequestWrapper request = new BufferedRequestWrapper((HttpServletRequest) req);
 		HttpServletResponse response = (HttpServletResponse) res;
 
-		User u = SecurityUtils.getAuthenticatedUser();
 		String appid = RestUtils.extractAccessKey(request);
 		boolean isApp = !StringUtils.isBlank(appid);
+		boolean proceed = false;
 		// users are allowed to GET '/_me' - used on the client-side for checking authentication
-		if (u != null && !isApp && RestRequestMatcher.INSTANCE.matches(request)) {
-			if (u.getActive()) {
-				App parentApp = u.getDao().read(App.id(u.getAppid()));
-				if (parentApp != null) {
-					boolean isRootApp = parentApp.getId().equals(App.id(Config.APP_NAME_NS));
-					boolean isUserAllowed = parentApp.isAllowedTo(u.getId(),
-							RestUtils.extractResourceName(request), request.getMethod());
-					if ((isRootApp && !u.isAdmin()) || !isUserAllowed) {
-						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-								"User doesn't have permission to access this resource.");
-						return;
-					}
-				} else {
-					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND, "App not found.");
-					return;
+		if (!isApp && RestRequestMatcher.INSTANCE.matches(request)) {
+			proceed = userAuthRequestHandler(SecurityUtils.getAuthenticatedUser(), request, response);
+		} else if (isApp && RestRequestMatcher.INSTANCE_STRICT.matches(request)) {
+			proceed = appAuthRequestHandler(appid, request, response);
+		}
+
+		if (proceed) {
+			chain.doFilter(request, res);
+		}
+	}
+
+	private boolean userAuthRequestHandler(User u, BufferedRequestWrapper request, HttpServletResponse response) {
+		if (u != null && u.getActive()) {
+			App parentApp = u.getDao().read(App.id(u.getAppid()));
+			if (parentApp != null) {
+				boolean isRootApp = parentApp.getId().equals(App.id(Config.APP_NAME_NS));
+				boolean isUserAllowed = parentApp.isAllowedTo(u.getId(),
+						RestUtils.extractResourceName(request), request.getMethod());
+				if ((isRootApp && !u.isAdmin()) || !isUserAllowed) {
+					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+							"User doesn't have permission to access this resource.");
+					return false;
 				}
 			} else {
-				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-						"User doesn't have permission to access this resource.");
-				return;
+				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND, "App not found.");
+				return false;
 			}
-		} else if (isApp && RestRequestMatcher.INSTANCE_STRICT.matches(request)) {
-			String date = RestUtils.extractDate(request);
-			Date d = Signer.parseAWSDate(date);
-			boolean requestExpired = (d != null) && (System.currentTimeMillis() >
-					(d.getTime() + (Config.REQUEST_EXPIRES_AFTER_SEC * 1000)));
+		} else {
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+					"User doesn't have permission to access this resource.");
+			return false;
+		}
+		return true;
+	}
 
-			if (!StringUtils.isBlank(appid)) {
-				if (!StringUtils.isBlank(date)) {
-					if (!requestExpired) {
-						App app = Para.getDAO().read(App.id(appid));
+	private boolean appAuthRequestHandler(String appid, BufferedRequestWrapper request, HttpServletResponse response) {
+		String date = RestUtils.extractDate(request);
+		Date d = Signer.parseAWSDate(date);
+		boolean requestExpired = (d != null) && (System.currentTimeMillis()
+				> (d.getTime() + (Config.REQUEST_EXPIRES_AFTER_SEC * 1000)));
 
-						if (app != null) {
-							if (app.getActive()) {
-								if (!(app.getReadOnly() && isWriteRequest(request))) {
-									if (signer.isValidSignature(request, app.getSecret())) {
-										SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
-									} else {
-										RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-												"Request signature is invalid.");
-										return;
-									}
+		if (!StringUtils.isBlank(appid)) {
+			if (!StringUtils.isBlank(date)) {
+				if (!requestExpired) {
+					App app = Para.getDAO().read(App.id(appid));
+
+					if (app != null) {
+						if (app.getActive()) {
+							if (!(app.getReadOnly() && isWriteRequest(request))) {
+								if (signer.isValidSignature(request, app.getSecret())) {
+									SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
 								} else {
 									RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-											"App is in read-only mode.");
-									return;
+											"Request signature is invalid.");
+									return false;
 								}
 							} else {
 								RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-										"App not active.");
-								return;
+										"App is in read-only mode.");
+								return false;
 							}
 						} else {
-							RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND,
-									"App not found.");
-							return;
+							RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+									"App not active.");
+							return false;
 						}
 					} else {
-						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-								"Request has expired.");
-						return;
+						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND,
+								"App not found.");
+						return false;
 					}
 				} else {
 					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-							"'X-Amz-Date' header/parameter is not set!");
-					return;
+							"Request has expired.");
+					return false;
 				}
 			} else {
-				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
-						"Credentials are missing.");
-				return;
+				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
+						"'X-Amz-Date' header/parameter is not set!");
+				return false;
 			}
+		} else {
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
+					"Credentials are missing.");
+			return false;
 		}
-
-		chain.doFilter(request, res);
+		return true;
 	}
-
 
 	private class BufferedRequestWrapper extends HttpServletRequestWrapper {
 
