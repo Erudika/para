@@ -36,6 +36,7 @@ import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -498,12 +499,11 @@ public class ParaClientIT {
 		assertFalse(constraint.get(kittenType).isEmpty());
 
 		// Permissions
-//		App app = pc.me();
 		Map<String, Map<String, List<String>>> permits = pc.resourcePermissions();
 		assertTrue(permits.isEmpty());
 
-//		assertTrue(pc.grantResourcePermission(null, dogsType, EnumSet.noneOf(AllowedMethods.class)).isEmpty());
-//		assertTrue(pc.grantResourcePermission(" ", "", EnumSet.noneOf(AllowedMethods.class)).isEmpty());
+		assertNull(pc.grantResourcePermission(null, dogsType, EnumSet.noneOf(AllowedMethods.class)));
+		assertNull(pc.grantResourcePermission(" ", "", EnumSet.noneOf(AllowedMethods.class)));
 
 		pc.grantResourcePermission(u1.getId(), dogsType, AllowedMethods.READ);
 		permits = pc.resourcePermissions(u1.getId());

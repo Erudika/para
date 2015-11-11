@@ -909,16 +909,4 @@ public class App implements ParaObject {
 			}
 		}
 	}
-//
-//	public static void main(String[] args) throws JsonProcessingException, IOException {
-//		EnumSet<AllowedMethods> s = EnumSet.of(AllowedMethods.READ_ONLY, AllowedMethods.PATCH);
-//		String ss = ParaObjectUtils.getJsonWriter().writeValueAsString(s);
-//		String sss = "[\"*\"]";
-//		System.out.println(ss);
-//		System.out.println("--------");
-//		System.out.println(ParaObjectUtils.getJsonReader(List.class).readValue(ss));
-//		System.out.println("--------");
-//		Set<AllowedMethods> aa = ParaObjectUtils.getJsonReader(Set.class).readValue(sss);
-//		System.out.println(aa);
-//	}
 }
