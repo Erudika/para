@@ -72,6 +72,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 		RememberMeAuthenticationProvider rmeProvider = new RememberMeAuthenticationProvider(Config.APP_SECRET_KEY);
 		auth.authenticationProvider(rmeProvider);
+
+		JWTAuthenticationProvider jwtProvider = new JWTAuthenticationProvider();
+		auth.authenticationProvider(jwtProvider);
 	}
 
 	/**
@@ -215,6 +218,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		githubFilter.setAuthenticationFailureHandler(failureHandler);
 		githubFilter.setRememberMeServices(tbrms);
 
+		JWTRestfulAuthFilter jwtFilter = new JWTRestfulAuthFilter("/" + JWTRestfulAuthFilter.JWT_ACTION);
+		jwtFilter.setAuthenticationManager(authenticationManager());
+
 		http.addFilterAfter(passwordFilter, BasicAuthenticationFilter.class);
 		http.addFilterAfter(openidFilter, BasicAuthenticationFilter.class);
 		http.addFilterAfter(facebookFilter, BasicAuthenticationFilter.class);
@@ -222,10 +228,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		http.addFilterAfter(linkedinFilter, BasicAuthenticationFilter.class);
 		http.addFilterAfter(twitterFilter, BasicAuthenticationFilter.class);
 		http.addFilterAfter(githubFilter, BasicAuthenticationFilter.class);
+		http.addFilterAfter(jwtFilter, RememberMeAuthenticationFilter.class);
 
 		if (enableRestFilter) {
 			RestAuthFilter restFilter = new RestAuthFilter(new Signer());
-			http.addFilterAfter(restFilter, RememberMeAuthenticationFilter.class);
+			http.addFilterAfter(restFilter, JWTRestfulAuthFilter.class);
 		}
 	}
 
