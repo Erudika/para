@@ -18,7 +18,7 @@
 package com.erudika.para.security;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
@@ -46,15 +46,18 @@ public class UserAuthentication implements Authentication {
 	 * @return a list of roles
 	 */
 	public Collection<GrantedAuthority> getAuthorities() {
-		return new HashSet<GrantedAuthority>(principal.getAuthorities());
+		if (principal == null) {
+			return Collections.emptyList();
+		}
+		return Collections.unmodifiableCollection(principal.getAuthorities());
 	}
 
 	/**
-	 * The password/credentials of a user
+	 * Always null (unused).
 	 * @return credentials string
 	 */
 	public Object getCredentials() {
-		return principal.getPassword();
+		return null;
 	}
 
 	/**
@@ -82,7 +85,7 @@ public class UserAuthentication implements Authentication {
 	}
 
 	/**
-	 * Sets the authentication status
+	 * Not supported.
 	 * @param isAuthenticated true if authenticated
 	 */
 	public void setAuthenticated(boolean isAuthenticated) {
@@ -94,6 +97,9 @@ public class UserAuthentication implements Authentication {
 	 * @return the identifier
 	 */
 	public String getName() {
+		if (principal == null) {
+			return null;
+		}
 		return principal.getIdentifier();
 	}
 }

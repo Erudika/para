@@ -99,7 +99,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 						RestUtils.extractResourceName(request), request.getMethod());
 				if ((isRootApp && !u.isAdmin()) || !isUserAllowed) {
 					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-							"User doesn't have permission to access this resource.");
+							"You don't have permission to access this resource.");
 					return false;
 				}
 			} else {
@@ -108,7 +108,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 			}
 		} else {
 			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-					"User doesn't have permission to access this resource.");
+					"You don't have permission to access this resource.");
 			return false;
 		}
 		return true;

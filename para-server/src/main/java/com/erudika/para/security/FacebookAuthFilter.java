@@ -48,6 +48,8 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
  */
 public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 
+	private final CloseableHttpClient httpclient;
+	private final ObjectReader jreader;
 	private static final String PROFILE_URL = "https://graph.facebook.com/me?"
 			+ "fields=name,email,picture.width(400).type(square).height(400)&access_token=";
 	private static final String TOKEN_URL = "https://graph.facebook.com/oauth/access_token?"
@@ -63,6 +65,8 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 */
 	public FacebookAuthFilter(String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
+		this.jreader = ParaObjectUtils.getJsonReader(Map.class);
+		this.httpclient = HttpClients.createDefault();
 	}
 
 	/**
@@ -74,12 +78,10 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * @throws AuthenticationException ex
 	 */
 	@Override
-	@SuppressWarnings("unchecked")
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws IOException, AuthenticationException {
 		final String requestURI = request.getRequestURI();
-		Authentication userAuth = null;
-		User user = new User();
+		UserAuthentication userAuth = null;
 
 		if (requestURI.endsWith(FACEBOOK_ACTION)) {
 			String authCode = request.getParameter("code");
@@ -87,60 +89,76 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 				String url = Utils.formatMessage(TOKEN_URL, authCode,
 						request.getRequestURL().toString(), Config.FB_APP_ID, Config.FB_SECRET);
 
-				CloseableHttpClient httpclient = HttpClients.createDefault();
 				HttpGet tokenPost = new HttpGet(url);
 				CloseableHttpResponse resp1 = httpclient.execute(tokenPost);
-				ObjectReader jreader = ParaObjectUtils.getJsonReader(Map.class);
 
 				if (resp1 != null && resp1.getEntity() != null) {
 					String token = EntityUtils.toString(resp1.getEntity(), Config.DEFAULT_ENCODING);
 					if (token != null && token.startsWith("access_token")) {
-						// got valid token
 						String accessToken = token.substring(token.indexOf("=") + 1, token.indexOf("&"));
-						HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
-						CloseableHttpResponse resp2 = httpclient.execute(profileGet);
-						HttpEntity respEntity = resp2.getEntity();
-						String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
-
-						if (respEntity != null && Utils.isJsonType(ctype)) {
-							Map<String, Object> profile = jreader.readValue(resp2.getEntity().getContent());
-
-							if (profile != null && profile.containsKey("id")) {
-								String fbId = (String) profile.get("id");
-								Map<String, Object> pic = (Map<String, Object>) profile.get("picture");
-								String email = (String) profile.get("email");
-								String name = (String) profile.get("name");
-
-								user.setIdentifier(Config.FB_PREFIX.concat(fbId));
-								user = User.readUserForIdentifier(user);
-								if (user == null) {
-									//user is new
-									user = new User();
-									user.setActive(true);
-									user.setEmail(StringUtils.isBlank(email) ? fbId + "@facebook.com" : email);
-									user.setName(StringUtils.isBlank(name) ? "No Name" : name);
-									user.setPassword(new UUID().toString());
-									user.setIdentifier(Config.FB_PREFIX.concat(fbId));
-									String id = user.create();
-									if (id == null) {
-										throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
-									}
-								}
-								user.setPicture(getPicture(fbId, pic));
-								userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
-							}
-							EntityUtils.consumeQuietly(resp2.getEntity());
-						}
-						EntityUtils.consumeQuietly(resp1.getEntity());
+						userAuth = getOrCreateUser(accessToken);
 					}
+					EntityUtils.consumeQuietly(resp1.getEntity());
 				}
 			}
 		}
+
+		User user = SecurityUtils.getAuthenticatedUser(userAuth);
 
 		if (userAuth == null || user == null || user.getIdentifier() == null) {
 			throw new BadCredentialsException("Bad credentials.");
 		} else if (!user.getActive()) {
 			throw new LockedException("Account is locked.");
+		}
+		return userAuth;
+	}
+
+	/**
+	 * Calls the Facebook API to get the user profile using a given access token.
+	 * @param accessToken access token
+	 * @return {@link UserAuthentication} object or null if something went wrong
+	 * @throws IOException
+	 * @throws AuthenticationException
+	 */
+	@SuppressWarnings("unchecked")
+	protected UserAuthentication getOrCreateUser(String accessToken) throws IOException, AuthenticationException {
+		UserAuthentication userAuth = null;
+		if (accessToken != null) {
+			User user = new User();
+			HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
+			CloseableHttpResponse resp2 = httpclient.execute(profileGet);
+			HttpEntity respEntity = resp2.getEntity();
+			String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
+
+			if (respEntity != null && Utils.isJsonType(ctype)) {
+				Map<String, Object> profile = jreader.readValue(resp2.getEntity().getContent());
+
+				if (profile != null && profile.containsKey("id")) {
+					String fbId = (String) profile.get("id");
+					Map<String, Object> pic = (Map<String, Object>) profile.get("picture");
+					String email = (String) profile.get("email");
+					String name = (String) profile.get("name");
+
+					user.setIdentifier(Config.FB_PREFIX.concat(fbId));
+					user = User.readUserForIdentifier(user);
+					if (user == null) {
+						//user is new
+						user = new User();
+						user.setActive(true);
+						user.setEmail(StringUtils.isBlank(email) ? fbId + "@facebook.com" : email);
+						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
+						user.setPassword(new UUID().toString());
+						user.setIdentifier(Config.FB_PREFIX.concat(fbId));
+						String id = user.create();
+						if (id == null) {
+							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
+						}
+					}
+					user.setPicture(getPicture(fbId, pic));
+					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+				}
+				EntityUtils.consumeQuietly(resp2.getEntity());
+			}
 		}
 		return userAuth;
 	}

@@ -86,7 +86,7 @@ public class AppAuthentication implements Authentication {
 	}
 
 	/**
-	 * Sets the authentication status
+	 * Not supported.
 	 * @param isAuthenticated true if authenticated
 	 */
 	public void setAuthenticated(boolean isAuthenticated) {
@@ -98,6 +98,9 @@ public class AppAuthentication implements Authentication {
 	 * @return the identifier
 	 */
 	public String getName() {
+		if (principal == null) {
+			return null;
+		}
 		return principal.getId();
 	}
 }

@@ -50,6 +50,8 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
  */
 public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 
+	private final CloseableHttpClient httpclient;
+	private final ObjectReader jreader;
 	private static final String FLOW_URL1 = "https://api.twitter.com/oauth/request_token";
 	private static final String FLOW_URL2 = "https://api.twitter.com/oauth/authenticate?";
 	private static final String FLOW_URL3 = "https://api.twitter.com/oauth/access_token";
@@ -66,6 +68,8 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 */
 	public TwitterAuthFilter(final String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
+		this.jreader = ParaObjectUtils.getJsonReader(Map.class);
+		this.httpclient = HttpClients.createDefault();
 	}
 
 	/**
@@ -80,12 +84,10 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws IOException, AuthenticationException {
 		final String requestURI = request.getRequestURI();
-		Authentication userAuth = null;
-		User user = new User();
+		UserAuthentication userAuth = null;
 
 		if (requestURI.endsWith(TWITTER_ACTION)) {
 			String verifier = request.getParameter("oauth_verifier");
-			CloseableHttpClient httpclient = HttpClients.createDefault();
 
 			if (verifier == null) {
 				String callback = Utils.urlEncode(request.getRequestURL().toString());
@@ -121,63 +123,78 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 				if (resp2.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
 					String decoded = EntityUtils.toString(resp2.getEntity());
-					String oauthToken = null, oauthSecret = null, userid = null;
+					String oauthToken = null;
+					String oauthSecret = null;
 					for (String pair : decoded.split("&")) {
 						if (pair.startsWith("oauth_token_secret")) {
 							oauthSecret = pair.substring(19);
 						} else if (pair.startsWith("oauth_token")) {
 							oauthToken = pair.substring(12);
-						} else if (pair.startsWith("user_id")) {
-							userid = pair.substring(8);
 						}
 					}
-
-					if (oauthToken != null && oauthSecret != null) {
-						Map<String, String[]> params2 = new HashMap<String, String[]>();
-						HttpGet profileGet = new HttpGet(PROFILE_URL);
-						profileGet.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("GET", PROFILE_URL,
-								params2, Config.TWITTER_APP_ID, Config.TWITTER_SECRET, oauthToken, oauthSecret));
-						CloseableHttpResponse resp3 = httpclient.execute(profileGet);
-
-						if (resp3.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
-							ObjectReader jreader = ParaObjectUtils.getJsonReader(Map.class);
-							Map<String, Object> profile = jreader.readValue(resp3.getEntity().getContent());
-
-							if (profile != null && profile.containsKey("id_str")) {
-								String twitterId = (String) profile.get("id_str");
-								String pic = (String) profile.get("profile_image_url_https");
-								String alias = (String) profile.get("screen_name");
-								String name = (String) profile.get("name");
-
-								user.setIdentifier(Config.TWITTER_PREFIX + twitterId);
-								user = User.readUserForIdentifier(user);
-								if (user == null) {
-									//user is new
-									user = new User();
-									user.setActive(true);
-									// Twitter API is stupid!
-									user.setEmail(alias + "@twitter.com");
-									user.setName(StringUtils.isBlank(name) ? "No Name" : name);
-									user.setPassword(new UUID().toString());
-									user.setIdentifier(Config.TWITTER_PREFIX + twitterId);
-									String id = user.create();
-									if (id == null) {
-										throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
-									}
-								}
-								user.setPicture(getPicture(pic));
-								userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
-							}
-						}
-					}
+					userAuth = getOrCreateUser(oauthToken, oauthSecret);
 				}
 			}
 		}
+
+		User user = SecurityUtils.getAuthenticatedUser(userAuth);
 
 		if (userAuth == null || user == null || user.getIdentifier() == null) {
 			throw new BadCredentialsException("Bad credentials.");
 		} else if (!user.getActive()) {
 			throw new LockedException("Account is locked.");
+		}
+		return userAuth;
+	}
+
+	/**
+	 * Calls the Twitter API to get the user profile using a given access token.
+	 * @param oauthToken OAuth token
+	 * @param oauthSecret OAuth secret
+	 * @return {@link UserAuthentication} object or null if something went wrong
+	 * @throws IOException
+	 * @throws AuthenticationException
+	 */
+	protected UserAuthentication getOrCreateUser(String oauthToken, String oauthSecret)
+			throws IOException, AuthenticationException {
+		UserAuthentication userAuth = null;
+		if (oauthToken != null && oauthSecret != null) {
+			User user = new User();
+			Map<String, String[]> params2 = new HashMap<String, String[]>();
+			HttpGet profileGet = new HttpGet(PROFILE_URL);
+			profileGet.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("GET", PROFILE_URL,
+					params2, Config.TWITTER_APP_ID, Config.TWITTER_SECRET, oauthToken, oauthSecret));
+			CloseableHttpResponse resp3 = httpclient.execute(profileGet);
+
+			if (resp3.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
+				Map<String, Object> profile = jreader.readValue(resp3.getEntity().getContent());
+
+				if (profile != null && profile.containsKey("id_str")) {
+					String twitterId = (String) profile.get("id_str");
+					String pic = (String) profile.get("profile_image_url_https");
+					String alias = (String) profile.get("screen_name");
+					String name = (String) profile.get("name");
+
+					user.setIdentifier(Config.TWITTER_PREFIX + twitterId);
+					user = User.readUserForIdentifier(user);
+					if (user == null) {
+						//user is new
+						user = new User();
+						user.setActive(true);
+						// Twitter API is stupid!
+						user.setEmail(alias + "@twitter.com");
+						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
+						user.setPassword(new UUID().toString());
+						user.setIdentifier(Config.TWITTER_PREFIX + twitterId);
+						String id = user.create();
+						if (id == null) {
+							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
+						}
+					}
+					user.setPicture(getPicture(pic));
+					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+				}
+			}
 		}
 		return userAuth;
 	}

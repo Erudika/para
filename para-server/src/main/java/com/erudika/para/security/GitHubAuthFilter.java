@@ -51,6 +51,8 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
  */
 public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 
+	private final CloseableHttpClient httpclient;
+	private final ObjectReader jreader;
 	private static final String PROFILE_URL = "https://api.github.com/user";
 	private static final String TOKEN_URL = "https://github.com/login/oauth/access_token";
 	private static final String PAYLOAD = "code={0}&redirect_uri={1}&scope=&client_id={2}"
@@ -66,6 +68,8 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 */
 	public GitHubAuthFilter(final String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
+		this.jreader = ParaObjectUtils.getJsonReader(Map.class);
+		this.httpclient = HttpClients.createDefault();
 	}
 
 	/**
@@ -80,8 +84,7 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws IOException, AuthenticationException {
 		final String requestURI = request.getRequestURI();
-		Authentication userAuth = null;
-		User user = new User();
+		UserAuthentication userAuth = null;
 
 		if (requestURI.endsWith(GITHUB_ACTION)) {
 			String authCode = request.getParameter("code");
@@ -91,64 +94,79 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 						URLEncoder.encode(request.getRequestURL().toString(), "UTF-8"),
 						Config.GITHUB_APP_ID, Config.GITHUB_SECRET);
 
-				CloseableHttpClient httpclient = HttpClients.createDefault();
 				HttpPost tokenPost = new HttpPost(TOKEN_URL);
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 				tokenPost.setHeader(HttpHeaders.ACCEPT, "application/json");
 				tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
 				CloseableHttpResponse resp1 = httpclient.execute(tokenPost);
-				ObjectReader jreader = ParaObjectUtils.getJsonReader(Map.class);
 
 				if (resp1 != null && resp1.getEntity() != null) {
 					Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
 					if (token != null && token.containsKey("access_token")) {
-						// got valid token
-						HttpGet profileGet = new HttpGet(PROFILE_URL);
-						profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token.get("access_token"));
-						profileGet.setHeader(HttpHeaders.ACCEPT, "application/json");
-						CloseableHttpResponse resp2 = httpclient.execute(profileGet);
-						HttpEntity respEntity = resp2.getEntity();
-						String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
-
-						if (respEntity != null && Utils.isJsonType(ctype)) {
-							Map<String, Object> profile = jreader.readValue(resp2.getEntity().getContent());
-
-							if (profile != null && profile.containsKey("id")) {
-								Integer githubId = (Integer) profile.get("id");
-								String pic = (String) profile.get("avatar_url");
-								String email = (String) profile.get("email");
-								String name = (String) profile.get("name");
-
-								user.setIdentifier(Config.GITHUB_PREFIX + githubId);
-								user = User.readUserForIdentifier(user);
-								if (user == null) {
-									//user is new
-									user = new User();
-									user.setActive(true);
-									user.setEmail(StringUtils.isBlank(email) ? githubId + "@github.com" : email);
-									user.setName(StringUtils.isBlank(name) ? "No Name" : name);
-									user.setPassword(new UUID().toString());
-									user.setIdentifier(Config.GITHUB_PREFIX + githubId);
-									String id = user.create();
-									if (id == null) {
-										throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
-									}
-								}
-								user.setPicture(getPicture(pic));
-								userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
-							}
-							EntityUtils.consumeQuietly(resp2.getEntity());
-						}
-						EntityUtils.consumeQuietly(resp1.getEntity());
+						userAuth = getOrCreateUser((String) token.get("access_token"));
 					}
+					EntityUtils.consumeQuietly(resp1.getEntity());
 				}
 			}
 		}
+
+		User user = SecurityUtils.getAuthenticatedUser(userAuth);
 
 		if (userAuth == null || user == null || user.getIdentifier() == null) {
 			throw new BadCredentialsException("Bad credentials.");
 		} else if (!user.getActive()) {
 			throw new LockedException("Account is locked.");
+		}
+		return userAuth;
+	}
+
+	/**
+	 * Calls the GitHub API to get the user profile using a given access token.
+	 * @param accessToken access token
+	 * @return {@link UserAuthentication} object or null if something went wrong
+	 * @throws IOException
+	 * @throws AuthenticationException
+	 */
+	protected UserAuthentication getOrCreateUser(String accessToken) throws IOException, AuthenticationException {
+		UserAuthentication userAuth = null;
+		if (accessToken != null) {
+			User user = new User();
+			HttpGet profileGet = new HttpGet(PROFILE_URL);
+			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+			profileGet.setHeader(HttpHeaders.ACCEPT, "application/json");
+			CloseableHttpResponse resp2 = httpclient.execute(profileGet);
+			HttpEntity respEntity = resp2.getEntity();
+			String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
+
+			if (respEntity != null && Utils.isJsonType(ctype)) {
+				Map<String, Object> profile = jreader.readValue(resp2.getEntity().getContent());
+
+				if (profile != null && profile.containsKey("id")) {
+					Integer githubId = (Integer) profile.get("id");
+					String pic = (String) profile.get("avatar_url");
+					String email = (String) profile.get("email");
+					String name = (String) profile.get("name");
+
+					user.setIdentifier(Config.GITHUB_PREFIX + githubId);
+					user = User.readUserForIdentifier(user);
+					if (user == null) {
+						//user is new
+						user = new User();
+						user.setActive(true);
+						user.setEmail(StringUtils.isBlank(email) ? githubId + "@github.com" : email);
+						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
+						user.setPassword(new UUID().toString());
+						user.setIdentifier(Config.GITHUB_PREFIX + githubId);
+						String id = user.create();
+						if (id == null) {
+							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
+						}
+					}
+					user.setPicture(getPicture(pic));
+					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+				}
+				EntityUtils.consumeQuietly(resp2.getEntity());
+			}
 		}
 		return userAuth;
 	}
