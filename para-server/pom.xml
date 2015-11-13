@@ -13,7 +13,7 @@
 
 	<properties>
 		<jerseyVer>2.16</jerseyVer>
-		<springVer>4.0.2.RELEASE</springVer>
+		<springVer>4.0.3.RELEASE</springVer>
 		<springVer2>1.2.7.RELEASE</springVer2>
 		<hazelcastVer>3.5.3</hazelcastVer>
 	</properties>
@@ -147,6 +147,11 @@
 			<version>7.0</version>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.nimbusds</groupId>
+			<artifactId>nimbus-jose-jwt</artifactId>
+			<version>4.3.1</version>
+		</dependency>
 
 		<!-- TESTING -->
 		<dependency>
@@ -159,6 +164,12 @@
 			<groupId>org.elasticmq</groupId>
 			<artifactId>elasticmq-rest-sqs_2.10</artifactId>
 			<version>0.7.1</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-mock</artifactId>
+			<version>2.0.8</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -185,7 +196,7 @@
 			<plugin>
 				<groupId>org.eclipse.jetty</groupId>
 				<artifactId>jetty-maven-plugin</artifactId>
-				<version>9.3.0.v20150612</version>
+				<version>9.3.5.v20151012</version>
 				<configuration>
 					<systemProperties>
 						<systemProperty>
