@@ -19,8 +19,17 @@ package com.erudika.para.security;
 
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import java.text.ParseException;
+import java.util.Date;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -29,6 +38,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public final class SecurityUtils {
+
+	private static final Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
 
 	private SecurityUtils() { }
 
@@ -80,5 +91,56 @@ public final class SecurityUtils {
 				session.invalidate();
 			}
 		}
+	}
+
+	/**
+	 * Validates a JWT token. Only signature is checked.
+	 * @param app app
+	 * @param jwt token
+	 * @return true if signature is valid
+	 */
+	public static boolean isValidButExpiredJWToken(App app, SignedJWT jwt) {
+		return isValidJWToken(app, jwt, true);
+	}
+
+	/**
+	 * Validates a JWT token.
+	 * @param app app
+	 * @param jwt token
+	 * @return true if token is valid and not expired
+	 */
+	public static boolean isValidJWToken(App app, SignedJWT jwt) {
+		return isValidJWToken(app, jwt, false);
+	}
+
+	/**
+	 * Validates a JWT token. Only signature is checked.
+	 * @param app app
+	 * @param jwt token
+	 * @param checkSignatureOnly only check the signature
+	 * @return true if token is valid
+	 */
+	private static boolean isValidJWToken(App app, SignedJWT jwt, boolean checkSignatureOnly) {
+		try {
+			if (app != null && jwt != null) {
+				JWSVerifier verifier = new MACVerifier(app.getSecret());
+				if (jwt.verify(verifier)) {
+					Date referenceTime = new Date();
+					JWTClaimsSet claims = jwt.getJWTClaimsSet();
+
+					Date expirationTime = claims.getExpirationTime();
+					Date notBeforeTime = claims.getNotBeforeTime();
+					boolean expired = expirationTime == null || expirationTime.before(referenceTime);
+					boolean notYetValid = notBeforeTime == null || notBeforeTime.after(referenceTime);
+
+					return checkSignatureOnly ? !notYetValid : !(expired || notYetValid);
+				}
+			}
+		} catch (JOSEException e) {
+			logger.warn(null, e);
+		} catch (ParseException ex) {
+			logger.warn(null, ex);
+		}
+		return false;
 	}
 }
