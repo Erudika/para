@@ -53,6 +53,13 @@ public class JWTAuthentication extends UserAuthentication {
 		return null;
 	}
 
+	public String getUserid() {
+		if (claims != null) {
+			return claims.getSubject();
+		}
+		return null;
+	}
+
 	public JWTClaimsSet getClaims() {
 		return claims;
 	}
