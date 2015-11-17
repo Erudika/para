@@ -102,7 +102,7 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 				if (resp1 != null && resp1.getEntity() != null) {
 					Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
 					if (token != null && token.containsKey("access_token")) {
-						userAuth = getOrCreateUser((String) token.get("access_token"));
+						userAuth = getOrCreateUser(null, (String) token.get("access_token"));
 					}
 					EntityUtils.consumeQuietly(resp1.getEntity());
 				}
@@ -121,15 +121,18 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	/**
 	 * Calls the Google+ API to get the user profile using a given access token.
+	 * @param appid app identifier of the parent app, use null for root app
 	 * @param accessToken access token
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException
 	 * @throws AuthenticationException
 	 */
-	protected UserAuthentication getOrCreateUser(String accessToken) throws IOException, AuthenticationException {
+	protected UserAuthentication getOrCreateUser(String appid, String accessToken)
+			throws IOException, AuthenticationException {
 		UserAuthentication userAuth = null;
 		if (accessToken != null) {
 			User user = new User();
+			user.setAppid(appid);
 			HttpGet profileGet = new HttpGet(PROFILE_URL);
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 			CloseableHttpResponse resp2 = httpclient.execute(profileGet);
@@ -155,7 +158,7 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());
 						user.setIdentifier(Config.GPLUS_PREFIX.concat(googleSubId));
-						String id = user.create();
+						String id = StringUtils.isBlank(appid) ? user.create() : user.getDao().create(appid, user);
 						if (id == null) {
 							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 						}

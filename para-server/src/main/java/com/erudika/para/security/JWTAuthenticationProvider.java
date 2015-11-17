@@ -19,12 +19,7 @@ package com.erudika.para.security;
 
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
-import com.erudika.para.utils.Config;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSVerifier;
-import com.nimbusds.jose.crypto.MACVerifier;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
+import com.erudika.para.core.User;
 import java.util.Date;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.AuthenticationServiceException;
@@ -48,46 +43,23 @@ public class JWTAuthenticationProvider implements AuthenticationProvider {
 	@Override
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
 		JWTAuthentication jwtToken = (JWTAuthentication) authentication;
-		if (jwtToken != null) {
-			if (!supports(authentication.getClass())) {
-				return null;
-			}
-			try {
-				SignedJWT jwt = jwtToken.getJwt();
-				App app = Para.getDAO().read(jwtToken.getAppid());
-				if (app != null) {
-					JWSVerifier verifier = new MACVerifier(app.getSecret());
-					if (jwt.verify(verifier)) {
-						Date referenceTime = new Date();
-						JWTClaimsSet claims = jwtToken.getClaims();
-
-						Date expirationTime = claims.getExpirationTime();
-						if (expirationTime == null || expirationTime.before(referenceTime)) {
-							throw new BadCredentialsException("Expired token.");
-						}
-
-						Date notBeforeTime = claims.getNotBeforeTime();
-						if (notBeforeTime == null || notBeforeTime.after(referenceTime)) {
-							throw new BadCredentialsException("Invalid 'nbf' claim.");
-						}
-
-						String issuerReference = Config.getConfigParam("jwt.issuer", "paraio.org");
-						String issuer = claims.getIssuer();
-						if (!issuerReference.equals(issuer)) {
-							throw new BadCredentialsException("Invalid issuer.");
-						}
-//						jwtToken.setAuthenticated(true);
-					} else {
-						throw new BadCredentialsException("Invalid token signature.");
-					}
-				} else {
-					throw new AuthenticationServiceException("App not found.");
+		if (jwtToken != null && supports(authentication.getClass())) {
+			User user = SecurityUtils.getAuthenticatedUser(authentication);
+			if (user != null) {
+				boolean userMustLogin = user.getRevokeTokensAt() != null &&
+							new Date(user.getRevokeTokensAt()).before(new Date());
+				if (userMustLogin) {
+					throw new BadCredentialsException("Invalid or expired token.");
 				}
-			} catch (JOSEException e) {
-				throw new BadCredentialsException("Invalid token signature.");
+				App app = Para.getDAO().read(jwtToken.getAppid());
+				if (!SecurityUtils.isValidJWToken(app, jwtToken.getJwt())) {
+					throw new BadCredentialsException("Invalid or expired token.");
+				}
+			} else {
+				throw new AuthenticationServiceException("User not found.");
 			}
 		} else {
-			throw new BadCredentialsException("Unsupported token type.");
+			throw new AuthenticationServiceException("Unsupported token type.");
 		}
 		return jwtToken;
 	}

@@ -132,7 +132,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 							oauthToken = pair.substring(12);
 						}
 					}
-					userAuth = getOrCreateUser(oauthToken, oauthSecret);
+					userAuth = getOrCreateUser(null, oauthToken, oauthSecret);
 				}
 			}
 		}
@@ -149,17 +149,19 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	/**
 	 * Calls the Twitter API to get the user profile using a given access token.
+	 * @param appid app identifier of the parent app, use null for root app
 	 * @param oauthToken OAuth token
 	 * @param oauthSecret OAuth secret
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException
 	 * @throws AuthenticationException
 	 */
-	protected UserAuthentication getOrCreateUser(String oauthToken, String oauthSecret)
+	protected UserAuthentication getOrCreateUser(String appid, String oauthToken, String oauthSecret)
 			throws IOException, AuthenticationException {
 		UserAuthentication userAuth = null;
 		if (oauthToken != null && oauthSecret != null) {
 			User user = new User();
+			user.setAppid(appid);
 			Map<String, String[]> params2 = new HashMap<String, String[]>();
 			HttpGet profileGet = new HttpGet(PROFILE_URL);
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("GET", PROFILE_URL,
@@ -186,7 +188,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());
 						user.setIdentifier(Config.TWITTER_PREFIX + twitterId);
-						String id = user.create();
+						String id = StringUtils.isBlank(appid) ? user.create() : user.getDao().create(appid, user);
 						if (id == null) {
 							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 						}

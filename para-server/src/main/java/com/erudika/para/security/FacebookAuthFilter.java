@@ -96,7 +96,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 					String token = EntityUtils.toString(resp1.getEntity(), Config.DEFAULT_ENCODING);
 					if (token != null && token.startsWith("access_token")) {
 						String accessToken = token.substring(token.indexOf("=") + 1, token.indexOf("&"));
-						userAuth = getOrCreateUser(accessToken);
+						userAuth = getOrCreateUser(null, accessToken);
 					}
 					EntityUtils.consumeQuietly(resp1.getEntity());
 				}
@@ -115,16 +115,19 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	/**
 	 * Calls the Facebook API to get the user profile using a given access token.
+	 * @param appid app identifier of the parent app, use null for root app
 	 * @param accessToken access token
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException
 	 * @throws AuthenticationException
 	 */
 	@SuppressWarnings("unchecked")
-	protected UserAuthentication getOrCreateUser(String accessToken) throws IOException, AuthenticationException {
+	protected UserAuthentication getOrCreateUser(String appid, String accessToken)
+			throws IOException, AuthenticationException {
 		UserAuthentication userAuth = null;
 		if (accessToken != null) {
 			User user = new User();
+			user.setAppid(appid);
 			HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
 			CloseableHttpResponse resp2 = httpclient.execute(profileGet);
 			HttpEntity respEntity = resp2.getEntity();
@@ -149,7 +152,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());
 						user.setIdentifier(Config.FB_PREFIX.concat(fbId));
-						String id = user.create();
+						String id = StringUtils.isBlank(appid) ? user.create() : user.getDao().create(appid, user);
 						if (id == null) {
 							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 						}

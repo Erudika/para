@@ -19,6 +19,7 @@ package com.erudika.para.security;
 
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
+import com.erudika.para.core.CoreUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
 import com.erudika.para.utils.Config;
@@ -42,7 +43,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.HttpHeaders;
 import org.apache.commons.lang3.StringUtils;
-import org.joda.time.DateTime;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -103,70 +104,135 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			throws IOException, ServletException {
 		HttpServletRequest request = (HttpServletRequest) req;
 		HttpServletResponse response = (HttpServletResponse) res;
-
 		if (authenticationRequestMatcher.matches(request)) {
 			if (HttpMethod.POST.equals(request.getMethod())) {
-				String provider = request.getParameter("provider");
-				String appid = request.getParameter("appid");
-				String token = request.getParameter("token");
-
-				if (provider != null && appid != null && token != null) {
-					UserAuthentication userAuth = getOrCreateUser(provider, token);
-					User user = SecurityUtils.getAuthenticatedUser(userAuth);
-					App app = Para.getDAO().read(App.id(user.getAppid()));
-
-					if (app != null) {
-						// issue token
-						Date now = new Date();
-						JWTClaimsSet.Builder claimsSet = new JWTClaimsSet.Builder();
-						claimsSet.subject(user.getId());
-						claimsSet.issueTime(now);
-						claimsSet.expirationTime(new DateTime().plusHours(24).toDate());
-						claimsSet.notBeforeTime(now);
-						claimsSet.claim("appid", app.getId());
-
-						String newJWT = generateJWT(claimsSet.build(), app.getSecret());
-						if (newJWT != null) {
-							RestUtils.returnObjectResponse(response, Collections.singletonMap("access_token", newJWT));
-							return;
-						}
-					} else {
-						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-							"User belongs to an app that does not exist.");
-						return;
-					}
-				}
-				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-						"Some of the required query parameters 'provider', 'appid', 'token', are missing.");
-				return;
-			} else if (HttpMethod.PUT.equals(request.getMethod())) {
-				// revoke token
-				// TODO
+				newTokenHandler(request, response);
+			} else if (HttpMethod.GET.equals(request.getMethod())) {
+				renewTokenHandler(request, response);
+			} else if (HttpMethod.DELETE.equals(request.getMethod())) {
+				revokeAllTokensHandler(request, response);
 			}
+			return;
 		} else if (RestRequestMatcher.INSTANCE.matches(request) &&
 				SecurityContextHolder.getContext().getAuthentication() == null) {
-			// validate token if present
-			String token = request.getHeader(HttpHeaders.AUTHORIZATION);
-			if (token == null) {
-				token = request.getParameter(token);
-			}
-
-			if (!StringUtils.isBlank(token) && token.contains("Bearer")) {
-				try {
-					SignedJWT jwt = SignedJWT.parse(token.substring(6).trim());
-					Authentication auth = authenticationManager.authenticate(new JWTAuthentication(null).withJWT(jwt));
-					// success!
-					SecurityContextHolder.getContext().setAuthentication(auth);
-				} catch (ParseException e) {
-					logger.warn("Unable to parse JWT token.", e);
-				} catch (AuthenticationException authenticationException) {
-					logger.warn("SecurityContextHolder not populated with JWToken, as " +
-							"AuthenticationManager rejected Authentication.", authenticationException);
+			try {
+				// validate token if present
+				JWTAuthentication jwt = getJWTfromRequest(request);
+				if (jwt != null) {
+					User user = Para.getDAO().read(new App(jwt.getAppid()).getAppIdentifier(), jwt.getUserid());
+					if (user != null) {
+						Authentication auth = authenticationManager.authenticate(jwt);
+						// success!
+						SecurityContextHolder.getContext().setAuthentication(auth);
+					}
 				}
+			} catch (AuthenticationException authenticationException) {
+				logger.warn("AuthenticationManager rejected JWT Authentication.", authenticationException);
 			}
 		}
 
 		chain.doFilter(request, response);
+	}
+
+	private boolean revokeAllTokensHandler(HttpServletRequest request, HttpServletResponse response) {
+		String at = request.getParameter("revokeTokensAt");
+		Long atStamp = NumberUtils.toLong(at, System.currentTimeMillis());
+		JWTAuthentication jwt = getJWTfromRequest(request);
+		if (jwt != null) {
+			User user = SecurityUtils.getAuthenticatedUser(jwt);
+			if (user != null) {
+				user.setRevokeTokensAt(atStamp);
+				CoreUtils.overwrite(new App(jwt.getAppid()).getAppIdentifier(), user);
+				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_OK,
+						"All tokens will be revoked at " + new Date(atStamp));
+			}
+		}
+		RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
+				"Invalid or expired token.");
+		return false;
+	}
+
+	private boolean newTokenHandler(HttpServletRequest request, HttpServletResponse response)
+			throws IOException {
+		String provider = request.getParameter("provider");
+		String appid = request.getParameter("appid");
+		String token = request.getParameter("token");
+
+		if (provider != null && appid != null && token != null) {
+			App app = new App(appid);
+			UserAuthentication userAuth = getOrCreateUser(app.getAppIdentifier(), provider, token);
+			User user = SecurityUtils.getAuthenticatedUser(userAuth);
+			if (user != null) {
+				app = Para.getDAO().read(app.getId());
+				if (app != null) {
+					// issue token
+					Date now = new Date();
+					JWTClaimsSet.Builder claimsSet = new JWTClaimsSet.Builder();
+					claimsSet.subject(user.getId());
+					claimsSet.issueTime(now);
+					claimsSet.expirationTime(new Date(now.getTime() + Config.SESSION_TIMEOUT_SEC));
+					claimsSet.notBeforeTime(now);
+					claimsSet.claim("appid", app.getId());
+
+					String newJWT = generateJWT(claimsSet.build(), app.getSecret());
+					if (newJWT != null) {
+						// clear revocation flag
+						if (user.getRevokeTokensAt() != null) {
+							user.setRevokeTokensAt(null);
+							CoreUtils.overwrite(app.getAppIdentifier(), user);
+						}
+						RestUtils.returnObjectResponse(response, Collections.singletonMap("access_token", newJWT));
+						return true;
+					}
+				} else {
+					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
+							"User belongs to an app that does not exist.");
+					return false;
+				}
+			} else {
+				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
+						"Failed to authenticate user with " + provider);
+				return false;
+			}
+		}
+		RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
+				"Some of the required query parameters 'provider', 'appid', 'token', are missing.");
+		return false;
+	}
+
+	private boolean renewTokenHandler(HttpServletRequest request, HttpServletResponse response) {
+		// check or reissue token
+		JWTAuthentication jwt = getJWTfromRequest(request);
+		if (jwt != null) {
+			try {
+				App app = Para.getDAO().read(jwt.getAppid());
+				User u = SecurityUtils.getAuthenticatedUser(jwt);
+				if (u != null && app != null) {
+					Date now = new Date();
+					boolean validJwt = SecurityUtils.isValidJWToken(app, jwt.getJwt());
+					boolean validSig = SecurityUtils.isValidButExpiredJWToken(app, jwt.getJwt());
+					boolean userMustLogin = u.getRevokeTokensAt() != null
+							&& new Date(u.getRevokeTokensAt()).before(now);
+					if (!userMustLogin) {
+						if (validJwt) {
+							RestUtils.returnStatusResponse(response, HttpServletResponse.SC_OK, "Valid JWT.");
+							return true;
+						} else if (validSig) {
+							String newToken = generateJWT(jwt.getClaims(), app.getSecret());
+							if (newToken != null) {
+								RestUtils.returnObjectResponse(response, Collections.
+										singletonMap("access_token", newToken));
+								return true;
+							}
+						}
+					}
+				}
+			} catch (Exception ex) {
+				logger.warn(ex);
+			}
+		}
+		RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "User must reauthenticate.");
+		return false;
 	}
 
 	protected String generateJWT(JWTClaimsSet claimsSet, String secret) {
@@ -183,19 +249,40 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 		return null;
     }
 
-	private UserAuthentication getOrCreateUser(String identityProvider, String accessToken)
+	private JWTAuthentication getJWTfromRequest(HttpServletRequest request) {
+		String token = request.getHeader(HttpHeaders.AUTHORIZATION);
+		if (token == null) {
+			token = request.getParameter(HttpHeaders.AUTHORIZATION);
+		}
+		if (!StringUtils.isBlank(token) && token.contains("Bearer")) {
+			try {
+				SignedJWT jwt = SignedJWT.parse(token.substring(6).trim());
+				String userid = jwt.getJWTClaimsSet().getSubject();
+				String appid = (String) jwt.getJWTClaimsSet().getClaim("appid");
+				User user = Para.getDAO().read(new App(appid).getAppIdentifier(), userid);
+				if (user != null) {
+					return new JWTAuthentication(new AuthenticatedUserDetails(user)).withJWT(jwt);
+				}
+			} catch (ParseException e) {
+				logger.warn("Unable to parse JWT token.", e);
+			}
+		}
+		return null;
+	}
+
+	private UserAuthentication getOrCreateUser(String appid, String identityProvider, String accessToken)
 			throws IOException, AuthenticationException {
 		if ("facebook".equals(identityProvider)) {
-			return facebookAuth.getOrCreateUser(accessToken);
+			return facebookAuth.getOrCreateUser(appid, accessToken);
 		} else if ("google".equals(identityProvider)) {
-			return googleAuth.getOrCreateUser(accessToken);
+			return googleAuth.getOrCreateUser(appid, accessToken);
 		} else if ("github".equals(identityProvider)) {
-			return githubAuth.getOrCreateUser(accessToken);
+			return githubAuth.getOrCreateUser(appid, accessToken);
 		} else if ("linkedin".equals(identityProvider)) {
-			return linkedinAuth.getOrCreateUser(accessToken);
+			return linkedinAuth.getOrCreateUser(appid, accessToken);
 		} else if ("twitter".equals(identityProvider)) {
 			String[] tokens = accessToken.split(Config.SEPARATOR);
-			return twitterAuth.getOrCreateUser(tokens[0], tokens[1]);
+			return twitterAuth.getOrCreateUser(appid, tokens[0], tokens[1]);
 		}
 		return null;
 	}
