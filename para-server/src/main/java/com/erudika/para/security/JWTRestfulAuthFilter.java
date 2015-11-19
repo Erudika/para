@@ -147,7 +147,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 						"All tokens will be revoked at " + new Date(atStamp));
 			}
 		}
-		RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
+		RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
 				"Invalid or expired token.");
 		return false;
 	}
