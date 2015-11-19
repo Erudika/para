@@ -125,9 +125,12 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 						// success!
 						SecurityContextHolder.getContext().setAuthentication(auth);
 					}
+				} else {
+					response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
 				}
 			} catch (AuthenticationException authenticationException) {
-				logger.warn("AuthenticationManager rejected JWT Authentication.", authenticationException);
+				response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer error=\"invalid_token\"");
+				logger.debug("AuthenticationManager rejected JWT Authentication.", authenticationException);
 			}
 		}
 
@@ -147,6 +150,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 						"All tokens will be revoked at " + new Date(atStamp));
 			}
 		}
+		response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
 		RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
 				"Invalid or expired token.");
 		return false;
@@ -231,6 +235,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 				logger.warn(ex);
 			}
 		}
+		response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer error=\"invalid_token\"");
 		RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "User must reauthenticate.");
 		return false;
 	}
@@ -264,7 +269,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 					return new JWTAuthentication(new AuthenticatedUserDetails(user)).withJWT(jwt);
 				}
 			} catch (ParseException e) {
-				logger.warn("Unable to parse JWT token.", e);
+				logger.debug("Unable to parse JWT token.", e);
 			}
 		}
 		return null;
