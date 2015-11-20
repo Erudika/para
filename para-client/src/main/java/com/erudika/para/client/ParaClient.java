@@ -153,6 +153,22 @@ public final class ParaClient {
 		}
 	}
 
+	/**
+	 * Clears the JWT token from memory, if such exists.
+	 */
+	public void clearAccessToken() {
+		tokenKey = null;
+		tokenKeyExpires = null;
+	}
+
+	private String key() {
+		if (tokenKey != null) {
+			refreshToken();
+			return "Bearer " + tokenKey;
+		}
+		return secretKey;
+	}
+
 	@SuppressWarnings("unchecked")
 	private <T> T getEntity(Response res, Class<?> type) {
 		if (res != null) {
@@ -183,27 +199,27 @@ public final class ParaClient {
 	}
 
 	private Response invokeGet(String resourcePath, MultivaluedMap<String, String> params) {
-		return signer.invokeSignedRequest(getApiClient(), accessKey, secretKey, GET,
+		return signer.invokeSignedRequest(getApiClient(), accessKey, key(), GET,
 				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
 	}
 
 	private Response invokePost(String resourcePath, Entity<?> entity) {
-		return signer.invokeSignedRequest(getApiClient(), accessKey, secretKey, POST,
+		return signer.invokeSignedRequest(getApiClient(), accessKey, key(), POST,
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
 	private Response invokePut(String resourcePath, Entity<?> entity) {
-		return signer.invokeSignedRequest(getApiClient(), accessKey, secretKey, PUT,
+		return signer.invokeSignedRequest(getApiClient(), accessKey, key(), PUT,
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
 	private Response invokePatch(String resourcePath, Entity<?> entity) {
-		return signer.invokeSignedRequest(getApiClient(), accessKey, secretKey, "PATCH",
+		return signer.invokeSignedRequest(getApiClient(), accessKey, key(), "PATCH",
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
 	private Response invokeDelete(String resourcePath, MultivaluedMap<String, String> params) {
-		return signer.invokeSignedRequest(getApiClient(), accessKey, secretKey, DELETE,
+		return signer.invokeSignedRequest(getApiClient(), accessKey, key(), DELETE,
 				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
 	}
 
@@ -1119,8 +1135,7 @@ public final class ParaClient {
 				tokenKeyExpires = (Long) jwtData.get("expires");
 				return ParaObjectUtils.setAnnotatedFields(userData);
 			} else {
-				tokenKey = null;
-				tokenKeyExpires = null;
+				clearAccessToken();
 			}
 		}
 		return null;
@@ -1140,8 +1155,7 @@ public final class ParaClient {
 				tokenKeyExpires = (Long) jwtData.get("expires");
 				return true;
 			} else {
-				tokenKey = null;
-				tokenKeyExpires = null;
+				clearAccessToken();
 			}
 		}
 		return false;

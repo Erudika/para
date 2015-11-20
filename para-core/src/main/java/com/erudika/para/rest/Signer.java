@@ -283,9 +283,14 @@ public final class Signer extends AWS4Signer {
 			String httpMethod, String endpointURL, String reqPath,
 			Map<String, String> headers, MultivaluedMap<String, String> params, byte[] jsonEntity) {
 
+		boolean isJWT = StringUtils.startsWithIgnoreCase(secretKey, "Bearer");
+
 		WebTarget target = apiClient.target(endpointURL).path(reqPath);
-		Map<String, String> signedHeaders = signRequest(accessKey, secretKey, httpMethod, endpointURL, reqPath,
-				headers, params, jsonEntity);
+		Map<String, String> signedHeaders = null;
+		if (!isJWT) {
+			signedHeaders = signRequest(accessKey, secretKey, httpMethod, endpointURL, reqPath,
+					headers, params, jsonEntity);
+		}
 
 		if (params != null) {
 			for (Map.Entry<String, List<String>> param : params.entrySet()) {
@@ -314,8 +319,12 @@ public final class Signer extends AWS4Signer {
 			}
 		}
 
-		builder.header(HttpHeaders.AUTHORIZATION, signedHeaders.get(HttpHeaders.AUTHORIZATION)).
-				header("X-Amz-Date", signedHeaders.get("X-Amz-Date"));
+		if (isJWT) {
+			builder.header(HttpHeaders.AUTHORIZATION, secretKey);
+		} else {
+			builder.header(HttpHeaders.AUTHORIZATION, signedHeaders.get(HttpHeaders.AUTHORIZATION)).
+					header("X-Amz-Date", signedHeaders.get("X-Amz-Date"));
+		}
 
 		if (jsonPayload != null) {
 			return builder.method(httpMethod, jsonPayload);
