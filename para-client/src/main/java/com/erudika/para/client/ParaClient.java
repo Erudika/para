@@ -21,6 +21,7 @@ import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.ParaObjectUtils;
 import com.erudika.para.core.Tag;
+import com.erudika.para.core.User;
 import com.erudika.para.rest.GenericExceptionMapper;
 import com.erudika.para.rest.Signer;
 import com.erudika.para.utils.Config;
@@ -62,16 +63,22 @@ public final class ParaClient {
 	private static final Logger logger = LoggerFactory.getLogger(ParaClient.class);
 	private static final String DEFAULT_ENDPOINT = "https://paraio.com";
 	private static final String DEFAULT_PATH = "/v1/";
+	private static final String JWT_PATH = "jwt_auth";
 	private String endpoint;
 	private String path;
 	private final String accessKey;
 	private final String secretKey;
+	private String tokenKey;
+	private Long tokenKeyExpires;
 	private Client apiClient;
 	private final Signer signer = new Signer();
 
 	public ParaClient(String accessKey, String secretKey) {
 		this.accessKey = accessKey;
 		this.secretKey = secretKey;
+		if (StringUtils.length(secretKey) < 6) {
+			logger.warn("Secret key appears to be invalid. Make sure you call 'signIn()' first.");
+		}
 		ClientConfig clientConfig = new ClientConfig();
 		clientConfig.register(GenericExceptionMapper.class);
 		clientConfig.register(new JacksonJsonProvider(ParaObjectUtils.getJsonMapper()));
@@ -952,6 +959,21 @@ public final class ParaClient {
 	}
 
 	/**
+	 * Returns a {@link com.erudika.para.core.User} or an
+	 * {@link com.erudika.para.core.App} that is currently authenticated.
+	 * @param <P> an App or User
+	 * @return a {@link com.erudika.para.core.User} or an {@link com.erudika.para.core.App}
+	 */
+	public <P extends ParaObject> P me() {
+		Map<String, Object> data = getEntity(invokeGet("_me", null), Map.class);
+		return ParaObjectUtils.setAnnotatedFields(data);
+	}
+
+	/////////////////////////////////////////////
+	//			Validation Constraints
+	/////////////////////////////////////////////
+
+	/**
 	 * Returns the validation constraints map.
 	 * @return a map containing all validation constraints.
 	 */
@@ -996,6 +1018,10 @@ public final class ParaClient {
 		return getEntity(invokeDelete(Utils.formatMessage("_constraints/{0}/{1}/{2}", type,
 				field, constraintName), null), Map.class);
 	}
+
+	/////////////////////////////////////////////
+	//			Resource Permissions
+	/////////////////////////////////////////////
 
 	/**
 	 * Returns the permissions for all subjects and resources for current app.
@@ -1062,14 +1088,79 @@ public final class ParaClient {
 		return getEntity(invokeGet(url, null), Boolean.class);
 	}
 
+	/////////////////////////////////////////////
+	//				Access Tokens
+	/////////////////////////////////////////////
+
 	/**
-	 * Returns a {@link com.erudika.para.core.User} or an
-	 * {@link com.erudika.para.core.App} that is currently authenticated.
-	 * @param <P> an App or User
-	 * @return a {@link com.erudika.para.core.User} or an {@link com.erudika.para.core.App}
+	 * Takes an identity provider access token and fethces the user data from that provider.
+	 * A new {@link  User} object is created if that user doesn't exist.
+	 * Access tokens are returned upon successful authentication using one of the SDKs from
+	 * Facebook, Google, Twitter, etc.
+	 * <b>Note:</b> Twitter uses OAuth 1 and gives you a token and a token secret.
+	 * <b>You must concatenate them like this: <code>{oauth_token}:{oauth_token_secret} and
+	 * use that as the provider access token.</code></b>
+	 * @param provider
+	 * @param providerToken access token from a provider like Facebook, Google, Twitter
+	 * @return a {@link  User} object or null if something failed
 	 */
-	public <P extends ParaObject> P me() {
-		Map<String, Object> data = getEntity(invokeGet("_me", null), Map.class);
-		return ParaObjectUtils.setAnnotatedFields(data);
+	@SuppressWarnings("unchecked")
+	public User signIn(String provider, String providerToken) {
+		if (!StringUtils.isBlank(provider) && !StringUtils.isBlank(providerToken)) {
+			Map<String, String> credentials = new HashMap<String, String>();
+			credentials.put("appid", accessKey);
+			credentials.put("provider", provider);
+			credentials.put("token", providerToken);
+			Map<String, Object> result = getEntity(invokePost(JWT_PATH, Entity.json(credentials)), Map.class);
+			if (result != null && result.containsKey("user") && result.containsKey("jwt")) {
+				Map<?, ?> jwtData = (Map<?, ?>) result.get("jwt");
+				Map<String, Object> userData = (Map<String, Object>) result.get("user");
+				tokenKey = (String) jwtData.get("access_token");
+				tokenKeyExpires = (Long) jwtData.get("expires");
+				return ParaObjectUtils.setAnnotatedFields(userData);
+			} else {
+				tokenKey = null;
+				tokenKeyExpires = null;
+			}
+		}
+		return null;
 	}
+
+	/**
+	 * Refreshes the JWT access token. This requires an old expired token.
+	 * <b>Note:</b> Generating a new API secret on the server will invalidate all tokens for all clients.
+	 * @return true if token was refreshed or false if user must reauthenticate with the identity provider.
+	 */
+	public boolean refreshToken() {
+		if (tokenKey != null && tokenKeyExpires != null && tokenKeyExpires <= System.currentTimeMillis()) {
+			Map<String, Object> result = getEntity(invokeGet(JWT_PATH, null), Map.class);
+			if (result != null && result.containsKey("user") && result.containsKey("jwt")) {
+				Map<?, ?> jwtData = (Map<?, ?>) result.get("jwt");
+				tokenKey = (String) jwtData.get("access_token");
+				tokenKeyExpires = (Long) jwtData.get("expires");
+				return true;
+			} else {
+				tokenKey = null;
+				tokenKeyExpires = null;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Revokes all user tokens for a given user id. If a timestamp is given then tokens will become
+	 * invalid at that time. If timestamp is null or in the past, tokens are revoked immediately.
+	 * Requires a valid existing token.
+	 * @param timestamp a Java timestamp in milliseconds
+	 * @return true if successful
+	 */
+	public boolean revokeAllTokens(Long timestamp) {
+		MultivaluedMap<String, String> params = null;
+		if (timestamp != null) {
+			params = new MultivaluedHashMap<String, String>();
+			params.putSingle("revokeTokensAt", timestamp.toString());
+		}
+		return getEntity(invokeDelete(JWT_PATH, params), Map.class) != null;
+	}
+
 }

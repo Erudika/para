@@ -32,8 +32,9 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -42,6 +43,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -108,7 +110,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			if (HttpMethod.POST.equals(request.getMethod())) {
 				newTokenHandler(request, response);
 			} else if (HttpMethod.GET.equals(request.getMethod())) {
-				renewTokenHandler(request, response);
+				refreshTokenHandler(request, response);
 			} else if (HttpMethod.DELETE.equals(request.getMethod())) {
 				revokeAllTokensHandler(request, response);
 			}
@@ -137,6 +139,96 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 		chain.doFilter(request, response);
 	}
 
+	@SuppressWarnings("unchecked")
+	private boolean newTokenHandler(HttpServletRequest request, HttpServletResponse response)
+			throws IOException {
+		Response res = RestUtils.getEntity(request.getInputStream(), Map.class);
+		if (res.getStatusInfo() != Response.Status.OK) {
+			RestUtils.returnStatusResponse(response, res.getStatus(), res.getEntity().toString());
+			return false;
+		}
+		Map<String, Object> entity = (Map<String, Object>) res.getEntity();
+		String provider = (String) entity.get("provider");
+		String appid = (String) entity.get("appid");
+		String token = (String) entity.get("token");
+
+		if (provider != null && appid != null && token != null) {
+			App app = new App(appid);
+			UserAuthentication userAuth = getOrCreateUser(app.getAppIdentifier(), provider, token);
+			User user = SecurityUtils.getAuthenticatedUser(userAuth);
+			if (user != null) {
+				app = Para.getDAO().read(app.getId());
+				if (app != null) {
+					// issue token
+					Date now = new Date();
+					JWTClaimsSet.Builder claimsSet = new JWTClaimsSet.Builder();
+					claimsSet.subject(user.getId());
+					claimsSet.issueTime(now);
+					claimsSet.expirationTime(new Date(now.getTime() + (Config.SESSION_TIMEOUT_SEC * 1000)));
+					claimsSet.notBeforeTime(now);
+					claimsSet.claim("appid", app.getId());
+
+					SignedJWT newJWT = generateJWT(claimsSet.build(), app.getSecret());
+					if (newJWT != null) {
+						// clear revocation flag
+						if (user.getRevokeTokensAt() != null) {
+							user.setRevokeTokensAt(null);
+							CoreUtils.overwrite(app.getAppIdentifier(), user);
+						}
+						succesHandler(response, user, newJWT);
+						return true;
+					}
+				} else {
+					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
+							"User belongs to an app that does not exist.");
+					return false;
+				}
+			} else {
+				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
+						"Failed to authenticate user with " + provider);
+				return false;
+			}
+		}
+		RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
+				"Some of the required query parameters 'provider', 'appid', 'token', are missing.");
+		return false;
+	}
+
+	private boolean refreshTokenHandler(HttpServletRequest request, HttpServletResponse response) {
+		// check or reissue token
+		JWTAuthentication jwt = getJWTfromRequest(request);
+		if (jwt != null) {
+			try {
+				App app = Para.getDAO().read(jwt.getAppid());
+				User user = SecurityUtils.getAuthenticatedUser(jwt);
+				if (user != null && app != null) {
+					Date now = new Date();
+					boolean validJwt = SecurityUtils.isValidJWToken(app, jwt.getJwt());
+					boolean validSig = SecurityUtils.isValidButExpiredJWToken(app, jwt.getJwt());
+					boolean userMustLogin = user.getRevokeTokensAt() != null
+							&& new Date(user.getRevokeTokensAt()).before(now);
+					if (!userMustLogin) {
+						if (validJwt) {
+							succesHandler(response, user, jwt.getJwt());
+							return true;
+						} else if (validSig) {
+							SignedJWT newToken = generateJWT(jwt.getClaims(), app.getSecret());
+							if (newToken != null) {
+								succesHandler(response, user, newToken);
+								return true;
+							}
+						}
+					}
+				}
+			} catch (Exception ex) {
+				logger.warn(ex);
+			}
+		}
+		response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer error=\"invalid_token\"");
+		RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "User must reauthenticate.");
+		return false;
+	}
+
 	private boolean revokeAllTokensHandler(HttpServletRequest request, HttpServletResponse response) {
 		String at = request.getParameter("revokeTokensAt");
 		Long atStamp = NumberUtils.toLong(at, System.currentTimeMillis());
@@ -156,97 +248,31 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 		return false;
 	}
 
-	private boolean newTokenHandler(HttpServletRequest request, HttpServletResponse response)
-			throws IOException {
-		String provider = request.getParameter("provider");
-		String appid = request.getParameter("appid");
-		String token = request.getParameter("token");
-
-		if (provider != null && appid != null && token != null) {
-			App app = new App(appid);
-			UserAuthentication userAuth = getOrCreateUser(app.getAppIdentifier(), provider, token);
-			User user = SecurityUtils.getAuthenticatedUser(userAuth);
-			if (user != null) {
-				app = Para.getDAO().read(app.getId());
-				if (app != null) {
-					// issue token
-					Date now = new Date();
-					JWTClaimsSet.Builder claimsSet = new JWTClaimsSet.Builder();
-					claimsSet.subject(user.getId());
-					claimsSet.issueTime(now);
-					claimsSet.expirationTime(new Date(now.getTime() + Config.SESSION_TIMEOUT_SEC));
-					claimsSet.notBeforeTime(now);
-					claimsSet.claim("appid", app.getId());
-
-					String newJWT = generateJWT(claimsSet.build(), app.getSecret());
-					if (newJWT != null) {
-						// clear revocation flag
-						if (user.getRevokeTokensAt() != null) {
-							user.setRevokeTokensAt(null);
-							CoreUtils.overwrite(app.getAppIdentifier(), user);
-						}
-						RestUtils.returnObjectResponse(response, Collections.singletonMap("access_token", newJWT));
-						return true;
+	private void succesHandler(HttpServletResponse response, User user, final SignedJWT token) {
+		if (user != null && token != null) {
+			Map<String, Object> result = new HashMap<String, Object>();
+			result.put("user", user);
+			result.put("jwt", new HashMap<String, Object>() {{
+					try {
+						put("access_token", token.serialize());
+						put("expires", token.getJWTClaimsSet().getExpirationTime().getTime());
+					} catch (ParseException ex) {
+						logger.info("Unable to parse JWT.", ex);
 					}
-				} else {
-					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-							"User belongs to an app that does not exist.");
-					return false;
-				}
-			} else {
-				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-						"Failed to authenticate user with " + provider);
-				return false;
-			}
+			}});
+			RestUtils.returnObjectResponse(response, result);
+		} else {
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Null token.");
 		}
-		RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-				"Some of the required query parameters 'provider', 'appid', 'token', are missing.");
-		return false;
 	}
 
-	private boolean renewTokenHandler(HttpServletRequest request, HttpServletResponse response) {
-		// check or reissue token
-		JWTAuthentication jwt = getJWTfromRequest(request);
-		if (jwt != null) {
-			try {
-				App app = Para.getDAO().read(jwt.getAppid());
-				User u = SecurityUtils.getAuthenticatedUser(jwt);
-				if (u != null && app != null) {
-					Date now = new Date();
-					boolean validJwt = SecurityUtils.isValidJWToken(app, jwt.getJwt());
-					boolean validSig = SecurityUtils.isValidButExpiredJWToken(app, jwt.getJwt());
-					boolean userMustLogin = u.getRevokeTokensAt() != null
-							&& new Date(u.getRevokeTokensAt()).before(now);
-					if (!userMustLogin) {
-						if (validJwt) {
-							RestUtils.returnStatusResponse(response, HttpServletResponse.SC_OK, "Valid JWT.");
-							return true;
-						} else if (validSig) {
-							String newToken = generateJWT(jwt.getClaims(), app.getSecret());
-							if (newToken != null) {
-								RestUtils.returnObjectResponse(response, Collections.
-										singletonMap("access_token", newToken));
-								return true;
-							}
-						}
-					}
-				}
-			} catch (Exception ex) {
-				logger.warn(ex);
-			}
-		}
-		response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer error=\"invalid_token\"");
-		RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "User must reauthenticate.");
-		return false;
-	}
-
-	protected String generateJWT(JWTClaimsSet claimsSet, String secret) {
+	protected SignedJWT generateJWT(JWTClaimsSet claimsSet, String secret) {
 		if (claimsSet != null && secret != null) {
 			try {
 				JWSSigner signer = new MACSigner(secret);
 				SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);
 				signedJWT.sign(signer);
-				return signedJWT.serialize();
+				return signedJWT;
 			} catch(JOSEException e) {
 				logger.warn("Unable to sign JWT.", e);
 			}
@@ -269,7 +295,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 					return new JWTAuthentication(new AuthenticatedUserDetails(user)).withJWT(jwt);
 				}
 			} catch (ParseException e) {
-				logger.debug("Unable to parse JWT token.", e);
+				logger.debug("Unable to parse JWT.", e);
 			}
 		}
 		return null;
