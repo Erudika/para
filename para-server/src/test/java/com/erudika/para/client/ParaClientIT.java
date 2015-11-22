@@ -466,8 +466,12 @@ public class ParaClientIT {
 		assertTrue(types.containsKey(new User().getPlural()));
 
 		assertTrue(pc.me().getId().equals(App.id(System.getProperty("para.app_name"))));
+	}
 
+	@Test
+	public void testValidationConstraints() {
 		// Validations
+		String kittenType = "kitten";
 		Map<String, ?> constraints = pc.validationConstraints();
 		assertFalse(constraints.isEmpty());
 		assertTrue(constraints.containsKey("app"));
@@ -497,7 +501,10 @@ public class ParaClientIT {
 		pc.removeValidationConstraint(kittenType, "paws", "required");
 		constraint = pc.validationConstraints(kittenType);
 		assertFalse(constraint.get(kittenType).isEmpty());
+	}
 
+	@Test
+	public void testResourcePermissions() {
 		// Permissions
 		Map<String, Map<String, List<String>>> permits = pc.resourcePermissions();
 		assertTrue(permits.isEmpty());
@@ -556,5 +563,10 @@ public class ParaClientIT {
 		assertTrue(pc.isAllowedTo(u1.getId(), catsType, AllowedMethods.GET.toString()));
 		assertTrue(pc.isAllowedTo(u2.getId(), dogsType, AllowedMethods.GET.toString()));
 		assertTrue(pc.isAllowedTo(u2.getId(), catsType, AllowedMethods.GET.toString()));
+	}
+
+	@Test
+	public void testAccessTokens() {
+
 	}
 }
