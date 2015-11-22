@@ -128,7 +128,7 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * @throws IOException
 	 * @throws AuthenticationException
 	 */
-	protected UserAuthentication getOrCreateUser(String appid, String accessToken)
+	public UserAuthentication getOrCreateUser(String appid, String accessToken)
 			throws IOException, AuthenticationException {
 		UserAuthentication userAuth = null;
 		if (accessToken != null) {
