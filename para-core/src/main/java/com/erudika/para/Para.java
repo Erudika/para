@@ -143,14 +143,24 @@ public final class Para {
 	}
 
 	/**
+	 * Return an instance of some class if it has been wired through DI.
+	 * @param <T> any type
+	 * @param type any type
+	 * @return an object
+	 */
+	public static <T> T getInstance(Class<T> type) {
+		if (injector == null) {
+			handleNotInitializedError();
+		}
+		return injector.getInstance(type);
+	}
+
+	/**
 	 * @return an instance of the core persistence class.
 	 * @see DAO
 	 */
 	public static DAO getDAO() {
-		if (injector == null) {
-			handleNotInitializedError();
-		}
-		return injector.getInstance(DAO.class);
+		return getInstance(DAO.class);
 	}
 
 	/**
@@ -158,10 +168,7 @@ public final class Para {
 	 * @see Search
 	 */
 	public static Search getSearch() {
-		if (injector == null) {
-			handleNotInitializedError();
-		}
-		return injector.getInstance(Search.class);
+		return getInstance(Search.class);
 	}
 
 	/**
@@ -169,10 +176,7 @@ public final class Para {
 	 * @see Cache
 	 */
 	public static Cache getCache() {
-		if (injector == null) {
-			handleNotInitializedError();
-		}
-		return injector.getInstance(Cache.class);
+		return getInstance(Cache.class);
 	}
 
 	/**
