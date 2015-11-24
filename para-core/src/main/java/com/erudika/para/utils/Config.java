@@ -226,9 +226,15 @@ public final class Config {
 	 */
 	public static final String CORE_PACKAGE_NAME = getConfigParam("core_package_name", "");
 	/**
-	 * Request expiration in seconds. Default: 15 minutes
+	 * Expiration of signed API request, in seconds. Default: 15 minutes
 	 */
 	public static final Long REQUEST_EXPIRES_AFTER_SEC = NumberUtils.toLong(getConfigParam("request_expires_after", ""), 15 * 60);
+	/**
+	 * JWT (access token) expiration in seconds. Default: 1 week
+	 */
+	public static final Long JWT_EXPIRES_AFTER_SEC = NumberUtils.toLong(getConfigParam("jwt_expires_after", ""), 7 * 24 * 60 * 60);
+
+	public static final Long JWT_REFRESH_INTERVAL_SEC = NumberUtils.toLong(getConfigParam("jwt_refresh_interval", ""), 60 * 60);
 	/**
 	 * Session timeout in seconds. Default: 24 hours
 	 */
