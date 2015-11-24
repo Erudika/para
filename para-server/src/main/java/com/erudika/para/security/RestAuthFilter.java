@@ -39,6 +39,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.GenericFilterBean;
 
@@ -80,7 +81,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		boolean proceed = false;
 		// users are allowed to GET '/_me' - used on the client-side for checking authentication
 		if (!isApp && RestRequestMatcher.INSTANCE.matches(request)) {
-			proceed = userAuthRequestHandler(SecurityUtils.getAuthenticatedUser(), request, response);
+			proceed = userAuthRequestHandler(request, response);
 		} else if (isApp && RestRequestMatcher.INSTANCE_STRICT.matches(request)) {
 			proceed = appAuthRequestHandler(appid, request, response);
 		}
@@ -90,14 +91,22 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		}
 	}
 
-	private boolean userAuthRequestHandler(User u, BufferedRequestWrapper request, HttpServletResponse response) {
+	private boolean userAuthRequestHandler(BufferedRequestWrapper request, HttpServletResponse response) {
+		Authentication userAuth = SecurityContextHolder.getContext().getAuthentication();
+		User u = SecurityUtils.getAuthenticatedUser(userAuth);
 		if (u != null && u.getActive()) {
-			App parentApp = u.getDao().read(App.id(u.getAppid()));
+			App parentApp;
+			if (userAuth instanceof JWTAuthentication) {
+				parentApp = ((JWTAuthentication) userAuth).getApp();
+			} else {
+				parentApp = Para.getDAO().read(App.id(u.getAppid()));
+			}
 			if (parentApp != null) {
 				boolean isRootApp = parentApp.getId().equals(App.id(Config.APP_NAME_NS));
+				boolean isRootAppAccessAllowed = Config.CLIENTS_CAN_ACCESS_ROOT_APP;
 				boolean isUserAllowed = parentApp.isAllowedTo(u.getId(),
 						RestUtils.extractResourceName(request), request.getMethod());
-				if ((isRootApp && !u.isAdmin()) || !isUserAllowed) {
+				if ((isRootApp && !isRootAppAccessAllowed) || !isUserAllowed) {
 					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
 							"You don't have permission to access this resource.");
 					return false;

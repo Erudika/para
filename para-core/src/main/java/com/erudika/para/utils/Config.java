@@ -233,7 +233,9 @@ public final class Config {
 	 * JWT (access token) expiration in seconds. Default: 1 week
 	 */
 	public static final Long JWT_EXPIRES_AFTER_SEC = NumberUtils.toLong(getConfigParam("jwt_expires_after", ""), 7 * 24 * 60 * 60);
-
+	/**
+	 * JWT refresh interval - tokens will be auto-refreshed at this interval of time. Default: 1 hour
+	 */
 	public static final Long JWT_REFRESH_INTERVAL_SEC = NumberUtils.toLong(getConfigParam("jwt_refresh_interval", ""), 60 * 60);
 	/**
 	 * Session timeout in seconds. Default: 24 hours
@@ -251,6 +253,10 @@ public final class Config {
 	 * Password reset window in seconds. Default: 30 minutes
 	 */
 	public static final Long PASSRESET_TIMEOUT_SEC = NumberUtils.toLong(getConfigParam("pass_reset_timeout", ""), 30 * 60);
+	/**
+	 * Enable access to root app by clients. Default: false
+	 */
+	public static final boolean CLIENTS_CAN_ACCESS_ROOT_APP = Boolean.parseBoolean(getConfigParam("clients_can_access_root_app", "false"));
 	/**
 	 * Enable the RESTful API. Default: true
 	 */

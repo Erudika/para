@@ -28,11 +28,16 @@ import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
 import com.erudika.para.search.ElasticSearchUtils;
+import com.erudika.para.security.AuthenticatedUserDetails;
+import com.erudika.para.security.FacebookAuthFilter;
+import com.erudika.para.security.SecurityModule;
+import com.erudika.para.security.UserAuthentication;
 import com.erudika.para.utils.Config;
 import static com.erudika.para.validation.Constraint.*;
 import com.erudika.para.utils.HumanTime;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
+import com.google.inject.util.Modules;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,8 +51,12 @@ import org.junit.AfterClass;
 import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.SpringApplication;
 
 /**
  *
@@ -84,20 +93,25 @@ public class ParaClientIT {
 		fbUser.setGroups("users");
 		fbUser.setActive(true);
 
-//		UserAuthentication ua = new UserAuthentication(new AuthenticatedUserDetails(fbUser));
-//		SpringApplication app = new SpringApplication(ParaServer.class);
-//		app.setWebEnvironment(true);
-//		app.setShowBanner(false);
-//		SecurityModule secMod = new SecurityModule();
-//		FacebookAuthFilter fbaf = mock(FacebookAuthFilter.class);
-//		when(fbaf.getOrCreateUser(anyString(), anyString())).thenReturn(ua);
-//		secMod.setFacebookFilter(fbaf);
-//		Para.initialize(Modules.override(ParaServer.getCoreModules()).with(secMod));
-//		app.run();
+		UserAuthentication ua = new UserAuthentication(new AuthenticatedUserDetails(fbUser));
+		SpringApplication app = new SpringApplication(ParaServer.class);
+		app.setWebEnvironment(true);
+		app.setShowBanner(false);
+		SecurityModule secMod = new SecurityModule();
+		FacebookAuthFilter fbaf = new FacebookAuthFilter("/");
+		fbaf = spy(fbaf);
+		when(fbaf.getOrCreateUser(anyString(), anyString())).thenReturn(ua);
+		secMod.setFacebookFilter(fbaf);
+		Para.initialize(Modules.override(ParaServer.getCoreModules()).with(secMod));
+		app.run();
 
-		ParaServer.main(new String[0]);
+//		ParaServer.main(new String[0]);
 		ParaClient temp = new ParaClient("x", "x");
 		temp.setEndpoint(endpoint);
+
+		assertNull(temp.me());
+		assertTrue(temp.newId().isEmpty());
+
 		Map<String, String> credentials = temp.setup();
 		if (credentials != null && credentials.containsKey("accessKey")) {
 			String accessKey = credentials.get("accessKey");
@@ -106,9 +120,6 @@ public class ParaClientIT {
 			pc.setEndpoint(endpoint);
 			logger.info("accessKey: {}, secretKey: {}", accessKey, secretKey);
 		}
-
-		fbUser = pc.create(fbUser);
-//		assertNotNull(fbUser);
 
 		u = new Sysprop("111");
 		u.setName("John Doe");
@@ -153,7 +164,7 @@ public class ParaClientIT {
 		s2.setName("We are testing this thing. This sentence is a test. One, two.");
 		s2.setTimestamp(Utils.timestamp());
 
-		pc.createAll(Arrays.asList(u, u1, u2, t, s1, s2, a1, a2));
+		pc.createAll(Arrays.asList(u, u1, u2, t, s1, s2, a1, a2, fbUser));
 		Thread.sleep(1000);
 	}
 
@@ -532,8 +543,8 @@ public class ParaClientIT {
 		Map<String, Map<String, List<String>>> permits = pc.resourcePermissions();
 		assertTrue(permits.isEmpty());
 
-		assertNull(pc.grantResourcePermission(null, dogsType, EnumSet.noneOf(AllowedMethods.class)));
-		assertNull(pc.grantResourcePermission(" ", "", EnumSet.noneOf(AllowedMethods.class)));
+		assertTrue(pc.grantResourcePermission(null, dogsType, EnumSet.noneOf(AllowedMethods.class)).isEmpty());
+		assertTrue(pc.grantResourcePermission(" ", "", EnumSet.noneOf(AllowedMethods.class)).isEmpty());
 
 		pc.grantResourcePermission(u1.getId(), dogsType, AllowedMethods.READ);
 		permits = pc.resourcePermissions(u1.getId());
@@ -590,18 +601,29 @@ public class ParaClientIT {
 
 	@Test
 	public void testAccessTokens() throws IOException {
+		assertNotNull(fbUser);
+
+		User signedIn = pc.signIn("facebook", "test_token");
+		assertNotNull(signedIn);
+		assertEquals(fbUser.getId(), signedIn.getId());
+		assertTrue(signedIn.getActive());
+		logger.warn(pc.getAccessToken());
+
+		// TODO:
+		// test no permissions
+		// test add permission
+		// test fails for root app
+		// test ok if config allows root app access
+		// test token expired
+		// test revoke tokens
+		// test with me() + signout == User and not App!
+		// test tokens invalid after App changes secret key
+		// test with child app
+		
 //		App app = new App("my-app1");
 //		app.setActive(true);
 //		app = pc.create(app);
 
-
-		// ...
-
-//		User signedIn = pc.signIn("facebook", "test_token");
-//		assertNotNull(signedIn);
-//		assertEquals(fbUser.getId(), signedIn.getId());
-//		assertTrue(signedIn.getActive());
-
-
+		pc.clearAccessToken();
 	}
 }

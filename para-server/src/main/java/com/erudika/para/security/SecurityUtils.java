@@ -94,33 +94,12 @@ public final class SecurityUtils {
 	}
 
 	/**
-	 * Validates a JWT token. Only signature is checked.
-	 * @param app app
-	 * @param jwt token
-	 * @return true if signature is valid
-	 */
-	public static boolean isValidButExpiredJWToken(App app, SignedJWT jwt) {
-		return isValidJWToken(app, jwt, true);
-	}
-
-	/**
 	 * Validates a JWT token.
 	 * @param app app
 	 * @param jwt token
-	 * @return true if token is valid and not expired
-	 */
-	public static boolean isValidJWToken(App app, SignedJWT jwt) {
-		return isValidJWToken(app, jwt, false);
-	}
-
-	/**
-	 * Validates a JWT token. Only signature is checked.
-	 * @param app app
-	 * @param jwt token
-	 * @param checkSignatureOnly only check the signature
 	 * @return true if token is valid
 	 */
-	private static boolean isValidJWToken(App app, SignedJWT jwt, boolean checkSignatureOnly) {
+	public static boolean isValidJWToken(App app, SignedJWT jwt) {
 		try {
 			if (app != null && jwt != null) {
 				JWSVerifier verifier = new MACVerifier(app.getSecret());
@@ -133,7 +112,7 @@ public final class SecurityUtils {
 					boolean expired = expirationTime == null || expirationTime.before(referenceTime);
 					boolean notYetValid = notBeforeTime == null || notBeforeTime.after(referenceTime);
 
-					return checkSignatureOnly ? !notYetValid : !(expired || notYetValid);
+					return !(expired || notYetValid);
 				}
 			}
 		} catch (JOSEException e) {

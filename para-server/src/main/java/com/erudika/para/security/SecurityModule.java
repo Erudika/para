@@ -224,6 +224,7 @@ public class SecurityModule extends AbstractModule {
 	public JWTRestfulAuthFilter getJWTAuthFilter() {
 		if (jwtFilter == null) {
 			jwtFilter = new JWTRestfulAuthFilter("/" + JWTRestfulAuthFilter.JWT_ACTION);
+			requestInjection(jwtFilter);
 		}
 		return jwtFilter;
 	}

@@ -17,6 +17,7 @@
  */
 package com.erudika.para.security;
 
+import com.erudika.para.core.App;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ public class JWTAuthentication extends UserAuthentication {
 	private static final long serialVersionUID = 1L;
 	private static final org.slf4j.Logger logger = LoggerFactory.getLogger(JWTAuthentication.class);
 
+	private App app;
 	private SignedJWT jwt;
 	private JWTClaimsSet claims;
 
@@ -42,8 +44,17 @@ public class JWTAuthentication extends UserAuthentication {
 		return this;
 	}
 
+	public JWTAuthentication withApp(App app) {
+		this.app = app;
+		return this;
+	}
+
 	public SignedJWT getJwt() {
 		return jwt;
+	}
+
+	public App getApp() {
+		return app;
 	}
 
 	public String getAppid() {

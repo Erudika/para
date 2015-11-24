@@ -26,9 +26,7 @@ import com.typesafe.config.ConfigValue;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 import javax.annotation.security.DeclareRoles;
-import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
@@ -43,7 +41,6 @@ import org.springframework.security.openid.OpenIDAuthenticationProvider;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
-import org.springframework.security.web.util.matcher.RequestMatcher;
 
 /**
  * Programmatic configuration for Spring Security.
@@ -153,18 +150,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		}
 
 		if (Config.getConfigParamUnwrapped("security.csrf_protection", true)) {
-			http.csrf().requireCsrfProtectionMatcher(new RequestMatcher() {
-				private final Pattern allowedMethods = Pattern.compile("^(GET|HEAD|TRACE|OPTIONS)$");
-				private final Pattern authEndpoints = Pattern.compile("^/\\w+_auth$");
-
-				public boolean matches(HttpServletRequest request) {
-					boolean matches = !RestRequestMatcher.INSTANCE.matches(request)
-							&& !IgnoredRequestMatcher.INSTANCE.matches(request)
-							&& !authEndpoints.matcher(request.getRequestURI()).matches()
-							&& !allowedMethods.matcher(request.getMethod()).matches();
-					return matches;
-				}
-			}).csrfTokenRepository(csrfTokenRepository);
+			http.csrf().requireCsrfProtectionMatcher(CsrfProtectionRequestMatcher.INSTANCE).
+					csrfTokenRepository(csrfTokenRepository);
 		} else {
 			http.csrf().disable();
 		}
@@ -178,29 +165,45 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		http.logout().logoutUrl(confMap.get("security.signout")).logoutSuccessUrl(confMap.get("security.signout_success"));
 		http.rememberMe().rememberMeServices(rememberMeServices);
 
+		if (passwordFilter != null) {
 			passwordFilter.setAuthenticationManager(authenticationManager());
 			http.addFilterAfter(passwordFilter, BasicAuthenticationFilter.class);
+		}
 
-		openidFilter.setAuthenticationManager(authenticationManager());
-		http.addFilterAfter(openidFilter, BasicAuthenticationFilter.class);
+		if (openidFilter != null) {
+			openidFilter.setAuthenticationManager(authenticationManager());
+			http.addFilterAfter(openidFilter, BasicAuthenticationFilter.class);
+		}
 
-		facebookFilter.setAuthenticationManager(authenticationManager());
-		http.addFilterAfter(facebookFilter, BasicAuthenticationFilter.class);
+		if (facebookFilter != null) {
+			facebookFilter.setAuthenticationManager(authenticationManager());
+			http.addFilterAfter(facebookFilter, BasicAuthenticationFilter.class);
+		}
 
-		googleFilter.setAuthenticationManager(authenticationManager());
-		http.addFilterAfter(googleFilter, BasicAuthenticationFilter.class);
+		if (googleFilter != null) {
+			googleFilter.setAuthenticationManager(authenticationManager());
+			http.addFilterAfter(googleFilter, BasicAuthenticationFilter.class);
+		}
 
-		linkedinFilter.setAuthenticationManager(authenticationManager());
-		http.addFilterAfter(linkedinFilter, BasicAuthenticationFilter.class);
+		if (linkedinFilter != null) {
+			linkedinFilter.setAuthenticationManager(authenticationManager());
+			http.addFilterAfter(linkedinFilter, BasicAuthenticationFilter.class);
+		}
 
-		twitterFilter.setAuthenticationManager(authenticationManager());
-		http.addFilterAfter(twitterFilter, BasicAuthenticationFilter.class);
+		if (twitterFilter != null) {
+			twitterFilter.setAuthenticationManager(authenticationManager());
+			http.addFilterAfter(twitterFilter, BasicAuthenticationFilter.class);
+		}
 
-		githubFilter.setAuthenticationManager(authenticationManager());
-		http.addFilterAfter(githubFilter, BasicAuthenticationFilter.class);
+		if (githubFilter != null) {
+			githubFilter.setAuthenticationManager(authenticationManager());
+			http.addFilterAfter(githubFilter, BasicAuthenticationFilter.class);
+		}
 
-		jwtFilter.setAuthenticationManager(authenticationManager());
-		http.addFilterAfter(jwtFilter, RememberMeAuthenticationFilter.class);
+		if (jwtFilter != null) {
+			jwtFilter.setAuthenticationManager(authenticationManager());
+			http.addFilterAfter(jwtFilter, RememberMeAuthenticationFilter.class);
+		}
 
 		if (enableRestFilter) {
 			RestAuthFilter restFilter = new RestAuthFilter(new Signer());

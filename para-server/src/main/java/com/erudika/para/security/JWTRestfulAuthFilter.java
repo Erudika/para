@@ -35,6 +35,7 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import javax.inject.Inject;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
@@ -63,11 +64,12 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 
 	private AuthenticationManager authenticationManager;
 	private AntPathRequestMatcher authenticationRequestMatcher;
-	private final FacebookAuthFilter facebookAuth;
-	private final GoogleAuthFilter googleAuth;
-	private final GitHubAuthFilter githubAuth;
-	private final LinkedInAuthFilter linkedinAuth;
-	private final TwitterAuthFilter twitterAuth;
+
+	@Inject private FacebookAuthFilter facebookAuth;
+	@Inject private GoogleAuthFilter googleAuth;
+	@Inject private GitHubAuthFilter githubAuth;
+	@Inject private LinkedInAuthFilter linkedinAuth;
+	@Inject private TwitterAuthFilter twitterAuth;
 
 	/**
 	 * The default filter mapping
@@ -75,11 +77,6 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	public static final String JWT_ACTION = "jwt_auth";
 
 	public JWTRestfulAuthFilter(String defaultFilterProcessesUrl) {
-		this.twitterAuth = new TwitterAuthFilter("/");
-		this.linkedinAuth = new LinkedInAuthFilter("/");
-		this.googleAuth = new GoogleAuthFilter("/");
-		this.facebookAuth = new FacebookAuthFilter("/");
-		this.githubAuth = new GitHubAuthFilter("/");
 		Assert.hasLength(defaultFilterProcessesUrl);
 		setFilterProcessesUrl(defaultFilterProcessesUrl);
 	}
@@ -121,12 +118,9 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 				// validate token if present
 				JWTAuthentication jwt = getJWTfromRequest(request);
 				if (jwt != null) {
-					User user = Para.getDAO().read(new App(jwt.getAppid()).getAppIdentifier(), jwt.getUserid());
-					if (user != null) {
-						Authentication auth = authenticationManager.authenticate(jwt);
-						// success!
-						SecurityContextHolder.getContext().setAuthentication(auth);
-					}
+					Authentication auth = authenticationManager.authenticate(jwt);
+					// success!
+					SecurityContextHolder.getContext().setAuthentication(auth);
 				} else {
 					response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
 				}
@@ -164,7 +158,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 					JWTClaimsSet.Builder claimsSet = new JWTClaimsSet.Builder();
 					claimsSet.subject(user.getId());
 					claimsSet.issueTime(now);
-					claimsSet.expirationTime(new Date(now.getTime() + (Config.SESSION_TIMEOUT_SEC * 1000)));
+					claimsSet.expirationTime(new Date(now.getTime() + (Config.JWT_EXPIRES_AFTER_SEC * 1000)));
 					claimsSet.notBeforeTime(now);
 					claimsSet.claim("appid", app.getId());
 
@@ -195,33 +189,23 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	private boolean refreshTokenHandler(HttpServletRequest request, HttpServletResponse response) {
-		// check or reissue token
-		JWTAuthentication jwt = getJWTfromRequest(request);
-		if (jwt != null) {
+		JWTAuthentication jwtAuth = getJWTfromRequest(request);
+		if (jwtAuth != null) {
 			try {
-				App app = Para.getDAO().read(jwt.getAppid());
-				User user = SecurityUtils.getAuthenticatedUser(jwt);
-				if (user != null && app != null) {
-					Date now = new Date();
-					boolean validJwt = SecurityUtils.isValidJWToken(app, jwt.getJwt());
-					boolean validSig = SecurityUtils.isValidButExpiredJWToken(app, jwt.getJwt());
-					boolean userMustLogin = user.getRevokeTokensAt() != null
-							&& new Date(user.getRevokeTokensAt()).before(now);
-					if (!userMustLogin) {
-						if (validJwt) {
-							succesHandler(response, user, jwt.getJwt());
+				User user = SecurityUtils.getAuthenticatedUser(jwtAuth);
+				if (user != null) {
+					// check and reissue token
+					jwtAuth = (JWTAuthentication) authenticationManager.authenticate(jwtAuth);
+					if (jwtAuth != null && jwtAuth.getApp() != null) {
+						SignedJWT newToken = generateJWT(jwtAuth.getClaims(), jwtAuth.getApp().getSecret());
+						if (newToken != null) {
+							succesHandler(response, user, newToken);
 							return true;
-						} else if (validSig) {
-							SignedJWT newToken = generateJWT(jwt.getClaims(), app.getSecret());
-							if (newToken != null) {
-								succesHandler(response, user, newToken);
-								return true;
-							}
 						}
 					}
 				}
 			} catch (Exception ex) {
-				logger.warn(ex);
+				logger.debug(ex);
 			}
 		}
 		response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer error=\"invalid_token\"");

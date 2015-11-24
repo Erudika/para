@@ -54,6 +54,8 @@ public class JWTAuthenticationProvider implements AuthenticationProvider {
 				App app = Para.getDAO().read(jwtToken.getAppid());
 				if (!SecurityUtils.isValidJWToken(app, jwtToken.getJwt())) {
 					throw new BadCredentialsException("Invalid or expired token.");
+				} else {
+					jwtToken.withApp(app);
 				}
 			} else {
 				throw new AuthenticationServiceException("User not found.");
