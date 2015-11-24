@@ -17,6 +17,7 @@
  */
 package com.erudika.para.security;
 
+import com.google.inject.Inject;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -31,7 +32,6 @@ import javax.servlet.ServletException;
 import org.joda.time.DateTime;
 import org.junit.Assert;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -40,9 +40,10 @@ import org.springframework.mock.web.MockHttpServletResponse;
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
+//@RunWith(SpringJUnit4ClassRunner.class)
 public class JWTRestfulAuthFilterTest {
 
-    @Autowired
+    @Inject
     private JWTRestfulAuthFilter filter;
 
     public MockHttpServletResponse doFilter(MockHttpServletRequest request) throws IOException, ServletException {

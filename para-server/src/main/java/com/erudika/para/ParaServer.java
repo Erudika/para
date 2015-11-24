@@ -26,6 +26,7 @@ import com.erudika.para.persistence.PersistenceModule;
 import com.erudika.para.queue.QueueModule;
 import com.erudika.para.rest.Api1;
 import com.erudika.para.search.SearchModule;
+import com.erudika.para.security.SecurityModule;
 import com.erudika.para.storage.StorageModule;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.filters.CORSFilter;
@@ -90,7 +91,8 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 			new PersistenceModule(),
 			new QueueModule(),
 			new SearchModule(),
-			new StorageModule()
+			new StorageModule(),
+			new SecurityModule()
 		};
 	}
 
@@ -191,22 +193,6 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		runAsWAR(sc, ParaServer.class);
 	}
 
-	private static WebApplicationContext registerApplicationWithSpringBoot(ServletContext sc, WebApplicationContext rootAppContext) {
-		if (rootAppContext != null) {
-			sc.addListener(new ContextLoaderListener(rootAppContext) {
-				@Override
-				public void contextInitialized(ServletContextEvent event) {
-					// no-op because the application context is already initialized
-				}
-			});
-			sc.getSessionCookieConfig().setName("sess");
-			sc.getSessionCookieConfig().setMaxAge(1);
-			sc.getSessionCookieConfig().setHttpOnly(true);
-			sc.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
-		}
-		return rootAppContext;
-	}
-
 	/**
 	 * This is the initializing method when running ParaServer as WAR,
 	 * deployed to a servlet container.
@@ -222,7 +208,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 			parent = (ApplicationContext) object;
 			sc.setAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE, null);
 		}
-		SpringApplicationBuilder application = new SpringApplicationBuilder();
+		SpringApplicationBuilder application = new SpringApplicationBuilder(sources);
 		if (parent != null) {
 			application.initializers(new ParentContextApplicationContextInitializer(parent));
 		}
@@ -233,11 +219,24 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		application.web(true);
 		application.showBanner(false);
 		Para.initialize(getCoreModules());
-		application.sources(sources);
 		// Ensure error pages are registered
 		application.sources(ErrorFilter.class);
 
-		return registerApplicationWithSpringBoot(sc, (WebApplicationContext) application.run());
+		WebApplicationContext rootAppContext = (WebApplicationContext) application.run();
+
+		if (rootAppContext != null) {
+			sc.addListener(new ContextLoaderListener(rootAppContext) {
+				@Override
+				public void contextInitialized(ServletContextEvent event) {
+					// no-op because the application context is already initialized
+				}
+			});
+			sc.getSessionCookieConfig().setName("sess");
+			sc.getSessionCookieConfig().setMaxAge(1);
+			sc.getSessionCookieConfig().setHttpOnly(true);
+			sc.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
+		}
+		return rootAppContext;
 	}
 
 	/**

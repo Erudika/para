@@ -23,7 +23,6 @@ import com.erudika.para.utils.Config;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigValue;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +39,6 @@ import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.openid.OpenID4JavaConsumer;
 import org.springframework.security.openid.OpenIDAuthenticationProvider;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
@@ -57,6 +55,30 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 	private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
+
+	private final CachedCsrfTokenRepository csrfTokenRepository;
+	private final SimpleRememberMeServices rememberMeServices;
+	private final PasswordAuthFilter passwordFilter;
+	private final OpenIDAuthFilter openidFilter;
+	private final FacebookAuthFilter facebookFilter;
+	private final GoogleAuthFilter googleFilter;
+	private final LinkedInAuthFilter linkedinFilter;
+	private final TwitterAuthFilter twitterFilter;
+	private final GitHubAuthFilter githubFilter;
+	private final JWTRestfulAuthFilter jwtFilter;
+
+	public SecurityConfig() {
+		csrfTokenRepository = Para.getInstance(CachedCsrfTokenRepository.class);
+		rememberMeServices = Para.getInstance(SimpleRememberMeServices.class);
+		passwordFilter = Para.getInstance(PasswordAuthFilter.class);
+		openidFilter = Para.getInstance(OpenIDAuthFilter.class);
+		facebookFilter = Para.getInstance(FacebookAuthFilter.class);
+		googleFilter = Para.getInstance(GoogleAuthFilter.class);
+		linkedinFilter = Para.getInstance(LinkedInAuthFilter.class);
+		twitterFilter = Para.getInstance(TwitterAuthFilter.class);
+		githubFilter = Para.getInstance(GitHubAuthFilter.class);
+		jwtFilter = Para.getInstance(JWTRestfulAuthFilter.class);
+	}
 
 	/**
 	 * Configures the authentication providers
@@ -131,9 +153,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		}
 
 		if (Config.getConfigParamUnwrapped("security.csrf_protection", true)) {
-			CachedCsrfTokenRepository str = new CachedCsrfTokenRepository();
-			Para.injectInto(str);
-
 			http.csrf().requireCsrfProtectionMatcher(new RequestMatcher() {
 				private final Pattern allowedMethods = Pattern.compile("^(GET|HEAD|TRACE|OPTIONS)$");
 				private final Pattern authEndpoints = Pattern.compile("^/\\w+_auth$");
@@ -145,7 +164,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 							&& !allowedMethods.matcher(request.getMethod()).matches();
 					return matches;
 				}
-			}).csrfTokenRepository(str);
+			}).csrfTokenRepository(csrfTokenRepository);
 		} else {
 			http.csrf().disable();
 		}
@@ -156,78 +175,31 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		http.exceptionHandling().authenticationEntryPoint(new SimpleAuthenticationEntryPoint(confMap.get("security.signin")));
 		http.exceptionHandling().accessDeniedHandler(new SimpleAccessDeniedHandler(confMap.get("security.access_denied")));
 		http.requestCache().requestCache(new SimpleRequestCache());
-		http.logout().logoutUrl(confMap.get("security.signout")).
-				logoutSuccessUrl(confMap.get("security.signout_success"));
+		http.logout().logoutUrl(confMap.get("security.signout")).logoutSuccessUrl(confMap.get("security.signout_success"));
+		http.rememberMe().rememberMeServices(rememberMeServices);
 
-		SimpleAuthenticationSuccessHandler successHandler = new SimpleAuthenticationSuccessHandler();
-		successHandler.setDefaultTargetUrl(confMap.get("security.signin_success"));
-		successHandler.setTargetUrlParameter(confMap.get("security.returnto"));
-		successHandler.setUseReferer(false);
+			passwordFilter.setAuthenticationManager(authenticationManager());
+			http.addFilterAfter(passwordFilter, BasicAuthenticationFilter.class);
 
-		SimpleAuthenticationFailureHandler failureHandler = new SimpleAuthenticationFailureHandler();
-		failureHandler.setDefaultFailureUrl(confMap.get("security.signin_failure"));
-
-		SimpleRememberMeServices tbrms = new SimpleRememberMeServices(Config.APP_SECRET_KEY, new SimpleUserService());
-		tbrms.setAlwaysRemember(true);
-		tbrms.setTokenValiditySeconds(Config.SESSION_TIMEOUT_SEC.intValue());
-		tbrms.setCookieName(Config.AUTH_COOKIE);
-		tbrms.setParameter(Config.AUTH_COOKIE.concat("-remember-me"));
-		http.rememberMe().rememberMeServices(tbrms);
-
-		PasswordAuthFilter passwordFilter = new PasswordAuthFilter("/" + PasswordAuthFilter.PASSWORD_ACTION);
-		passwordFilter.setAuthenticationManager(authenticationManager());
-		passwordFilter.setAuthenticationSuccessHandler(successHandler);
-		passwordFilter.setAuthenticationFailureHandler(failureHandler);
-		passwordFilter.setRememberMeServices(tbrms);
-
-		OpenIDAuthFilter openidFilter = new OpenIDAuthFilter("/" + OpenIDAuthFilter.OPENID_ACTION);
 		openidFilter.setAuthenticationManager(authenticationManager());
-		openidFilter.setConsumer(new OpenID4JavaConsumer(new SimpleAxFetchListFactory()));
-		openidFilter.setReturnToUrlParameters(Collections.singleton(confMap.get("security.returnto")));
-		openidFilter.setAuthenticationSuccessHandler(successHandler);
-		openidFilter.setAuthenticationFailureHandler(failureHandler);
-		openidFilter.setRememberMeServices(tbrms);
-
-		FacebookAuthFilter facebookFilter = new FacebookAuthFilter("/" + FacebookAuthFilter.FACEBOOK_ACTION);
-		facebookFilter.setAuthenticationManager(authenticationManager());
-		facebookFilter.setAuthenticationSuccessHandler(successHandler);
-		facebookFilter.setAuthenticationFailureHandler(failureHandler);
-		facebookFilter.setRememberMeServices(tbrms);
-
-		GoogleAuthFilter googleFilter = new GoogleAuthFilter("/" + GoogleAuthFilter.GOOGLE_ACTION);
-		googleFilter.setAuthenticationManager(authenticationManager());
-		googleFilter.setAuthenticationSuccessHandler(successHandler);
-		googleFilter.setAuthenticationFailureHandler(failureHandler);
-		googleFilter.setRememberMeServices(tbrms);
-
-		LinkedInAuthFilter linkedinFilter = new LinkedInAuthFilter("/" + LinkedInAuthFilter.LINKEDIN_ACTION);
-		linkedinFilter.setAuthenticationManager(authenticationManager());
-		linkedinFilter.setAuthenticationSuccessHandler(successHandler);
-		linkedinFilter.setAuthenticationFailureHandler(failureHandler);
-		linkedinFilter.setRememberMeServices(tbrms);
-
-		TwitterAuthFilter twitterFilter = new TwitterAuthFilter("/" + TwitterAuthFilter.TWITTER_ACTION);
-		twitterFilter.setAuthenticationManager(authenticationManager());
-		twitterFilter.setAuthenticationSuccessHandler(successHandler);
-		twitterFilter.setAuthenticationFailureHandler(failureHandler);
-		twitterFilter.setRememberMeServices(tbrms);
-
-		GitHubAuthFilter githubFilter = new GitHubAuthFilter("/" + GitHubAuthFilter.GITHUB_ACTION);
-		githubFilter.setAuthenticationManager(authenticationManager());
-		githubFilter.setAuthenticationSuccessHandler(successHandler);
-		githubFilter.setAuthenticationFailureHandler(failureHandler);
-		githubFilter.setRememberMeServices(tbrms);
-
-		JWTRestfulAuthFilter jwtFilter = new JWTRestfulAuthFilter("/" + JWTRestfulAuthFilter.JWT_ACTION);
-		jwtFilter.setAuthenticationManager(authenticationManager());
-
-		http.addFilterAfter(passwordFilter, BasicAuthenticationFilter.class);
 		http.addFilterAfter(openidFilter, BasicAuthenticationFilter.class);
+
+		facebookFilter.setAuthenticationManager(authenticationManager());
 		http.addFilterAfter(facebookFilter, BasicAuthenticationFilter.class);
+
+		googleFilter.setAuthenticationManager(authenticationManager());
 		http.addFilterAfter(googleFilter, BasicAuthenticationFilter.class);
+
+		linkedinFilter.setAuthenticationManager(authenticationManager());
 		http.addFilterAfter(linkedinFilter, BasicAuthenticationFilter.class);
+
+		twitterFilter.setAuthenticationManager(authenticationManager());
 		http.addFilterAfter(twitterFilter, BasicAuthenticationFilter.class);
+
+		githubFilter.setAuthenticationManager(authenticationManager());
 		http.addFilterAfter(githubFilter, BasicAuthenticationFilter.class);
+
+		jwtFilter.setAuthenticationManager(authenticationManager());
 		http.addFilterAfter(jwtFilter, RememberMeAuthenticationFilter.class);
 
 		if (enableRestFilter) {

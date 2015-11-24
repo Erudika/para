@@ -33,6 +33,7 @@ import static com.erudika.para.validation.Constraint.*;
 import com.erudika.para.utils.HumanTime;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -68,13 +69,32 @@ public class ParaClientIT {
 	protected static Sysprop s2;
 	protected static Address a1;
 	protected static Address a2;
+	protected static User fbUser;
 
 	@BeforeClass
-	public static void setUpClass() throws InterruptedException {
+	public static void setUpClass() throws InterruptedException, IOException {
 		System.setProperty("para.env", "embedded");
 		System.setProperty("para.app_name", "para-client-test");
 		System.setProperty("para.cluster_name", "para-test");
 		String endpoint = "http://localhost:8080";
+
+		fbUser = new User("fbUser_1");
+		fbUser.setEmail("test@user.com");
+		fbUser.setIdentifier("fb:1234");
+		fbUser.setGroups("users");
+		fbUser.setActive(true);
+
+//		UserAuthentication ua = new UserAuthentication(new AuthenticatedUserDetails(fbUser));
+//		SpringApplication app = new SpringApplication(ParaServer.class);
+//		app.setWebEnvironment(true);
+//		app.setShowBanner(false);
+//		SecurityModule secMod = new SecurityModule();
+//		FacebookAuthFilter fbaf = mock(FacebookAuthFilter.class);
+//		when(fbaf.getOrCreateUser(anyString(), anyString())).thenReturn(ua);
+//		secMod.setFacebookFilter(fbaf);
+//		Para.initialize(Modules.override(ParaServer.getCoreModules()).with(secMod));
+//		app.run();
+
 		ParaServer.main(new String[0]);
 		ParaClient temp = new ParaClient("x", "x");
 		temp.setEndpoint(endpoint);
@@ -86,6 +106,9 @@ public class ParaClientIT {
 			pc.setEndpoint(endpoint);
 			logger.info("accessKey: {}, secretKey: {}", accessKey, secretKey);
 		}
+
+		fbUser = pc.create(fbUser);
+//		assertNotNull(fbUser);
 
 		u = new Sysprop("111");
 		u.setName("John Doe");
@@ -566,7 +589,19 @@ public class ParaClientIT {
 	}
 
 	@Test
-	public void testAccessTokens() {
+	public void testAccessTokens() throws IOException {
+//		App app = new App("my-app1");
+//		app.setActive(true);
+//		app = pc.create(app);
+
+
+		// ...
+
+//		User signedIn = pc.signIn("facebook", "test_token");
+//		assertNotNull(signedIn);
+//		assertEquals(fbUser.getId(), signedIn.getId());
+//		assertTrue(signedIn.getActive());
+
 
 	}
 }
