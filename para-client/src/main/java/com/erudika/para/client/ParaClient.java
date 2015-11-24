@@ -190,10 +190,13 @@ public final class ParaClient {
 	}
 
 	private String getFullPath(String resourcePath) {
+		if (StringUtils.startsWith(resourcePath, JWT_PATH)) {
+			return resourcePath;
+		}
 		if (resourcePath == null) {
 			resourcePath = "";
 		} else if (resourcePath.startsWith("/")) {
-			return resourcePath;
+			resourcePath = resourcePath.substring(1);
 		}
 		return getApiPath() + resourcePath;
 	}
@@ -1015,7 +1018,7 @@ public final class ParaClient {
 	 */
 	public Map<String, Map<String, Map<String, Map<String, ?>>>> addValidationConstraint(String type,
 			String field, Constraint c) {
-		if (type == null || field == null || c == null) {
+		if (StringUtils.isBlank(type) || StringUtils.isBlank(field) || c == null) {
 			return Collections.emptyMap();
 		}
 		return getEntity(invokePut(Utils.formatMessage("_constraints/{0}/{1}/{2}", type,
@@ -1031,6 +1034,9 @@ public final class ParaClient {
 	 */
 	public Map<String, Map<String, Map<String, Map<String, ?>>>> removeValidationConstraint(String type,
 			String field, String constraintName) {
+		if (StringUtils.isBlank(type) || StringUtils.isBlank(field) || StringUtils.isBlank(constraintName)) {
+			return Collections.emptyMap();
+		}
 		return getEntity(invokeDelete(Utils.formatMessage("_constraints/{0}/{1}/{2}", type,
 				field, constraintName), null), Map.class);
 	}
@@ -1065,6 +1071,9 @@ public final class ParaClient {
 	 */
 	public Map<String, Map<String, List<String>>> grantResourcePermission(String subjectid, String resourceName,
 			EnumSet<App.AllowedMethods> permission) {
+		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourceName) || permission == null) {
+			return Collections.emptyMap();
+		}
 		return getEntity(invokePut(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourceName),
 				Entity.json(permission)), Map.class);
 	}
@@ -1076,6 +1085,9 @@ public final class ParaClient {
 	 * @return a map of the permissions for this subject id
 	 */
 	public Map<String, Map<String, List<String>>> revokeResourcePermission(String subjectid, String resourceName) {
+		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourceName)) {
+			return Collections.emptyMap();
+		}
 		return getEntity(invokeDelete(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourceName),
 				null), Map.class);
 	}
@@ -1086,6 +1098,9 @@ public final class ParaClient {
 	 * @return a map of the permissions for this subject id
 	 */
 	public Map<String, Map<String, List<String>>> revokeAllResourcePermissions(String subjectid) {
+		if (StringUtils.isBlank(subjectid)) {
+			return Collections.emptyMap();
+		}
 		return getEntity(invokeDelete(Utils.formatMessage("_permissions/{0}", subjectid), null), Map.class);
 	}
 
