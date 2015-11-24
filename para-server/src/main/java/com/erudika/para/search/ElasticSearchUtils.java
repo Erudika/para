@@ -131,14 +131,14 @@ public final class ElasticSearchUtils {
 			}
 		});
 
-		// wait for the shards to initialize to prevent NoShardAvailableActionException
-		String timeout = Config.IN_PRODUCTION ? "1m" : "5s";
-		searchClient.admin().cluster().prepareHealth(Config.APP_NAME_NS).
-				setWaitForGreenStatus().setTimeout(timeout).execute().actionGet();
-
 		if (!existsIndex(Config.APP_NAME_NS)) {
 			createIndex(Config.APP_NAME_NS);
 		}
+
+		// wait for the shards to initialize - prevents NoShardAvailableActionException!
+		String timeout = Config.IN_PRODUCTION ? "1m" : "5s";
+		searchClient.admin().cluster().prepareHealth(Config.APP_NAME_NS).
+				setWaitForGreenStatus().setTimeout(timeout).execute().actionGet();
 
 		return searchClient;
 	}
