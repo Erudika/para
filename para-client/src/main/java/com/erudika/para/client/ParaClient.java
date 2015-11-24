@@ -70,6 +70,7 @@ public final class ParaClient {
 	private final String secretKey;
 	private String tokenKey;
 	private Long tokenKeyExpires;
+	private Long tokenKeyLastRefresh;
 	private Client apiClient;
 	private final Signer signer = new Signer();
 
@@ -159,6 +160,14 @@ public final class ParaClient {
 	public void clearAccessToken() {
 		tokenKey = null;
 		tokenKeyExpires = null;
+		tokenKeyLastRefresh = null;
+	}
+
+	/**
+	 * @return the JWT access token, or null
+	 */
+	public String getAccessToken() {
+		return tokenKey;
 	}
 
 	private String key() {
@@ -1157,17 +1166,35 @@ public final class ParaClient {
 	}
 
 	/**
-	 * Refreshes the JWT access token. This requires an old expired token.
-	 * <b>Note:</b> Generating a new API secret on the server will invalidate all tokens for all clients.
-	 * @return true if token was refreshed or false if user must reauthenticate with the identity provider.
+	 * Same as {@link #revokeAllTokens(java.lang.Long)}.
+	 * Instantly revokes all tokens for current user.
+	 * @return true if successful
 	 */
-	public boolean refreshToken() {
-		if (tokenKey != null && tokenKeyExpires != null && tokenKeyExpires <= System.currentTimeMillis()) {
+	public boolean signOut() {
+		clearAccessToken();
+		return revokeAllTokens(null);
+	}
+
+	/**
+	 * Refreshes the JWT access token. This requires a valid unexpired token.
+	 *	Call {@link #signIn(java.lang.String, java.lang.String)} first.
+	 * <b>Note:</b> Generating a new API secret on the server will invalidate all tokens for all clients.
+	 * @return true if token was refreshed
+	 */
+	protected boolean refreshToken() {
+		long now = System.currentTimeMillis();
+		long interval = (Config.JWT_REFRESH_INTERVAL_SEC * 1000);
+		boolean notExpired = tokenKeyExpires != null && tokenKeyExpires > now;
+		boolean canRefresh = tokenKeyLastRefresh != null &&
+				((tokenKeyLastRefresh + interval) < now || (tokenKeyLastRefresh + interval) > tokenKeyExpires);
+		// token present and NOT expired
+		if (tokenKey != null && notExpired && canRefresh) {
 			Map<String, Object> result = getEntity(invokeGet(JWT_PATH, null), Map.class);
 			if (result != null && result.containsKey("user") && result.containsKey("jwt")) {
 				Map<?, ?> jwtData = (Map<?, ?>) result.get("jwt");
 				tokenKey = (String) jwtData.get("access_token");
 				tokenKeyExpires = (Long) jwtData.get("expires");
+				tokenKeyLastRefresh = System.currentTimeMillis();
 				return true;
 			} else {
 				clearAccessToken();
