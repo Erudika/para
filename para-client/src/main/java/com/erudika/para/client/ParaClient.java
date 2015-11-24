@@ -63,7 +63,7 @@ public final class ParaClient {
 	private static final Logger logger = LoggerFactory.getLogger(ParaClient.class);
 	private static final String DEFAULT_ENDPOINT = "https://paraio.com";
 	private static final String DEFAULT_PATH = "/v1/";
-	private static final String JWT_PATH = "jwt_auth";
+	private static final String JWT_PATH = "/jwt_auth";
 	private String endpoint;
 	private String path;
 	private final String accessKey;
@@ -193,7 +193,7 @@ public final class ParaClient {
 		if (resourcePath == null) {
 			resourcePath = "";
 		} else if (resourcePath.startsWith("/")) {
-			resourcePath = resourcePath.substring(1);
+			return resourcePath;
 		}
 		return getApiPath() + resourcePath;
 	}
