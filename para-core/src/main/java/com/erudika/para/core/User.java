@@ -61,7 +61,7 @@ public class User implements ParaObject {
 	@Stored private String currency;
 	@Stored private String picture;
 	@Stored private String lastIp;
-	@Stored @Locked private Long revokeTokensAt;
+	@Stored @Locked private String tokenSecret;
 
 	private transient String password;
 	private transient DAO dao;
@@ -90,24 +90,25 @@ public class User implements ParaObject {
 	}
 
 	/**
-	 * The timestamp after which all JWT tokens issued
-	 * for this user become invalid. A way to "logout" users
-	 * or client devices after a set time.
-	 * @return a timestamp
+	 * Token secret - used for generating JWT tokens.
+	 * Changing this secret would invalidate all existing user tokens.
+	 * A kind of global "logout".
+	 * @return a random string
 	 */
-	public Long getRevokeTokensAt() {
-		return revokeTokensAt;
+	@JsonIgnore
+	public String getTokenSecret() {
+		if (tokenSecret == null) {
+			resetTokenSecret();
+		}
+		return tokenSecret;
 	}
 
 	/**
-	 * Sets the timestamp after which all JWT tokens issued
-	 * for this user become invalid. If set to null, JWT tokens
-	 * will be renewed every time they expire. If set to a timestamp
-	 * in the past, all tokens become invalid and user has to log in again.
-	 * @param revokeTokensAt
+	 * Sets the token secret.
+	 * @param tokenSecret a random string
 	 */
-	public void setRevokeTokensAt(Long revokeTokensAt) {
-		this.revokeTokensAt = revokeTokensAt;
+	public void setTokenSecret(String tokenSecret) {
+		this.tokenSecret = tokenSecret;
 	}
 
 	/**
@@ -232,6 +233,14 @@ public class User implements ParaObject {
 	}
 
 	/**
+	 * Generates a new token secret.
+	 * This is whould be equivalent to "logout everywhere".
+	 */
+	public void resetTokenSecret() {
+		tokenSecret = Utils.generateSecurityToken();
+	}
+
+	/**
 	 * Note: this method assumes that child objects can be modified by their parents.
 	 * This might not work for special cases where a parent has no rights over a child.
 	 * @param obj an object
@@ -265,6 +274,7 @@ public class User implements ParaObject {
 		}
 
 		setGravatarPicture();
+		resetTokenSecret();
 
 		if (getDao().create(getAppid(), this) != null) {
 			createIdentifier(getId(), getIdentifier(), getPassword());
