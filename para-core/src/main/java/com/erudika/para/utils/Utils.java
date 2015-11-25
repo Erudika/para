@@ -350,6 +350,8 @@ public final class Utils {
 	 */
 	public static String formatMessage(String msg, Object... params) {
 		try {
+			// required by MessageFormat, single quotes break string interpolation!
+			msg = StringUtils.replace(msg, "'", "''");
 			return StringUtils.isBlank(msg) ? "" : MessageFormat.format(msg, params);
 		} catch (IllegalArgumentException e) {
 			return msg;
