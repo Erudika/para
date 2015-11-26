@@ -24,7 +24,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.openid.OpenIDAuthenticationFilter;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
@@ -64,11 +63,10 @@ public class OpenIDAuthFilter extends OpenIDAuthenticationFilter {
 	 * @param response HTTP response
 	 * @return an authentication object that contains the principal object if successful.
 	 * @throws IOException ex
-	 * @throws AuthenticationException ex
 	 */
 	@Override
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, AuthenticationException {
+			throws IOException {
 		final String requestURI = request.getRequestURI();
 		Authentication userAuth = null;
 		User user = null;

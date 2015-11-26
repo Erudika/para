@@ -40,7 +40,6 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
 /**
@@ -77,11 +76,10 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * @param response HTTP response
 	 * @return an authentication object that contains the principal object if successful.
 	 * @throws IOException ex
-	 * @throws AuthenticationException ex
 	 */
 	@Override
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
-			throws IOException, AuthenticationException {
+			throws IOException {
 		final String requestURI = request.getRequestURI();
 		UserAuthentication userAuth = null;
 
@@ -120,10 +118,9 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * @param accessToken access token
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException
-	 * @throws AuthenticationException
 	 */
 	public UserAuthentication getOrCreateUser(String appid, String accessToken)
-			throws IOException, AuthenticationException {
+			throws IOException {
 		UserAuthentication userAuth = null;
 		if (accessToken != null) {
 			User user = new User();
