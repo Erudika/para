@@ -20,7 +20,11 @@ package com.erudika.para.security;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
@@ -95,14 +99,14 @@ public final class SecurityUtils {
 
 	/**
 	 * Validates a JWT token.
-	 * @param app app
-	 * @param jwt token
+	 * @param secret secret used for generating the token
+	 * @param jwt token to validate
 	 * @return true if token is valid
 	 */
-	public static boolean isValidJWToken(App app, SignedJWT jwt) {
+	public static boolean isValidJWToken(String secret, SignedJWT jwt) {
 		try {
-			if (app != null && jwt != null) {
-				JWSVerifier verifier = new MACVerifier(app.getSecret());
+			if (secret != null && jwt != null) {
+				JWSVerifier verifier = new MACVerifier(secret);
 				if (jwt.verify(verifier)) {
 					Date referenceTime = new Date();
 					JWTClaimsSet claims = jwt.getJWTClaimsSet();
@@ -121,5 +125,25 @@ public final class SecurityUtils {
 			logger.warn(null, ex);
 		}
 		return false;
+	}
+
+	/**
+	 * Generates a new JWT token.
+	 * @param secret secret used for generating the token
+	 * @param claimsSet JWT claims
+	 * @return a new JWT or null
+	 */
+	public static SignedJWT generateJWToken(String secret, JWTClaimsSet claimsSet) {
+		if (claimsSet != null && secret != null) {
+			try {
+				JWSSigner signer = new MACSigner(secret);
+				SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);
+				signedJWT.sign(signer);
+				return signedJWT;
+			} catch (JOSEException e) {
+				logger.warn("Unable to sign JWT.", e);
+			}
+		}
+		return null;
 	}
 }

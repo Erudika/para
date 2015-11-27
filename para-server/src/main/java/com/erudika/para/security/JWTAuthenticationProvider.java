@@ -17,15 +17,12 @@
  */
 package com.erudika.para.security;
 
-import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
-import java.util.Date;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 
 /**
  * An authentication provider that verifies JSON web tokens.
@@ -41,21 +38,15 @@ public class JWTAuthenticationProvider implements AuthenticationProvider {
 	}
 
 	@Override
-	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+	public Authentication authenticate(Authentication authentication) {
 		JWTAuthentication jwtToken = (JWTAuthentication) authentication;
 		if (jwtToken != null && supports(authentication.getClass())) {
 			User user = SecurityUtils.getAuthenticatedUser(authentication);
-			if (user != null) {
-				boolean userMustLogin = user.getRevokeTokensAt() != null &&
-							new Date(user.getRevokeTokensAt()).before(new Date());
-				if (userMustLogin) {
+			App app = jwtToken.getApp();
+			if (user != null && app != null) {
+				String secret = jwtToken.getApp().getSecret() + user.getTokenSecret();
+				if (!SecurityUtils.isValidJWToken(secret, jwtToken.getJwt())) {
 					throw new BadCredentialsException("Invalid or expired token.");
-				}
-				App app = Para.getDAO().read(jwtToken.getAppid());
-				if (!SecurityUtils.isValidJWToken(app, jwtToken.getJwt())) {
-					throw new BadCredentialsException("Invalid or expired token.");
-				} else {
-					jwtToken.withApp(app);
 				}
 			} else {
 				throw new AuthenticationServiceException("User not found.");

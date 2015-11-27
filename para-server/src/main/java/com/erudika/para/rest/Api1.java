@@ -589,7 +589,7 @@ public class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> keysHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = RestUtils.getPrincipalApp();
+				App app = SecurityUtils.getAuthenticatedApp();
 				if (app != null) {
 					app.resetSecret();
 					CoreUtils.overwrite(app);
@@ -597,7 +597,7 @@ public class Api1 extends ResourceConfig {
 					creds.put("info", "Save the secret key! It is showed only once!");
 					return Response.ok(creds).build();
 				}
-				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+				return RestUtils.getStatusResponse(Response.Status.UNAUTHORIZED, "Not an app.");
 			}
 		};
 	}

@@ -23,6 +23,7 @@ import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
 import com.erudika.para.rest.Signer;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Utils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -78,10 +79,10 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 
 		String appid = RestUtils.extractAccessKey(request);
 		boolean isApp = !StringUtils.isBlank(appid);
-		boolean proceed = false;
+		boolean proceed = true;
 		// users are allowed to GET '/_me' - used on the client-side for checking authentication
 		if (!isApp && RestRequestMatcher.INSTANCE.matches(request)) {
-			proceed = userAuthRequestHandler(request, response);
+			proceed = userAuthRequestHandler((HttpServletRequest) req, response);
 		} else if (isApp && RestRequestMatcher.INSTANCE_STRICT.matches(request)) {
 			proceed = appAuthRequestHandler(appid, request, response);
 		}
@@ -91,24 +92,27 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		}
 	}
 
-	private boolean userAuthRequestHandler(BufferedRequestWrapper request, HttpServletResponse response) {
+	private boolean userAuthRequestHandler(HttpServletRequest request, HttpServletResponse response) {
 		Authentication userAuth = SecurityContextHolder.getContext().getAuthentication();
-		User u = SecurityUtils.getAuthenticatedUser(userAuth);
-		if (u != null && u.getActive()) {
+		User user = SecurityUtils.getAuthenticatedUser(userAuth);
+		String reqUri = request.getRequestURI();
+		String method = request.getMethod();
+		if (user != null && user.getActive()) {
 			App parentApp;
 			if (userAuth instanceof JWTAuthentication) {
 				parentApp = ((JWTAuthentication) userAuth).getApp();
 			} else {
-				parentApp = Para.getDAO().read(App.id(u.getAppid()));
+				parentApp = Para.getDAO().read(App.id(user.getAppid()));
 			}
 			if (parentApp != null) {
+				String resource = RestUtils.extractResourceName(request);
 				boolean isRootApp = parentApp.getId().equals(App.id(Config.APP_NAME_NS));
 				boolean isRootAppAccessAllowed = Config.CLIENTS_CAN_ACCESS_ROOT_APP;
-				boolean isUserAllowed = parentApp.isAllowedTo(u.getId(),
-						RestUtils.extractResourceName(request), request.getMethod());
+				boolean isUserAllowed = parentApp.isAllowedTo(user.getId(), resource, request.getMethod());
 				if ((isRootApp && !isRootAppAccessAllowed) || !isUserAllowed) {
 					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-							"You don't have permission to access this resource.");
+							Utils.formatMessage("You don't have permission to access this resource. "
+									+ "[user: {0}, resource: {1} {2}]", user.getId(), method, reqUri));
 					return false;
 				}
 			} else {
@@ -116,8 +120,9 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 				return false;
 			}
 		} else {
-			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-					"You don't have permission to access this resource.");
+			String msg = Utils.formatMessage("You don't have permission to access this resource. "
+					+ "[resource: {0} {1}]", method, reqUri);
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN, msg);
 			return false;
 		}
 		return true;

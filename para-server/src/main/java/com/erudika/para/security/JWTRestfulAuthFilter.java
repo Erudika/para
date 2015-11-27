@@ -23,11 +23,7 @@ import com.erudika.para.core.CoreUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
 import com.erudika.para.utils.Config;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jose.crypto.MACSigner;
+import com.erudika.para.utils.Utils;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import java.io.IOException;
@@ -46,7 +42,6 @@ import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -94,9 +89,9 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	@Override
-    public void afterPropertiesSet() {
+	public void afterPropertiesSet() {
 		Assert.notNull(authenticationManager, "authenticationManager cannot be null");
-    }
+	}
 
 	@Override
 	public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
@@ -112,7 +107,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 				revokeAllTokensHandler(request, response);
 			}
 			return;
-		} else if (RestRequestMatcher.INSTANCE.matches(request) &&
+		} else if (RestRequestMatcher.INSTANCE_STRICT.matches(request) &&
 				SecurityContextHolder.getContext().getAuthentication() == null) {
 			try {
 				// validate token if present
@@ -162,13 +157,9 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 					claimsSet.notBeforeTime(now);
 					claimsSet.claim("appid", app.getId());
 
-					SignedJWT newJWT = generateJWT(claimsSet.build(), app.getSecret());
+					String secret = app.getSecret() + user.getTokenSecret();
+					SignedJWT newJWT = SecurityUtils.generateJWToken(secret, claimsSet.build());
 					if (newJWT != null) {
-						// clear revocation flag
-						if (user.getRevokeTokensAt() != null) {
-							user.setRevokeTokensAt(null);
-							CoreUtils.overwrite(app.getAppIdentifier(), user);
-						}
 						succesHandler(response, user, newJWT);
 						return true;
 					}
@@ -197,7 +188,8 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 					// check and reissue token
 					jwtAuth = (JWTAuthentication) authenticationManager.authenticate(jwtAuth);
 					if (jwtAuth != null && jwtAuth.getApp() != null) {
-						SignedJWT newToken = generateJWT(jwtAuth.getClaims(), jwtAuth.getApp().getSecret());
+						String secret = jwtAuth.getApp().getSecret() + user.getTokenSecret();
+						SignedJWT newToken = SecurityUtils.generateJWToken(secret, jwtAuth.getClaims());
 						if (newToken != null) {
 							succesHandler(response, user, newToken);
 							return true;
@@ -214,16 +206,22 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	private boolean revokeAllTokensHandler(HttpServletRequest request, HttpServletResponse response) {
-		String at = request.getParameter("revokeTokensAt");
-		Long atStamp = NumberUtils.toLong(at, System.currentTimeMillis());
-		JWTAuthentication jwt = getJWTfromRequest(request);
-		if (jwt != null) {
-			User user = SecurityUtils.getAuthenticatedUser(jwt);
-			if (user != null) {
-				user.setRevokeTokensAt(atStamp);
-				CoreUtils.overwrite(new App(jwt.getAppid()).getAppIdentifier(), user);
-				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_OK,
-						"All tokens will be revoked at " + new Date(atStamp));
+		JWTAuthentication jwtAuth = getJWTfromRequest(request);
+		if (jwtAuth != null) {
+			try {
+				User user = SecurityUtils.getAuthenticatedUser(jwtAuth);
+				if (user != null) {
+					jwtAuth = (JWTAuthentication) authenticationManager.authenticate(jwtAuth);
+					if (jwtAuth != null && jwtAuth.getApp() != null) {
+						user.resetTokenSecret();
+						CoreUtils.overwrite(jwtAuth.getApp().getAppIdentifier(), user);
+						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_OK,
+								Utils.formatMessage("All tokens revoked for user {0}!", user.getId()));
+						return true;
+					}
+				}
+			} catch (Exception ex) {
+				logger.debug(ex);
 			}
 		}
 		response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
@@ -236,33 +234,19 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 		if (user != null && token != null) {
 			Map<String, Object> result = new HashMap<String, Object>();
 			result.put("user", user);
-			result.put("jwt", new HashMap<String, Object>() {{
+			result.put("jwt", new HashMap<String, Object>() { {
 					try {
 						put("access_token", token.serialize());
 						put("expires", token.getJWTClaimsSet().getExpirationTime().getTime());
 					} catch (ParseException ex) {
 						logger.info("Unable to parse JWT.", ex);
 					}
-			}});
+			} });
 			RestUtils.returnObjectResponse(response, result);
 		} else {
 			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Null token.");
 		}
 	}
-
-	protected SignedJWT generateJWT(JWTClaimsSet claimsSet, String secret) {
-		if (claimsSet != null && secret != null) {
-			try {
-				JWSSigner signer = new MACSigner(secret);
-				SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);
-				signedJWT.sign(signer);
-				return signedJWT;
-			} catch(JOSEException e) {
-				logger.warn("Unable to sign JWT.", e);
-			}
-		}
-		return null;
-    }
 
 	private JWTAuthentication getJWTfromRequest(HttpServletRequest request) {
 		String token = request.getHeader(HttpHeaders.AUTHORIZATION);
@@ -274,9 +258,11 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 				SignedJWT jwt = SignedJWT.parse(token.substring(6).trim());
 				String userid = jwt.getJWTClaimsSet().getSubject();
 				String appid = (String) jwt.getJWTClaimsSet().getClaim("appid");
-				User user = Para.getDAO().read(new App(appid).getAppIdentifier(), userid);
-				if (user != null) {
-					return new JWTAuthentication(new AuthenticatedUserDetails(user)).withJWT(jwt);
+				App app = new App(appid);
+				User user = Para.getDAO().read(app.getAppIdentifier(), userid);
+				app = Para.getDAO().read(app.getAppIdentifier(), app.getId());
+				if (user != null && app != null) {
+					return new JWTAuthentication(new AuthenticatedUserDetails(user)).withJWT(jwt).withApp(app);
 				}
 			} catch (ParseException e) {
 				logger.debug("Unable to parse JWT.", e);
@@ -286,7 +272,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	private UserAuthentication getOrCreateUser(String appid, String identityProvider, String accessToken)
-			throws IOException, AuthenticationException {
+			throws IOException {
 		if ("facebook".equals(identityProvider)) {
 			return facebookAuth.getOrCreateUser(appid, accessToken);
 		} else if ("google".equals(identityProvider)) {

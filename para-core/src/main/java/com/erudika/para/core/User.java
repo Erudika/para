@@ -274,7 +274,10 @@ public class User implements ParaObject {
 		}
 
 		setGravatarPicture();
-		resetTokenSecret();
+
+		if (StringUtils.isBlank(tokenSecret)) {
+			resetTokenSecret();
+		}
 
 		if (getDao().create(getAppid(), this) != null) {
 			createIdentifier(getId(), getIdentifier(), getPassword());

@@ -66,8 +66,8 @@ public final class ParaClient {
 	private static final String JWT_PATH = "/jwt_auth";
 	private String endpoint;
 	private String path;
-	private final String accessKey;
-	private final String secretKey;
+	private String accessKey;
+	private String secretKey;
 	private String tokenKey;
 	private Long tokenKeyExpires;
 	private Long tokenKeyLastRefresh;
@@ -155,19 +155,27 @@ public final class ParaClient {
 	}
 
 	/**
-	 * Clears the JWT token from memory, if such exists.
+	 * @return the JWT access token, or null
 	 */
-	public void clearAccessToken() {
-		tokenKey = null;
-		tokenKeyExpires = null;
-		tokenKeyLastRefresh = null;
+	protected String getAccessToken() {
+		return tokenKey;
 	}
 
 	/**
-	 * @return the JWT access token, or null
+	 * Sets a new JWT access token.
+	 * @param token a token
 	 */
-	public String getAccessToken() {
-		return tokenKey;
+	protected void setAccessToken(String token) {
+		this.tokenKey = token;
+	}
+
+	/**
+	 * Clears the JWT token from memory, if such exists.
+	 */
+	private void clearAccessToken() {
+		tokenKey = null;
+		tokenKeyExpires = null;
+		tokenKeyLastRefresh = null;
 	}
 
 	private String key() {
@@ -975,7 +983,11 @@ public final class ParaClient {
 	 * @return a map of new credentials
 	 */
 	public Map<String, String> newKeys() {
-		return getEntity(invokePost("_newkeys", null), Map.class);
+		Map<String, String> keys = getEntity(invokePost("_newkeys", null), Map.class);
+		if (keys != null && keys.containsKey("secretKey")) {
+			this.secretKey = keys.get("secretKey");
+		}
+		return keys;
 	}
 
 	/**
@@ -1166,19 +1178,16 @@ public final class ParaClient {
 	}
 
 	/**
-	 * Same as {@link #revokeAllTokens(java.lang.Long)}.
-	 * Instantly revokes all tokens for current user.
-	 * @return true if successful
+	 * Clears the JWT access token but token is not revoked.
+	 * Tokens can be revoked globally per user with {@link #revokeAllTokens()}.
 	 */
-	public boolean signOut() {
+	public void signOut() {
 		clearAccessToken();
-		return revokeAllTokens(null);
 	}
 
 	/**
-	 * Refreshes the JWT access token. This requires a valid unexpired token.
+	 * Refreshes the JWT access token. This requires a valid existing token.
 	 *	Call {@link #signIn(java.lang.String, java.lang.String)} first.
-	 * <b>Note:</b> Generating a new API secret on the server will invalidate all tokens for all clients.
 	 * @return true if token was refreshed
 	 */
 	protected boolean refreshToken() {
@@ -1204,19 +1213,14 @@ public final class ParaClient {
 	}
 
 	/**
-	 * Revokes all user tokens for a given user id. If a timestamp is given then tokens will become
-	 * invalid at that time. If timestamp is null or in the past, tokens are revoked immediately.
+	 * Revokes all user tokens for a given user id.
+	 * This is whould be equivalent to "logout everywhere".
+	 * <b>Note:</b> Generating a new API secret on the server will also invalidate all client tokens.
 	 * Requires a valid existing token.
-	 * @param timestamp a Java timestamp in milliseconds
 	 * @return true if successful
 	 */
-	public boolean revokeAllTokens(Long timestamp) {
-		MultivaluedMap<String, String> params = null;
-		if (timestamp != null) {
-			params = new MultivaluedHashMap<String, String>();
-			params.putSingle("revokeTokensAt", timestamp.toString());
-		}
-		return getEntity(invokeDelete(JWT_PATH, params), Map.class) != null;
+	public boolean revokeAllTokens() {
+		return getEntity(invokeDelete(JWT_PATH, null), Map.class) != null;
 	}
 
 }

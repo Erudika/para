@@ -58,7 +58,9 @@ public class JWTAuthentication extends UserAuthentication {
 	}
 
 	public String getAppid() {
-		if (claims != null && claims.getClaims() != null) {
+		if (app != null) {
+			return app.getId();
+		} else if (claims != null && claims.getClaims() != null) {
 			return (String) claims.getClaims().get("appid");
 		}
 		return null;

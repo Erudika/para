@@ -163,7 +163,7 @@ public class MockDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> P read(String key) {
-		return read(Config.	APP_NAME_NS, key);
+		return read(Config.APP_NAME_NS, key);
 	}
 
 	@Override

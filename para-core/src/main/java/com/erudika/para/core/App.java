@@ -570,7 +570,9 @@ public class App implements ParaObject {
 		if (getId() != null && this.exists()) {
 			return null;
 		}
-		resetSecret();
+		if (StringUtils.isBlank(secret)) {
+			resetSecret();
+		}
 		return getDao().create(this);
 	}
 

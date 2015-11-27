@@ -116,23 +116,19 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	 */
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-		String[] defRoles = {"USER", "MOD", "ADMIN"};
-		String[] appRole = {"APP"};
-		String[] appAdminRoles = {"APP", "ADMIN"};
+		String[] defRoles = {"USER", "MOD", "ADMIN", "APP"};
 		Map<String, String> confMap = Config.getConfigMap();
-		ConfigObject c = Config.getConfig().getObject("security.protected");
+		ConfigObject protectedResources = Config.getConfig().getObject("security.protected");
 		ConfigValue apiSec = Config.getConfig().getValue("security.api_security");
 		boolean enableRestFilter = apiSec != null && Boolean.TRUE.equals(apiSec.unwrapped());
 
-		// if API security is disabled don't add any API related patterns
-		// to the list of protected resources
+		// If API security is disabled don't add the API endpoint to the list of protected resources
 		if (enableRestFilter) {
-			http.authorizeRequests().requestMatchers(RestRequestMatcher.INSTANCE).
-					hasAnyRole(Config.IN_PRODUCTION ? appRole : appAdminRoles);
+			http.authorizeRequests().requestMatchers(RestRequestMatcher.INSTANCE);
 		}
 
-		for (String key : c.keySet()) {
-			ConfigValue cv = c.get(key);
+		for (String key : protectedResources.keySet()) {
+			ConfigValue cv = protectedResources.get(key);
 			LinkedList<String> patterns = new LinkedList<String>();
 			LinkedList<String> roles = new LinkedList<String>();
 
@@ -200,12 +196,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 			http.addFilterAfter(githubFilter, BasicAuthenticationFilter.class);
 		}
 
-		if (jwtFilter != null) {
-			jwtFilter.setAuthenticationManager(authenticationManager());
-			http.addFilterAfter(jwtFilter, RememberMeAuthenticationFilter.class);
-		}
-
 		if (enableRestFilter) {
+			if (jwtFilter != null) {
+				jwtFilter.setAuthenticationManager(authenticationManager());
+				http.addFilterAfter(jwtFilter, RememberMeAuthenticationFilter.class);
+			}
 			RestAuthFilter restFilter = new RestAuthFilter(new Signer());
 			http.addFilterAfter(restFilter, JWTRestfulAuthFilter.class);
 		}
