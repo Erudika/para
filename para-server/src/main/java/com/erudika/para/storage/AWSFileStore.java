@@ -81,7 +81,7 @@ public class AWSFileStore implements FileStore {
 		if (StringUtils.isBlank(path) || data == null) {
 			return null;
 		}
-		int maxFileSizeMBytes = Config.getConfigParamUnwrapped("para.s3.max_filesize_mb", 10);
+		int maxFileSizeMBytes = Config.getConfigInt("para.s3.max_filesize_mb", 10);
 		try {
 			if (data.available() > 0 && data.available() <= (maxFileSizeMBytes * 1024 * 1024)) {
 				ObjectMetadata om = new ObjectMetadata();

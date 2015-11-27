@@ -64,7 +64,7 @@ public final class HazelcastUtils {
 			cfg.setProperty("hazelcast.jmx", Boolean.toString(isJMXOn()));
 			cfg.setProperty("hazelcast.logging.type", "slf4j");
 			cfg.setProperty("hazelcast.health.monitoring.level", "OFF");
-			if (Config.IN_PRODUCTION && Config.getConfigParamUnwrapped("hc.ec2_discovery_enabled", true)) {
+			if (Config.IN_PRODUCTION && Config.getConfigBoolean("hc.ec2_discovery_enabled", true)) {
 				cfg.setNetworkConfig(new NetworkConfig().setJoin(new JoinConfig().
 					setMulticastConfig(new MulticastConfig().setEnabled(false)).
 						setTcpIpConfig(new TcpIpConfig().setEnabled(false)).
@@ -104,21 +104,22 @@ public final class HazelcastUtils {
 	}
 
 	private static EvictionPolicy getEvictionPolicy() {
-		return "LFU".equals(Config.getConfigParamUnwrapped("hc.eviction_policy", "LRU")) ?
+		return "LFU".equals(Config.getConfigParam("hc.eviction_policy", "LRU")) ?
 				EvictionPolicy.LFU : EvictionPolicy.LRU;
 	}
 
 	private static int getEvictionPercentage() {
-		return Config.getConfigParamUnwrapped("hc.eviction_percentage", 25);
+		return Config.getConfigInt("hc.eviction_percentage", 25);
 	}
 
 	private static MaxSizeConfig getMaxSize() {
-		return new MaxSizeConfig().setSize(Config.getConfigParamUnwrapped("hc.max_size", 25)).
+		return new MaxSizeConfig().
+				setSize(Config.getConfigInt("hc.max_size", 25)).
 				setMaxSizePolicy(USED_HEAP_PERCENTAGE);
 	}
 
 	private static boolean isJMXOn() {
-		return Config.getConfigParamUnwrapped("hc.jmx_enabled", true);
+		return Config.getConfigBoolean("hc.jmx_enabled", true);
 	}
 
 }

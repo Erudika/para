@@ -465,6 +465,7 @@ public class App implements ParaObject {
 	 * @return true if allowed
 	 */
 	public boolean isAllowedTo(String subjectid, String resourceName, String httpMethod) {
+		boolean allow = false;
 		if (subjectid != null && !StringUtils.isBlank(resourceName) && !StringUtils.isBlank(httpMethod)) {
 			if (getResourcePermissions().isEmpty()) {
 				// Default policy is "deny all". Returning true here would make it "allow all".
@@ -474,15 +475,17 @@ public class App implements ParaObject {
 					getResourcePermissions().get(subjectid).containsKey(resourceName)) {
 				// subject-specific permissions have precedence over wildcard permissions
 				// i.e. only the permissions for that subjectid are checked, other permissions are ignored
-				return isAllowed(subjectid, resourceName, httpMethod);
+				allow = isAllowed(subjectid, resourceName, httpMethod);
 			} else {
-				return isAllowed(subjectid, resourceName, httpMethod) ||
+				allow = isAllowed(subjectid, resourceName, httpMethod) ||
 						isAllowed(subjectid, ALLOW_ALL, httpMethod) ||
 						isAllowed(ALLOW_ALL, resourceName, httpMethod) ||
 						isAllowed(ALLOW_ALL, ALLOW_ALL, httpMethod);
 			}
 		}
-		return false;
+		boolean isRootApp = getId().equals(App.id(Config.APP_NAME_NS));
+		boolean isRootAppAccessAllowed = Config.getConfigBoolean("clients_can_access_root_app", false);
+		return isRootApp ? (isRootAppAccessAllowed && allow) : allow;
 	}
 
 	private boolean isAllowed(String subjectid, String resourceName, String httpMethod) {

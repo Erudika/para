@@ -570,7 +570,7 @@ public class ElasticSearch implements Search {
 	 * @return true if asynchronous indexing/unindexing is enabled.
 	 */
 	private boolean isAsyncEnabled() {
-		return Config.getConfigParamUnwrapped("es.async_enabled", false);
+		return Config.getConfigBoolean("es.async_enabled", false);
 	}
 
 	/**

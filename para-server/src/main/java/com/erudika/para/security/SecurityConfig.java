@@ -145,7 +145,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 			http.authorizeRequests().antMatchers(patterns.toArray(new String[0])).hasAnyRole(rolz);
 		}
 
-		if (Config.getConfigParamUnwrapped("security.csrf_protection", true)) {
+		if (Config.getConfigBoolean("security.csrf_protection", true)) {
 			http.csrf().requireCsrfProtectionMatcher(CsrfProtectionRequestMatcher.INSTANCE).
 					csrfTokenRepository(csrfTokenRepository);
 		} else {

@@ -75,15 +75,15 @@ public final class ElasticSearchUtils {
 		if (searchClient != null) {
 			return searchClient;
 		}
-		boolean localNode = Config.getConfigParamUnwrapped("es.local_node", true);
-		boolean dataNode = Config.getConfigParamUnwrapped("es.data_node", true);
-		boolean corsEnabled = Config.getConfigParamUnwrapped("es.cors_enabled", !Config.IN_PRODUCTION);
+		boolean localNode = Config.getConfigBoolean("es.local_node", true);
+		boolean dataNode = Config.getConfigBoolean("es.data_node", true);
+		boolean corsEnabled = Config.getConfigBoolean("es.cors_enabled", !Config.IN_PRODUCTION);
 		String corsAllowOrigin = Config.getConfigParam("es.cors_allow_origin", "/https?:\\/\\/localhost(:[0-9]+)?/");
 		String esHome = Config.getConfigParam("es.dir", Paths.get(".").toAbsolutePath().normalize().toString());
 		String esHost = Config.getConfigParam("es.transportclient_host", "localhost");
-		int esPort = Config.getConfigParamUnwrapped("es.transportclient_port", 9300);
+		int esPort = Config.getConfigInt("es.transportclient_port", 9300);
 		boolean useTransportClient = !"embedded".equals(Config.ENVIRONMENT) &&
-				Config.getConfigParamUnwrapped("es.use_transportclient", false);
+				Config.getConfigBoolean("es.use_transportclient", false);
 
 		Settings.Builder settings = Settings.builder();
 		settings.put("node.name", getNodeName());

@@ -8,7 +8,7 @@
 	</parent>
 
 	<artifactId>para-server</artifactId>
-	<packaging>jar</packaging>
+	<packaging>war</packaging>
 	<name>para-server</name>
 
 	<properties>

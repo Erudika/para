@@ -96,27 +96,27 @@ public final class Config {
 	/**
 	 * Maximum results per page - limits the number of items to show in search results. Default is 30.
 	 */
-	public static final int MAX_ITEMS_PER_PAGE = getConfigParamUnwrapped("max_items_per_page", 30);
+	public static final int MAX_ITEMS_PER_PAGE = getConfigInt("max_items_per_page", 30);
 	/**
 	 * Pagination limit - default is 10 000.
 	 */
-	public static final int MAX_PAGES = getConfigParamUnwrapped("max_pages", 10000);
+	public static final int MAX_PAGES = getConfigInt("max_pages", 10000);
 	/**
 	 * Maximum image size (longest edge) - default is 1024 (pixels).
 	 */
-	public static final int MAX_IMG_SIZE_PX = getConfigParamUnwrapped("max_img_px", 1024);
+	public static final int MAX_IMG_SIZE_PX = getConfigInt("max_img_px", 1024);
 	/**
 	 * Minimum password length - default is 6 symbols.
 	 */
-	public static final int MIN_PASS_LENGTH = getConfigParamUnwrapped("min_password_length", 6);
+	public static final int MIN_PASS_LENGTH = getConfigInt("min_password_length", 6);
 	/**
 	 * Maximum number of data types that can be defined per app - default is 256.
 	 */
-	public static final int MAX_DATATYPES_PER_APP = getConfigParamUnwrapped("max_datatypes_per_app", 256);
+	public static final int MAX_DATATYPES_PER_APP = getConfigInt("max_datatypes_per_app", 256);
 	/**
 	 * Maximum size of incoming JSON objects - default is 1048576 (bytes).
 	 */
-	public static final int MAX_ENTITY_SIZE_BYTES = getConfigParamUnwrapped("max_entity_size_bytes", 1024 * 1024);
+	public static final int MAX_ENTITY_SIZE_BYTES = getConfigInt("max_entity_size_bytes", 1024 * 1024);
 	/**
 	 * Default character encoding - 'UTF-8'
 	 */
@@ -196,7 +196,7 @@ public final class Config {
 	/**
 	 * The number of threads to use for the ExecutorService thread pool. Default is 2.
 	 */
-	public static final int EXECUTOR_THREADS = getConfigParamUnwrapped("executor_threads", 2);
+	public static final int EXECUTOR_THREADS = getConfigInt("executor_threads", 2);
 	/**
 	 * The name of the default application.
 	 */
@@ -254,10 +254,6 @@ public final class Config {
 	 */
 	public static final Long PASSRESET_TIMEOUT_SEC = NumberUtils.toLong(getConfigParam("pass_reset_timeout", ""), 30 * 60);
 	/**
-	 * Enable access to root app by clients. Default: false
-	 */
-	public static final boolean CLIENTS_CAN_ACCESS_ROOT_APP = Boolean.parseBoolean(getConfigParam("clients_can_access_root_app", "false"));
-	/**
 	 * Enable the RESTful API. Default: true
 	 */
 	public static final boolean API_ENABLED = Boolean.parseBoolean(getConfigParam("api_enabled", "true"));
@@ -311,22 +307,23 @@ public final class Config {
 	}
 
 	/**
-	 * Returns the unwrapped value of a configuration parameter or its default value.
+	 * Returns the boolean value of a configuration parameter.
 	 * @param key the param key
 	 * @param defaultValue the default param value
-	 * @param <V> the type of value to return
 	 * @return the value of a param
 	 */
-	@SuppressWarnings("unchecked")
-	public static <V> V getConfigParamUnwrapped(String key, V defaultValue) {
-		if (config == null) {
-			init(null);
-		}
-		if (StringUtils.isBlank(key)) {
-			return defaultValue;
-		}
-		ConfigValue raw = config.hasPath(key) ? config.getValue(key) : null;
-		return (V) ((raw != null) ? raw.unwrapped() : defaultValue);
+	public static boolean getConfigBoolean(String key, boolean defaultValue) {
+		return Boolean.parseBoolean(getConfigParam(key, Boolean.toString(defaultValue)));
+	}
+
+	/**
+	 * Returns the integer value of a configuration parameter.
+	 * @param key the param key
+	 * @param defaultValue the default param value
+	 * @return the value of a param
+	 */
+	public static int getConfigInt(String key, int defaultValue) {
+		return NumberUtils.toInt(getConfigParam(key, Integer.toString(defaultValue)));
 	}
 
 	/**
@@ -341,7 +338,7 @@ public final class Config {
 			init(null);
 		}
 		if (StringUtils.isBlank(key)) {
-			return null;
+			return defaultValue;
 		}
 		String sys = System.getProperty(key, System.getProperty(PARA + "." + key));
 		if (!StringUtils.isBlank(sys)) {

@@ -83,7 +83,7 @@ public class LocalFileStore implements FileStore {
 		if (StringUtils.isBlank(path)) {
 			return null;
 		}
-		int maxFileSizeMBytes = Config.getConfigParamUnwrapped("para.localstorage.max_filesize_mb", 10);
+		int maxFileSizeMBytes = Config.getConfigInt("para.localstorage.max_filesize_mb", 10);
 		FileOutputStream fos = null;
 		BufferedOutputStream bos = null;
 		try {

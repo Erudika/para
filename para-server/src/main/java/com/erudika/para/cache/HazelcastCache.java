@@ -163,7 +163,7 @@ public class HazelcastCache implements Cache {
 	 * @return true if asynchronous caching is enabled.
 	 */
 	private boolean isAsyncEnabled() {
-		return Config.getConfigParamUnwrapped("hc.async_enabled", false);
+		return Config.getConfigBoolean("hc.async_enabled", false);
 	}
 
 	////////////////////////////////////////////////////

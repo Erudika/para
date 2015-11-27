@@ -155,18 +155,10 @@ public final class ParaClient {
 	}
 
 	/**
-	 * @return the JWT access token, or null
+	 * @return the JWT access token, or null if not signed in 
 	 */
-	protected String getAccessToken() {
+	public String getAccessToken() {
 		return tokenKey;
-	}
-
-	/**
-	 * Sets a new JWT access token.
-	 * @param token a token
-	 */
-	protected void setAccessToken(String token) {
-		this.tokenKey = token;
 	}
 
 	/**
@@ -968,14 +960,6 @@ public final class ParaClient {
 	/////////////////////////////////////////////
 	//				 MISC
 	/////////////////////////////////////////////
-
-	/**
-	 * First-time setup - creates the root app and returns its credentials.
-	 * @return a map of credentials
-	 */
-	Map<String, String> setup() {
-		return getEntity(invokeGet("_setup", null), Map.class);
-	}
 
 	/**
 	 * Generates a new set of access/secret keys.

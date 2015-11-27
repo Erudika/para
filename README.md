@@ -21,7 +21,7 @@ See how Para [compares to other open source back-end frameworks](http://www.erud
 
 ### Features
 
-- Standalone executable JAR with embedded Jetty (WAR also available).
+- Standalone executable WAR with embedded Jetty.
 - RESTful JSON API for your objects secured with Amazon's Signature 4 algorithm.
 - Full text search (current implementation is based on ElasticSearch).
 - Distributed object cache support (implemented with Hazelcast).
@@ -64,10 +64,10 @@ See how Para [compares to other open source back-end frameworks](http://www.erud
 
 ## Getting started
 
-To get started quickly just [grab the JAR file](https://github.com/Erudika/para/releases) and execute it with:
+To get started quickly just [grab the WAR file](https://github.com/Erudika/para/releases) and execute it with:
 
-1. [Download the JAR](https://github.com/Erudika/para/releases)
-2. Execute it with `java -jar para-X.Y.Z.jar`
+1. [Download the executable WAR](https://github.com/Erudika/para/releases)
+2. Execute it with `java -jar para-X.Y.Z.war`
 3. Call `curl localhost:8080/v1/_setup` to get the access and secret keys (give it a few seconds to initialize)
 4. Start using the API directly or using the provided `ParaClient` class.
 
@@ -83,23 +83,18 @@ cd para
 mvn install -DskipTests=true
 ```
 
-You can create a "fat" executable JAR file like this:
+
+### Standalone - executable WAR
+
+You can run Para as a standalone server by downloading the executable WAR and then:
 
 ```sh
-mvn clean package -f para -DskipTests=true -DfatJAR=true
-```
-
-### Standalone JAR & WAR
-
-You can run Para as a standalone server by downloading the "fat" JAR and then:
-
-```sh
-java -jar para-X.Y.Z.jar
+java -jar para-X.Y.Z.war
 ```
 
 Alternatively, you can grab the WAR file and deploy it to your favorite servlet container.
 
-####[Download JAR or WAR](https://github.com/Erudika/para/releases)
+####[Download WAR](https://github.com/Erudika/para/releases)
 
 ### Maven
 

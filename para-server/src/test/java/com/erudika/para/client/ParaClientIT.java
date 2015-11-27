@@ -66,9 +66,11 @@ public class ParaClientIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(ParaClientIT.class);
 	private static ParaClient pc;
+	private static ParaClient pc2;
 	private static final String catsType = "cat";
 	private static final String dogsType = "dog";
 	private static final String batsType = "bat";
+	private static final String APP_NAME = "para-test";
 
 	protected static Sysprop u;
 	protected static Sysprop u1;
@@ -83,8 +85,10 @@ public class ParaClientIT {
 	@BeforeClass
 	public static void setUpClass() throws InterruptedException, IOException {
 		System.setProperty("para.env", "embedded");
-		System.setProperty("para.app_name", "para-client-test");
-		System.setProperty("para.cluster_name", "para-test");
+		System.setProperty("para.app_name", APP_NAME);
+		System.setProperty("para.cluster_name", APP_NAME);
+//		System.setProperty("para.jwt_refresh_interval", "1");
+		System.setProperty("para.clients_can_access_root_app", "true");
 		String endpoint = "http://localhost:8080";
 
 		fbUser = new User("fbUser_1");
@@ -92,6 +96,7 @@ public class ParaClientIT {
 		fbUser.setIdentifier("fb:1234");
 		fbUser.setGroups("users");
 		fbUser.setActive(true);
+		fbUser.setAppid(APP_NAME);
 
 		UserAuthentication ua = new UserAuthentication(new AuthenticatedUserDetails(fbUser));
 		SpringApplication app = new SpringApplication(ParaServer.class);
@@ -105,21 +110,21 @@ public class ParaClientIT {
 		Para.initialize(Modules.override(ParaServer.getCoreModules()).with(secMod));
 		app.run();
 
-//		ParaServer.main(new String[0]);
 		ParaClient temp = new ParaClient("x", "x");
 		temp.setEndpoint(endpoint);
 
 		assertNull(temp.me());
 		assertTrue(temp.newId().isEmpty());
 
-		Map<String, String> credentials = temp.setup();
-		if (credentials != null && credentials.containsKey("accessKey")) {
-			String accessKey = credentials.get("accessKey");
-			String secretKey = credentials.get("secretKey");
-			pc = new ParaClient(accessKey, secretKey);
-			pc.setEndpoint(endpoint);
-			logger.info("accessKey: {}, secretKey: {}", accessKey, secretKey);
-		}
+		App rootApp = new App(APP_NAME);
+		rootApp.setName(APP_NAME);
+		rootApp.setShared(false);
+		rootApp.create();
+		pc = new ParaClient(App.id(APP_NAME), rootApp.getSecret());
+		pc.setEndpoint(endpoint);
+		pc2 = new ParaClient(App.id(APP_NAME), rootApp.getSecret());
+		pc2.setEndpoint(endpoint);
+		logger.info("accessKey: {}, secretKey: {}", rootApp.getId(), rootApp.getSecret());
 
 		u = new Sysprop("111");
 		u.setName("John Doe");
@@ -164,14 +169,15 @@ public class ParaClientIT {
 		s2.setName("We are testing this thing. This sentence is a test. One, two.");
 		s2.setTimestamp(Utils.timestamp());
 
-		pc.createAll(Arrays.asList(u, u1, u2, t, s1, s2, a1, a2, fbUser));
+		assertNotNull(fbUser.create());
+		pc.createAll(Arrays.asList(u, u1, u2, t, s1, s2, a1, a2));
 		Thread.sleep(1000);
 	}
 
 	@AfterClass
 	public static void tearDownClass() {
-		Para.getDAO().delete(new App(Config.APP_NAME_NS));
-		ElasticSearchUtils.deleteIndex(Config.APP_NAME_NS);
+		Para.getDAO().delete(new App(APP_NAME));
+		ElasticSearchUtils.deleteIndex(APP_NAME);
 		Para.destroy();
 	}
 
@@ -491,15 +497,12 @@ public class ParaClientIT {
 
 	@Test
 	public void testMisc() {
-		String kittenType = "kitten";
-		Map<String, String> cred = pc.setup();
-		assertFalse(cred.containsKey("accessKey"));
-
 		Map<String, String> types = pc.types();
+		assertNotNull(types);
 		assertFalse(types.isEmpty());
 		assertTrue(types.containsKey(new User().getPlural()));
 
-		assertTrue(pc.me().getId().equals(App.id(System.getProperty("para.app_name"))));
+		assertEquals(App.id(APP_NAME), pc.me().getId());
 	}
 
 	@Test
@@ -507,6 +510,7 @@ public class ParaClientIT {
 		// Validations
 		String kittenType = "kitten";
 		Map<String, ?> constraints = pc.validationConstraints();
+		assertNotNull(constraints);
 		assertFalse(constraints.isEmpty());
 		assertTrue(constraints.containsKey("app"));
 		assertTrue(constraints.containsKey("user"));
@@ -541,7 +545,7 @@ public class ParaClientIT {
 	public void testResourcePermissions() {
 		// Permissions
 		Map<String, Map<String, List<String>>> permits = pc.resourcePermissions();
-		assertTrue(permits.isEmpty());
+		assertNotNull(permits);
 
 		assertTrue(pc.grantResourcePermission(null, dogsType, EnumSet.noneOf(AllowedMethods.class)).isEmpty());
 		assertTrue(pc.grantResourcePermission(" ", "", EnumSet.noneOf(AllowedMethods.class)).isEmpty());
@@ -600,30 +604,63 @@ public class ParaClientIT {
 	}
 
 	@Test
-	public void testAccessTokens() throws IOException {
+	public void testAccessTokens() throws IOException, InterruptedException {
 		assertNotNull(fbUser);
+		assertNull(pc2.getAccessToken());
 
-		User signedIn = pc.signIn("facebook", "test_token");
+		// fails with google+ - service not mocked
+		User failsNotMocked = pc2.signIn("google", "test_token");
+		assertNull(failsNotMocked);
+
+		User signedIn = pc2.signIn("facebook", "test_token");
+		logger.info(pc2.getAccessToken());
 		assertNotNull(signedIn);
+		assertNotNull(pc2.getAccessToken());
 		assertEquals(fbUser.getId(), signedIn.getId());
 		assertTrue(signedIn.getActive());
-		logger.warn(pc.getAccessToken());
 
-		// TODO:
-		// test no permissions
-		// test add permission
-		// test fails for root app
-		// test ok if config allows root app access
-		// test token expired
+		// test without permissions - signed in but you can't access anything yet
+		ParaObject me = pc2.me();
+		assertNotNull(me);
+		assertEquals("user", me.getType());
+		assertTrue(pc2.newId().isEmpty());
+		assertTrue(pc2.getTimestamp() == 0L);
+
+		// test with permissions - logout first to use app credentials (full access)
+		pc2.signOut();
+		pc2.grantResourcePermission(fbUser.getId(), App.ALLOW_ALL, AllowedMethods.READ_AND_WRITE);
+		signedIn = pc2.signIn("facebook", "test_token");
+		logger.info(pc2.getAccessToken());
+		assertNotNull(signedIn);
+		assertNotNull(pc2.getAccessToken());
+		me = pc2.me();
+		assertNotNull(me);
+		assertFalse(pc2.newId().isEmpty());
+		assertEquals(signedIn.getName(), me.getName());
+		Thread.sleep(1000);
+
+		// now switch back to App access
+		pc2.signOut();
+		assertNull(pc2.getAccessToken());
+		me = pc2.me(); // app
+		assertNotNull(me);
+		assertEquals("app", me.getType());
+		assertFalse(pc2.newId().isEmpty());
+		signedIn = pc2.signIn("facebook", "test_token");
+		logger.info(pc2.getAccessToken());
+		me = pc2.me(); // user
+		assertNotNull(me);
+		assertEquals("user", me.getType());
+		assertEquals(signedIn.getId(), me.getId());
+
+		assertNull(pc2.newKeys()); // users can't change API keys!
+
 		// test revoke tokens
-		// test with me() + signout == User and not App!
-		// test tokens invalid after App changes secret key
-		// test with child app
-		
-//		App app = new App("my-app1");
-//		app.setActive(true);
-//		app = pc.create(app);
+		pc2.revokeAllTokens();
+		assertTrue(pc2.newId().isEmpty());
+		assertTrue(pc2.getTimestamp() == 0L);
+		assertNull(pc2.me());
 
-		pc.clearAccessToken();
+		pc2.signOut();
 	}
 }
