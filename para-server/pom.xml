@@ -12,9 +12,8 @@
 	<name>para-server</name>
 
 	<properties>
-		<jerseyVer>2.16</jerseyVer>
-		<springVer>4.0.3.RELEASE</springVer>
-		<springVer2>1.2.7.RELEASE</springVer2>
+		<springSecVer>4.0.3.RELEASE</springSecVer>
+		<springBootVer>1.2.7.RELEASE</springBootVer>
 		<hazelcastVer>3.5.3</hazelcastVer>
 	</properties>
 
@@ -29,17 +28,17 @@
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-core</artifactId>
-			<version>${springVer}</version>
+			<version>${springSecVer}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-web</artifactId>
-			<version>${springVer}</version>
+			<version>${springSecVer}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-openid</artifactId>
-			<version>${springVer}</version>
+			<version>${springSecVer}</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>commons-logging</artifactId>
@@ -50,13 +49,13 @@
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-config</artifactId>
-			<version>${springVer}</version>
+			<version>${springSecVer}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter</artifactId>
-			<version>${springVer2}</version>
+			<version>${springBootVer}</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>spring-boot-starter-tomcat</artifactId>
@@ -67,12 +66,12 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-logging</artifactId>
-			<version>${springVer2}</version>
+			<version>${springBootVer}</version>
 		</dependency>
 <!--		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
-			<version>${springVer2}</version>
+			<version>${springBootVer}</version>
 		</dependency>-->
 
 
@@ -150,7 +149,7 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>4.3.1</version>
+			<version>4.7</version>
 		</dependency>
 
 		<!-- TESTING -->

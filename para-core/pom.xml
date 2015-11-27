@@ -12,12 +12,8 @@
 	<name>para-core</name>
 
 	<properties>
-		<jerseyVer>2.17</jerseyVer>
 		<jacksonVer>2.6.3</jacksonVer>
-		<springVer>4.1.6.RELEASE</springVer>
-<!--		<springVer>4.0.0.M2</springVer>
-		<springVer2>1.1.11.RELEASE</springVer2>
-		<hazelcastVer>3.4.1</hazelcastVer>-->
+		<springVer>4.1.8.RELEASE</springVer>
 	</properties>
 
 	<dependencies>
