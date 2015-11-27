@@ -32,6 +32,7 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.filters.CORSFilter;
 import com.erudika.para.utils.filters.ErrorFilter;
 import com.erudika.para.utils.filters.GZipServletFilter;
+import com.erudika.para.web.DefaultParaServlet;
 import com.google.inject.Module;
 import javax.annotation.PreDestroy;
 import javax.servlet.ServletContext;
@@ -113,6 +114,16 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	}
 
 	@Bean
+	public ServletRegistrationBean defaultServletRegistrationBean() {
+		ServletRegistrationBean reg = new ServletRegistrationBean(new DefaultParaServlet(), "/");
+		reg.setName(DefaultParaServlet.class.getSimpleName());
+		reg.setAsyncSupported(true);
+		reg.setEnabled(!Config.IN_PRODUCTION);
+		reg.setOrder(100);
+		return reg;
+	}
+
+	@Bean
 	public FilterRegistrationBean gzipFilterRegistrationBean() {
 		FilterRegistrationBean frb = new FilterRegistrationBean(new GZipServletFilter());
 		frb.addUrlPatterns("*.css", "*.json", "*.html", "*.js", Api1.PATH + "*");
@@ -144,7 +155,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		JettyEmbeddedServletContainerFactory jef = new JettyEmbeddedServletContainerFactory();
 		jef.addServerCustomizers(new JettyServerCustomizer() {
 			public void customize(Server server) {
-				if (Config.getConfigParamUnwrapped("access_log_enabled", true)) {
+				if (Config.getConfigBoolean("access_log_enabled", true)) {
 					// enable access log via Logback
 					HandlerCollection handlers = new HandlerCollection();
 					for (Handler handler : server.getHandlers()) {
