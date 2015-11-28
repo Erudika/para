@@ -176,6 +176,7 @@ public class ParaClientIT {
 
 	@AfterClass
 	public static void tearDownClass() {
+		System.setProperty("para.clients_can_access_root_app", "false");
 		Para.getDAO().delete(new App(APP_NAME));
 		ElasticSearchUtils.deleteIndex(APP_NAME);
 		Para.destroy();

@@ -20,8 +20,11 @@ package com.erudika.para.core;
 
 import com.erudika.para.utils.Config;
 import static com.erudika.para.validation.Constraint.url;
+import java.io.IOException;
 import java.util.EnumSet;
+import org.junit.AfterClass;
 import static org.junit.Assert.*;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -29,6 +32,16 @@ import org.junit.Test;
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class AppTest {
+
+	@BeforeClass
+	public static void setUpClass() throws InterruptedException, IOException {
+		System.setProperty("para.clients_can_access_root_app", "true");
+	}
+
+	@AfterClass
+	public static void tearDownClass() {
+		System.setProperty("para.clients_can_access_root_app", "false");
+	}
 
 	@Test
 	public void testSetId() {
@@ -158,8 +171,10 @@ public class AppTest {
 		app.grantResourcePermission("123", App.ALLOW_ALL, EnumSet.noneOf(App.AllowedMethods.class));
 		assertTrue(app.getResourcePermissions().isEmpty());
 
+		assertFalse(app.isAllowedTo("123", "test", "GET"));
 		app.grantResourcePermission("123", App.ALLOW_ALL, App.AllowedMethods.READ);
 		assertTrue(app.isAllowedTo("123", App.ALLOW_ALL, App.AllowedMethods.READ_ONLY.toString()));
+		assertTrue(app.isAllowedTo("123", "res", "gEt"));
 		assertFalse(app.isAllowedTo("1234", App.ALLOW_ALL, App.AllowedMethods.READ_ONLY.toString()));
 
 		app.revokeResourcePermission("123", "_test");

@@ -273,15 +273,15 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 
 	private UserAuthentication getOrCreateUser(String appid, String identityProvider, String accessToken)
 			throws IOException {
-		if ("facebook".equals(identityProvider)) {
+		if ("facebook".equalsIgnoreCase(identityProvider)) {
 			return facebookAuth.getOrCreateUser(appid, accessToken);
-		} else if ("google".equals(identityProvider)) {
+		} else if ("google".equalsIgnoreCase(identityProvider)) {
 			return googleAuth.getOrCreateUser(appid, accessToken);
-		} else if ("github".equals(identityProvider)) {
+		} else if ("github".equalsIgnoreCase(identityProvider)) {
 			return githubAuth.getOrCreateUser(appid, accessToken);
-		} else if ("linkedin".equals(identityProvider)) {
+		} else if ("linkedin".equalsIgnoreCase(identityProvider)) {
 			return linkedinAuth.getOrCreateUser(appid, accessToken);
-		} else if ("twitter".equals(identityProvider)) {
+		} else if ("twitter".equalsIgnoreCase(identityProvider)) {
 			String[] tokens = accessToken.split(Config.SEPARATOR);
 			return twitterAuth.getOrCreateUser(appid, tokens[0], tokens[1]);
 		}

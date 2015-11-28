@@ -158,7 +158,7 @@ public class App implements ParaObject {
 
 	/**
 	 * Sets the permissions map
-	 * @param resourcePermissions
+	 * @param resourcePermissions permissions map
 	 */
 	public void setResourcePermissions(Map<String, Map<String, List<String>>> resourcePermissions) {
 		this.resourcePermissions = resourcePermissions;
@@ -373,9 +373,7 @@ public class App implements ParaObject {
 			for (String subjectid : subjectids) {
 				if (getResourcePermissions().containsKey(subjectid)) {
 					allPermits.put(subjectid, getResourcePermissions().get(subjectid));
-//					allPermits.get(subjectid).putAll(getResourcePermissions().get(subjectid));
 				} else if (getResourcePermissions().containsKey(ALLOW_ALL)) {
-//					allPermits.put(subjectid, getResourcePermissions().get(subjectid));
 					allPermits.put(ALLOW_ALL, getResourcePermissions().get(ALLOW_ALL));
 				}
 			}
@@ -389,7 +387,7 @@ public class App implements ParaObject {
 	 * Grants a new permission for a given subject and resource.
 	 * @param subjectid the subject to give permissions to
 	 * @param resourceName the resource name/type
-	 * @param permissions the set or HTTP methods allowed
+	 * @param permission the set or HTTP methods allowed
 	 * @return true if successful
 	 */
 	public boolean grantResourcePermission(String subjectid, String resourceName, EnumSet<AllowedMethods> permission) {
@@ -445,7 +443,7 @@ public class App implements ParaObject {
 
 	/**
 	 * Revokes all permissions for a subject id.
-	 * @param subjectid
+	 * @param subjectid subject id
 	 * @return true if successful
 	 */
 	public boolean revokeAllResourcePermissions(String subjectid) {
@@ -483,7 +481,7 @@ public class App implements ParaObject {
 						isAllowed(ALLOW_ALL, ALLOW_ALL, httpMethod);
 			}
 		}
-		boolean isRootApp = getId().equals(App.id(Config.APP_NAME_NS));
+		boolean isRootApp = StringUtils.equals(App.id(Config.APP_NAME_NS), getId());
 		boolean isRootAppAccessAllowed = Config.getConfigBoolean("clients_can_access_root_app", false);
 		return isRootApp ? (isRootAppAccessAllowed && allow) : allow;
 	}
@@ -518,7 +516,6 @@ public class App implements ParaObject {
 
 	/**
 	 * Adds unknown types to this App's list of data types. Called on create().
-	 * @param app the current app
 	 * @param objects a list of new objects
 	 */
 	public void addDatatypes(ParaObject... objects) {

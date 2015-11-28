@@ -151,10 +151,9 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * @param oauthToken OAuth token
 	 * @param oauthSecret OAuth secret
 	 * @return {@link UserAuthentication} object or null if something went wrong
-	 * @throws IOException
+	 * @throws IOException ex
 	 */
-	public UserAuthentication getOrCreateUser(String appid, String oauthToken, String oauthSecret)
-			throws IOException {
+	public UserAuthentication getOrCreateUser(String appid, String oauthToken, String oauthSecret) throws IOException {
 		UserAuthentication userAuth = null;
 		if (oauthToken != null && oauthSecret != null) {
 			User user = new User();

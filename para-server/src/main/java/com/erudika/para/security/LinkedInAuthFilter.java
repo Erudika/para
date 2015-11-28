@@ -117,10 +117,9 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * @param appid app identifier of the parent app, use null for root app
 	 * @param accessToken access token
 	 * @return {@link UserAuthentication} object or null if something went wrong
-	 * @throws IOException
+	 * @throws IOException ex
 	 */
-	public UserAuthentication getOrCreateUser(String appid, String accessToken)
-			throws IOException {
+	public UserAuthentication getOrCreateUser(String appid, String accessToken) throws IOException {
 		UserAuthentication userAuth = null;
 		if (accessToken != null) {
 			User user = new User();

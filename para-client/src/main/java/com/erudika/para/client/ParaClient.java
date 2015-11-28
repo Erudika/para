@@ -155,7 +155,7 @@ public final class ParaClient {
 	}
 
 	/**
-	 * @return the JWT access token, or null if not signed in 
+	 * @return the JWT access token, or null if not signed in
 	 */
 	public String getAccessToken() {
 		return tokenKey;
@@ -1136,7 +1136,7 @@ public final class ParaClient {
 	 * <b>Note:</b> Twitter uses OAuth 1 and gives you a token and a token secret.
 	 * <b>You must concatenate them like this: <code>{oauth_token}:{oauth_token_secret} and
 	 * use that as the provider access token.</code></b>
-	 * @param provider
+	 * @param provider identity provider, e.g. 'facebook', 'google'...
 	 * @param providerToken access token from a provider like Facebook, Google, Twitter
 	 * @return a {@link  User} object or null if something failed
 	 */
