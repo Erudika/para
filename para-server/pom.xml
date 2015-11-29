@@ -8,12 +8,11 @@
 	</parent>
 
 	<artifactId>para-server</artifactId>
-	<packaging>war</packaging>
+	<packaging>jar</packaging>
 	<name>para-server</name>
 
 	<properties>
 		<springSecVer>4.0.3.RELEASE</springSecVer>
-		<springBootVer>1.2.7.RELEASE</springBootVer>
 		<hazelcastVer>3.5.3</hazelcastVer>
 	</properties>
 
@@ -311,34 +310,6 @@
 					<quiet>true</quiet>
 					<docfilessubdirs>true</docfilessubdirs>
 				</configuration>
-			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-war-plugin</artifactId>
-				<version>2.6</version>
-				<configuration>
-					<failOnMissingWebXml>false</failOnMissingWebXml>
-					<archive>
-						<manifest>
-							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-							<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-						</manifest>
-					</archive>
-				</configuration>
-			</plugin>
-
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-				<version>${springBootVer}</version>
-				<executions>
-					<execution>
-						<goals>
-							<goal>repackage</goal>
-						</goals>
-					</execution>
-				</executions>
 			</plugin>
 		</plugins>
 	</build>

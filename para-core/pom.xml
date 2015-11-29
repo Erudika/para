@@ -145,7 +145,7 @@
 		<dependency>
 			<groupId>org.hibernate</groupId>
 			<artifactId>hibernate-validator</artifactId>
-			<version>5.1.3.Final</version>
+			<version>5.2.2.Final</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
@@ -165,17 +165,17 @@
 		<dependency>
 			<groupId>org.jsoup</groupId>
 			<artifactId>jsoup</artifactId>
-			<version>1.8.1</version>
+			<version>1.8.3</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.rjeschke</groupId>
 			<artifactId>txtmark</artifactId>
-			<version>0.11</version>
+			<version>0.13</version>
 		</dependency>
 		<dependency>
-			<groupId>org.mindrot</groupId>
-			<artifactId>jbcrypt</artifactId>
-			<version>0.3m</version>
+			<groupId>de.svenkubiak</groupId>
+			<artifactId>jBCrypt</artifactId>
+			<version>0.4</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.spullara.mustache.java</groupId>
