@@ -1134,8 +1134,8 @@ public final class ParaClient {
 	 * Access tokens are returned upon successful authentication using one of the SDKs from
 	 * Facebook, Google, Twitter, etc.
 	 * <b>Note:</b> Twitter uses OAuth 1 and gives you a token and a token secret.
-	 * <b>You must concatenate them like this: <code>{oauth_token}:{oauth_token_secret} and
-	 * use that as the provider access token.</code></b>
+	 * <b>You must concatenate them like this: <code>{oauth_token}:{oauth_token_secret}</code> and
+	 * use that as the provider access token.</b>
 	 * @param provider identity provider, e.g. 'facebook', 'google'...
 	 * @param providerToken access token from a provider like Facebook, Google, Twitter
 	 * @return a {@link  User} object or null if something failed
