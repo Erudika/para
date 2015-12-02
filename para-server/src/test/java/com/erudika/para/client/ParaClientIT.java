@@ -87,8 +87,6 @@ public class ParaClientIT {
 		System.setProperty("para.env", "embedded");
 		System.setProperty("para.app_name", APP_NAME);
 		System.setProperty("para.cluster_name", APP_NAME);
-//		System.setProperty("para.jwt_refresh_interval", "1");
-		System.setProperty("para.clients_can_access_root_app", "true");
 		String endpoint = "http://localhost:8080";
 
 		fbUser = new User("fbUser_1");
@@ -602,6 +600,9 @@ public class ParaClientIT {
 		assertTrue(pc.isAllowedTo(u1.getId(), catsType, AllowedMethods.GET.toString()));
 		assertTrue(pc.isAllowedTo(u2.getId(), dogsType, AllowedMethods.GET.toString()));
 		assertTrue(pc.isAllowedTo(u2.getId(), catsType, AllowedMethods.GET.toString()));
+
+		pc.revokeAllResourcePermissions(App.ALLOW_ALL);
+		pc.revokeAllResourcePermissions(u1.getId());
 	}
 
 	@Test

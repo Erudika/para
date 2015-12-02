@@ -482,7 +482,7 @@ public class App implements ParaObject {
 			}
 		}
 		boolean isRootApp = StringUtils.equals(App.id(Config.APP_NAME_NS), getId());
-		boolean isRootAppAccessAllowed = Config.getConfigBoolean("clients_can_access_root_app", false);
+		boolean isRootAppAccessAllowed = Config.getConfigBoolean("clients_can_access_root_app", !Config.IN_PRODUCTION);
 		return isRootApp ? (isRootAppAccessAllowed && allow) : allow;
 	}
 
