@@ -131,15 +131,23 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	@SuppressWarnings("unchecked")
 	private boolean newTokenHandler(HttpServletRequest request, HttpServletResponse response)
 			throws IOException {
-		Response res = RestUtils.getEntity(request.getInputStream(), Map.class);
-		if (res.getStatusInfo() != Response.Status.OK) {
-			RestUtils.returnStatusResponse(response, res.getStatus(), res.getEntity().toString());
+		String provider;
+		String appid;
+		String token;
+		try {
+			Response res = RestUtils.getEntity(request.getInputStream(), Map.class);
+			if (res.getStatusInfo() != Response.Status.OK) {
+				RestUtils.returnStatusResponse(response, res.getStatus(), res.getEntity().toString());
+				return false;
+			}
+			Map<String, Object> entity = (Map<String, Object>) res.getEntity();
+			provider = (String) entity.get("provider");
+			appid = (String) entity.get("appid");
+			token = (String) entity.get("token");
+		} catch (Exception e) {
+			logger.debug(null, e);
 			return false;
 		}
-		Map<String, Object> entity = (Map<String, Object>) res.getEntity();
-		String provider = (String) entity.get("provider");
-		String appid = (String) entity.get("appid");
-		String token = (String) entity.get("token");
 
 		if (provider != null && appid != null && token != null) {
 			App app = new App(appid);
