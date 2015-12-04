@@ -21,16 +21,16 @@ See how Para [compares to other open source back-end frameworks](http://www.erud
 
 ### Features
 
-- Standalone executable WAR with embedded Jetty.
-- RESTful JSON API for your objects secured with Amazon's Signature 4 algorithm.
-- Full text search (current implementation is based on ElasticSearch).
-- Distributed object cache support (implemented with Hazelcast).
-- Multi-app support, each with its own table, index and cache.
-- Flexible security based on Spring Security (OpenID and Facebook login, CSRF protection, etc.).
-- Robust constraint validation mechanism based on JSR-303 and Hibernate Validator.
-- Support for scalable data stores (Amazon DynamoDB, Cassandra).
-- Modular design powered by Google Guice.
-- I18n utilities for translating language packs into different languages.
+- Standalone executable WAR with embedded Jetty
+- RESTful JSON API for your objects secured with Amazon's Signature 4 algorithm
+- Full text search with Elasticsearch
+- Distributed object cache (Hazelcast)
+- Multi-app support, each with its own table, index and cache
+- Flexible security based on Spring Security (Social login, JWT support, CSRF protection, etc.)
+- Robust constraint validation mechanism based on JSR-303 and Hibernate Validator
+- Support for scalable data stores (Amazon DynamoDB, Apache Cassandra, MongoDB)
+- Modular design powered by Google Guice
+- I18n utilities for translating language packs into different languages
 
 ### Architecture
 
