@@ -29,6 +29,7 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.erudika.para.validation.ValidationUtils;
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -161,6 +162,8 @@ public final class RestUtils {
 			} else {
 				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
 			}
+		} catch (JsonMappingException e) {
+			return getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
 		} catch (JsonParseException e) {
 			return getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
 		} catch (IOException e) {
