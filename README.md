@@ -60,7 +60,7 @@ See how Para [compares to other open source back-end frameworks](http://www.erud
 
 ## Documentation
 
-###[Read the Docs](http://paraio.org/docs)
+### [Read the Docs](http://paraio.org/docs)
 
 ## Getting started
 
@@ -107,7 +107,7 @@ Here's the Maven snippet to include in your `pom.xml`:
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para-server</artifactId>
-  <version>1.17</version>
+  <version>1.17.1</version>
 </dependency>
 ```
 
