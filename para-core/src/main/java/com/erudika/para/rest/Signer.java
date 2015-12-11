@@ -350,7 +350,7 @@ public final class Signer extends AWS4Signer {
 			Map<String, String> headers, MultivaluedMap<String, String> params, byte[] jsonEntity) {
 
 		if (StringUtils.isBlank(accessKey) || StringUtils.isBlank(secretKey)) {
-			logger.warn("Blank access key or secret key!");
+			logger.warn("Blank access key or secret key for: {} {}", httpMethod, reqPath);
 			accessKey = "";
 			secretKey = "";
 		}
