@@ -133,7 +133,8 @@ public class User implements ParaObject {
 	 * @return a URL or null
 	 */
 	public String getPicture() {
-		return picture;
+		return StringUtils.isBlank(picture) ?
+				"http://www.gravatar.com/avatar?d=mm&size=400" : picture;
 	}
 
 	/**

@@ -153,13 +153,19 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 						user.setEmail(StringUtils.isBlank(email) ? googleSubId + "@google.com" : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());
+						user.setPicture(getPicture(pic));
 						user.setIdentifier(Config.GPLUS_PREFIX.concat(googleSubId));
 						String id = StringUtils.isBlank(appid) ? user.create() : user.getDao().create(appid, user);
 						if (id == null) {
 							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 						}
+					} else {
+						String picture = getPicture(pic);
+						if (!StringUtils.equals(user.getPicture(), picture)) {
+							user.setPicture(picture);
+							user.update();
+						}
 					}
-					user.setPicture(getPicture(pic));
 					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 				}
 				EntityUtils.consumeQuietly(resp2.getEntity());

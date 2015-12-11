@@ -183,13 +183,19 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 						user.setEmail(alias + "@twitter.com");
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());
+						user.setPicture(getPicture(pic));
 						user.setIdentifier(Config.TWITTER_PREFIX + twitterId);
 						String id = StringUtils.isBlank(appid) ? user.create() : user.getDao().create(appid, user);
 						if (id == null) {
 							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 						}
+					} else {
+						String picture = getPicture(pic);
+						if (!StringUtils.equals(user.getPicture(), picture)) {
+							user.setPicture(picture);
+							user.update();
+						}
 					}
-					user.setPicture(getPicture(pic));
 					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 				}
 			}
