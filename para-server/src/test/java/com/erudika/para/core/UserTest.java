@@ -49,6 +49,8 @@ public class UserTest {
 		u.setEmail("asd@asd.com");
 		u.setIdentifier(u.getEmail());
 		u.setPassword("123456");
+
+		assertNotNull(u.getPicture());
 	}
 
 	@Test
