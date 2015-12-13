@@ -117,9 +117,8 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 				return false;
 			}
 		} else {
-			String msg = Utils.formatMessage("You don't have permission to access this resource. "
-					+ "[resource: {0} {1}]", method, reqUri);
-			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN, msg);
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, Utils.
+					formatMessage("You don't have permission to access this resource. [{0} {1}]", method, reqUri));
 			return false;
 		}
 		return true;
@@ -128,6 +127,8 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 	private boolean appAuthRequestHandler(String appid, BufferedRequestWrapper request, HttpServletResponse response) {
 		String date = RestUtils.extractDate(request);
 		Date d = Signer.parseAWSDate(date);
+		String reqUri = request.getRequestURI();
+		String method = request.getMethod();
 		boolean requestExpired = (d != null) && (System.currentTimeMillis()
 				> (d.getTime() + (Config.REQUEST_EXPIRES_AFTER_SEC * 1000)));
 
@@ -148,17 +149,17 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 								}
 							} else {
 								RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-										"App is in read-only mode.");
+										Utils.formatMessage("App is in read-only mode. [{0}]", appid));
 								return false;
 							}
 						} else {
 							RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-									"App not active.");
+									Utils.formatMessage("App not active. [{0}]", appid));
 							return false;
 						}
 					} else {
 						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND,
-								"App not found.");
+								Utils.formatMessage("App not found. [{0}]", appid));
 						return false;
 					}
 				} else {
@@ -168,12 +169,12 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 				}
 			} else {
 				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-						"'X-Amz-Date' header/parameter is not set!");
+						"'X-Amz-Date' header or parameter is not set!");
 				return false;
 			}
 		} else {
-			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
-					"Credentials are missing.");
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, Utils.
+					formatMessage("You don't have permission to access this resource. [{0} {1}]", method, reqUri));
 			return false;
 		}
 		return true;
