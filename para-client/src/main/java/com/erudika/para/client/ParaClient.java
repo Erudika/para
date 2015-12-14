@@ -70,7 +70,7 @@ public final class ParaClient {
 	private String secretKey;
 	private String tokenKey;
 	private Long tokenKeyExpires;
-	private Long tokenKeyLastRefresh;
+	private Long tokenKeyNextRefresh;
 	private Client apiClient;
 	private final Signer signer = new Signer();
 
@@ -162,12 +162,34 @@ public final class ParaClient {
 	}
 
 	/**
+	 * Sets the JWT access token.
+	 * @param token a valid token
+	 */
+	@SuppressWarnings("unchecked")
+	public void setAccessToken(String token) {
+		if (!StringUtils.isBlank(token)) {
+			try {
+				String payload = Utils.base64dec(StringUtils.substringBetween(token, ".", "."));
+				Map<String, Object> decoded = ParaObjectUtils.getJsonMapper().readValue(payload, Map.class);
+				if (decoded != null && decoded.containsKey("exp")) {
+					this.tokenKeyExpires = (Long) decoded.get("exp");
+					this.tokenKeyNextRefresh = (Long) decoded.get("refresh");
+				}
+			} catch (Exception ex) {
+				this.tokenKeyExpires = null;
+				this.tokenKeyNextRefresh = null;
+			}
+		}
+		this.tokenKey = token;
+	}
+
+	/**
 	 * Clears the JWT token from memory, if such exists.
 	 */
 	private void clearAccessToken() {
 		tokenKey = null;
 		tokenKeyExpires = null;
-		tokenKeyLastRefresh = null;
+		tokenKeyNextRefresh = null;
 	}
 
 	private String key() {
@@ -1153,6 +1175,7 @@ public final class ParaClient {
 				Map<String, Object> userData = (Map<String, Object>) result.get("user");
 				tokenKey = (String) jwtData.get("access_token");
 				tokenKeyExpires = (Long) jwtData.get("expires");
+				tokenKeyNextRefresh = (Long) jwtData.get("refresh");
 				return ParaObjectUtils.setAnnotatedFields(userData);
 			} else {
 				clearAccessToken();
@@ -1176,10 +1199,9 @@ public final class ParaClient {
 	 */
 	protected boolean refreshToken() {
 		long now = System.currentTimeMillis();
-		long interval = (Config.JWT_REFRESH_INTERVAL_SEC * 1000);
 		boolean notExpired = tokenKeyExpires != null && tokenKeyExpires > now;
-		boolean canRefresh = tokenKeyLastRefresh != null &&
-				((tokenKeyLastRefresh + interval) < now || (tokenKeyLastRefresh + interval) > tokenKeyExpires);
+		boolean canRefresh = tokenKeyNextRefresh != null &&
+				(tokenKeyNextRefresh < now || tokenKeyNextRefresh > tokenKeyExpires);
 		// token present and NOT expired
 		if (tokenKey != null && notExpired && canRefresh) {
 			Map<String, Object> result = getEntity(invokeGet(JWT_PATH, null), Map.class);
@@ -1187,7 +1209,7 @@ public final class ParaClient {
 				Map<?, ?> jwtData = (Map<?, ?>) result.get("jwt");
 				tokenKey = (String) jwtData.get("access_token");
 				tokenKeyExpires = (Long) jwtData.get("expires");
-				tokenKeyLastRefresh = System.currentTimeMillis();
+				tokenKeyNextRefresh = (Long) jwtData.get("refresh");
 				return true;
 			} else {
 				clearAccessToken();
