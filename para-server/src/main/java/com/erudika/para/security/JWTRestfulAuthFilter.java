@@ -153,8 +153,9 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 					JWTClaimsSet.Builder claimsSet = new JWTClaimsSet.Builder();
 					claimsSet.subject(user.getId());
 					claimsSet.issueTime(now);
-					claimsSet.expirationTime(new Date(now.getTime() + (Config.JWT_EXPIRES_AFTER_SEC * 1000)));
+					claimsSet.expirationTime(new Date(now.getTime() + (app.getTokenValiditySec() * 1000)));
 					claimsSet.notBeforeTime(now);
+					claimsSet.claim("refresh", getNextRefresh(app.getTokenValiditySec()));
 					claimsSet.claim("appid", app.getId());
 
 					String secret = app.getSecret() + user.getTokenSecret();
@@ -237,6 +238,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			result.put("jwt", new HashMap<String, Object>() { {
 					try {
 						put("access_token", token.serialize());
+						put("refresh", token.getJWTClaimsSet().getLongClaim("refresh"));
 						put("expires", token.getJWTClaimsSet().getExpirationTime().getTime());
 					} catch (ParseException ex) {
 						logger.info("Unable to parse JWT.", ex);
@@ -269,6 +271,16 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			}
 		}
 		return null;
+	}
+
+	private long getNextRefresh(long tokenValiditySec) {
+		long interval = Config.JWT_REFRESH_INTERVAL_SEC;
+		// estimate when the next token refresh should be
+		// usually every hour, or halfway until the time it expires
+		if (tokenValiditySec < (2 * interval)) {
+			interval = (tokenValiditySec / 2);
+		}
+		return System.currentTimeMillis() + (interval * 1000);
 	}
 
 	private UserAuthentication getOrCreateUser(String appid, String identityProvider, String accessToken)

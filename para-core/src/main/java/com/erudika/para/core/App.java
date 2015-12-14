@@ -88,6 +88,7 @@ public class App implements ParaObject {
 	@Stored private Map<String, Map<String, List<String>>> resourcePermissions;
 	@Stored private Boolean active;
 	@Stored private Long deleteOn;
+	@Stored private Long tokenValiditySec;
 
 	private transient DAO dao;
 	private transient Search search;
@@ -203,6 +204,30 @@ public class App implements ParaObject {
 	 */
 	public void setDeleteOn(Long deleteOn) {
 		this.deleteOn = deleteOn;
+	}
+
+	/**
+	 * The validity period for access tokens in seconds.
+	 * This setting is for current app only.
+	 * Always returns a default value if local setting is null.
+	 * @return period in seconds
+	 */
+	public Long getTokenValiditySec() {
+		if (tokenValiditySec == null || tokenValiditySec <= 0) {
+			tokenValiditySec = Config.JWT_EXPIRES_AFTER_SEC;
+		}
+		return tokenValiditySec;
+	}
+
+	/**
+	 * Sets the access token validity period in seconds.
+	 * @param tokenValiditySec seconds
+	 */
+	public void setTokenValiditySec(Long tokenValiditySec) {
+		if (tokenValiditySec == null || tokenValiditySec <= 0) {
+			this.tokenValiditySec = 0L;
+		}
+		this.tokenValiditySec = tokenValiditySec;
 	}
 
 	/**
