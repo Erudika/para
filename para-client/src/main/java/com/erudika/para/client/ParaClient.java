@@ -192,9 +192,11 @@ public final class ParaClient {
 		tokenKeyNextRefresh = null;
 	}
 
-	private String key() {
+	private String key(boolean refresh) {
 		if (tokenKey != null) {
-			refreshToken();
+			if (refresh) {
+				refreshToken();
+			}
 			return "Bearer " + tokenKey;
 		}
 		return secretKey;
@@ -233,27 +235,27 @@ public final class ParaClient {
 	}
 
 	private Response invokeGet(String resourcePath, MultivaluedMap<String, String> params) {
-		return signer.invokeSignedRequest(getApiClient(), accessKey, key(), GET,
+		return signer.invokeSignedRequest(getApiClient(), accessKey, key(!JWT_PATH.equals(resourcePath)), GET,
 				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
 	}
 
 	private Response invokePost(String resourcePath, Entity<?> entity) {
-		return signer.invokeSignedRequest(getApiClient(), accessKey, key(), POST,
+		return signer.invokeSignedRequest(getApiClient(), accessKey, key(false), POST,
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
 	private Response invokePut(String resourcePath, Entity<?> entity) {
-		return signer.invokeSignedRequest(getApiClient(), accessKey, key(), PUT,
+		return signer.invokeSignedRequest(getApiClient(), accessKey, key(false), PUT,
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
 	private Response invokePatch(String resourcePath, Entity<?> entity) {
-		return signer.invokeSignedRequest(getApiClient(), accessKey, key(), "PATCH",
+		return signer.invokeSignedRequest(getApiClient(), accessKey, key(false), "PATCH",
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
 	private Response invokeDelete(String resourcePath, MultivaluedMap<String, String> params) {
-		return signer.invokeSignedRequest(getApiClient(), accessKey, key(), DELETE,
+		return signer.invokeSignedRequest(getApiClient(), accessKey, key(false), DELETE,
 				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
 	}
 
@@ -1151,7 +1153,7 @@ public final class ParaClient {
 	/////////////////////////////////////////////
 
 	/**
-	 * Takes an identity provider access token and fethces the user data from that provider.
+	 * Takes an identity provider access token and fetches the user data from that provider.
 	 * A new {@link  User} object is created if that user doesn't exist.
 	 * Access tokens are returned upon successful authentication using one of the SDKs from
 	 * Facebook, Google, Twitter, etc.
@@ -1220,7 +1222,7 @@ public final class ParaClient {
 
 	/**
 	 * Revokes all user tokens for a given user id.
-	 * This is whould be equivalent to "logout everywhere".
+	 * This would be equivalent to "logout everywhere".
 	 * <b>Note:</b> Generating a new API secret on the server will also invalidate all client tokens.
 	 * Requires a valid existing token.
 	 * @return true if successful

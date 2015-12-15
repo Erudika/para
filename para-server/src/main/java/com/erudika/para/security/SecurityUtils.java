@@ -19,6 +19,7 @@ package com.erudika.para.security;
 
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
+import com.erudika.para.utils.Config;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -133,11 +134,20 @@ public final class SecurityUtils {
 	 * @param claimsSet JWT claims
 	 * @return a new JWT or null
 	 */
-	public static SignedJWT generateJWToken(String secret, JWTClaimsSet claimsSet) {
-		if (claimsSet != null && secret != null) {
+	public static SignedJWT generateJWToken(User user, App app) {
+		if (user != null && app != null) {
 			try {
-				JWSSigner signer = new MACSigner(secret);
-				SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet);
+				Date now = new Date();
+				JWTClaimsSet.Builder claimsSet = new JWTClaimsSet.Builder();
+				claimsSet.subject(user.getId());
+				claimsSet.issueTime(now);
+				claimsSet.expirationTime(new Date(now.getTime() + (app.getTokenValiditySec() * 1000)));
+				claimsSet.notBeforeTime(now);
+				claimsSet.claim("refresh", getNextRefresh(app.getTokenValiditySec()));
+				claimsSet.claim("appid", app.getId());
+
+				JWSSigner signer = new MACSigner(app.getSecret() + user.getTokenSecret());
+				SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet.build());
 				signedJWT.sign(signer);
 				return signedJWT;
 			} catch (JOSEException e) {
@@ -145,5 +155,20 @@ public final class SecurityUtils {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Decides when the next token refresh should be.
+	 * @param tokenValiditySec token validity period
+	 * @return a refresh timestamp to be used by API clients
+	 */
+	private static long getNextRefresh(long tokenValiditySec) {
+		long interval = Config.JWT_REFRESH_INTERVAL_SEC;
+		// estimate when the next token refresh should be
+		// usually every hour, or halfway until the time it expires
+		if (tokenValiditySec < (2 * interval)) {
+			interval = (tokenValiditySec / 2);
+		}
+		return System.currentTimeMillis() + (interval * 1000);
 	}
 }

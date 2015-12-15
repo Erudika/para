@@ -23,10 +23,11 @@ See how Para [compares to other open source back-end frameworks](http://www.erud
 
 - Standalone executable WAR with embedded Jetty
 - RESTful JSON API for your objects secured with Amazon's Signature 4 algorithm
-- Full text search with Elasticsearch
+- Full text search (Elasticsearch)
 - Distributed object cache (Hazelcast)
 - Multi-app support, each with its own table, index and cache
 - Flexible security based on Spring Security (Social login, JWT support, CSRF protection, etc.)
+- Simple but effective resource permissions for client access control
 - Robust constraint validation mechanism based on JSR-303 and Hibernate Validator
 - Support for scalable data stores (Amazon DynamoDB, Apache Cassandra, MongoDB)
 - Modular design powered by Google Guice
@@ -54,7 +55,7 @@ See how Para [compares to other open source back-end frameworks](http://www.erud
 +----+---------^----+  +-----------------+   +-------------+
      |         |
 +----v---------+-------------------------------------------+
-|        Clients : JavaScript, PHP, Ruby, C#, etc.         |
+|        Clients : JavaScript, PHP, Java, C#, etc.         |
 +----------------------------------------------------------+
 </pre>
 

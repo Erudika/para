@@ -24,11 +24,9 @@ import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
-import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Inject;
@@ -149,17 +147,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 				app = Para.getDAO().read(app.getId());
 				if (app != null) {
 					// issue token
-					Date now = new Date();
-					JWTClaimsSet.Builder claimsSet = new JWTClaimsSet.Builder();
-					claimsSet.subject(user.getId());
-					claimsSet.issueTime(now);
-					claimsSet.expirationTime(new Date(now.getTime() + (app.getTokenValiditySec() * 1000)));
-					claimsSet.notBeforeTime(now);
-					claimsSet.claim("refresh", getNextRefresh(app.getTokenValiditySec()));
-					claimsSet.claim("appid", app.getId());
-
-					String secret = app.getSecret() + user.getTokenSecret();
-					SignedJWT newJWT = SecurityUtils.generateJWToken(secret, claimsSet.build());
+					SignedJWT newJWT = SecurityUtils.generateJWToken(user, app);
 					if (newJWT != null) {
 						succesHandler(response, user, newJWT);
 						return true;
@@ -189,8 +177,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 					// check and reissue token
 					jwtAuth = (JWTAuthentication) authenticationManager.authenticate(jwtAuth);
 					if (jwtAuth != null && jwtAuth.getApp() != null) {
-						String secret = jwtAuth.getApp().getSecret() + user.getTokenSecret();
-						SignedJWT newToken = SecurityUtils.generateJWToken(secret, jwtAuth.getClaims());
+						SignedJWT newToken = SecurityUtils.generateJWToken(user, jwtAuth.getApp());
 						if (newToken != null) {
 							succesHandler(response, user, newToken);
 							return true;
@@ -271,16 +258,6 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			}
 		}
 		return null;
-	}
-
-	private long getNextRefresh(long tokenValiditySec) {
-		long interval = Config.JWT_REFRESH_INTERVAL_SEC;
-		// estimate when the next token refresh should be
-		// usually every hour, or halfway until the time it expires
-		if (tokenValiditySec < (2 * interval)) {
-			interval = (tokenValiditySec / 2);
-		}
-		return System.currentTimeMillis() + (interval * 1000);
 	}
 
 	private UserAuthentication getOrCreateUser(String appid, String identityProvider, String accessToken)
