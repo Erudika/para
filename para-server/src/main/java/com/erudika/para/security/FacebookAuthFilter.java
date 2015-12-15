@@ -149,7 +149,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 						user.setPassword(new UUID().toString());
 						user.setPicture(getPicture(fbId, pic));
 						user.setIdentifier(Config.FB_PREFIX.concat(fbId));
-						String id = StringUtils.isBlank(appid) ? user.create() : user.getDao().create(appid, user);
+						String id = user.create();
 						if (id == null) {
 							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 						}

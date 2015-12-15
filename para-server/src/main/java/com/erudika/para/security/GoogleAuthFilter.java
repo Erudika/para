@@ -155,7 +155,7 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 						user.setPassword(new UUID().toString());
 						user.setPicture(getPicture(pic));
 						user.setIdentifier(Config.GPLUS_PREFIX.concat(googleSubId));
-						String id = StringUtils.isBlank(appid) ? user.create() : user.getDao().create(appid, user);
+						String id = user.create();
 						if (id == null) {
 							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 						}
