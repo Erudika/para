@@ -139,7 +139,7 @@ public class Api1 extends ResourceConfig {
 		Resource.Builder permRes = Resource.builder("_permissions");
 		permRes.addMethod(GET).produces(JSON).handledBy(getPermitHandler(null));
 		permRes.addChildResource("{subjectid}").addMethod(GET).produces(JSON).handledBy(getPermitHandler(null));
-		permRes.addChildResource("{subjectid}/{type}/{method}").addMethod(GET).produces(JSON).handledBy(validPermitHandler(null));
+		permRes.addChildResource("{subjectid}/{type}/{method}").addMethod(GET).produces(JSON).handledBy(checkPermitHandler(null));
 		permRes.addChildResource("{subjectid}/{type}").addMethod(PUT).produces(JSON).handledBy(grantPermitHandler(null));
 		permRes.addChildResource("{subjectid}/{type}").addMethod(DELETE).produces(JSON).handledBy(revokePermitHandler(null));
 		permRes.addChildResource("{subjectid}").addMethod(DELETE).produces(JSON).handledBy(revokePermitHandler(null));
@@ -507,7 +507,7 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> validPermitHandler(final App a) {
+	protected final Inflector<ContainerRequestContext, Response> checkPermitHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : RestUtils.getPrincipalApp();
