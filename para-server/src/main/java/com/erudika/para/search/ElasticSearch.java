@@ -98,7 +98,7 @@ public class ElasticSearch implements Search {
 		if (po == null || StringUtils.isBlank(appid)) {
 			return;
 		}
-		Map<String, Object> data = ParaObjectUtils.getAnnotatedFields(po, null, true);
+		Map<String, Object> data = ParaObjectUtils.getAnnotatedFields(po, null, false);
 		try {
 			IndexRequestBuilder irb = client().prepareIndex(getIndexName(appid), po.getType(), po.getId()).
 					setSource(data);
@@ -142,7 +142,7 @@ public class ElasticSearch implements Search {
 		BulkRequestBuilder brb = client().prepareBulk();
 		for (ParaObject po : objects) {
 			brb.add(client().prepareIndex(getIndexName(appid), po.getType(), po.getId()).
-					setSource(ParaObjectUtils.getAnnotatedFields(po, null, true)));
+					setSource(ParaObjectUtils.getAnnotatedFields(po, null, false)));
 		}
 		if (brb.numberOfActions() > 0) {
 			if (isAsyncEnabled()) {

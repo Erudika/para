@@ -13,7 +13,7 @@
 
 	<properties>
 		<springSecVer>4.0.3.RELEASE</springSecVer>
-		<hazelcastVer>3.5.3</hazelcastVer>
+		<hazelcastVer>3.5.4</hazelcastVer>
 	</properties>
 
 	<dependencies>
@@ -78,7 +78,7 @@
 		<dependency>
 			<groupId>org.elasticsearch</groupId>
 			<artifactId>elasticsearch</artifactId>
-			<version>2.1.0</version>
+			<version>2.1.1</version>
 		</dependency>
 		<dependency>
 			<groupId>net.java.dev.jna</groupId>
