@@ -130,8 +130,8 @@ public final class SecurityUtils {
 
 	/**
 	 * Generates a new JWT token.
-	 * @param secret secret used for generating the token
-	 * @param claimsSet JWT claims
+	 * @param user a User object belonging to the app
+	 * @param app the app object
 	 * @return a new JWT or null
 	 */
 	public static SignedJWT generateJWToken(User user, App app) {
