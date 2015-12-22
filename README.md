@@ -74,7 +74,7 @@ To get started quickly just [grab the WAR file](https://github.com/Erudika/para/
 
 ### Building Para
 
-Para can be compiled with JDK 1.6 and up.
+Para can be compiled with JDK 1.6 and up, but we recommend running it on Java 1.8+.
 
 Para uses Maven. Here's how you clone it and build it:
 
@@ -95,7 +95,7 @@ java -jar para-X.Y.Z.war
 
 Alternatively, you can grab the WAR file and deploy it to your favorite servlet container.
 
-####[Download WAR](https://github.com/Erudika/para/releases)
+### [Download WAR](https://github.com/Erudika/para/releases)
 
 ### Maven
 
@@ -124,9 +124,9 @@ clients for popular languages soon.
 
 ## Wishlist / Plans
 
-- Add `DAO` implementations for popular databases like MongoDB, PostgreSQL, etc.
-- Write API clients in JavaScript, PHP, Ruby, Python, C#, Swift, etc.
-- Add integrations with Google App Engine, Heroku, JOOQ, Comsat, Quasar
+- `DAO` implementations for popular databases like MongoDB, PostgreSQL, etc.
+- API clients in Python, iOS, Android.
+- Integrate with Google App Engine, Heroku, JOOQ, Comsat, Quasar
 
 ## Contributing
 

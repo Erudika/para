@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Utility class for language operations.
+ * These can be used to build a crowdsourced translation system. 
  * @author Alex Bogdanovski [alex@erudika.com]
  * @see Translation
  */
