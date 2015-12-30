@@ -398,7 +398,10 @@ public class App implements ParaObject {
 			for (String subjectid : subjectids) {
 				if (getResourcePermissions().containsKey(subjectid)) {
 					allPermits.put(subjectid, getResourcePermissions().get(subjectid));
-				} else if (getResourcePermissions().containsKey(ALLOW_ALL)) {
+				} else {
+					allPermits.put(subjectid, new HashMap<String, List<String>>(0));
+				}
+				if (getResourcePermissions().containsKey(ALLOW_ALL)) {
 					allPermits.put(ALLOW_ALL, getResourcePermissions().get(ALLOW_ALL));
 				}
 			}
@@ -461,6 +464,9 @@ public class App implements ParaObject {
 		if (!StringUtils.isBlank(subjectid) && getResourcePermissions().containsKey(subjectid) &&
 				!StringUtils.isBlank(resourceName)) {
 			getResourcePermissions().get(subjectid).remove(resourceName);
+			if (getResourcePermissions().get(subjectid).isEmpty()) {
+				getResourcePermissions().remove(subjectid);
+			}
 			return true;
 		}
 		return false;
@@ -474,7 +480,6 @@ public class App implements ParaObject {
 	public boolean revokeAllResourcePermissions(String subjectid) {
 		if (!StringUtils.isBlank(subjectid) && getResourcePermissions().containsKey(subjectid)) {
 			getResourcePermissions().remove(subjectid);
-			getResourcePermissions().put(subjectid, new HashMap<String, List<String>>());
 			return true;
 		}
 		return false;
