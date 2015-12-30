@@ -419,6 +419,9 @@ public class App implements ParaObject {
 	 * @return true if successful
 	 */
 	public boolean grantResourcePermission(String subjectid, String resourceName, EnumSet<AllowedMethods> permission) {
+		// clean up resource name
+		resourceName = Utils.noSpaces(resourceName, "-");
+
 		if (!StringUtils.isBlank(subjectid) && !StringUtils.isBlank(resourceName) &&
 				permission != null && !permission.isEmpty()) {
 			if (!getResourcePermissions().containsKey(subjectid)) {
@@ -532,6 +535,8 @@ public class App implements ParaObject {
 	 * @param datatype a datatype, must not be null or empty
 	 */
 	public void addDatatype(String pluralDatatype, String datatype) {
+		pluralDatatype = Utils.noSpaces(Utils.stripAndTrim(pluralDatatype, " "), "-");
+		datatype = Utils.noSpaces(Utils.stripAndTrim(datatype, " "), "-");
 		if (getDatatypes().size() < Config.MAX_DATATYPES_PER_APP) {
 			if (!StringUtils.isBlank(pluralDatatype) && !StringUtils.isBlank(datatype) &&
 					!getDatatypes().containsValue(datatype) &&
@@ -545,7 +550,7 @@ public class App implements ParaObject {
 	}
 
 	/**
-	 * Adds unknown types to this App's list of data types. Called on create().
+	 * Adds unknown types to this app's list of data types. Called on create().
 	 * @param objects a list of new objects
 	 */
 	public void addDatatypes(ParaObject... objects) {
