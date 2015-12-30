@@ -536,12 +536,19 @@ public class Api1 extends ResourceConfig {
 						List<String> permission = (List<String>) resp.getEntity();
 						Set<App.AllowedMethods> set = new HashSet<App.AllowedMethods>(permission.size());
 						for (String perm : permission) {
-							set.add(App.AllowedMethods.fromString(perm));
+							App.AllowedMethods method = App.AllowedMethods.fromString(perm);
+							if (method != null) {
+								set.add(method);
+							}
 						}
-						if (app.grantResourcePermission(subjectid, resourceName, EnumSet.copyOf(set))) {
-							app.update();
+						if (!set.isEmpty()) {
+							if (app.grantResourcePermission(subjectid, resourceName, EnumSet.copyOf(set))) {
+								app.update();
+							}
+							return Response.ok(app.getAllResourcePermissions(subjectid)).build();
+						} else {
+							return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, "No allowed methods specified.");
 						}
-						return Response.ok(app.getAllResourcePermissions(subjectid)).build();
 					} else {
 						return resp;
 					}
