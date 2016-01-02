@@ -551,7 +551,7 @@ public abstract class Constraint {
 	 * @return constraint
 	 */
 	public static Constraint build(String cname, Map<String, Object> payload) {
-		if (cname != null && payload != null && !payload.isEmpty()) {
+		if (cname != null && payload != null) {
 			if ("required".equals(cname)) {
 				return required();
 			} else if ("email".equals(cname)) {

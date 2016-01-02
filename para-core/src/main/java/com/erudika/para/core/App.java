@@ -376,8 +376,13 @@ public class App implements ParaObject {
 	public boolean removeValidationConstraint(String type, String field, String constraintName) {
 		if (!StringUtils.isBlank(type) && !StringUtils.isBlank(field) && constraintName != null) {
 			Map<String, Map<String, Map<String, ?>>> fieldsMap = getValidationConstraints().get(type);
-			if (fieldsMap != null && fieldsMap.containsKey(field) && fieldsMap.get(field).containsKey(constraintName)) {
-				fieldsMap.get(field).remove(constraintName);
+			if (fieldsMap != null && fieldsMap.containsKey(field)) {
+				if (fieldsMap.get(field).containsKey(constraintName)) {
+					fieldsMap.get(field).remove(constraintName);
+				}
+				if (fieldsMap.get(field).isEmpty()) {
+					getValidationConstraints().get(type).remove(field);
+				}
 				return true;
 			}
 		}
