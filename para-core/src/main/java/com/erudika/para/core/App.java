@@ -383,6 +383,9 @@ public class App implements ParaObject {
 				if (fieldsMap.get(field).isEmpty()) {
 					getValidationConstraints().get(type).remove(field);
 				}
+				if (getValidationConstraints().get(type).isEmpty()) {
+					getValidationConstraints().remove(type);
+				}
 				return true;
 			}
 		}
