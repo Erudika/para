@@ -404,13 +404,15 @@ public class App implements ParaObject {
 		}
 		try {
 			for (String subjectid : subjectids) {
-				if (getResourcePermissions().containsKey(subjectid)) {
-					allPermits.put(subjectid, getResourcePermissions().get(subjectid));
-				} else {
-					allPermits.put(subjectid, new HashMap<String, List<String>>(0));
-				}
-				if (getResourcePermissions().containsKey(ALLOW_ALL)) {
-					allPermits.put(ALLOW_ALL, getResourcePermissions().get(ALLOW_ALL));
+				if (subjectid != null) {
+					if (getResourcePermissions().containsKey(subjectid)) {
+						allPermits.put(subjectid, getResourcePermissions().get(subjectid));
+					} else {
+						allPermits.put(subjectid, new HashMap<String, List<String>>(0));
+					}
+					if (getResourcePermissions().containsKey(ALLOW_ALL)) {
+						allPermits.put(ALLOW_ALL, getResourcePermissions().get(ALLOW_ALL));
+					}
 				}
 			}
 		} catch (Exception ex) {

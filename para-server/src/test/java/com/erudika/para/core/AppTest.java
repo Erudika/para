@@ -123,9 +123,7 @@ public class AppTest {
 
 		// remove
 		app.removeValidationConstraint("testtype", "urlField", "url");
-		assertTrue(app.getValidationConstraints().get("testtype").containsKey("urlField"));
-		assertTrue(app.getValidationConstraints().get("testtype").get("urlField").isEmpty());
-		assertFalse(app.getValidationConstraints().get("testtype").get("urlField").containsKey("url"));
+		assertTrue(app.getValidationConstraints().isEmpty());
 	}
 
 	@Test

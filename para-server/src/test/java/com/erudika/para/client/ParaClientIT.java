@@ -537,7 +537,7 @@ public class ParaClientIT {
 
 		pc.removeValidationConstraint(kittenType, "paws", "required");
 		constraint = pc.validationConstraints(kittenType);
-		assertFalse(constraint.get(kittenType).isEmpty());
+		assertFalse(constraint.containsKey(kittenType));
 	}
 
 	@Test
@@ -573,8 +573,8 @@ public class ParaClientIT {
 		pc.revokeAllResourcePermissions(u2.getId());
 		permits = pc.resourcePermissions();
 		assertFalse(pc.isAllowedTo(u2.getId(), dogsType, AllowedMethods.PUT.toString()));
-		assertTrue(permits.containsKey(u2.getId()));
-		assertTrue(permits.get(u2.getId()).isEmpty());
+		assertFalse(permits.containsKey(u2.getId()));
+//		assertTrue(permits.get(u2.getId()).isEmpty());
 
 		pc.grantResourcePermission(u1.getId(), dogsType, AllowedMethods.WRITE);
 		pc.grantResourcePermission(App.ALLOW_ALL, catsType, AllowedMethods.WRITE);
