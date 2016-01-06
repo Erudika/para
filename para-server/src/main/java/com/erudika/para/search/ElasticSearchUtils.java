@@ -82,8 +82,7 @@ public final class ElasticSearchUtils {
 		String esHome = Config.getConfigParam("es.dir", Paths.get(".").toAbsolutePath().normalize().toString());
 		String esHost = Config.getConfigParam("es.transportclient_host", "localhost");
 		int esPort = Config.getConfigInt("es.transportclient_port", 9300);
-		boolean useTransportClient = !"embedded".equals(Config.ENVIRONMENT) &&
-				Config.getConfigBoolean("es.use_transportclient", false);
+		boolean useTransportClient = Config.getConfigBoolean("es.use_transportclient", false);
 
 		Settings.Builder settings = Settings.builder();
 		settings.put("node.name", getNodeName());
