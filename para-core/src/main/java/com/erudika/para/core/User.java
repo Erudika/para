@@ -134,7 +134,7 @@ public class User implements ParaObject {
 	 */
 	public String getPicture() {
 		return StringUtils.isBlank(picture) ?
-				"http://www.gravatar.com/avatar?d=mm&size=400" : picture;
+				"https://www.gravatar.com/avatar?d=mm&size=400" : picture;
 	}
 
 	/**
@@ -632,9 +632,9 @@ public class User implements ParaObject {
 		if (StringUtils.isBlank(picture)) {
 			if (email != null) {
 				String emailHash = DigestUtils.md5DigestAsHex(email.getBytes());
-				setPicture("http://www.gravatar.com/avatar/" + emailHash + "?size=400&d=mm&r=pg");
+				setPicture("https://www.gravatar.com/avatar/" + emailHash + "?size=400&d=mm&r=pg");
 			} else {
-				setPicture("http://www.gravatar.com/avatar?d=mm&size=400");
+				setPicture("https://www.gravatar.com/avatar?d=mm&size=400");
 			}
 		}
 	}
