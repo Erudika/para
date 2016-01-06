@@ -34,7 +34,7 @@ import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * A system property object. Generic object for storing data.
+ * A generic system class for storing data.
  * It is essentially a map of keys and values.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
