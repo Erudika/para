@@ -34,7 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Fake DAO for in-memory persistence.
+ * Used for testing and development without a database.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 @Singleton
