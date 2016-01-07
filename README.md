@@ -1,6 +1,8 @@
 ![Logo](https://s3-eu-west-1.amazonaws.com/org.paraio/para.png)
 ============================
 
+[![Join the chat at https://gitter.im/Erudika/para](https://badges.gitter.im/Erudika/para.svg)](https://gitter.im/Erudika/para?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 > ### A general-purpose back-end framework for the cloud.
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-core)
