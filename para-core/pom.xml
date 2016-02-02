@@ -12,23 +12,22 @@
 	<name>para-core</name>
 
 	<properties>
-		<jacksonVer>2.6.3</jacksonVer>
-		<springVer>4.1.8.RELEASE</springVer>
+		<jacksonVer>2.6.5</jacksonVer>
+		<springVer>4.1.9.RELEASE</springVer>
 	</properties>
 
 	<dependencies>
-		<!-- GUICE -->
-		<dependency>
-			<groupId>com.google.inject</groupId>
-			<artifactId>guice</artifactId>
-			<version>3.0</version>
-		</dependency>
-
 		<!-- AWS JAVA SDK -->
 		<dependency>
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk-core</artifactId>
 			<version>${awsJdkVer}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<!-- SPRING -->
@@ -36,6 +35,12 @@
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-core</artifactId>
 			<version>${springVer}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
@@ -152,7 +157,7 @@
 			<artifactId>commons-lang3</artifactId>
 			<version>3.4</version>
 		</dependency>
-<!--		<dependency>
+		<!--		<dependency>
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
 			<version>1.10</version>
