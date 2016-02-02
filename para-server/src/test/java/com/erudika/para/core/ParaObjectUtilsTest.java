@@ -17,7 +17,7 @@
  */
 package com.erudika.para.core;
 
-import static com.erudika.para.core.ParaObjectUtils.*;
+import static com.erudika.para.core.utils.ParaObjectUtils.*;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import org.junit.BeforeClass;

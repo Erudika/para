@@ -24,7 +24,7 @@ import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
 import com.erudika.para.core.Votable;
 import static com.erudika.para.utils.Utils.*;
-import static com.erudika.para.core.ParaObjectUtils.*;
+import static com.erudika.para.core.utils.ParaObjectUtils.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;

@@ -22,7 +22,7 @@ import com.erudika.para.ParaServer;
 import com.erudika.para.core.Address;
 import com.erudika.para.core.App;
 import com.erudika.para.core.App.AllowedMethods;
-import com.erudika.para.core.CoreUtils;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
@@ -108,6 +108,9 @@ public class ParaClientIT {
 		Para.initialize(Modules.override(ParaServer.getCoreModules()).with(secMod));
 		app.run();
 
+		CoreUtils.getInstance().setDao(Para.getDAO());
+		CoreUtils.getInstance().setSearch(Para.getSearch());
+
 		ParaClient temp = new ParaClient("x", "x");
 		temp.setEndpoint(endpoint);
 
@@ -127,17 +130,17 @@ public class ParaClientIT {
 		u = new Sysprop("111");
 		u.setName("John Doe");
 		u.setTimestamp(Utils.timestamp());
-		u.setTags(CoreUtils.addTags(u.getTags(), "one", "two", "three"));
+		u.setTags(CoreUtils.getInstance().addTags(u.getTags(), "one", "two", "three"));
 
 		u1 = new Sysprop("222");
 		u1.setName("Joe Black");
 		u1.setTimestamp(Utils.timestamp());
-		u1.setTags(CoreUtils.addTags(u1.getTags(), "two", "four", "three"));
+		u1.setTags(CoreUtils.getInstance().addTags(u1.getTags(), "two", "four", "three"));
 
 		u2 = new Sysprop("333");
 		u2.setName("Ann Smith");
 		u2.setTimestamp(Utils.timestamp());
-		u2.setTags(CoreUtils.addTags(u2.getTags(), "four", "five", "three"));
+		u2.setTags(CoreUtils.getInstance().addTags(u2.getTags(), "four", "five", "three"));
 
 		t = new Tag("test");
 		t.setCount(3);
@@ -344,12 +347,8 @@ public class ParaClientIT {
 		assertEquals(3, pc.findByIds(Arrays.asList(u.getId(), u1.getId(), u2.getId())).size());
 
 		assertTrue(pc.findNearby(null, null, 100, 1, 1).isEmpty());
-		List<User> l1 = pc.findNearby(u.getType(), "*", 10, 40.60, -73.90);
-		assertFalse(l1.isEmpty());
-
-		assertTrue(pc.findNearby(null, null, 100, 1, 1).isEmpty());
-		l1 = pc.findNearby(u.getType(), "*", 10, 40.60, -73.90);
-		assertFalse(l1.isEmpty());
+		assertFalse(pc.findNearby(u.getType(), "*", 10, 40.60, -73.90).isEmpty());
+		assertFalse(pc.findNearby(t.getType(), "*", 10, 40.62, -73.91).isEmpty());
 
 		assertTrue(pc.findPrefix(null, null, "").isEmpty());
 		assertTrue(pc.findPrefix("", "null", "xx").isEmpty());

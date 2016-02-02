@@ -21,9 +21,10 @@ import com.erudika.para.Para;
 import com.erudika.para.cache.Cache;
 import com.erudika.para.cache.MockCache;
 import com.erudika.para.core.App;
-import com.erudika.para.core.ParaObjectUtils;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
 import static com.erudika.para.rest.RestUtils.*;
@@ -65,6 +66,8 @@ public class RestUtilsTest {
 				binder.bind(Search.class).toInstance(Mockito.mock(Search.class));
 			}
 		});
+		CoreUtils.getInstance().setDao(Para.getDAO());
+		CoreUtils.getInstance().setSearch(Para.getSearch());
 	}
 
 	@AfterClass
@@ -93,22 +96,21 @@ public class RestUtilsTest {
 
 		assertEquals(Status.CREATED.getStatusCode(),
 				getCreateResponse(rootApp, t.getType(), getInputStream(t)).getStatus());
-		assertNotNull(t.getDao().read(t.getId()));
+		assertNotNull(CoreUtils.getInstance().getDao().read(t.getId()));
 
 		Map<String, Object> map = new HashMap<String, Object>();
 		assertEquals(Status.NOT_FOUND.getStatusCode(), getUpdateResponse(rootApp, null, null).getStatus());
 		assertEquals(Status.OK.getStatusCode(), getUpdateResponse(rootApp, t, getInputStream(map)).getStatus());
-		assertNotNull(t.getDao().read(t.getId()));
+		assertNotNull(CoreUtils.getInstance().getDao().read(t.getId()));
 
 		assertEquals(Status.BAD_REQUEST.getStatusCode(), getDeleteResponse(rootApp, null).getStatus());
 		assertEquals(Status.OK.getStatusCode(), getDeleteResponse(rootApp, t).getStatus());
-		assertNull(t.getDao().read(t.getId()));
+		assertNull(CoreUtils.getInstance().getDao().read(t.getId()));
 	}
 
 	@Test
 	public void testRegisterNewTypes() {
 		App app = new App("test");
-		app.setDao(new MockDAO());
 		Sysprop custom = new Sysprop("ctype");
 		custom.setType("cat");
 		app.addDatatypes(custom);

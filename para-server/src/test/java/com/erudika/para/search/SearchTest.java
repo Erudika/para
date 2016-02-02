@@ -19,7 +19,7 @@ package com.erudika.para.search;
 
 import com.erudika.para.core.Address;
 import com.erudika.para.core.App;
-import com.erudika.para.core.CoreUtils;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
@@ -57,38 +57,35 @@ public abstract class SearchTest {
 	protected static Address a2;
 
 	public static void init() {
+		CoreUtils.getInstance().setSearch(s);
 		u = new User("111");
-		u.setSearch(s);
 		u.setName("John Doe");
 		u.setGroups(User.Groups.USERS.toString());
 		u.setEmail("john@asd.com");
 		u.setIdentifier(u.getEmail());
 		u.setTimestamp(1000000000L);
 		u.setPassword("123456");
-		u.setTags(CoreUtils.addTags(u.getTags(), "one", "two", "three"));
+		u.setTags(CoreUtils.getInstance().addTags(u.getTags(), "one", "two", "three"));
 
 		u1 = new User("222");
-		u1.setSearch(s);
 		u1.setName("Joe Black");
 		u1.setGroups(User.Groups.USERS.toString());
 		u1.setEmail("joe@asd.com");
 		u1.setIdentifier(u1.getEmail());
 		u1.setTimestamp(Utils.timestamp());
 		u1.setPassword("123456");
-		u1.setTags(CoreUtils.addTags(u1.getTags(), "two", "four", "three"));
+		u1.setTags(CoreUtils.getInstance().addTags(u1.getTags(), "two", "four", "three"));
 
 		u2 = new User("333");
-		u2.setSearch(s);
 		u2.setName("Ann Smith");
 		u2.setGroups(User.Groups.USERS.toString());
 		u2.setEmail("ann@asd.com");
 		u2.setIdentifier(u2.getEmail());
 		u2.setTimestamp(Utils.timestamp());
 		u2.setPassword("123456");
-		u2.setTags(CoreUtils.addTags(u2.getTags(), "four", "five", "three"));
+		u2.setTags(CoreUtils.getInstance().addTags(u2.getTags(), "four", "five", "three"));
 
 		t = new Tag("test");
-		t.setSearch(s);
 		t.setCount(3);
 		t.setTimestamp(Utils.timestamp());
 
@@ -330,11 +327,8 @@ public abstract class SearchTest {
 	@Test
 	public void testIndexAllUnindexAll() throws InterruptedException {
 		Tag tt1 = new Tag("test-all1");
-		tt1.setSearch(s);
 		Tag tt2 = new Tag("test-all2");
-		tt1.setSearch(s);
 		Tag tt3 = new Tag("test-all3");
-		tt1.setSearch(s);
 		List<Tag> tags = new ArrayList<Tag>();
 		tags.add(tt1);
 		tags.add(tt2);

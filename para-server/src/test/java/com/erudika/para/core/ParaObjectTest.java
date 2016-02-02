@@ -17,6 +17,7 @@
  */
 package com.erudika.para.core;
 
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.search.Search;
@@ -57,8 +58,10 @@ public class ParaObjectTest {
 		User u = new User("111");
 		User u3 = new User("333");
 
-		u.setDao(dao);
-		u.setSearch(search);
+		CoreUtils.getInstance().setDao(dao);
+		CoreUtils.getInstance().setSearch(search);
+//		u.setDao(dao);
+//		u.setSearch(search);
 
 		dao.create(t);
 		dao.create(u);
@@ -125,28 +128,28 @@ public class ParaObjectTest {
 		List<String> cleanTags = new ArrayList<String>();
 		cleanTags.add("one");
 		cleanTags.add("two");
-		u1.setTags(CoreUtils.addTags(u1.getTags(), someTags.toArray(new String[]{})));
+		u1.setTags(CoreUtils.getInstance().addTags(u1.getTags(), someTags.toArray(new String[]{})));
 		assertFalse(u1.getTags().contains(""));
 		assertFalse(u1.getTags().contains(" "));
 		assertFalse(u1.getTags().contains(null));
 		Collections.sort(u1.getTags());
 		assertEquals(cleanTags, u1.getTags());
-		u1.setTags(CoreUtils.addTags(u1.getTags(), "two", "two", null));
+		u1.setTags(CoreUtils.getInstance().addTags(u1.getTags(), "two", "two", null));
 		Collections.sort(u1.getTags());
 		assertEquals(cleanTags, u1.getTags());
-		u1.setTags(CoreUtils.addTags(u1.getTags(), "three", "four", "five"));
+		u1.setTags(CoreUtils.getInstance().addTags(u1.getTags(), "three", "four", "five"));
 		assertEquals(5, u1.getTags().size());
 
-		u1.setTags(CoreUtils.removeTags(u1.getTags(), "two", "four"));
+		u1.setTags(CoreUtils.getInstance().removeTags(u1.getTags(), "two", "four"));
 		assertEquals(3, u1.getTags().size());
 		assertFalse(u1.getTags().contains("two"));
 		assertFalse(u1.getTags().contains("four"));
 
-		u1.setTags(CoreUtils.addTags(u1.getTags(), "one", "five"));
+		u1.setTags(CoreUtils.getInstance().addTags(u1.getTags(), "one", "five"));
 		assertEquals(3, u1.getTags().size());
-		u1.setTags(CoreUtils.removeTags(u1.getTags(), "two"));
+		u1.setTags(CoreUtils.getInstance().removeTags(u1.getTags(), "two"));
 		assertEquals(3, u1.getTags().size());
-		u1.setTags(CoreUtils.removeTags(u1.getTags(), null, null));
+		u1.setTags(CoreUtils.getInstance().removeTags(u1.getTags(), null, null));
 
 		u1.setTags(null);
 		assertNull(u1.getTags());

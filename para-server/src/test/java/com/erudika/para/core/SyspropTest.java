@@ -17,8 +17,8 @@
  */
 package com.erudika.para.core;
 
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.persistence.DAO;
-import com.erudika.para.persistence.MockDAO;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Before;
@@ -34,9 +34,8 @@ public class SyspropTest {
 
 	@Before
 	public void setUp() {
-		dao = new MockDAO();
+		dao = CoreUtils.getInstance().getDao(); //new MockDAO();
 		s = new Sysprop("5");
-		s.setDao(dao);
 		s.addProperty("test1", "ok");
 		s.addProperty("test2", "nope");
 		s.addProperty("test3", "sure");

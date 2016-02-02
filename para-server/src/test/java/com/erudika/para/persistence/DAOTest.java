@@ -21,6 +21,7 @@ import com.erudika.para.core.App;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Utils;
 import java.util.Arrays;
@@ -47,9 +48,9 @@ public abstract class DAOTest {
 
 	@Before
 	public void setUp() {
+		CoreUtils.getInstance().setDao(dao);
+		CoreUtils.getInstance().setSearch(mock(Search.class));
 		u = new User("111");
-		u.setSearch(mock(Search.class));
-		u.setDao(dao);
 		u.setName("Name");
 		u.setGroups(User.Groups.USERS.toString());
 		u.setEmail("asd@asd.com");
@@ -57,8 +58,6 @@ public abstract class DAOTest {
 		u.setPassword("123456");
 
 		t = new Tag("test");
-		t.setSearch(mock(Search.class));
-		t.setDao(dao);
 		t.setCount(3);
 
 		dao.create(u);

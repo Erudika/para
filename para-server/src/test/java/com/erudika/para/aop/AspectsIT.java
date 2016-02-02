@@ -22,7 +22,7 @@ import com.erudika.para.ParaServer;
 import com.erudika.para.cache.Cache;
 import com.erudika.para.cache.MockCache;
 import com.erudika.para.core.App;
-import com.erudika.para.core.CoreUtils;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
@@ -77,18 +77,20 @@ public class AspectsIT {
 		s0 = new Sysprop("111");
 		s0.setName("John Doe");
 		s0.setTimestamp(Utils.timestamp());
-		s0.setTags(CoreUtils.addTags(s0.getTags(), "one", "two", "three"));
+		s0.setTags(CoreUtils.getInstance().addTags(s0.getTags(), "one", "two", "three"));
 
 		s1 = new Sysprop("222");
 		s1.setName("Joe Black");
 		s1.setTimestamp(Utils.timestamp());
-		s1.setTags(CoreUtils.addTags(s1.getTags(), "two", "four", "three"));
+		s1.setTags(CoreUtils.getInstance().addTags(s1.getTags(), "two", "four", "three"));
 
 		s2 = new Sysprop("333");
 		s2.setName("Ann Smith");
 		s2.setTimestamp(Utils.timestamp());
-		s2.setTags(CoreUtils.addTags(s2.getTags(), "four", "five", "three"));
+		s2.setTags(CoreUtils.getInstance().addTags(s2.getTags(), "four", "five", "three"));
 
+		CoreUtils.getInstance().setDao(Para.getDAO());
+		CoreUtils.getInstance().setSearch(Para.getSearch());
 	}
 
 	@AfterClass

@@ -37,7 +37,6 @@ public class TagTest {
 		dao = new MockDAO();
 		t = new Tag("test");
 		t.setCreatorid("111");
-		t.setDao(dao);
 	}
 
 	@Test

@@ -18,8 +18,8 @@
 package com.erudika.para.core;
 
 import com.erudika.para.core.User.Groups;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.persistence.DAO;
-import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
 import com.erudika.para.validation.ValidationUtils;
@@ -40,16 +40,16 @@ public class UserTest {
 
 	@Before
 	public void setUp() {
-		dao = new MockDAO();
+		dao = CoreUtils.getInstance().getDao(); //new MockDAO();
 		u = new User("111");
-		u.setSearch(mock(Search.class));
-		u.setDao(dao);
+//		u.setSearch(mock(Search.class));
 		u.setName("Name");
 		u.setGroups(Groups.USERS.toString());
 		u.setEmail("asd@asd.com");
 		u.setIdentifier(u.getEmail());
 		u.setPassword("123456");
 
+		CoreUtils.getInstance().setSearch(mock(Search.class));
 		assertNotNull(u.getPicture());
 	}
 
@@ -117,7 +117,7 @@ public class UserTest {
 		list.add(new Sysprop(u.getIdentifier()));
 		list.add(new Sysprop(secIdent));
 
-		when(u.getSearch().findTerms(anyString(), anyString(), anyMapOf(String.class, Object.class),
+		when(CoreUtils.getInstance().getSearch().findTerms(anyString(), anyString(), anyMapOf(String.class, Object.class),
 				anyBoolean())).thenReturn(list);
 
 		u.attachIdentifier(secIdent);
@@ -225,7 +225,6 @@ public class UserTest {
 		assertTrue(User.passwordMatches(u));
 
 		User u1 = new User();
-		u1.setDao(dao);
 		u1.setIdentifier(u.getIdentifier());
 		u1.setPassword("1234");
 		assertFalse(User.passwordMatches(u1));
@@ -271,7 +270,6 @@ public class UserTest {
 
 		User u1 = new User();
 		u1.setIdentifier(u.getIdentifier());
-		u1.setDao(dao);
 		u1.setPassword(newpass);
 		assertTrue(User.passwordMatches(u1));
 
@@ -286,6 +284,8 @@ public class UserTest {
 
 	@Test
 	public void testGenerateEmailConfirmationToken() {
+		u.delete();
+		dao.delete(new Sysprop(u.getIdentifier()));
 		String fail = u.generateEmailConfirmationToken();
 		assertTrue(fail.isEmpty());
 		Sysprop s = dao.read(u.getIdentifier());

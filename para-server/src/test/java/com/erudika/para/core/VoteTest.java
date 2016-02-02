@@ -17,11 +17,10 @@
  */
 package com.erudika.para.core;
 
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.persistence.DAO;
-import com.erudika.para.persistence.MockDAO;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
 /**
  *
@@ -31,12 +30,9 @@ public class VoteTest {
 
 	@Test
 	public void testVotes() {
-		DAO dao = new MockDAO();
+		DAO dao = CoreUtils.getInstance().getDao(); //new MockDAO();
 		User u = new User("111");
-		User u2 = spy(new User("222"));
-
-		u.setDao(dao);
-		u2.setDao(dao);
+		User u2 = new User("222");
 
 		assertEquals(0, u.getVotes().intValue());
 		u.voteUp(u2.getId());
@@ -105,7 +101,6 @@ public class VoteTest {
 		assertEquals(0, u.getVotes().intValue());
 
 		Tag t = new Tag("test");
-		t.setDao(dao);
 		t.voteUp(t.getId());
 		assertEquals(0, t.getVotes().intValue());
 	}
