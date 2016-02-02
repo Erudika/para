@@ -19,7 +19,7 @@ package com.erudika.para.client;
 
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.core.ParaObjectUtils;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
 import com.erudika.para.rest.GenericExceptionMapper;
@@ -98,6 +98,10 @@ public final class ParaClient {
 		this.apiClient = apiClient;
 	}
 
+	/**
+	 * Sets the host URL of the Para server.
+	 * @param endpoint the Para server location
+	 */
 	public void setEndpoint(String endpoint) {
 		this.endpoint = endpoint;
 	}

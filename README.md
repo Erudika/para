@@ -109,7 +109,7 @@ Here's the Maven snippet to include in your `pom.xml`:
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para-server</artifactId>
-  <version>1.17.1</version>
+  <version>1.18.0</version>
 </dependency>
 ```
 
@@ -122,12 +122,14 @@ clients for popular languages soon.
 - **JavaScript / Node.js** [para-client-js](https://github.com/erudika/para-client-js)
 - **Java** [para-client](https://github.com/erudika/para/tree/master/para-client)
 - **.NET** [para-client-csharp](https://github.com/erudika/para-client-csharp)
+- **Android** [para-client-android](https://github.com/erudika/para-client-android)
 
-## Wishlist / Plans
+## Wishlist / Roadmap
 
-- `DAO` implementations for popular databases like MongoDB, PostgreSQL, etc.
-- API clients in Python, iOS, Android.
-- Integrate with Google App Engine, Heroku, JOOQ, Comsat, Quasar
+- `DAO` implementations for popular databases like MongoDB, PostgreSQL, Cassandra, etc.
+- API clients in Python, iOS.
+- Integrations with Google App Engine, Heroku, Docker, Vagrant
+- GraphQL support
 
 ## Contributing
 
