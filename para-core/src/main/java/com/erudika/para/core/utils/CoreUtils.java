@@ -15,9 +15,17 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.core;
+package com.erudika.para.core.utils;
 
+import com.erudika.para.InitializeListener;
+import com.erudika.para.core.Linker;
+import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Votable.VoteValue;
+import com.erudika.para.core.Vote;
+import com.erudika.para.persistence.DAO;
+import com.erudika.para.persistence.MockDAO;
+import com.erudika.para.search.MockSearch;
+import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -31,49 +39,109 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides some the basic functionality for domain objects.
  * @author Alex Bogdanovski [alex@erudika.com]
  * @see ParaObject
  */
-public final class CoreUtils {
+@Singleton
+public final class CoreUtils implements InitializeListener {
 
-	private CoreUtils() { }
+	private static final Logger logger = LoggerFactory.getLogger(CoreUtils.class);
 
-	public static String getObjectURI(ParaObject obj) {
+	@Inject private DAO dao;
+	@Inject private Search search;
+
+	private static CoreUtils instance;
+
+	/**
+	 * Default constructor.
+	 * @param dao a {@link com.erudika.para.persistence.DAO} object
+	 * @param search a {@link com.erudika.para.search.Search} object
+	 */
+	public CoreUtils(DAO dao, Search search) {
+		this.dao = dao;
+		this.search = search;
+	}
+
+	@Override
+	public void onInitialize() {
+		if (dao != null && search != null) {
+			logger.info("Loaded new DAO and Search implementations - {} and {}.",
+					dao.getClass().getSimpleName(), search.getClass().getSimpleName());
+			CoreUtils.instance = new CoreUtils(dao, search);
+		}
+	}
+
+	/**
+	 * Provides a default instance using fake DAO and Search implementations.
+	 * @return an instance of this class
+	 */
+	public static synchronized CoreUtils getInstance() {
+		if (instance == null) {
+			DAO defaultDAO = new MockDAO();
+			Search defaultSearch = new MockSearch();
+			logger.info("Using default impementations - {} and {}.",
+					defaultDAO.getClass().getSimpleName(), defaultSearch.getClass().getSimpleName());
+			instance = new CoreUtils(defaultDAO, defaultSearch);
+		}
+		return instance;
+	}
+
+	public DAO getDao() {
+		return dao;
+	}
+
+	public void setDao(DAO dao) {
+		this.dao = dao;
+	}
+
+	public Search getSearch() {
+		return search;
+	}
+
+	public void setSearch(Search search) {
+		this.search = search;
+	}
+
+	public String getObjectURI(ParaObject obj) {
 		String defurl = "/".concat(obj.getPlural());
 		return (obj.getId() != null) ? defurl.concat("/").concat(obj.getId()) : defurl;
 	}
 
-	public static String getName(String name, String id) {
+	public String getName(String name, String id) {
 		return (name == null) ? "ParaObject ".concat((id == null) ? System.currentTimeMillis() + "" : id) : name;
 	}
 
 	/**
-	 * Creates the object again (dangerous!).
+	 * Creates the object again (use with caution!).
 	 * Same as {@link com.erudika.para.persistence.DAO#create(com.erudika.para.core.ParaObject)}.
 	 * @param obj an object
 	 * @return the object id or null
 	 */
-	public static String overwrite(ParaObject obj) {
+	public String overwrite(ParaObject obj) {
 		return overwrite(Config.APP_NAME_NS, obj);
 	}
 
 	/**
-	 * Creates the object again (dangerous!).
+	 * Creates the object again (use with caution!).
 	 * Same as {@link com.erudika.para.persistence.DAO#create(java.lang.String, com.erudika.para.core.ParaObject)}.
 	 * @param appid the app id
 	 * @param obj an object
 	 * @return the object id or null
 	 */
-	public static String overwrite(String appid, ParaObject obj) {
+	public String overwrite(String appid, ParaObject obj) {
 		if (obj != null && obj.getId() != null) {
 			if (obj.getUpdated() == null) {
 				obj.setUpdated(System.currentTimeMillis());
 			}
-			return obj.getDao().create(appid, obj);
+			return getDao().create(appid, obj);
 		}
 		return null;
 	}
@@ -88,7 +156,7 @@ public final class CoreUtils {
 	 * @param objectTags the object tags
 	 * @return a new list of tags
 	 */
-	public static List<String> addTags(List<String> objectTags, String... tag) {
+	public List<String> addTags(List<String> objectTags, String... tag) {
 		if (tag != null && tag.length > 0) {
 			Set<String> tagz;
 			if (objectTags == null || objectTags.isEmpty()) {
@@ -114,7 +182,7 @@ public final class CoreUtils {
 	 * @param objectTags the object
 	 * @return a new list of tags
 	 */
-	public static List<String> removeTags(List<String> objectTags, String... tag) {
+	public List<String> removeTags(List<String> objectTags, String... tag) {
 		if (objectTags != null && tag != null && tag.length > 0) {
 			Set<String> tagz = new HashSet<String>(objectTags);
 			tagz.removeAll(Arrays.asList(tag));
@@ -135,13 +203,13 @@ public final class CoreUtils {
 	 * @param obj the object to execute this method on
 	 * @return the id of the {@link com.erudika.para.core.Linker} object that is created
 	 */
-	public static String link(ParaObject obj, String id2) {
-		ParaObject second = obj.getDao().read(obj.getAppid(), id2);
+	public String link(ParaObject obj, String id2) {
+		ParaObject second = getDao().read(obj.getAppid(), id2);
 		if (second == null || obj.getId() == null) {
 			return null;
 		}
 		// auto correct the second type
-		return obj.getDao().create(obj.getAppid(), new Linker(obj.getType(), second.getType(), obj.getId(), id2));
+		return getDao().create(obj.getAppid(), new Linker(obj.getType(), second.getType(), obj.getId(), id2));
 	}
 
 	/**
@@ -151,8 +219,8 @@ public final class CoreUtils {
 	 * @param obj the object to execute this method on
 	 * @param id2 the other id
 	 */
-	public static void unlink(ParaObject obj, String type2, String id2) {
-		obj.getDao().delete(obj.getAppid(), new Linker(obj.getType(), type2, obj.getId(), id2));
+	public void unlink(ParaObject obj, String type2, String id2) {
+		getDao().delete(obj.getAppid(), new Linker(obj.getType(), type2, obj.getId(), id2));
 	}
 
 	/**
@@ -161,12 +229,12 @@ public final class CoreUtils {
 	 * Deletes all {@link com.erudika.para.core.Linker} objects.
 	 * Only the links are deleted. Objects are left untouched.
 	 */
-	public static void unlinkAll(ParaObject obj) {
+	public void unlinkAll(ParaObject obj) {
 		Map<String, Object> terms = new HashMap<String, Object>();
 		// delete all links where id1 == id OR id2 == id
 		terms.put("id1", obj.getId());
 		terms.put("id2", obj.getId());
-		obj.getDao().deleteAll(obj.getAppid(), obj.getSearch().
+		getDao().deleteAll(obj.getAppid(), getSearch().
 				findTerms(obj.getAppid(), Utils.type(Linker.class), terms, false));
 	}
 
@@ -177,7 +245,7 @@ public final class CoreUtils {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of Linker objects
 	 */
-	public static List<Linker> getLinks(ParaObject obj, String type2, Pager... pager) {
+	public List<Linker> getLinks(ParaObject obj, String type2, Pager... pager) {
 		if (type2 == null) {
 			return Collections.emptyList();
 		}
@@ -186,7 +254,7 @@ public final class CoreUtils {
 		Map<String, Object> terms = new HashMap<String, Object>();
 		terms.put(Config._NAME, link.getName());
 		terms.put(idField, obj.getId());
-		return obj.getSearch().findTerms(obj.getAppid(), link.getType(), terms, true, pager);
+		return getSearch().findTerms(obj.getAppid(), link.getType(), terms, true, pager);
 	}
 
 	/**
@@ -196,11 +264,11 @@ public final class CoreUtils {
 	 * @param obj the object to execute this method on
 	 * @return true if the two are linked
 	 */
-	public static boolean isLinked(ParaObject obj, String type2, String id2) {
+	public boolean isLinked(ParaObject obj, String type2, String id2) {
 		if (type2 == null) {
 			return false;
 		}
-		return obj.getDao().read(obj.getAppid(), new Linker(obj.getType(), type2, obj.getId(), id2).getId()) != null;
+		return getDao().read(obj.getAppid(), new Linker(obj.getType(), type2, obj.getId(), id2).getId()) != null;
 	}
 
 	/**
@@ -209,7 +277,7 @@ public final class CoreUtils {
 	 * @param obj the object to execute this method on
 	 * @return true if linked
 	 */
-	public static boolean isLinked(ParaObject obj, ParaObject toObj) {
+	public boolean isLinked(ParaObject obj, ParaObject toObj) {
 		if (toObj == null) {
 			return false;
 		}
@@ -222,7 +290,7 @@ public final class CoreUtils {
 	 * @param obj the object to execute this method on
 	 * @return the number of links for the given object
 	 */
-	public static Long countLinks(ParaObject obj, String type2) {
+	public Long countLinks(ParaObject obj, String type2) {
 		if (obj.getId() == null) {
 			return 0L;
 		}
@@ -231,7 +299,7 @@ public final class CoreUtils {
 		Map<String, Object> terms = new HashMap<String, Object>();
 		terms.put(Config._NAME, link.getName());
 		terms.put(idField, obj.getId());
-		return obj.getSearch().getCount(obj.getAppid(), link.getType(), terms);
+		return getSearch().getCount(obj.getAppid(), link.getType(), terms);
 	}
 
 	/**
@@ -240,8 +308,8 @@ public final class CoreUtils {
 	 * @param obj the object to execute this method on
 	 * @return the number of links
 	 */
-	public static Long countChildren(ParaObject obj, String type2) {
-		return obj.getSearch().getCount(obj.getAppid(), type2);
+	public Long countChildren(ParaObject obj, String type2) {
+		return getSearch().getCount(obj.getAppid(), type2);
 	}
 
 	/**
@@ -252,7 +320,7 @@ public final class CoreUtils {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
-	public static <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, Pager... pager) {
+	public <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, Pager... pager) {
 		return getChildren(obj, type2, null, null, pager);
 	}
 
@@ -266,14 +334,14 @@ public final class CoreUtils {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
-	public static <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, String field, String term,
+	public <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, String field, String term,
 			Pager... pager) {
 		Map<String, Object> terms = new HashMap<String, Object>();
 		if (!StringUtils.isBlank(field) && !StringUtils.isBlank(term)) {
 			terms.put(field, term);
 		}
 		terms.put(Config._PARENTID, obj.getId());
-		return obj.getSearch().findTerms(obj.getAppid(), type2, terms, true, pager);
+		return getSearch().findTerms(obj.getAppid(), type2, terms, true, pager);
 	}
 
 	/**
@@ -281,9 +349,9 @@ public final class CoreUtils {
 	 * @param obj the object to execute this method on
 	 * @param type2 the children's type.
 	 */
-	public static void deleteChildren(ParaObject obj, String type2) {
+	public void deleteChildren(ParaObject obj, String type2) {
 		if (!StringUtils.isBlank(obj.getId())) {
-			obj.getDao().deleteAll(obj.getAppid(), obj.getSearch().findTerms(obj.getAppid(),
+			getDao().deleteAll(obj.getAppid(), getSearch().findTerms(obj.getAppid(),
 					type2, Collections.singletonMap(Config._PARENTID, obj.getId()), true));
 		}
 	}
@@ -297,7 +365,7 @@ public final class CoreUtils {
 	 * @return a list of linked objects
 	 */
 	@SuppressWarnings("unchecked")
-	public static <P extends ParaObject> List<P> getLinkedObjects(ParaObject obj, String type2, Pager... pager) {
+	public <P extends ParaObject> List<P> getLinkedObjects(ParaObject obj, String type2, Pager... pager) {
 		List<Linker> links = getLinks(obj, type2, pager);
 		LinkedList<String> keys = new LinkedList<String>();
 		for (Linker link : links) {
@@ -307,7 +375,26 @@ public final class CoreUtils {
 				keys.add(link.getId2());
 			}
 		}
-		return new ArrayList<P>((Collection<? extends P>) obj.getDao().readAll(obj.getAppid(), keys, true).values());
+		return new ArrayList<P>((Collection<? extends P>) getDao().readAll(obj.getAppid(), keys, true).values());
+	}
+
+	/**
+	 * The parent object.
+	 * @param obj find the parent of this object
+	 * @return the parent or null if {@code obj.getParentid()} is null
+	 */
+	public <P extends ParaObject> P getParent(ParaObject obj) {
+		return getDao().read(obj.getAppid(), obj.getParentid());
+	}
+
+	/**
+	 * The user object of the creator.
+	 * @param obj find the creator of this object
+	 * @return the user who created this or null if {@code obj.getCreatorid()} is null
+	 * @see User
+	 */
+	public <P extends ParaObject> P getCreator(ParaObject obj) {
+		return getDao().read(obj.getAppid(), obj.getCreatorid());
 	}
 
 	///////////////////////////////////////
@@ -321,7 +408,7 @@ public final class CoreUtils {
 	 * @param upDown up or down
 	 * @return true if the vote was successful
 	 */
-	public static boolean vote(ParaObject votable, String userid, VoteValue upDown) {
+	public boolean vote(ParaObject votable, String userid, VoteValue upDown) {
 		if (StringUtils.isBlank(userid) || votable == null || votable.getId() == null || upDown == null) {
 			return false;
 		}
@@ -331,7 +418,7 @@ public final class CoreUtils {
 		}
 
 		Vote v = new Vote(userid, votable.getId(), upDown.toString());
-		Vote saved = votable.getDao().read(votable.getAppid(), v.getId());
+		Vote saved = getDao().read(votable.getAppid(), v.getId());
 		boolean done = false;
 		int vote = (upDown == VoteValue.UP) ? 1 : -1;
 
@@ -341,13 +428,13 @@ public final class CoreUtils {
 			boolean voteHasChanged = isUpvote ^ wasUpvote;
 
 			if (saved.isExpired()) {
-				done = votable.getDao().create(votable.getAppid(), v) != null;
+				done = getDao().create(votable.getAppid(), v) != null;
 			} else if (saved.isAmendable() && voteHasChanged) {
-				votable.getDao().delete(votable.getAppid(), saved);
+				getDao().delete(votable.getAppid(), saved);
 				done = true;
 			}
 		} else {
-			done = votable.getDao().create(votable.getAppid(), v) != null;
+			done = getDao().create(votable.getAppid(), v) != null;
 		}
 
 		if (done) {

@@ -15,10 +15,13 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.core;
+package com.erudika.para.core.utils;
 
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
+import com.erudika.para.core.App;
+import com.erudika.para.core.ParaObject;
+import com.erudika.para.core.Sysprop;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import static com.erudika.para.utils.Utils.getAllDeclaredFields;
@@ -78,7 +81,7 @@ public final class ParaObjectUtils {
 
 	private ParaObjectUtils() { }
 
-		/**
+	/**
 	 * A Jackson {@code ObjectMapper}.
 	 *
 	 * @return JSON object mapper
