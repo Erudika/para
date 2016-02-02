@@ -19,6 +19,7 @@ package com.erudika.para.persistence;
 
 import com.erudika.para.utils.Config;
 import com.google.inject.AbstractModule;
+import java.util.ServiceLoader;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -40,17 +41,33 @@ public class PersistenceModule extends AbstractModule {
 				bind(DAO.class).to(IndexBasedDAO.class).asEagerSingleton();
 			} else if ("dynamodb".equalsIgnoreCase(selectedDAO)) {
 				bind(DAO.class).to(AWSDynamoDAO.class).asEagerSingleton();
-			} else if ("cassandra".equalsIgnoreCase(selectedDAO)) {
-				// Cassandra connector plugin
-			} else if ("mongodb".equalsIgnoreCase(selectedDAO)) {
-				// MongoDB connector plugin
-			} else if ("postgre".equalsIgnoreCase(selectedDAO)) {
-				// MongoDB connector plugin
 			} else {
-				// in-memory DB
-				bind(DAO.class).to(MockDAO.class).asEagerSingleton();
+				DAO daoPlugin = loadExternalDAO(selectedDAO);
+				if (daoPlugin != null) {
+					// external plugins - MongoDB, Cassandra, xSQL, etc.
+					bind(DAO.class).toInstance(daoPlugin);
+				} else {
+					// in-memory DAO - default fallback
+					bind(DAO.class).to(MockDAO.class).asEagerSingleton();
+				}
 			}
 		}
+	}
+
+	/**
+	 * Scans the classpath for DAO implementations, through the
+	 * {@link ServiceLoader} mechanism and returns one.
+	 * @param classSimpleName the name of the class name to look for and load
+	 * @return a DAO instance if found, or null
+	 */
+	final DAO loadExternalDAO(String classSimpleName) {
+		ServiceLoader<DAO> daoLoader = ServiceLoader.load(DAO.class);
+		for (DAO dao : daoLoader) {
+			if (dao != null && classSimpleName.equalsIgnoreCase(dao.getClass().getSimpleName())) {
+				return dao;
+			}
+		}
+		return null;
 	}
 
 }
