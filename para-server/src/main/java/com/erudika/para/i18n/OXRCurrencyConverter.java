@@ -18,7 +18,7 @@
 package com.erudika.para.i18n;
 
 import com.erudika.para.Para;
-import com.erudika.para.core.ParaObjectUtils;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.utils.Config;

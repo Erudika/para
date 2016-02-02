@@ -29,6 +29,7 @@ import com.amazonaws.services.sqs.model.DeleteMessageRequest;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
+import com.erudika.para.DestroyListener;
 import com.erudika.para.Para;
 import com.erudika.para.utils.Config;
 import java.util.List;
@@ -79,7 +80,7 @@ public class AWSQueue implements Queue {
 		sqs.setRegion(Region.getRegion(Regions.fromName(Config.AWS_REGION)));
 		sqs.setEndpoint(this.endpoint);
 
-		Para.addDestroyListener(new Para.DestroyListener() {
+		Para.addDestroyListener(new DestroyListener() {
 			public void onDestroy() {
 				sqs.shutdown();
 			}

@@ -19,7 +19,7 @@ package com.erudika.para.security;
 
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
-import com.erudika.para.core.CoreUtils;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
 import com.erudika.para.utils.Config;
@@ -202,7 +202,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 					jwtAuth = (JWTAuthentication) authenticationManager.authenticate(jwtAuth);
 					if (jwtAuth != null && jwtAuth.getApp() != null) {
 						user.resetTokenSecret();
-						CoreUtils.overwrite(jwtAuth.getApp().getAppIdentifier(), user);
+						CoreUtils.getInstance().overwrite(jwtAuth.getApp().getAppIdentifier(), user);
 						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_OK,
 								Utils.formatMessage("All tokens revoked for user {0}!", user.getId()));
 						return true;

@@ -30,6 +30,7 @@ import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.amazonaws.services.dynamodbv2.model.UpdateTableRequest;
+import com.erudika.para.DestroyListener;
 import com.erudika.para.Para;
 import com.erudika.para.utils.Config;
 import java.util.Collections;
@@ -75,7 +76,7 @@ public final class AWSDynamoUtils {
 			createTable(Config.APP_NAME_NS);
 		}
 
-		Para.addDestroyListener(new Para.DestroyListener() {
+		Para.addDestroyListener(new DestroyListener() {
 			public void onDestroy() {
 				shutdownClient();
 			}

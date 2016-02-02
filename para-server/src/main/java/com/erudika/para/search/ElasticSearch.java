@@ -19,7 +19,7 @@ package com.erudika.para.search;
 
 import com.erudika.para.core.Address;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.core.ParaObjectUtils;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.Tag;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.utils.Config;

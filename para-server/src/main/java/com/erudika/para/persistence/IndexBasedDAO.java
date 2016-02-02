@@ -19,7 +19,7 @@ package com.erudika.para.persistence;
 
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.core.ParaObjectUtils;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,7 @@ import org.slf4j.LoggerFactory;
  * <b>Note</b>: This implementation doesn't work well with shared apps (app.isShared() must be false).
  * @author Alex Bogdanovski [alex@erudika.com]
  */
+@Singleton
 public class IndexBasedDAO implements DAO {
 
 	private static final Logger logger = LoggerFactory.getLogger(IndexBasedDAO.class);

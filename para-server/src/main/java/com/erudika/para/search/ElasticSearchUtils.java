@@ -17,9 +17,10 @@
  */
 package com.erudika.para.search;
 
+import com.erudika.para.DestroyListener;
 import com.erudika.para.Para;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.core.ParaObjectUtils;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
@@ -124,7 +125,7 @@ public final class ElasticSearchUtils {
 			searchClient = searchNode.client();
 		}
 
-		Para.addDestroyListener(new Para.DestroyListener() {
+		Para.addDestroyListener(new DestroyListener() {
 			public void onDestroy() {
 				shutdownClient();
 			}

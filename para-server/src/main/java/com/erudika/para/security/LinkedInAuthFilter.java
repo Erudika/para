@@ -18,7 +18,7 @@
 package com.erudika.para.security;
 
 import com.eaio.uuid.UUID;
-import com.erudika.para.core.ParaObjectUtils;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;

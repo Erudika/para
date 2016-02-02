@@ -17,6 +17,7 @@
  */
 package com.erudika.para.cache;
 
+import com.erudika.para.DestroyListener;
 import com.erudika.para.Para;
 import com.erudika.para.utils.Config;
 import com.hazelcast.config.AwsConfig;
@@ -78,7 +79,7 @@ public final class HazelcastUtils {
 
 			hcInstance = Hazelcast.newHazelcastInstance(cfg);
 
-			Para.addDestroyListener(new Para.DestroyListener() {
+			Para.addDestroyListener(new DestroyListener() {
 				public void onDestroy() {
 					shutdownClient();
 				}
