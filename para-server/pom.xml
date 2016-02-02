@@ -13,7 +13,7 @@
 
 	<properties>
 		<springSecVer>4.0.3.RELEASE</springSecVer>
-		<hazelcastVer>3.5.4</hazelcastVer>
+		<hazelcastVer>3.5.5</hazelcastVer>
 	</properties>
 
 	<dependencies>
@@ -125,6 +125,13 @@
 			<version>${awsJdkVer}</version>
 		</dependency>
 
+		<!-- GUICE -->
+		<dependency>
+			<groupId>com.google.inject</groupId>
+			<artifactId>guice</artifactId>
+			<version>3.0</version>
+		</dependency>
+
 		<!-- OTHER -->
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
@@ -148,7 +155,7 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>4.7</version>
+			<version>4.11.2</version>
 		</dependency>
 
 		<!-- TESTING -->
