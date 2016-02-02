@@ -20,7 +20,7 @@ package com.erudika.para.validation;
 import com.erudika.para.annotations.Email;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.core.ParaObjectUtils;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.utils.Utils;
 import static com.erudika.para.validation.Constraint.*;

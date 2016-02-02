@@ -17,14 +17,13 @@
  */
 package com.erudika.para.core;
 
+import com.erudika.para.core.utils.CoreUtils;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.eaio.uuid.UUID;
-import com.erudika.para.Para;
 import com.erudika.para.annotations.Email;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.i18n.CurrencyUtils;
-import com.erudika.para.persistence.DAO;
-import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -34,7 +33,7 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
-import org.springframework.util.DigestUtils;
+//import org.springframework.util.DigestUtils;
 
 /**
  * The core user object. Stores information about users.
@@ -64,8 +63,6 @@ public class User implements ParaObject {
 	@Stored @Locked private String tokenSecret;
 
 	private transient String password;
-	private transient DAO dao;
-	private transient Search search;
 
 	/**
 	 * No-args constructor
@@ -82,11 +79,6 @@ public class User implements ParaObject {
 		setId(id);
 		setName(getName());
 		this.groups = Groups.USERS.toString();
-	}
-
-	@Override
-	public ParaObject getParent() {
-		return this;
 	}
 
 	/**
@@ -280,7 +272,7 @@ public class User implements ParaObject {
 			resetTokenSecret();
 		}
 
-		if (getDao().create(getAppid(), this) != null) {
+		if (CoreUtils.getInstance().getDao().create(getAppid(), this) != null) {
 			createIdentifier(getId(), getIdentifier(), getPassword());
 		}
 
@@ -290,8 +282,8 @@ public class User implements ParaObject {
 	@Override
 	public void delete() {
 		if (getId() != null) {
-			getDao().deleteAll(getAppid(), getIdentifiers());
-			getDao().delete(getAppid(), this);
+			CoreUtils.getInstance().getDao().deleteAll(getAppid(), getIdentifiers());
+			CoreUtils.getInstance().getDao().delete(getAppid(), this);
 		}
 	}
 
@@ -301,7 +293,7 @@ public class User implements ParaObject {
 	 */
 	@JsonIgnore
 	public List<Sysprop> getIdentifiers() {
-		return getSearch().findTerms(getAppid(), Utils.type(Sysprop.class),
+		return CoreUtils.getInstance().getSearch().findTerms(getAppid(), Utils.type(Sysprop.class),
 				Collections.singletonMap(Config._CREATORID, getId()), true);
 	}
 
@@ -321,7 +313,7 @@ public class User implements ParaObject {
 	 */
 	public void detachIdentifier(String identifier) {
 		if (!StringUtils.equals(identifier, getIdentifier())) {
-			Sysprop s = getDao().read(getAppid(), identifier);
+			Sysprop s = CoreUtils.getInstance().getDao().read(getAppid(), identifier);
 			if (s != null && StringUtils.equals(getId(), s.getCreatorid())) {
 				deleteIdentifier(identifier);
 			}
@@ -438,14 +430,14 @@ public class User implements ParaObject {
 			return null;
 		}
 		String identifier = u.getIdentifier();
-		Sysprop s = u.getDao().read(u.getAppid(), identifier);
+		Sysprop s = CoreUtils.getInstance().getDao().read(u.getAppid(), identifier);
 		if (s != null && s.getCreatorid() != null) {
-			User user = u.getDao().read(u.getAppid(), s.getCreatorid());
+			User user = CoreUtils.getInstance().getDao().read(u.getAppid(), s.getCreatorid());
 			if (user != null) {
 				if (!identifier.equals(user.getIdentifier())) {
 					// the main identifier was changed - update
 					user.setIdentifier(identifier);
-					u.getDao().update(user);
+					CoreUtils.getInstance().getDao().update(user);
 				}
 				user.setPassword((String) s.getProperty(Config._PASSWORD));
 				return user;
@@ -469,7 +461,7 @@ public class User implements ParaObject {
 		if (StringUtils.isBlank(password) || StringUtils.isBlank(identifier)) {
 			return false;
 		}
-		Sysprop s = u.getDao().read(u.getAppid(), identifier);
+		Sysprop s = CoreUtils.getInstance().getDao().read(u.getAppid(), identifier);
 		if (s != null) {
 			String storedHash = (String) s.getProperty(Config._PASSWORD);
 			return Utils.bcryptMatches(password, storedHash);
@@ -485,11 +477,11 @@ public class User implements ParaObject {
 		if (StringUtils.isBlank(identifier)) {
 			return "";
 		}
-		Sysprop s = getDao().read(getAppid(), identifier);
+		Sysprop s = CoreUtils.getInstance().getDao().read(getAppid(), identifier);
 		if (s != null) {
 			String token = Utils.generateSecurityToken(42, true);
 			s.addProperty(Config._RESET_TOKEN, token);
-			getDao().update(getAppid(), s);
+			CoreUtils.getInstance().getDao().update(getAppid(), s);
 			return token;
 		}
 		return "";
@@ -505,13 +497,13 @@ public class User implements ParaObject {
 		if (StringUtils.isBlank(newpass) || StringUtils.isBlank(token) || newpass.length() < Config.MIN_PASS_LENGTH) {
 			return false;
 		}
-		Sysprop s = getDao().read(getAppid(), identifier);
+		Sysprop s = CoreUtils.getInstance().getDao().read(getAppid(), identifier);
 		if (isValidToken(s, Config._RESET_TOKEN, token)) {
 			s.removeProperty(Config._RESET_TOKEN);
 			String hashed = Utils.bcrypt(newpass);
 			s.addProperty(Config._PASSWORD, hashed);
 			setPassword(hashed);
-			getDao().update(getAppid(), s);
+			CoreUtils.getInstance().getDao().update(getAppid(), s);
 			return true;
 		}
 		return false;
@@ -542,7 +534,7 @@ public class User implements ParaObject {
 			s.addProperty(Config._PASSWORD, hashed);
 			setPassword(hashed);
 		}
-		return getDao().create(getAppid(), s) != null;
+		return CoreUtils.getInstance().getDao().create(getAppid(), s) != null;
 	}
 
 	/**
@@ -551,7 +543,7 @@ public class User implements ParaObject {
 	 */
 	private void deleteIdentifier(String ident) {
 		if (!StringUtils.isBlank(ident)) {
-			getDao().delete(getAppid(), new Sysprop(ident));
+			CoreUtils.getInstance().getDao().delete(getAppid(), new Sysprop(ident));
 		}
 	}
 
@@ -563,11 +555,11 @@ public class User implements ParaObject {
 		if (StringUtils.isBlank(identifier)) {
 			return "";
 		}
-		Sysprop s = getDao().read(getAppid(), identifier);
+		Sysprop s = CoreUtils.getInstance().getDao().read(getAppid(), identifier);
 		if (s != null) {
 			String token = Utils.base64encURL(new UUID().toString().getBytes());
 			s.addProperty(Config._EMAIL_TOKEN, token);
-			getDao().update(getAppid(), s);
+			CoreUtils.getInstance().getDao().update(getAppid(), s);
 			return token;
 		}
 		return "";
@@ -579,10 +571,10 @@ public class User implements ParaObject {
 	 * @return true if successful
 	 */
 	public final boolean activateWithEmailToken(String token) {
-		Sysprop s = getDao().read(getAppid(), identifier);
+		Sysprop s = CoreUtils.getInstance().getDao().read(getAppid(), identifier);
 		if (isValidToken(s, Config._EMAIL_TOKEN, token)) {
 			s.removeProperty(Config._EMAIL_TOKEN);
-			getDao().update(getAppid(), s);
+			CoreUtils.getInstance().getDao().update(getAppid(), s);
 			setActive(true);
 			update();
 			return true;
@@ -596,7 +588,7 @@ public class User implements ParaObject {
 	 * @return true if valid
 	 */
 	public final boolean isValidPasswordResetToken(String token) {
-		Sysprop s = getDao().read(getAppid(), identifier);
+		Sysprop s = CoreUtils.getInstance().getDao().read(getAppid(), identifier);
 		return isValidToken(s, Config._RESET_TOKEN, token);
 	}
 
@@ -606,7 +598,7 @@ public class User implements ParaObject {
 	 * @return true if valid
 	 */
 	public final boolean isValidEmailConfirmationToken(String token) {
-		Sysprop s = getDao().read(getAppid(), identifier);
+		Sysprop s = CoreUtils.getInstance().getDao().read(getAppid(), identifier);
 		return isValidToken(s, Config._EMAIL_TOKEN, token);
 	}
 
@@ -631,7 +623,7 @@ public class User implements ParaObject {
 	private void setGravatarPicture() {
 		if (StringUtils.isBlank(picture)) {
 			if (email != null) {
-				String emailHash = DigestUtils.md5DigestAsHex(email.getBytes());
+				String emailHash = Utils.MD5(email);//DigestUtils.md5DigestAsHex(email.getBytes());
 				setPicture("https://www.gravatar.com/avatar/" + emailHash + "?size=400&d=mm&r=pg");
 			} else {
 				setPicture("https://www.gravatar.com/avatar?d=mm&size=400");
@@ -719,7 +711,7 @@ public class User implements ParaObject {
 
 	@Override
 	public String getObjectURI() {
-		return CoreUtils.getObjectURI(this);
+		return CoreUtils.getInstance().getObjectURI(this);
 	}
 
 	@Override
@@ -754,7 +746,7 @@ public class User implements ParaObject {
 
 	@Override
 	public final String getName() {
-		return CoreUtils.getName(name, id);
+		return CoreUtils.getInstance().getName(name, id);
 	}
 
 	@Override
@@ -765,11 +757,6 @@ public class User implements ParaObject {
 	@Override
 	public String getPlural() {
 		return Utils.singularToPlural(getType());
-	}
-
-	@Override
-	public ParaObject getCreator() {
-		return getDao().read(getAppid(), creatorid);
 	}
 
 	@Override
@@ -794,48 +781,22 @@ public class User implements ParaObject {
 
 	@Override
 	public void update() {
-		getDao().update(getAppid(), this);
+		CoreUtils.getInstance().getDao().update(getAppid(), this);
 	}
 
 	@Override
 	public boolean exists() {
-		return getDao().read(id) != null;
-	}
-
-	@Override
-	public DAO getDao() {
-		if (dao == null) {
-			dao = Para.getDAO();
-		}
-		return dao;
-	}
-
-	@Override
-	public void setDao(DAO dao) {
-		this.dao = dao;
-	}
-
-	@Override
-	public Search getSearch() {
-		if (search == null) {
-			search = Para.getSearch();
-		}
-		return search;
-	}
-
-	@Override
-	public void setSearch(Search search) {
-		this.search = search;
+		return CoreUtils.getInstance().getDao().read(getAppid(), getId()) != null;
 	}
 
 	@Override
 	public boolean voteUp(String userid) {
-		return CoreUtils.vote(this, userid, VoteValue.UP);
+		return CoreUtils.getInstance().vote(this, userid, VoteValue.UP);
 	}
 
 	@Override
 	public boolean voteDown(String userid) {
-		return CoreUtils.vote(this, userid, VoteValue.DOWN);
+		return CoreUtils.getInstance().vote(this, userid, VoteValue.DOWN);
 	}
 
 	@Override
@@ -850,62 +811,62 @@ public class User implements ParaObject {
 
 	@Override
 	public Long countLinks(String type2) {
-		return CoreUtils.countLinks(this, type2);
+		return CoreUtils.getInstance().countLinks(this, type2);
 	}
 
 	@Override
 	public List<Linker> getLinks(String type2, Pager... pager) {
-		return CoreUtils.getLinks(this, type2, pager);
+		return CoreUtils.getInstance().getLinks(this, type2, pager);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> getLinkedObjects(String type, Pager... pager) {
-		return CoreUtils.getLinkedObjects(this, type, pager);
+		return CoreUtils.getInstance().getLinkedObjects(this, type, pager);
 	}
 
 	@Override
 	public boolean isLinked(String type2, String id2) {
-		return CoreUtils.isLinked(this, type2, id2);
+		return CoreUtils.getInstance().isLinked(this, type2, id2);
 	}
 
 	@Override
 	public boolean isLinked(ParaObject toObj) {
-		return CoreUtils.isLinked(this, toObj);
+		return CoreUtils.getInstance().isLinked(this, toObj);
 	}
 
 	@Override
 	public String link(String id2) {
-		return CoreUtils.link(this, id2);
+		return CoreUtils.getInstance().link(this, id2);
 	}
 
 	@Override
 	public void unlink(String type, String id2) {
-		CoreUtils.unlink(this, type, id2);
+		CoreUtils.getInstance().unlink(this, type, id2);
 	}
 
 	@Override
 	public void unlinkAll() {
-		CoreUtils.unlinkAll(this);
+		CoreUtils.getInstance().unlinkAll(this);
 	}
 
 	@Override
 	public Long countChildren(String type) {
-		return CoreUtils.countChildren(this, type);
+		return CoreUtils.getInstance().countChildren(this, type);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> getChildren(String type, Pager... pager) {
-		return CoreUtils.getChildren(this, type, pager);
+		return CoreUtils.getInstance().getChildren(this, type, pager);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> getChildren(String type, String field, String term, Pager... pager) {
-		return CoreUtils.getChildren(this, type, field, term, pager);
+		return CoreUtils.getInstance().getChildren(this, type, field, term, pager);
 	}
 
 	@Override
 	public void deleteChildren(String type) {
-		CoreUtils.deleteChildren(this, type);
+		CoreUtils.getInstance().deleteChildren(this, type);
 	}
 
 	@Override

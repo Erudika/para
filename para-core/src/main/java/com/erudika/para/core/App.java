@@ -17,11 +17,10 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.Para;
+import com.erudika.para.core.utils.CoreUtils;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
-import com.erudika.para.persistence.DAO;
-import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -89,9 +88,6 @@ public class App implements ParaObject {
 	@Stored private Boolean active;
 	@Stored private Long deleteOn;
 	@Stored private Long tokenValiditySec;
-
-	private transient DAO dao;
-	private transient Search search;
 
 	/**
 	 * No-args constructor
@@ -618,14 +614,14 @@ public class App implements ParaObject {
 		if (StringUtils.isBlank(secret)) {
 			resetSecret();
 		}
-		return getDao().create(this);
+		return CoreUtils.getInstance().getDao().create(this);
 	}
 
 	@Override
 	public void delete() {
 		// root app cannot be deleted
 		if (!StringUtils.equals(getId(), prefix.concat(Config.APP_NAME_NS))) {
-			getDao().delete(this);
+			CoreUtils.getInstance().getDao().delete(this);
 		}
 	}
 
@@ -660,7 +656,7 @@ public class App implements ParaObject {
 
 	@Override
 	public String getObjectURI() {
-		return CoreUtils.getObjectURI(this);
+		return CoreUtils.getInstance().getObjectURI(this);
 	}
 
 	@Override
@@ -695,7 +691,7 @@ public class App implements ParaObject {
 
 	@Override
 	public final String getName() {
-		return CoreUtils.getName(name, id);
+		return CoreUtils.getInstance().getName(name, id);
 	}
 
 	@Override
@@ -706,16 +702,6 @@ public class App implements ParaObject {
 	@Override
 	public String getPlural() {
 		return Utils.singularToPlural(getType());
-	}
-
-	@Override
-	public ParaObject getParent() {
-		return getDao().read(getAppid(), parentid);
-	}
-
-	@Override
-	public ParaObject getCreator() {
-		return getDao().read(getAppid(), creatorid);
 	}
 
 	@Override
@@ -740,48 +726,22 @@ public class App implements ParaObject {
 
 	@Override
 	public void update() {
-		getDao().update(getAppid(), this);
+		CoreUtils.getInstance().getDao().update(getAppid(), this);
 	}
 
 	@Override
 	public boolean exists() {
-		return getDao().read(id) != null;
-	}
-
-	@Override
-	public DAO getDao() {
-		if (dao == null) {
-			dao = Para.getDAO();
-		}
-		return dao;
-	}
-
-	@Override
-	public void setDao(DAO dao) {
-		this.dao = dao;
-	}
-
-	@Override
-	public Search getSearch() {
-		if (search == null) {
-			search = Para.getSearch();
-		}
-		return search;
-	}
-
-	@Override
-	public void setSearch(Search search) {
-		this.search = search;
+		return CoreUtils.getInstance().getDao().read(getAppid(), getId()) != null;
 	}
 
 	@Override
 	public boolean voteUp(String userid) {
-		return CoreUtils.vote(this, userid, VoteValue.UP);
+		return CoreUtils.getInstance().vote(this, userid, VoteValue.UP);
 	}
 
 	@Override
 	public boolean voteDown(String userid) {
-		return CoreUtils.vote(this, userid, VoteValue.DOWN);
+		return CoreUtils.getInstance().vote(this, userid, VoteValue.DOWN);
 	}
 
 	@Override
@@ -796,62 +756,62 @@ public class App implements ParaObject {
 
 	@Override
 	public Long countLinks(String type2) {
-		return CoreUtils.countLinks(this, type2);
+		return CoreUtils.getInstance().countLinks(this, type2);
 	}
 
 	@Override
 	public List<Linker> getLinks(String type2, Pager... pager) {
-		return CoreUtils.getLinks(this, type2, pager);
+		return CoreUtils.getInstance().getLinks(this, type2, pager);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> getLinkedObjects(String type, Pager... pager) {
-		return CoreUtils.getLinkedObjects(this, type, pager);
+		return CoreUtils.getInstance().getLinkedObjects(this, type, pager);
 	}
 
 	@Override
 	public boolean isLinked(String type2, String id2) {
-		return CoreUtils.isLinked(this, type2, id2);
+		return CoreUtils.getInstance().isLinked(this, type2, id2);
 	}
 
 	@Override
 	public boolean isLinked(ParaObject toObj) {
-		return CoreUtils.isLinked(this, toObj);
+		return CoreUtils.getInstance().isLinked(this, toObj);
 	}
 
 	@Override
 	public String link(String id2) {
-		return CoreUtils.link(this, id2);
+		return CoreUtils.getInstance().link(this, id2);
 	}
 
 	@Override
 	public void unlink(String type, String id2) {
-		CoreUtils.unlink(this, type, id2);
+		CoreUtils.getInstance().unlink(this, type, id2);
 	}
 
 	@Override
 	public void unlinkAll() {
-		CoreUtils.unlinkAll(this);
+		CoreUtils.getInstance().unlinkAll(this);
 	}
 
 	@Override
 	public Long countChildren(String type) {
-		return CoreUtils.countChildren(this, type);
+		return CoreUtils.getInstance().countChildren(this, type);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> getChildren(String type, Pager... pager) {
-		return CoreUtils.getChildren(this, type, pager);
+		return CoreUtils.getInstance().getChildren(this, type, pager);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> getChildren(String type, String field, String term, Pager... pager) {
-		return CoreUtils.getChildren(this, type, field, term, pager);
+		return CoreUtils.getInstance().getChildren(this, type, field, term, pager);
 	}
 
 	@Override
 	public void deleteChildren(String type) {
-		CoreUtils.deleteChildren(this, type);
+		CoreUtils.getInstance().deleteChildren(this, type);
 	}
 
 	@Override

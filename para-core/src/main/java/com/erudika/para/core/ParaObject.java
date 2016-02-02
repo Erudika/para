@@ -17,9 +17,6 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.persistence.DAO;
-import com.erudika.para.search.Search;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.Serializable;
 import java.util.List;
 import javax.validation.constraints.Size;
@@ -119,21 +116,6 @@ public interface ParaObject extends Serializable, Linkable, Votable {
 	String getObjectURI();
 
 	/**
-	 * The user object of the creator.
-	 * @return the user who created this or null if {@link #getCreatorid()} is null
-	 * @see User
-	 */
-	@JsonIgnore
-	ParaObject getCreator();
-
-	/**
-	 * The parent object..
-	 * @return the parent or null if {@link #getParentid()} is null
-	 */
-	@JsonIgnore
-	ParaObject getParent();
-
-	/**
 	 * The time when the object was created, in milliseconds.
 	 * @return the timestamp of creation
 	 */
@@ -198,29 +180,4 @@ public interface ParaObject extends Serializable, Linkable, Votable {
 	 */
 	boolean exists();
 
-	/**
-	 * Returns the core persistence object.
-	 * @return a {@link com.erudika.para.persistence.DAO} instance
-	 */
-	@JsonIgnore
-	DAO getDao();
-
-	/**
-	 * Sets the core persistence object.
-	 * @param dao a {@link com.erudika.para.persistence.DAO} instance
-	 */
-	void setDao(DAO dao);
-
-	/**
-	 * Returns the core search object.
-	 * @return a {@link com.erudika.para.search.Search} instance
-	 */
-	@JsonIgnore
-	Search getSearch();
-
-	/**
-	 * Sets the core search object.
-	 * @param search a {@link com.erudika.para.search.Search} instance
-	 */
-	void setSearch(Search search);
 }
