@@ -20,6 +20,7 @@ package com.erudika.para;
 import ch.qos.logback.access.jetty.RequestLogImpl;
 import com.erudika.para.aop.AOPModule;
 import com.erudika.para.cache.CacheModule;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.email.EmailModule;
 import com.erudika.para.i18n.I18nModule;
 import com.erudika.para.persistence.PersistenceModule;
@@ -218,6 +219,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		// entry point (WAR)
 		application.web(true);
 		application.showBanner(false);
+		Para.addInitListener(CoreUtils.getInstance());
 		Para.initialize(getCoreModules());
 		// Ensure error pages are registered
 		application.sources(ErrorFilter.class);
@@ -250,6 +252,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		SpringApplication app = new SpringApplication(sources);
 		app.setWebEnvironment(true);
 		app.setShowBanner(false);
+		Para.addInitListener(CoreUtils.getInstance());
 		Para.initialize(getCoreModules());
 		app.run(args);
 	}
