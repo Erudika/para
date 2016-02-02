@@ -1,5 +1,5 @@
 /**
- * Contains the main Para class.
+ * Default package.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 package com.erudika.para;
