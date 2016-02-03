@@ -420,21 +420,21 @@ public class App implements ParaObject {
 	/**
 	 * Grants a new permission for a given subject and resource.
 	 * @param subjectid the subject to give permissions to
-	 * @param resourceName the resource name/type
+	 * @param resourcePath the resource name/type
 	 * @param permission the set or HTTP methods allowed
 	 * @return true if successful
 	 */
-	public boolean grantResourcePermission(String subjectid, String resourceName, EnumSet<AllowedMethods> permission) {
-		// clean up resource name
-		resourceName = Utils.noSpaces(resourceName, "-");
+	public boolean grantResourcePermission(String subjectid, String resourcePath, EnumSet<AllowedMethods> permission) {
+		// urlDecode resource path
+		resourcePath = Utils.urlDecode(resourcePath);
 
-		if (!StringUtils.isBlank(subjectid) && !StringUtils.isBlank(resourceName) &&
+		if (!StringUtils.isBlank(subjectid) && !StringUtils.isBlank(resourcePath) &&
 				permission != null && !permission.isEmpty()) {
 			if (!getResourcePermissions().containsKey(subjectid)) {
 				Map<String, List<String>> perm = new HashMap<String, List<String>>();
-				perm.put(resourceName, new ArrayList<String>(permission.size()));
+				perm.put(resourcePath, new ArrayList<String>(permission.size()));
 				for (AllowedMethods allowedMethod : permission) {
-					perm.get(resourceName).add(allowedMethod.toString());
+					perm.get(resourcePath).add(allowedMethod.toString());
 				}
 				getResourcePermissions().put(subjectid, perm);
 			} else {
@@ -456,7 +456,7 @@ public class App implements ParaObject {
 				for (AllowedMethods allowedMethod : permission) {
 					perm.add(allowedMethod.toString());
 				}
-				getResourcePermissions().get(subjectid).put(resourceName, perm);
+				getResourcePermissions().get(subjectid).put(resourcePath, perm);
 			}
 			return true;
 		}
@@ -466,13 +466,15 @@ public class App implements ParaObject {
 	/**
 	 * Revokes a permission for given subject.
 	 * @param subjectid subject id
-	 * @param resourceName resource name or type
+	 * @param resourcePath resource path or object type
 	 * @return true if successful
 	 */
-	public boolean revokeResourcePermission(String subjectid, String resourceName) {
+	public boolean revokeResourcePermission(String subjectid, String resourcePath) {
 		if (!StringUtils.isBlank(subjectid) && getResourcePermissions().containsKey(subjectid) &&
-				!StringUtils.isBlank(resourceName)) {
-			getResourcePermissions().get(subjectid).remove(resourceName);
+				!StringUtils.isBlank(resourcePath)) {
+			// urlDecode resource path
+			resourcePath = Utils.urlDecode(resourcePath);
+			getResourcePermissions().get(subjectid).remove(resourcePath);
 			if (getResourcePermissions().get(subjectid).isEmpty()) {
 				getResourcePermissions().remove(subjectid);
 			}
@@ -497,26 +499,29 @@ public class App implements ParaObject {
 	/**
 	 * Checks if a subject is allowed to call method X on resource Y.
 	 * @param subjectid subject id
-	 * @param resourceName resource name (type)
+	 * @param resourcePath resource path or object type
 	 * @param httpMethod HTTP method name
 	 * @return true if allowed
 	 */
-	public boolean isAllowedTo(String subjectid, String resourceName, String httpMethod) {
+	public boolean isAllowedTo(String subjectid, String resourcePath, String httpMethod) {
 		boolean allow = false;
-		if (subjectid != null && !StringUtils.isBlank(resourceName) && !StringUtils.isBlank(httpMethod)) {
+		if (subjectid != null && !StringUtils.isBlank(resourcePath) && !StringUtils.isBlank(httpMethod)) {
+			// urlDecode resource path
+			resourcePath = Utils.urlDecode(resourcePath);
+
 			if (getResourcePermissions().isEmpty()) {
 				// Default policy is "deny all". Returning true here would make it "allow all".
 				return false;
 			}
 			if (getResourcePermissions().containsKey(subjectid) &&
-					getResourcePermissions().get(subjectid).containsKey(resourceName)) {
+					getResourcePermissions().get(subjectid).containsKey(resourcePath)) {
 				// subject-specific permissions have precedence over wildcard permissions
 				// i.e. only the permissions for that subjectid are checked, other permissions are ignored
-				allow = isAllowed(subjectid, resourceName, httpMethod);
+				allow = isAllowed(subjectid, resourcePath, httpMethod);
 			} else {
-				allow = isAllowed(subjectid, resourceName, httpMethod) ||
+				allow = isAllowed(subjectid, resourcePath, httpMethod) ||
 						isAllowed(subjectid, ALLOW_ALL, httpMethod) ||
-						isAllowed(ALLOW_ALL, resourceName, httpMethod) ||
+						isAllowed(ALLOW_ALL, resourcePath, httpMethod) ||
 						isAllowed(ALLOW_ALL, ALLOW_ALL, httpMethod);
 			}
 		}
@@ -525,12 +530,30 @@ public class App implements ParaObject {
 		return isRootApp ? (isRootAppAccessAllowed && allow) : allow;
 	}
 
-	private boolean isAllowed(String subjectid, String resourceName, String httpMethod) {
-		if (subjectid != null && getResourcePermissions().containsKey(subjectid)) {
-			return getResourcePermissions().get(subjectid).containsKey(resourceName) && (
-					getResourcePermissions().get(subjectid).get(resourceName).contains(httpMethod.toUpperCase()) ||
-					getResourcePermissions().get(subjectid).get(resourceName).contains(ALLOW_ALL));
-
+	protected final boolean isAllowed(String subjectid, String resourcePath, String httpMethod) {
+		if (subjectid != null && httpMethod != null && getResourcePermissions().containsKey(subjectid)) {
+			httpMethod = httpMethod.toUpperCase();
+			boolean allowed = false;
+			if (StringUtils.contains(resourcePath, "/")) {
+				// we assume that a full resource path is given like: 'users/something/123'
+				// so we check to see if 'users/something' is in the list of resources
+				// if there is only 'users' this will match, also 'users/someth' matches
+				String fragment = resourcePath.substring(0, resourcePath.lastIndexOf("/"));
+				for (String resource : getResourcePermissions().get(subjectid).keySet()) {
+					if (StringUtils.startsWith(fragment, resource) && (
+						getResourcePermissions().get(subjectid).get(resource).contains(httpMethod) ||
+						getResourcePermissions().get(subjectid).get(resource).contains(ALLOW_ALL))) {
+						allowed = true;
+						break;
+					}
+				}
+			}
+			if (!allowed && getResourcePermissions().get(subjectid).containsKey(resourcePath)) {
+				// check exact resource path as it is
+				allowed = (getResourcePermissions().get(subjectid).get(resourcePath).contains(httpMethod)
+						|| getResourcePermissions().get(subjectid).get(resourcePath).contains(ALLOW_ALL));
+			}
+			return allowed;
 		}
 		return false;
 	}

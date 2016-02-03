@@ -21,7 +21,11 @@ package com.erudika.para.core;
 import com.erudika.para.utils.Config;
 import static com.erudika.para.validation.Constraint.url;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.AfterClass;
 import static org.junit.Assert.*;
 import org.junit.BeforeClass;
@@ -183,6 +187,51 @@ public class AppTest {
 		assertFalse(app.isAllowedTo("123", App.ALLOW_ALL, "bad_method"));
 		app.revokeResourcePermission("123", App.ALLOW_ALL);
 		assertFalse(app.isAllowedTo("123", App.ALLOW_ALL, App.AllowedMethods.READ_ONLY.toString()));
+	}
+
+	@Test
+	public void testIsAllowed() {
+		App app = new App();
+		assertFalse(app.isAllowed(null, null, null));
+		assertFalse(app.isAllowed("user1", "posts", "GET"));
+
+		app.setResourcePermissions(new HashMap<String, Map<String, List<String>>>() {{
+			put("user1", new HashMap<String, List<String>>() {{
+				put("posts", Arrays.asList("GET", "PUT"));
+				put("posts/123", Arrays.asList("DELETE"));
+				// subpaths
+				put("_users/admins", Arrays.asList("GET"));
+				put("_users/admins/321", Arrays.asList("PUT", "POST"));
+				// simple "allow all"
+				put("users", Arrays.asList("*"));
+			}});
+		}});
+
+		assertTrue(app.isAllowed("user1", "posts", "get"));
+		assertTrue(app.isAllowed("user1", "posts", "PUT"));
+		assertTrue(app.isAllowed("user1", "posts/456", "PUT"));
+		assertFalse(app.isAllowed("user1", "posts", "DELETE"));
+		assertTrue(app.isAllowed("user1", "posts/123", "DELETE"));
+		assertFalse(app.isAllowed("user1", "posts/1234", "DELETE")); // !!! important
+		assertFalse(app.isAllowed("user1", "posts", "ELSE"));
+		// subpaths
+		assertFalse(app.isAllowed("user1", "_users", "GET"));
+		assertTrue(app.isAllowed("user1", "_users/admins", "GET"));
+		assertFalse(app.isAllowed("user1", "_users/admins", "PUT"));
+		assertTrue(app.isAllowed("user1", "_users/admins/123", "GET"));
+		assertFalse(app.isAllowed("user1", "_users/admins/123", "PUT"));
+		assertFalse(app.isAllowed("user1", "_users/admin", "GET"));
+		assertFalse(app.isAllowed("user1", "_users/123", "GET"));
+		assertFalse(app.isAllowed("user1", "_users/123", "PUT"));
+		assertTrue(app.isAllowed("user1", "_users/admins/321", "GET"));
+		assertTrue(app.isAllowed("user1", "_users/admins/321", "POST"));
+		assertFalse(app.isAllowed("user1", "_users/admins/321", "DELETE"));
+		// allow all
+		assertTrue(app.isAllowed("user1", "users/12345", "DELETE"));
+		assertTrue(app.isAllowed("user1", "users/12345", "PUT"));
+		assertTrue(app.isAllowed("user1", "users/12345", "POST"));
+		assertFalse(app.isAllowed("user2", "users/12345", "POST"));
+		assertTrue(app.isAllowed("user1", "users/12345", "ELSE"));
 	}
 
 }

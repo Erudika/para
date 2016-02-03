@@ -102,25 +102,22 @@ public final class RestUtils {
 	}
 
 	/**
-	 * Extracts the resource name, for example '/v1/_some_resource_name'
-	 * returns '_some_resource_name'.
+	 * Extracts the resource name, for example '/v1/_resource/path'
+	 * returns '_resource/path'.
 	 * @param request a request
-	 * @return the resource name
+	 * @return the resource path
 	 */
-	public static String extractResourceName(HttpServletRequest request) {
+	public static String extractResourcePath(HttpServletRequest request) {
 		if (request == null || request.getRequestURI().length() <= 3) {
 			return "";
 		}
+		// get request path, strip first slash '/'
 		String uri = request.getRequestURI().substring(1);
+		// skip to the end of API version prefix '/v1/'
 		int start = uri.indexOf("/");
 
 		if (start >= 0 && start + 1 < uri.length()) {
-			int end = uri.substring(start + 1).indexOf("/") + start + 1;
-			if (end > start) {
-				return uri.substring(start + 1, end);
-			} else {
-				return uri.substring(start + 1);
-			}
+			return uri.substring(start + 1);
 		} else {
 			return "";
 		}

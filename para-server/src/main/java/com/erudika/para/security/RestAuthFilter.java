@@ -105,8 +105,8 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 				parentApp = Para.getDAO().read(App.id(user.getAppid()));
 			}
 			if (parentApp != null) {
-				String resource = RestUtils.extractResourceName(request);
-				if (!parentApp.isAllowedTo(user.getId(), resource, request.getMethod())) {
+				String resourcePath = RestUtils.extractResourcePath(request);
+				if (!parentApp.isAllowedTo(user.getId(), resourcePath, request.getMethod())) {
 					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
 							Utils.formatMessage("You don't have permission to access this resource. "
 									+ "[user: {0}, resource: {1} {2}]", user.getId(), method, reqUri));

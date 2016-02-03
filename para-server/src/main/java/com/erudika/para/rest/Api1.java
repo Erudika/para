@@ -512,10 +512,10 @@ public class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : RestUtils.getPrincipalApp();
 				String subjectid = pathParam("subjectid", ctx);
-				String resourceName = pathParam(Config._TYPE, ctx);
+				String resourcePath = pathParam(Config._TYPE, ctx);
 				String httpMethod = pathParam("method", ctx);
 				if (app != null) {
-					return Response.ok(app.isAllowedTo(subjectid, resourceName, httpMethod),
+					return Response.ok(app.isAllowedTo(subjectid, resourcePath, httpMethod),
 							MediaType.TEXT_PLAIN_TYPE).build();
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
@@ -529,7 +529,7 @@ public class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : RestUtils.getPrincipalApp();
 				String subjectid = pathParam("subjectid", ctx);
-				String resourceName = pathParam(Config._TYPE, ctx);
+				String resourcePath = pathParam(Config._TYPE, ctx);
 				if (app != null) {
 					Response resp = RestUtils.getEntity(ctx.getEntityStream(), List.class);
 					if (resp.getStatusInfo() == Response.Status.OK) {
@@ -542,7 +542,7 @@ public class Api1 extends ResourceConfig {
 							}
 						}
 						if (!set.isEmpty()) {
-							if (app.grantResourcePermission(subjectid, resourceName, EnumSet.copyOf(set))) {
+							if (app.grantResourcePermission(subjectid, resourcePath, EnumSet.copyOf(set))) {
 								app.update();
 							}
 							return Response.ok(app.getAllResourcePermissions(subjectid)).build();

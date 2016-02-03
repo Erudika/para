@@ -133,22 +133,27 @@ public class RestUtilsTest {
 	public void testExtractResourceName() {
 		HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
 		Mockito.when(req.getRequestURI()).thenReturn("");
-		assertEquals(extractResourceName(null), "");
-		assertEquals(extractResourceName(req), "");
+		assertEquals(extractResourcePath(null), "");
+		assertEquals(extractResourcePath(req), "");
 
 		Mockito.when(req.getRequestURI()).thenReturn("/v1");
-		assertEquals("", extractResourceName(req));
+		assertEquals("", extractResourcePath(req));
 
 		Mockito.when(req.getRequestURI()).thenReturn("/v1/");
-		assertEquals("", extractResourceName(req));
+		assertEquals("", extractResourcePath(req));
 
 		Mockito.when(req.getRequestURI()).thenReturn("/v1/_");
-		assertEquals("_", extractResourceName(req));
+		assertEquals("_", extractResourcePath(req));
 
 		Mockito.when(req.getRequestURI()).thenReturn("/v1/_test");
-		assertEquals("_test", extractResourceName(req));
+		assertEquals("_test", extractResourcePath(req));
 
-		Mockito.when(req.getRequestURI()).thenReturn("/v1/_test/dont_need/this");
-		assertEquals("_test", extractResourceName(req));
+		Mockito.when(req.getRequestURI()).thenReturn("/v1/_test/path/id");
+		assertEquals("_test/path/id", extractResourcePath(req));
+
+		// new feature - specific resource paths
+		Mockito.when(req.getRequestURI()).thenReturn("/v2.0/posts/123");
+		assertEquals("posts/123", extractResourcePath(req));
+
 	}
 }

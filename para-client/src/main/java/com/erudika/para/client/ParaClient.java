@@ -1098,30 +1098,30 @@ public final class ParaClient {
 	/**
 	 * Grants a permission to a subject that allows them to call the specified HTTP methods on a given resource.
 	 * @param subjectid subject id (user id)
-	 * @param resourceName resource name or object type
+	 * @param resourcePath resource path or object type (URL encoded)
 	 * @param permission a set of HTTP methods
 	 * @return a map of the permissions for this subject id
 	 */
-	public Map<String, Map<String, List<String>>> grantResourcePermission(String subjectid, String resourceName,
+	public Map<String, Map<String, List<String>>> grantResourcePermission(String subjectid, String resourcePath,
 			EnumSet<App.AllowedMethods> permission) {
-		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourceName) || permission == null) {
+		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourcePath) || permission == null) {
 			return Collections.emptyMap();
 		}
-		return getEntity(invokePut(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourceName),
+		return getEntity(invokePut(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourcePath),
 				Entity.json(permission)), Map.class);
 	}
 
 	/**
 	 * Revokes a permission for a subject, meaning they no longer will be able to access the given resource.
 	 * @param subjectid subject id (user id)
-	 * @param resourceName resource name or object type
+	 * @param resourcePath resource path or object type (URL encoded)
 	 * @return a map of the permissions for this subject id
 	 */
-	public Map<String, Map<String, List<String>>> revokeResourcePermission(String subjectid, String resourceName) {
-		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourceName)) {
+	public Map<String, Map<String, List<String>>> revokeResourcePermission(String subjectid, String resourcePath) {
+		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourcePath)) {
 			return Collections.emptyMap();
 		}
-		return getEntity(invokeDelete(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourceName),
+		return getEntity(invokeDelete(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourcePath),
 				null), Map.class);
 	}
 
@@ -1140,15 +1140,15 @@ public final class ParaClient {
 	/**
 	 * Checks if a subject is allowed to call method X on resource Y.
 	 * @param subjectid subject id
-	 * @param resourceName resource name (type)
+	 * @param resourcePath resource path or object type (URL encoded)
 	 * @param httpMethod HTTP method name
 	 * @return true if allowed
 	 */
-	public boolean isAllowedTo(String subjectid, String resourceName, String httpMethod) {
-		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourceName) || StringUtils.isBlank(httpMethod)) {
+	public boolean isAllowedTo(String subjectid, String resourcePath, String httpMethod) {
+		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourcePath) || StringUtils.isBlank(httpMethod)) {
 			return false;
 		}
-		String url = Utils.formatMessage("_permissions/{0}/{1}/{2}", subjectid, resourceName, httpMethod);
+		String url = Utils.formatMessage("_permissions/{0}/{1}/{2}", subjectid, resourcePath, httpMethod);
 		return getEntity(invokeGet(url, null), Boolean.class);
 	}
 
