@@ -78,6 +78,7 @@ public abstract class DAOTest {
 
 		User x = dao.read(u.getId());
 		assertEquals(u.getEmail(), x.getEmail());
+		// email CAN be empty or null because @NotBlank validation is skipped here
 		x.setEmail(null);
 		assertNotNull(dao.create(x));
 		x = dao.read(u.getId());
@@ -177,7 +178,7 @@ public abstract class DAOTest {
 		t2.setName("Name 2");
 		t3.setName("Name 3");
 
-		// these shouldn't go through
+		// these should go through (custom types support)
 		t1.setType("type1");
 		t2.setType("type2");
 		t3.setType("type3");
@@ -185,10 +186,22 @@ public abstract class DAOTest {
 		dao.updateAll(null);
 		dao.updateAll(Arrays.asList(t1, t2, t3));
 
+		assertNotNull(t1);
+		assertNotNull(t2);
+		assertNotNull(t3);
+
+		assertNotNull(t1.getId());
+		assertNotNull(t2.getId());
+		assertNotNull(t3.getId());
+
 		Sysprop tr1 = dao.read(t1.getId());
 		Sysprop tr2 = dao.read(t2.getId());
 		Sysprop tr3 = dao.read(t3.getId());
 
+		assertNotNull(tr1);
+		assertNotNull(tr2);
+		assertNotNull(tr3);
+		
 		assertEquals(t1.getId(), tr1.getId());
 		assertEquals(t2.getId(), tr2.getId());
 		assertEquals(t3.getId(), tr3.getId());
