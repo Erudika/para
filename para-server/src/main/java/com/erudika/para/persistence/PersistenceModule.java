@@ -29,7 +29,7 @@ import org.apache.commons.lang3.StringUtils;
 public class PersistenceModule extends AbstractModule {
 
 	protected void configure() {
-		String selectedDAO = Config.getConfigParam("database", "");
+		String selectedDAO = Config.getConfigParam("dao", "");
 		if (StringUtils.isBlank(selectedDAO)) {
 			if ("embedded".equals(Config.ENVIRONMENT)) {
 				bind(DAO.class).to(IndexBasedDAO.class).asEagerSingleton();
