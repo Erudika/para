@@ -17,7 +17,10 @@
  */
 package com.erudika.para.search;
 
+import com.erudika.para.utils.Config;
 import com.google.inject.AbstractModule;
+import java.util.ServiceLoader;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * The default search module.
@@ -26,7 +29,38 @@ import com.google.inject.AbstractModule;
 public class SearchModule extends AbstractModule {
 
 	protected void configure() {
-		bind(Search.class).to(ElasticSearch.class).asEagerSingleton();
+		String selectedSearch = Config.getConfigParam("search", "");
+		if (StringUtils.isBlank(selectedSearch)) {
+			bind(Search.class).to(ElasticSearch.class).asEagerSingleton();
+		} else {
+			if ("elasticsearch".equalsIgnoreCase(selectedSearch)) {
+				bind(Search.class).to(ElasticSearch.class).asEagerSingleton();
+			} else {
+				Search searchPlugin = loadExternalSearch(selectedSearch);
+				if (searchPlugin != null) {
+					bind(Search.class).toInstance(searchPlugin);
+				} else {
+					// default fallback - not implemented!
+					bind(Search.class).to(MockSearch.class).asEagerSingleton();
+				}
+			}
+		}
+	}
+
+	/**
+	 * Scans the classpath for Search implementations, through the
+	 * {@link ServiceLoader} mechanism and returns one.
+	 * @param classSimpleName the name of the class name to look for and load
+	 * @return a Search instance if found, or null
+	 */
+	final Search loadExternalSearch(String classSimpleName) {
+		ServiceLoader<Search> searchLoader = ServiceLoader.load(Search.class);
+		for (Search search : searchLoader) {
+			if (search != null && classSimpleName.equalsIgnoreCase(search.getClass().getSimpleName())) {
+				return search;
+			}
+		}
+		return null;
 	}
 
 }

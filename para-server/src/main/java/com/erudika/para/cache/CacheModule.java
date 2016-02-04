@@ -17,7 +17,10 @@
  */
 package com.erudika.para.cache;
 
+import com.erudika.para.utils.Config;
 import com.google.inject.AbstractModule;
+import java.util.ServiceLoader;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * The default cache module.
@@ -26,7 +29,38 @@ import com.google.inject.AbstractModule;
 public class CacheModule extends AbstractModule {
 
 	protected void configure() {
-		bind(Cache.class).to(HazelcastCache.class);
+		String selectedCache = Config.getConfigParam("cache", "");
+		if (StringUtils.isBlank(selectedCache)) {
+			bind(Cache.class).to(HazelcastCache.class);
+		} else {
+			if ("hazelcast".equalsIgnoreCase(selectedCache)) {
+				bind(Cache.class).to(HazelcastCache.class);
+			} else {
+				Cache cachePlugin = loadExternalCache(selectedCache);
+				if (cachePlugin != null) {
+					bind(Cache.class).toInstance(cachePlugin);
+				} else {
+					// default fallback
+					bind(Cache.class).to(MockCache.class).asEagerSingleton();
+				}
+			}
+		}
+	}
+
+	/**
+	 * Scans the classpath for Cache implementations, through the
+	 * {@link ServiceLoader} mechanism and returns one.
+	 * @param classSimpleName the name of the class name to look for and load
+	 * @return a Cache instance if found, or null
+	 */
+	final Cache loadExternalCache(String classSimpleName) {
+		ServiceLoader<Cache> cacheLoader = ServiceLoader.load(Cache.class);
+		for (Cache cache : cacheLoader) {
+			if (cache != null && classSimpleName.equalsIgnoreCase(cache.getClass().getSimpleName())) {
+				return cache;
+			}
+		}
+		return null;
 	}
 
 }
