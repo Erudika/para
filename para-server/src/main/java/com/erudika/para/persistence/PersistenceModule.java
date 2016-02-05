@@ -17,6 +17,7 @@
  */
 package com.erudika.para.persistence;
 
+import com.erudika.para.Para;
 import com.erudika.para.utils.Config;
 import com.google.inject.AbstractModule;
 import java.util.ServiceLoader;
@@ -61,12 +62,12 @@ public class PersistenceModule extends AbstractModule {
 	 * @return a DAO instance if found, or null
 	 */
 	final DAO loadExternalDAO(String classSimpleName) {
-		ServiceLoader<DAO> daoLoader = ServiceLoader.load(DAO.class);
-		for (DAO dao : daoLoader) {
-			if (dao != null && classSimpleName.equalsIgnoreCase(dao.getClass().getSimpleName())) {
-				return dao;
+			ServiceLoader<DAO> daoLoader = ServiceLoader.load(DAO.class, Para.getParaClassLoader());
+			for (DAO dao : daoLoader) {
+				if (dao != null && classSimpleName.equalsIgnoreCase(dao.getClass().getSimpleName())) {
+					return dao;
+				}
 			}
-		}
 		return null;
 	}
 

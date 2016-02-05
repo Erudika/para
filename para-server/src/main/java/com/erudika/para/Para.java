@@ -27,6 +27,9 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Stage;
 import com.google.inject.util.Modules;
+import java.io.File;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,6 +39,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,6 +70,7 @@ public final class Para {
 	private static final List<InitializeListener> initListeners = new ArrayList<InitializeListener>();
 	private static final ExecutorService exec = Executors.newFixedThreadPool(Config.EXECUTOR_THREADS);
 	private static Injector injector;
+	private static ClassLoader paraClassLoader;
 
 	public Para() { }
 
@@ -263,6 +268,29 @@ public final class Para {
 			externalModules.add(module);
 		}
 		return externalModules;
+	}
+
+	/**
+	 * Returns the {@link URLClassLoader} classloader for Para.
+	 * Used for loading JAR files from 'lib/*.jar'.
+	 * This overrides the Thread.currentClassLoader().
+	 * @return a classloader
+	 */
+	public static ClassLoader getParaClassLoader() {
+		if (paraClassLoader == null) {
+			try {
+				ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
+				List<URL> jars = new ArrayList<URL>();
+				for (File file : FileUtils.listFiles(new File("lib/"), new String[]{"jar"}, false)) {
+					jars.add(file.toURI().toURL());
+				}
+				paraClassLoader = new URLClassLoader(jars.toArray(new URL[0]), currentClassLoader);
+				Thread.currentThread().setContextClassLoader(paraClassLoader);
+			} catch (Exception e) {
+				logger.error(null, e);
+			}
+		}
+		return paraClassLoader;
 	}
 
 	private static void handleNotInitializedError() {

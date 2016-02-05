@@ -17,6 +17,7 @@
  */
 package com.erudika.para.search;
 
+import com.erudika.para.Para;
 import com.erudika.para.utils.Config;
 import com.google.inject.AbstractModule;
 import java.util.ServiceLoader;
@@ -54,7 +55,7 @@ public class SearchModule extends AbstractModule {
 	 * @return a Search instance if found, or null
 	 */
 	final Search loadExternalSearch(String classSimpleName) {
-		ServiceLoader<Search> searchLoader = ServiceLoader.load(Search.class);
+		ServiceLoader<Search> searchLoader = ServiceLoader.load(Search.class, Para.getParaClassLoader());
 		for (Search search : searchLoader) {
 			if (search != null && classSimpleName.equalsIgnoreCase(search.getClass().getSimpleName())) {
 				return search;

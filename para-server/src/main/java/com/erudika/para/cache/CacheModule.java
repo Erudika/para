@@ -17,6 +17,7 @@
  */
 package com.erudika.para.cache;
 
+import com.erudika.para.Para;
 import com.erudika.para.utils.Config;
 import com.google.inject.AbstractModule;
 import java.util.ServiceLoader;
@@ -54,7 +55,7 @@ public class CacheModule extends AbstractModule {
 	 * @return a Cache instance if found, or null
 	 */
 	final Cache loadExternalCache(String classSimpleName) {
-		ServiceLoader<Cache> cacheLoader = ServiceLoader.load(Cache.class);
+		ServiceLoader<Cache> cacheLoader = ServiceLoader.load(Cache.class, Para.getParaClassLoader());
 		for (Cache cache : cacheLoader) {
 			if (cache != null && classSimpleName.equalsIgnoreCase(cache.getClass().getSimpleName())) {
 				return cache;
