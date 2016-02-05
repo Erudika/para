@@ -18,6 +18,8 @@
 package com.erudika.para.core.utils;
 
 import com.erudika.para.InitializeListener;
+import com.erudika.para.cache.Cache;
+import com.erudika.para.cache.MockCache;
 import com.erudika.para.core.Linker;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Votable.VoteValue;
@@ -57,6 +59,7 @@ public final class CoreUtils implements InitializeListener {
 
 	@Inject private DAO dao;
 	@Inject private Search search;
+	@Inject private Cache cache;
 
 	private static CoreUtils instance;
 
@@ -64,18 +67,22 @@ public final class CoreUtils implements InitializeListener {
 	 * Default constructor.
 	 * @param dao a {@link com.erudika.para.persistence.DAO} object
 	 * @param search a {@link com.erudika.para.search.Search} object
+	 * @param cache a {@link com.erudika.para.cache.Cache} object
 	 */
-	public CoreUtils(DAO dao, Search search) {
+	public CoreUtils(DAO dao, Search search, Cache cache) {
 		this.dao = dao;
 		this.search = search;
+		this.cache = cache;
 	}
 
 	@Override
 	public void onInitialize() {
-		if (dao != null && search != null) {
-			logger.info("Loaded new DAO and Search implementations - {} and {}.",
-					dao.getClass().getSimpleName(), search.getClass().getSimpleName());
-			CoreUtils.instance = new CoreUtils(dao, search);
+		if (dao != null && search != null && cache != null) {
+			logger.info("Loaded new DAO, Search and Cache implementations - {}, {} and {}.",
+					dao.getClass().getSimpleName(),
+					search.getClass().getSimpleName(),
+					cache.getClass().getSimpleName());
+			CoreUtils.instance = new CoreUtils(dao, search, cache);
 		}
 	}
 
@@ -87,9 +94,12 @@ public final class CoreUtils implements InitializeListener {
 		if (instance == null) {
 			DAO defaultDAO = new MockDAO();
 			Search defaultSearch = new MockSearch();
-			logger.info("Using default impementations - {} and {}.",
-					defaultDAO.getClass().getSimpleName(), defaultSearch.getClass().getSimpleName());
-			instance = new CoreUtils(defaultDAO, defaultSearch);
+			Cache defaultCache = new MockCache();
+			logger.info("Using default impementations - {}, {} and {}.",
+					defaultDAO.getClass().getSimpleName(),
+					defaultSearch.getClass().getSimpleName(),
+					defaultCache.getClass().getSimpleName());
+			instance = new CoreUtils(defaultDAO, defaultSearch, defaultCache);
 		}
 		return instance;
 	}
@@ -108,6 +118,14 @@ public final class CoreUtils implements InitializeListener {
 
 	public void setSearch(Search search) {
 		this.search = search;
+	}
+
+	public Cache getCache() {
+		return cache;
+	}
+
+	public void setCache(Cache cache) {
+		this.cache = cache;
 	}
 
 	public String getObjectURI(ParaObject obj) {
