@@ -20,9 +20,7 @@ package com.erudika.para.aop;
 import com.erudika.para.annotations.Cached;
 import com.erudika.para.annotations.Indexed;
 import com.erudika.para.cache.Cache;
-import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.core.User;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
@@ -33,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
@@ -129,14 +128,19 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					break;
 				case ADD_ALL:
 					List<ParaObject> addUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
-					List<ParaObject> indexUs = removeSpecialClassesNotStored(addUs);
+					List<ParaObject> indexUs = new LinkedList<ParaObject>();
+					List<ParaObject> removedObjects = removeNotStoredNotIndexed(addUs, indexUs);
 					result = mi.proceed();
 					search.indexAll(appid, indexUs);
-					logger.debug("{}: Indexed all {}->#{}", cn, appid, (addUs == null) ? null : addUs.size());
+					if (cachedAnno != null) {
+						// restore removed objects - needed if we have to cache them later
+						// do not remove this line - breaks tests
+						addUs.addAll(removedObjects); // don't delete!
+					}
+					logger.debug("{}: Indexed all {}->#{}", cn, appid, (indexUs == null) ? null : indexUs.size());
 					break;
 				case REMOVE_ALL:
 					List<ParaObject> removeUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
-					removeSpecialClasses(removeUs);
 					result = mi.proceed(); // delete from DB even if "isStored = false"
 					search.unindexAll(appid, removeUs); // remove from index even if "isIndexed = false"
 					logger.debug("{}: Unindexed all {}->#{}", cn, appid, (removeUs == null) ? null : removeUs.size());
@@ -205,7 +209,6 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					break;
 				case PUT_ALL:
 					List<ParaObject> putUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
-					removeSpecialClasses(putUs);
 					if (putUs != null && !putUs.isEmpty()) {
 						Map<String, ParaObject> map1 = new LinkedHashMap<String, ParaObject>(putUs.size());
 						for (ParaObject obj : putUs) {
@@ -221,7 +224,6 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					break;
 				case DELETE_ALL:
 					List<ParaObject> deleteUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
-					removeSpecialClasses(deleteUs);
 					if (deleteUs != null && !deleteUs.isEmpty()) {
 						List<String> list = new ArrayList<String>(deleteUs.size());
 						for (ParaObject paraObject : deleteUs) {
@@ -245,33 +247,22 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		return result;
 	}
 
-	// Security feature - it's logical to not allow batch "create" and "delete"
-	// operations on Apps and Users - these are usually created rarely, one at a time.
-	//
-	private void removeSpecialClasses(List<ParaObject> objects) {
-		if (objects != null) {
-			ArrayList<ParaObject> list = new ArrayList<ParaObject>(objects);
-			for (ParaObject paraObject : list) {
-				if (paraObject instanceof User || paraObject instanceof App) {
-					objects.remove(paraObject);
-				}
-			}
-		}
-	}
-
-	private List<ParaObject> removeSpecialClassesNotStored(List<ParaObject> objects) {
-		if (objects != null) {
-			ArrayList<ParaObject> indexUs = new ArrayList<ParaObject>(objects);
-			for (Iterator<ParaObject> it = indexUs.iterator(); it.hasNext();) {
+	private List<ParaObject> removeNotStoredNotIndexed(List<ParaObject> addUs, List<ParaObject> indexUs) {
+		if (addUs != null) {
+			List<ParaObject> removed = new LinkedList<ParaObject>();
+			for (Iterator<ParaObject> it = addUs.iterator(); it.hasNext();) {
 				ParaObject obj = it.next();
-				if (obj instanceof User || obj instanceof App || (obj != null && !obj.getStored())) {
-					objects.remove(obj);
-				}
-				if (obj instanceof User || obj instanceof App || (obj != null && !obj.getIndexed())) {
-					it.remove();
+				if (obj != null) {
+					if (obj.getIndexed()) {
+						indexUs.add(obj);
+					}
+					if (!obj.getStored()) {
+						removed.add(obj);
+						it.remove();
+					}
 				}
 			}
-			return indexUs;
+			return removed;
 		}
 		return Collections.emptyList();
 	}

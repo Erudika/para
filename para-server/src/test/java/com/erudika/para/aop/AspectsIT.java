@@ -39,6 +39,7 @@ import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.Map;
 import org.junit.AfterClass;
 import static org.junit.Assert.*;
@@ -183,37 +184,205 @@ public class AspectsIT {
 		assertNull(s.findById(s2.getId()));
 		assertNull(c.get(s2.getId()));
 
+		// Removed in v1.18 - this will cause unexpected behavior in the future.
+		// These "special" classes are not documented and this is the wrong
+		// place to filter them out.
+
 		// test skipping special classes calling batch methods
-		App app1 = new App("app1");
-		User user1 = new User("user1");
-		user1.setName("John Doe");
-		user1.setGroups(User.Groups.USERS.toString());
-		user1.setEmail("john1@asd.com");
-		user1.setIdentifier(user1.getEmail());
-		user1.setTimestamp(Utils.timestamp());
-		user1.setPassword("123456");
-		Tag t1 = new Tag("testtag123");
+//		App app1 = new App("app1");
+//		User user1 = new User("user1");
+//		user1.setName("John Doe");
+//		user1.setGroups(User.Groups.USERS.toString());
+//		user1.setEmail("john1@asd.com");
+//		user1.setIdentifier(user1.getEmail());
+//		user1.setTimestamp(Utils.timestamp());
+//		user1.setPassword("123456");
+//		Tag t1 = new Tag("testtag123");
+//
+//		// test that Apps and Users are removed from batch operations
+//		ArrayList<ParaObject> list1 = new ArrayList<ParaObject>();
+//		list1.add(app1);
+//		list1.add(user1);
+//		list1.add(t1);
+//		Para.getDAO().createAll(list1);
+//
+//		System.setProperty("para.cache_enabled", "false");
+//		assertNull(Para.getDAO().read(app1.getId()));
+//		assertNull(Para.getDAO().read(user1.getId()));
+//		assertNotNull(Para.getDAO().read(t1.getId()));
+//
+//		assertNull(Para.getSearch().findById(app1.getId()));
+//		assertNull(Para.getSearch().findById(user1.getId()));
+//		assertNotNull(Para.getSearch().findById(t1.getId()));
+//
+//		System.setProperty("para.cache_enabled", "true");
+//		assertFalse(Para.getCache().contains(app1.getId()));
+//		assertFalse(Para.getCache().contains(user1.getId()));
+//		assertTrue(Para.getCache().contains(t1.getId()));
+	}
 
-		// test that Apps and Users are removed from batch operations
-		ArrayList<ParaObject> list1 = new ArrayList<ParaObject>();
-		list1.add(app1);
-		list1.add(user1);
-		list1.add(t1);
-		Para.getDAO().createAll(list1);
+	@Test
+	public void testFlags() {
+		// default - store=true, index=true, cache=true
+		Tag t1 = new Tag("tag1");
+		Sysprop o11 = new Sysprop("obj11");
+		Sysprop o12 = new Sysprop("obj12");
+		Para.getDAO().create(t1);
+		Para.getDAO().createAll(new LinkedList<ParaObject>(Arrays.asList(o11, o12)));
 
-		assertNull(Para.getDAO().read(app1.getId()));
-		assertNull(Para.getDAO().read(user1.getId()));
 		assertNotNull(Para.getDAO().read(t1.getId()));
-
-		assertNull(Para.getSearch().findById(app1.getId()));
-		assertNull(Para.getSearch().findById(user1.getId()));
+		assertNotNull(Para.getDAO().read(o11.getId()));
+		assertNotNull(Para.getDAO().read(o12.getId()));
 		assertNotNull(Para.getSearch().findById(t1.getId()));
+		assertNotNull(Para.getSearch().findById(o11.getId()));
+		assertNotNull(Para.getSearch().findById(o12.getId()));
+		assertNotNull(Para.getCache().get(t1.getId()));
+		assertNotNull(Para.getCache().get(o11.getId()));
+		assertNotNull(Para.getCache().get(o12.getId()));
+		Para.getDAO().deleteAll(Arrays.asList(t1, o11, o12));
+		assertNull(Para.getDAO().read(t1.getId()));
+		assertNull(Para.getDAO().read(o11.getId()));
+		assertNull(Para.getDAO().read(o12.getId()));
+		assertNull(Para.getSearch().findById(t1.getId()));
+		assertNull(Para.getSearch().findById(o11.getId()));
+		assertNull(Para.getSearch().findById(o12.getId()));
+		assertNull(Para.getCache().get(t1.getId()));
+		assertNull(Para.getCache().get(o11.getId()));
+		assertNull(Para.getCache().get(o12.getId()));
 
-		assertFalse(Para.getCache().contains(app1.getId()));
-		assertFalse(Para.getCache().contains(user1.getId()));
-		assertTrue(Para.getCache().contains(t1.getId()));
+		// not in DB - store=false, index=true, cache=true
+		Tag t2 = new Tag("tag2");
+		Sysprop o21 = new Sysprop("obj21");
+		Sysprop o22 = new Sysprop("obj22");
+		t2.setStored(false);
+		o21.setStored(false);
+		o22.setStored(false);
+		Para.getDAO().create(t2);
+		Para.getDAO().createAll(new LinkedList<ParaObject>(Arrays.asList(o21, o22)));
 
+		System.setProperty("para.cache_enabled", "false");
+		assertNull(Para.getDAO().read(t2.getId()));
+		assertNull(Para.getDAO().read(o21.getId()));
+		assertNull(Para.getDAO().read(o22.getId()));
+		assertNotNull(Para.getSearch().findById(t2.getId()));
+		assertNotNull(Para.getSearch().findById(o21.getId()));
+		assertNotNull(Para.getSearch().findById(o22.getId()));
+		System.setProperty("para.cache_enabled", "true");
+		assertNotNull(Para.getCache().get(t2.getId()));
+		assertNotNull(Para.getCache().get(o21.getId()));
+		assertNotNull(Para.getCache().get(o22.getId()));
+		Para.getDAO().deleteAll(Arrays.asList(t2, o21, o22));
+		assertNull(Para.getDAO().read(t2.getId()));
+		assertNull(Para.getDAO().read(o21.getId()));
+		assertNull(Para.getDAO().read(o22.getId()));
+		assertNull(Para.getSearch().findById(t2.getId()));
+		assertNull(Para.getSearch().findById(o21.getId()));
+		assertNull(Para.getSearch().findById(o22.getId()));
+		assertNull(Para.getCache().get(t2.getId()));
+		assertNull(Para.getCache().get(o21.getId()));
+		assertNull(Para.getCache().get(o22.getId()));
 
+		// in memory - store=false, index=false, cache=true
+		Tag t3 = new Tag("tag3");
+		Sysprop o31 = new Sysprop("obj31");
+		Sysprop o32 = new Sysprop("obj32");
+		t3.setStored(false);
+		t3.setIndexed(false);
+		o31.setStored(false);
+		o31.setIndexed(false);
+		o32.setStored(false);
+		o32.setIndexed(false);
+		Para.getDAO().create(t3);
+		Para.getDAO().createAll(new LinkedList<ParaObject>(Arrays.asList(o31, o32)));
+
+		System.setProperty("para.cache_enabled", "false");
+		assertNull(Para.getDAO().read(t3.getId()));
+		assertNull(Para.getDAO().read(o31.getId()));
+		assertNull(Para.getDAO().read(o32.getId()));
+		assertNull(Para.getSearch().findById(t3.getId()));
+		assertNull(Para.getSearch().findById(o31.getId()));
+		assertNull(Para.getSearch().findById(o32.getId()));
+		System.setProperty("para.cache_enabled", "true");
+		assertNotNull(Para.getCache().get(t3.getId()));
+		assertNotNull(Para.getCache().get(o31.getId()));
+		assertNotNull(Para.getCache().get(o32.getId()));
+		Para.getDAO().deleteAll(Arrays.asList(t3, o31, o32));
+		assertNull(Para.getDAO().read(t3.getId()));
+		assertNull(Para.getDAO().read(o31.getId()));
+		assertNull(Para.getDAO().read(o32.getId()));
+		assertNull(Para.getSearch().findById(t3.getId()));
+		assertNull(Para.getSearch().findById(o31.getId()));
+		assertNull(Para.getSearch().findById(o32.getId()));
+		assertNull(Para.getCache().get(t3.getId()));
+		assertNull(Para.getCache().get(o31.getId()));
+		assertNull(Para.getCache().get(o32.getId()));
+
+		// not cached - store=true, index=true, cache=false
+		Tag t4 = new Tag("tag4");
+		Sysprop o41 = new Sysprop("obj41");
+		Sysprop o42 = new Sysprop("obj42");
+		t4.setCached(false);
+		o41.setCached(false);
+		o42.setCached(false);
+		Para.getDAO().create(t4);
+		Para.getDAO().createAll(new LinkedList<ParaObject>(Arrays.asList(o41, o42)));
+
+		System.setProperty("para.cache_enabled", "false");
+		assertNotNull(Para.getDAO().read(t4.getId()));
+		assertNotNull(Para.getDAO().read(o41.getId()));
+		assertNotNull(Para.getDAO().read(o42.getId()));
+		assertNotNull(Para.getSearch().findById(t4.getId()));
+		assertNotNull(Para.getSearch().findById(o41.getId()));
+		assertNotNull(Para.getSearch().findById(o42.getId()));
+		System.setProperty("para.cache_enabled", "true");
+		assertNull(Para.getCache().get(t4.getId()));
+		assertNull(Para.getCache().get(o41.getId()));
+		assertNull(Para.getCache().get(o42.getId()));
+		Para.getDAO().deleteAll(Arrays.asList(t4, o41, o42));
+		assertNull(Para.getDAO().read(t4.getId()));
+		assertNull(Para.getDAO().read(o41.getId()));
+		assertNull(Para.getDAO().read(o42.getId()));
+		assertNull(Para.getSearch().findById(t4.getId()));
+		assertNull(Para.getSearch().findById(o41.getId()));
+		assertNull(Para.getSearch().findById(o42.getId()));
+		assertNull(Para.getCache().get(t4.getId()));
+		assertNull(Para.getCache().get(o41.getId()));
+		assertNull(Para.getCache().get(o42.getId()));
+
+		// only in DB - store=true, index=false, cache=false
+		Tag t5 = new Tag("tag5");
+		Sysprop o51 = new Sysprop("obj51");
+		Sysprop o52 = new Sysprop("obj52");
+		t5.setIndexed(false);
+		t5.setCached(false);
+		o51.setIndexed(false);
+		o51.setCached(false);
+		o52.setIndexed(false);
+		o52.setCached(false);
+		Para.getDAO().create(t5);
+		Para.getDAO().createAll(new LinkedList<ParaObject>(Arrays.asList(o51, o52)));
+
+		System.setProperty("para.cache_enabled", "false");
+		assertNotNull(Para.getDAO().read(t5.getId()));
+		assertNotNull(Para.getDAO().read(o51.getId()));
+		assertNotNull(Para.getDAO().read(o52.getId()));
+		assertNull(Para.getSearch().findById(t5.getId()));
+		assertNull(Para.getSearch().findById(o51.getId()));
+		assertNull(Para.getSearch().findById(o52.getId()));
+		System.setProperty("para.cache_enabled", "true");
+		assertNull(Para.getCache().get(t5.getId()));
+		assertNull(Para.getCache().get(o51.getId()));
+		assertNull(Para.getCache().get(o52.getId()));
+		Para.getDAO().deleteAll(Arrays.asList(t5, o51, o52));
+		assertNull(Para.getDAO().read(t5.getId()));
+		assertNull(Para.getDAO().read(o51.getId()));
+		assertNull(Para.getDAO().read(o52.getId()));
+		assertNull(Para.getSearch().findById(t5.getId()));
+		assertNull(Para.getSearch().findById(o51.getId()));
+		assertNull(Para.getSearch().findById(o52.getId()));
+		assertNull(Para.getCache().get(t5.getId()));
+		assertNull(Para.getCache().get(o51.getId()));
+		assertNull(Para.getCache().get(o52.getId()));
 	}
 
 }
