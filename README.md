@@ -129,6 +129,7 @@ clients for popular languages soon.
 
 - `DAO` implementations for popular databases like MongoDB, PostgreSQL, Cassandra, etc.
 - API clients in Python, iOS.
+- Web API console for developers
 - Integrations with Google App Engine, Heroku, Docker, Vagrant
 - GraphQL support
 
