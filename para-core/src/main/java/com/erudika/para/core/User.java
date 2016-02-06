@@ -52,6 +52,9 @@ public class User implements ParaObject {
 	@Stored private String name;
 	@Stored private List<String> tags;
 	@Stored private Integer votes;
+	@Stored private Boolean stored;
+	@Stored private Boolean indexed;
+	@Stored private Boolean cached;
 
 	@Stored @NotBlank private String identifier;
 	@Stored @Locked @NotBlank private String groups;
@@ -722,6 +725,45 @@ public class User implements ParaObject {
 	@Override
 	public void setTags(List<String> tags) {
 		this.tags = tags;
+	}
+
+	@Override
+	public Boolean getStored() {
+		if (stored == null) {
+			stored = true;
+		}
+		return stored;
+	}
+
+	@Override
+	public void setStored(Boolean stored) {
+		this.stored = stored;
+	}
+
+	@Override
+	public Boolean getIndexed() {
+		if (indexed == null) {
+			indexed = true;
+		}
+		return indexed;
+	}
+
+	@Override
+	public void setIndexed(Boolean indexed) {
+		this.indexed = indexed;
+	}
+
+	@Override
+	public Boolean getCached() {
+		if (cached == null) {
+			cached = true;
+		}
+		return cached;
+	}
+
+	@Override
+	public void setCached(Boolean cached) {
+		this.cached = cached;
 	}
 
 	@Override

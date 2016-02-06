@@ -48,6 +48,9 @@ public class Address implements ParaObject {
 	@Stored private String name;
 	@Stored private List<String> tags;
 	@Stored private Integer votes;
+	@Stored private Boolean stored;
+	@Stored private Boolean indexed;
+	@Stored private Boolean cached;
 
 	@Stored @NotBlank @Size(min = 3, max = 255) private String address;
 	@Stored @NotBlank @Size(min = 2, max = 255) private String country;
@@ -177,6 +180,45 @@ public class Address implements ParaObject {
 	@Override
 	public List<String> getTags() {
 		return tags;
+	}
+
+	@Override
+	public Boolean getStored() {
+		if (stored == null) {
+			stored = true;
+		}
+		return stored;
+	}
+
+	@Override
+	public void setStored(Boolean stored) {
+		this.stored = stored;
+	}
+
+	@Override
+	public Boolean getIndexed() {
+		if (indexed == null) {
+			indexed = true;
+		}
+		return indexed;
+	}
+
+	@Override
+	public void setIndexed(Boolean indexed) {
+		this.indexed = indexed;
+	}
+
+	@Override
+	public Boolean getCached() {
+		if (cached == null) {
+			cached = true;
+		}
+		return cached;
+	}
+
+	@Override
+	public void setCached(Boolean cached) {
+		this.cached = cached;
 	}
 
 	@Override

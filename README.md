@@ -12,7 +12,7 @@
 It enables your application to store objects directly to a data store (NoSQL) or any relational database (RDBMS)
 and it also automatically indexes those objects and makes them searchable.
 
-The name "Para" means "steam" in Bulgarian. And just like steam is used to power stuff, you can use
+The name "pára" means "steam" in Bulgarian. And just like steam is used to power stuff, you can use
 Para to power your mobile or web application back-end.
 
 Para can be used in two ways - as the backbone of your JVM-based application or as a standalone server supporting
@@ -24,15 +24,16 @@ See how Para [compares to other open source back-end frameworks](http://www.erud
 
 - Standalone executable WAR with embedded Jetty
 - RESTful JSON API for your objects secured with Amazon's Signature 4 algorithm
-- Full text search (Elasticsearch)
-- Distributed object cache (Hazelcast)
+- Full text search (Elasticsearch by default)
+- Distributed object cache (Hazelcast by default)
 - Multi-app support, each with its own table, index and cache
 - Flexible security based on Spring Security (Social login, JWT support, CSRF protection, etc.)
 - Simple but effective resource permissions for client access control
 - Robust constraint validation mechanism based on JSR-303 and Hibernate Validator
+- Per-object control of persistence, index and cache operations
 - Support for scalable data stores (Amazon DynamoDB, Apache Cassandra, MongoDB)
 - Modular design powered by Google Guice
-- I18n utilities for translating language packs into different languages
+- I18n utilities for translating language packs and working with currencies
 
 ### Architecture
 

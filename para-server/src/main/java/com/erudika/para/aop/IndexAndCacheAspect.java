@@ -30,6 +30,8 @@ import com.erudika.para.validation.ValidationUtils;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -107,32 +109,36 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					ParaObject addMe = AOPUtils.getArgOfParaObject(args);
 					String[] errors = ValidationUtils.validateObject(addMe);
 					if (errors.length == 0) {
-						result = mi.proceed();
-						search.index(appid, addMe);
-						logger.debug("{}: Indexed {}->{}", cn, appid, addMe.getId());
+						if (addMe.getStored()) {
+							result = mi.proceed();
+						}
+						if (addMe.getIndexed()) {
+							search.index(appid, addMe);
+							logger.debug("{}: Indexed {}->{}", cn, appid, addMe.getId());
+						}
 					} else {
 						logger.warn("{}: Invalid object {}->{} errors: [{}]. Changes weren't persisted.",
 								cn, appid, addMe, String.join("; ", errors));
 					}
 					break;
 				case REMOVE:
-					result = mi.proceed();
+					result = mi.proceed(); // delete from DB even if "isStored = false"
 					ParaObject removeMe = AOPUtils.getArgOfParaObject(args);
-					search.unindex(appid, removeMe);
+					search.unindex(appid, removeMe); // remove from index even if "isIndexed = false"
 					logger.debug("{}: Unindexed {}->{}", cn, appid, (removeMe == null) ? null : removeMe.getId());
 					break;
 				case ADD_ALL:
 					List<ParaObject> addUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
-					removeSpecialClasses(addUs);
+					List<ParaObject> indexUs = removeSpecialClassesNotStored(addUs);
 					result = mi.proceed();
-					search.indexAll(appid, addUs);
+					search.indexAll(appid, indexUs);
 					logger.debug("{}: Indexed all {}->#{}", cn, appid, (addUs == null) ? null : addUs.size());
 					break;
 				case REMOVE_ALL:
 					List<ParaObject> removeUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
 					removeSpecialClasses(removeUs);
-					result = mi.proceed();
-					search.unindexAll(appid, removeUs);
+					result = mi.proceed(); // delete from DB even if "isStored = false"
+					search.unindexAll(appid, removeUs); // remove from index even if "isIndexed = false"
 					logger.debug("{}: Unindexed all {}->#{}", cn, appid, (removeUs == null) ? null : removeUs.size());
 					break;
 				default:
@@ -150,7 +156,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 						if (result == null) {
 							result = mi.proceed();
 						}
-						if (result != null) {
+						if (result != null && ((ParaObject) result).getCached()) {
 							cache.put(appid, getMeId, result);
 							logger.debug("{}: Cache miss: {}->{}", cn, appid, getMeId);
 						}
@@ -158,14 +164,14 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					break;
 				case PUT:
 					ParaObject putMe = AOPUtils.getArgOfParaObject(args);
-					if (putMe != null) {
+					if (putMe != null && putMe.getCached()) {
 						cache.put(appid, putMe.getId(), putMe);
 						logger.debug("{}: Cache put: {}->{}", cn, appid, putMe.getId());
 					}
 					break;
 				case DELETE:
 					ParaObject deleteMe = AOPUtils.getArgOfParaObject(args);
-					if (deleteMe != null) {
+					if (deleteMe != null) { // clear from cache even if "isCached = false"
 						cache.remove(appid, deleteMe.getId());
 						logger.debug("{}: Cache delete: {}->{}", cn, appid, deleteMe.getId());
 					}
@@ -175,14 +181,21 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					if (getUs != null) {
 						Map<String, ParaObject> cached = cache.getAll(appid, getUs);
 						logger.debug("{}: Cache get page: {}->{}", cn, appid, getUs);
-						for (String id : getUs) {
-							if (!cached.containsKey(id)) {
-								if (result == null) {
-									result = mi.proceed();
+						// hit the database if even a single object is missing from cache, then cache it
+						boolean missingFromCache = cached.size() != getUs.size();
+						if (result == null && missingFromCache) {
+							logger.debug("{}: Cache get page reload: {}", cn, appid);
+							result = mi.proceed();
+						}
+						if (result != null && missingFromCache) {
+							for (String id : getUs) {
+								if (!cached.containsKey(id)) {
+									ParaObject obj = ((Map<String, ParaObject>) result).get(id);
+									if (obj != null && obj.getCached()) {
+										cache.put(appid, obj.getId(), obj);
+										logger.debug("{}: Cache miss on readAll: {}->{}", cn, appid, id);
+									}
 								}
-								cache.putAll(appid, (Map<String, ParaObject>) result);
-								logger.debug("{}: Cache get page reload: {}->{}", cn, appid, id);
-								break;
 							}
 						}
 						if (result == null) {
@@ -195,10 +208,14 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					removeSpecialClasses(putUs);
 					if (putUs != null && !putUs.isEmpty()) {
 						Map<String, ParaObject> map1 = new LinkedHashMap<String, ParaObject>(putUs.size());
-						for (ParaObject paraObject : putUs) {
-							map1.put(paraObject.getId(), paraObject);
+						for (ParaObject obj : putUs) {
+							if (obj != null && obj.getCached()) {
+								map1.put(obj.getId(), obj);
+							}
 						}
-						cache.putAll(appid, map1);
+						if (!map1.isEmpty()) {
+							cache.putAll(appid, map1);
+						}
 						logger.debug("{}: Cache put page: {}->{}", cn, appid, map1.keySet());
 					}
 					break;
@@ -210,6 +227,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 						for (ParaObject paraObject : deleteUs) {
 							list.add(paraObject.getId());
 						}
+						// clear from cache even if "isCached = false"
 						cache.removeAll(appid, list);
 						logger.debug("{}: Cache delete page: {}->{}", cn, appid, list);
 					}
@@ -227,6 +245,9 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		return result;
 	}
 
+	// Security feature - it's logical to not allow batch "create" and "delete"
+	// operations on Apps and Users - these are usually created rarely, one at a time.
+	//
 	private void removeSpecialClasses(List<ParaObject> objects) {
 		if (objects != null) {
 			ArrayList<ParaObject> list = new ArrayList<ParaObject>(objects);
@@ -236,5 +257,22 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 				}
 			}
 		}
+	}
+
+	private List<ParaObject> removeSpecialClassesNotStored(List<ParaObject> objects) {
+		if (objects != null) {
+			ArrayList<ParaObject> indexUs = new ArrayList<ParaObject>(objects);
+			for (Iterator<ParaObject> it = indexUs.iterator(); it.hasNext();) {
+				ParaObject obj = it.next();
+				if (obj instanceof User || obj instanceof App || (obj != null && !obj.getStored())) {
+					objects.remove(obj);
+				}
+				if (obj instanceof User || obj instanceof App || (obj != null && !obj.getIndexed())) {
+					it.remove();
+				}
+			}
+			return indexUs;
+		}
+		return Collections.emptyList();
 	}
 }

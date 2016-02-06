@@ -194,6 +194,7 @@ public class AspectsIT {
 		user1.setPassword("123456");
 		Tag t1 = new Tag("testtag123");
 
+		// test that Apps and Users are removed from batch operations
 		ArrayList<ParaObject> list1 = new ArrayList<ParaObject>();
 		list1.add(app1);
 		list1.add(user1);

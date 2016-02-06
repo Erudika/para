@@ -273,7 +273,6 @@ public final class Para {
 	/**
 	 * Returns the {@link URLClassLoader} classloader for Para.
 	 * Used for loading JAR files from 'lib/*.jar'.
-	 * This overrides the Thread.currentClassLoader().
 	 * @return a classloader
 	 */
 	public static ClassLoader getParaClassLoader() {
@@ -285,7 +284,7 @@ public final class Para {
 					jars.add(file.toURI().toURL());
 				}
 				paraClassLoader = new URLClassLoader(jars.toArray(new URL[0]), currentClassLoader);
-				Thread.currentThread().setContextClassLoader(paraClassLoader);
+				// Thread.currentThread().setContextClassLoader(paraClassLoader);
 			} catch (Exception e) {
 				logger.error(null, e);
 			}

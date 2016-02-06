@@ -153,6 +153,45 @@ public interface ParaObject extends Serializable, Linkable, Votable {
 	void setTags(List<String> tags);
 
 	/**
+	 * Boolean flag which controls whether this object is stored
+	 * in the database or not. Default is true.
+	 * @return true if this object is stored in DB.
+	 */
+	Boolean getStored();
+
+	/**
+	 * Sets the "isStored" flag.
+	 * @param isStored when set to true, object is stored in DB.
+	 */
+	void setStored(Boolean isStored);
+
+	/**
+	 * Boolean flat which controls whether this object is indexed
+	 * by the search engine. Default is true.
+	 * @return true if this object is indexed
+	 */
+	Boolean getIndexed();
+
+	/**
+	 * Sets the "isIndexed" flag.
+	 * @param isIndexed when set to true, object is indexed.
+	 */
+	void setIndexed(Boolean isIndexed);
+
+	/**
+	 * Boolean flat which controls whether this object is cached.
+	 * Default is true.
+	 * @return true if this object is cached on update() and create().
+	 */
+	Boolean getCached();
+
+	/**
+	 * Sets the "isCached" flag.
+	 * @param isCached when set to true, object is cached.
+	 */
+	void setCached(Boolean isCached);
+
+	/**
 	 * Stores this object in the data store.
 	 * @return the id of the object (a new id if object is new)
 	 * @see com.erudika.para.annotations.Stored

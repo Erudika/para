@@ -651,6 +651,7 @@ public class Api1 extends ResourceConfig {
 				ParaObject obj = ParaObjectUtils.toObject(type);
 				obj.setType(type);
 				obj.setId(pathParam(Config._ID, ctx));
+				// partial update - equivalent to PATCH method
 				return RestUtils.getUpdateResponse(app, dao.read(app.getAppIdentifier(), obj.getId()),
 						ctx.getEntityStream());
 			}
@@ -660,6 +661,7 @@ public class Api1 extends ResourceConfig {
 	protected final Inflector<ContainerRequestContext, Response> overwriteHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
+				// full update - equivalent to PUT method
 				return RestUtils.getOverwriteResponse(app, pathParam(Config._ID, ctx), type, ctx.getEntityStream());
 			}
 		};

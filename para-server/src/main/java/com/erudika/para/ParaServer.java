@@ -51,9 +51,6 @@ import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.MessageSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
 import org.springframework.boot.builder.ParentContextApplicationContextInitializer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.embedded.AnnotationConfigEmbeddedWebApplicationContext;
@@ -78,7 +75,6 @@ import org.springframework.web.context.WebApplicationContext;
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 @Configuration
-@EnableAutoConfiguration(exclude = { MessageSourceAutoConfiguration.class, MongoAutoConfiguration.class })
 @ComponentScan
 public class ParaServer implements WebApplicationInitializer, Ordered {
 
