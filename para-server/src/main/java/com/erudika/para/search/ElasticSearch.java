@@ -75,6 +75,12 @@ public class ElasticSearch implements Search {
 	private static final Logger logger = LoggerFactory.getLogger(ElasticSearch.class);
 	private DAO dao;
 
+	static {
+		if (!Config.getConfigBoolean("es.lazy_start", true)) {
+			ElasticSearchUtils.getClient();
+		}
+	}
+
 	/**
 	 * Default constructor.
 	 * @param dao an instance of the persistence class

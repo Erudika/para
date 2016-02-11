@@ -45,6 +45,12 @@ public class HazelcastCache implements Cache {
 
 	private static final Logger logger = LoggerFactory.getLogger(HazelcastCache.class);
 
+	static {
+		if (!Config.getConfigBoolean("hc.lazy_start", true)) {
+			HazelcastUtils.getClient();
+		}
+	}
+
 	/**
 	 * No-args constructor
 	 */
