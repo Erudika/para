@@ -281,8 +281,11 @@ public final class Para {
 			try {
 				ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
 				List<URL> jars = new ArrayList<URL>();
-				for (File file : FileUtils.listFiles(new File("lib/"), new String[]{"jar"}, false)) {
-					jars.add(file.toURI().toURL());
+				File lib = new File("lib/");
+				if (lib.exists() && lib.isDirectory()) {
+					for (File file : FileUtils.listFiles(lib, new String[]{"jar"}, false)) {
+						jars.add(file.toURI().toURL());
+					}
 				}
 				paraClassLoader = new URLClassLoader(jars.toArray(new URL[0]), currentClassLoader);
 				// Thread.currentThread().setContextClassLoader(paraClassLoader);
