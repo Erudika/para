@@ -250,7 +250,8 @@ public final class Para {
 	 * @return a loaded list of  ServletContextListener class.
 	 */
 	public static List<CustomResourceHandler> getCustomResourceHandlers() {
-		ServiceLoader<CustomResourceHandler> loader = ServiceLoader.load(CustomResourceHandler.class);
+		ServiceLoader<CustomResourceHandler> loader = ServiceLoader.
+				load(CustomResourceHandler.class, Para.getParaClassLoader());
 		List<CustomResourceHandler> externalResources = new ArrayList<CustomResourceHandler>();
 		for (CustomResourceHandler handler : loader) {
 			if (handler != null) {
@@ -262,7 +263,7 @@ public final class Para {
 	}
 
 	private static List<Module> getExternalModules() {
-		ServiceLoader<Module> moduleLoader = ServiceLoader.load(Module.class);
+		ServiceLoader<Module> moduleLoader = ServiceLoader.load(Module.class, Para.getParaClassLoader());
 		List<Module> externalModules = new ArrayList<Module>();
 		for (Module module : moduleLoader) {
 			externalModules.add(module);
