@@ -244,22 +244,22 @@ public final class ParaClient {
 	}
 
 	private Response invokePost(String resourcePath, Entity<?> entity) {
-		return signer.invokeSignedRequest(getApiClient(), accessKey, key(false), POST,
+		return signer.invokeSignedRequest(getApiClient(), accessKey, key(true), POST,
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
 	private Response invokePut(String resourcePath, Entity<?> entity) {
-		return signer.invokeSignedRequest(getApiClient(), accessKey, key(false), PUT,
+		return signer.invokeSignedRequest(getApiClient(), accessKey, key(true), PUT,
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
 	private Response invokePatch(String resourcePath, Entity<?> entity) {
-		return signer.invokeSignedRequest(getApiClient(), accessKey, key(false), "PATCH",
+		return signer.invokeSignedRequest(getApiClient(), accessKey, key(true), "PATCH",
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
 	private Response invokeDelete(String resourcePath, MultivaluedMap<String, String> params) {
-		return signer.invokeSignedRequest(getApiClient(), accessKey, key(false), DELETE,
+		return signer.invokeSignedRequest(getApiClient(), accessKey, key(true), DELETE,
 				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
 	}
 
