@@ -426,10 +426,9 @@ public final class ParaClient {
 
 	/**
 	 * Deletes multiple objects.
-	 * @param <P> the type of object
 	 * @param keys the ids of the objects to delete
 	 */
-	public <P extends ParaObject> void deleteAll(List<String> keys) {
+	public void deleteAll(List<String> keys) {
 		if (keys == null || keys.isEmpty()) {
 			return;
 		}
@@ -701,7 +700,7 @@ public final class ParaClient {
 		return pager.getCount();
 	}
 
-	private <P extends ParaObject> Map<String, Object> find(String queryType, MultivaluedMap<String, String> params) {
+	private Map<String, Object> find(String queryType, MultivaluedMap<String, String> params) {
 		Map<String, Object> map = new HashMap<String, Object>();
 		if (params != null && !params.isEmpty()) {
 			String qType = StringUtils.isBlank(queryType) ? "" : "/".concat(queryType);
