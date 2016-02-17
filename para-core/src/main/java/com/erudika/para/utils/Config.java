@@ -78,7 +78,7 @@ public final class Config {
 	}
 
 	/** {@value #DEFAULT_LIMIT} */
-	public static final int	DEFAULT_LIMIT = Integer.MAX_VALUE;
+	public static final int	DEFAULT_LIMIT = 10000;
 	/** String separator - default is colon ':'. */
 	public static final String SEPARATOR = getConfigParam("default_separator", ":");
 	/** Facebook prefix - defaults to 'fb:'. */
@@ -100,7 +100,7 @@ public final class Config {
 	/**
 	 * Pagination limit - default is 10 000.
 	 */
-	public static final int MAX_PAGES = getConfigInt("max_pages", 10000);
+	public static final int MAX_PAGES = getConfigInt("max_pages", DEFAULT_LIMIT);
 	/**
 	 * Maximum image size (longest edge) - default is 1024 (pixels).
 	 */
