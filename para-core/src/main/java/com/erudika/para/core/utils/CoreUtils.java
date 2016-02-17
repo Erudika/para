@@ -398,6 +398,7 @@ public final class CoreUtils implements InitializeListener {
 
 	/**
 	 * The parent object.
+	 * @param <P> type of linked objects
 	 * @param obj find the parent of this object
 	 * @return the parent or null if {@code obj.getParentid()} is null
 	 */
@@ -407,9 +408,10 @@ public final class CoreUtils implements InitializeListener {
 
 	/**
 	 * The user object of the creator.
+	 * @param <P> type of linked objects
 	 * @param obj find the creator of this object
 	 * @return the user who created this or null if {@code obj.getCreatorid()} is null
-	 * @see User
+	 * @see com.erudika.para.core.User
 	 */
 	public <P extends ParaObject> P getCreator(ParaObject obj) {
 		return getDao().read(obj.getAppid(), obj.getCreatorid());
