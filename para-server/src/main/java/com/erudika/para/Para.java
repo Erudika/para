@@ -107,7 +107,7 @@ public final class Para {
 						initListener.onInitialize();
 					}
 				}
-
+				logger.info("Instance with id={} initialized.", Config.WORKER_ID);
 			} catch (Exception e) {
 				logger.error(null, e);
 			}

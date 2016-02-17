@@ -215,6 +215,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		application.contextClass(AnnotationConfigEmbeddedWebApplicationContext.class);
 
 		// entry point (WAR)
+		application.profiles(Config.ENVIRONMENT);
 		application.web(true);
 		application.bannerMode(Banner.Mode.OFF);
 		Para.addInitListener(CoreUtils.getInstance());
@@ -248,6 +249,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	protected static void runAsJAR(String[] args, Object... sources) {
 		// entry point (JAR)
 		SpringApplication app = new SpringApplication(sources);
+		app.setAdditionalProfiles(Config.ENVIRONMENT);
 		app.setWebEnvironment(true);
 		app.setBannerMode(Banner.Mode.OFF);
 		Para.addInitListener(CoreUtils.getInstance());
