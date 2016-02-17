@@ -50,6 +50,7 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.builder.ParentContextApplicationContextInitializer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -215,7 +216,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 
 		// entry point (WAR)
 		application.web(true);
-		application.showBanner(false);
+		application.bannerMode(Banner.Mode.OFF);
 		Para.addInitListener(CoreUtils.getInstance());
 		Para.initialize(getCoreModules());
 		// Ensure error pages are registered
@@ -248,7 +249,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		// entry point (JAR)
 		SpringApplication app = new SpringApplication(sources);
 		app.setWebEnvironment(true);
-		app.setShowBanner(false);
+		app.setBannerMode(Banner.Mode.OFF);
 		Para.addInitListener(CoreUtils.getInstance());
 		Para.initialize(getCoreModules());
 		app.run(args);
