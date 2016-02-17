@@ -13,7 +13,7 @@
 
 	<properties>
 		<springSecVer>4.0.3.RELEASE</springSecVer>
-		<hazelcastVer>3.5.5</hazelcastVer>
+		<hazelcastVer>3.6</hazelcastVer>
 	</properties>
 
 	<dependencies>
@@ -78,7 +78,7 @@
 		<dependency>
 			<groupId>org.elasticsearch</groupId>
 			<artifactId>elasticsearch</artifactId>
-			<version>2.1.1</version>
+			<version>2.2.0</version>
 		</dependency>
 		<dependency>
 			<groupId>net.java.dev.jna</groupId>
@@ -137,14 +137,14 @@
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpcore</artifactId>
 			<!-- Skip 4.4 because it causes SSL exceptions with some hostnames-->
-			<version>4.3.3</version>
+			<version>4.4.4</version>
 		</dependency>
 		<dependency>
 			<!-- Skip 4.4 because it causes SSL exceptions with some hostnames-->
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
 			<!-- Skip 4.4 because it causes SSL exceptions with some hostnames-->
-			<version>4.3.6</version>
+			<version>4.5.1</version>
 		</dependency>
 		<dependency>
 			<groupId>javax</groupId>

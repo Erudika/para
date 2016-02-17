@@ -12,7 +12,7 @@
 	<name>para-core</name>
 
 	<properties>
-		<jacksonVer>2.6.5</jacksonVer>
+		<jacksonVer>2.7.0</jacksonVer>
 		<springVer>4.1.9.RELEASE</springVer>
 	</properties>
 
@@ -180,7 +180,7 @@
 		<dependency>
 			<groupId>de.svenkubiak</groupId>
 			<artifactId>jBCrypt</artifactId>
-			<version>0.4</version>
+			<version>0.4.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.spullara.mustache.java</groupId>
