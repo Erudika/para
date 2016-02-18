@@ -56,6 +56,7 @@ public final class HazelcastUtils {
 			}
 			com.hazelcast.config.Config cfg = new com.hazelcast.config.Config();
 			cfg.setInstanceName(getNodeName());
+			cfg.getGroupConfig().setName(Config.CLUSTER_NAME);
 			MapConfig mapcfg = new MapConfig("default");
 			mapcfg.setEvictionPercentage(getEvictionPercentage());
 			mapcfg.setEvictionPolicy(getEvictionPolicy());
