@@ -83,13 +83,13 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 
 	public static Module[] getCoreModules() {
 		return new Module[] {
-			new AOPModule(),
+			new PersistenceModule(),
+			new SearchModule(),
 			new CacheModule(),
+			new AOPModule(),
 			new EmailModule(),
 			new I18nModule(),
-			new PersistenceModule(),
 			new QueueModule(),
-			new SearchModule(),
 			new StorageModule(),
 			new SecurityModule()
 		};

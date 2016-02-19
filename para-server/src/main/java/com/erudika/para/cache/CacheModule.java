@@ -39,7 +39,7 @@ public class CacheModule extends AbstractModule {
 			} else {
 				Cache cachePlugin = loadExternalCache(selectedCache);
 				if (cachePlugin != null) {
-					bind(Cache.class).toInstance(cachePlugin);
+					bind(Cache.class).to(cachePlugin.getClass()).asEagerSingleton();
 				} else {
 					// default fallback
 					bind(Cache.class).to(MockCache.class).asEagerSingleton();

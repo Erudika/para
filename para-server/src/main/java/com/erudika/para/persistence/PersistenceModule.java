@@ -46,7 +46,7 @@ public class PersistenceModule extends AbstractModule {
 				DAO daoPlugin = loadExternalDAO(selectedDAO);
 				if (daoPlugin != null) {
 					// external plugins - MongoDB, Cassandra, xSQL, etc.
-					bind(DAO.class).toInstance(daoPlugin);
+					bind(DAO.class).to(daoPlugin.getClass()).asEagerSingleton();
 				} else {
 					// in-memory DAO - default fallback
 					bind(DAO.class).to(MockDAO.class).asEagerSingleton();

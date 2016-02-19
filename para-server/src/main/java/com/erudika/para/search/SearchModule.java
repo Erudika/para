@@ -39,7 +39,7 @@ public class SearchModule extends AbstractModule {
 			} else {
 				Search searchPlugin = loadExternalSearch(selectedSearch);
 				if (searchPlugin != null) {
-					bind(Search.class).toInstance(searchPlugin);
+					bind(Search.class).to(searchPlugin.getClass()).asEagerSingleton();
 				} else {
 					// default fallback - not implemented!
 					bind(Search.class).to(MockSearch.class).asEagerSingleton();
