@@ -24,15 +24,15 @@ See how Para [compares to other open source back-end frameworks](http://www.erud
 
 - Standalone executable WAR with embedded Jetty
 - RESTful JSON API for your objects secured with Amazon's Signature 4 algorithm
-- Full text search (Elasticsearch by default)
+- Full-text search (Elasticsearch by default)
 - Distributed object cache (Hazelcast by default)
-- Multi-app support, each with its own table, index and cache
+- Multi-tenancy support - each app has its own table, index and cache
 - Flexible security based on Spring Security (Social login, JWT support, CSRF protection, etc.)
 - Simple but effective resource permissions for client access control
 - Robust constraint validation mechanism based on JSR-303 and Hibernate Validator
 - Per-object control of persistence, index and cache operations
-- Support for scalable data stores (Amazon DynamoDB, Apache Cassandra, MongoDB)
-- Modular design powered by Google Guice
+- Designed for scalable data stores (Amazon DynamoDB, Apache Cassandra, MongoDB)
+- Modular design powered by Google Guice and support for plugins
 - I18n utilities for translating language packs and working with currencies
 
 ### Architecture
@@ -49,15 +49,14 @@ See how Para [compares to other open source back-end frameworks](http://www.erud
 |      REST API     |  |     Search      |   |    Cache    |
 +---------+---------+--+--------+--------+---+------+------+
           |                     |                   |
-          |                     |                   |
 +---------+---------+  +--------+--------+   +------+------+
-|  Security and     |  |                 |   |             |
-|  Validation of    |  |  ElasticSearch  +---+ Data Store  |
-|  Signed Requests  |  |                 |   |             |
+|  Validation of    |  |                 |   |             |
+|  Signed Requests  |  |  Search Index   +---+ Data Store  |
+|  and JWT Tokens   |  | (ElasticSearch) |   |             |
 +----+---------^----+  +-----------------+   +-------------+
      |         |
 +----v---------+-------------------------------------------+
-|        Clients : JavaScript, PHP, Java, C#, etc.         |
+|   Clients : JavaScript, PHP, Java, C#, Android, etc.     |
 +----------------------------------------------------------+
 </pre>
 
@@ -69,9 +68,9 @@ See how Para [compares to other open source back-end frameworks](http://www.erud
 
 To get started quickly just [grab the WAR file](https://github.com/Erudika/para/releases) and execute it with:
 
-1. [Download the executable WAR](https://github.com/Erudika/para/releases)
-2. Execute it with `java -jar para-X.Y.Z.war`
-3. Call `curl localhost:8080/v1/_setup` to get the access and secret keys (give it a few seconds to initialize)
+1. [Download the latest executable WAR](https://github.com/Erudika/para/releases)
+2. Execute it with `java -jar para-war-X.Y.Z.war`
+3. Call `curl localhost:8080/v1/_setup` to get the access and secret keys
 4. Start using the API directly or using the provided `ParaClient` class.
 
 ### Building Para
@@ -86,13 +85,12 @@ cd para
 mvn install -DskipTests=true
 ```
 
-
 ### Standalone - executable WAR
 
 You can run Para as a standalone server by downloading the executable WAR and then:
 
 ```sh
-java -jar para-X.Y.Z.war
+java -jar para-war-X.Y.Z.war
 ```
 
 Alternatively, you can grab the WAR file and deploy it to your favorite servlet container.
@@ -110,7 +108,7 @@ Here's the Maven snippet to include in your `pom.xml`:
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para-server</artifactId>
-  <version>1.18.0</version>
+  <version>1.18.1</version>
 </dependency>
 ```
 
@@ -127,7 +125,7 @@ clients for popular languages soon.
 
 ## Wishlist / Roadmap
 
-- `DAO` implementations for popular databases like MongoDB, PostgreSQL, Cassandra, etc.
+- `DAO` implementations for popular databases like [MongoDB](https://github.com/erudika/para-dao-mongodb), PostgreSQL, Cassandra, etc.
 - API clients in Python, iOS.
 - Web API console for developers
 - Integrations with Google App Engine, Heroku, Docker, Vagrant
@@ -149,6 +147,13 @@ mvn validate
 ```
 
 For more information see [CONTRIBUTING.md](https://github.com/Erudika/para/blob/master/CONTRIBUTING.md)
+
+## Hosting
+
+We offer professional hosting and support at [paraio.com](https://paraio.com) where you can try Para online with a
+free developer account. Browse and manage your users and objects, do backups and edit permissions with a few clicks in
+the web console. By upgrading to a premium account you will be able to scale you projects up and down in seconds and
+manage multiple apps.
 
 ## License
 [Apache 2.0](LICENSE)
