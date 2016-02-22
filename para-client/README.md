@@ -4,14 +4,19 @@
 # Java Client for Para
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-client/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-client)
+[![Join the chat at https://gitter.im/Erudika/para](https://badges.gitter.im/Erudika/para.svg)](https://gitter.im/Erudika/para?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## What is this?
 
-This is the Java client for Para. 
+**Para** was designed as a simple and modular back-end framework for object persistence and retrieval.
+It enables your application to store objects directly to a data store (NoSQL) or any relational database (RDBMS)
+and it also automatically indexes those objects and makes them searchable.
 
-### Maven
+This is the Java client for Para.
 
-Here's the Maven snippet to include in your `pom.xml`:
+### Quick start
+
+1. Use Maven and include the client in your `pom.xml`:
 
 ```xml
 <dependency>
@@ -20,6 +25,15 @@ Here's the Maven snippet to include in your `pom.xml`:
   <version>${paraVersion}</version>
 </dependency>
 ```
+
+2. Initialize the client with your access and secret API keys.
+
+```java
+ParaClient client = new ParaClient('ACCESS_KEY', 'SECRET_KEY');
+```
+## Documentation
+
+### [Read the Docs](http://paraio.org/docs)
 
 ## Contributing
 
