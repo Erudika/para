@@ -22,7 +22,6 @@ import com.erudika.para.core.App;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
-import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.nimbusds.jwt.SignedJWT;
 import java.io.IOException;
@@ -58,11 +57,12 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	private AuthenticationManager authenticationManager;
 	private AntPathRequestMatcher authenticationRequestMatcher;
 
-	@Inject private FacebookAuthFilter facebookAuth;
-	@Inject private GoogleAuthFilter googleAuth;
-	@Inject private GitHubAuthFilter githubAuth;
-	@Inject private LinkedInAuthFilter linkedinAuth;
-	@Inject private TwitterAuthFilter twitterAuth;
+	private FacebookAuthFilter facebookAuth;
+	private GoogleAuthFilter googleAuth;
+	private GitHubAuthFilter githubAuth;
+	private LinkedInAuthFilter linkedinAuth;
+	private TwitterAuthFilter twitterAuth;
+	private PasswordAuthFilter passwordAuth;
 
 	/**
 	 * The default filter mapping
@@ -89,6 +89,60 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	@Override
 	public void afterPropertiesSet() {
 		Assert.notNull(authenticationManager, "authenticationManager cannot be null");
+	}
+
+	public FacebookAuthFilter getFacebookAuth() {
+		return facebookAuth;
+	}
+
+	@Inject
+	public void setFacebookAuth(FacebookAuthFilter facebookAuth) {
+		this.facebookAuth = facebookAuth;
+	}
+
+	public GoogleAuthFilter getGoogleAuth() {
+		return googleAuth;
+	}
+
+	@Inject
+	public void setGoogleAuth(GoogleAuthFilter googleAuth) {
+		this.googleAuth = googleAuth;
+	}
+
+	public GitHubAuthFilter getGithubAuth() {
+		return githubAuth;
+	}
+
+	@Inject
+	public void setGithubAuth(GitHubAuthFilter githubAuth) {
+		this.githubAuth = githubAuth;
+	}
+
+	public LinkedInAuthFilter getLinkedinAuth() {
+		return linkedinAuth;
+	}
+
+	@Inject
+	public void setLinkedinAuth(LinkedInAuthFilter linkedinAuth) {
+		this.linkedinAuth = linkedinAuth;
+	}
+
+	public TwitterAuthFilter getTwitterAuth() {
+		return twitterAuth;
+	}
+
+	@Inject
+	public void setTwitterAuth(TwitterAuthFilter twitterAuth) {
+		this.twitterAuth = twitterAuth;
+	}
+
+	public PasswordAuthFilter getPasswordAuth() {
+		return passwordAuth;
+	}
+
+	@Inject
+	public void setPasswordAuth(PasswordAuthFilter passwordAuth) {
+		this.passwordAuth = passwordAuth;
 	}
 
 	@Override
@@ -271,8 +325,9 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 		} else if ("linkedin".equalsIgnoreCase(identityProvider)) {
 			return linkedinAuth.getOrCreateUser(appid, accessToken);
 		} else if ("twitter".equalsIgnoreCase(identityProvider)) {
-			String[] tokens = accessToken.split(Config.SEPARATOR);
-			return twitterAuth.getOrCreateUser(appid, tokens[0], tokens[1]);
+			return twitterAuth.getOrCreateUser(appid, accessToken);
+		} else if ("password".equalsIgnoreCase(identityProvider)) {
+			return passwordAuth.getOrCreateUser(appid, accessToken);
 		}
 		return null;
 	}

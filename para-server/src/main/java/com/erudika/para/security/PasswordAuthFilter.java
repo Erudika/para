@@ -18,6 +18,7 @@
 package com.erudika.para.security;
 
 import com.erudika.para.core.User;
+import com.erudika.para.utils.Config;
 import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -29,7 +30,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
 /**
- *
+ * A filter that handles simple authentication requests with email and password.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
@@ -80,10 +81,45 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 			throw new BadCredentialsException("Bad credentials.");
 		} else if (!user.getActive()) {
 			throw new LockedException("Account is locked.");
-//		} else {
-//			SecurityUtils.setAuthCookie(user, request, response);
 		}
 		return userAuth;
 	}
 
+
+	/**
+	 * Authenticates or creates a {@link User} using an email and password.
+	 * Access token must be in the format: "email:full_name:password" or "email::password_hash"
+	 * @param appid app identifier of the parent app, use null for root app
+	 * @param accessToken token in the format "email:full_name:password" or "email::password_hash"
+	 * @return {@link UserAuthentication} object or null if something went wrong
+	 */
+	public UserAuthentication getOrCreateUser(String appid, String accessToken) {
+		UserAuthentication userAuth = null;
+		if (accessToken != null && accessToken.contains(Config.SEPARATOR)) {
+			String[] parts = accessToken.split(Config.SEPARATOR, 3);
+			String email = parts[0];
+			String name = parts[1];
+			String pass = (parts.length > 2) ? parts[2] : "";
+
+			User u = new User();
+			u.setIdentifier(email);
+			u.setPassword(pass);
+
+			User user = User.readUserForIdentifier(u);
+			if (user == null) {
+				u.setActive(Config.getConfigBoolean("security.allow_unverified_emails", false));
+				u.setName(name);
+				u.setIdentifier(email);
+				u.setEmail(email);
+				u.setPassword(pass);
+				if (u.create() != null) {
+					// allow temporary first-time login without verifying email address
+					userAuth = new UserAuthentication(new AuthenticatedUserDetails(u));
+				}
+			} else if (User.passwordMatches(u)) {
+				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+			}
+		}
+		return userAuth;
+	}
 }

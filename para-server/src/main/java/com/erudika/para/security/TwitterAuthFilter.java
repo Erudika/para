@@ -130,7 +130,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 							oauthToken = pair.substring(12);
 						}
 					}
-					userAuth = getOrCreateUser(null, oauthToken, oauthSecret);
+					userAuth = getOrCreateUser(null, oauthToken + Config.SEPARATOR + oauthSecret);
 				}
 			}
 		}
@@ -148,20 +148,20 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 	/**
 	 * Calls the Twitter API to get the user profile using a given access token.
 	 * @param appid app identifier of the parent app, use null for root app
-	 * @param oauthToken OAuth token
-	 * @param oauthSecret OAuth secret
+	 * @param accessToken token in the format "oauth_token:oauth_secret"
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException ex
 	 */
-	public UserAuthentication getOrCreateUser(String appid, String oauthToken, String oauthSecret) throws IOException {
+	public UserAuthentication getOrCreateUser(String appid, String accessToken) throws IOException {
 		UserAuthentication userAuth = null;
-		if (oauthToken != null && oauthSecret != null) {
+		if (accessToken != null && accessToken.contains(Config.SEPARATOR)) {
+			String[] tokens = accessToken.split(Config.SEPARATOR);
 			User user = new User();
 			user.setAppid(appid);
 			Map<String, String[]> params2 = new HashMap<String, String[]>();
 			HttpGet profileGet = new HttpGet(PROFILE_URL);
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("GET", PROFILE_URL,
-					params2, Config.TWITTER_APP_ID, Config.TWITTER_SECRET, oauthToken, oauthSecret));
+					params2, Config.TWITTER_APP_ID, Config.TWITTER_SECRET, tokens[0], tokens[1]));
 			CloseableHttpResponse resp3 = httpclient.execute(profileGet);
 
 			if (resp3.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {

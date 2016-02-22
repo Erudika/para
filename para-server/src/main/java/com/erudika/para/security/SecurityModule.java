@@ -17,8 +17,10 @@
  */
 package com.erudika.para.security;
 
+import com.erudika.para.cache.Cache;
 import com.erudika.para.utils.Config;
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import java.util.Collections;
 import java.util.Map;
 import org.openid4java.consumer.ConsumerException;
@@ -46,24 +48,13 @@ public class SecurityModule extends AbstractModule {
 	private JWTRestfulAuthFilter jwtFilter;
 
 	protected void configure() {
-		bind(CachedCsrfTokenRepository.class).toInstance(getCsrfTokenRepository());
-		bind(SimpleAuthenticationSuccessHandler.class).toInstance(getSuccessHandler());
-		bind(SimpleAuthenticationFailureHandler.class).toInstance(getFailureHandler());
-		bind(SimpleRememberMeServices.class).toInstance(getRemembeMeServices());
-		bind(PasswordAuthFilter.class).toInstance(getPasswordFilter());
-		bind(OpenIDAuthFilter.class).toInstance(getOpenIDFilter());
-		bind(FacebookAuthFilter.class).toInstance(getFacebookFilter());
-		bind(GoogleAuthFilter.class).toInstance(getGoogleFilter());
-		bind(LinkedInAuthFilter.class).toInstance(getLinkedinFilter());
-		bind(TwitterAuthFilter.class).toInstance(getTwitterFilter());
-		bind(GitHubAuthFilter.class).toInstance(getGithubFilter());
-		bind(JWTRestfulAuthFilter.class).toInstance(getJWTAuthFilter());
 	}
 
-	public CachedCsrfTokenRepository getCsrfTokenRepository() {
+	@Provides
+	public CachedCsrfTokenRepository getCsrfTokenRepository(Cache cache) {
 		if (csrfTokenRepository == null) {
 			csrfTokenRepository = new CachedCsrfTokenRepository();
-			requestInjection(csrfTokenRepository);
+			csrfTokenRepository.setCache(cache);
 		}
 		return csrfTokenRepository;
 	}
@@ -72,6 +63,7 @@ public class SecurityModule extends AbstractModule {
 		this.csrfTokenRepository = csrfTokenRepository;
 	}
 
+	@Provides
 	public SimpleAuthenticationSuccessHandler getSuccessHandler() {
 		if (successHandler == null) {
 			successHandler = new SimpleAuthenticationSuccessHandler();
@@ -86,6 +78,7 @@ public class SecurityModule extends AbstractModule {
 		this.successHandler = successHandler;
 	}
 
+	@Provides
 	public SimpleAuthenticationFailureHandler getFailureHandler() {
 		if (failureHandler == null) {
 			failureHandler = new SimpleAuthenticationFailureHandler();
@@ -98,6 +91,7 @@ public class SecurityModule extends AbstractModule {
 		this.failureHandler = failureHandler;
 	}
 
+	@Provides
 	public SimpleRememberMeServices getRemembeMeServices() {
 		if (rememberMeServices == null) {
 			rememberMeServices = new SimpleRememberMeServices(Config.APP_SECRET_KEY, new SimpleUserService());
@@ -114,7 +108,7 @@ public class SecurityModule extends AbstractModule {
 		this.rememberMeServices = rememberMeServices;
 	}
 
-
+	@Provides
 	public PasswordAuthFilter getPasswordFilter() {
 		if (passwordFilter == null) {
 			passwordFilter = new PasswordAuthFilter("/" + PasswordAuthFilter.PASSWORD_ACTION);
@@ -129,6 +123,7 @@ public class SecurityModule extends AbstractModule {
 		this.passwordFilter = passwordFilter;
 	}
 
+	@Provides
 	public OpenIDAuthFilter getOpenIDFilter() {
 		if (openidFilter == null) {
 			openidFilter = new OpenIDAuthFilter("/" + OpenIDAuthFilter.OPENID_ACTION);
@@ -149,7 +144,7 @@ public class SecurityModule extends AbstractModule {
 		this.openidFilter = openidFilter;
 	}
 
-
+	@Provides
 	public FacebookAuthFilter getFacebookFilter() {
 		if (facebookFilter == null) {
 			facebookFilter = new FacebookAuthFilter("/" + FacebookAuthFilter.FACEBOOK_ACTION);
@@ -164,6 +159,7 @@ public class SecurityModule extends AbstractModule {
 		this.facebookFilter = facebookFilter;
 	}
 
+	@Provides
 	public GoogleAuthFilter getGoogleFilter() {
 		if (googleFilter == null) {
 			googleFilter = new GoogleAuthFilter("/" + GoogleAuthFilter.GOOGLE_ACTION);
@@ -178,6 +174,7 @@ public class SecurityModule extends AbstractModule {
 		this.googleFilter = googleFilter;
 	}
 
+	@Provides
 	public LinkedInAuthFilter getLinkedinFilter() {
 		if (linkedinFilter == null) {
 			linkedinFilter = new LinkedInAuthFilter("/" + LinkedInAuthFilter.LINKEDIN_ACTION);
@@ -192,7 +189,7 @@ public class SecurityModule extends AbstractModule {
 		this.linkedinFilter = linkedinFilter;
 	}
 
-
+	@Provides
 	public TwitterAuthFilter getTwitterFilter() {
 		if (twitterFilter == null) {
 			twitterFilter = new TwitterAuthFilter("/" + TwitterAuthFilter.TWITTER_ACTION);
@@ -207,6 +204,7 @@ public class SecurityModule extends AbstractModule {
 		this.twitterFilter = twitterFilter;
 	}
 
+	@Provides
 	public GitHubAuthFilter getGithubFilter() {
 		if (githubFilter == null) {
 			githubFilter = new GitHubAuthFilter("/" + GitHubAuthFilter.GITHUB_ACTION);
@@ -221,10 +219,17 @@ public class SecurityModule extends AbstractModule {
 		this.githubFilter = githubFilter;
 	}
 
-	public JWTRestfulAuthFilter getJWTAuthFilter() {
+	@Provides
+	public JWTRestfulAuthFilter getJWTAuthFilter(FacebookAuthFilter fbAuth, GoogleAuthFilter gpAuth,
+			GitHubAuthFilter ghAuth, LinkedInAuthFilter liAuth, TwitterAuthFilter twAuth, PasswordAuthFilter pwAuth) {
 		if (jwtFilter == null) {
 			jwtFilter = new JWTRestfulAuthFilter("/" + JWTRestfulAuthFilter.JWT_ACTION);
-			requestInjection(jwtFilter);
+			jwtFilter.setFacebookAuth(fbAuth);
+			jwtFilter.setGoogleAuth(gpAuth);
+			jwtFilter.setGithubAuth(ghAuth);
+			jwtFilter.setLinkedinAuth(liAuth);
+			jwtFilter.setTwitterAuth(twAuth);
+			jwtFilter.setPasswordAuth(pwAuth);
 		}
 		return jwtFilter;
 	}
