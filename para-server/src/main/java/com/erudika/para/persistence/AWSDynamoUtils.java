@@ -224,13 +224,18 @@ public final class AWSDynamoUtils {
 	 * @return a list of DynamoDB tables
 	 */
 	public static List<String> listAllTables() {
-		ListTablesResult ltr = getClient().listTables(100);
+		int items = 10;
+		ListTablesResult ltr = getClient().listTables(items);
 		List<String> tables = new LinkedList<String>();
 		String lastKey;
 		do {
 			tables.addAll(ltr.getTableNames());
 			lastKey = ltr.getLastEvaluatedTableName();
-		} while (!(ltr = getClient().listTables(lastKey, 100)).getTableNames().isEmpty());
+			logger.info("Found {} tables. Total found: {}.", ltr.getTableNames().size(), tables.size());
+			if (lastKey == null) {
+				break;
+			}
+		} while (!(ltr = getClient().listTables(lastKey, items)).getTableNames().isEmpty());
 		return tables;
 	}
 
