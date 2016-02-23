@@ -66,17 +66,26 @@ public class HazelcastCache implements Cache {
 		if (StringUtils.isBlank(id) || StringUtils.isBlank(appid)) {
 			return false;
 		}
-		return client().getMap(appid).containsKey(id);
+		try {
+			return client().getMap(appid).containsKey(id);
+		} catch (Exception e) {
+			logger.error(null, e);
+			return false;
+		}
 	}
 
 	@Override
 	public <T> void put(String appid, String id, T object) {
 		if (!StringUtils.isBlank(id) && object != null && !StringUtils.isBlank(appid)) {
 			logger.debug("Cache.put() {} {}", appid, id);
-			if (isAsyncEnabled()) {
-				client().getMap(appid).putAsync(id, object);
-			} else {
-				client().getMap(appid).put(id, object);
+			try {
+				if (isAsyncEnabled()) {
+					client().getMap(appid).putAsync(id, object);
+				} else {
+					client().getMap(appid).put(id, object);
+				}
+			} catch (Exception e) {
+				logger.error(null, e);
 			}
 		}
 	}
@@ -85,10 +94,14 @@ public class HazelcastCache implements Cache {
 	public <T> void put(String appid, String id, T object, Long ttlSeconds) {
 		if (!StringUtils.isBlank(id) && object != null && !StringUtils.isBlank(appid)) {
 			logger.debug("Cache.put() {} {} ttl {}", appid, id, ttlSeconds);
-			if (isAsyncEnabled()) {
-				client().getMap(appid).putAsync(id, object, ttlSeconds, TimeUnit.SECONDS);
-			} else {
-				client().getMap(appid).put(id, object, ttlSeconds, TimeUnit.SECONDS);
+			try {
+				if (isAsyncEnabled()) {
+					client().getMap(appid).putAsync(id, object, ttlSeconds, TimeUnit.SECONDS);
+				} else {
+					client().getMap(appid).put(id, object, ttlSeconds, TimeUnit.SECONDS);
+				}
+			} catch (Exception e) {
+				logger.error(null, e);
 			}
 		}
 	}
@@ -102,8 +115,12 @@ public class HazelcastCache implements Cache {
 					cleanMap.put(entry.getKey(), entry.getValue());
 				}
 			}
-			logger.debug("Cache.putAll() {} {}", appid, objects.size());
-			client().getMap(appid).putAll(cleanMap);
+			try {
+				logger.debug("Cache.putAll() {} {}", appid, objects.size());
+				client().getMap(appid).putAll(cleanMap);
+			} catch (Exception e) {
+				logger.error(null, e);
+			}
 		}
 	}
 
@@ -112,10 +129,15 @@ public class HazelcastCache implements Cache {
 		if (StringUtils.isBlank(id) || StringUtils.isBlank(appid)) {
 			return null;
 		}
-		Map<String, T> map = client().getMap(appid);
-		T obj = map.get(id);
-		logger.debug("Cache.get() {} {}", appid, (obj == null) ? null : id);
-		return obj;
+		try {
+			Map<String, T> map = client().getMap(appid);
+			T obj = map.get(id);
+			logger.debug("Cache.get() {} {}", appid, (obj == null) ? null : id);
+			return obj;
+		} catch (Exception e) {
+			logger.error(null, e);
+			return null;
+		}
 	}
 
 	@Override
@@ -125,43 +147,59 @@ public class HazelcastCache implements Cache {
 		}
 		Map<String, T> result = new LinkedHashMap<String, T>(ids.size(), 0.75f, true);
 		ids.remove(null);
-		IMap<String, T> imap = client().getMap(appid);
-		Map<String, T> res = imap.getAll(new TreeSet<String>(ids));
-		for (String id : ids) {
-			if (res.containsKey(id)) {
-				result.put(id, res.get(id));
+		try {
+			IMap<String, T> imap = client().getMap(appid);
+			Map<String, T> res = imap.getAll(new TreeSet<String>(ids));
+			for (String id : ids) {
+				if (res.containsKey(id)) {
+					result.put(id, res.get(id));
+				}
 			}
+			logger.debug("Cache.getAll() {} {}", appid, ids.size());
+		} catch (Exception e) {
+			logger.error(null, e);
 		}
-		logger.debug("Cache.getAll() {} {}", appid, ids.size());
 		return result;
 	}
 
 	@Override
 	public void remove(String appid, String id) {
 		if (!StringUtils.isBlank(id) && !StringUtils.isBlank(appid)) {
-			logger.debug("Cache.remove() {} {}", appid, id);
-			client().getMap(appid).delete(id);
+			try {
+				logger.debug("Cache.remove() {} {}", appid, id);
+				client().getMap(appid).delete(id);
+			} catch (Exception e) {
+				logger.error(null, e);
+			}
 		}
 	}
 
 	@Override
 	public void removeAll(String appid) {
 		if (!StringUtils.isBlank(appid)) {
-			logger.debug("Cache.removeAll() {}", appid);
-			client().getMap(appid).clear();
+			try {
+				logger.debug("Cache.removeAll() {}", appid);
+				client().getMap(appid).clear();
+			} catch (Exception e) {
+				logger.error(null, e);
+			}
 		}
 	}
 
 	@Override
 	public void removeAll(String appid, List<String> ids) {
 		if (ids != null && !StringUtils.isBlank(appid)) {
-			IMap<?,?> map = client().getMap(appid);
-			for (String id : ids) {
-				if (!StringUtils.isBlank(id)) {
-					map.delete(id);
+			try {
+				IMap<?,?> map = client().getMap(appid);
+				for (String id : ids) {
+					if (!StringUtils.isBlank(id)) {
+						map.delete(id);
+					}
 				}
+				logger.debug("Cache.removeAll() {} {}", appid, ids.size());
+			} catch (Exception e) {
+				logger.error(null, e);
 			}
-			logger.debug("Cache.removeAll() {} {}", appid, ids.size());
 		}
 	}
 
