@@ -195,7 +195,7 @@ public class AWSDynamoDAO implements DAO {
 	}
 
 	/////////////////////////////////////////////
-	//				READ ALL FUNCTIONS
+	//				BATCH FUNCTIONS
 	/////////////////////////////////////////////
 
 	@Override
@@ -245,7 +245,7 @@ public class AWSDynamoDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> List<P> readPage(String appid, Pager pager) {
-		List<P> results = new LinkedList<P>();
+		LinkedList<P> results = new LinkedList<P>();
 		if (StringUtils.isBlank(appid)) {
 			return results;
 		}
@@ -276,9 +276,11 @@ public class AWSDynamoDAO implements DAO {
 			lastKeyEvaluated = result.getLastEvaluatedKey();
 			if (lastKeyEvaluated != null) {
 				pager.setLastKey(lastKeyEvaluated.get(Config._KEY).getS());
-			} else {
-				pager.setLastKey(null);
+			} else if (!results.isEmpty()) {
+				// set last key to be equal to the last result - end reached.
+				pager.setLastKey(results.peekLast().getId());
 			}
+			pager.setCount(pager.getCount() + results.size());
 		} catch (Exception e) {
 			logger.error(null, e);
 		}

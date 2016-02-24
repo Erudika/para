@@ -23,8 +23,11 @@ import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.search.Search;
+import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import org.junit.After;
 import static org.junit.Assert.*;
@@ -42,6 +45,7 @@ public abstract class DAOTest {
 	protected static DAO dao;
 	protected static String appid1 = "testapp1";
 	protected static String appid2 = "testapp2";
+	protected static String appid3 = "testapp3";
 
 	private User u;
 	private Tag t;
@@ -98,6 +102,19 @@ public abstract class DAOTest {
 		assertNotNull(dao.read(appid2, t.getId()));
 		assertNull(dao.read(t.getId()));
 		assertNull(dao.read(appid1, t.getId()));
+
+		App app = new App("testappid");
+		app.setName("testappid");
+		app.setShared(false);
+		app.create();
+		App app2 = new App("testappid");
+		assertTrue(app2.exists());
+
+		Tag tag = new Tag("testtagid");
+		tag.setCount(10);
+		tag.create();
+		Tag tag2 = new Tag("testtagid");
+		assertTrue(tag2.exists());
 	}
 
 	@Test
@@ -111,7 +128,9 @@ public abstract class DAOTest {
 	@Test
 	public void testUpdate() {
 		u.setName("Test Name");
+		assertEquals(Utils.type(User.class), u.getType());
 		dao.update(u);
+		assertNotNull(u.getId());
 		User x = dao.read(u.getId());
 		assertEquals(u.getName(), x.getName());
 		assertNotNull(x.getUpdated());
@@ -201,7 +220,7 @@ public abstract class DAOTest {
 		assertNotNull(tr1);
 		assertNotNull(tr2);
 		assertNotNull(tr3);
-		
+
 		assertEquals(t1.getId(), tr1.getId());
 		assertEquals(t2.getId(), tr2.getId());
 		assertEquals(t3.getId(), tr3.getId());
@@ -237,6 +256,23 @@ public abstract class DAOTest {
 
 	@Test
 	public void testReadPage() {
-		// TODO
+		ArrayList<Sysprop> list = new ArrayList<Sysprop>();
+		for (int i = 0; i < 22; i++) {
+			Sysprop s = new Sysprop("id_" + i);
+			s.addProperty("prop" + i, i);
+			list.add(s);
+		}
+		dao.createAll(appid3, list);
+
+		Pager p = new Pager(10);
+		assertTrue(dao.readPage(null, null).isEmpty());
+		assertFalse(dao.readPage(appid3, null).isEmpty());
+		assertEquals(10, dao.readPage(appid3, p).size()); // page 1
+		assertEquals(10, dao.readPage(appid3, p).size()); // page 2
+		assertEquals(2, dao.readPage(appid3, p).size());  // page 3
+		List<?> l = dao.readPage(appid3, p);
+		assertTrue(l.isEmpty());  // end
+		System.out.println(">> " + l);
+		assertEquals(22, p.getCount());
 	}
 }

@@ -27,6 +27,7 @@ import com.erudika.para.utils.Utils;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
@@ -163,8 +164,36 @@ public class IndexBasedDAO implements DAO {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> readPage(String appid, Pager pager) {
-		return Collections.emptyList();
+		List<P> results = new LinkedList<P>();
+		if (StringUtils.isBlank(appid)) {
+			return results;
+		}
+		if (pager == null) {
+			pager = new Pager();
+		}
+		if (pager.getCount() >= getMap(appid).size()) {
+			return results;
+		}
+
+		String lastKey = pager.getLastKey();
+		boolean found = false;
+		int	i = 0;
+		for (String key : getMap(appid).keySet()) {
+			if (lastKey != null && !found) {
+				found = key.equals(lastKey);
+			} else {
+				results.add((P) getMap(appid).get(key));
+				i++;
+			}
+			if (i >= pager.getLimit()) {
+				pager.setLastKey(key);
+				break;
+			}
+		}
+		pager.setCount(pager.getCount() + i);
+		return results;
 	}
 
 	@Override

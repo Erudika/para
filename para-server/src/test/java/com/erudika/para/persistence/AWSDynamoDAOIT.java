@@ -36,6 +36,7 @@ public class AWSDynamoDAOIT extends DAOTest {
 		AWSDynamoUtils.createTable(Config.APP_NAME_NS);
 		AWSDynamoUtils.createTable(appid1);
 		AWSDynamoUtils.createTable(appid2);
+		AWSDynamoUtils.createTable(appid3);
 	}
 
 	@AfterClass
@@ -43,6 +44,7 @@ public class AWSDynamoDAOIT extends DAOTest {
 		AWSDynamoUtils.deleteTable(Config.APP_NAME_NS);
 		AWSDynamoUtils.deleteTable(appid1);
 		AWSDynamoUtils.deleteTable(appid2);
+		AWSDynamoUtils.deleteTable(appid3);
 		AWSDynamoUtils.shutdownClient();
 	}
 
