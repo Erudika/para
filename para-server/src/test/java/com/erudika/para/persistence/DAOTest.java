@@ -27,7 +27,6 @@ import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import org.junit.After;
 import static org.junit.Assert.*;
@@ -270,9 +269,7 @@ public abstract class DAOTest {
 		assertEquals(10, dao.readPage(appid3, p).size()); // page 1
 		assertEquals(10, dao.readPage(appid3, p).size()); // page 2
 		assertEquals(2, dao.readPage(appid3, p).size());  // page 3
-		List<?> l = dao.readPage(appid3, p);
-		assertTrue(l.isEmpty());  // end
-		System.out.println(">> " + l);
+		assertTrue(dao.readPage(appid3, p).isEmpty());  // end
 		assertEquals(22, p.getCount());
 	}
 }
