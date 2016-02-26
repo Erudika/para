@@ -410,16 +410,17 @@ public class ElasticSearch implements Search {
 		}
 		ArrayList<P> results = new ArrayList<P>(hits.getHits().length);
 		ArrayList<String> keys = new ArrayList<String>(hits.getHits().length);
+		boolean readFromIndex = Config.getConfigBoolean("read_from_index", false);
 		try {
 			for (SearchHit hit : hits) {
 				keys.add(hit.getId());
-				if (Config.READ_FROM_INDEX) {
+				if (readFromIndex) {
 					P pobj = ParaObjectUtils.setAnnotatedFields(hit.getSource());
 					results.add(pobj);
 				}
 			}
 
-			if (!Config.READ_FROM_INDEX && !keys.isEmpty()) {
+			if (!readFromIndex && !keys.isEmpty()) {
 				Map<String, P> fromDB = dao.readAll(appid, keys, true);
 				if (!fromDB.isEmpty()) {
 					results.addAll(fromDB.values());
@@ -427,17 +428,16 @@ public class ElasticSearch implements Search {
 			}
 
 			int	sizeBefore = results.size();
+			ArrayList<String> nullz = new ArrayList<String>();
+			for (int i = 0; i < results.size(); i++) {
+				if (results.get(i) == null) {
+					nullz.add(keys.get(i));
+				}
+			}
 			results.removeAll(Collections.singleton(null));
 			int	sizeAfter = results.size();
 
 			if (sizeBefore > (sizeAfter + 1)) {
-				ArrayList<String> nullz = new ArrayList<String>();
-				for (int i = 0; i < results.size(); i++) {
-					P obj = results.get(i);
-					if (obj == null) {
-						nullz.add(keys.get(i));
-					}
-				}
 				logger.warn("Found {} objects that are indexed but no longer exist in the database. Ids: {}",
 						sizeBefore - sizeAfter, nullz);
 			}

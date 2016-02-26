@@ -224,7 +224,7 @@ public final class AWSDynamoUtils {
 	 * @return a list of DynamoDB tables
 	 */
 	public static List<String> listAllTables() {
-		int items = 10;
+		int items = 100;
 		ListTablesResult ltr = getClient().listTables(items);
 		List<String> tables = new LinkedList<String>();
 		String lastKey;

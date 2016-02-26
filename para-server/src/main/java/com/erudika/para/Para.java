@@ -38,6 +38,8 @@ import java.util.ServiceLoader;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -69,6 +71,7 @@ public final class Para {
 	private static final List<DestroyListener> destroyListeners = new ArrayList<DestroyListener>();
 	private static final List<InitializeListener> initListeners = new ArrayList<InitializeListener>();
 	private static final ExecutorService exec = Executors.newFixedThreadPool(Config.EXECUTOR_THREADS);
+	private static final ScheduledExecutorService execAt = Executors.newScheduledThreadPool(Config.EXECUTOR_THREADS);
 	private static Injector injector;
 	private static ClassLoader paraClassLoader;
 
@@ -132,6 +135,10 @@ public final class Para {
 			if (!exec.isShutdown()) {
 				exec.shutdown();
 				exec.awaitTermination(60, TimeUnit.SECONDS);
+			}
+			if (!execAt.isShutdown()) {
+				execAt.shutdown();
+				execAt.awaitTermination(60, TimeUnit.SECONDS);
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -225,6 +232,14 @@ public final class Para {
 	}
 
 	/**
+	 * Returns the Para scheduled executor service
+	 * @return a scheduled executor service
+	 */
+	public static ScheduledExecutorService getScheduledExecutorService() {
+		return execAt;
+	}
+
+	/**
 	 * Executes a {@link java.lang.Runnable} asynchronously
 	 * @param runnable a task
 	 */
@@ -241,6 +256,25 @@ public final class Para {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Executes a {@link java.lang.Runnable} at a fixed interval, asynchronously
+	 * @param task a task
+	 * @param delay run after
+	 * @param interval run at this interval of time
+	 * @param t time unit
+	 * @return a Future
+	 */
+	public static ScheduledFuture<?> asyncExecutePeriodically(Runnable task, long delay, long interval, TimeUnit t) {
+		if (task != null) {
+			try {
+				return Para.getScheduledExecutorService().scheduleAtFixedRate(task, delay, interval, t);
+			} catch (RejectedExecutionException ex) {
+				logger.warn(ex.getMessage());
+			}
+		}
+		return null;
 	}
 
 	/**

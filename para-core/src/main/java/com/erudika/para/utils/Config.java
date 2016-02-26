@@ -266,10 +266,6 @@ public final class Config {
 	 */
 	public static final boolean GZIP_ENABLED = Boolean.parseBoolean(getConfigParam("gzip_enabled", "false"));
 	/**
-	 * Read objects from index, not the data store. This WILL override the cache! Default: false
-	 */
-	public static final boolean READ_FROM_INDEX = Boolean.parseBoolean(getConfigParam("read_from_index", "true"));
-	/**
 	 * Production environment flag.
 	 */
 	public static final boolean IN_PRODUCTION = ENVIRONMENT.equals("production");
