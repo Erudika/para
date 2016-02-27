@@ -137,13 +137,13 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 						// do not remove this line - breaks tests
 						addUs.addAll(removedObjects); // don't delete!
 					}
-					logger.debug("{}: Indexed all {}->#{}", cn, appid, (indexUs == null) ? null : indexUs.size());
+					logger.debug("{}: Indexed all {}->{}", cn, appid, (indexUs == null) ? null : indexUs.size());
 					break;
 				case REMOVE_ALL:
 					List<ParaObject> removeUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
 					result = mi.proceed(); // delete from DB even if "isStored = false"
 					search.unindexAll(appid, removeUs); // remove from index even if "isIndexed = false"
-					logger.debug("{}: Unindexed all {}->#{}", cn, appid, (removeUs == null) ? null : removeUs.size());
+					logger.debug("{}: Unindexed all {}->{}", cn, appid, (removeUs == null) ? null : removeUs.size());
 					break;
 				default:
 					break;
@@ -184,20 +184,21 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					List<String> getUs = AOPUtils.getArgOfListOfType(args, String.class);
 					if (getUs != null) {
 						Map<String, ParaObject> cached = cache.getAll(appid, getUs);
-						logger.debug("{}: Cache get page: {}->{}", cn, appid, getUs);
+						logger.debug("{}: Cache getAll(): {}->{}", cn, appid, getUs);
 						// hit the database if even a single object is missing from cache, then cache it
-						boolean missingFromCache = cached.size() != getUs.size();
+						boolean missingFromCache = cached.size() < getUs.size();
 						if (result == null && missingFromCache) {
-							logger.debug("{}: Cache get page reload: {}", cn, appid);
+							logger.debug("{}: Cache getAll() will read from DB: {}", cn, appid);
 							result = mi.proceed();
-						}
-						if (result != null && missingFromCache) {
-							for (String id : getUs) {
-								if (!cached.containsKey(id)) {
-									ParaObject obj = ((Map<String, ParaObject>) result).get(id);
-									if (obj != null && obj.getCached()) {
-										cache.put(appid, obj.getId(), obj);
-										logger.debug("{}: Cache miss on readAll: {}->{}", cn, appid, id);
+							if (result != null) {
+								for (String id : getUs) {
+									logger.debug("{}: Cache getAll() got from DB: {}", cn, id);
+									if (!cached.containsKey(id)) {
+										ParaObject obj = ((Map<String, ParaObject>) result).get(id);
+										if (obj != null && obj.getCached()) {
+											cache.put(appid, obj.getId(), obj);
+											logger.debug("{}: Cache miss on readAll: {}->{}", cn, appid, id);
+										}
 									}
 								}
 							}

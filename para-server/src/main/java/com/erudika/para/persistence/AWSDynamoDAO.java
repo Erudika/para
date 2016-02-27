@@ -59,6 +59,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.erudika.para.persistence.AWSDynamoUtils.*;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * An implementation of the {@link DAO} interface using AWS DynamoDB as a data store.
@@ -97,7 +99,7 @@ public class AWSDynamoDAO implements DAO {
 		}
 		so.setAppid(appid);
 		createRow(so.getId(), appid, toRow(so, null));
-		logger.debug("DAO.create() {}", so.getId());
+		logger.debug("DAO.create() {}->{}", appid, so.getId());
 		return so.getId();
 	}
 
@@ -107,7 +109,7 @@ public class AWSDynamoDAO implements DAO {
 			return null;
 		}
 		P so = fromRow(readRow(key, appid));
-		logger.debug("DAO.read() {} -> {}", key, so == null ? null : so.getType());
+		logger.debug("DAO.read() {}->{}", appid, key);
 		return so != null ? so : null;
 	}
 
@@ -116,7 +118,7 @@ public class AWSDynamoDAO implements DAO {
 		if (so != null && so.getId() != null) {
 			so.setUpdated(Utils.timestamp());
 			updateRow(so.getId(), appid, toRow(so, Locked.class));
-			logger.debug("DAO.update() {}", so.getId());
+			logger.debug("DAO.update() {}->{}", appid, so.getId());
 		}
 	}
 
@@ -124,7 +126,7 @@ public class AWSDynamoDAO implements DAO {
 	public <P extends ParaObject> void delete(String appid, P so) {
 		if (so != null && so.getId() != null) {
 			deleteRow(so.getId(), appid);
-			logger.debug("DAO.delete() {}", so.getId());
+			logger.debug("DAO.delete() {}->{}", appid, so.getId());
 		}
 	}
 
@@ -201,7 +203,7 @@ public class AWSDynamoDAO implements DAO {
 	@Override
 	public <P extends ParaObject> void createAll(String appid, List<P> objects) {
 		writeAll(appid, objects, false);
-		logger.debug("DAO.createAll() {}", (objects == null) ? 0 : objects.size());
+		logger.debug("DAO.createAll() {}->{}", appid, (objects == null) ? 0 : objects.size());
 	}
 
 	@Override
@@ -210,36 +212,46 @@ public class AWSDynamoDAO implements DAO {
 			return new LinkedHashMap<String, P>();
 		}
 
-		Map<String, P> results = new LinkedHashMap<String, P>(keys.size(), 0.75f, true);
+		// DynamoDB doesn't allow duplicate keys in batch requests
+		Set<String> keySet = new TreeSet<String>(keys);
+		if (keySet.size() < keys.size() && !keySet.isEmpty()) {
+			logger.debug("Duplicate keys found - readAll({})", keys);
+		}
+
+		Map<String, P> results = new LinkedHashMap<String, P>(keySet.size(), 0.75f, true);
 		ArrayList<Map<String, AttributeValue>> keyz = new ArrayList<Map<String, AttributeValue>>(MAX_KEYS_PER_READ);
 
-		int batchSteps = 1;
-		if ((keys.size() > MAX_KEYS_PER_READ)) {
-			batchSteps = (keys.size() / MAX_KEYS_PER_READ)
-					+ ((keys.size() % MAX_KEYS_PER_READ > 0) ? 1 : 0);
-		}
-
-		Iterator<String> it = keys.iterator();
-		int j = 0;
-
-		for (int i = 0; i < batchSteps; i++) {
-			while (it.hasNext() && j < MAX_KEYS_PER_READ) {
-				String key = it.next();
-				results.put(key, null);
-				keyz.add(Collections.singletonMap(Config._KEY, new AttributeValue(key)));
-				j++;
+		try {
+			int batchSteps = 1;
+			if ((keySet.size() > MAX_KEYS_PER_READ)) {
+				batchSteps = (keySet.size() / MAX_KEYS_PER_READ)
+						+ ((keySet.size() % MAX_KEYS_PER_READ > 0) ? 1 : 0);
 			}
 
-			KeysAndAttributes kna = new KeysAndAttributes().withKeys(keyz);
-			if (!getAllColumns) {
-				kna.setAttributesToGet(Arrays.asList(Config._KEY, Config._TYPE));
-			}
+			Iterator<String> it = keySet.iterator();
+			int j = 0;
 
-			batchGet(Collections.singletonMap(getTableNameForAppid(appid), kna), results);
-			keyz.clear();
-			j = 0;
+			for (int i = 0; i < batchSteps; i++) {
+				while (it.hasNext() && j < MAX_KEYS_PER_READ) {
+					String key = it.next();
+					results.put(key, null);
+					keyz.add(Collections.singletonMap(Config._KEY, new AttributeValue(key)));
+					j++;
+				}
+
+				KeysAndAttributes kna = new KeysAndAttributes().withKeys(keyz);
+				if (!getAllColumns) {
+					kna.setAttributesToGet(Arrays.asList(Config._KEY, Config._TYPE));
+				}
+
+				batchGet(Collections.singletonMap(getTableNameForAppid(appid), kna), results);
+				keyz.clear();
+				j = 0;
+			}
+			logger.debug("DAO.readAll({}) {}", keySet, results.size());
+		} catch (Exception e) {
+			logger.error("Failed to readAll({}), {}", keys, e);
 		}
-		logger.debug("DAO.readAll() {}", results.size());
 		return results;
 	}
 

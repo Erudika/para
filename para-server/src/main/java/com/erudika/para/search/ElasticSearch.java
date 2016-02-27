@@ -17,7 +17,6 @@
  */
 package com.erudika.para.search;
 
-import com.erudika.para.Para;
 import com.erudika.para.core.Address;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
@@ -411,7 +410,6 @@ public class ElasticSearch implements Search {
 		ArrayList<P> results = new ArrayList<P>(hits.getHits().length);
 		ArrayList<String> keys = new ArrayList<String>(hits.getHits().length);
 		boolean readFromIndex = Config.getConfigBoolean("read_from_index", Config.ENVIRONMENT.equals("embedded"));
-		boolean restoreFromIndex = Config.getConfigBoolean("restore_from_index", false);
 		try {
 			for (SearchHit hit : hits) {
 				keys.add(hit.getId());
@@ -422,38 +420,25 @@ public class ElasticSearch implements Search {
 			}
 
 			if (!readFromIndex && !keys.isEmpty()) {
-				final ArrayList<P> restoreUs = new ArrayList<P>(results.size());
 				ArrayList<String> nullz = new ArrayList<String>(results.size());
 				Map<String, P> fromDB = dao.readAll(appid, keys, true);
 				int i = 0;
 				for (Map.Entry<String, P> row : fromDB.entrySet()) {
 					String key = row.getKey();
 					P pobj = row.getValue();
-					if (pobj == null) {
+					if (pobj == null && hits.getAt(i) != null) {
 						// object is still in index but not in DB
 						nullz.add(key);
-						if (restoreFromIndex && hits.getAt(i) != null) {
-							pobj = ParaObjectUtils.setAnnotatedFields(hits.getAt(i).getSource());
-							restoreUs.add(pobj);
-						}
-					} else {
+					}
+					if (pobj != null) {
 						results.add(pobj);
 					}
 					i++;
 				}
 
 				if (!nullz.isEmpty()) {
-					logger.warn("Found {} objects that are indexed but no longer exist in the database. Ids: {}",
+					logger.warn("Found {} objects that are indexed but not in the database: {}",
 							nullz.size(), nullz);
-				}
-
-				if (!restoreUs.isEmpty()) {
-					Para.asyncExecute(new Runnable() {
-						public void run() {
-							dao.createAll(appid, restoreUs);
-							logger.info("Restored {} objects from index to the database.", restoreUs.size());
-						}
-					});
 				}
 			}
 			logger.debug("Search.searchQuery() {}", results.size());
