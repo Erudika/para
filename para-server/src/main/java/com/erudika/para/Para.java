@@ -137,8 +137,7 @@ public final class Para {
 				exec.awaitTermination(60, TimeUnit.SECONDS);
 			}
 			if (!execAt.isShutdown()) {
-				execAt.shutdown();
-				execAt.awaitTermination(60, TimeUnit.SECONDS);
+				execAt.shutdownNow();
 			}
 		} catch (Exception e) {
 			logger.error(null, e);

@@ -17,6 +17,7 @@
  */
 package com.erudika.para.search;
 
+import com.erudika.para.Para;
 import com.erudika.para.core.Address;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
@@ -352,7 +353,6 @@ public class ElasticSearch implements Search {
 			return Collections.emptyList();
 		}
 		QueryBuilder qb = QueryBuilders.wildcardQuery("tag", keyword.concat("*"));
-//		SortBuilder sb = SortBuilders.fieldSort("count").order(SortOrder.DESC);
 		return searchQuery(appid, Utils.type(Tag.class), qb, pager);
 	}
 
@@ -404,13 +404,14 @@ public class ElasticSearch implements Search {
 	 * @param hits the search results from a query
 	 * @return the list of object found
 	 */
-	private <P extends ParaObject> List<P> searchQuery(String appid, SearchHits hits) {
+	private <P extends ParaObject> List<P> searchQuery(final String appid, SearchHits hits) {
 		if (hits == null) {
 			return Collections.emptyList();
 		}
 		ArrayList<P> results = new ArrayList<P>(hits.getHits().length);
 		ArrayList<String> keys = new ArrayList<String>(hits.getHits().length);
-		boolean readFromIndex = Config.getConfigBoolean("read_from_index", false);
+		boolean readFromIndex = Config.getConfigBoolean("read_from_index", Config.ENVIRONMENT.equals("embedded"));
+		boolean restoreFromIndex = Config.getConfigBoolean("restore_from_index", false);
 		try {
 			for (SearchHit hit : hits) {
 				keys.add(hit.getId());
@@ -421,25 +422,39 @@ public class ElasticSearch implements Search {
 			}
 
 			if (!readFromIndex && !keys.isEmpty()) {
+				final ArrayList<P> restoreUs = new ArrayList<P>(results.size());
+				ArrayList<String> nullz = new ArrayList<String>(results.size());
 				Map<String, P> fromDB = dao.readAll(appid, keys, true);
-				if (!fromDB.isEmpty()) {
-					results.addAll(fromDB.values());
+				int i = 0;
+				for (Map.Entry<String, P> row : fromDB.entrySet()) {
+					String key = row.getKey();
+					P pobj = row.getValue();
+					if (pobj == null) {
+						// object is still in index but not in DB
+						nullz.add(key);
+						if (restoreFromIndex && hits.getAt(i) != null) {
+							pobj = ParaObjectUtils.setAnnotatedFields(hits.getAt(i).getSource());
+							restoreUs.add(pobj);
+						}
+					} else {
+						results.add(pobj);
+					}
+					i++;
 				}
-			}
 
-			int	sizeBefore = results.size();
-			ArrayList<String> nullz = new ArrayList<String>();
-			for (int i = 0; i < results.size(); i++) {
-				if (results.get(i) == null) {
-					nullz.add(keys.get(i));
+				if (!nullz.isEmpty()) {
+					logger.warn("Found {} objects that are indexed but no longer exist in the database. Ids: {}",
+							nullz.size(), nullz);
 				}
-			}
-			results.removeAll(Collections.singleton(null));
-			int	sizeAfter = results.size();
 
-			if (sizeBefore > (sizeAfter + 1)) {
-				logger.warn("Found {} objects that are indexed but no longer exist in the database. Ids: {}",
-						sizeBefore - sizeAfter, nullz);
+				if (!restoreUs.isEmpty()) {
+					Para.asyncExecute(new Runnable() {
+						public void run() {
+							dao.createAll(appid, restoreUs);
+							logger.info("Restored {} objects from index to the database.", restoreUs.size());
+						}
+					});
+				}
 			}
 			logger.debug("Search.searchQuery() {}", results.size());
 		} catch (Exception e) {
