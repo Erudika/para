@@ -148,6 +148,7 @@ public interface DAO {
 
 	/**
 	 * Reads a fixed number of objects. Used for scanning a data store page by page.
+	 * Calling this method would bypass the read cache and will hit the DB.
 	 * @param <P> the type of object
 	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param pager a {@link com.erudika.para.utils.Pager}
@@ -157,6 +158,7 @@ public interface DAO {
 
 	/**
 	 * Reads a fixed number of objects. Used for scanning a data store page by page.
+	 * Calling this method would bypass the read cache and will hit the DB.
 	 * @param <P> the type of object
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects
