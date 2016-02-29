@@ -417,23 +417,23 @@ public class ElasticSearch implements Search {
 					P pobj = ParaObjectUtils.setAnnotatedFields(hit.getSource());
 					results.add(pobj);
 				}
+				logger.debug("Search result: appid={}, {}->{}", appid, hit.getSource().get("appid"), hit.getId());
 			}
 
 			if (!readFromIndex && !keys.isEmpty()) {
 				ArrayList<String> nullz = new ArrayList<String>(results.size());
 				Map<String, P> fromDB = dao.readAll(appid, keys, true);
-				int i = 0;
-				for (Map.Entry<String, P> row : fromDB.entrySet()) {
-					String key = row.getKey();
-					P pobj = row.getValue();
-					if (pobj == null && hits.getAt(i) != null) {
+				for (int i = 0; i < keys.size(); i++) {
+					String key = keys.get(i);
+					P pobj = fromDB.get(key);
+					if (pobj == null) {
+						pobj = ParaObjectUtils.setAnnotatedFields(hits.getAt(i).getSource());
 						// object is still in index but not in DB
 						nullz.add(key);
 					}
 					if (pobj != null) {
 						results.add(pobj);
 					}
-					i++;
 				}
 
 				if (!nullz.isEmpty()) {
@@ -441,7 +441,6 @@ public class ElasticSearch implements Search {
 							nullz.size(), nullz);
 				}
 			}
-			logger.debug("Search.searchQuery() {}", results.size());
 		} catch (Exception e) {
 			logger.warn(null, e);
 		}
@@ -486,6 +485,7 @@ public class ElasticSearch implements Search {
 			if (!StringUtils.isBlank(type)) {
 				srb.setTypes(type);
 			}
+			logger.debug("Elasticsearch query: {}", srb.toString());
 
 			hits = srb.execute().actionGet().getHits();
 			page.setCount(hits.getTotalHits());

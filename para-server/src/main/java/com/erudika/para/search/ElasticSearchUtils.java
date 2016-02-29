@@ -21,7 +21,6 @@ import com.erudika.para.DestroyListener;
 import com.erudika.para.Para;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
-import com.erudika.para.persistence.DAO;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -161,26 +160,15 @@ public final class ElasticSearchUtils {
 		return Config.PARA.concat("-es-").concat(Config.WORKER_ID);
 	}
 
-	/**
-	 * Creates a new search index.
-	 * @param appid the index name (alias)
-	 * @return true if created
-	 */
-	public static boolean createIndex(String appid) {
-		return createIndex(appid, Integer.valueOf(Config.getConfigParam("es.shards", "5")),
-				Integer.valueOf(Config.getConfigParam("es.replicas", "0")));
-	}
-
-	/**
-	 * Creates a new search index.
-	 * @param appid the index name (alias)
-	 * @param shards number of shards
-	 * @param replicas number of replicas
-	 * @return true if created
-	 */
-	public static boolean createIndex(String appid, int shards, int replicas) {
-		if (StringUtils.isBlank(appid) || StringUtils.containsWhitespace(appid) || existsIndex(appid)) {
+	private static boolean createIndexWithoutAlias(String name, int shards, int replicas) {
+		if (StringUtils.isBlank(name) || StringUtils.containsWhitespace(name) || existsIndex(name)) {
 			return false;
+		}
+		if (shards <= 0) {
+			shards = Config.getConfigInt("es.shards", 5);
+		}
+		if (replicas < 0) {
+			replicas = Config.getConfigInt("es.replicas", 0);
 		}
 		try {
 			NodeBuilder nb = NodeBuilder.nodeBuilder();
@@ -195,20 +183,49 @@ public final class ElasticSearchUtils {
 					"norwegian", "persian", "portuguese", "romanian", "russian", "spanish",
 					"swedish", "turkish");
 
-			String name = appid + "1";
 			CreateIndexRequestBuilder create = getClient().admin().indices().prepareCreate(name).
 					setSettings(nb.settings().build());
 
 			// default system mapping (all the rest are dynamic)
 			create.addMapping("_default_", getDefaultMapping());
 			create.execute().actionGet();
-
-			addIndexAlias(name, appid);
+			logger.info("Created a new index '{}' with {} shards, {} replicas.", name, shards, replicas);
 		} catch (Exception e) {
 			logger.warn(null, e);
 			return false;
 		}
 		return true;
+	}
+
+	/**
+	 * Creates a new search index.
+	 * @param appid the index name (alias)
+	 * @return true if created
+	 */
+	public static boolean createIndex(String appid) {
+		return createIndex(appid, Config.getConfigInt("es.shards", 5), Config.getConfigInt("es.replicas", 0));
+	}
+
+	/**
+	 * Creates a new search index.
+	 * @param appid the index name (alias)
+	 * @param shards number of shards
+	 * @param replicas number of replicas
+	 * @return true if created
+	 */
+	public static boolean createIndex(String appid, int shards, int replicas) {
+		if (appid == null) {
+			return false;
+		}
+		String name = appid + "_1";
+		boolean created = createIndexWithoutAlias(name, shards, replicas);
+		if (created) {
+			boolean aliased = addIndexAlias(name, appid);
+			if (created && !aliased) {
+				logger.warn("Index '{}' was created but not aliased to '{}'.", name, appid);
+			}
+		}
+		return created;
 	}
 
 	/**
@@ -221,6 +238,7 @@ public final class ElasticSearchUtils {
 			return false;
 		}
 		try {
+			logger.warn("Deleted index '{}'.", appid);
 			getClient().admin().indices().prepareDelete(appid).execute().actionGet();
 		} catch (Exception e) {
 			logger.warn(null, e);
@@ -249,55 +267,75 @@ public final class ElasticSearchUtils {
 	}
 
 	/**
-	 * Rebuilds an index. Reads objects from the data store and indexes them in batches.
+	 * Rebuilds an index.
+	 * Reads objects from the data store and indexes them in batches.
+	 * Works on one DB table and index only.
 	 * @param appid the index name (alias)
-	 * @param dao an instance of the persistence class
-	 * @return true if successful
+	 * @param pager a Pager instance
+	 * @return true if successful, false if index doesn't exist or failed.
 	 */
-	public static boolean rebuildIndex(String appid, DAO dao) {
-		if (StringUtils.isBlank(appid) || dao == null) {
+	public static boolean rebuildIndex(String appid, boolean isShared, Pager... pager) {
+		if (StringUtils.isBlank(appid)) {
 			return false;
 		}
 		try {
 			if (!existsIndex(appid)) {
+				logger.warn("Can't rebuild '{}' - index doesn't exist.", appid);
 				return false;
 			}
 			String oldName = getIndexNameForAlias(appid);
+			String newName = appid;
+
 			if (oldName == null) {
 				return false;
 			}
-			String newName = oldName + "_" + Utils.timestamp();
+			if (!isShared) {
+				newName = oldName.substring(0, oldName.indexOf("_")) + "_" + Utils.timestamp();
+				createIndexWithoutAlias(newName, -1, -1);
+			}
 
 			logger.info("rebuildIndex(): {}", appid);
 
 			BulkRequestBuilder brb = getClient().prepareBulk();
-			BulkResponse resp = null;
-			Pager pager = new Pager();
+			BulkResponse resp;
+			int queueSize = 50;
+			int count = 0;
+			Pager p = (pager != null && pager.length > 0) ? pager[0] : new Pager(100);
 
+			List<ParaObject> list;
 			do {
-				List<ParaObject> list = dao.readPage(appid, pager);
+				list = Para.getDAO().readPage(appid, p);
+				logger.debug("rebuildIndex(): Read {} objects from table {}.", list.size(), appid);
 				for (ParaObject obj : list) {
-					brb.add(getClient().prepareIndex(appid, obj.getType(), obj.getId()).
-							setSource(ParaObjectUtils.getAnnotatedFields(obj)));
-					pager.setLastKey(obj.getId());
+					if (obj != null) {
+						// put objects from DB into the newly created index
+						brb.add(getClient().prepareIndex(newName, obj.getType(), obj.getId()).
+								setSource(ParaObjectUtils.getAnnotatedFields(obj, null, false)).request());
+						// index in batches of ${queueSize} objects
+						if (brb.numberOfActions() >= queueSize) {
+							count += brb.numberOfActions();
+							resp = brb.execute().actionGet();
+							logger.info("rebuildIndex(): indexed {}, failures: {}",
+									brb.numberOfActions(), resp.hasFailures() ? resp.buildFailureMessage() : "false");
+							brb = getClient().prepareBulk();
+						}
+					}
 				}
-				// bulk index 1000 objects
-				if (brb.numberOfActions() > 100) {
-					resp = brb.execute().actionGet();
-					logger.info("rebuildIndex(): indexed {}, hasFailures: {}",
-							brb.numberOfActions(), resp.hasFailures());
-				}
-			} while (pager.getLastKey() != null);
+			} while (!list.isEmpty());
 
 			// anything left after loop? index that too
 			if (brb.numberOfActions() > 0) {
+				count += brb.numberOfActions();
 				resp = brb.execute().actionGet();
-				logger.info("rebuildIndex(): indexed {}, hasFailures: {}",
-						brb.numberOfActions(), resp.hasFailures());
+				logger.info("rebuildIndex(): indexed {}, failures: {}",
+						brb.numberOfActions(), resp.hasFailures() ? resp.buildFailureMessage() : "false");
 			}
 
-			// switch to alias NEW_INDEX -> ALIAS, OLD_INDEX -> X, deleting the old index
-			switchIndexToAlias(oldName, newName, appid, true);
+			if (!isShared) {
+				// switch to alias NEW_INDEX -> ALIAS, OLD_INDEX -> DELETE old index
+				switchIndexToAlias(oldName, newName, appid, true);
+			}
+			logger.info("rebuildIndex(): Done. {} objects reindexed.", count);
 		} catch (Exception e) {
 			logger.warn(null, e);
 			return false;
@@ -345,14 +383,19 @@ public final class ElasticSearchUtils {
 		if (!existsIndex(indexName)) {
 			return false;
 		}
-		AliasAction act = new AliasAction(AliasAction.Type.ADD, indexName, alias);
-		if (setRouting) {
-			act.searchRouting(alias);
-			act.indexRouting(alias);
-			act.filter(QueryBuilders.termQuery(Config._APPID, alias));
+		try {
+			AliasAction act = new AliasAction(AliasAction.Type.ADD, indexName, alias);
+			if (setRouting) {
+				act.searchRouting(alias);
+				act.indexRouting(alias);
+				act.filter(QueryBuilders.termQuery(Config._APPID, alias));
+			}
+			return getClient().admin().indices().prepareAliases().addAliasAction(act).
+					execute().actionGet().isAcknowledged();
+		} catch (Exception e) {
+			logger.error(null, e);
+			return false;
 		}
-		return getClient().admin().indices().prepareAliases().addAliasAction(act).
-				execute().actionGet().isAcknowledged();
 	}
 
 	/**
@@ -377,13 +420,18 @@ public final class ElasticSearchUtils {
 	 * @param deleteOld if true will delete the old index completely
 	 */
 	public static void switchIndexToAlias(String oldIndex, String newIndex, String alias, boolean deleteOld) {
-		getClient().admin().indices().prepareAliases().
-				addAlias(newIndex, alias).
-				removeAlias(oldIndex, alias).
-				execute().actionGet();
-		// delete the old index
-		if (deleteOld) {
-			deleteIndex(oldIndex);
+		logger.info("Switching index aliases {}->{}, deleting index '{}': {}", alias, newIndex, oldIndex, deleteOld);
+		try {
+			getClient().admin().indices().prepareAliases().
+					addAlias(newIndex, alias).
+					removeAlias(oldIndex, alias).
+					execute().actionGet();
+			// delete the old index
+			if (deleteOld) {
+				deleteIndex(oldIndex);
+			}
+		} catch (Exception e) {
+			logger.error(null, e);
 		}
 	}
 
@@ -401,7 +449,7 @@ public final class ElasticSearchUtils {
 		ImmutableOpenMap<String, List<AliasMetaData>> aliases = get.getAliases();
 		if (aliases.size() > 1) {
 			logger.warn("More than one index for alias {}", appid);
-		} else {
+		} else if(!aliases.isEmpty()) {
 			return aliases.keysIt().next();
 		}
 		return null;
