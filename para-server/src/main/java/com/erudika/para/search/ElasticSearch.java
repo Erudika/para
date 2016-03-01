@@ -36,6 +36,7 @@ import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.queryparser.flexible.standard.StandardQueryParser;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -73,6 +74,7 @@ import org.slf4j.LoggerFactory;
 public class ElasticSearch implements Search {
 
 	private static final Logger logger = LoggerFactory.getLogger(ElasticSearch.class);
+	private StandardQueryParser queryParserHelper = new StandardQueryParser();
 	private DAO dao;
 
 	static {
@@ -279,7 +281,7 @@ public class ElasticSearch implements Search {
 		if (StringUtils.isBlank(query)) {
 			return Collections.emptyList();
 		}
-		QueryBuilder qb = QueryBuilders.queryStringQuery(query).allowLeadingWildcard(false);
+		QueryBuilder qb = QueryBuilders.queryStringQuery(qs(query)).allowLeadingWildcard(false);
 		return searchQuery(appid, type, qb, pager);
 	}
 
@@ -384,7 +386,7 @@ public class ElasticSearch implements Search {
 			}
 		}
 
-		QueryBuilder qb2 = QueryBuilders.boolQuery().must(QueryBuilders.queryStringQuery(query)).
+		QueryBuilder qb2 = QueryBuilders.boolQuery().must(QueryBuilders.queryStringQuery(qs(query))).
 				filter(QueryBuilders.idsQuery(type).ids(ridsarr));
 		SearchHits hits2 = searchQueryRaw(appid, type, qb2, pager);
 
@@ -625,6 +627,35 @@ public class ElasticSearch implements Search {
 			return bfb;
 		}
 		return noop ? null : fb;
+	}
+
+	/**
+	 * Tries to parse a query string in order to check if it is valid.
+	 * @param query a Lucene query string
+	 * @return the query if valid, or '*' if invalid
+	 */
+	private String qs(String query) {
+		if (query == null) {
+			query = "*";
+		}
+		query = query.trim();
+		if (query.length() > 1 && query.startsWith("*")) {
+			query = query.substring(1);
+		}
+		if (query.length() > 1 && query.contains(" *")) {
+			query = query.replaceAll("\\s\\*", " ").trim();
+		}
+		if (query.length() >= 2 && query.toLowerCase().endsWith("and") ||
+				query.toLowerCase().endsWith("or") || query.toLowerCase().endsWith("not")) {
+			query = query.substring(0, query.length() - (query.toLowerCase().endsWith("or") ? 2 : 3));
+		}
+		try {
+			queryParserHelper.setAllowLeadingWildcard(false);
+			queryParserHelper.parse(query, "");
+		} catch (Exception ex) {
+			query = "*";
+		}
+		return query.trim();
 	}
 
 	//////////////////////////////////////////////////////////////
