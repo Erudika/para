@@ -431,7 +431,9 @@ public class ElasticSearch implements Search {
 					if (pobj == null) {
 						pobj = ParaObjectUtils.setAnnotatedFields(hits.getAt(i).getSource());
 						// object is still in index but not in DB
-						nullz.add(key);
+						if (pobj == null || appid.equals(pobj.getAppid())) {
+							nullz.add(key);
+						}
 					}
 					if (pobj != null) {
 						results.add(pobj);
