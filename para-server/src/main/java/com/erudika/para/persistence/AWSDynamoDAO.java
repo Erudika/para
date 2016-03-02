@@ -291,8 +291,8 @@ public class AWSDynamoDAO implements DAO {
 				// set last key to be equal to the last result - end reached.
 				pager.setLastKey(results.peekLast().getId());
 			}
-			logger.debug("readPage(): total {}, {} reads/s, last {}", result.getCount(),
-					result.getConsumedCapacity().getCapacityUnits(), pager.getLastKey());
+			logger.debug("readPage(): total {}, cc {}, last {}", result.getCount(),
+					result.getConsumedCapacity(), pager.getLastKey());
 			pager.setCount(pager.getCount() + results.size());
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -349,8 +349,7 @@ public class AWSDynamoDAO implements DAO {
 				P obj = fromRow(item);
 				results.put(item.get(Config._KEY).getS(), obj);
 			}
-			logger.debug("batchGet(): total {}, {} reads/s", res.size(),
-					result.getConsumedCapacity().get(0).getCapacityUnits());
+			logger.debug("batchGet(): total {}, cc {}", res.size(), result.getConsumedCapacity());
 
 			if (result.getUnprocessedKeys() != null && !result.getUnprocessedKeys().isEmpty()) {
 				Thread.sleep(1000);
@@ -372,8 +371,7 @@ public class AWSDynamoDAO implements DAO {
 			if (result == null) {
 				return;
 			}
-			logger.debug("batchWrite(): total {}, {} writes/s", items.size(),
-					result.getConsumedCapacity().get(0).getCapacityUnits());
+			logger.debug("batchWrite(): total {}, cc {}", items.size(), result.getConsumedCapacity());
 
 			if (result.getUnprocessedItems() != null && !result.getUnprocessedItems().isEmpty()) {
 				Thread.sleep(1000);

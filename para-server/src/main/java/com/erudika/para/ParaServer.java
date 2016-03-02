@@ -176,6 +176,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 				}
 			}
 		});
+		logger.info("Listening on port {}...", jef.getPort());
 		return jef;
 	}
 
