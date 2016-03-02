@@ -12,8 +12,8 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>4.0.3.RELEASE</springSecVer>
-		<hazelcastVer>3.6</hazelcastVer>
+		<springSecVer>4.0.4.RELEASE</springSecVer>
+		<hazelcastVer>3.6.1</hazelcastVer>
 	</properties>
 
 	<dependencies>

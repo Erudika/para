@@ -1,12 +1,10 @@
 ![Logo](https://s3-eu-west-1.amazonaws.com/org.paraio/para.png)
-============================
 
-> ### A general-purpose back-end framework for the cloud.
+## A general-purpose back-end framework for the cloud.
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-core)
 [![Join the chat at https://gitter.im/Erudika/para](https://badges.gitter.im/Erudika/para.svg)](https://gitter.im/Erudika/para?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-## What is this?
 
 **Para** was designed as a simple and modular back-end framework for object persistence and retrieval.
 It enables your application to store objects directly to a data store (NoSQL) or any relational database (RDBMS)
@@ -69,7 +67,7 @@ See how Para [compares to other open source back-end frameworks](http://www.erud
 To get started quickly just [grab the WAR file](https://github.com/Erudika/para/releases) and execute it with:
 
 1. [Download the latest executable WAR](https://github.com/Erudika/para/releases)
-2. Execute it with `java -jar para-war-X.Y.Z.war`
+2. Execute it with `java -jar para-X.Y.Z.war`
 3. Call `curl localhost:8080/v1/_setup` to get the access and secret keys
 4. Start using the API directly or using the provided `ParaClient` class.
 
@@ -90,7 +88,7 @@ mvn install -DskipTests=true
 You can run Para as a standalone server by downloading the executable WAR and then:
 
 ```sh
-java -jar para-war-X.Y.Z.war
+java -jar para-X.Y.Z.war
 ```
 
 Alternatively, you can grab the WAR file and deploy it to your favorite servlet container.
@@ -108,7 +106,7 @@ Here's the Maven snippet to include in your `pom.xml`:
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para-server</artifactId>
-  <version>1.18.1</version>
+  <version>1.18.2</version>
 </dependency>
 ```
 

@@ -75,6 +75,7 @@
 							<goal>repackage</goal>
 						</goals>
 						<configuration>
+							<finalName>para-${project.version}</finalName>
 							<mainClass>com.erudika.para.ParaServer</mainClass>
 						</configuration>
 					</execution>
