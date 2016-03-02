@@ -214,7 +214,7 @@ public final class ElasticSearchUtils {
 	 * @return true if created
 	 */
 	public static boolean createIndex(String appid, int shards, int replicas) {
-		if (appid == null) {
+		if (StringUtils.isBlank(appid)) {
 			return false;
 		}
 		String name = appid + "_1";
@@ -271,6 +271,7 @@ public final class ElasticSearchUtils {
 	 * Reads objects from the data store and indexes them in batches.
 	 * Works on one DB table and index only.
 	 * @param appid the index name (alias)
+	 * @param isShared is the app shared, controls index aliases and index switching
 	 * @param pager a Pager instance
 	 * @return true if successful, false if index doesn't exist or failed.
 	 */
@@ -449,7 +450,7 @@ public final class ElasticSearchUtils {
 		ImmutableOpenMap<String, List<AliasMetaData>> aliases = get.getAliases();
 		if (aliases.size() > 1) {
 			logger.warn("More than one index for alias {}", appid);
-		} else if(!aliases.isEmpty()) {
+		} else if (!aliases.isEmpty()) {
 			return aliases.keysIt().next();
 		}
 		return null;
