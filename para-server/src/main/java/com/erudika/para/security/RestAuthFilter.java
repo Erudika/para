@@ -19,6 +19,7 @@ package com.erudika.para.security;
 
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
+import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
 import com.erudika.para.rest.Signer;
@@ -38,6 +39,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
+import static javax.ws.rs.HttpMethod.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.security.core.Authentication;
@@ -106,7 +108,9 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 			}
 			if (parentApp != null) {
 				String resourcePath = RestUtils.extractResourcePath(request);
-				if (!parentApp.isAllowedTo(user.getId(), resourcePath, request.getMethod())) {
+				boolean isDeniedExplicitly = parentApp.isDeniedExplicitly(user.getId(), resourcePath, method);
+				boolean isAllowed = parentApp.isAllowedTo(user.getId(), resourcePath, method);
+				if (isDeniedExplicitly || !(isAllowed || canModify(user, resourcePath, method))) {
 					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
 							Utils.formatMessage("You don't have permission to access this resource. "
 									+ "[user: {0}, resource: {1} {2}]", user.getId(), method, reqUri));
@@ -180,6 +184,19 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		return true;
 	}
 
+	private boolean canModify(User user, String resourcePath, String method) {
+		ParaObject obj = RestUtils.readResourcePath(user.getAppid(), resourcePath);
+		if (obj != null) {
+			if (user.getId().equals(obj.getId())) {
+				// a user object can only read and update itself
+				return (method.equals(GET) || method.equals("PATCH"));
+			} else {
+				return user.canModify(obj);
+			}
+		}
+		return false;
+	}
+
 	private class BufferedRequestWrapper extends HttpServletRequestWrapper {
 
 		ByteArrayInputStream bais;
@@ -250,9 +267,9 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 
 	private boolean isWriteRequest(HttpServletRequest req) {
 		return req != null &&
-				("POST".equals(req.getMethod()) ||
-				"PUT".equals(req.getMethod()) ||
-				"DELETE".equals(req.getMethod()) ||
+				(POST.equals(req.getMethod()) ||
+				PUT.equals(req.getMethod()) ||
+				DELETE.equals(req.getMethod()) ||
 				"PATCH".equals(req.getMethod()));
 	}
 

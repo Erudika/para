@@ -130,7 +130,7 @@ public class RestUtilsTest {
 	}
 
 	@Test
-	public void testExtractResourceName() {
+	public void testExtractResourcePath() {
 		HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
 		Mockito.when(req.getRequestURI()).thenReturn("");
 		assertEquals(extractResourcePath(null), "");
@@ -155,5 +155,34 @@ public class RestUtilsTest {
 		Mockito.when(req.getRequestURI()).thenReturn("/v2.0/posts/123");
 		assertEquals("posts/123", extractResourcePath(req));
 
+	}
+
+	@Test
+	public void testReadResourcePath() {
+		String appid = "test-app-1";
+		App app = new App(appid);
+		Sysprop s = new Sysprop();
+		s.setAppid(appid);
+		s.setName("noname");
+
+		app.create();
+		Para.getDAO().create(appid, s);
+
+		assertNull(readResourcePath(appid, null));
+		assertNull(readResourcePath(appid, ""));
+		assertNull(readResourcePath(null, "/"));
+		assertNull(readResourcePath(appid, "users"));
+		assertNull(readResourcePath(appid, "sysprops"));
+		assertNull(readResourcePath(appid, "sysprop"));
+		assertNull(readResourcePath(appid, "sysprop/"));
+
+		assertNotNull(readResourcePath(appid, "sysprop/" + s.getId()));
+		assertNotNull(readResourcePath(appid, "/v1/sysprop/" + s.getId()));
+		assertNotNull(readResourcePath(appid, "one/two/three/" + s.getId()));
+		assertNull(readResourcePath(appid, "one/two/three/" + s.getId() + "/four"));
+
+		Para.getDAO().delete(appid, s);
+		assertNull(readResourcePath(appid, "sysprop/" + s.getId()));
+		app.delete();
 	}
 }

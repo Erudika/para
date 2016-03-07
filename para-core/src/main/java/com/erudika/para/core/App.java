@@ -441,7 +441,7 @@ public class App implements ParaObject {
 				}
 				getResourcePermissions().put(subjectid, perm);
 			} else {
-				if (permission.containsAll(AllowedMethods.ALL_VALUES)
+				if (permission.containsAll(AllowedMethods.ALL)
 						|| permission.contains(AllowedMethods.READ_WRITE)
 						|| (permission.contains(AllowedMethods.READ_ONLY) &&
 							permission.contains(AllowedMethods.WRITE_ONLY))
@@ -534,9 +534,9 @@ public class App implements ParaObject {
 	}
 
 	protected final boolean isAllowed(String subjectid, String resourcePath, String httpMethod) {
+		boolean allowed = false;
 		if (subjectid != null && httpMethod != null && getResourcePermissions().containsKey(subjectid)) {
 			httpMethod = httpMethod.toUpperCase();
-			boolean allowed = false;
 			if (StringUtils.contains(resourcePath, "/")) {
 				// we assume that a full resource path is given like: 'users/something/123'
 				// so we check to see if 'users/something' is in the list of resources
@@ -556,9 +556,30 @@ public class App implements ParaObject {
 				allowed = (getResourcePermissions().get(subjectid).get(resourcePath).contains(httpMethod)
 						|| getResourcePermissions().get(subjectid).get(resourcePath).contains(ALLOW_ALL));
 			}
-			return allowed;
 		}
-		return false;
+		return allowed;
+	}
+
+	/**
+	 * Check if a subject is explicitly denied access to a resource.
+	 * @param subjectid subject id
+	 * @param resourcePath resource path or object type
+	 * @param httpMethod HTTP method name
+	 * @return true if access is explicitly denied
+	 */
+	public boolean isDeniedExplicitly(String subjectid, String resourcePath, String httpMethod) {
+		boolean denied = false;
+		if (subjectid != null && !StringUtils.isBlank(resourcePath) && !StringUtils.isBlank(httpMethod)) {
+			// urlDecode resource path
+			resourcePath = Utils.urlDecode(resourcePath);
+			if (getResourcePermissions().isEmpty()) {
+				return false;
+			}
+			if (getResourcePermissions().containsKey(subjectid)) {
+				denied = !isAllowed(subjectid, resourcePath, httpMethod) && !isAllowed(subjectid, ALLOW_ALL, httpMethod);
+			}
+		}
+		return denied;
 	}
 
 	/**
@@ -915,6 +936,10 @@ public class App implements ParaObject {
 	public static enum AllowedMethods {
 
 		/**
+		 * Deny all requests (no access)
+		 */
+		EMPTY,
+		/**
 		 * Allows all HTTP methods (full access)
 		 */
 		READ_WRITE,
@@ -947,11 +972,12 @@ public class App implements ParaObject {
 		 */
 		WRITE_ONLY;
 
-		public static final EnumSet<AllowedMethods> ALL_VALUES = EnumSet.of(GET, POST, PUT, PATCH, DELETE);
+		public static final EnumSet<AllowedMethods> ALL = EnumSet.of(GET, POST, PUT, PATCH, DELETE);
 		public static final EnumSet<AllowedMethods> READ_AND_WRITE = EnumSet.of(READ_WRITE);
 		public static final EnumSet<AllowedMethods> READ = EnumSet.of(GET);
 		public static final EnumSet<AllowedMethods> WRITE = EnumSet.of(POST, PUT, PATCH, DELETE);
 		public static final EnumSet<AllowedMethods> ALL_EXCEPT_DELETE = EnumSet.of(GET, POST, PUT, PATCH);
+		public static final EnumSet<AllowedMethods> NONE = EnumSet.of(EMPTY);
 
 		@JsonCreator
 		public static AllowedMethods fromString(String value) {
@@ -961,7 +987,7 @@ public class App implements ParaObject {
 				try {
 					return valueOf(value.toUpperCase());
 				} catch (Exception e) {
-					return null;
+					return EMPTY;
 				}
 			}
 		}
@@ -974,6 +1000,8 @@ public class App implements ParaObject {
 					return ALLOW_ALL;
 				case READ_ONLY:
 					return GET.name();
+				case EMPTY:
+					return "-";
 				case WRITE_ONLY:
 					return "w";
 				default:

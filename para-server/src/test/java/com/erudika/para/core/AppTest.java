@@ -173,10 +173,16 @@ public class AppTest {
 		app.grantResourcePermission("123", App.ALLOW_ALL, EnumSet.noneOf(App.AllowedMethods.class));
 		assertTrue(app.getResourcePermissions().isEmpty());
 
+		app.grantResourcePermission("123", "res", App.AllowedMethods.NONE);
+		assertFalse(app.getResourcePermissions().isEmpty());
+		assertFalse(app.isAllowedTo("123", "test", "GET"));
+
 		assertFalse(app.isAllowedTo("123", "test", "GET"));
 		app.grantResourcePermission("123", App.ALLOW_ALL, App.AllowedMethods.READ);
 		assertTrue(app.isAllowedTo("123", App.ALLOW_ALL, App.AllowedMethods.READ_ONLY.toString()));
-		assertTrue(app.isAllowedTo("123", "res", "gEt"));
+		// explicitly denied above
+		assertFalse(app.isAllowedTo("123", "res", "gEt"));
+		assertTrue(app.isAllowedTo("123", "res1/res2", "gEt"));
 		assertFalse(app.isAllowedTo("1234", App.ALLOW_ALL, App.AllowedMethods.READ_ONLY.toString()));
 
 		app.revokeResourcePermission("123", "_test");
@@ -203,7 +209,11 @@ public class AppTest {
 				put("_users/admins", Arrays.asList("GET"));
 				put("_users/admins/321", Arrays.asList("PUT", "POST"));
 				// simple "allow all"
-				put("users", Arrays.asList("*"));
+				put("users", Arrays.asList(App.ALLOW_ALL));
+			}});
+			put(App.ALLOW_ALL, new HashMap<String, List<String>>() {{
+				// simple "allow all"
+				put("super/secret/resource", Arrays.asList(App.AllowedMethods.NONE.toString()));
 			}});
 		}});
 
@@ -232,6 +242,50 @@ public class AppTest {
 		assertTrue(app.isAllowed("user1", "users/12345", "POST"));
 		assertFalse(app.isAllowed("user2", "users/12345", "POST"));
 		assertTrue(app.isAllowed("user1", "users/12345", "ELSE"));
+		// deny all
+		assertFalse(app.isAllowed(App.ALLOW_ALL, "super/secret/resource", "GET"));
+		assertFalse(app.isAllowed(App.ALLOW_ALL, "super/secret/resource", "PUT"));
+		assertFalse(app.isAllowed("user1", "super/secret/resource", "GET"));
+		assertFalse(app.isAllowed("user2", "super/secret/resource", "POST"));
+		assertFalse(app.isAllowed("user2", "super/secret/resource", App.AllowedMethods.NONE.toString()));
+	}
+
+	@Test
+	public void testIsDeniedExplicitly() {
+		App app = new App();
+		User u = new User("u123");
+		User u2 = new User("someone_else");
+
+		String res1 = "some/resource/1";
+		String res2 = "cant/touch/this";
+
+		assertFalse(app.isDeniedExplicitly(u.getId(), res2, "GET"));
+
+		app.grantResourcePermission(App.ALLOW_ALL, res1, App.AllowedMethods.WRITE);
+		assertTrue(app.isAllowedTo(u.getId(), res1, "POST"));
+		assertTrue(app.isAllowedTo(u2.getId(), res1, "POST"));
+
+		assertFalse(app.isDeniedExplicitly(u.getId(), App.ALLOW_ALL, "GET"));
+		assertFalse(app.isDeniedExplicitly(u2.getId(), App.ALLOW_ALL, "GET"));
+		assertFalse(app.isDeniedExplicitly(u.getId(), App.ALLOW_ALL, "POST"));
+		assertFalse(app.isDeniedExplicitly(u.getId(), res1, "POST"));
+		assertFalse(app.isDeniedExplicitly(u2.getId(), res1, "PUT"));
+
+		// explicit restrictions
+		app.grantResourcePermission(u2.getId(), res2, App.AllowedMethods.NONE);
+		assertFalse(app.isAllowedTo(u2.getId(), res2, "GET"));
+		assertTrue(app.isDeniedExplicitly(u2.getId(), res2, "GET"));
+		assertTrue(app.isDeniedExplicitly(u2.getId(), res2, "DELETE"));
+		assertTrue(app.isDeniedExplicitly(u2.getId(), App.ALLOW_ALL, "PUT"));
+
+		// specific restrictions per "id" take precedence
+		app.grantResourcePermission(App.ALLOW_ALL, res2, App.AllowedMethods.READ);
+		assertFalse(app.isAllowedTo(u2.getId(), res2, "GET"));
+		assertTrue(app.isDeniedExplicitly(u2.getId(), res2, "GET"));
+
+		app.grantResourcePermission(App.ALLOW_ALL, App.ALLOW_ALL, App.AllowedMethods.READ);
+		assertTrue(app.isDeniedExplicitly(u2.getId(), "this/is/test", "GET"));
+		assertTrue(app.isDeniedExplicitly(u2.getId(), res2, "GET"));
 	}
 
 }

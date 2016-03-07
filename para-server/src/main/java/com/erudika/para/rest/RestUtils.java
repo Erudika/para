@@ -124,6 +124,31 @@ public final class RestUtils {
 	}
 
 	/**
+	 * Reads an object from a given resource path.
+	 * Assumes that the "id" is after the last slash "/" and tries to read it.
+	 * @param appid app id
+	 * @param path resource path
+	 * @return the object found at this path or null
+	 */
+	public static ParaObject readResourcePath(String appid, String path) {
+		if (StringUtils.isBlank(appid) || StringUtils.isBlank(path) || !path.contains("/")) {
+			return null;
+		}
+		ParaObject obj = null;
+		try {
+			URI uri = new URI(path);
+			path = uri.getPath();
+			if (path != null && path.length() > 0) {
+				int lastSlash = (path.lastIndexOf("/") + 1) < path.length() ? path.lastIndexOf("/") + 1 : 0;
+				obj = Para.getDAO().read(appid, path.substring(lastSlash));
+			}
+		} catch (Exception e) {
+			logger.debug("Invalid resource path {}: {}", path, e);
+		}
+		return obj;
+	}
+
+	/**
 	 * Returns the current authenticated {@link App} object.
 	 * @return an App object or null
 	 */
