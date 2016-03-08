@@ -189,7 +189,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		if (obj != null) {
 			if (user.getId().equals(obj.getId())) {
 				// a user object can only read and update itself
-				return (method.equals(GET) || method.equals("PATCH"));
+				return (method.equals(GET) || method.equals("PATCH") || method.equals(PUT));
 			} else {
 				return user.canModify(obj);
 			}

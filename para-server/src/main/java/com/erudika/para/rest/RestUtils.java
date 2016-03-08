@@ -273,7 +273,7 @@ public final class RestUtils {
 			if (!StringUtils.isBlank(type)) {
 				newContent.put(Config._TYPE, type);
 			}
-			content = ParaObjectUtils.setAnnotatedFields(newContent);
+			content = ParaObjectUtils.setAnnotatedFields(null, newContent, Locked.class);
 			if (content != null && !StringUtils.isBlank(id)) {
 				content.setAppid(app.getAppIdentifier());
 				content.setId(id);
