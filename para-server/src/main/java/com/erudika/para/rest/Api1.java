@@ -267,8 +267,12 @@ public class Api1 extends ResourceConfig {
 						}
 						return crudHandler(app, type).apply(ctx);
 					} else {
-						// print logo
-						return Response.ok(Para.LOGO, MediaType.TEXT_PLAIN).build();
+						Map<String, String> info = new HashMap<String, String>();
+						info.put("info", "Para - a backend for busy developers.");
+						if (Config.getConfigBoolean("print_version", true)) {
+							info.put("version", Para.getVersion());
+						}
+						return Response.ok(info).build();
 					}
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");

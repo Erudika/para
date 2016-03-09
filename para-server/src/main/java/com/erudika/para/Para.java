@@ -22,6 +22,7 @@ import com.erudika.para.persistence.DAO;
 import com.erudika.para.rest.CustomResourceHandler;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.VersionInfo;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
@@ -54,12 +55,15 @@ public final class Para {
 
 	public static final String LOGO;
 	static {
-		String[] logo = {"",
+		boolean printVer = Config.getConfigBoolean("print_version", true);
+		String[] logo = {
 			"      ____  ___ _ ____ ___ _ ",
 			"     / __ \\/ __` / ___/ __` /",
 			"    / /_/ / /_/ / /  / /_/ / ",
 			"   / .___/\\__,_/_/   \\__,_/  ",
-			"  /_/                        ", ""};
+			"  /_/                        ", "",
+			(printVer ? "  v" + getVersion() : ""), ""
+		};
 		StringBuilder sb = new StringBuilder();
 		for (String line : logo) {
 			sb.append(line).append("\n");
@@ -337,9 +341,17 @@ public final class Para {
 	 * Prints the Para logo to System.out.
 	 */
 	public static void printLogo() {
-		if (Boolean.parseBoolean(Config.getConfigParam("print_logo", "true"))) {
+		if (Config.getConfigBoolean("print_logo", true)) {
 			System.out.print(LOGO);
 		}
+	}
+
+	/**
+	 * Current version.
+	 * @return version string, from pom.xml
+	 */
+	public static String getVersion() {
+		return VersionInfo.getVersion();
 	}
 
 }
