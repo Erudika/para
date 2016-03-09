@@ -56,13 +56,12 @@ public final class Para {
 	public static final String LOGO;
 	static {
 		boolean printVer = Config.getConfigBoolean("print_version", true);
-		String[] logo = {
+		String[] logo = {"",
 			"      ____  ___ _ ____ ___ _ ",
 			"     / __ \\/ __` / ___/ __` /",
 			"    / /_/ / /_/ / /  / /_/ / ",
-			"   / .___/\\__,_/_/   \\__,_/  ",
-			"  /_/                        ", "",
-			(printVer ? "  v" + getVersion() : ""), ""
+			"   / .___/\\__,_/_/   \\__,_/  " + (printVer ? "v" + getVersion() : ""),
+			"  /_/                        ", ""
 		};
 		StringBuilder sb = new StringBuilder();
 		for (String line : logo) {

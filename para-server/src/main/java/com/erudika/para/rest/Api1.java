@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.MediaType;
@@ -267,7 +268,7 @@ public class Api1 extends ResourceConfig {
 						}
 						return crudHandler(app, type).apply(ctx);
 					} else {
-						Map<String, String> info = new HashMap<String, String>();
+						Map<String, String> info = new TreeMap<String, String>();
 						info.put("info", "Para - a backend for busy developers.");
 						if (Config.getConfigBoolean("print_version", true)) {
 							info.put("version", Para.getVersion());
