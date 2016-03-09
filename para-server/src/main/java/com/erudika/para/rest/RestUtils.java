@@ -125,7 +125,7 @@ public final class RestUtils {
 
 	/**
 	 * Reads an object from a given resource path.
-	 * Assumes that the "id" is after the last slash "/" and tries to read it.
+	 * Assumes that the "id" is located after the first slash "/" like this: {type}/{id}/...
 	 * @param appid app id
 	 * @param path resource path
 	 * @return the object found at this path or null
@@ -134,18 +134,25 @@ public final class RestUtils {
 		if (StringUtils.isBlank(appid) || StringUtils.isBlank(path) || !path.contains("/")) {
 			return null;
 		}
-		ParaObject obj = null;
 		try {
 			URI uri = new URI(path);
-			path = uri.getPath();
-			if (path != null && path.length() > 0) {
-				int lastSlash = (path.lastIndexOf("/") + 1) < path.length() ? path.lastIndexOf("/") + 1 : 0;
-				obj = Para.getDAO().read(appid, path.substring(lastSlash));
+			if (path.length() > 1) {
+				path = path.startsWith("/") ? uri.getPath().substring(1) : uri.getPath();
+				String[] parts = path.split("/");
+				String id;
+				if (parts.length == 1) {
+					id = parts[0];	// case: {id}
+				} else if (parts.length >= 2) {
+					id = parts[1];	// case: {type}/{id}/...
+				} else {
+					return null;
+				}
+				return Para.getDAO().read(appid, id);
 			}
 		} catch (Exception e) {
 			logger.debug("Invalid resource path {}: {}", path, e);
 		}
-		return obj;
+		return null;
 	}
 
 	/**
@@ -275,6 +282,7 @@ public final class RestUtils {
 			}
 			content = ParaObjectUtils.setAnnotatedFields(null, newContent, Locked.class);
 			if (content != null && !StringUtils.isBlank(id)) {
+				content.setType(type);
 				content.setAppid(app.getAppIdentifier());
 				content.setId(id);
 				int typesCount = app.getDatatypes().size();

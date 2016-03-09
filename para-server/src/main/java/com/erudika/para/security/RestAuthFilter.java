@@ -185,16 +185,21 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 	}
 
 	private boolean canModify(User user, String resourcePath, String method) {
-		ParaObject obj = RestUtils.readResourcePath(user.getAppid(), resourcePath);
-		if (obj != null) {
-			if (user.getId().equals(obj.getId())) {
-				// a user object can only read and update itself
-				return (method.equals(GET) || method.equals("PATCH") || method.equals(PUT));
-			} else {
-				return user.canModify(obj);
-			}
+		ParaObject po = RestUtils.readResourcePath(user.getAppid(), resourcePath);
+		if (po == null) {
+			return false;
 		}
-		return false;
+		if (user.getId().equals(po.getId())) {
+			String path = resourcePath.startsWith("/") ? resourcePath : "/" + resourcePath;
+			String prefix = (po.getObjectURI().startsWith("/") ? po.getObjectURI() : "/" + po.getObjectURI()) + "/";
+			if (StringUtils.startsWithIgnoreCase(path, prefix) && !path.equals(prefix)) {
+				// implicit permissions: object can access children and its own subresources
+				return true;
+			}
+			// a user object can only read and update itself
+			return (method.equals(GET) || method.equals("PATCH") || method.equals(PUT));
+		}
+		return user.canModify(po);
 	}
 
 	private class BufferedRequestWrapper extends HttpServletRequestWrapper {

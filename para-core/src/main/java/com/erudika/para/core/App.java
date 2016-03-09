@@ -568,18 +568,30 @@ public class App implements ParaObject {
 	 * @return true if access is explicitly denied
 	 */
 	public boolean isDeniedExplicitly(String subjectid, String resourcePath, String httpMethod) {
-		boolean denied = false;
-		if (subjectid != null && !StringUtils.isBlank(resourcePath) && !StringUtils.isBlank(httpMethod)) {
-			// urlDecode resource path
-			resourcePath = Utils.urlDecode(resourcePath);
-			if (getResourcePermissions().isEmpty()) {
-				return false;
-			}
-			if (getResourcePermissions().containsKey(subjectid)) {
-				denied = !isAllowed(subjectid, resourcePath, httpMethod) && !isAllowed(subjectid, ALLOW_ALL, httpMethod);
-			}
+		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourcePath) ||
+				StringUtils.isBlank(httpMethod) || getResourcePermissions().isEmpty()) {
+			return false;
 		}
-		return denied;
+		// urlDecode resource path
+		resourcePath = Utils.urlDecode(resourcePath);
+		String sid, path;
+
+		if (getResourcePermissions().containsKey(subjectid)) {
+			sid = subjectid;
+		} else if (getResourcePermissions().containsKey(ALLOW_ALL)) {
+			sid = ALLOW_ALL;
+		} else {
+			return false;
+		}
+
+		if (getResourcePermissions().get(sid).containsKey(resourcePath)) {
+			path = resourcePath;
+		} else if (getResourcePermissions().get(sid).containsKey(ALLOW_ALL)) {
+			path = ALLOW_ALL;
+		} else {
+			return false;
+		}
+		return !isAllowed(sid, path, httpMethod);
 	}
 
 	/**

@@ -253,6 +253,8 @@ public class AppTest {
 	@Test
 	public void testIsDeniedExplicitly() {
 		App app = new App();
+		App app2 = new App();
+
 		User u = new User("u123");
 		User u2 = new User("someone_else");
 
@@ -276,7 +278,7 @@ public class AppTest {
 		assertFalse(app.isAllowedTo(u2.getId(), res2, "GET"));
 		assertTrue(app.isDeniedExplicitly(u2.getId(), res2, "GET"));
 		assertTrue(app.isDeniedExplicitly(u2.getId(), res2, "DELETE"));
-		assertTrue(app.isDeniedExplicitly(u2.getId(), App.ALLOW_ALL, "PUT"));
+		assertFalse(app.isDeniedExplicitly(u2.getId(), App.ALLOW_ALL, "PUT"));
 
 		// specific restrictions per "id" take precedence
 		app.grantResourcePermission(App.ALLOW_ALL, res2, App.AllowedMethods.READ);
@@ -284,8 +286,14 @@ public class AppTest {
 		assertTrue(app.isDeniedExplicitly(u2.getId(), res2, "GET"));
 
 		app.grantResourcePermission(App.ALLOW_ALL, App.ALLOW_ALL, App.AllowedMethods.READ);
-		assertTrue(app.isDeniedExplicitly(u2.getId(), "this/is/test", "GET"));
+		assertFalse(app.isDeniedExplicitly(u2.getId(), "this/is/test", "GET"));
 		assertTrue(app.isDeniedExplicitly(u2.getId(), res2, "GET"));
+
+		// wildcard restrictions
+		assertFalse(app2.isDeniedExplicitly(u.getId(), res2, "POST"));
+		app2.grantResourcePermission(App.ALLOW_ALL, res2, App.AllowedMethods.READ);
+		assertTrue(app2.isDeniedExplicitly(u.getId(), res2, "POST"));
+		assertTrue(app2.isDeniedExplicitly(u2.getId(), res2, "PUT"));
 	}
 
 }

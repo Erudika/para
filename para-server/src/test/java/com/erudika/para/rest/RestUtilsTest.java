@@ -177,9 +177,11 @@ public class RestUtilsTest {
 		assertNull(readResourcePath(appid, "sysprop/"));
 
 		assertNotNull(readResourcePath(appid, "sysprop/" + s.getId()));
-		assertNotNull(readResourcePath(appid, "/v1/sysprop/" + s.getId()));
-		assertNotNull(readResourcePath(appid, "one/two/three/" + s.getId()));
-		assertNull(readResourcePath(appid, "one/two/three/" + s.getId() + "/four"));
+		assertNull(readResourcePath(appid, "/v1/sysprop/" + s.getId()));
+		assertNull(readResourcePath(appid, "one/two/three/" + s.getId()));
+		assertNotNull(readResourcePath(appid, "type/" + s.getId() + "/subresource/test"));
+		assertEquals(s, readResourcePath(appid, "type/" + s.getId() + "/subresource/test"));
+		assertNotNull(readResourcePath(appid, "/type/" + s.getId() + "/subresource/test?query=string"));
 
 		Para.getDAO().delete(appid, s);
 		assertNull(readResourcePath(appid, "sysprop/" + s.getId()));
