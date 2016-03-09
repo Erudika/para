@@ -1,5 +1,4 @@
 ![Logo](https://s3-eu-west-1.amazonaws.com/org.paraio/para.png)
-============================
 
 # Java Client for Para
 
@@ -8,9 +7,10 @@
 
 ## What is this?
 
-**Para** was designed as a simple and modular back-end framework for object persistence and retrieval.
-It enables your application to store objects directly to a data store (NoSQL) or any relational database (RDBMS)
-and it also automatically indexes those objects and makes them searchable.
+**Para** was designed as a simple and modular backend framework for object persistence and retrieval.
+It helps you build applications faster by taking care of the backend. It works on three levels -
+objects are stored in a NoSQL data store or any old relational database, then automatically indexed
+by a search engine and finally, cached.
 
 This is the Java client for Para.
 

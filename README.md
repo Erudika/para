@@ -1,22 +1,23 @@
 ![Logo](https://s3-eu-west-1.amazonaws.com/org.paraio/para.png)
 
-## A general-purpose back-end framework for the cloud.
+## A general-purpose backend framework for the cloud.
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-core)
 [![Join the chat at https://gitter.im/Erudika/para](https://badges.gitter.im/Erudika/para.svg)](https://gitter.im/Erudika/para?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 
-**Para** was designed as a simple and modular back-end framework for object persistence and retrieval.
-It enables your application to store objects directly to a data store (NoSQL) or any relational database (RDBMS)
-and it also automatically indexes those objects and makes them searchable.
+**Para** was designed as a simple and modular backend framework for object persistence and retrieval.
+It helps you build applications faster by taking care of the backend. It works on three levels -
+objects are stored in a NoSQL data store or any old relational database, then automatically indexed
+by a search engine and finally, cached.
 
 The name "pára" means "steam" in Bulgarian. And just like steam is used to power stuff, you can use
-Para to power your mobile or web application back-end.
+Para to power your mobile or web application backend.
 
 Para can be used in two ways - as the backbone of your JVM-based application or as a standalone server supporting
 multiple applications and clients written in any programming language.
 
-See how Para [compares to other open source back-end frameworks](http://www.erudika.com/blog/2015/10/21/backend-frameworks-usergrid-loopback-para-baasbox-deployd-telepat/).
+See how Para [compares to other open source backend frameworks](http://www.erudika.com/blog/2015/10/21/backend-frameworks-usergrid-loopback-para-baasbox-deployd-telepat/).
 
 ### Features
 
@@ -124,10 +125,11 @@ clients for popular languages soon.
 ## Wishlist / Roadmap
 
 - `DAO` implementations for popular databases like [MongoDB](https://github.com/erudika/para-dao-mongodb), PostgreSQL, Cassandra, etc.
-- API clients in Python, iOS.
 - Web API console for developers
+- API clients in Python, iOS.
+- Swagger support
+- GraphQL and/or ([jsonapi.org](http://jsonapi.org/)) support
 - Integrations with Google App Engine, Heroku, Docker, Vagrant
-- GraphQL support
 
 ## Contributing
 
@@ -148,7 +150,7 @@ For more information see [CONTRIBUTING.md](https://github.com/Erudika/para/blob/
 
 ## Hosting
 
-We offer professional hosting and support at [paraio.com](https://paraio.com) where you can try Para online with a
+We offer **hosting and premium support** at [paraio.com](https://paraio.com) where you can try Para online with a
 free developer account. Browse and manage your users and objects, do backups and edit permissions with a few clicks in
 the web console. By upgrading to a premium account you will be able to scale you projects up and down in seconds and
 manage multiple apps.
