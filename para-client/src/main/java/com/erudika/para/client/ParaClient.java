@@ -764,7 +764,8 @@ public final class ParaClient {
 			return false;
 		}
 		String url = Utils.formatMessage("{0}/links/{1}/{2}", obj.getObjectURI(), type2, id2);
-		return getEntity(invokeGet(url, null), Boolean.class);
+		Boolean result = getEntity(invokeGet(url, null), Boolean.class);
+		return result != null && result;
 	}
 
 	/**
@@ -1103,8 +1104,24 @@ public final class ParaClient {
 	 */
 	public Map<String, Map<String, List<String>>> grantResourcePermission(String subjectid, String resourcePath,
 			EnumSet<App.AllowedMethods> permission) {
+		return grantResourcePermission(subjectid, resourcePath, permission, false);
+	}
+
+	/**
+	 * Grants a permission to a subject that allows them to call the specified HTTP methods on a given resource.
+	 * @param subjectid subject id (user id)
+	 * @param resourcePath resource path or object type (URL encoded)
+	 * @param permission a set of HTTP methods
+	 * @param allowGuestAccess if true - all unauthenticated requests will go through, 'false' by default.
+	 * @return a map of the permissions for this subject id
+	 */
+	public Map<String, Map<String, List<String>>> grantResourcePermission(String subjectid, String resourcePath,
+			EnumSet<App.AllowedMethods> permission, boolean allowGuestAccess) {
 		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourcePath) || permission == null) {
 			return Collections.emptyMap();
+		}
+		if (allowGuestAccess && App.ALLOW_ALL.equals(subjectid)) {
+			permission.add(App.AllowedMethods.GUEST);
 		}
 		return getEntity(invokePut(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourcePath),
 				Entity.json(permission)), Map.class);
@@ -1148,7 +1165,8 @@ public final class ParaClient {
 			return false;
 		}
 		String url = Utils.formatMessage("_permissions/{0}/{1}/{2}", subjectid, resourcePath, httpMethod);
-		return getEntity(invokeGet(url, null), Boolean.class);
+		Boolean result = getEntity(invokeGet(url, null), Boolean.class);
+		return result != null && result;
 	}
 
 	/////////////////////////////////////////////

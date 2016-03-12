@@ -1026,6 +1026,10 @@ public class App implements ParaObject {
 		public static AllowedMethods fromString(String value) {
 			if (ALLOW_ALL.equals(value)) {
 				return READ_WRITE;
+			} else if ("w".equals(value)) {
+				return WRITE_ONLY;
+			} else if ("?".equals(value)) {
+				return GUEST;
 			} else {
 				try {
 					return valueOf(value.toUpperCase());

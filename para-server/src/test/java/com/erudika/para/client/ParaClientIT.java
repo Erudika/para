@@ -664,5 +664,14 @@ public class ParaClientIT {
 		assertNull(pc2.me());
 
 		pc2.signOut();
+
+		// test anonymous permissions
+		String utilsPath = Utils.urlEncode("utils/timestamp");
+		ParaClient guest = new ParaClient(App.id(APP_NAME), null);
+		guest.setEndpoint(pc2.getEndpoint());
+		assertFalse(guest.getTimestamp() > 0);
+		assertFalse(guest.isAllowedTo(App.ALLOW_ALL, utilsPath, AllowedMethods.GET.toString()));
+		pc2.grantResourcePermission(App.ALLOW_ALL, utilsPath, AllowedMethods.READ, true);
+		assertTrue(guest.getTimestamp() > 0);
 	}
 }

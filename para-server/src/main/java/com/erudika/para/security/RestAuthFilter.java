@@ -202,7 +202,21 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		return false;
 	}
 
+	private boolean hasPermission(App parentApp, User user, HttpServletRequest request) {
+		String resourcePath = RestUtils.extractResourcePath(request);
+		String method = request.getMethod();
+		String uid = (user == null) ? "" : user.getId();
+		boolean isAllowed = parentApp.isAllowedTo(uid, resourcePath, method);
+		if (parentApp.isDeniedExplicitly(uid, resourcePath, method)) {
+			return false;
+		}
+		return (isAllowed || canModify(user, resourcePath, method));
+	}
+
 	private boolean canModify(User user, String resourcePath, String method) {
+		if (user == null || resourcePath == null || method == null) {
+			return false;
+		}
 		ParaObject po = RestUtils.readResourcePath(user.getAppid(), resourcePath);
 		if (po == null) {
 			return false;
@@ -218,17 +232,6 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 			return (method.equals(GET) || method.equals("PATCH") || method.equals(PUT));
 		}
 		return user.canModify(po);
-	}
-
-	private boolean hasPermission(App parentApp, User user, HttpServletRequest request) {
-		String resourcePath = RestUtils.extractResourcePath(request);
-		String method = request.getMethod();
-		String uid = (user == null) ? "" : user.getId();
-		boolean isAllowed = parentApp.isAllowedTo(uid, resourcePath, method);
-		if (parentApp.isDeniedExplicitly(uid, resourcePath, method)) {
-			return false;
-		}
-		return (isAllowed || canModify(user, resourcePath, method));
 	}
 
 	private class BufferedRequestWrapper extends HttpServletRequestWrapper {

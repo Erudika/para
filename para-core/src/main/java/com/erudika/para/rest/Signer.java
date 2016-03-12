@@ -356,8 +356,10 @@ public final class Signer extends AWS4Signer {
 
 		if (StringUtils.isBlank(secretKey)) {
 			logger.debug("Anonymous request: {} {}", httpMethod, reqPath);
-			// guest access
-			headers.put("Authorization", "Anonymous " + accessKey);
+			if (headers == null) {
+				headers = new HashMap<String, String>();
+			}
+			headers.put(HttpHeaders.AUTHORIZATION, "Anonymous " + accessKey);
 			return headers;
 		}
 

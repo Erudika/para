@@ -248,6 +248,12 @@ public class AppTest {
 		assertFalse(app.isAllowed("user1", "super/secret/resource", "GET"));
 		assertFalse(app.isAllowed("user2", "super/secret/resource", "POST"));
 		assertFalse(app.isAllowed("user2", "super/secret/resource", App.AllowedMethods.NONE.toString()));
+		// guest access
+		assertFalse(app.isAllowed(App.ALLOW_ALL, "users/12345", App.AllowedMethods.GUEST.toString()));
+		assertFalse(app.isAllowed(App.ALLOW_ALL, "guest/access", App.AllowedMethods.GUEST.toString()));
+		app.grantResourcePermission(App.ALLOW_ALL, "guest/access", App.AllowedMethods.READ, true);
+		assertTrue(app.isAllowed(App.ALLOW_ALL, "guest/access", "GET"));
+		assertTrue(app.isAllowed(App.ALLOW_ALL, "guest/access", App.AllowedMethods.GUEST.toString()));
 	}
 
 	@Test
