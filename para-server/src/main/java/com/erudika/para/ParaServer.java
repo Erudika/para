@@ -107,7 +107,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		reg.setName(Api1.class.getSimpleName());
 		reg.setAsyncSupported(true);
 		reg.setEnabled(true);
-		reg.setOrder(1);
+		reg.setOrder(3);
 		return reg;
 	}
 
@@ -126,6 +126,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	public FilterRegistrationBean corsFilterRegistrationBean() {
 		FilterRegistrationBean frb = new FilterRegistrationBean(new CORSFilter());
 		frb.addUrlPatterns(Api1.PATH + "*");
+		frb.addInitParameter("cors.support.credentials", "true");
 		frb.addInitParameter("cors.allowed.methods", "GET,POST,PATCH,PUT,DELETE,HEAD,OPTIONS");
 		frb.addInitParameter("cors.exposed.headers", "Cache-Control,Content-Length,Content-Type,Date,ETag,Expires");
 		frb.addInitParameter("cors.allowed.headers", "Origin,Accept,X-Requested-With,Content-Type,"
@@ -133,8 +134,8 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 				+ "X-Amz-Date,Authorization");
 		frb.setAsyncSupported(true);
 		frb.setEnabled(Config.CORS_ENABLED);
-		frb.setMatchAfter(true);
-		frb.setOrder(3);
+		frb.setMatchAfter(false);
+		frb.setOrder(2);
 		return frb;
 	}
 
