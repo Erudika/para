@@ -79,9 +79,22 @@ public final class RestUtils {
 				return StringUtils.substringBefore(auth, "/");
 			}
 		} else {
-			String credential = StringUtils.substringBetween(auth, "Credential=", ",");
-			return StringUtils.substringBefore(credential, "/");
+			if (auth.startsWith("Anonymous")) {
+				return StringUtils.substringAfter(auth, "Anonymous").trim();
+			} else {
+				String credential = StringUtils.substringBetween(auth, "Credential=", ",");
+				return StringUtils.substringBefore(credential, "/");
+			}
 		}
+	}
+
+	/**
+	 * Check if Authorization header starts with 'Anonymous'. Used for guest access.
+	 * @param request a request
+	 * @return true if user is unauthenticated
+	 */
+	public static boolean isAnonymousRequest(HttpServletRequest request) {
+		return request != null && StringUtils.startsWith(request.getHeader(HttpHeaders.AUTHORIZATION), "Anonymous");
 	}
 
 	/**

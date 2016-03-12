@@ -428,11 +428,29 @@ public class App implements ParaObject {
 	 * @return true if successful
 	 */
 	public boolean grantResourcePermission(String subjectid, String resourcePath, EnumSet<AllowedMethods> permission) {
+		return grantResourcePermission(subjectid, resourcePath, permission, false);
+	}
+
+	/**
+	 * Grants a new permission for a given subject and resource.
+	 * @param subjectid the subject to give permissions to
+	 * @param resourcePath the resource name/type
+	 * @param permission the set or HTTP methods allowed
+	 * @param allowGuestAccess if true - all unauthenticated requests will go through, 'false' by default.
+	 * @return true if successful
+	 */
+	public boolean grantResourcePermission(String subjectid, String resourcePath, EnumSet<AllowedMethods> permission,
+			boolean allowGuestAccess) {
 		// urlDecode resource path
 		resourcePath = Utils.urlDecode(resourcePath);
 
 		if (!StringUtils.isBlank(subjectid) && !StringUtils.isBlank(resourcePath) &&
 				permission != null && !permission.isEmpty()) {
+
+			if (allowGuestAccess && ALLOW_ALL.equals(subjectid)) {
+				permission.add(AllowedMethods.GUEST);
+			}
+
 			if (!getResourcePermissions().containsKey(subjectid)) {
 				Map<String, List<String>> perm = new HashMap<String, List<String>>();
 				perm.put(resourcePath, new ArrayList<String>(permission.size()));
@@ -528,9 +546,18 @@ public class App implements ParaObject {
 						isAllowed(ALLOW_ALL, ALLOW_ALL, httpMethod);
 			}
 		}
-		boolean isRootApp = StringUtils.equals(App.id(Config.APP_NAME_NS), getId());
-		boolean isRootAppAccessAllowed = Config.getConfigBoolean("clients_can_access_root_app", !Config.IN_PRODUCTION);
-		return isRootApp ? (isRootAppAccessAllowed && allow) : allow;
+		if (allow) {
+			boolean isRootApp = StringUtils.equals(App.id(Config.APP_NAME_NS), getId());
+			if (isRootApp && !Config.getConfigBoolean("clients_can_access_root_app", !Config.IN_PRODUCTION)) {
+				return false;
+			}
+			if (StringUtils.isBlank(subjectid)) {
+				// guest access check
+				return isAllowed(ALLOW_ALL, resourcePath, AllowedMethods.GUEST.toString());
+			}
+			return true;
+		}
+		return false;
 	}
 
 	protected final boolean isAllowed(String subjectid, String resourcePath, String httpMethod) {
@@ -948,6 +975,10 @@ public class App implements ParaObject {
 	public static enum AllowedMethods {
 
 		/**
+		 * Allow unauthenticated requests (guest access)
+		 */
+		GUEST,
+		/**
 		 * Deny all requests (no access)
 		 */
 		EMPTY,
@@ -1012,6 +1043,8 @@ public class App implements ParaObject {
 					return ALLOW_ALL;
 				case READ_ONLY:
 					return GET.name();
+				case GUEST:
+					return "?";
 				case EMPTY:
 					return "-";
 				case WRITE_ONLY:

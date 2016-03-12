@@ -79,11 +79,15 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		BufferedRequestWrapper request = new BufferedRequestWrapper((HttpServletRequest) req);
 		HttpServletResponse response = (HttpServletResponse) res;
 
+		// users are allowed to GET '/_me' - used on the client-side for checking authentication
 		String appid = RestUtils.extractAccessKey(request);
 		boolean isApp = !StringUtils.isBlank(appid);
+		boolean isGuest = isApp && RestUtils.isAnonymousRequest(request);
 		boolean proceed = true;
-		// users are allowed to GET '/_me' - used on the client-side for checking authentication
-		if (!isApp && RestRequestMatcher.INSTANCE.matches(request)) {
+
+		if (isGuest && RestRequestMatcher.INSTANCE.matches(request)) {
+			proceed = guestAuthRequestHandler(appid, (HttpServletRequest) req, response);
+		} else if (!isApp && RestRequestMatcher.INSTANCE.matches(request)) {
 			proceed = userAuthRequestHandler((HttpServletRequest) req, response);
 		} else if (isApp && RestRequestMatcher.INSTANCE_STRICT.matches(request)) {
 			proceed = appAuthRequestHandler(appid, request, response);
@@ -92,6 +96,29 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		if (proceed) {
 			chain.doFilter(request, res);
 		}
+	}
+
+	private boolean guestAuthRequestHandler(String appid, HttpServletRequest request, HttpServletResponse response) {
+		String reqUri = request.getRequestURI();
+		String method = request.getMethod();
+		if (!StringUtils.isBlank(appid)) {
+			App parentApp = Para.getDAO().read(App.id(appid));
+			if (parentApp != null) {
+				if (!hasPermission(parentApp, null, request)) {
+					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+							Utils.formatMessage("You don't have permission to access this resource. "
+									+ "[user: {0}, resource: {1} {2}]", "[GUEST]", method, reqUri));
+					return false;
+				}
+			} else {
+				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND,
+						Utils.formatMessage("App not found. [{0}]", appid));
+			}
+		} else {
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, Utils.
+					formatMessage("You don't have permission to access this resource. [{0} {1}]", method, reqUri));
+		}
+		return true;
 	}
 
 	private boolean userAuthRequestHandler(HttpServletRequest request, HttpServletResponse response) {
@@ -107,10 +134,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 				parentApp = Para.getDAO().read(App.id(user.getAppid()));
 			}
 			if (parentApp != null) {
-				String resourcePath = RestUtils.extractResourcePath(request);
-				boolean isDeniedExplicitly = parentApp.isDeniedExplicitly(user.getId(), resourcePath, method);
-				boolean isAllowed = parentApp.isAllowedTo(user.getId(), resourcePath, method);
-				if (isDeniedExplicitly || !(isAllowed || canModify(user, resourcePath, method))) {
+				if (!hasPermission(parentApp, user, request)) {
 					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
 							Utils.formatMessage("You don't have permission to access this resource. "
 									+ "[user: {0}, resource: {1} {2}]", user.getId(), method, reqUri));
@@ -146,42 +170,36 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 							if (!(app.getReadOnly() && isWriteRequest(request))) {
 								if (signer.isValidSignature(request, app.getSecret())) {
 									SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
+									return true;
 								} else {
 									RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
 											"Request signature is invalid.");
-									return false;
 								}
 							} else {
 								RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
 										Utils.formatMessage("App is in read-only mode. [{0}]", appid));
-								return false;
 							}
 						} else {
 							RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
 									Utils.formatMessage("App not active. [{0}]", appid));
-							return false;
 						}
 					} else {
 						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND,
 								Utils.formatMessage("App not found. [{0}]", appid));
-						return false;
 					}
 				} else {
 					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
 							"Request has expired.");
-					return false;
 				}
 			} else {
 				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
 						"'X-Amz-Date' header or parameter is not set!");
-				return false;
 			}
 		} else {
 			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, Utils.
 					formatMessage("You don't have permission to access this resource. [{0} {1}]", method, reqUri));
-			return false;
 		}
-		return true;
+		return false;
 	}
 
 	private boolean canModify(User user, String resourcePath, String method) {
@@ -200,6 +218,17 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 			return (method.equals(GET) || method.equals("PATCH") || method.equals(PUT));
 		}
 		return user.canModify(po);
+	}
+
+	private boolean hasPermission(App parentApp, User user, HttpServletRequest request) {
+		String resourcePath = RestUtils.extractResourcePath(request);
+		String method = request.getMethod();
+		String uid = (user == null) ? "" : user.getId();
+		boolean isAllowed = parentApp.isAllowedTo(uid, resourcePath, method);
+		if (parentApp.isDeniedExplicitly(uid, resourcePath, method)) {
+			return false;
+		}
+		return (isAllowed || canModify(user, resourcePath, method));
 	}
 
 	private class BufferedRequestWrapper extends HttpServletRequestWrapper {

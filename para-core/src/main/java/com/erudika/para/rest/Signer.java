@@ -349,10 +349,16 @@ public final class Signer extends AWS4Signer {
 			String httpMethod, String endpointURL, String reqPath,
 			Map<String, String> headers, MultivaluedMap<String, String> params, byte[] jsonEntity) {
 
-		if (StringUtils.isBlank(accessKey) || StringUtils.isBlank(secretKey)) {
-			logger.warn("Blank access key or secret key for: {} {}", httpMethod, reqPath);
-			accessKey = "";
-			secretKey = "";
+		if (StringUtils.isBlank(accessKey)) {
+			logger.error("Blank access key: {} {}", httpMethod, reqPath);
+			return headers;
+		}
+
+		if (StringUtils.isBlank(secretKey)) {
+			logger.debug("Anonymous request: {} {}", httpMethod, reqPath);
+			// guest access
+			headers.put("Authorization", "Anonymous " + accessKey);
+			return headers;
 		}
 
 		if (httpMethod == null) {
