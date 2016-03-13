@@ -666,7 +666,7 @@ public class ParaClientIT {
 		pc2.signOut();
 
 		// test anonymous permissions
-		String utilsPath = Utils.urlEncode("utils/timestamp");
+		String utilsPath = "utils/timestamp";
 		ParaClient guest = new ParaClient(App.id(APP_NAME), null);
 		guest.setEndpoint(pc2.getEndpoint());
 		assertFalse(guest.getTimestamp() > 0);
