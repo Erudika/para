@@ -54,6 +54,7 @@ import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -78,7 +79,7 @@ public class ElasticSearch implements Search {
 	private DAO dao;
 
 	static {
-		if (!Config.getConfigBoolean("es.lazy_start", true)) {
+		if (Config.isSearchEnabled()) {
 			ElasticSearchUtils.getClient();
 		}
 	}
@@ -526,6 +527,8 @@ public class ElasticSearch implements Search {
 			if (gres.isExists()) {
 				map = gres.getSource();
 			}
+		} catch (IndexNotFoundException ex) {
+			logger.warn("Index not created yet. Call '_setup' first.");
 		} catch (Exception e) {
 			logger.warn(null, e);
 		}

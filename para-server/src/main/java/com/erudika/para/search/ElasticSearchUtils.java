@@ -129,16 +129,14 @@ public final class ElasticSearchUtils {
 				shutdownClient();
 			}
 		});
-
-		if (!existsIndex(Config.APP_NAME_NS)) {
-			createIndex(Config.APP_NAME_NS);
-		}
-
 		// wait for the shards to initialize - prevents NoShardAvailableActionException!
 		String timeout = Config.IN_PRODUCTION ? "1m" : "5s";
 		searchClient.admin().cluster().prepareHealth(Config.APP_NAME_NS).
 				setWaitForGreenStatus().setTimeout(timeout).execute().actionGet();
 
+		if (!existsIndex(Config.APP_NAME_NS)) {
+			createIndex(Config.APP_NAME_NS);
+		}
 		return searchClient;
 	}
 
@@ -238,7 +236,7 @@ public final class ElasticSearchUtils {
 			return false;
 		}
 		try {
-			logger.warn("Deleted index '{}'.", appid);
+			logger.info("Deleted index '{}'.", appid);
 			getClient().admin().indices().prepareDelete(appid).execute().actionGet();
 		} catch (Exception e) {
 			logger.warn(null, e);
