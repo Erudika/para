@@ -371,7 +371,7 @@ public final class Config {
 	 * @return true if caching is enabled
 	 */
 	public static boolean isCacheEnabled() {
-		return Boolean.parseBoolean(getConfigParam("cache_enabled", "" + ENVIRONMENT.equals("production")));
+		return getConfigBoolean("cache_enabled", ENVIRONMENT.equals("production"));
 	}
 
 	/**
@@ -379,7 +379,7 @@ public final class Config {
 	 * @return true if indexing is enabled
 	 */
 	public static boolean isSearchEnabled() {
-		return Boolean.parseBoolean(getConfigParam("search_enabled", "true"));
+		return getConfigBoolean("search_enabled", true);
 	}
 
 	/**

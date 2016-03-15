@@ -95,6 +95,11 @@ public class Api1 extends ResourceConfig {
 		register(new JacksonJsonProvider(ParaObjectUtils.getJsonMapper()));
 		register(FieldFilter.class);
 
+		// print logo
+		Resource.Builder logo = Resource.builder("/");
+		logo.addMethod(GET).produces(JSON).handledBy(introHandler());
+		registerResources(logo.build());
+
 		// core objects CRUD API
 		registerCrudApi("{type}", typeCrudHandler(), linksHandler());
 
@@ -182,9 +187,6 @@ public class Api1 extends ResourceConfig {
 
 	private void registerCrudApi(String path, Inflector<ContainerRequestContext, Response> handler,
 			Inflector<ContainerRequestContext, Response> linksHandler) {
-		// print logo
-		Resource.Builder logo = Resource.builder("/");
-		logo.addMethod(GET).produces(JSON).handledBy(handler);
 		Resource.Builder core = Resource.builder(path);
 		// list endpoints (both do the same thing)
 		core.addMethod(GET).produces(JSON).handledBy(handler);
@@ -210,7 +212,6 @@ public class Api1 extends ResourceConfig {
 		batch.addMethod(PATCH).produces(JSON).consumes(JSON).handledBy(batchUpdateHandler());
 		batch.addMethod(DELETE).produces(JSON).handledBy(batchDeleteHandler());
 
-		registerResources(logo.build());
 		registerResources(core.build());
 		registerResources(batch.build());
 	}
@@ -255,26 +256,30 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
+	private Inflector<ContainerRequestContext, Response> introHandler() {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				Map<String, String> info = new TreeMap<String, String>();
+				info.put("info", "Para - a backend for busy developers.");
+				if (Config.getConfigBoolean("print_version", true)) {
+					info.put("version", StringUtils.replace(Para.getVersion(), "-SNAPSHOT", ""));
+				}
+				return Response.ok(info).build();
+			}
+		};
+	}
+
 	private Inflector<ContainerRequestContext, Response> typeCrudHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				String typePlural = pathParam(Config._TYPE, ctx);
 				App app = RestUtils.getPrincipalApp();
-				if (app != null) {
-					if (!StringUtils.isBlank(typePlural)) {
-						String type = ParaObjectUtils.getAllTypes(app).get(typePlural);
-						if (type == null) {
-							type = typePlural;
-						}
-						return crudHandler(app, type).apply(ctx);
-					} else {
-						Map<String, String> info = new TreeMap<String, String>();
-						info.put("info", "Para - a backend for busy developers.");
-						if (Config.getConfigBoolean("print_version", true)) {
-							info.put("version", Para.getVersion());
-						}
-						return Response.ok(info).build();
+				if (app != null && !StringUtils.isBlank(typePlural)) {
+					String type = ParaObjectUtils.getAllTypes(app).get(typePlural);
+					if (type == null) {
+						type = typePlural;
 					}
+					return crudHandler(app, type).apply(ctx);
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
@@ -617,17 +622,7 @@ public class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> setupHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = new App(Config.APP_NAME_NS); // the root app name
-				if (app.exists()) {
-					return RestUtils.getStatusResponse(Response.Status.OK, "All set!");
-				} else {
-					app.setName(Config.APP_NAME);
-					app.setShared(false);
-					app.create();
-					Map<String, String> creds = app.getCredentials();
-					creds.put("info", "Save the secret key! It is showed only once!");
-					return Response.ok(creds).build();
-				}
+				return Response.ok(Para.setup()).build();
 			}
 		};
 	}

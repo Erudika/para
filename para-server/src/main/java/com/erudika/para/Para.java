@@ -18,6 +18,7 @@
 package com.erudika.para;
 
 import com.erudika.para.cache.Cache;
+import com.erudika.para.core.App;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.rest.CustomResourceHandler;
 import com.erudika.para.search.Search;
@@ -36,6 +37,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -334,6 +336,26 @@ public final class Para {
 
 	private static void handleNotInitializedError() {
 		throw new IllegalStateException("Call Para.initialize() first!");
+	}
+
+	/**
+	 * Creates the root application and returns the
+	 * @return credentials for the root app
+	 */
+	public static Map<String, String> setup() {
+		App app = new App(Config.APP_NAME_NS);
+		Map<String, String> creds = new TreeMap<String, String>();
+		if (app.exists()) {
+			creds.put("message", "All set!");
+		} else {
+			app.setName(Config.APP_NAME);
+			app.setShared(false);
+			app.setActive(true);
+			app.create();
+			creds.putAll(app.getCredentials());
+			creds.put("message", "Save the secret key! It is showed only once!");
+		}
+		return creds;
 	}
 
 	/**
