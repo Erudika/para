@@ -34,6 +34,7 @@ import com.erudika.para.utils.filters.CORSFilter;
 import com.erudika.para.utils.filters.ErrorFilter;
 import com.erudika.para.utils.filters.GZipServletFilter;
 import com.google.inject.Module;
+import java.util.Arrays;
 import javax.annotation.PreDestroy;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -101,9 +102,10 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	}
 
 	@Bean
-	public ServletRegistrationBean jerseyRegistrationBean() {
-		ServletRegistrationBean reg = new ServletRegistrationBean(
-				new ServletContainer(new Api1()), Api1.PATH + "*");
+	public ServletRegistrationBean apiV1RegistrationBean() {
+		String path = Api1.PATH + "*";
+		ServletRegistrationBean reg = new ServletRegistrationBean(new ServletContainer(new Api1()), path);
+		logger.debug("Initializing Para API v1 [{}]...", path);
 		reg.setName(Api1.class.getSimpleName());
 		reg.setAsyncSupported(true);
 		reg.setEnabled(true);
@@ -113,8 +115,10 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 
 	@Bean
 	public FilterRegistrationBean gzipFilterRegistrationBean() {
+		String[] path = new String[]{ "*.css", "*.json", "*.html", "*.js", Api1.PATH + "*" };
 		FilterRegistrationBean frb = new FilterRegistrationBean(new GZipServletFilter());
-		frb.addUrlPatterns("*.css", "*.json", "*.html", "*.js", Api1.PATH + "*");
+		logger.debug("Initializing GZip filter [{}]...", Arrays.toString(path));
+		frb.addUrlPatterns(path);
 		frb.setAsyncSupported(true);
 		frb.setEnabled(Config.GZIP_ENABLED);
 		frb.setMatchAfter(true);
@@ -124,8 +128,10 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 
 	@Bean
 	public FilterRegistrationBean corsFilterRegistrationBean() {
+		String path = Api1.PATH + "*";
+		logger.debug("Initializing CORS filter [{}]...", path);
 		FilterRegistrationBean frb = new FilterRegistrationBean(new CORSFilter());
-		frb.addUrlPatterns(Api1.PATH + "*");
+		frb.addUrlPatterns(path);
 		frb.addInitParameter("cors.support.credentials", "true");
 		frb.addInitParameter("cors.allowed.methods", "GET,POST,PATCH,PUT,DELETE,HEAD,OPTIONS");
 		frb.addInitParameter("cors.exposed.headers", "Cache-Control,Content-Length,Content-Type,Date,ETag,Expires");
