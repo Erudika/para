@@ -14,15 +14,14 @@ by a search engine and finally, cached.
 The name "pára" means "steam" in Bulgarian. And just like steam is used to power stuff, you can use
 Para to power your mobile or web application backend.
 
-Para can be used in two ways - as the backbone of your JVM-based application or as a standalone server supporting
-multiple applications and clients written in any programming language.
+**Para** can be used in two ways - as the backbone of your JVM-based application or as a standalone API server with
+multiple applications and clients connecting to it.
 
-See how Para [compares to other open source backend frameworks](http://www.erudika.com/blog/2015/10/21/backend-frameworks-usergrid-loopback-para-baasbox-deployd-telepat/).
+See how **Para** [compares to other open source backend frameworks](http://www.erudika.com/blog/2015/10/21/backend-frameworks-usergrid-loopback-para-baasbox-deployd-telepat/).
 
 ### Features
 
-- Standalone executable WAR with embedded Jetty
-- RESTful JSON API for your objects secured with Amazon's Signature 4 algorithm
+- RESTful JSON API secured with Amazon's Signature 4 algorithm
 - Full-text search (Elasticsearch by default)
 - Distributed object cache (Hazelcast by default)
 - Multi-tenancy support - each app has its own table, index and cache
@@ -33,6 +32,7 @@ See how Para [compares to other open source backend frameworks](http://www.erudi
 - Designed for scalable data stores (Amazon DynamoDB, Apache Cassandra, MongoDB)
 - Modular design powered by Google Guice and support for plugins
 - I18n utilities for translating language packs and working with currencies
+- Standalone executable WAR with embedded Jetty
 
 ### Architecture
 
@@ -79,9 +79,8 @@ Para can be compiled with JDK 1.6 and up, but we recommend running it on Java 1.
 Para uses Maven. Here's how you clone it and build it:
 
 ```sh
-git clone https://github.com/erudika/para.git para
-cd para
-mvn install -DskipTests=true
+$ git clone https://github.com/erudika/para.git && cd para
+$ mvn install -DskipTests=true
 ```
 
 ### Standalone - executable WAR
@@ -89,7 +88,7 @@ mvn install -DskipTests=true
 You can run Para as a standalone server by downloading the executable WAR and then:
 
 ```sh
-java -jar para-X.Y.Z.war
+$ java -jar para-X.Y.Z.war
 ```
 
 Alternatively, you can grab the WAR file and deploy it to your favorite servlet container.
