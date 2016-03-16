@@ -34,7 +34,6 @@ import com.erudika.para.utils.filters.CORSFilter;
 import com.erudika.para.utils.filters.ErrorFilter;
 import com.erudika.para.utils.filters.GZipServletFilter;
 import com.google.inject.Module;
-import java.util.Arrays;
 import javax.annotation.PreDestroy;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -115,9 +114,9 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 
 	@Bean
 	public FilterRegistrationBean gzipFilterRegistrationBean() {
-		String[] path = new String[]{ "*.css", "*.json", "*.html", "*.js", Api1.PATH + "*" };
+		String path = Api1.PATH + "*";
 		FilterRegistrationBean frb = new FilterRegistrationBean(new GZipServletFilter());
-		logger.debug("Initializing GZip filter [{}]...", Arrays.toString(path));
+		logger.debug("Initializing GZip filter [{}]...", path);
 		frb.addUrlPatterns(path);
 		frb.setAsyncSupported(true);
 		frb.setEnabled(Config.GZIP_ENABLED);
@@ -131,13 +130,13 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		String path = Api1.PATH + "*";
 		logger.debug("Initializing CORS filter [{}]...", path);
 		FilterRegistrationBean frb = new FilterRegistrationBean(new CORSFilter());
-		frb.addUrlPatterns(path);
 		frb.addInitParameter("cors.support.credentials", "true");
 		frb.addInitParameter("cors.allowed.methods", "GET,POST,PATCH,PUT,DELETE,HEAD,OPTIONS");
 		frb.addInitParameter("cors.exposed.headers", "Cache-Control,Content-Length,Content-Type,Date,ETag,Expires");
 		frb.addInitParameter("cors.allowed.headers", "Origin,Accept,X-Requested-With,Content-Type,"
 				+ "Access-Control-Request-Method,Access-Control-Request-Headers,X-Amz-Credential,"
 				+ "X-Amz-Date,Authorization");
+		frb.addUrlPatterns(path);
 		frb.setAsyncSupported(true);
 		frb.setEnabled(Config.CORS_ENABLED);
 		frb.setMatchAfter(false);
