@@ -43,18 +43,21 @@ public class JWTAuthenticationProvider implements AuthenticationProvider {
 		if (jwtToken != null && supports(authentication.getClass())) {
 			User user = SecurityUtils.getAuthenticatedUser(authentication);
 			App app = jwtToken.getApp();
-			if (user != null && app != null) {
-				String secret = jwtToken.getApp().getSecret() + user.getTokenSecret();
-				if (!SecurityUtils.isValidJWToken(secret, jwtToken.getJwt())) {
+			if (app != null) {
+				boolean isUser = user != null;
+				String secret = jwtToken.getApp().getSecret() + (isUser ? user.getTokenSecret() : "");
+
+				if (SecurityUtils.isValidJWToken(secret, jwtToken.getJwt())) {
+					return isUser ? jwtToken : new AppAuthentication(app);
+				} else {
 					throw new BadCredentialsException("Invalid or expired token.");
 				}
 			} else {
-				throw new AuthenticationServiceException("User not found.");
+				throw new AuthenticationServiceException("App not found.");
 			}
 		} else {
 			throw new AuthenticationServiceException("Unsupported token type.");
 		}
-		return jwtToken;
 	}
 
 	@Override

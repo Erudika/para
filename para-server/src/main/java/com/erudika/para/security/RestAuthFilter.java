@@ -103,16 +103,11 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		String method = request.getMethod();
 		if (!StringUtils.isBlank(appid)) {
 			App parentApp = Para.getDAO().read(App.id(appid));
-			if (parentApp != null) {
-				if (!hasPermission(parentApp, null, request)) {
-					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-							Utils.formatMessage("You don't have permission to access this resource. "
-									+ "[user: {0}, resource: {1} {2}]", "[GUEST]", method, reqUri));
-					return false;
-				}
-			} else {
-				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND,
-						Utils.formatMessage("App not found. [{0}]", appid));
+			if (!hasPermission(parentApp, null, request)) {
+				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+						Utils.formatMessage("You don't have permission to access this resource. "
+								+ "[user: {0}, resource: {1} {2}]", "[GUEST]", method, reqUri));
+				return false;
 			}
 		} else {
 			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, Utils.
@@ -126,22 +121,28 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		User user = SecurityUtils.getAuthenticatedUser(userAuth);
 		String reqUri = request.getRequestURI();
 		String method = request.getMethod();
-		if (user != null && user.getActive()) {
-			App parentApp;
-			if (userAuth instanceof JWTAuthentication) {
-				parentApp = ((JWTAuthentication) userAuth).getApp();
-			} else {
+		App parentApp;
+		if (userAuth instanceof JWTAuthentication) {
+			parentApp = ((JWTAuthentication) userAuth).getApp();
+		} else {
+			parentApp = SecurityUtils.getAuthenticatedApp();
+		}
+
+		if (user == null) {
+			// special case: app authenticated with JWT token (admin token)
+			Object[] fail = doAppChecks(parentApp, request);
+			if (fail != null) {
+				RestUtils.returnStatusResponse(response, (Integer) fail[0], (String) fail[1]);
+				return false;
+			}
+		} else if (user.getActive()) {
+			if (parentApp == null) {
 				parentApp = Para.getDAO().read(App.id(user.getAppid()));
 			}
-			if (parentApp != null) {
-				if (!hasPermission(parentApp, user, request)) {
-					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-							Utils.formatMessage("You don't have permission to access this resource. "
-									+ "[user: {0}, resource: {1} {2}]", user.getId(), method, reqUri));
-					return false;
-				}
-			} else {
-				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND, "App not found.");
+			if (!hasPermission(parentApp, user, request)) {
+				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+						Utils.formatMessage("You don't have permission to access this resource. "
+								+ "[user: {0}, resource: {1} {2}]", user.getId(), method, reqUri));
 				return false;
 			}
 		} else {
@@ -155,54 +156,33 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 	private boolean appAuthRequestHandler(String appid, BufferedRequestWrapper request, HttpServletResponse response) {
 		String date = RestUtils.extractDate(request);
 		Date d = Signer.parseAWSDate(date);
-		String reqUri = request.getRequestURI();
-		String method = request.getMethod();
 		boolean requestExpired = (d != null) && (System.currentTimeMillis()
 				> (d.getTime() + (Config.REQUEST_EXPIRES_AFTER_SEC * 1000)));
 
-		if (!StringUtils.isBlank(appid)) {
-			if (!StringUtils.isBlank(date)) {
-				if (!requestExpired) {
-					App app = Para.getDAO().read(App.id(appid));
+		if (StringUtils.isBlank(date) || requestExpired) {
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Request has expired.");
+			return false;
+		}
 
-					if (app != null) {
-						if (app.getActive()) {
-							if (!(app.getReadOnly() && isWriteRequest(request))) {
-								if (signer.isValidSignature(request, app.getSecret())) {
-									SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
-									return true;
-								} else {
-									RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-											"Request signature is invalid.");
-								}
-							} else {
-								RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-										Utils.formatMessage("App is in read-only mode. [{0}]", appid));
-							}
-						} else {
-							RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-									Utils.formatMessage("App not active. [{0}]", appid));
-						}
-					} else {
-						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NOT_FOUND,
-								Utils.formatMessage("App not found. [{0}]", appid));
-					}
-				} else {
-					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-							"Request has expired.");
-				}
-			} else {
-				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-						"'X-Amz-Date' header or parameter is not set!");
+		App app = Para.getDAO().read(App.id(appid));
+		Object[] fail = doAppChecks(app, request);
+
+		if (fail == null) {
+			if (signer.isValidSignature(request, app.getSecret())) {
+				SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
+				return true;
 			}
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN, "Request signature is invalid.");
 		} else {
-			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, Utils.
-					formatMessage("You don't have permission to access this resource. [{0} {1}]", method, reqUri));
+			RestUtils.returnStatusResponse(response, (Integer) fail[0], (String) fail[1]);
 		}
 		return false;
 	}
 
 	private boolean hasPermission(App parentApp, User user, HttpServletRequest request) {
+		if (parentApp == null) {
+			return false;
+		}
 		String resourcePath = RestUtils.extractResourcePath(request);
 		String method = request.getMethod();
 		String uid = (user == null) ? "" : user.getId();
@@ -232,6 +212,21 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 			return (method.equals(GET) || method.equals("PATCH") || method.equals(PUT));
 		}
 		return user.canModify(po);
+	}
+
+	private Object[] doAppChecks(App app, HttpServletRequest request) {
+		if (app == null) {
+			return new Object[]{HttpServletResponse.SC_NOT_FOUND, "App not found."};
+		}
+		if (!app.getActive()) {
+			return new Object[]{HttpServletResponse.SC_FORBIDDEN,
+				Utils.formatMessage("App not active. [{0}]", app.getId())};
+		}
+		if (app.getReadOnly() && isWriteRequest(request)) {
+			return new Object[]{HttpServletResponse.SC_FORBIDDEN,
+				Utils.formatMessage("App is in read-only mode. [{0}]", app.getId())};
+		}
+		return null;
 	}
 
 	private class BufferedRequestWrapper extends HttpServletRequestWrapper {

@@ -304,8 +304,12 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 				App app = new App(appid);
 				User user = Para.getDAO().read(app.getAppIdentifier(), userid);
 				app = Para.getDAO().read(app.getAppIdentifier(), app.getId());
-				if (user != null && app != null) {
-					return new JWTAuthentication(new AuthenticatedUserDetails(user)).withJWT(jwt).withApp(app);
+				if (app != null) {
+					if (user != null) {
+						return new JWTAuthentication(new AuthenticatedUserDetails(user)).withJWT(jwt).withApp(app);
+					} else {
+						return new JWTAuthentication(null).withJWT(jwt).withApp(app);
+					}
 				}
 			} catch (ParseException e) {
 				logger.debug("Unable to parse JWT.", e);
