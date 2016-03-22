@@ -136,8 +136,15 @@ public abstract class DAOTest {
 
 		// test updating locked fields
 		App app = new App("xyz");
+		assertNull(app.getSecret());
 		assertNotNull(dao.create(app));
+		assertNull(app.getSecret());
+		assertNull(((App) dao.read(app.getId())).getSecret());
+		app.delete();
+		app.create();
+		assertNotNull(app.getSecret());
 		String secret = app.getSecret();
+		assertNotNull(((App) dao.read(app.getId())).getSecret());
 		assertNotNull(secret);
 		app.resetSecret();
 		dao.update(app);
@@ -145,6 +152,11 @@ public abstract class DAOTest {
 		App app2 = dao.read(app.getId());
 		assertNotNull(app2);
 		assertEquals(secret, app2.getSecret());
+
+		App app3 = new App(app2.getId());
+		app3.setName("New App partial update");
+		app3.update();
+		assertEquals(secret, ((App) dao.read(app2.getId())).getSecret());
 	}
 
 	@Test

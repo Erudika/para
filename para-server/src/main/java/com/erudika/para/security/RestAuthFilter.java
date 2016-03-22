@@ -103,17 +103,18 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		String method = request.getMethod();
 		if (!StringUtils.isBlank(appid)) {
 			App parentApp = Para.getDAO().read(App.id(appid));
-			if (!hasPermission(parentApp, null, request)) {
+			if (hasPermission(parentApp, null, request)) {
+				return true;
+			} else {
 				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
 						Utils.formatMessage("You don't have permission to access this resource. "
 								+ "[user: {0}, resource: {1} {2}]", "[GUEST]", method, reqUri));
 				return false;
 			}
-		} else {
-			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, Utils.
-					formatMessage("You don't have permission to access this resource. [{0} {1}]", method, reqUri));
 		}
-		return true;
+		RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, Utils.
+				formatMessage("You don't have permission to access this resource. [{0} {1}]", method, reqUri));
+		return false;
 	}
 
 	private boolean userAuthRequestHandler(HttpServletRequest request, HttpServletResponse response) {
@@ -128,29 +129,33 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 			parentApp = SecurityUtils.getAuthenticatedApp();
 		}
 
-		if (user == null) {
-			// special case: app authenticated with JWT token (admin token)
-			Object[] fail = doAppChecks(parentApp, request);
-			if (fail != null) {
-				RestUtils.returnStatusResponse(response, (Integer) fail[0], (String) fail[1]);
-				return false;
+		if (userAuth != null) {
+			if (user == null) {
+				// special case: app authenticated with JWT token (admin token)
+				Object[] fail = doAppChecks(parentApp, request);
+				if (fail == null) {
+					return true;
+				} else {
+					RestUtils.returnStatusResponse(response, (Integer) fail[0], (String) fail[1]);
+					return false;
+				}
+			} else if (user.getActive()) {
+				if (parentApp == null) {
+					parentApp = Para.getDAO().read(App.id(user.getAppid()));
+				}
+				if (hasPermission(parentApp, user, request)) {
+					return true;
+				} else {
+					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+							Utils.formatMessage("You don't have permission to access this resource. "
+									+ "[user: {0}, resource: {1} {2}]", user.getId(), method, reqUri));
+					return false;
+				}
 			}
-		} else if (user.getActive()) {
-			if (parentApp == null) {
-				parentApp = Para.getDAO().read(App.id(user.getAppid()));
-			}
-			if (!hasPermission(parentApp, user, request)) {
-				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-						Utils.formatMessage("You don't have permission to access this resource. "
-								+ "[user: {0}, resource: {1} {2}]", user.getId(), method, reqUri));
-				return false;
-			}
-		} else {
-			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, Utils.
-					formatMessage("You don't have permission to access this resource. [{0} {1}]", method, reqUri));
-			return false;
 		}
-		return true;
+		RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, Utils.
+				formatMessage("You don't have permission to access this resource. [{0} {1}]", method, reqUri));
+		return false;
 	}
 
 	private boolean appAuthRequestHandler(String appid, BufferedRequestWrapper request, HttpServletResponse response) {

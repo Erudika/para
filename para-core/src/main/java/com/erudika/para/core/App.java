@@ -235,9 +235,6 @@ public class App implements ParaObject {
 	 */
 	@JsonIgnore
 	public String getSecret() {
-		if (secret == null) {
-			resetSecret();
-		}
 		return secret;
 	}
 
