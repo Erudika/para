@@ -33,6 +33,7 @@ See how **Para** [compares to other open source backend frameworks](http://www.e
 - Modular design powered by Google Guice and support for plugins
 - I18n utilities for translating language packs and working with currencies
 - Standalone executable WAR with embedded Jetty
+- [Para Web Console](http://console.paraio.org) - admin user interface
 
 ### Architecture
 
