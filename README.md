@@ -92,6 +92,11 @@ You can run Para as a standalone server by downloading the executable WAR and th
 $ java -jar para-X.Y.Z.war
 ```
 
+The you can browse your objects through the **Para Web Console** [console.paraio.org](http://console.paraio.org).
+Simply change the API endpoint to be your local server and connect your access keys.
+The admin interface is client-side only and your secret key is never sent over the the network. Instead,
+a JWT access token is generated locally.
+
 Alternatively, you can grab the WAR file and deploy it to your favorite servlet container.
 
 ### [Download WAR](https://github.com/Erudika/para/releases)
@@ -107,7 +112,7 @@ Here's the Maven snippet to include in your `pom.xml`:
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para-server</artifactId>
-  <version>1.18.2</version>
+  <version>1.18.3</version>
 </dependency>
 ```
 
@@ -125,7 +130,6 @@ clients for popular languages soon.
 ## Wishlist / Roadmap
 
 - `DAO` implementations for popular databases like [MongoDB](https://github.com/erudika/para-dao-mongodb), PostgreSQL, Cassandra, etc.
-- Web API console for developers
 - API clients in Python, iOS.
 - Swagger support
 - GraphQL and/or ([jsonapi.org](http://jsonapi.org/)) support
