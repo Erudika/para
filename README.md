@@ -95,7 +95,7 @@ $ java -jar para-X.Y.Z.war
 The you can browse your objects through the **Para Web Console** [console.paraio.org](http://console.paraio.org).
 Simply change the API endpoint to be your local server and connect your access keys.
 The admin interface is client-side only and your secret key is never sent over the the network. Instead,
-a JWT access token is generated locally.
+a JWT access token is generated locally and sent to the server on each request.
 
 Alternatively, you can grab the WAR file and deploy it to your favorite servlet container.
 
