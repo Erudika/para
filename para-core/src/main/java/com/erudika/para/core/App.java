@@ -81,7 +81,7 @@ public class App implements ParaObject {
 	@Stored private Boolean cached;
 
 	@Stored @Locked private boolean shared;
-	@Stored @Locked @NotBlank private String secret;
+	@Stored @Locked private String secret;
 	@Stored @Locked private Boolean readOnly;
 	@Stored private Map<String, String> datatypes;
 	// type -> field -> constraint -> property -> value
