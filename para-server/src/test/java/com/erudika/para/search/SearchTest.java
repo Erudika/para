@@ -153,6 +153,8 @@ public abstract class SearchTest {
 		assertTrue(s.findNearby(null, null, 100, 1, 1).isEmpty());
 		List<User> l1 = s.findNearby(u.getType(), "*", 10, 40.60, -73.90);
 		assertFalse(l1.isEmpty());
+		List<User> l2 = s.findNearby(a1.getType(), "*", 10, 40.60, -73.90);
+		assertFalse(l2.isEmpty());
 	}
 
 	@Test

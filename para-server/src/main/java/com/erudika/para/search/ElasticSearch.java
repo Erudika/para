@@ -378,6 +378,10 @@ public class ElasticSearch implements Search {
 			return Collections.emptyList();
 		}
 
+		if (type.equals(Utils.type(Address.class))) {
+			return searchQuery(appid, hits1);
+		}
+
 		// then find their parent objects
 		String[] ridsarr = new String[(int) hits1.getTotalHits()];
 		for (int i = 0; i < hits1.getTotalHits(); i++) {
