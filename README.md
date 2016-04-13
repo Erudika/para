@@ -66,12 +66,10 @@ See how **Para** [compares to other open source backend frameworks](http://www.e
 
 ## Getting started
 
-To get started quickly just [grab the WAR file](https://github.com/Erudika/para/releases) and execute it with:
-
 1. [Download the latest executable WAR](https://github.com/Erudika/para/releases)
 2. Execute it with `java -jar para-X.Y.Z.war`
 3. Call `curl localhost:8080/v1/_setup` to get the access and secret keys
-4. Start using the API directly or using the provided `ParaClient` class.
+4. Start using the API directly or use one of the client libraries below.
 
 ### Building Para
 
@@ -130,7 +128,7 @@ clients for popular languages soon.
 ## Wishlist / Roadmap
 
 - `DAO` implementations for popular databases like [MongoDB](https://github.com/erudika/para-dao-mongodb), PostgreSQL, Cassandra, etc.
-- API clients in Python, iOS.
+- API clients in Python, ~iOS~ (work in progress).
 - Swagger support
 - GraphQL and/or ([jsonapi.org](http://jsonapi.org/)) support
 - Integrations with Google App Engine, Heroku, Docker, Vagrant
