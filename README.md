@@ -128,9 +128,8 @@ clients for popular languages soon.
 ## Wishlist / Roadmap
 
 - `DAO` implementations for popular databases like [MongoDB](https://github.com/erudika/para-dao-mongodb), PostgreSQL, Cassandra, etc.
-- API clients in Python, ~iOS~ (work in progress).
 - Swagger support
-- GraphQL and/or ([jsonapi.org](http://jsonapi.org/)) support
+- GraphQL and/or ([JSON API](http://jsonapi.org/)) schema support
 - Integrations with Google App Engine, Heroku, Docker, Vagrant
 
 ## Contributing
