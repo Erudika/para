@@ -54,6 +54,7 @@ public class Address implements ParaObject {
 
 	@Stored @NotBlank @Size(min = 3, max = 255) private String address;
 	@Stored @NotBlank @Size(min = 2, max = 255) private String country;
+	@Stored @Size(min = 0, max = 255) private String city;
 	@Stored @NotBlank private String latlng;
 	@Stored private String phone;
 
@@ -72,6 +73,22 @@ public class Address implements ParaObject {
 	public Address(String id) {
 		setId(id);
 		setName(getName());
+	}
+
+	/**
+	 * The name of the city. Optional.
+	 * @return the city
+	 */
+	public String getCity() {
+		return city;
+	}
+
+	/**
+	 * Sets the city.
+	 * @param city city name
+	 */
+	public void setCity(String city) {
+		this.city = city;
 	}
 
 	/**
