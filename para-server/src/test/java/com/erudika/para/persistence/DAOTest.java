@@ -122,6 +122,12 @@ public abstract class DAOTest {
 		assertNull(dao.read("1"));
 		assertNotNull(dao.read(u.getId()));
 		assertEquals(u.getName(), dao.read(u.getId()).getName());
+
+		// test with a custom ID
+		Sysprop sp = new Sysprop("email@test.com");
+		sp.setName("test custom id");
+		dao.create(sp);
+		assertNotNull(dao.read("email@test.com"));
 	}
 
 	@Test

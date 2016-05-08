@@ -673,5 +673,21 @@ public class ParaClientIT {
 		assertFalse(guest.isAllowedTo(App.ALLOW_ALL, utilsPath, AllowedMethods.GET.toString()));
 		pc2.grantResourcePermission(App.ALLOW_ALL, utilsPath, AllowedMethods.READ, true);
 		assertTrue(guest.getTimestamp() > 0);
+
+		// test user should not be created twice if signed in with email and password
+		long existingUsers = pc2.getCount("user");
+		User signedInWithEmail = pc2.signIn("password", "test@user.com::123456");
+		assertNotNull(signedInWithEmail);
+		pc2.signOut();
+		Thread.sleep(700);
+		long existingUsers2 = pc2.getCount("user");
+		assertEquals(existingUsers2, existingUsers + 1);
+		pc2.signIn("password", "test@user.com::123456");
+		pc2.signOut();
+		User badPass = pc2.signIn("password", "test@user.com::1234567");
+		assertNull(badPass);
+		pc2.signOut();
+		long existingUsers3 = pc2.getCount("user");
+		assertEquals(existingUsers3, existingUsers2);
 	}
 }

@@ -64,7 +64,7 @@ public class ValidationUtilsTest {
 		assertEquals(0, validateObject(new Tag("test")).length);
 
 		App app = new App(Config.PARA);
-		assertFalse(validateObject(app).length == 0);
+		assertTrue(validateObject(app).length == 0);
 		app.resetSecret();
 		assertTrue(validateObject(app).length == 0);
 
