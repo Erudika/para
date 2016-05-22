@@ -110,7 +110,7 @@ Here's the Maven snippet to include in your `pom.xml`:
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para-server</artifactId>
-  <version>1.18.3</version>
+  <version>1.18.4</version>
 </dependency>
 ```
 
@@ -124,6 +124,7 @@ clients for popular languages soon.
 - **Java** [para-client](https://github.com/erudika/para/tree/master/para-client)
 - **.NET** [para-client-csharp](https://github.com/erudika/para-client-csharp)
 - **Android** [para-client-android](https://github.com/erudika/para-client-android)
+- **iOS** [para-client-ios](https://github.com/erudika/para-client-ios)
 
 ## Wishlist / Roadmap
 
