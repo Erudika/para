@@ -473,12 +473,11 @@ public final class ElasticSearchUtils {
 			startObject().
 				startObject("_default_").
 					startObject("properties").
-						startObject("latlng").field("type", "geo_point").field("lat_lon", true).endObject().
+						startObject("latlng").field("type", "geo_point").endObject().
 						startObject("tag").field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._ID).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._KEY).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._APPID).field("type", "string").field("index", "not_analyzed").endObject().
-//						startObject(Config._TAGS).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._EMAIL).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._GROUPS).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._UPDATED).field("type", "string").field("index", "not_analyzed").endObject().
