@@ -12,7 +12,7 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>4.0.4.RELEASE</springSecVer>
+		<springSecVer>4.1.0.RELEASE</springSecVer>
 		<hazelcastVer>3.6.2</hazelcastVer>
 	</properties>
 
@@ -78,7 +78,7 @@
 		<dependency>
 			<groupId>org.elasticsearch</groupId>
 			<artifactId>elasticsearch</artifactId>
-			<version>2.3.2</version>
+			<version>2.3.3</version>
 		</dependency>
 		<dependency>
 			<groupId>net.java.dev.jna</groupId>

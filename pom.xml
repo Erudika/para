@@ -71,11 +71,11 @@
 		<skipITs>${skipTests}</skipITs>
 		<skipUTs>${skipTests}</skipUTs>
 		<deployPluginVer>2.8.2</deployPluginVer>
-		<slf4jVer>1.7.14</slf4jVer>
-		<logbackVer>1.1.3</logbackVer>
-		<awsJdkVer>1.10.74</awsJdkVer>
+		<slf4jVer>1.7.21</slf4jVer>
+		<logbackVer>1.1.7</logbackVer>
+		<awsJdkVer>1.11.3</awsJdkVer>
 		<jerseyVer>2.22.2</jerseyVer>
-		<springBootVer>1.3.3.RELEASE</springBootVer>
+		<springBootVer>1.3.5.RELEASE</springBootVer>
 	</properties>
 
 	<dependencies>
