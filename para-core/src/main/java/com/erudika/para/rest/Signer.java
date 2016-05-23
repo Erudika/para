@@ -23,6 +23,7 @@ import com.amazonaws.Request;
 import com.amazonaws.auth.AWS4Signer;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.http.HttpMethodName;
+import com.amazonaws.util.SdkHttpUtils;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.utils.Config;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -170,7 +171,7 @@ public final class Signer extends AWS4Signer {
 			r.setEndpoint(URI.create(endpoint));
 		}
 		if (!StringUtils.isBlank(resourcePath)) {
-			r.setResourcePath(resourcePath);
+			r.setResourcePath(SdkHttpUtils.urlEncode(resourcePath, true));
 		}
 		if (headers != null) {
 			if (headers.containsKey("x-amz-date")) {
@@ -286,7 +287,7 @@ public final class Signer extends AWS4Signer {
 		boolean isJWT = StringUtils.startsWithIgnoreCase(secretKey, "Bearer");
 
 		WebTarget target = apiClient.target(endpointURL).path(reqPath);
-		Map<String, String> signedHeaders = null;
+		Map<String, String> signedHeaders = new HashMap<String, String>();
 		if (!isJWT) {
 			signedHeaders = signRequest(accessKey, secretKey, httpMethod, endpointURL, reqPath,
 					headers, params, jsonEntity);
