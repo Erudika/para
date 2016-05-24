@@ -323,6 +323,16 @@ public final class Config {
 	}
 
 	/**
+	 * Returns the double value of a configuration parameter.
+	 * @param key the param key
+	 * @param defaultValue the default param value
+	 * @return the value of a param
+	 */
+	public static double getConfigDouble(String key, double defaultValue) {
+		return NumberUtils.toDouble(getConfigParam(key, Double.toString(defaultValue)));
+	}
+
+	/**
 	 * Returns the value of a configuration parameter or its default value.
 	 * {@link System#getProperty(java.lang.String)} has precedence.
 	 * @param key the param key
