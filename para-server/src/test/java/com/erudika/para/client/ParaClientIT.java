@@ -614,6 +614,14 @@ public class ParaClientIT {
 		User failsNotMocked = pc2.signIn("google", "test_token");
 		assertNull(failsNotMocked);
 
+		// should fail to create user for root app
+		User notSignedIn = pc2.signIn("facebook", "test_token");
+		logger.info(pc2.getAccessToken());
+		assertNull(notSignedIn);
+		assertNull(pc2.getAccessToken());
+
+		// then allow clients to modify root app
+		System.setProperty("para.clients_can_access_root_app", "true");
 		User signedIn = pc2.signIn("facebook", "test_token");
 		logger.info(pc2.getAccessToken());
 		assertNotNull(signedIn);

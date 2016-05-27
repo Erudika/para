@@ -84,11 +84,15 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (requestURI.endsWith(FACEBOOK_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
+				CloseableHttpResponse resp1 = null;
 				String url = Utils.formatMessage(TOKEN_URL, authCode,
 						request.getRequestURL().toString(), Config.FB_APP_ID, Config.FB_SECRET);
-
-				HttpGet tokenPost = new HttpGet(url);
-				CloseableHttpResponse resp1 = httpclient.execute(tokenPost);
+				try {
+					HttpGet tokenPost = new HttpGet(url);
+					resp1 = httpclient.execute(tokenPost);
+				} catch (Exception e) {
+					logger.warn("Facebook auth request failed: GET " + url, e);
+				}
 
 				if (resp1 != null && resp1.getEntity() != null) {
 					String token = EntityUtils.toString(resp1.getEntity(), Config.DEFAULT_ENCODING);
@@ -124,12 +128,20 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (accessToken != null) {
 			User user = new User();
 			user.setAppid(appid);
-			HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
-			CloseableHttpResponse resp2 = httpclient.execute(profileGet);
-			HttpEntity respEntity = resp2.getEntity();
-			String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
 
-			if (respEntity != null && Utils.isJsonType(ctype)) {
+			String ctype = null;
+			HttpEntity respEntity = null;
+			CloseableHttpResponse resp2 = null;
+			try {
+				HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
+				resp2 = httpclient.execute(profileGet);
+				respEntity = resp2.getEntity();
+				ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
+			} catch (Exception e) {
+				logger.warn("Facebook auth request failed: GET " + PROFILE_URL + accessToken, e);
+			}
+
+			if (resp2 != null && respEntity != null && Utils.isJsonType(ctype)) {
 				Map<String, Object> profile = jreader.readValue(resp2.getEntity().getContent());
 
 				if (profile != null && profile.containsKey("id")) {

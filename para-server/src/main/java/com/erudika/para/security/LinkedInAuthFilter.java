@@ -86,11 +86,15 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (requestURI.endsWith(LINKEDIN_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
+				CloseableHttpResponse resp1 = null;
 				String url = Utils.formatMessage(TOKEN_URL, authCode,
 						request.getRequestURL().toString(), Config.LINKEDIN_APP_ID, Config.LINKEDIN_SECRET);
-
-				HttpPost tokenPost = new HttpPost(url);
-				CloseableHttpResponse resp1 = httpclient.execute(tokenPost);
+				try {
+					HttpPost tokenPost = new HttpPost(url);
+					resp1 = httpclient.execute(tokenPost);
+				} catch (Exception e) {
+					logger.warn("LinkedIn auth request failed: GET " + url, e);
+				}
 
 				if (resp1 != null && resp1.getEntity() != null) {
 					Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
@@ -124,12 +128,20 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (accessToken != null) {
 			User user = new User();
 			user.setAppid(appid);
-			HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
-			CloseableHttpResponse resp2 = httpclient.execute(profileGet);
-			HttpEntity respEntity = resp2.getEntity();
-			String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
 
-			if (respEntity != null && Utils.isJsonType(ctype)) {
+			String ctype = null;
+			HttpEntity respEntity = null;
+			CloseableHttpResponse resp2 = null;
+			try {
+				HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
+				resp2 = httpclient.execute(profileGet);
+				respEntity = resp2.getEntity();
+				ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
+			} catch (Exception e) {
+				logger.warn("LinkedIn auth request failed: GET " + PROFILE_URL + accessToken, e);
+			}
+
+			if (resp2 != null && respEntity != null && Utils.isJsonType(ctype)) {
 				Map<String, Object> profile = jreader.readValue(resp2.getEntity().getContent());
 
 				if (profile != null && profile.containsKey("id")) {

@@ -22,6 +22,7 @@ import com.erudika.para.core.App;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
+import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.nimbusds.jwt.SignedJWT;
 import java.io.IOException;
@@ -195,26 +196,34 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 
 		if (provider != null && appid != null && token != null) {
 			App app = new App(appid);
-			UserAuthentication userAuth = getOrCreateUser(app.getAppIdentifier(), provider, token);
-			User user = SecurityUtils.getAuthenticatedUser(userAuth);
-			if (user != null) {
-				app = Para.getDAO().read(app.getId());
-				if (app != null) {
-					// issue token
-					SignedJWT newJWT = SecurityUtils.generateJWToken(user, app);
-					if (newJWT != null) {
-						succesHandler(response, user, newJWT);
-						return true;
+			boolean isRootApp = StringUtils.equals(App.id(Config.APP_NAME_NS), app.getId());
+			// don't allow clients to create users on root app unless this is explicitly configured
+			if (!isRootApp || Config.getConfigBoolean("clients_can_access_root_app", false)) {
+				UserAuthentication userAuth = getOrCreateUser(app.getAppIdentifier(), provider, token);
+				User user = SecurityUtils.getAuthenticatedUser(userAuth);
+				if (user != null) {
+					app = Para.getDAO().read(app.getId());
+					if (app != null) {
+						// issue token
+						SignedJWT newJWT = SecurityUtils.generateJWToken(user, app);
+						if (newJWT != null) {
+							succesHandler(response, user, newJWT);
+							return true;
+						}
+					} else {
+						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
+								"User belongs to an app that does not exist.");
+						return false;
 					}
 				} else {
 					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-							"User belongs to an app that does not exist.");
+							"Failed to authenticate user with " + provider);
 					return false;
 				}
 			} else {
-				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-						"Failed to authenticate user with " + provider);
-				return false;
+				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+							"Can't authenticate user with app '" + app.getId() + "'");
+					return false;
 			}
 		}
 		RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,

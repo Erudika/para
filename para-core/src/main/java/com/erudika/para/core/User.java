@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
-//import org.springframework.util.DigestUtils;
+import org.slf4j.LoggerFactory;
 
 /**
  * The core user object. Stores information about users.
@@ -464,10 +464,16 @@ public class User implements ParaObject {
 		if (StringUtils.isBlank(password) || StringUtils.isBlank(identifier)) {
 			return false;
 		}
-		Sysprop s = CoreUtils.getInstance().getDao().read(u.getAppid(), identifier);
+		ParaObject s = CoreUtils.getInstance().getDao().read(u.getAppid(), identifier);
 		if (s != null) {
-			String storedHash = (String) s.getProperty(Config._PASSWORD);
-			return Utils.bcryptMatches(password, storedHash);
+			if (s instanceof Sysprop) {
+				String storedHash = (String) ((Sysprop) s).getProperty(Config._PASSWORD);
+				return Utils.bcryptMatches(password, storedHash);
+			} else {
+				LoggerFactory.getLogger(User.class).
+						warn(Utils.formatMessage("Failed to read auth object for user '{}' using identifier '{}'.",
+								u.getId(), identifier));
+			}
 		}
 		return false;
 	}
