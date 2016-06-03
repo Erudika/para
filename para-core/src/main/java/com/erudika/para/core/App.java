@@ -545,7 +545,7 @@ public class App implements ParaObject {
 		}
 		if (allow) {
 			boolean isRootApp = StringUtils.equals(App.id(Config.APP_NAME_NS), getId());
-			if (isRootApp && !Config.getConfigBoolean("clients_can_access_root_app", !Config.IN_PRODUCTION)) {
+			if (isRootApp && !Config.getConfigBoolean("clients_can_access_root_app", false)) {
 				return false;
 			}
 			if (StringUtils.isBlank(subjectid)) {
