@@ -615,6 +615,7 @@ public class ParaClientIT {
 		assertNull(failsNotMocked);
 
 		// should fail to create user for root app
+		System.setProperty("para.clients_can_access_root_app", "false");
 		User notSignedIn = pc2.signIn("facebook", "test_token");
 		logger.info(pc2.getAccessToken());
 		assertNull(notSignedIn);
