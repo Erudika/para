@@ -82,7 +82,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		// users are allowed to GET '/_me' - used on the client-side for checking authentication
 		String appid = RestUtils.extractAccessKey(request);
 		boolean isApp = !StringUtils.isBlank(appid);
-		boolean isGuest = isApp && RestUtils.isAnonymousRequest(request);
+		boolean isGuest = RestUtils.isAnonymousRequest(request);
 		boolean proceed = true;
 
 		if (isGuest && RestRequestMatcher.INSTANCE.matches(request)) {
@@ -104,6 +104,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		if (!StringUtils.isBlank(appid)) {
 			App parentApp = Para.getDAO().read(App.id(appid));
 			if (hasPermission(parentApp, null, request)) {
+				SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(parentApp));
 				return true;
 			} else {
 				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,

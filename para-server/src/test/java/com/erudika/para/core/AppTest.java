@@ -219,6 +219,7 @@ public class AppTest {
 
 		assertTrue(app.isAllowed("user1", "posts", "get"));
 		assertTrue(app.isAllowed("user1", "posts", "PUT"));
+		assertFalse(app.isAllowed("user1", "posts123", "PUT")); // !!! important
 		assertTrue(app.isAllowed("user1", "posts/456", "PUT"));
 		assertFalse(app.isAllowed("user1", "posts", "DELETE"));
 		assertTrue(app.isAllowed("user1", "posts/123", "DELETE"));

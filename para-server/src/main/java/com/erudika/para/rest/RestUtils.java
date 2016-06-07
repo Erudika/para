@@ -70,22 +70,33 @@ public final class RestUtils {
 		if (request == null) {
 			return "";
 		}
+		String accessKey = "";
 		String auth = request.getHeader(HttpHeaders.AUTHORIZATION);
+		boolean isAnonymousRequest = isAnonymousRequest(request);
 		if (StringUtils.isBlank(auth)) {
 			auth = request.getParameter("X-Amz-Credential");
-			if (StringUtils.isBlank(auth)) {
-				return "";
-			} else {
-				return StringUtils.substringBefore(auth, "/");
+			if (!StringUtils.isBlank(auth)) {
+				accessKey = StringUtils.substringBefore(auth, "/");
 			}
 		} else {
-			if (auth.startsWith("Anonymous")) {
-				return StringUtils.substringAfter(auth, "Anonymous").trim();
+			if (isAnonymousRequest) {
+				accessKey = StringUtils.substringAfter(auth, "Anonymous").trim();
 			} else {
 				String credential = StringUtils.substringBetween(auth, "Credential=", ",");
-				return StringUtils.substringBefore(credential, "/");
+				accessKey = StringUtils.substringBefore(credential, "/");
 			}
 		}
+		if (isAnonymousRequest) {
+			if (StringUtils.isBlank(accessKey)) {
+				// try to get access key from parameter
+				accessKey = request.getParameter("accessKey");
+			}
+			if (StringUtils.isBlank(accessKey)) {
+				// return root app access key
+				accessKey = App.id(Config.APP_NAME_NS);
+			}
+		}
+		return accessKey;
 	}
 
 	/**
@@ -94,7 +105,9 @@ public final class RestUtils {
 	 * @return true if user is unauthenticated
 	 */
 	public static boolean isAnonymousRequest(HttpServletRequest request) {
-		return request != null && StringUtils.startsWith(request.getHeader(HttpHeaders.AUTHORIZATION), "Anonymous");
+		return request != null &&
+				(StringUtils.startsWith(request.getHeader(HttpHeaders.AUTHORIZATION), "Anonymous") ||
+				 StringUtils.isBlank(request.getHeader(HttpHeaders.AUTHORIZATION)));
 	}
 
 	/**
