@@ -118,9 +118,9 @@ Here's the Maven snippet to include in your `pom.xml`:
 
 Use these client libraries to quickly integrate Para into your project:
 
-- **PHP**: [para-client-php](https://github.com/erudika/para-client-php)
-- **JavaScript / Node.js**: [para-client-js](https://github.com/erudika/para-client-js)
 - **Java**: [para-client](https://github.com/erudika/para/tree/master/para-client)
+- **JavaScript / Node.js**: [para-client-js](https://github.com/erudika/para-client-js)
+- **PHP**: [para-client-php](https://github.com/erudika/para-client-php)
 - **C# / .NET**: [para-client-csharp](https://github.com/erudika/para-client-csharp)
 - **Android**: [para-client-android](https://github.com/erudika/para-client-android)
 - **Swift / iOS / OSX**: [para-client-ios](https://github.com/erudika/para-client-ios)
