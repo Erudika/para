@@ -64,16 +64,16 @@ See how **Para** [compares to other open source backend frameworks](http://www.e
 
 ### [Read the Docs](http://paraio.org/docs)
 
-## Getting started
+## Quick Start
 
 1. [Download the latest executable WAR](https://github.com/Erudika/para/releases)
 2. Execute it with `java -jar para-X.Y.Z.war`
 3. Call `curl localhost:8080/v1/_setup` to get the access and secret keys
-4. Start using the API directly or use one of the client libraries below.
+4. Open [Para Web Console](http://console.paraio.org) or integrate with one of the API clients below.
 
 ### Building Para
 
-Para can be compiled with JDK 1.6 and up, but we recommend running it on Java 1.8+.
+Para can be compiled with JDK 6 and up, but we recommend running it on JDK 8+.
 
 Para uses Maven. Here's how you clone it and build it:
 
@@ -82,7 +82,7 @@ $ git clone https://github.com/erudika/para.git && cd para
 $ mvn install -DskipTests=true
 ```
 
-### Standalone - executable WAR
+### Standalone server
 
 You can run Para as a standalone server by downloading the executable WAR and then:
 
@@ -99,11 +99,9 @@ Alternatively, you can grab the WAR file and deploy it to your favorite servlet 
 
 ### [Download WAR](https://github.com/Erudika/para/releases)
 
-### Maven
+### Maven dependency
 
-You can also integrate Para with your project by adding it as a dependency in your build system.
-Para is hosted on Maven Central.
-
+You can also integrate Para with your project by adding it as a dependency. Para is hosted on Maven Central.
 Here's the Maven snippet to include in your `pom.xml`:
 
 ```xml
