@@ -451,7 +451,9 @@ public class ElasticSearch implements Search {
 				}
 			}
 		} catch (Exception e) {
-			logger.warn(null, e);
+			Throwable cause = e.getCause();
+			String msg = cause != null ? cause.getMessage() : e.getMessage();
+			logger.warn("Search query failed for app '{}': {}", appid, msg);
 		}
 		return results;
 	}
@@ -499,7 +501,9 @@ public class ElasticSearch implements Search {
 			hits = srb.execute().actionGet().getHits();
 			page.setCount(hits.getTotalHits());
 		} catch (Exception e) {
-			logger.warn(null, e);
+			Throwable cause = e.getCause();
+			String msg = cause != null ? cause.getMessage() : e.getMessage();
+			logger.warn("No search results for type '{}' in app '{}': {}.", type, appid, msg);
 		}
 
 		return hits;
