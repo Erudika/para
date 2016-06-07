@@ -56,7 +56,7 @@ See how **Para** [compares to other open source backend frameworks](http://www.e
 +----+---------^----+  +-----------------+   +-------------+
      |         |
 +----v---------+-------------------------------------------+
-|   Clients : JavaScript, PHP, Java, C#, Android, etc.     |
+|  Clients : JavaScript, PHP, Java, C#, Android, iOS, etc. |
 +----------------------------------------------------------+
 </pre>
 
@@ -116,19 +116,25 @@ Here's the Maven snippet to include in your `pom.xml`:
 
 ## API clients
 
-API clients help you quickly integrate your project with Para and we're hoping to write more
-clients for popular languages soon.
+Use these client libraries to quickly integrate Para into your project:
 
-- **PHP** [para-client-php](https://github.com/erudika/para-client-php)
-- **JavaScript / Node.js** [para-client-js](https://github.com/erudika/para-client-js)
-- **Java** [para-client](https://github.com/erudika/para/tree/master/para-client)
-- **.NET** [para-client-csharp](https://github.com/erudika/para-client-csharp)
-- **Android** [para-client-android](https://github.com/erudika/para-client-android)
-- **iOS** [para-client-ios](https://github.com/erudika/para-client-ios)
+- **PHP**: [para-client-php](https://github.com/erudika/para-client-php)
+- **JavaScript / Node.js**: [para-client-js](https://github.com/erudika/para-client-js)
+- **Java**: [para-client](https://github.com/erudika/para/tree/master/para-client)
+- **C# / .NET**: [para-client-csharp](https://github.com/erudika/para-client-csharp)
+- **Android**: [para-client-android](https://github.com/erudika/para-client-android)
+- **iOS**: [para-client-ios](https://github.com/erudika/para-client-ios)
+
+## Database integrations
+
+Use these `DAO` implementations to connect to different databases:
+
+- **MongoDB**: [para-dao-mongodb](https://github.com/erudika/para-dao-mongodb)
+- **Cassandra**: para-dao-cassandra (soon)
 
 ## Wishlist / Roadmap
 
-- `DAO` implementations for popular databases like [MongoDB](https://github.com/erudika/para-dao-mongodb), PostgreSQL, Cassandra, etc.
+- `DAO` implementations for popular databases like Cassandra (in progress), PostgreSQL, etc.
 - Swagger support
 - GraphQL and/or ([JSON API](http://jsonapi.org/)) schema support
 - Integrations with Google App Engine, Heroku, Docker, Vagrant
