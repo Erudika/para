@@ -312,7 +312,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 				String appid = (String) jwt.getJWTClaimsSet().getClaim("appid");
 				App app = new App(appid);
 				User user = Para.getDAO().read(app.getAppIdentifier(), userid);
-				app = Para.getDAO().read(app.getAppIdentifier(), app.getId());
+				app = Para.getDAO().read(app.getId());
 				if (app != null) {
 					if (user != null) {
 						return new JWTAuthentication(new AuthenticatedUserDetails(user)).withJWT(jwt).withApp(app);
