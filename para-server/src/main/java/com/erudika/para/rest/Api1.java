@@ -546,9 +546,11 @@ public class Api1 extends ResourceConfig {
 						List<String> permission = (List<String>) resp.getEntity();
 						Set<App.AllowedMethods> set = new HashSet<App.AllowedMethods>(permission.size());
 						for (String perm : permission) {
-							App.AllowedMethods method = App.AllowedMethods.fromString(perm);
-							if (method != null) {
-								set.add(method);
+							if (!StringUtils.isBlank(perm)) {
+								App.AllowedMethods method = App.AllowedMethods.fromString(perm);
+								if (method != null) {
+									set.add(method);
+								}
 							}
 						}
 						if (!set.isEmpty()) {
