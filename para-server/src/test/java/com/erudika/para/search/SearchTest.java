@@ -368,7 +368,7 @@ public abstract class SearchTest {
 		terms.put(Config._TIMESTAMP, 123L);
 
 		s.unindexAll(terms, true);
-//		Thread.sleep(2000);
+		Thread.sleep(2000);
 
 		assertNull(s.findById(sp1.getId()));
 		assertNull(s.findById(sp2.getId()));
