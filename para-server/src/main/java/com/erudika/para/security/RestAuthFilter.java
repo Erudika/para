@@ -101,6 +101,9 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 	private boolean guestAuthRequestHandler(String appid, HttpServletRequest request, HttpServletResponse response) {
 		String reqUri = request.getRequestURI();
 		String method = request.getMethod();
+		if (StringUtils.isBlank(appid) && Config.getConfigBoolean("clients_can_access_root_app", false)) {
+			appid = App.id(Config.APP_NAME_NS);
+		}
 		if (!StringUtils.isBlank(appid)) {
 			App parentApp = Para.getDAO().read(App.id(appid));
 			if (hasPermission(parentApp, null, request)) {

@@ -38,6 +38,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 import org.junit.AfterClass;
@@ -127,6 +128,31 @@ public class RestUtilsTest {
 	public void testGetExceptionResponse() {
 		assertEquals(Status.FORBIDDEN.getStatusCode(), GenericExceptionMapper.getExceptionResponse(403, null).getStatus());
 		assertEquals(MediaType.APPLICATION_JSON, GenericExceptionMapper.getExceptionResponse(403, "").getMediaType().toString());
+	}
+
+	@Test
+	public void testExtractAccessKey() {
+		HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
+		Mockito.when(req.getHeader(HttpHeaders.AUTHORIZATION)).thenReturn(null);
+		String appid = "app:test-123";
+
+		assertEquals("", extractAccessKey(null));
+		assertEquals(null, extractAccessKey(req));
+
+		Mockito.when(req.getHeader(HttpHeaders.AUTHORIZATION)).thenReturn("Anonymous " + appid);
+		assertEquals(appid, extractAccessKey(req));
+
+		Mockito.when(req.getHeader(HttpHeaders.AUTHORIZATION)).thenReturn(null);
+		Mockito.when(req.getParameter("X-Amz-Credential")).thenReturn("AWS4-HMAC-SHA256 Credential=" + appid + "/123/");
+		assertEquals(appid, extractAccessKey(req));
+
+		Mockito.when(req.getParameter("X-Amz-Credential")).thenReturn(null);
+		Mockito.when(req.getParameter("accessKey")).thenReturn(appid);
+		assertEquals(appid, extractAccessKey(req));
+
+		Mockito.when(req.getParameter("accessKey")).thenReturn(null);
+		Mockito.when(req.getHeader(HttpHeaders.AUTHORIZATION)).thenReturn("AWS4-HMAC-SHA256 Credential=" + appid + "/0/");
+		assertEquals(appid, extractAccessKey(req));
 	}
 
 	@Test

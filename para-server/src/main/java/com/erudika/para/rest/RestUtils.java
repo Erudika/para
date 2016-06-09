@@ -76,24 +76,19 @@ public final class RestUtils {
 		if (StringUtils.isBlank(auth)) {
 			auth = request.getParameter("X-Amz-Credential");
 			if (!StringUtils.isBlank(auth)) {
-				accessKey = StringUtils.substringBefore(auth, "/");
+				accessKey = StringUtils.substringBetween(auth, "=", "/");
 			}
 		} else {
 			if (isAnonymousRequest) {
 				accessKey = StringUtils.substringAfter(auth, "Anonymous").trim();
 			} else {
-				String credential = StringUtils.substringBetween(auth, "Credential=", ",");
-				accessKey = StringUtils.substringBefore(credential, "/");
+				accessKey = StringUtils.substringBetween(auth, "=", "/");
 			}
 		}
 		if (isAnonymousRequest) {
 			if (StringUtils.isBlank(accessKey)) {
 				// try to get access key from parameter
 				accessKey = request.getParameter("accessKey");
-			}
-			if (StringUtils.isBlank(accessKey)) {
-				// return root app access key
-				accessKey = App.id(Config.APP_NAME_NS);
 			}
 		}
 		return accessKey;
