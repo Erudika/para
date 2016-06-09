@@ -107,7 +107,7 @@ public final class RestUtils {
 	public static boolean isAnonymousRequest(HttpServletRequest request) {
 		return request != null &&
 				(StringUtils.startsWith(request.getHeader(HttpHeaders.AUTHORIZATION), "Anonymous") ||
-				 StringUtils.isBlank(request.getHeader(HttpHeaders.AUTHORIZATION)));
+					StringUtils.isBlank(request.getHeader(HttpHeaders.AUTHORIZATION)));
 	}
 
 	/**
