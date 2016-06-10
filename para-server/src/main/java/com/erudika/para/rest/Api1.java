@@ -554,7 +554,8 @@ public class Api1 extends ResourceConfig {
 							}
 						}
 						if (!set.isEmpty()) {
-							if (app.grantResourcePermission(subjectid, resourcePath, EnumSet.copyOf(set))) {
+							boolean isPublic = set.contains(App.AllowedMethods.GUEST);
+							if (app.grantResourcePermission(subjectid, resourcePath, EnumSet.copyOf(set), isPublic)) {
 								app.update();
 							}
 							return Response.ok(app.getAllResourcePermissions(subjectid)).build();

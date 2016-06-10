@@ -444,10 +444,6 @@ public class App implements ParaObject {
 		if (!StringUtils.isBlank(subjectid) && !StringUtils.isBlank(resourcePath) &&
 				permission != null && !permission.isEmpty()) {
 
-			if (allowGuestAccess && ALLOW_ALL.equals(subjectid)) {
-				permission.add(AllowedMethods.GUEST);
-			}
-
 			if (!getResourcePermissions().containsKey(subjectid)) {
 				Map<String, List<String>> perm = new HashMap<String, List<String>>();
 				perm.put(resourcePath, new ArrayList<String>(permission.size()));
@@ -475,6 +471,9 @@ public class App implements ParaObject {
 					perm.add(allowedMethod.toString());
 				}
 				getResourcePermissions().get(subjectid).put(resourcePath, perm);
+			}
+			if (allowGuestAccess && ALLOW_ALL.equals(subjectid)) {
+				permission.add(AllowedMethods.GUEST);
 			}
 			return true;
 		}
