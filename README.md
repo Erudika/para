@@ -108,7 +108,7 @@ Here's the Maven snippet to include in your `pom.xml`:
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para-server</artifactId>
-  <version>1.18.8</version>
+  <version>1.18.9</version>
 </dependency>
 ```
 
