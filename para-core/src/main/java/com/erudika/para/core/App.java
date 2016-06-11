@@ -439,8 +439,11 @@ public class App implements ParaObject {
 	 */
 	public boolean grantResourcePermission(String subjectid, String resourcePath,
 			EnumSet<AllowedMethods> permission, boolean allowGuestAccess) {
-		// urlDecode resource path
+		// urlDecode resource path & strip slashes at both ends
 		resourcePath = Utils.urlDecode(resourcePath);
+		resourcePath = StringUtils.removeEnd(resourcePath, "/");
+		resourcePath = StringUtils.removeStart(resourcePath, "/");
+		resourcePath = StringUtils.remove(resourcePath, ".");	// ElasticSearch 2.0+ restriction
 		if (!StringUtils.isBlank(subjectid) && !StringUtils.isBlank(resourcePath) &&
 				permission != null && !permission.isEmpty()) {
 
