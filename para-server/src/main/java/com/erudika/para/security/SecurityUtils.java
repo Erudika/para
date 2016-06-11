@@ -129,24 +129,36 @@ public final class SecurityUtils {
 	}
 
 	/**
+	 * Generates a new "super" JWT token for apps.
+	 * @param app the app object
+	 * @return a new JWT or null
+	 */
+	public static SignedJWT generateSuperJWToken(App app) {
+		return generateJWToken(null, app);
+	}
+
+	/**
 	 * Generates a new JWT token.
 	 * @param user a User object belonging to the app
 	 * @param app the app object
 	 * @return a new JWT or null
 	 */
 	public static SignedJWT generateJWToken(User user, App app) {
-		if (user != null && app != null) {
+		if (app != null) {
 			try {
 				Date now = new Date();
 				JWTClaimsSet.Builder claimsSet = new JWTClaimsSet.Builder();
-				claimsSet.subject(user.getId());
+				String userSecret = "";
 				claimsSet.issueTime(now);
 				claimsSet.expirationTime(new Date(now.getTime() + (app.getTokenValiditySec() * 1000)));
 				claimsSet.notBeforeTime(now);
 				claimsSet.claim("refresh", getNextRefresh(app.getTokenValiditySec()));
 				claimsSet.claim("appid", app.getId());
-
-				JWSSigner signer = new MACSigner(app.getSecret() + user.getTokenSecret());
+				if (user != null) {
+					claimsSet.subject(user.getId());
+					userSecret = user.getTokenSecret();
+				}
+				JWSSigner signer = new MACSigner(app.getSecret() + userSecret);
 				SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet.build());
 				signedJWT.sign(signer);
 				return signedJWT;
