@@ -193,6 +193,13 @@ public class AppTest {
 		assertFalse(app.isAllowedTo("123", App.ALLOW_ALL, "bad_method"));
 		app.revokeResourcePermission("123", App.ALLOW_ALL);
 		assertFalse(app.isAllowedTo("123", App.ALLOW_ALL, App.AllowedMethods.READ_ONLY.toString()));
+
+		app.grantResourcePermission(App.ALLOW_ALL, "/0123/", App.AllowedMethods.READ);
+		assertTrue(app.isAllowedTo(App.ALLOW_ALL, "0123", "get"));
+
+		app.grantResourcePermission(App.ALLOW_ALL, "/4.5.6/", App.AllowedMethods.READ);
+		assertTrue(app.isAllowedTo(App.ALLOW_ALL, "456", "get"));
+		assertFalse(app.isAllowedTo("4.5.6", App.ALLOW_ALL, "get"));
 	}
 
 	@Test
