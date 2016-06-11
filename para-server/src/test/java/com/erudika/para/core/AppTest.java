@@ -255,6 +255,24 @@ public class AppTest {
 		app.grantResourcePermission(App.ALLOW_ALL, "guest/access", App.AllowedMethods.READ, true);
 		assertTrue(app.isAllowed(App.ALLOW_ALL, "guest/access", "GET"));
 		assertTrue(app.isAllowed(App.ALLOW_ALL, "guest/access", App.AllowedMethods.GUEST.toString()));
+
+		app.grantResourcePermission(App.ALLOW_ALL, "guest/test",
+				EnumSet.of(App.AllowedMethods.PUT, App.AllowedMethods.READ_WRITE), false);
+		assertFalse(app.isAllowed(App.ALLOW_ALL, "guest/test", App.AllowedMethods.GUEST.toString()));
+
+		app.grantResourcePermission(App.ALLOW_ALL, "publicRes", App.AllowedMethods.ALL, true);
+		assertTrue(app.isAllowed(App.ALLOW_ALL, "publicRes/test", App.AllowedMethods.GUEST.toString()));
+
+		app.grantResourcePermission(App.ALLOW_ALL, "publicSubResource", App.AllowedMethods.READ_AND_WRITE, false);
+		assertFalse(app.isAllowed(App.ALLOW_ALL, "publicSubResource", App.AllowedMethods.GUEST.toString()));
+		assertFalse(app.isAllowed(App.ALLOW_ALL, "publicSubResource/test", App.AllowedMethods.GUEST.toString()));
+		app.grantResourcePermission(App.ALLOW_ALL, "publicSubResource/test", EnumSet.of(App.AllowedMethods.GUEST), false);
+		assertTrue(app.isAllowed(App.ALLOW_ALL, "publicSubResource/test", App.AllowedMethods.GUEST.toString()));
+		// this is not valid because subject can't be authenticated
+		app.grantResourcePermission("someUser1", "illegalPublic", EnumSet.of(App.AllowedMethods.GET,
+				App.AllowedMethods.GUEST), true);
+		assertFalse(app.isAllowed(App.ALLOW_ALL, "illegalPublic", App.AllowedMethods.GUEST.toString()));
+		assertFalse(app.isAllowed("someUser1", "illegalPublic", App.AllowedMethods.GUEST.toString()));
 	}
 
 	@Test

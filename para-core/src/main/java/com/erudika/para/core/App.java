@@ -21,6 +21,7 @@ import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
+import static com.erudika.para.core.App.AllowedMethods.*;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -436,45 +437,39 @@ public class App implements ParaObject {
 	 * @param allowGuestAccess if true - all unauthenticated requests will go through, 'false' by default.
 	 * @return true if successful
 	 */
-	public boolean grantResourcePermission(String subjectid, String resourcePath, EnumSet<AllowedMethods> permission,
-			boolean allowGuestAccess) {
+	public boolean grantResourcePermission(String subjectid, String resourcePath,
+			EnumSet<AllowedMethods> permission, boolean allowGuestAccess) {
 		// urlDecode resource path
 		resourcePath = Utils.urlDecode(resourcePath);
-
 		if (!StringUtils.isBlank(subjectid) && !StringUtils.isBlank(resourcePath) &&
 				permission != null && !permission.isEmpty()) {
 
+			allowGuestAccess = permission.remove(GUEST) || allowGuestAccess;
+			EnumSet<AllowedMethods> methods = EnumSet.copyOf(permission);
 			if (!getResourcePermissions().containsKey(subjectid)) {
 				Map<String, List<String>> perm = new HashMap<String, List<String>>();
 				perm.put(resourcePath, new ArrayList<String>(permission.size()));
-				for (AllowedMethods allowedMethod : permission) {
-					perm.get(resourcePath).add(allowedMethod.toString());
-				}
 				getResourcePermissions().put(subjectid, perm);
+			}
+			if (permission.containsAll(ALL) || permission.contains(READ_WRITE) ||			// * || rw = *
+					(permission.contains(READ_ONLY) && permission.contains(WRITE_ONLY)) ||	//   r + w = *
+					(permission.contains(GET) && permission.contains(WRITE_ONLY))) {		//   r + w = *
+				methods = EnumSet.copyOf(READ_AND_WRITE);
 			} else {
-				if (permission.containsAll(AllowedMethods.ALL)
-						|| permission.contains(AllowedMethods.READ_WRITE)
-						|| (permission.contains(AllowedMethods.READ_ONLY) &&
-							permission.contains(AllowedMethods.WRITE_ONLY))
-						|| (permission.contains(AllowedMethods.GET) &&
-							permission.contains(AllowedMethods.WRITE_ONLY))) {
-					permission = AllowedMethods.READ_AND_WRITE;
-				} else {
-					if (permission.contains(AllowedMethods.WRITE_ONLY)) {
-						permission = AllowedMethods.WRITE;
-					} else if (permission.contains(AllowedMethods.READ_ONLY)) {
-						permission = AllowedMethods.READ;
-					}
+				if (permission.contains(WRITE_ONLY)) {
+					methods = EnumSet.copyOf(READ_AND_WRITE);
+				} else if (permission.contains(READ_ONLY)) {
+					methods = EnumSet.copyOf(READ_AND_WRITE);
 				}
-				List<String> perm = new ArrayList<String>(permission.size());
-				for (AllowedMethods allowedMethod : permission) {
-					perm.add(allowedMethod.toString());
-				}
-				getResourcePermissions().get(subjectid).put(resourcePath, perm);
 			}
 			if (allowGuestAccess && ALLOW_ALL.equals(subjectid)) {
-				permission.add(AllowedMethods.GUEST);
+				methods.add(GUEST);
 			}
+			List<String> perm = new ArrayList<String>(methods.size());
+			for (AllowedMethods allowedMethod : methods) {
+				perm.add(allowedMethod.toString());
+			}
+			getResourcePermissions().get(subjectid).put(resourcePath, perm);
 			return true;
 		}
 		return false;
@@ -549,7 +544,7 @@ public class App implements ParaObject {
 			}
 			if (StringUtils.isBlank(subjectid)) {
 				// guest access check
-				return isAllowed(ALLOW_ALL, resourcePath, AllowedMethods.GUEST.toString());
+				return isAllowed(ALLOW_ALL, resourcePath, GUEST.toString());
 			}
 			return true;
 		}
@@ -560,6 +555,11 @@ public class App implements ParaObject {
 		boolean allowed = false;
 		if (subjectid != null && httpMethod != null && getResourcePermissions().containsKey(subjectid)) {
 			httpMethod = httpMethod.toUpperCase();
+			String wildcard = ALLOW_ALL;
+			if (fromString(httpMethod) == GUEST) {
+				// special case where we have wildcard permissions * but public access is not allowed
+				wildcard = httpMethod;
+			}
 			if (StringUtils.contains(resourcePath, "/")) {
 				// we assume that a full resource path is given like: 'users/something/123'
 				// so we check to see if 'users/something' is in the list of resources
@@ -568,7 +568,7 @@ public class App implements ParaObject {
 				for (String resource : getResourcePermissions().get(subjectid).keySet()) {
 					if (StringUtils.startsWith(fragment, resource) && (
 						getResourcePermissions().get(subjectid).get(resource).contains(httpMethod) ||
-						getResourcePermissions().get(subjectid).get(resource).contains(ALLOW_ALL))) {
+						getResourcePermissions().get(subjectid).get(resource).contains(wildcard))) {
 						allowed = true;
 						break;
 					}
@@ -577,7 +577,7 @@ public class App implements ParaObject {
 			if (!allowed && getResourcePermissions().get(subjectid).containsKey(resourcePath)) {
 				// check exact resource path as it is
 				allowed = (getResourcePermissions().get(subjectid).get(resourcePath).contains(httpMethod)
-						|| getResourcePermissions().get(subjectid).get(resourcePath).contains(ALLOW_ALL));
+						|| getResourcePermissions().get(subjectid).get(resourcePath).contains(wildcard));
 			}
 		}
 		return allowed;
