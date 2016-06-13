@@ -55,6 +55,10 @@ public final class Linker implements ParaObject {
 	@Stored @Locked @NotBlank private String type2;
 	@Stored private String metadata;
 
+	// holds both linked objects inside a nested array
+	// implemented in Elasticsearch 2.3+ with the 'nested' datatype
+	@Stored private ParaObject[] nstd;
+
 	/**
 	 * No-args constructor
 	 */
@@ -194,6 +198,22 @@ public final class Linker implements ParaObject {
 	 */
 	public String getIdFieldNameFor(String type) {
 		return isFirst(type) ? "id1" : "id2";
+	}
+
+	/**
+	 * Get the nested objects that are linked by this link.
+	 * @return a 2-element array of objects or null
+	 */
+	public ParaObject[] getNstd() {
+		return nstd;
+	}
+
+	/**
+	 * Sets the nested array of objects that are linked by this link.
+	 * @param nstd an array of 2 objects only
+	 */
+	public void setNstd(ParaObject[] nstd) {
+		this.nstd = nstd;
 	}
 
 	////////////////////////////////////////////////////////
@@ -395,6 +415,11 @@ public final class Linker implements ParaObject {
 	}
 
 	@Override
+	public <P extends ParaObject> List<P> findLinkedObjects(String type, String query, Pager... pager) {
+		return CoreUtils.getInstance().findLinkedObjects(this, type, query, pager);
+	}
+
+	@Override
 	public boolean isLinked(String type2, String id2) {
 		return CoreUtils.getInstance().isLinked(this, type2, id2);
 	}
@@ -432,6 +457,11 @@ public final class Linker implements ParaObject {
 	@Override
 	public <P extends ParaObject> List<P> getChildren(String type, String field, String term, Pager... pager) {
 		return CoreUtils.getInstance().getChildren(this, type, field, term, pager);
+	}
+
+	@Override
+	public <P extends ParaObject> List<P> findChildren(String type, String query, Pager... pager) {
+		return CoreUtils.getInstance().findChildren(this, type, query, pager);
 	}
 
 	@Override

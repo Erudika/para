@@ -17,13 +17,12 @@
  */
 package com.erudika.para.rest;
 
-import com.erudika.para.Para;
+import static com.erudika.para.Para.*;
 import com.erudika.para.core.App;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
-import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.utils.Config;
@@ -62,7 +61,7 @@ import org.slf4j.LoggerFactory;
  * and the way API request will be handled. This is API version 1.0.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class Api1 extends ResourceConfig {
+public final class Api1 extends ResourceConfig {
 
 	public static final String PATH = "/v1/";
 
@@ -75,22 +74,15 @@ public class Api1 extends ResourceConfig {
 	private static final String DELETE = HttpMethod.DELETE;
 	private static final String PATCH = "PATCH";
 
-	private final DAO dao;
-	private final Search search;
-
 	/**
 	 * Initializes all of the API resources.
 	 */
 	public Api1() {
-		dao = Para.getDAO()	;
-		search = Para.getSearch();
-
 		if (!Config.API_ENABLED) {
 			return;
 		}
 
 		setApplicationName(Config.APP_NAME_NS);
-
 		register(GenericExceptionMapper.class);
 		register(new JacksonJsonProvider(ParaObjectUtils.getJsonMapper()));
 		register(FieldFilter.class);
@@ -157,7 +149,7 @@ public class Api1 extends ResourceConfig {
 		registerResources(utilsRes.build());
 
 		// register custom resources
-		for (final CustomResourceHandler handler : Para.getCustomResourceHandlers()) {
+		for (final CustomResourceHandler handler : getCustomResourceHandlers()) {
 			Resource.Builder custom = Resource.builder(handler.getRelativePath());
 			custom.addMethod(GET).produces(JSON).handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
@@ -262,7 +254,7 @@ public class Api1 extends ResourceConfig {
 				Map<String, String> info = new TreeMap<String, String>();
 				info.put("info", "Para - a backend for busy developers.");
 				if (Config.getConfigBoolean("print_version", true)) {
-					info.put("version", StringUtils.replace(Para.getVersion(), "-SNAPSHOT", ""));
+					info.put("version", StringUtils.replace(getVersion(), "-SNAPSHOT", ""));
 				}
 				return Response.ok(info).build();
 			}
@@ -286,7 +278,7 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> crudHandler(final App app, final String type) {
+	public static Inflector<ContainerRequestContext, Response> crudHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				String id = pathParam(Config._ID, ctx);
@@ -314,7 +306,7 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> linksHandler() {
+	public static Inflector<ContainerRequestContext, Response> linksHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
@@ -337,7 +329,7 @@ public class Api1 extends ResourceConfig {
 
 				ParaObject pobj = ParaObjectUtils.toObject(type);
 				pobj.setId(id);
-				pobj = dao.read(app.getAppIdentifier(), pobj.getId());
+				pobj = getDAO().read(app.getAppIdentifier(), pobj.getId());
 
 				Pager pager = new Pager();
 				pager.setPage(NumberUtils.toLong(params.getFirst("page"), 0));
@@ -429,20 +421,20 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> readIdHandler() {
+	public static Inflector<ContainerRequestContext, Response> readIdHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = RestUtils.getPrincipalApp();
 				String id = pathParam(Config._ID, ctx);
 				if (app != null) {
-					return RestUtils.getReadResponse(dao.read(app.getAppIdentifier(), id));
+					return RestUtils.getReadResponse(getDAO().read(app.getAppIdentifier(), id));
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> getConstrHandler(final App a) {
+	public static Inflector<ContainerRequestContext, Response> getConstrHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : RestUtils.getPrincipalApp();
@@ -460,7 +452,7 @@ public class Api1 extends ResourceConfig {
 	}
 
 	@SuppressWarnings("unchecked")
-	protected final Inflector<ContainerRequestContext, Response> addConstrHandler(final App a) {
+	public static Inflector<ContainerRequestContext, Response> addConstrHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : RestUtils.getPrincipalApp();
@@ -482,7 +474,7 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> removeConstrHandler(final App a) {
+	public static Inflector<ContainerRequestContext, Response> removeConstrHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : RestUtils.getPrincipalApp();
@@ -500,7 +492,7 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> getPermitHandler(final App a) {
+	public static Inflector<ContainerRequestContext, Response> getPermitHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : RestUtils.getPrincipalApp();
@@ -517,7 +509,7 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> checkPermitHandler(final App a) {
+	public static Inflector<ContainerRequestContext, Response> checkPermitHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : RestUtils.getPrincipalApp();
@@ -534,7 +526,7 @@ public class Api1 extends ResourceConfig {
 	}
 
 	@SuppressWarnings("unchecked")
-	protected final Inflector<ContainerRequestContext, Response> grantPermitHandler(final App a) {
+	public static Inflector<ContainerRequestContext, Response> grantPermitHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : RestUtils.getPrincipalApp();
@@ -570,7 +562,7 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> revokePermitHandler(final App a) {
+	public static Inflector<ContainerRequestContext, Response> revokePermitHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : RestUtils.getPrincipalApp();
@@ -624,12 +616,12 @@ public class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> setupHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				return Response.ok(Para.setup()).build();
+				return Response.ok(setup()).build();
 			}
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> createHandler(final App app, final String type) {
+	public static Inflector<ContainerRequestContext, Response> createHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				return RestUtils.getCreateResponse(app, type, ctx.getEntityStream());
@@ -637,30 +629,30 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> readHandler(final App app, final String type) {
+	public static Inflector<ContainerRequestContext, Response> readHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				ParaObject obj = ParaObjectUtils.toObject(type);
 				obj.setId(pathParam(Config._ID, ctx));
-				return RestUtils.getReadResponse(dao.read(app.getAppIdentifier(), obj.getId()));
+				return RestUtils.getReadResponse(getDAO().read(app.getAppIdentifier(), obj.getId()));
 			}
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> updateHandler(final App app, final String type) {
+	public static Inflector<ContainerRequestContext, Response> updateHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				ParaObject obj = ParaObjectUtils.toObject(type);
 				obj.setType(type);
 				obj.setId(pathParam(Config._ID, ctx));
 				// partial update - equivalent to PATCH method
-				return RestUtils.getUpdateResponse(app, dao.read(app.getAppIdentifier(), obj.getId()),
+				return RestUtils.getUpdateResponse(app, getDAO().read(app.getAppIdentifier(), obj.getId()),
 						ctx.getEntityStream());
 			}
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> overwriteHandler(final App app, final String type) {
+	public static Inflector<ContainerRequestContext, Response> overwriteHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				// full update - equivalent to PUT method
@@ -669,7 +661,7 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> deleteHandler(final App app, final String type) {
+	public static Inflector<ContainerRequestContext, Response> deleteHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				ParaObject obj = ParaObjectUtils.toObject(type);
@@ -680,7 +672,7 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> batchCreateHandler() {
+	public static Inflector<ContainerRequestContext, Response> batchCreateHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = RestUtils.getPrincipalApp();
@@ -689,7 +681,7 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> batchReadHandler() {
+	public static Inflector<ContainerRequestContext, Response> batchReadHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = RestUtils.getPrincipalApp();
@@ -698,7 +690,7 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> batchUpdateHandler() {
+	public static Inflector<ContainerRequestContext, Response> batchUpdateHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = RestUtils.getPrincipalApp();
@@ -707,7 +699,7 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> batchDeleteHandler() {
+	public static Inflector<ContainerRequestContext, Response> batchDeleteHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = RestUtils.getPrincipalApp();
@@ -716,7 +708,7 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	protected final Inflector<ContainerRequestContext, Response> searchHandler(final App app, final String type) {
+	public static Inflector<ContainerRequestContext, Response> searchHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app1 = (app == null) ? RestUtils.getPrincipalApp() : app;
@@ -727,13 +719,14 @@ public class Api1 extends ResourceConfig {
 		};
 	}
 
-	private <P extends ParaObject> Map<String, Object> buildQueryAndSearch(App app, String queryType,
+	private static <P extends ParaObject> Map<String, Object> buildQueryAndSearch(App app, String queryType,
 			MultivaluedMap<String, String> params, String typeOverride) {
 		String query = params.containsKey("q") ? params.getFirst("q") : "*";
 		String appid = app.getAppIdentifier();
 		String type = (!StringUtils.isBlank(typeOverride) && !"search".equals(typeOverride)) ?
 				typeOverride : params.getFirst(Config._TYPE);
 
+		Search search = getSearch();
 		Pager pager = new Pager();
 		pager.setPage(NumberUtils.toLong(params.getFirst("page"), 0));
 		pager.setSortby(params.getFirst("sort"));
@@ -811,23 +804,23 @@ public class Api1 extends ResourceConfig {
 		return result;
 	}
 
-	protected String pathParam(String param, ContainerRequestContext ctx) {
+	public static String pathParam(String param, ContainerRequestContext ctx) {
 		return ctx.getUriInfo().getPathParameters().getFirst(param);
 	}
 
-	protected List<String> pathParams(String param, ContainerRequestContext ctx) {
+	public static List<String> pathParams(String param, ContainerRequestContext ctx) {
 		return ctx.getUriInfo().getPathParameters().get(param);
 	}
 
-	protected String queryParam(String param, ContainerRequestContext ctx) {
+	public static String queryParam(String param, ContainerRequestContext ctx) {
 		return ctx.getUriInfo().getQueryParameters().getFirst(param);
 	}
 
-	protected List<String> queryParams(String param, ContainerRequestContext ctx) {
+	public static List<String> queryParams(String param, ContainerRequestContext ctx) {
 		return ctx.getUriInfo().getQueryParameters().get(param);
 	}
 
-	protected boolean hasQueryParam(String param, ContainerRequestContext ctx) {
+	public static boolean hasQueryParam(String param, ContainerRequestContext ctx) {
 		return ctx.getUriInfo().getQueryParameters().containsKey(param);
 	}
 

@@ -17,8 +17,11 @@
  */
 package com.erudika.para.utils.filters;
 
+import com.erudika.para.core.ParaObject;
+import com.erudika.para.utils.Utils;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -54,6 +57,7 @@ public class FieldFilter implements ContainerResponseFilter {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private void filterObject(List<String> fields, Object entity) {
 		if (fields == null || fields.isEmpty()) {
 			return;
@@ -71,17 +75,23 @@ public class FieldFilter implements ContainerResponseFilter {
 				filterObject(fields, obj);
 			}
 		} else if (!ClassUtils.isPrimitiveOrWrapper(entity.getClass()) && !(entity instanceof String)) {
-			for (Field field : entity.getClass().getDeclaredFields()) {
+			for (Field field : Utils.getAllDeclaredFields((Class<? extends ParaObject>) entity.getClass())) {
 				try {
-					String fieldName = field.getName();
-					field.setAccessible(true);
-					if (!fields.contains(fieldName)) {
-						field.set(entity, null);
+					if (!Modifier.isStatic(field.getModifiers())) {
+						String fieldName = field.getName();
+						field.setAccessible(true);
+						if (!fields.contains(fieldName) && !isBoolean(field.getType())) {
+							field.set(entity, null);
+						}
 					}
 				} catch (Exception e) {
 					LoggerFactory.getLogger(this.getClass()).warn(null, e);
 				}
 			}
 		}
+	}
+
+	private boolean isBoolean(Class<?> returnType) {
+		return boolean.class.equals(returnType) || Boolean.class.equals(returnType);
 	}
 }

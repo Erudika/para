@@ -243,9 +243,9 @@ public final class CoreUtils implements InitializeListener {
 
 	/**
 	 * Unlinks all objects that are linked to this one.
-	 * @param obj the object to execute this method on
 	 * Deletes all {@link com.erudika.para.core.Linker} objects.
 	 * Only the links are deleted. Objects are left untouched.
+	 * @param obj the object to execute this method on
 	 */
 	public void unlinkAll(ParaObject obj) {
 		Map<String, Object> terms = new HashMap<String, Object>();
@@ -363,6 +363,23 @@ public final class CoreUtils implements InitializeListener {
 	}
 
 	/**
+	 * Searches through child objects in a one-to-many relationship.
+	 * @param <P> the type of children
+	 * @param type the type of children to look for
+	 * @param obj the object to execute this method on
+	 * @param query a query string
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
+	 */
+	public <P extends ParaObject> List<P> findChildren(ParaObject obj, String type, String query, Pager... pager) {
+		if (StringUtils.isBlank(query)) {
+			query = "*";
+		}
+		query = Config._PARENTID + ":" + obj.getId() + " AND " + query;
+		return getSearch().findQuery(obj.getAppid(), type, query, pager);
+	}
+
+	/**
 	 * Deletes all child objects permanently.
 	 * @param obj the object to execute this method on
 	 * @param type2 the children's type.
@@ -377,21 +394,40 @@ public final class CoreUtils implements InitializeListener {
 	/**
 	 * Returns all objects linked to the given one. Only applicable to many-to-many relationships.
 	 * @param <P> type of linked objects
-	 * @param type2 type of linked objects to search for
+	 * @param type type of linked objects to search for
 	 * @param obj the object to execute this method on
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of linked objects
 	 */
 	@SuppressWarnings("unchecked")
-	public <P extends ParaObject> List<P> getLinkedObjects(ParaObject obj, String type2, Pager... pager) {
-		List<Linker> links = getLinks(obj, type2, pager);
+	public <P extends ParaObject> List<P> getLinkedObjects(ParaObject obj, String type, Pager... pager) {
+		List<Linker> links = getLinks(obj, type, pager);
 		LinkedList<String> keys = new LinkedList<String>();
 		for (Linker link : links) {
-			if (link.isFirst(type2)) {
-				keys.add(link.getId1());
-			} else {
-				keys.add(link.getId2());
-			}
+			keys.add(link.isFirst(type) ? link.getId1() : link.getId2());
+		}
+		return new ArrayList<P>((Collection<? extends P>) getDao().readAll(obj.getAppid(), keys, true).values());
+	}
+
+	/**
+	 * Searches through all linked objects in many-to-many relationships.
+	 * @param <P> type of linked objects
+	 * @param type type of linked objects to search for
+	 * @param obj the object to execute this method on
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param query a query string
+	 * @return a list of linked objects matching the search query
+	 */
+	@SuppressWarnings("unchecked")
+	public <P extends ParaObject> List<P> findLinkedObjects(ParaObject obj, String type, String query, Pager... pager) {
+		if (StringUtils.isBlank(query)) {
+			query = "*";
+		}
+		query = "(NOT " + Config._ID + ":" + obj.getId() + ") AND " + query;
+		List<Linker> links = getSearch().findNestedQuery(obj.getAppid(), Utils.type(Linker.class), query, pager);
+		LinkedList<String> keys = new LinkedList<String>();
+		for (Linker link : links) {
+			keys.add(link.isFirst(type) ? link.getId1() : link.getId2());
 		}
 		return new ArrayList<P>((Collection<? extends P>) getDao().readAll(obj.getAppid(), keys, true).values());
 	}

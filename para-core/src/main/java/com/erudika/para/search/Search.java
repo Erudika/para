@@ -202,7 +202,7 @@ public interface Search {
 	<P extends ParaObject> List<P> findPrefix(String appid, String type, String field, String prefix, Pager... pager);
 
 	/**
-	 * Simple query string search. This is the basic search method.
+	 * Query string search. This is the basic search method. Refer to the Lucene query string syntax.
 	 * @param <P> type of the object
 	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param query the query string
@@ -212,7 +212,7 @@ public interface Search {
 	<P extends ParaObject> List<P> findQuery(String type, String query, Pager... pager);
 
 	/**
-	 * Simple query string search. This is the basic search method.
+	 * Query string search. This is the basic search method. Refer to the Lucene query string syntax.
 	 * @param <P> type of the object
 	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
@@ -221,6 +221,27 @@ public interface Search {
 	 * @return a list of objects found
 	 */
 	<P extends ParaObject> List<P> findQuery(String appid, String type, String query, Pager... pager);
+
+	/**
+	 * Searches within a nested field. The objects of the given type must contain a nested field "nstd".
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param query query string
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return list of objects found
+	 */
+	<P extends ParaObject> List<P> findNestedQuery(String type, String query, Pager... pager);
+
+	/**
+	 * Searches within a nested field. The objects of the given type must contain a nested field "nstd".
+	 * @param <P> type of the object
+	 * @param appid name of the {@link com.erudika.para.core.App}
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param query query string
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return list of objects found
+	 */
+	<P extends ParaObject> List<P> findNestedQuery(String appid, String type, String query, Pager... pager);
 
 	/**
 	 * Searches for objects that have similar property values to a given text. A "find like this" query.

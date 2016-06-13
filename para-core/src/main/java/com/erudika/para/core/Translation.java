@@ -375,6 +375,11 @@ public class Translation implements ParaObject {
 	}
 
 	@Override
+	public <P extends ParaObject> List<P> findLinkedObjects(String type, String query, Pager... pager) {
+		return CoreUtils.getInstance().findLinkedObjects(this, type, query, pager);
+	}
+
+	@Override
 	public boolean isLinked(String type2, String id2) {
 		return CoreUtils.getInstance().isLinked(this, type2, id2);
 	}
@@ -412,6 +417,11 @@ public class Translation implements ParaObject {
 	@Override
 	public <P extends ParaObject> List<P> getChildren(String type, String field, String term, Pager... pager) {
 		return CoreUtils.getInstance().getChildren(this, type, field, term, pager);
+	}
+
+	@Override
+	public <P extends ParaObject> List<P> findChildren(String type, String query, Pager... pager) {
+		return CoreUtils.getInstance().findChildren(this, type, query, pager);
 	}
 
 	@Override
