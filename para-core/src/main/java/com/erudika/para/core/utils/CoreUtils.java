@@ -227,7 +227,10 @@ public final class CoreUtils implements InitializeListener {
 			return null;
 		}
 		// auto correct the second type
-		return getDao().create(obj.getAppid(), new Linker(obj.getType(), second.getType(), obj.getId(), id2));
+		Linker link = new Linker(obj.getType(), second.getType(), obj.getId(), id2);
+		link.addNestedObject(obj);
+		link.addNestedObject(second);
+		return getDao().create(obj.getAppid(), link);
 	}
 
 	/**

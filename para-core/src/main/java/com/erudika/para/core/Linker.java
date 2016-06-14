@@ -24,7 +24,9 @@ import com.erudika.para.annotations.Stored;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -57,7 +59,7 @@ public final class Linker implements ParaObject {
 
 	// holds both linked objects inside a nested array
 	// implemented in Elasticsearch 2.3+ with the 'nested' datatype
-	@Stored private ParaObject[] nstd;
+	@Stored private List<Map<String, Object>> nstd;
 
 	/**
 	 * No-args constructor
@@ -71,6 +73,7 @@ public final class Linker implements ParaObject {
 	 * @param id1 the id of the first object
 	 * @param id2 the id of the second object
 	 */
+	@SuppressWarnings("unchecked")
 	public Linker(String type1, String type2, String id1, String id2) {
 		if (isReversed(type1, type2)) {
 			this.type1 = type2;
@@ -204,7 +207,10 @@ public final class Linker implements ParaObject {
 	 * Get the nested objects that are linked by this link.
 	 * @return a 2-element array of objects or null
 	 */
-	public ParaObject[] getNstd() {
+	public List<Map<String, Object>> getNstd() {
+		if (nstd == null) {
+			nstd = new ArrayList<Map<String, Object>>();
+		}
 		return nstd;
 	}
 
@@ -212,8 +218,19 @@ public final class Linker implements ParaObject {
 	 * Sets the nested array of objects that are linked by this link.
 	 * @param nstd an array of 2 objects only
 	 */
-	public void setNstd(ParaObject[] nstd) {
+	public void setNstd(List<Map<String, Object>> nstd) {
 		this.nstd = nstd;
+	}
+
+	/**
+	 * Add an object to nest inside the linker object.
+	 * Used for joining queries when searching objects in a many-to-many relationship.
+	 * @param obj object
+	 */
+	public void addNestedObject(ParaObject obj) {
+		if (obj != null) {
+			getNstd().add(ParaObjectUtils.getAnnotatedFields(obj));
+		}
 	}
 
 	////////////////////////////////////////////////////////
