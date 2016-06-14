@@ -338,6 +338,7 @@ public final class Api1 extends ResourceConfig {
 				pager.setLimit(NumberUtils.toInt(params.getFirst("limit"), pager.getLimit()));
 
 				String childrenOnly = params.getFirst("childrenonly");
+				String query = params.getFirst("q");
 
 				if (pobj != null) {
 					if (POST.equals(ctx.getMethod()) || PUT.equals(ctx.getMethod())) {
@@ -364,7 +365,11 @@ public final class Api1 extends ResourceConfig {
 									if (params.containsKey("count")) {
 										pager.setCount(pobj.countLinks(type2));
 									} else {
-										items = pobj.getLinkedObjects(type2, pager);
+										if (StringUtils.isBlank(query)) {
+											items = pobj.getLinkedObjects(type2, pager);
+										} else {
+											items = pobj.findLinkedObjects(type2, query, pager);
+										}
 									}
 								} else {
 									if (params.containsKey("count")) {
@@ -374,7 +379,11 @@ public final class Api1 extends ResourceConfig {
 											items = pobj.getChildren(type2, params.getFirst("field"),
 													params.getFirst("term"), pager);
 										} else {
-											items = pobj.getChildren(type2, pager);
+											if (StringUtils.isBlank(query)) {
+												items = pobj.getChildren(type2, pager);
+											} else {
+												items = pobj.findChildren(type2, query, pager);
+											}
 										}
 									}
 								}
@@ -748,6 +757,8 @@ public final class Api1 extends ResourceConfig {
 			List<String> ids = params.get("ids");
 			items = search.findByIds(appid, ids);
 			pager.setCount(items.size());
+		} else if ("nested".equals(queryType)) {
+			items = search.findNestedQuery(appid, type, query, pager);
 		} else if ("nearby".equals(queryType)) {
 			String latlng = params.getFirst("latlng");
 			if (StringUtils.contains(latlng, ",")) {

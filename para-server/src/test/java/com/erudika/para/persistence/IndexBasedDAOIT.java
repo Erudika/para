@@ -36,13 +36,13 @@ public class IndexBasedDAOIT extends DAOTest {
 		System.setProperty("para.env", "embedded");
 		System.setProperty("para.app_name", "para-test");
 		System.setProperty("para.cluster_name", "para-test");
-		// dependency hell?
 		dao = new IndexBasedDAO();
 		Search search = new ElasticSearch(dao);
 		((IndexBasedDAO) dao).setSearch(search);
 		ElasticSearchUtils.createIndex(Config.APP_NAME_NS);
 		ElasticSearchUtils.createIndex(appid1);
 		ElasticSearchUtils.createIndex(appid2);
+		ElasticSearchUtils.createIndex(appid3);
 	}
 
 	@AfterClass
@@ -50,6 +50,7 @@ public class IndexBasedDAOIT extends DAOTest {
 		ElasticSearchUtils.deleteIndex(Config.APP_NAME_NS);
 		ElasticSearchUtils.deleteIndex(appid1);
 		ElasticSearchUtils.deleteIndex(appid2);
+		ElasticSearchUtils.deleteIndex(appid3);
 		Para.destroy();
 	}
 
