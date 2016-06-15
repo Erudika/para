@@ -18,12 +18,10 @@
 package com.erudika.para.utils.filters;
 
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.utils.Utils;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
@@ -32,7 +30,7 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.ext.Provider;
-import org.apache.commons.lang3.ClassUtils;
+import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 
@@ -48,50 +46,61 @@ public class FieldFilter implements ContainerResponseFilter {
 	private HttpServletRequest request;
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void filter(ContainerRequestContext requestContext,
 			ContainerResponseContext responseContext) throws IOException {
-		if (responseContext.getEntity() != null) {
-			String[] sarr = StringUtils.split(request.getParameter("select"), ",");
-			List<String> fields = sarr == null ? new ArrayList<String>(0) : Arrays.asList(sarr);
-			filterObject(fields, responseContext.getEntity());
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	private void filterObject(List<String> fields, Object entity) {
-		if (fields == null || fields.isEmpty()) {
-			return;
-		}
-		if (entity instanceof List) {
-			for (Object obj : (List) entity) {
-				filterObject(fields, obj);
-			}
-		} else if (entity instanceof Map) {
-			for (Object obj : ((Map) entity).values()) {
-				filterObject(fields, obj);
-			}
-		} else if (entity instanceof Object[]) {
-			for (Object obj : (Object[]) entity) {
-				filterObject(fields, obj);
-			}
-		} else if (!ClassUtils.isPrimitiveOrWrapper(entity.getClass()) && !(entity instanceof String)) {
-			for (Field field : Utils.getAllDeclaredFields((Class<? extends ParaObject>) entity.getClass())) {
-				try {
-					if (!Modifier.isStatic(field.getModifiers())) {
-						String fieldName = field.getName();
-						field.setAccessible(true);
-						if (!fields.contains(fieldName) && !isBoolean(field.getType())) {
-							field.set(entity, null);
+		try {
+			if (responseContext.getEntity() != null && !StringUtils.isBlank(request.getParameter("select"))) {
+				String[] sarr = StringUtils.split(request.getParameter("select"), ",");
+				List<String> fields = sarr == null ? new ArrayList<String>(0) : Arrays.asList(sarr);
+				if (!fields.isEmpty()) {
+					Object entity = responseContext.getEntity();
+					Object newEntity = null;
+					if (entity instanceof ParaObject) {
+						Map<String, Object> newItem = new HashMap<String, Object>();
+						for (String field : fields) {
+							newItem.put(field, getProperty(entity, field));
+						}
+						newEntity = newItem;
+					} else if (entity instanceof Map) {
+						if (((Map) entity).containsKey("items")) {
+							newEntity = new ArrayList<Map<String, Object>>();
+							for (ParaObject item : (List<ParaObject>) ((Map) entity).get("items")) {
+								Map<String, Object> newItem = new HashMap<String, Object>();
+								for (String field : fields) {
+									newItem.put(field, getProperty(item, field));
+								}
+								((List) newEntity).add(newItem);
+							}
+							((Map) entity).put("items", newEntity);
+						}
+					} else if (entity instanceof List) {
+						newEntity = new ArrayList<Map<String, Object>>();
+						if (!((List) entity).isEmpty() && ((List) entity).get(0) instanceof ParaObject) {
+							for (ParaObject item : (List<ParaObject>) entity) {
+								Map<String, Object> newItem = new HashMap<String, Object>();
+								for (String field : fields) {
+									newItem.put(field, getProperty(item, field));
+								}
+								((List) newEntity).add(newItem);
+							}
 						}
 					}
-				} catch (Exception e) {
-					LoggerFactory.getLogger(this.getClass()).warn(null, e);
+					if (newEntity != null) {
+						responseContext.setEntity(newEntity);
+					}
 				}
 			}
+		} catch (Exception e) {
+			LoggerFactory.getLogger(this.getClass()).warn(null, e);
 		}
 	}
 
-	private boolean isBoolean(Class<?> returnType) {
-		return boolean.class.equals(returnType) || Boolean.class.equals(returnType);
+	private Object getProperty(Object obj, String prop) {
+		try {
+			return BeanUtils.getProperty(obj, prop);
+		} catch (Exception e) {
+			return null;
+		}
 	}
 }
