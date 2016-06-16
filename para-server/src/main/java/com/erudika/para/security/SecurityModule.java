@@ -45,6 +45,7 @@ public class SecurityModule extends AbstractModule {
 	private LinkedInAuthFilter linkedinFilter;
 	private TwitterAuthFilter twitterFilter;
 	private GitHubAuthFilter githubFilter;
+	private MicrosoftAuthFilter microsoftFilter;
 	private JWTRestfulAuthFilter jwtFilter;
 
 	protected void configure() {
@@ -213,6 +214,17 @@ public class SecurityModule extends AbstractModule {
 			githubFilter.setRememberMeServices(getRemembeMeServices());
 		}
 		return githubFilter;
+	}
+
+	@Provides
+	public MicrosoftAuthFilter getMicrosoftFilter() {
+		if (microsoftFilter == null) {
+			microsoftFilter = new MicrosoftAuthFilter("/" + MicrosoftAuthFilter.MICROSOFT_ACTION);
+			microsoftFilter.setAuthenticationSuccessHandler(getSuccessHandler());
+			microsoftFilter.setAuthenticationFailureHandler(getFailureHandler());
+			microsoftFilter.setRememberMeServices(getRemembeMeServices());
+		}
+		return microsoftFilter;
 	}
 
 	public void setGithubFilter(GitHubAuthFilter githubFilter) {

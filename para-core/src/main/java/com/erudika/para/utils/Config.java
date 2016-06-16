@@ -83,14 +83,16 @@ public final class Config {
 	public static final String SEPARATOR = getConfigParam("default_separator", ":");
 	/** Facebook prefix - defaults to 'fb:'. */
 	public static final String FB_PREFIX = "fb" + SEPARATOR;
-	/** Google prefix - defaults to 'gp;'. */
+	/** Google prefix - defaults to 'gp:'. */
 	public static final String GPLUS_PREFIX = "gp" + SEPARATOR;
 	/** LinkedIn prefix - defaults to 'in:'. */
 	public static final String LINKEDIN_PREFIX = "in" + SEPARATOR;
 	/** Twitter prefix - defaults to 'tw:'. */
 	public static final String TWITTER_PREFIX = "tw" + SEPARATOR;
-	/** GitHub prefix - defaults to 'gh;'. */
+	/** GitHub prefix - defaults to 'gh:'. */
 	public static final String GITHUB_PREFIX = "gh" + SEPARATOR;
+	/** Microsoft prefix - defaults to 'ms:'. */
+	public static final String MICROSOFT_PREFIX = "ms" + SEPARATOR;
 
 	//////////  INITIALIZATION PARAMETERS  //////////////
 	/**
@@ -177,6 +179,14 @@ public final class Config {
 	 * GitHub app secret (for authentication)
 	 */
 	public static final String GITHUB_SECRET = getConfigParam("gh_secret", "");
+	/**
+	 * Microsoft app id (for authentication)
+	 */
+	public static final String MICROSOFT_APP_ID = getConfigParam("ms_app_id", "");
+	/**
+	 * Microsoft app secret (for authentication)
+	 */
+	public static final String MICROSOFT_SECRET = getConfigParam("ms_secret", "");
 	/**
 	 * OpenExchangeRates.org API key
 	 */
