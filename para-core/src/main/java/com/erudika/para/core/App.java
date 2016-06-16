@@ -93,6 +93,9 @@ public class App implements ParaObject {
 	@Stored private Long deleteOn;
 	@Stored private Long tokenValiditySec;
 
+	// used to store various settings, OAuth keys, etc.
+	@Stored private Map<String, Object> settings;
+
 	/**
 	 * No-args constructor
 	 */
@@ -125,6 +128,63 @@ public class App implements ParaObject {
 	@Override
 	public final void setId(String id) {
 		this.id = id(id);
+	}
+
+	/**
+	 * Adds a new setting to the map.
+	 * @param name a key
+	 * @param value a value
+	 * @return this
+	 */
+	public App addSetting(String name, Object value) {
+		if (!StringUtils.isBlank(name) && value != null) {
+			getSettings().put(name, value);
+		}
+		return this;
+	}
+
+	/**
+	 * Returns the value of a setting for a given key
+	 * @param name the key
+	 * @return the value
+	 */
+	public Object getSetting(String name) {
+		if (!StringUtils.isBlank(name)) {
+			return getSettings().get(name);
+		}
+		return null;
+	}
+
+	/**
+	 * Removes a setting from the map
+	 * @param name the key
+	 * @return this
+	 */
+	public App removeSetting(String name) {
+		if (!StringUtils.isBlank(name)) {
+			getSettings().remove(name);
+		}
+		return this;
+	}
+
+	/**
+	 * A map of all settings (key/values)
+	 * @return a map
+	 */
+	@JsonIgnore
+	public Map<String, Object> getSettings() {
+		if (settings == null) {
+			settings = new HashMap<String, Object>();
+		}
+		return settings;
+	}
+
+	/**
+	 * Overwrites the settings map.
+	 * @param settings a new map
+	 */
+	public void setSettings(Map<String, Object> settings) {
+		this.settings = settings;
 	}
 
 	/**
@@ -705,8 +765,9 @@ public class App implements ParaObject {
 	@Override
 	public void delete() {
 		// root app cannot be deleted
-		if (!StringUtils.equals(getId(), prefix.concat(Config.APP_NAME_NS))) {
+		if (!StringUtils.equals(getId(), id(Config.APP_NAME_NS))) {
 			CoreUtils.getInstance().getDao().delete(this);
+			logger.info("App '{}' deleted.", getId());
 		}
 	}
 
