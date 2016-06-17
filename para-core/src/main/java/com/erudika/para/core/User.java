@@ -873,8 +873,8 @@ public class User implements ParaObject {
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> findLinkedObjects(String type, String query, Pager... pager) {
-		return CoreUtils.getInstance().findLinkedObjects(this, type, query, pager);
+	public <P extends ParaObject> List<P> findLinkedObjects(String type, String field, String query, Pager... pager) {
+		return CoreUtils.getInstance().findLinkedObjects(this, type, field, query, pager);
 	}
 
 	@Override

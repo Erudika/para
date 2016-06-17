@@ -19,6 +19,7 @@ package com.erudika.para.search;
 
 import com.erudika.para.core.Address;
 import com.erudika.para.core.App;
+import com.erudika.para.core.Linker;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
@@ -55,6 +56,7 @@ public abstract class SearchTest {
 	protected static Sysprop s2;
 	protected static Address a1;
 	protected static Address a2;
+	protected static Linker l1;
 
 	public static void init() {
 		CoreUtils.getInstance().setSearch(s);
@@ -113,7 +115,15 @@ public abstract class SearchTest {
 		s2.setName("We are testing this thing. This sentence is a test. One, two.");
 		s2.setTimestamp(Utils.timestamp());
 
-		s.indexAll(Arrays.asList(u, u1, u2, t, s1, s2, a1, a2));
+		Sysprop linked1 = new Sysprop("link1");
+		Sysprop linked2 = new Sysprop("link2");
+		linked1.addProperty("text", "hello kitty");
+		linked2.addProperty("text", "hello doggy");
+		l1 = new Linker("cat", "dog", "id1", "id2");
+		l1.addNestedObject(linked1);
+		l1.addNestedObject(linked2);
+
+		s.indexAll(Arrays.asList(u, u1, u2, t, s1, s2, a1, a2, l1));
 		try {
 			Thread.sleep(1000);
 		} catch (InterruptedException ex) { }
@@ -129,6 +139,7 @@ public abstract class SearchTest {
 		s2 = null;
 		a1 = null;
 		a2 = null;
+		l1 = null;
 	}
 
 	@Test
@@ -172,12 +183,25 @@ public abstract class SearchTest {
 		assertFalse(s.findQuery(u.getType(), "ann").isEmpty());
 		assertFalse(s.findQuery(u.getType(), "Ann").isEmpty());
 		assertTrue(s.findQuery(null, "*").size() > 4);
+		// bad query syntax? - replace with *
+		assertFalse(s.findQuery(u.getType(), "AND").isEmpty());
+		assertFalse(s.findQuery(u.getType(), "AND ? OR").isEmpty());
+		assertFalse(s.findQuery(u.getType(), "? OR").isEmpty());
 
 		Pager p = new Pager();
 		assertEquals(0, p.getCount());
 		List<?> res = s.findQuery(u.getType(), "*", p);
 		assertEquals(res.size(), p.getCount());
 		assertTrue(p.getCount() > 0);
+	}
+
+	@Test
+	public void testFindNestedQuery() throws InterruptedException {
+		assertTrue(s.findNestedQuery(null, null, null).isEmpty());
+		assertTrue(s.findNestedQuery(l1.getType(), null, null).isEmpty());
+
+		assertFalse(s.findNestedQuery(l1.getType(), "properties.text", "kitty").isEmpty());
+		assertFalse(s.findNestedQuery(l1.getType(), "properties.text", "doggy").isEmpty());
 	}
 
 	@Test

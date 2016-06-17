@@ -368,7 +368,7 @@ public final class Api1 extends ResourceConfig {
 										if (StringUtils.isBlank(query)) {
 											items = pobj.getLinkedObjects(type2, pager);
 										} else {
-											items = pobj.findLinkedObjects(type2, query, pager);
+											items = pobj.findLinkedObjects(type2, params.getFirst("field"), query, pager);
 										}
 									}
 								} else {
@@ -758,7 +758,7 @@ public final class Api1 extends ResourceConfig {
 			items = search.findByIds(appid, ids);
 			pager.setCount(items.size());
 		} else if ("nested".equals(queryType)) {
-			items = search.findNestedQuery(appid, type, query, pager);
+			items = search.findNestedQuery(appid, type, params.getFirst("field"), query, pager);
 		} else if ("nearby".equals(queryType)) {
 			String latlng = params.getFirst("latlng");
 			if (StringUtils.contains(latlng, ",")) {

@@ -61,10 +61,11 @@ public interface Linkable {
 	 * @param <P> type of linked objects
 	 * @param type type of linked objects to look for
 	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param field the name of the field to target (within a nested field "nstd")
 	 * @param query a query string
 	 * @return a list of linked objects matching the search query
 	 */
-	<P extends ParaObject> List<P> findLinkedObjects(String type, String query, Pager... pager);
+	<P extends ParaObject> List<P> findLinkedObjects(String type, String field, String query, Pager... pager);
 
 	/**
 	 * Checks if this object is linked to another.

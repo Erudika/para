@@ -217,11 +217,23 @@ public final class ParaObjectUtils {
 	}
 
 	/**
+	 * @see #getAnnotatedFields(com.erudika.para.core.ParaObject, java.lang.Class, boolean)
+	 * @param <P> the object type
+	 * @param pojo the object to convert to a map
+	 * @param flattenNestedObjectsToString flattens nested objects to a JSON string, true by default.
+	 * @return a map of fields and their values
+	 */
+	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P pojo,
+			boolean flattenNestedObjectsToString) {
+		return getAnnotatedFields(pojo, null, flattenNestedObjectsToString);
+	}
+
+	/**
 	 * Returns a map of annotated fields of a domain object. Only annotated fields are returned. This method forms the
 	 * basis of an Object/Grid Mapper. It converts an object to a map of key/value pairs. That map can later be
 	 * persisted to a data store.
 	 * <br>
-	 * If {@code convertNestedToJsonString} is true all field values that are objects (i.e. not primitive types or
+	 * If {@code flattenNestedObjectsToString} is true all field values that are objects (i.e. not primitive types or
 	 * wrappers) are converted to a JSON string otherwise they are left as they are and will be serialized as regular
 	 * JSON objects later (structure is preserved). Null is considered a primitive type. Transient fields and
 	 * serialVersionUID are skipped.
@@ -229,11 +241,11 @@ public final class ParaObjectUtils {
 	 * @param <P> the object type
 	 * @param pojo the object to convert to a map
 	 * @param filter a filter annotation. fields that have it will be skipped
-	 * @param convertNestedToJsonString true if you want to flatten the nested objects to a JSON string.
+	 * @param flattenNestedObjectsToString true if you want to flatten the nested objects to a JSON string.
 	 * @return a map of fields and their values
 	 */
 	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P pojo,
-			Class<? extends Annotation> filter, boolean convertNestedToJsonString) {
+			Class<? extends Annotation> filter, boolean flattenNestedObjectsToString) {
 		HashMap<String, Object> map = new HashMap<String, Object>();
 		if (pojo == null) {
 			return map;
@@ -246,7 +258,7 @@ public final class ParaObjectUtils {
 				if (field.isAnnotationPresent(Stored.class) && dontSkip) {
 					String name = field.getName();
 					Object value = PropertyUtils.getProperty(pojo, name);
-					if (!Utils.isBasicType(field.getType()) && convertNestedToJsonString) {
+					if (!Utils.isBasicType(field.getType()) && flattenNestedObjectsToString) {
 						value = getJsonWriterNoIdent().writeValueAsString(value);
 					}
 					map.put(name, value);

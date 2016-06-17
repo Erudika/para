@@ -541,6 +541,22 @@ public final class ParaClient {
 	}
 
 	/**
+	 * Searches within a nested field. The objects of the given type must contain a nested field "nstd".
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param query the query string
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of objects found
+	 */
+	public <P extends ParaObject> List<P> findNestedQuery(String type, String query, Pager... pager) {
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("q", query);
+		params.putSingle(Config._TYPE, type);
+		params.putAll(pagerToParams(pager));
+		return getItems(find("nested", params), pager);
+	}
+
+	/**
 	 * Searches for objects that have similar property values to a given text. A "find like this" query.
 	 * @param <P> type of the object
 	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
@@ -753,6 +769,29 @@ public final class ParaClient {
 	}
 
 	/**
+	 * Searches through all linked objects in many-to-many relationships.
+	 * @param <P> type of linked objects
+	 * @param type2 type of linked objects to search for
+	 * @param obj the object to execute this method on
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param field the name of the field to target (within a nested field "nstd")
+	 * @param query a query string
+	 * @return a list of linked objects matching the search query
+	 */
+	@SuppressWarnings("unchecked")
+	public <P extends ParaObject> List<P> findLinkedObjects(ParaObject obj, String type2, String field,
+			String query, Pager... pager) {
+		if (obj == null || obj.getId() == null || type2 == null) {
+			return Collections.emptyList();
+		}
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("field", field);
+		params.putSingle("q", (query == null) ? "*" : query);
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
+		return getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
+	}
+
+	/**
 	 * Checks if this object is linked to another.
 	 * @param type2 the other type
 	 * @param id2 the other id
@@ -885,6 +924,28 @@ public final class ParaClient {
 		params.putSingle("childrenonly", "true");
 		params.putSingle("field", field);
 		params.putSingle("term", term);
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
+		return getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
+	}
+
+	/**
+	 * Search through all child objects. Only searches child objects directly
+	 * connected to this parent via the {@code parentid} field.
+	 * @param <P> the type of children
+	 * @param type2 the type of children to look for
+	 * @param query a query string
+	 * @param obj the object to execute this method on
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
+	 */
+	@SuppressWarnings("unchecked")
+	public <P extends ParaObject> List<P> findChildren(ParaObject obj, String type2, String query, Pager... pager) {
+		if (obj == null || obj.getId() == null || type2 == null) {
+			return Collections.emptyList();
+		}
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		params.putSingle("childrenonly", "true");
+		params.putSingle("q", (query == null) ? "*" : query);
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
 		return getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
 	}

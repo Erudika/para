@@ -136,12 +136,12 @@ public class MockSearch implements Search {
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> findNestedQuery(String type, String query, Pager... pager) {
+	public <P extends ParaObject> List<P> findNestedQuery(String type, String field, String query, Pager... pager) {
 		throw new UnsupportedOperationException("Not implemented.");
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> findNestedQuery(String appid, String type, String query, Pager... pager) {
+	public <P extends ParaObject> List<P> findNestedQuery(String appid, String type, String field, String query, Pager... pager) {
 		throw new UnsupportedOperationException("Not implemented.");
 	}
 

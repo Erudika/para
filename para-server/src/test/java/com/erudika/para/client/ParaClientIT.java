@@ -459,6 +459,66 @@ public class ParaClientIT {
 
 		assertFalse(pc.isLinked(u, t));
 		assertFalse(pc.isLinked(u, u2));
+
+		Sysprop second1 = new Sysprop("secondLink1");
+		Sysprop second2 = new Sysprop("secondLink2");
+		Sysprop second3 = new Sysprop("secondLink3");
+		second1.addProperty("text", "hello from the other side");
+		second2.addProperty("text", "hello kitty");
+		second3.setName("gordon");
+
+		Sysprop child1 = new Sysprop("child1");
+		Sysprop child2 = new Sysprop("child2");
+		Sysprop child3 = new Sysprop("child3");
+		child1.setParentid(u.getId());
+		child2.setParentid(u.getId());
+		child3.setParentid(u.getId());
+		child1.addProperty("text", "hello from the other side");
+		child2.addProperty("text", "hello kitty");
+		child3.setName("gordon");
+
+		pc.createAll(Arrays.asList(second1, second2, second3, child1, child2, child3));
+
+		assertNotNull(pc.link(u, second1.getId()));
+		assertNotNull(pc.link(u, second2.getId()));
+		assertNotNull(pc.link(u, second3.getId()));
+
+		Thread.sleep(1000);
+
+		// test linked objects search
+		assertEquals(3, pc.findLinkedObjects(u, second1.getType(), Config._NAME, null).size());
+
+		List<Sysprop> found1 = pc.findLinkedObjects(u, second1.getType(), Config._NAME, "gord*");
+		assertFalse(found1.isEmpty());
+		assertTrue(found1.get(0).getId().equals(second3.getId()));
+
+		List<Sysprop> found2 = pc.findLinkedObjects(u, second1.getType(), "properties.text", "kitt*");
+		assertFalse(found2.isEmpty());
+		assertTrue(found2.get(0).getId().equals(second2.getId()));
+
+		List<Sysprop> found3 = pc.findLinkedObjects(u, second1.getType(), "properties.text", "hello");
+		assertEquals(2, found3.size());
+		assertTrue(found3.get(0).getId().equals(second1.getId()) || found3.get(1).getId().equals(second1.getId()));
+		assertTrue(found3.get(0).getId().equals(second2.getId()) || found3.get(1).getId().equals(second2.getId()));
+
+		// test children search
+		assertEquals(3, pc.findChildren(u, child1.getType(), null).size());
+
+		List<Sysprop> result1 = pc.findChildren(u, child1.getType(), "gord*");
+		assertFalse(result1.isEmpty());
+		assertTrue(result1.get(0).getId().equals(child3.getId()));
+
+		List<Sysprop> result2 = pc.findChildren(u, child1.getType(), "kitt*");
+		assertFalse(result2.isEmpty());
+		assertTrue(result2.get(0).getId().equals(child2.getId()));
+
+		List<Sysprop> result3 = pc.findChildren(u, child1.getType(), "hello");
+		assertEquals(2, result3.size());
+		assertTrue(result3.get(0).getId().equals(child1.getId()) || result3.get(1).getId().equals(child1.getId()));
+		assertTrue(result3.get(0).getId().equals(child2.getId()) || result3.get(1).getId().equals(child2.getId()));
+
+		pc.deleteAll(Arrays.asList(second1.getId(), second2.getId(), second3.getId(),
+				child1.getId(), child2.getId(), child3.getId()));
 	}
 
 	@Test

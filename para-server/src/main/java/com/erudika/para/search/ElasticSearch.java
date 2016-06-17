@@ -287,12 +287,13 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> findNestedQuery(String appid, String type,
+	public <P extends ParaObject> List<P> findNestedQuery(String appid, String type, String field,
 			String query, Pager... pager) {
-		if (StringUtils.isBlank(query)) {
+		if (StringUtils.isBlank(query) || StringUtils.isBlank(field)) {
 			return Collections.emptyList();
 		}
-		QueryBuilder qb = QueryBuilders.nestedQuery("nstd", QueryBuilders.queryStringQuery(qs(query)));
+		String queryString = "nstd." + field + ":" + query;
+		QueryBuilder qb = QueryBuilders.nestedQuery("nstd", QueryBuilders.queryStringQuery(qs(queryString)));
 		return searchQuery(appid, type, qb, pager);
 	}
 
@@ -735,8 +736,8 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
-	public <P extends ParaObject> List<P> findNestedQuery(String type, String query, Pager... pager) {
-		return findNestedQuery(Config.APP_NAME_NS, type, query, pager);
+	public <P extends ParaObject> List<P> findNestedQuery(String type, String field, String query, Pager... pager) {
+		return findNestedQuery(Config.APP_NAME_NS, type, field, query, pager);
 	}
 
 	@Override
