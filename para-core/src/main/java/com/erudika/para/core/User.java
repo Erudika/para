@@ -643,7 +643,7 @@ public class User implements ParaObject {
 	/**
 	 * Simple groups enum
 	 */
-	public static enum Groups {
+	public enum Groups {
 		/**
 		 * The standard user group
 		 */
@@ -665,7 +665,7 @@ public class User implements ParaObject {
 	/**
 	 * Simple user roles enum
 	 */
-	public static enum Roles {
+	public enum Roles {
 		/**
 		 * The standard role
 		 */

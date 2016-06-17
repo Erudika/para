@@ -39,7 +39,7 @@ class GZipServletResponseWrapper extends HttpServletResponseWrapper {
 	private PrintWriter printWriter = null;
 	private boolean disableFlushBuffer = false;
 
-	public GZipServletResponseWrapper(HttpServletResponse response, GZIPOutputStream gzout)
+	GZipServletResponseWrapper(HttpServletResponse response, GZIPOutputStream gzout)
 			throws IOException {
 		super(response);
 		gzipOutputStream = new GZipServletOutputStream(gzout);

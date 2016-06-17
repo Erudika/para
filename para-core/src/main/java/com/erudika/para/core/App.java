@@ -1042,7 +1042,7 @@ public class App implements ParaObject {
 	 * "give read-only permissions to everyone". It is backed by a map of resource names
 	 * (object types) to a set of allowed HTTP methods.
 	 */
-	public static enum AllowedMethods {
+	public enum AllowedMethods {
 
 		/**
 		 * Allow unauthenticated requests (guest access)

@@ -105,7 +105,7 @@ public class HumanTime implements Externalizable, Comparable<HumanTime>, Cloneab
 	/**
 	 * Parsing state.
 	 */
-	static enum State {
+	enum State {
 
 		NUMBER, IGNORED, UNIT
 	}

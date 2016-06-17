@@ -430,7 +430,7 @@ public final class ParaObjectUtils {
 	 */
 	private static class CoreClassScanner extends ClassPathScanningCandidateComponentProvider {
 
-		public CoreClassScanner() {
+		CoreClassScanner() {
 			super(false);
 			addIncludeFilter(new AssignableTypeFilter(ParaObject.class));
 		}

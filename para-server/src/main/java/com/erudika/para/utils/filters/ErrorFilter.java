@@ -99,7 +99,7 @@ public class ErrorFilter implements Filter {
 		private int status;
 		private String message;
 
-		public ErrorWrapperResponse(HttpServletResponse response) {
+		ErrorWrapperResponse(HttpServletResponse response) {
 			super(response);
 		}
 

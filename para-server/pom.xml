@@ -13,7 +13,7 @@
 
 	<properties>
 		<springSecVer>4.1.0.RELEASE</springSecVer>
-		<hazelcastVer>3.6.2</hazelcastVer>
+		<hazelcastVer>3.6.3</hazelcastVer>
 	</properties>
 
 	<dependencies>
@@ -137,14 +137,14 @@
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpcore</artifactId>
 			<!-- Skip 4.4 because it causes SSL exceptions with some hostnames-->
-			<version>4.4.4</version>
+			<version>4.4.5</version>
 		</dependency>
 		<dependency>
 			<!-- Skip 4.4 because it causes SSL exceptions with some hostnames-->
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
 			<!-- Skip 4.4 because it causes SSL exceptions with some hostnames-->
-			<version>4.5.1</version>
+			<version>4.5.2</version>
 		</dependency>
 		<dependency>
 			<groupId>javax</groupId>
@@ -155,7 +155,7 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>4.16.2</version>
+			<version>4.18</version>
 		</dependency>
 
 		<!-- TESTING -->
@@ -201,7 +201,7 @@
 			<plugin>
 				<groupId>org.eclipse.jetty</groupId>
 				<artifactId>jetty-maven-plugin</artifactId>
-				<version>9.3.8.v20160314</version>
+				<version>9.3.9.v20160517</version>
 				<configuration>
 					<systemProperties>
 						<systemProperty>

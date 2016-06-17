@@ -245,7 +245,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		BufferedServletInputStream bsis;
 		byte[] buffer;
 
-		public BufferedRequestWrapper(HttpServletRequest req) throws IOException {
+		BufferedRequestWrapper(HttpServletRequest req) throws IOException {
 			super(req);
 			InputStream is = req.getInputStream();
 			baos = new ByteArrayOutputStream();
@@ -272,7 +272,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 	private class BufferedServletInputStream extends ServletInputStream {
 		ByteArrayInputStream bais;
 
-		public BufferedServletInputStream(ByteArrayInputStream bais) {
+		BufferedServletInputStream(ByteArrayInputStream bais) {
 			this.bais = bais;
 		}
 

@@ -945,7 +945,7 @@ public final class CORSFilter implements Filter {
 	/**
 	 * Enumerates varies types of CORS requests. Also, provides utility methods to determine the request type.
 	 */
-	public static enum CORSRequestType {
+	public enum CORSRequestType {
 
 		/**
 		 * A simple HTTP request, i.e. it shouldn't be pre-flighted.

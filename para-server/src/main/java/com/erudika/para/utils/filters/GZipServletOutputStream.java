@@ -31,7 +31,7 @@ class GZipServletOutputStream extends ServletOutputStream {
 
 	private final OutputStream stream;
 
-	public GZipServletOutputStream(OutputStream output)
+	GZipServletOutputStream(OutputStream output)
 			throws IOException {
 		super();
 		this.stream = output;
