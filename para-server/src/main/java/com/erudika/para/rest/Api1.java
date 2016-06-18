@@ -103,6 +103,7 @@ public final class Api1 extends ResourceConfig {
 		// first time setup
 		Resource.Builder setupRes = Resource.builder("_setup");
 		setupRes.addMethod(GET).produces(JSON).handledBy(setupHandler());
+		setupRes.addChildResource("{appid}").addMethod(GET).produces(JSON).handledBy(setupHandler());
 		registerResources(setupRes.build());
 
 		// reset API keys
@@ -625,6 +626,11 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> setupHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
+				String appid = pathParam("appid", ctx);
+				if (!StringUtils.isBlank(appid)) {
+					boolean shared = "true".equals(queryParam("shared", ctx));
+					return Response.ok(setup(appid, queryParam("name", ctx), shared)).build();
+				}
 				return Response.ok(setup()).build();
 			}
 		};
@@ -643,6 +649,9 @@ public final class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				ParaObject obj = ParaObjectUtils.toObject(type);
 				obj.setId(pathParam(Config._ID, ctx));
+				if (app.getId().equals(obj.getId())) {
+					return RestUtils.getReadResponse(app);
+				}
 				return RestUtils.getReadResponse(getDAO().read(app.getAppIdentifier(), obj.getId()));
 			}
 		};

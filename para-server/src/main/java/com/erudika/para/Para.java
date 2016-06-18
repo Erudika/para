@@ -45,6 +45,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -344,13 +345,26 @@ public final class Para {
 	 * @return credentials for the root app
 	 */
 	public static Map<String, String> setup() {
-		App app = new App(Config.APP_NAME_NS);
+		return setup(Config.APP_NAME_NS, Config.APP_NAME, false);
+	}
+
+	/**
+	 * Creates a new application and returns the
+	 * @param appid the app identifier
+	 * @param name the full name of the app
+	 * @param shared false if the app should have its own index
+	 * @return credentials for the root app
+	 */
+	public static Map<String, String> setup(String appid, String name, boolean shared) {
 		Map<String, String> creds = new TreeMap<String, String>();
-		if (app.exists()) {
-			creds.put("message", "All set!");
-		} else {
-			app.setName(Config.APP_NAME);
-			app.setShared(false);
+		creds.put("message", "All set!");
+		if (StringUtils.isBlank(appid)) {
+			return creds;
+		}
+		App app = new App(appid);
+		if (!app.exists()) {
+			app.setName(name);
+			app.setShared(shared);
 			app.setActive(true);
 			app.create();
 			creds.putAll(app.getCredentials());
