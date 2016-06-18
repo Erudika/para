@@ -163,6 +163,12 @@ public final class Api1 extends ResourceConfig {
 					return handler.handlePost(ctx);
 				}
 			});
+			custom.addMethod(PATCH).produces(JSON).consumes(JSON).
+					handledBy(new Inflector<ContainerRequestContext, Response>() {
+				public Response apply(ContainerRequestContext ctx) {
+					return handler.handlePatch(ctx);
+				}
+			});
 			custom.addMethod(PUT).produces(JSON).consumes(JSON).
 					handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
@@ -628,8 +634,14 @@ public final class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				String appid = pathParam("appid", ctx);
 				if (!StringUtils.isBlank(appid)) {
-					boolean shared = "true".equals(queryParam("shared", ctx));
-					return Response.ok(setup(appid, queryParam("name", ctx), shared)).build();
+					App app = SecurityUtils.getAuthenticatedApp();
+					if (app.isRootApp()) {
+						boolean shared = "true".equals(queryParam("shared", ctx));
+						return Response.ok(setup(appid, queryParam("name", ctx), shared)).build();
+					} else {
+						return RestUtils.getStatusResponse(Response.Status.FORBIDDEN,
+								"Only root app can create and initialize other apps.");
+					}
 				}
 				return Response.ok(setup()).build();
 			}

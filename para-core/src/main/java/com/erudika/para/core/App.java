@@ -361,6 +361,14 @@ public class App implements ParaObject {
 	}
 
 	/**
+	 * Return true if the app is the root app (the first one created).
+	 * @return true if root
+	 */
+	public boolean isRootApp() {
+		return StringUtils.equals(App.id(Config.APP_NAME_NS), getId());
+	}
+
+	/**
 	 * Returns all validation constraints for a list of types.
 	 * @param types a list of valid Para data types
 	 * @return a map of validation constraints for given types
@@ -601,8 +609,7 @@ public class App implements ParaObject {
 			}
 		}
 		if (allow) {
-			boolean isRootApp = StringUtils.equals(App.id(Config.APP_NAME_NS), getId());
-			if (isRootApp && !Config.getConfigBoolean("clients_can_access_root_app", false)) {
+			if (isRootApp() && !Config.getConfigBoolean("clients_can_access_root_app", false)) {
 				return false;
 			}
 			if (StringUtils.isBlank(subjectid)) {
@@ -769,7 +776,7 @@ public class App implements ParaObject {
 	@Override
 	public void delete() {
 		// root app cannot be deleted
-		if (!StringUtils.equals(getId(), id(Config.APP_NAME_NS))) {
+		if (!isRootApp()) {
 			CoreUtils.getInstance().getDao().delete(getAppid(), this);
 			logger.info("App '{}' deleted.", getId());
 		}
