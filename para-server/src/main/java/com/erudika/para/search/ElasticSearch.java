@@ -549,7 +549,9 @@ public class ElasticSearch implements Search {
 		} catch (IndexNotFoundException ex) {
 			logger.warn("Index not created yet. Call '_setup' first.");
 		} catch (Exception e) {
-			logger.warn(null, e);
+			Throwable cause = e.getCause();
+			String msg = cause != null ? cause.getMessage() : e.getMessage();
+			logger.warn("Could not get any data from index '{}': {}", appid, msg);
 		}
 		return map;
 	}
@@ -559,14 +561,22 @@ public class ElasticSearch implements Search {
 		if (StringUtils.isBlank(appid)) {
 			return 0L;
 		}
-		SearchRequestBuilder crb = client().prepareSearch(appid).setSize(0).
-				setQuery(QueryBuilders.matchAllQuery());
+		Long count = 0L;
+		try {
+			SearchRequestBuilder crb = client().prepareSearch(appid).setSize(0).
+					setQuery(QueryBuilders.matchAllQuery());
 
-		if (!StringUtils.isBlank(type)) {
-			crb.setTypes(type);
+			if (!StringUtils.isBlank(type)) {
+				crb.setTypes(type);
+			}
+
+			count = crb.execute().actionGet().getHits().getTotalHits();
+		} catch (Exception e) {
+			Throwable cause = e.getCause();
+			String msg = cause != null ? cause.getMessage() : e.getMessage();
+			logger.warn("Could not count results in index '{}': {}", appid, msg);
 		}
-
-		return crb.execute().actionGet().getHits().getTotalHits();
+		return count;
 	}
 
 	@Override
@@ -574,18 +584,26 @@ public class ElasticSearch implements Search {
 		if (StringUtils.isBlank(appid) || terms == null || terms.isEmpty()) {
 			return 0L;
 		}
+		Long count = 0L;
 		QueryBuilder fb = getTermsQuery(terms, true);
 		if (fb == null) {
 			return 0L;
 		} else {
-			SearchRequestBuilder crb = client().prepareSearch(getIndexName(appid)).setSize(0).setQuery(fb);
+			try {
+				SearchRequestBuilder crb = client().prepareSearch(getIndexName(appid)).setSize(0).setQuery(fb);
 
-			if (!StringUtils.isBlank(type)) {
-				crb.setTypes(type);
+				if (!StringUtils.isBlank(type)) {
+					crb.setTypes(type);
+				}
+
+				count = crb.execute().actionGet().getHits().getTotalHits();
+			} catch (Exception e) {
+				Throwable cause = e.getCause();
+				String msg = cause != null ? cause.getMessage() : e.getMessage();
+				logger.warn("Could not count results in index '{}': {}", appid, msg);
 			}
-
-			return crb.execute().actionGet().getHits().getTotalHits();
 		}
+		return count;
 	}
 
 	/**

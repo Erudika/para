@@ -756,17 +756,21 @@ public class App implements ParaObject {
 		if (getId() != null && this.exists()) {
 			return null;
 		}
+		if (!id(Config.APP_NAME_NS).equals(getAppid())) {
+			// third level apps not allowed
+			return null;
+		}
 		if (StringUtils.isBlank(secret)) {
 			resetSecret();
 		}
-		return CoreUtils.getInstance().getDao().create(this);
+		return CoreUtils.getInstance().getDao().create(getAppid(), this);
 	}
 
 	@Override
 	public void delete() {
 		// root app cannot be deleted
 		if (!StringUtils.equals(getId(), id(Config.APP_NAME_NS))) {
-			CoreUtils.getInstance().getDao().delete(this);
+			CoreUtils.getInstance().getDao().delete(getAppid(), this);
 			logger.info("App '{}' deleted.", getId());
 		}
 	}
@@ -1025,10 +1029,7 @@ public class App implements ParaObject {
 			return false;
 		}
 		final ParaObject other = (ParaObject) obj;
-		if (!Objects.equals(this.id, other.getId())) {
-			return false;
-		}
-		return true;
+		return Objects.equals(this.id, other.getId());
 	}
 
 	@Override
