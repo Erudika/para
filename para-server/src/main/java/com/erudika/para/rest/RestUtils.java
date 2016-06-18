@@ -257,7 +257,7 @@ public final class RestUtils {
 				newContent.put(Config._TYPE, type);
 			}
 			content = ParaObjectUtils.setAnnotatedFields(newContent);
-			if (content != null) {
+			if (app != null && content != null && !app.getId().equals(content.getId())) {
 				content.setAppid(app.getAppIdentifier());
 				int typesCount = app.getDatatypes().size();
 				app.addDatatypes(content);
@@ -302,7 +302,7 @@ public final class RestUtils {
 				newContent.put(Config._TYPE, type);
 			}
 			content = ParaObjectUtils.setAnnotatedFields(newContent);
-			if (content != null && !StringUtils.isBlank(id)) {
+			if (app != null && content != null && !StringUtils.isBlank(id) && !app.getType().equals(type)) {
 				content.setType(type);
 				content.setAppid(app.getAppIdentifier());
 				content.setId(id);
@@ -315,6 +315,7 @@ public final class RestUtils {
 				if (errors.length == 0) {
 					// Secondary validation pass called here. Object is validated again before being created
 					// See: IndexAndCacheAspect.java
+
 					CoreUtils.getInstance().overwrite(app.getAppIdentifier(), content);
 					// new type added so update app object
 					if (typesCount < app.getDatatypes().size()) {
@@ -324,7 +325,7 @@ public final class RestUtils {
 				}
 				return getStatusResponse(Response.Status.BAD_REQUEST, errors);
 			}
-			return getStatusResponse(Response.Status.BAD_REQUEST, "Failed to create object.");
+			return getStatusResponse(Response.Status.BAD_REQUEST, "Failed to overwrite object.");
 		}
 		return entityRes;
 	}
@@ -337,7 +338,7 @@ public final class RestUtils {
 	 * @return a status code 200 or 400 or 404
 	 */
 	public static Response getUpdateResponse(App app, ParaObject object, InputStream is) {
-		if (object != null) {
+		if (app != null && object != null) {
 			Map<String, Object> newContent;
 			Response entityRes = getEntity(is, Map.class);
 			if (entityRes.getStatusInfo() == Response.Status.OK) {
@@ -368,7 +369,7 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getDeleteResponse(App app, ParaObject content) {
-		if (content != null && content.getId() != null && content.getAppid() != null) {
+		if (app != null && content != null && content.getId() != null && content.getAppid() != null) {
 			content.setAppid(app.getAppIdentifier());
 			content.delete();
 			return Response.ok().build();
@@ -384,7 +385,7 @@ public final class RestUtils {
 	 * @return status code 200 or 400
 	 */
 	public static Response getBatchReadResponse(App app, List<String> ids) {
-		if (ids != null && !ids.isEmpty()) {
+		if (app != null && ids != null && !ids.isEmpty()) {
 			return Response.ok(Para.getDAO().readAll(app.getAppIdentifier(), ids, true).values()).build();
 		} else {
 			return getStatusResponse(Response.Status.BAD_REQUEST, "Missing ids.");
@@ -398,33 +399,40 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getBatchCreateResponse(final App app, InputStream is) {
-		final LinkedList<ParaObject> objects = new LinkedList<ParaObject>();
-		Response entityRes = getEntity(is, List.class);
-		if (entityRes.getStatusInfo() == Response.Status.OK) {
-			List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
-			for (Map<String, Object> object : items) {
-				ParaObject pobj = ParaObjectUtils.setAnnotatedFields(object);
-				if (pobj != null && ValidationUtils.isValidObject(pobj)) {
-					pobj.setAppid(app.getAppIdentifier());
-					objects.add(pobj);
-				}
-			}
-
-			Para.getDAO().createAll(app.getAppIdentifier(), objects);
-
-			Para.asyncExecute(new Runnable() {
-				public void run() {
-					int typesCount = app.getDatatypes().size();
-					app.addDatatypes(objects.toArray(new ParaObject[objects.size()]));
-					if (typesCount < app.getDatatypes().size()) {
-						app.update();
+		if (app != null) {
+			final LinkedList<ParaObject> objects = new LinkedList<ParaObject>();
+			Response entityRes = getEntity(is, List.class);
+			if (entityRes.getStatusInfo() == Response.Status.OK) {
+				List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
+				for (Map<String, Object> object : items) {
+					// can't create multiple apps in batch
+					if (!Utils.type(App.class).equals(object.get(Config._TYPE))) {
+						ParaObject pobj = ParaObjectUtils.setAnnotatedFields(object);
+						if (pobj != null && ValidationUtils.isValidObject(pobj)) {
+							pobj.setAppid(app.getAppIdentifier());
+							objects.add(pobj);
+						}
 					}
 				}
-			});
+
+				Para.getDAO().createAll(app.getAppIdentifier(), objects);
+
+				Para.asyncExecute(new Runnable() {
+					public void run() {
+						int typesCount = app.getDatatypes().size();
+						app.addDatatypes(objects.toArray(new ParaObject[objects.size()]));
+						if (typesCount < app.getDatatypes().size()) {
+							app.update();
+						}
+					}
+				});
+			} else {
+				return entityRes;
+			}
+			return Response.ok(objects).build();
 		} else {
-			return entityRes;
+			return getStatusResponse(Response.Status.BAD_REQUEST);
 		}
-		return Response.ok(objects).build();
 	}
 
 	/**
@@ -434,26 +442,33 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getBatchUpdateResponse(App app, InputStream is) {
-		LinkedList<ParaObject> objects = new LinkedList<ParaObject>();
-		Response entityRes = getEntity(is, List.class);
-		if (entityRes.getStatusInfo() == Response.Status.OK) {
-			List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
-			// WARN: objects will not be validated here as this would require them to be read first
-			for (Map<String, Object> item : items) {
-				if (item != null && item.containsKey(Config._ID) && item.containsKey(Config._TYPE)) {
-					ParaObject pobj = ParaObjectUtils.setAnnotatedFields(null, item, Locked.class);
-					if (pobj != null) {
-						pobj.setId((String) item.get(Config._ID));
-						pobj.setType((String) item.get(Config._TYPE));
-						objects.add(pobj);
+		if (app != null) {
+			LinkedList<ParaObject> objects = new LinkedList<ParaObject>();
+			Response entityRes = getEntity(is, List.class);
+			if (entityRes.getStatusInfo() == Response.Status.OK) {
+				List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
+				// WARN: objects will not be validated here as this would require them to be read first
+				for (Map<String, Object> item : items) {
+					if (item != null && item.containsKey(Config._ID) && item.containsKey(Config._TYPE)) {
+						// can't update multiple apps in batch
+						if (!Utils.type(App.class).equals(item.get(Config._TYPE))) {
+							ParaObject pobj = ParaObjectUtils.setAnnotatedFields(null, item, Locked.class);
+							if (pobj != null) {
+								pobj.setId((String) item.get(Config._ID));
+								pobj.setType((String) item.get(Config._TYPE));
+								objects.add(pobj);
+							}
+						}
 					}
 				}
+				Para.getDAO().updateAll(app.getAppIdentifier(), objects);
+			} else {
+				return entityRes;
 			}
-			Para.getDAO().updateAll(app.getAppIdentifier(), objects);
+			return Response.ok(objects).build();
 		} else {
-			return entityRes;
+			return getStatusResponse(Response.Status.BAD_REQUEST);
 		}
-		return Response.ok(objects).build();
 	}
 
 	/**
@@ -468,7 +483,10 @@ public final class RestUtils {
 			if (ids.size() <= Config.MAX_ITEMS_PER_PAGE) {
 				for (ParaObject pobj : Para.getDAO().readAll(app.getAppIdentifier(), ids, false).values()) {
 					if (pobj != null && pobj.getId() != null && pobj.getType() != null) {
-						objects.add(pobj);
+						// can't delete multiple apps in batch
+						if (!Utils.type(App.class).equals(pobj.getType())) {
+							objects.add(pobj);
+						}
 					}
 				}
 				Para.getDAO().deleteAll(app.getAppIdentifier(), objects);
