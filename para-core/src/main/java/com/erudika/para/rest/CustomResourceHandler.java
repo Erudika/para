@@ -48,6 +48,13 @@ public interface CustomResourceHandler {
 	Response handlePost(ContainerRequestContext ctx);
 
 	/**
+	 * This method is called when a PATCH request to be handled.
+	 * @param ctx the context object - contains all the details of the request and context
+	 * @return a response
+	 */
+	Response handlePatch(ContainerRequestContext ctx);
+
+	/**
 	 * This method is called when a PUT request to be handled.
 	 * @param ctx the context object - contains all the details of the request and context
 	 * @return a response
