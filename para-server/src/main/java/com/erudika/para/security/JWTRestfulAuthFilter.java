@@ -63,6 +63,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	private GitHubAuthFilter githubAuth;
 	private LinkedInAuthFilter linkedinAuth;
 	private TwitterAuthFilter twitterAuth;
+	private MicrosoftAuthFilter microsoftAuth;
 	private PasswordAuthFilter passwordAuth;
 
 	/**
@@ -135,6 +136,15 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	@Inject
 	public void setTwitterAuth(TwitterAuthFilter twitterAuth) {
 		this.twitterAuth = twitterAuth;
+	}
+
+	public MicrosoftAuthFilter getMicrosoftAuth() {
+		return microsoftAuth;
+	}
+
+	@Inject
+	public void setMicrosoftAuth(MicrosoftAuthFilter microsoftAuth) {
+		this.microsoftAuth = microsoftAuth;
 	}
 
 	public PasswordAuthFilter getPasswordAuth() {
@@ -339,6 +349,8 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			return linkedinAuth.getOrCreateUser(appid, accessToken);
 		} else if ("twitter".equalsIgnoreCase(identityProvider)) {
 			return twitterAuth.getOrCreateUser(appid, accessToken);
+		} else if ("microsoft".equalsIgnoreCase(identityProvider)) {
+			return microsoftAuth.getOrCreateUser(appid, accessToken);
 		} else if ("password".equalsIgnoreCase(identityProvider)) {
 			return passwordAuth.getOrCreateUser(appid, accessToken);
 		}
