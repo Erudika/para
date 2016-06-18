@@ -159,18 +159,17 @@ public final class AWSDynamoUtils {
 		}
 		try {
 			Map<String, Object> dbStats = getTableStatus(appid);
-			long currentReadCapacity = (Long) dbStats.get("readCapacityUnits");
-			long currentWriteCapacity = (Long) dbStats.get("writeCapacityUnits");
+			String status = (String) dbStats.get("status");
 			// AWS throws an exception if the new read/write capacity values are the same as the current ones
-			if (!dbStats.isEmpty() && readCapacity != currentReadCapacity && writeCapacity != currentWriteCapacity) {
+			if (!dbStats.isEmpty() && "ACTIVE".equalsIgnoreCase(status)) {
 				getClient().updateTable(new UpdateTableRequest().withTableName(getTableNameForAppid(appid)).
 						withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
+				return true;
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
-			return false;
 		}
-		return true;
+		return false;
 	}
 
 	/**
