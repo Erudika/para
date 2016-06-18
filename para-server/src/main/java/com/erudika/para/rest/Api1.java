@@ -149,6 +149,13 @@ public final class Api1 extends ResourceConfig {
 		utilsRes.addMethod(GET).produces(JSON).handledBy(utilsHandler());
 		registerResources(utilsRes.build());
 
+		// app settings
+		Resource.Builder appSettingsRes = Resource.builder("app/{id}/settings");
+		appSettingsRes.addMethod(GET).produces(JSON).handledBy(appSettingsHandler());
+		appSettingsRes.addChildResource("{key}").addMethod(GET).produces(JSON).handledBy(appSettingsHandler());
+		appSettingsRes.addChildResource("{key}").addMethod(PUT).produces(JSON).handledBy(appSettingsHandler());
+		registerResources(appSettingsRes.build());
+
 		// register custom resources
 		for (final CustomResourceHandler handler : getCustomResourceHandlers()) {
 			Resource.Builder custom = Resource.builder(handler.getRelativePath());
@@ -597,6 +604,39 @@ public final class Api1 extends ResourceConfig {
 					return Response.ok(app.getAllResourcePermissions(subjectid)).build();
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+			}
+		};
+	}
+
+	@SuppressWarnings("unchecked")
+	private Inflector<ContainerRequestContext, Response> appSettingsHandler() {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				App app = RestUtils.getPrincipalApp();
+				String id = pathParam("id", ctx);
+				String key = pathParam("key", ctx);
+				if (app != null && app.getId().equals(App.id(id))) {
+					if (StringUtils.isBlank(key)) {
+						return Response.ok(app.getSettings()).build();
+					} else {
+						if (PUT.equals(ctx.getMethod())) {
+							Response resp = RestUtils.getEntity(ctx.getEntityStream(), Map.class);
+							if (resp.getStatusInfo() == Response.Status.OK) {
+								Map<String, Object> setting = (Map<String, Object>) resp.getEntity();
+								if (setting.containsKey("value")) {
+									app.addSetting(key, setting.get("value"));
+									app.update();
+								}
+								return Response.ok().build();
+							} else {
+								return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST);
+							}
+						} else {
+							return Response.ok(Collections.singletonMap("value", app.getSetting(key))).build();
+						}
+					}
+				}
+				return RestUtils.getStatusResponse(Response.Status.FORBIDDEN, "Not allowed.");
 			}
 		};
 	}
