@@ -105,7 +105,7 @@ public abstract class DAOTest {
 		App app = new App("testappid");
 		app.setName("testappid");
 		app.setShared(false);
-		app.create();
+		assertNotNull(app.create());
 		App app2 = new App("testappid");
 		assertTrue(app2.exists());
 
@@ -147,7 +147,7 @@ public abstract class DAOTest {
 		assertNull(app.getSecret());
 		assertNull(((App) dao.read(app.getId())).getSecret());
 		app.delete();
-		app.create();
+		assertNotNull(app.create());
 		assertNotNull(app.getSecret());
 		String secret = app.getSecret();
 		assertNotNull(((App) dao.read(app.getId())).getSecret());

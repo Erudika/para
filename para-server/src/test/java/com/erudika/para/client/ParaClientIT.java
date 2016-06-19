@@ -230,6 +230,11 @@ public class ParaClientIT {
 		pc.delete(t1);
 		pc.delete(dog);
 		assertNull(pc.read(tr.getType(), tr.getId()));
+
+		// app must not overwrite itself
+		assertNull(pc.create(new App(APP_NAME)));
+		// app can read itself
+		assertNotNull(pc.read(Utils.type(App.class), APP_NAME));
 	}
 
 	@Test

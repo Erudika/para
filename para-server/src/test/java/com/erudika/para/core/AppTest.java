@@ -48,6 +48,15 @@ public class AppTest {
 	}
 
 	@Test
+	public void testCreate() {
+		App app = new App("test");
+		app.setAppid("notRoot");
+		assertNull(app.create());
+		app.setAppid(Config.APP_NAME_NS);
+		assertNotNull(app.create());
+	}
+
+	@Test
 	public void testSetId() {
 		App app = new App();
 		assertNull(app.getId());

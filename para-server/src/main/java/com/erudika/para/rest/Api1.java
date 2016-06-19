@@ -450,7 +450,7 @@ public final class Api1 extends ResourceConfig {
 				App app = RestUtils.getPrincipalApp();
 				String id = pathParam(Config._ID, ctx);
 				if (app != null) {
-					return RestUtils.getReadResponse(getDAO().read(app.getAppIdentifier(), id));
+					return RestUtils.getReadResponse(app, getDAO().read(app.getAppIdentifier(), id));
 				}
 				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
@@ -702,9 +702,9 @@ public final class Api1 extends ResourceConfig {
 				ParaObject obj = ParaObjectUtils.toObject(type);
 				obj.setId(pathParam(Config._ID, ctx));
 				if (app.getId().equals(obj.getId())) {
-					return RestUtils.getReadResponse(app);
+					return RestUtils.getReadResponse(app, app);
 				}
-				return RestUtils.getReadResponse(getDAO().read(app.getAppIdentifier(), obj.getId()));
+				return RestUtils.getReadResponse(app, getDAO().read(app.getAppIdentifier(), obj.getId()));
 			}
 		};
 	}

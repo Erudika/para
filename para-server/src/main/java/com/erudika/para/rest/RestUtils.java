@@ -233,12 +233,14 @@ public final class RestUtils {
 	 * @param content the object that was read
 	 * @return status code 200 or 404
 	 */
-	public static Response getReadResponse(ParaObject content) {
+	public static Response getReadResponse(App app, ParaObject content) {
 		if (content != null) {
-			return Response.ok(content).build();
-		} else {
-			return getStatusResponse(Response.Status.NOT_FOUND);
+			// app can't modify other apps except itself
+			if (!app.getType().equals(content.getType()) || app.getId().equals(content.getId())) {
+				return Response.ok(content).build();
+			}
 		}
+		return getStatusResponse(Response.Status.NOT_FOUND);
 	}
 
 	/**
@@ -341,6 +343,7 @@ public final class RestUtils {
 		if (app != null && object != null) {
 			Map<String, Object> newContent;
 			Response entityRes = getEntity(is, Map.class);
+			String[] errors = {};
 			if (entityRes.getStatusInfo() == Response.Status.OK) {
 				newContent = (Map<String, Object>) entityRes.getEntity();
 			} else {
@@ -348,12 +351,15 @@ public final class RestUtils {
 			}
 			if (object.getAppid() != null) {
 				ParaObjectUtils.setAnnotatedFields(object, newContent, Locked.class);
-				// This is the primary validation pass (validates not only core POJOS but also user defined objects).
-				String[] errors = ValidationUtils.validateObject(app, object);
-				if (errors.length == 0) {
-					// Secondary validation pass: object is validated again before being updated
-					object.update();
-					return Response.ok(object).build();
+				// app can't modify other apps except itself
+				if (!app.getType().equals(object.getType()) || app.getId().equals(object.getId())) {
+					// This is the primary validation pass (validates not only core POJOS but also user defined objects).
+					errors = ValidationUtils.validateObject(app, object);
+					if (errors.length == 0) {
+						// Secondary validation pass: object is validated again before being updated
+						object.update();
+						return Response.ok(object).build();
+					}
 				}
 				return getStatusResponse(Response.Status.BAD_REQUEST, errors);
 			}

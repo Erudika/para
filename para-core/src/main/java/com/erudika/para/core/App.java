@@ -763,7 +763,7 @@ public class App implements ParaObject {
 		if (getId() != null && this.exists()) {
 			return null;
 		}
-		if (!id(Config.APP_NAME_NS).equals(getAppid())) {
+		if (!Config.APP_NAME_NS.equals(getAppid())) {
 			// third level apps not allowed
 			return null;
 		}
