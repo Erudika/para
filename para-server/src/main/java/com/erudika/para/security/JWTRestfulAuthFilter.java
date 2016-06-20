@@ -76,86 +76,6 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 		setFilterProcessesUrl(defaultFilterProcessesUrl);
 	}
 
-	private void setFilterProcessesUrl(String filterProcessesUrl) {
-		this.authenticationRequestMatcher = new AntPathRequestMatcher(filterProcessesUrl);
-	}
-
-	protected AuthenticationManager getAuthenticationManager() {
-		return authenticationManager;
-	}
-
-	public void setAuthenticationManager(AuthenticationManager authenticationManager) {
-		this.authenticationManager = authenticationManager;
-	}
-
-	@Override
-	public void afterPropertiesSet() {
-		Assert.notNull(authenticationManager, "authenticationManager cannot be null");
-	}
-
-	public FacebookAuthFilter getFacebookAuth() {
-		return facebookAuth;
-	}
-
-	@Inject
-	public void setFacebookAuth(FacebookAuthFilter facebookAuth) {
-		this.facebookAuth = facebookAuth;
-	}
-
-	public GoogleAuthFilter getGoogleAuth() {
-		return googleAuth;
-	}
-
-	@Inject
-	public void setGoogleAuth(GoogleAuthFilter googleAuth) {
-		this.googleAuth = googleAuth;
-	}
-
-	public GitHubAuthFilter getGithubAuth() {
-		return githubAuth;
-	}
-
-	@Inject
-	public void setGithubAuth(GitHubAuthFilter githubAuth) {
-		this.githubAuth = githubAuth;
-	}
-
-	public LinkedInAuthFilter getLinkedinAuth() {
-		return linkedinAuth;
-	}
-
-	@Inject
-	public void setLinkedinAuth(LinkedInAuthFilter linkedinAuth) {
-		this.linkedinAuth = linkedinAuth;
-	}
-
-	public TwitterAuthFilter getTwitterAuth() {
-		return twitterAuth;
-	}
-
-	@Inject
-	public void setTwitterAuth(TwitterAuthFilter twitterAuth) {
-		this.twitterAuth = twitterAuth;
-	}
-
-	public MicrosoftAuthFilter getMicrosoftAuth() {
-		return microsoftAuth;
-	}
-
-	@Inject
-	public void setMicrosoftAuth(MicrosoftAuthFilter microsoftAuth) {
-		this.microsoftAuth = microsoftAuth;
-	}
-
-	public PasswordAuthFilter getPasswordAuth() {
-		return passwordAuth;
-	}
-
-	@Inject
-	public void setPasswordAuth(PasswordAuthFilter passwordAuth) {
-		this.passwordAuth = passwordAuth;
-	}
-
 	@Override
 	public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
 			throws IOException, ServletException {
@@ -354,5 +274,85 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			return passwordAuth.getOrCreateUser(appid, accessToken);
 		}
 		return null;
+	}
+
+	private void setFilterProcessesUrl(String filterProcessesUrl) {
+		this.authenticationRequestMatcher = new AntPathRequestMatcher(filterProcessesUrl);
+	}
+
+	protected AuthenticationManager getAuthenticationManager() {
+		return authenticationManager;
+	}
+
+	public void setAuthenticationManager(AuthenticationManager authenticationManager) {
+		this.authenticationManager = authenticationManager;
+	}
+
+	@Override
+	public void afterPropertiesSet() {
+		Assert.notNull(authenticationManager, "authenticationManager cannot be null");
+	}
+
+	public FacebookAuthFilter getFacebookAuth() {
+		return facebookAuth;
+	}
+
+	@Inject
+	public void setFacebookAuth(FacebookAuthFilter facebookAuth) {
+		this.facebookAuth = facebookAuth;
+	}
+
+	public GoogleAuthFilter getGoogleAuth() {
+		return googleAuth;
+	}
+
+	@Inject
+	public void setGoogleAuth(GoogleAuthFilter googleAuth) {
+		this.googleAuth = googleAuth;
+	}
+
+	public GitHubAuthFilter getGithubAuth() {
+		return githubAuth;
+	}
+
+	@Inject
+	public void setGithubAuth(GitHubAuthFilter githubAuth) {
+		this.githubAuth = githubAuth;
+	}
+
+	public LinkedInAuthFilter getLinkedinAuth() {
+		return linkedinAuth;
+	}
+
+	@Inject
+	public void setLinkedinAuth(LinkedInAuthFilter linkedinAuth) {
+		this.linkedinAuth = linkedinAuth;
+	}
+
+	public TwitterAuthFilter getTwitterAuth() {
+		return twitterAuth;
+	}
+
+	@Inject
+	public void setTwitterAuth(TwitterAuthFilter twitterAuth) {
+		this.twitterAuth = twitterAuth;
+	}
+
+	public MicrosoftAuthFilter getMicrosoftAuth() {
+		return microsoftAuth;
+	}
+
+	@Inject
+	public void setMicrosoftAuth(MicrosoftAuthFilter microsoftAuth) {
+		this.microsoftAuth = microsoftAuth;
+	}
+
+	public PasswordAuthFilter getPasswordAuth() {
+		return passwordAuth;
+	}
+
+	@Inject
+	public void setPasswordAuth(PasswordAuthFilter passwordAuth) {
+		this.passwordAuth = passwordAuth;
 	}
 }
