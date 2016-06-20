@@ -154,6 +154,7 @@ public final class Api1 extends ResourceConfig {
 		appSettingsRes.addMethod(GET).produces(JSON).handledBy(appSettingsHandler());
 		appSettingsRes.addChildResource("{key}").addMethod(GET).produces(JSON).handledBy(appSettingsHandler());
 		appSettingsRes.addChildResource("{key}").addMethod(PUT).produces(JSON).handledBy(appSettingsHandler());
+		appSettingsRes.addChildResource("{key}").addMethod(DELETE).produces(JSON).handledBy(appSettingsHandler());
 		registerResources(appSettingsRes.build());
 
 		// register custom resources
@@ -609,7 +610,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	@SuppressWarnings("unchecked")
-	private Inflector<ContainerRequestContext, Response> appSettingsHandler() {
+	public static Inflector<ContainerRequestContext, Response> appSettingsHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = RestUtils.getPrincipalApp();
@@ -631,6 +632,10 @@ public final class Api1 extends ResourceConfig {
 							} else {
 								return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST);
 							}
+						} else if (DELETE.equals(ctx.getMethod())) {
+							app.removeSetting(key);
+							app.update();
+							return Response.ok().build();
 						} else {
 							return Response.ok(Collections.singletonMap("value", app.getSetting(key))).build();
 						}
