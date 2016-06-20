@@ -224,6 +224,20 @@ public final class RestUtils {
 		return Response.ok(entity).build();
 	}
 
+	/**
+	 * An app can edit itself or delete itself. It can't read, edit, overwrite or delete other apps,
+	 * unless it is the root app.
+	 * @param app an app
+	 * @param object another object
+	 * @return true if app passes the check
+	 */
+	private static boolean checkImplicitAppPermissions(App app, ParaObject object) {
+		if (app != null && object != null) {
+			return !app.getType().equals(object.getType()) || app.getId().equals(object.getId()) || app.isRootApp();
+		}
+		return false;
+	}
+
 	/////////////////////////////////////////////
 	//			REST RESPONSE HANDLERS
 	/////////////////////////////////////////////
@@ -234,9 +248,9 @@ public final class RestUtils {
 	 * @return status code 200 or 404
 	 */
 	public static Response getReadResponse(App app, ParaObject content) {
-		if (content != null) {
+		if (app != null && content != null) {
 			// app can't modify other apps except itself
-			if (!app.getType().equals(content.getType()) || app.getId().equals(content.getId())) {
+			if (checkImplicitAppPermissions(app, content)) {
 				return Response.ok(content).build();
 			}
 		}
@@ -259,7 +273,7 @@ public final class RestUtils {
 				newContent.put(Config._TYPE, type);
 			}
 			content = ParaObjectUtils.setAnnotatedFields(newContent);
-			if (app != null && content != null && !app.getId().equals(content.getId())) {
+			if (app != null && content != null && !app.getType().equals(type)) {
 				content.setAppid(app.getAppIdentifier());
 				int typesCount = app.getDatatypes().size();
 				app.addDatatypes(content);
@@ -352,7 +366,7 @@ public final class RestUtils {
 			if (object.getAppid() != null) {
 				ParaObjectUtils.setAnnotatedFields(object, newContent, Locked.class);
 				// app can't modify other apps except itself
-				if (!app.getType().equals(object.getType()) || app.getId().equals(object.getId())) {
+				if (checkImplicitAppPermissions(app, object)) {
 					// This is the primary validation pass (validates not only core POJOS but also user defined objects).
 					errors = ValidationUtils.validateObject(app, object);
 					if (errors.length == 0) {
@@ -376,12 +390,14 @@ public final class RestUtils {
 	 */
 	public static Response getDeleteResponse(App app, ParaObject content) {
 		if (app != null && content != null && content.getId() != null && content.getAppid() != null) {
-			content.setAppid(app.getAppIdentifier());
-			content.delete();
-			return Response.ok().build();
-		} else {
+			if (checkImplicitAppPermissions(app, content)) {
+				content.setAppid(app.getAppIdentifier());
+				content.delete();
+				return Response.ok().build();
+			}
 			return getStatusResponse(Response.Status.BAD_REQUEST);
 		}
+		return getStatusResponse(Response.Status.NOT_FOUND);
 	}
 
 	/**

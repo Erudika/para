@@ -78,22 +78,37 @@ public class RestUtilsTest {
 
 	private InputStream getInputStream(Object obj) throws JsonProcessingException {
 		if (obj != null) {
-			return new ByteArrayInputStream(ParaObjectUtils.getJsonWriter().forType(obj.getClass()).writeValueAsBytes(obj));
+			return new ByteArrayInputStream(ParaObjectUtils.getJsonWriter().
+					forType(obj.getClass()).writeValueAsBytes(obj));
 		}
 		return null;
 	}
 
 	@Test
 	public void testGetReadResponse() {
-		assertEquals(Status.NOT_FOUND.getStatusCode(), getReadResponse(null).getStatus());
-		assertEquals(Status.OK.getStatusCode(), getReadResponse(new Tag("tag")).getStatus());
+		App app = new App("test");
+		App root = new App(Config.APP_NAME_NS);
+		assertEquals(Status.NOT_FOUND.getStatusCode(), getReadResponse(null, null).getStatus());
+		assertEquals(Status.OK.getStatusCode(), getReadResponse(app, new Tag("tag")).getStatus());
+		assertEquals(Status.OK.getStatusCode(), getReadResponse(root, new App("test1")).getStatus());
 	}
 
 	@Test
 	public void testGetCreateUpdateDeleteResponse() throws JsonProcessingException {
 		Tag t = new Tag("tag");
 		App rootApp = new App(Config.APP_NAME_NS);
+		App notRootApp = new App("anotherApp");
 		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(null, null, null).getStatus());
+		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(rootApp, rootApp.getType(),
+				getInputStream(rootApp)).getStatus());
+		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(rootApp, rootApp.getType(),
+				getInputStream(rootApp)).getStatus());
+		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(notRootApp, rootApp.getType(),
+				getInputStream(rootApp)).getStatus());
+		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(rootApp, rootApp.getType(),
+				getInputStream(notRootApp)).getStatus());
+		assertEquals(Status.BAD_REQUEST.getStatusCode(), getUpdateResponse(notRootApp, rootApp,
+				getInputStream(rootApp)).getStatus());
 
 		assertEquals(Status.CREATED.getStatusCode(),
 				getCreateResponse(rootApp, t.getType(), getInputStream(t)).getStatus());
@@ -103,9 +118,17 @@ public class RestUtilsTest {
 		assertEquals(Status.NOT_FOUND.getStatusCode(), getUpdateResponse(rootApp, null, null).getStatus());
 		assertEquals(Status.OK.getStatusCode(), getUpdateResponse(rootApp, t, getInputStream(map)).getStatus());
 		assertNotNull(CoreUtils.getInstance().getDao().read(t.getId()));
+		assertEquals(Status.OK.getStatusCode(), getUpdateResponse(notRootApp, notRootApp,
+				getInputStream(notRootApp)).getStatus());
+		assertEquals(Status.OK.getStatusCode(), getUpdateResponse(rootApp, notRootApp,
+				getInputStream(notRootApp)).getStatus());
 
-		assertEquals(Status.BAD_REQUEST.getStatusCode(), getDeleteResponse(rootApp, null).getStatus());
+		assertEquals(Status.NOT_FOUND.getStatusCode(), getDeleteResponse(rootApp, null).getStatus());
+		assertEquals(Status.NOT_FOUND.getStatusCode(), getDeleteResponse(null, t).getStatus());
+		assertEquals(Status.BAD_REQUEST.getStatusCode(), getDeleteResponse(notRootApp, rootApp).getStatus());
 		assertEquals(Status.OK.getStatusCode(), getDeleteResponse(rootApp, t).getStatus());
+		assertEquals(Status.OK.getStatusCode(), getDeleteResponse(rootApp, notRootApp).getStatus());
+		assertEquals(Status.OK.getStatusCode(), getDeleteResponse(notRootApp, notRootApp).getStatus());
 		assertNull(CoreUtils.getInstance().getDao().read(t.getId()));
 	}
 
