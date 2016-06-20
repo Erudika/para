@@ -364,6 +364,7 @@ public class App implements ParaObject {
 	 * Return true if the app is the root app (the first one created).
 	 * @return true if root
 	 */
+	@JsonIgnore
 	public boolean isRootApp() {
 		return StringUtils.equals(App.id(Config.APP_NAME_NS), getId());
 	}
