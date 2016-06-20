@@ -124,12 +124,13 @@ public final class ParaObjectUtils {
 
 	/**
 	 * Populates an object with an array of query parameters (dangerous!).
-	 * <b>This method might be deprecated in the future.</b>
-	 *
+	 * <b>This method is deprecated. Use {@link #setAnnotatedFields(ParaObject, java.util.Map, java.lang.Class) }
+	 * instead.</b>
 	 * @param <P> the object type
 	 * @param transObject an object
 	 * @param paramMap a query parameters map
 	 */
+	@Deprecated
 	public static <P extends ParaObject> void populate(P transObject, Map<String, String[]> paramMap) {
 		if (transObject == null || paramMap == null || paramMap.isEmpty()) {
 			return;
