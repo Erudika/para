@@ -27,6 +27,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.web.DefaultRedirectStrategy;
+import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 
 /**
@@ -34,6 +36,8 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+
+	private RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
 
 	@Override
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -45,10 +49,20 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 				u.update();
 			}
 		}
-		if (isRestRequest(request)) {
-			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NO_CONTENT, "Authentication success.");
+		String customURI = (String) request.getAttribute(Config.AUTH_SIGNIN_SUCCESS_ATTR);
+		if (customURI == null && request.getParameter("appid") != null) {
+			// try to reload custom redirect URI from app
+			SecurityUtils.getCustomAuthSettings(request.getParameter("appid"), null, request);
+			customURI = (String) request.getAttribute(Config.AUTH_SIGNIN_SUCCESS_ATTR);
+		}
+		if (StringUtils.startsWith(customURI, "/")) {
+			redirectStrategy.sendRedirect(request, response, customURI);
 		} else {
-			super.onAuthenticationSuccess(request, response, authentication);
+			if (isRestRequest(request)) {
+				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NO_CONTENT, "Authentication success.");
+			} else {
+				super.onAuthenticationSuccess(request, response, authentication);
+			}
 		}
 	}
 

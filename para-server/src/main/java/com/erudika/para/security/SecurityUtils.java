@@ -17,6 +17,7 @@
  */
 package com.erudika.para.security;
 
+import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
 import com.erudika.para.utils.Config;
@@ -31,8 +32,10 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import java.text.ParseException;
 import java.util.Date;
+import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -182,5 +185,47 @@ public final class SecurityUtils {
 			interval = (tokenValiditySec / 2);
 		}
 		return System.currentTimeMillis() + (interval * 1000);
+	}
+
+	/**
+	 * Return the OAuth appid and secret key for a given app or default to the ones in the config file.
+	 * @param appid the app in which to look for these keys
+	 * @param prefix a service prefix: "fb" for facebook, "tw" for twitter etc. See {@link Config}
+	 * @param request an auth request
+	 * @return an array ["app_id", "secret_key"] or ["", ""]
+	 */
+	public static String[] getCustomAuthSettings(String appid, String prefix, HttpServletRequest request) {
+		prefix = StringUtils.removeEnd(prefix + "", Config.SEPARATOR);
+		String appIdKey = prefix + "_app_id";
+		String secretKey = prefix + "_secret";
+		String authAppId = Config.getConfigParam(appIdKey, "");
+		String authSecret = Config.getConfigParam(secretKey, "");
+		String[] keys = new String[]{authAppId, authSecret};
+
+		if (appid != null) {
+			App app = new App(appid);
+			if (!StringUtils.isBlank(appid) && !app.isRootApp()) {
+				app = Para.getDAO().read(app.getId());
+				if (app != null) {
+					Map<String, Object> settings = app.getSettings();
+					if (settings.containsKey(appIdKey) && settings.containsKey(secretKey)) {
+						authAppId = settings.get(appIdKey) + "";
+						authSecret = settings.get(secretKey) + "";
+						keys[0] = authAppId;
+						keys[1] = authSecret;
+					}
+					// why not also set these while we have the custom settings loaded
+					if (request != null) {
+						if (settings.containsKey("signin_success")) {
+							request.setAttribute(Config.AUTH_SIGNIN_SUCCESS_ATTR, settings.get("signin_success"));
+						}
+						if (settings.containsKey("signin_failure")) {
+							request.setAttribute(Config.AUTH_SIGNIN_FAILURE_ATTR, settings.get("signin_failure"));
+						}
+					}
+				}
+			}
+		}
+		return keys;
 	}
 }

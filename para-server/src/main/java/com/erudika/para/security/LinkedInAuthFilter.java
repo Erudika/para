@@ -86,9 +86,11 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (requestURI.endsWith(LINKEDIN_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
+				String appid = request.getParameter("appid");
+				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
+				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.LINKEDIN_PREFIX, request);
 				CloseableHttpResponse resp1 = null;
-				String url = Utils.formatMessage(TOKEN_URL, authCode,
-						request.getRequestURL().toString(), Config.LINKEDIN_APP_ID, Config.LINKEDIN_SECRET);
+				String url = Utils.formatMessage(TOKEN_URL, authCode, redirectURI, keys[0], keys[1]);
 				try {
 					HttpPost tokenPost = new HttpPost(url);
 					resp1 = httpclient.execute(tokenPost);
@@ -99,7 +101,7 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 				if (resp1 != null && resp1.getEntity() != null) {
 					Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
 					if (token != null && token.containsKey("access_token")) {
-						userAuth = getOrCreateUser(null, (String) token.get("access_token"));
+						userAuth = getOrCreateUser(appid, (String) token.get("access_token"));
 					}
 					EntityUtils.consumeQuietly(resp1.getEntity());
 				}
@@ -158,6 +160,7 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 						//user is new
 						user = new User();
 						user.setActive(true);
+						user.setAppid(appid);
 						user.setEmail(StringUtils.isBlank(email) ? linkedInID + "@linkedin.com" : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());

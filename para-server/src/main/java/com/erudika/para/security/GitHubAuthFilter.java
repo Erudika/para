@@ -87,10 +87,12 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (requestURI.endsWith(GITHUB_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
+				String appid = request.getParameter("appid");
+				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
+				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.GITHUB_PREFIX, request);
 				String entity = Utils.formatMessage(PAYLOAD,
 						URLEncoder.encode(authCode, "UTF-8"),
-						URLEncoder.encode(request.getRequestURL().toString(), "UTF-8"),
-						Config.GITHUB_APP_ID, Config.GITHUB_SECRET);
+						URLEncoder.encode(redirectURI, "UTF-8"), keys[0], keys[1]);
 
 				HttpPost tokenPost = new HttpPost(TOKEN_URL);
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
@@ -101,7 +103,7 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 				if (resp1 != null && resp1.getEntity() != null) {
 					Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
 					if (token != null && token.containsKey("access_token")) {
-						userAuth = getOrCreateUser(null, (String) token.get("access_token"));
+						userAuth = getOrCreateUser(appid, (String) token.get("access_token"));
 					}
 					EntityUtils.consumeQuietly(resp1.getEntity());
 				}
@@ -152,6 +154,7 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 						//user is new
 						user = new User();
 						user.setActive(true);
+						user.setAppid(appid);
 						user.setEmail(StringUtils.isBlank(email) ? githubId + "@github.com" : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());

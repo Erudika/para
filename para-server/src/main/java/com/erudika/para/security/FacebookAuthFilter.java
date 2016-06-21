@@ -84,9 +84,11 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (requestURI.endsWith(FACEBOOK_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
+				String appid = request.getParameter("appid");
+				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
+				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.FB_PREFIX, request);
 				CloseableHttpResponse resp1 = null;
-				String url = Utils.formatMessage(TOKEN_URL, authCode,
-						request.getRequestURL().toString(), Config.FB_APP_ID, Config.FB_SECRET);
+				String url = Utils.formatMessage(TOKEN_URL, authCode, redirectURI, keys[0], keys[1]);
 				try {
 					HttpGet tokenPost = new HttpGet(url);
 					resp1 = httpclient.execute(tokenPost);
@@ -98,7 +100,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 					String token = EntityUtils.toString(resp1.getEntity(), Config.DEFAULT_ENCODING);
 					if (token != null && token.startsWith("access_token")) {
 						String accessToken = token.substring(token.indexOf("=") + 1, token.indexOf("&"));
-						userAuth = getOrCreateUser(null, accessToken);
+						userAuth = getOrCreateUser(appid, accessToken);
 					}
 					EntityUtils.consumeQuietly(resp1.getEntity());
 				}
@@ -156,6 +158,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 						//user is new
 						user = new User();
 						user.setActive(true);
+						user.setAppid(appid);
 						user.setEmail(StringUtils.isBlank(email) ? fbId + "@facebook.com" : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());

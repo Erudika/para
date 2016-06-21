@@ -18,11 +18,15 @@
 package com.erudika.para.security;
 
 import com.erudika.para.rest.RestUtils;
+import com.erudika.para.utils.Config;
 import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.DefaultRedirectStrategy;
+import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 
 /**
@@ -31,13 +35,26 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationFa
  */
 public class SimpleAuthenticationFailureHandler extends SimpleUrlAuthenticationFailureHandler {
 
+	private RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
+
 	@Override
 	public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
 			AuthenticationException exception) throws IOException, ServletException {
-		if (isRestRequest(request)) {
-			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, exception.getMessage());
+
+		String customURI = (String) request.getAttribute(Config.AUTH_SIGNIN_FAILURE_ATTR);
+		if (customURI == null && request.getParameter("appid") != null) {
+			// try to reload custom redirect URI from app
+			SecurityUtils.getCustomAuthSettings(request.getParameter("appid"), null, request);
+			customURI = (String) request.getAttribute(Config.AUTH_SIGNIN_FAILURE_ATTR);
+		}
+		if (StringUtils.startsWith(customURI, "/")) {
+			redirectStrategy.sendRedirect(request, response, customURI);
 		} else {
-			super.onAuthenticationFailure(request, response, exception);
+			if (isRestRequest(request)) {
+				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, exception.getMessage());
+			} else {
+				super.onAuthenticationFailure(request, response, exception);
+			}
 		}
 	}
 

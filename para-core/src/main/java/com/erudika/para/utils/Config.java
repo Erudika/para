@@ -94,6 +94,11 @@ public final class Config {
 	/** Microsoft prefix - defaults to 'ms:'. */
 	public static final String MICROSOFT_PREFIX = "ms" + SEPARATOR;
 
+	/**	{@value #AUTH_SIGNIN_SUCCESS_ATTR} */
+	public static final String AUTH_SIGNIN_SUCCESS_ATTR = "AUTH_SIGNIN_SUCCESS_ATTRIBUTE";
+	/**	{@value #AUTH_SIGNIN_FAILURE_ATTR} */
+	public static final String AUTH_SIGNIN_FAILURE_ATTR = "AUTH_SIGNIN_FAILURE_ATTRIBUTE";
+
 	//////////  INITIALIZATION PARAMETERS  //////////////
 	/**
 	 * Maximum results per page - limits the number of items to show in search results. Default is 30.

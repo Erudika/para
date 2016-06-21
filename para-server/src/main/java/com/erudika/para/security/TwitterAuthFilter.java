@@ -86,15 +86,18 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 		if (requestURI.endsWith(TWITTER_ACTION)) {
 			String verifier = request.getParameter("oauth_verifier");
+			String appid = request.getParameter("appid");
+			String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
+			String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.TWITTER_PREFIX, request);
 
 			if (verifier == null) {
-				String callback = Utils.urlEncode(request.getRequestURL().toString());
+				String callback = Utils.urlEncode(redirectURI);
 				Map<String, String[]> params = new HashMap<String, String[]>();
 				params.put("oauth_callback", new String[]{callback});
 
 				HttpPost tokenPost = new HttpPost(FLOW_URL1);
 				tokenPost.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("POST", FLOW_URL1,
-						params, Config.TWITTER_APP_ID, Config.TWITTER_SECRET, null, null));
+						params, keys[0], keys[1], null, null));
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 				CloseableHttpResponse resp1 = httpclient.execute(tokenPost);
 
@@ -115,7 +118,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 				HttpPost tokenPost = new HttpPost(FLOW_URL3);
 				tokenPost.setEntity(new StringEntity("oauth_verifier=" + verifier));
 				tokenPost.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("POST", FLOW_URL3,
-						params, Config.TWITTER_APP_ID, Config.TWITTER_SECRET, token, null));
+						params, keys[0], keys[1], token, null));
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 				CloseableHttpResponse resp2 = httpclient.execute(tokenPost);
 
@@ -130,7 +133,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 							oauthToken = pair.substring(12);
 						}
 					}
-					userAuth = getOrCreateUser(null, oauthToken + Config.SEPARATOR + oauthSecret);
+					userAuth = getOrCreateUser(appid, oauthToken + Config.SEPARATOR + oauthSecret);
 				}
 			}
 		}
@@ -156,12 +159,14 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 		UserAuthentication userAuth = null;
 		if (accessToken != null && accessToken.contains(Config.SEPARATOR)) {
 			String[] tokens = accessToken.split(Config.SEPARATOR);
+			String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.TWITTER_PREFIX, null);
 			User user = new User();
 			user.setAppid(appid);
+
 			Map<String, String[]> params2 = new HashMap<String, String[]>();
 			HttpGet profileGet = new HttpGet(PROFILE_URL);
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("GET", PROFILE_URL,
-					params2, Config.TWITTER_APP_ID, Config.TWITTER_SECRET, tokens[0], tokens[1]));
+					params2, keys[0], keys[1], tokens[0], tokens[1]));
 			CloseableHttpResponse resp3 = httpclient.execute(profileGet);
 
 			if (resp3.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
@@ -179,7 +184,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 						//user is new
 						user = new User();
 						user.setActive(true);
-						// Twitter API is stupid!
+						user.setAppid(appid);
 						user.setEmail(alias + "@twitter.com");
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());

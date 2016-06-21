@@ -144,18 +144,18 @@ public final class Api1 extends ResourceConfig {
 		permRes.addChildResource("{subjectid}").addMethod(DELETE).produces(JSON).handledBy(revokePermitHandler(null));
 		registerResources(permRes.build());
 
+		// app settings
+		Resource.Builder appSettingsRes = Resource.builder("_settings");
+		appSettingsRes.addMethod(GET).produces(JSON).handledBy(appSettingsHandler(null));
+		appSettingsRes.addChildResource("{key}").addMethod(GET).produces(JSON).handledBy(appSettingsHandler(null));
+		appSettingsRes.addChildResource("{key}").addMethod(PUT).produces(JSON).handledBy(appSettingsHandler(null));
+		appSettingsRes.addChildResource("{key}").addMethod(DELETE).produces(JSON).handledBy(appSettingsHandler(null));
+		registerResources(appSettingsRes.build());
+
 		// util functions API
 		Resource.Builder utilsRes = Resource.builder("utils/{method}");
 		utilsRes.addMethod(GET).produces(JSON).handledBy(utilsHandler());
 		registerResources(utilsRes.build());
-
-		// app settings
-		Resource.Builder appSettingsRes = Resource.builder("app/{id}/settings");
-		appSettingsRes.addMethod(GET).produces(JSON).handledBy(appSettingsHandler());
-		appSettingsRes.addChildResource("{key}").addMethod(GET).produces(JSON).handledBy(appSettingsHandler());
-		appSettingsRes.addChildResource("{key}").addMethod(PUT).produces(JSON).handledBy(appSettingsHandler());
-		appSettingsRes.addChildResource("{key}").addMethod(DELETE).produces(JSON).handledBy(appSettingsHandler());
-		registerResources(appSettingsRes.build());
 
 		// register custom resources
 		for (final CustomResourceHandler handler : getCustomResourceHandlers()) {
@@ -610,13 +610,12 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static Inflector<ContainerRequestContext, Response> appSettingsHandler() {
+	public static Inflector<ContainerRequestContext, Response> appSettingsHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = RestUtils.getPrincipalApp();
-				String id = pathParam("id", ctx);
+				App app = (a != null) ? a : RestUtils.getPrincipalApp();
 				String key = pathParam("key", ctx);
-				if (app != null && app.getId().equals(App.id(id))) {
+				if (app != null) {
 					if (StringUtils.isBlank(key)) {
 						return Response.ok(app.getSettings()).build();
 					} else {
