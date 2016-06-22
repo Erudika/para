@@ -17,6 +17,7 @@
  */
 package com.erudika.para.security;
 
+import com.erudika.para.core.App;
 import com.erudika.para.core.User;
 import com.erudika.para.core.User.Roles;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -82,7 +83,11 @@ public class AuthenticatedUserDetails implements UserDetails {
 	 */
 	@JsonIgnore
 	public String getUsername() {
-		return user.getIdentifier();
+		if (App.isRoot(user.getAppid())) {
+			return user.getIdentifier();
+		} else {
+			return user.getAppid() + "/" + user.getIdentifier();
+		}
 	}
 
 	/**

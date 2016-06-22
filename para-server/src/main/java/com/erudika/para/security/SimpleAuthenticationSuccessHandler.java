@@ -55,7 +55,7 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 			SecurityUtils.getCustomAuthSettings(request.getParameter("appid"), null, request);
 			customURI = (String) request.getAttribute(Config.AUTH_SIGNIN_SUCCESS_ATTR);
 		}
-		if (StringUtils.startsWith(customURI, "/")) {
+		if (!StringUtils.isBlank(customURI)) {
 			redirectStrategy.sendRedirect(request, response, customURI);
 		} else {
 			if (isRestRequest(request)) {

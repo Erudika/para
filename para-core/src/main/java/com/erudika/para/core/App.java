@@ -368,6 +368,14 @@ public class App implements ParaObject {
 	public boolean isRootApp() {
 		return StringUtils.equals(App.id(Config.APP_NAME_NS), getId());
 	}
+	/**
+	 * Return true if the app is the root app (the first one created).
+	 * @param appid an app identifier
+	 * @return true if root
+	 */
+	public static boolean isRoot(String appid) {
+		return StringUtils.equals(App.id(Config.APP_NAME_NS), id(appid));
+	}
 
 	/**
 	 * Returns all validation constraints for a list of types.

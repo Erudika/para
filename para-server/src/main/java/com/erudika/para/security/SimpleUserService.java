@@ -20,6 +20,7 @@ package com.erudika.para.security;
 import com.eaio.uuid.UUID;
 import com.erudika.para.core.User;
 import java.util.List;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.AuthenticationUserDetailsService;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -42,6 +43,13 @@ public class SimpleUserService implements UserDetailsService,
 	 */
 	public UserDetails loadUserByUsername(String ident) {
 		User user = new User();
+		// check if the cookie has an appid prefix
+		// and load user from the corresponding app
+		if (StringUtils.contains(ident, "/")) {
+			String[] parts = ident.split("/");
+			user.setAppid(parts[0]);
+			ident = parts[1];
+		}
 		user.setIdentifier(ident);
 		user = loadUser(user);
 

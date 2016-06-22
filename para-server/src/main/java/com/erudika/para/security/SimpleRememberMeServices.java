@@ -18,7 +18,11 @@
 
 package com.erudika.para.security;
 
+import com.erudika.para.core.App;
+import com.erudika.para.core.User;
 import com.erudika.para.utils.Utils;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices;
 
@@ -60,5 +64,18 @@ public class SimpleRememberMeServices extends TokenBasedRememberMeServices {
 		}
 		String sig = super.makeTokenSignature(tokenExpiryTime, username, password);
 		return sig;
+	}
+
+	@Override
+	protected String retrieveUserName(Authentication authentication) {
+		if (authentication.getPrincipal() instanceof UserDetails) {
+			User u = ((AuthenticatedUserDetails) authentication.getPrincipal()).getUser();
+			if (!App.isRoot(u.getAppid())) {
+				// we mark the user a part of another app so that it can be found later
+				return u.getAppid() + "/" + u.getIdentifier();
+			}
+			return u.getIdentifier();
+		}
+		return authentication.getPrincipal().toString();
 	}
 }

@@ -87,8 +87,13 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (requestURI.endsWith(TWITTER_ACTION)) {
 			String verifier = request.getParameter("oauth_verifier");
 			String appid = request.getParameter("appid");
+			String denied = request.getParameter("denied");
 			String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
 			String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.TWITTER_PREFIX, request);
+
+			if (denied != null) {
+				throw new BadCredentialsException("Cancelled.");
+			}
 
 			if (verifier == null) {
 				String callback = Utils.urlEncode(redirectURI);
@@ -110,6 +115,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 						}
 					}
 				}
+				EntityUtils.consumeQuietly(resp1.getEntity());
 			} else {
 				String token = request.getParameter("oauth_token");
 				Map<String, String[]> params = new HashMap<String, String[]>();
@@ -135,6 +141,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 					}
 					userAuth = getOrCreateUser(appid, oauthToken + Config.SEPARATOR + oauthSecret);
 				}
+				EntityUtils.consumeQuietly(resp2.getEntity());
 			}
 		}
 
@@ -164,7 +171,8 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 			user.setAppid(appid);
 
 			Map<String, String[]> params2 = new HashMap<String, String[]>();
-			HttpGet profileGet = new HttpGet(PROFILE_URL);
+			HttpGet profileGet = new HttpGet(PROFILE_URL + "?include_email=true");
+			params2.put("include_email", new String[]{"true"});
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("GET", PROFILE_URL,
 					params2, keys[0], keys[1], tokens[0], tokens[1]));
 			CloseableHttpResponse resp3 = httpclient.execute(profileGet);
@@ -177,6 +185,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 					String pic = (String) profile.get("profile_image_url_https");
 					String alias = (String) profile.get("screen_name");
 					String name = (String) profile.get("name");
+					String email = (String) profile.get("email");
 
 					user.setIdentifier(Config.TWITTER_PREFIX + twitterId);
 					user = User.readUserForIdentifier(user);
@@ -185,7 +194,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 						user = new User();
 						user.setActive(true);
 						user.setAppid(appid);
-						user.setEmail(alias + "@twitter.com");
+						user.setEmail(StringUtils.isBlank(email) ? alias + "@twitter.com" : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());
 						user.setPicture(getPicture(pic));
@@ -196,13 +205,22 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 						}
 					} else {
 						String picture = getPicture(pic);
+						boolean update = false;
 						if (!StringUtils.equals(user.getPicture(), picture)) {
 							user.setPicture(picture);
+							update = true;
+						}
+						if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+							user.setEmail(email);
+							update = true;
+						}
+						if (update) {
 							user.update();
 						}
 					}
 					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 				}
+				EntityUtils.consumeQuietly(resp3.getEntity());
 			}
 		}
 		return userAuth;

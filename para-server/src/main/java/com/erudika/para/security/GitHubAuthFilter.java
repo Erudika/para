@@ -166,8 +166,16 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 						}
 					} else {
 						String picture = getPicture(pic);
+						boolean update = false;
 						if (!StringUtils.equals(user.getPicture(), picture)) {
 							user.setPicture(picture);
+							update = true;
+						}
+						if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+							user.setEmail(email);
+							update = true;
+						}
+						if (update) {
 							user.update();
 						}
 					}

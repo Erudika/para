@@ -168,6 +168,11 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 						if (id == null) {
 							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 						}
+					} else {
+						if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+							user.setEmail(email);
+							user.update();
+						}
 					}
 					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 				}

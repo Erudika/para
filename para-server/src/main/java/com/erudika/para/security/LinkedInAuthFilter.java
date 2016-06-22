@@ -171,8 +171,16 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 						}
 					} else {
+						boolean update = false;
 						if (!StringUtils.equals(user.getPicture(), pic)) {
 							user.setPicture(pic);
+							update = true;
+						}
+						if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+							user.setEmail(email);
+							update = true;
+						}
+						if (update) {
 							user.update();
 						}
 					}
