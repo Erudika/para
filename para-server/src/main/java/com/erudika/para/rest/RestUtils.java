@@ -244,6 +244,7 @@ public final class RestUtils {
 
 	/**
 	 * Read response as JSON
+	 * @param app the app object
 	 * @param content the object that was read
 	 * @return status code 200 or 404
 	 */
