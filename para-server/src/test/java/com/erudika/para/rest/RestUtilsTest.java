@@ -109,10 +109,10 @@ public class RestUtilsTest {
 				getInputStream(notRootApp)).getStatus());
 		assertEquals(Status.BAD_REQUEST.getStatusCode(), getUpdateResponse(notRootApp, rootApp,
 				getInputStream(rootApp)).getStatus());
+		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(rootApp, notRootApp.getType(),
+				getInputStream(notRootApp)).getStatus());
 		assertEquals(Status.CREATED.getStatusCode(), getCreateResponse(rootApp, t.getType(),
 				getInputStream(t)).getStatus());
-		assertEquals(Status.CREATED.getStatusCode(), getCreateResponse(rootApp, notRootApp.getType(),
-				getInputStream(notRootApp)).getStatus());
 		assertNotNull(CoreUtils.getInstance().getDao().read(t.getId()));
 
 		Map<String, Object> map = new HashMap<String, Object>();

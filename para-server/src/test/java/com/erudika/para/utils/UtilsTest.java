@@ -259,28 +259,28 @@ public class UtilsTest {
 		assertEquals("users", singularToPlural("user"));
 	}
 
-	@Test
-	public void testPopulate() {
-		Map<String, String[]> map = new HashMap<String, String[]>();
-		long timestamp = 1390052381000L;
-		map.put(Config._EMAIL, new String[]{"u@test.co"});
-		map.put(Config._NAME, new String[]{"User Name"});
-		map.put(Config._TAGS, new String[]{"tag1", "tag2", "tag3"});
-		map.put(Config._TIMESTAMP, new String[]{Long.toString(timestamp)});
-
-		User u = new User();
-		u.setActive(true);
-		populate(u, null);
-		assertNull(u.getEmail());
-		populate(u, new HashMap<String, String[]>());
-		assertNull(u.getEmail());
-		populate(u, map);
-		assertEquals(map.get(Config._EMAIL)[0], u.getEmail());
-		assertEquals(map.get(Config._NAME)[0], u.getName());
-		assertTrue(u.getTags().contains(map.get(Config._TAGS)[0]));
-		assertEquals(timestamp, u.getTimestamp().longValue());
-		assertEquals(true, u.getActive());
-	}
+//	@Test
+//	public void testPopulate() {
+//		Map<String, String[]> map = new HashMap<String, String[]>();
+//		long timestamp = 1390052381000L;
+//		map.put(Config._EMAIL, new String[]{"u@test.co"});
+//		map.put(Config._NAME, new String[]{"User Name"});
+//		map.put(Config._TAGS, new String[]{"tag1", "tag2", "tag3"});
+//		map.put(Config._TIMESTAMP, new String[]{Long.toString(timestamp)});
+//
+//		User u = new User();
+//		u.setActive(true);
+//		populate(u, null);
+//		assertNull(u.getEmail());
+//		populate(u, new HashMap<String, String[]>());
+//		assertNull(u.getEmail());
+//		populate(u, map);
+//		assertEquals(map.get(Config._EMAIL)[0], u.getEmail());
+//		assertEquals(map.get(Config._NAME)[0], u.getName());
+//		assertTrue(u.getTags().contains(map.get(Config._TAGS)[0]));
+//		assertEquals(timestamp, u.getTimestamp().longValue());
+//		assertEquals(true, u.getActive());
+//	}
 
 	@Test
 	public void testTypesMatch() {
