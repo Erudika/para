@@ -544,13 +544,15 @@ public final class ParaClient {
 	 * Searches within a nested field. The objects of the given type must contain a nested field "nstd".
 	 * @param <P> type of the object
 	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param field the name of the field to target (within a nested field "nstd")
 	 * @param query the query string
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects found
 	 */
-	public <P extends ParaObject> List<P> findNestedQuery(String type, String query, Pager... pager) {
+	public <P extends ParaObject> List<P> findNestedQuery(String type, String field, String query, Pager... pager) {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
 		params.putSingle("q", query);
+		params.putSingle("field", field);
 		params.putSingle(Config._TYPE, type);
 		params.putAll(pagerToParams(pager));
 		return getItems(find("nested", params), pager);
@@ -765,7 +767,7 @@ public final class ParaClient {
 			return Collections.emptyList();
 		}
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
-		return getItems((Map<String, Object>) getEntity(invokeGet(url, null), Map.class), pager);
+		return getItems((Map<String, Object>) getEntity(invokeGet(url, pagerToParams(pager)), Map.class), pager);
 	}
 
 	/**
@@ -787,6 +789,7 @@ public final class ParaClient {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
 		params.putSingle("field", field);
 		params.putSingle("q", (query == null) ? "*" : query);
+		params.putAll(pagerToParams(pager));
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
 		return getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
 	}
@@ -900,6 +903,7 @@ public final class ParaClient {
 		}
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
 		params.putSingle("childrenonly", "true");
+		params.putAll(pagerToParams(pager));
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
 		return getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
 	}
@@ -924,6 +928,7 @@ public final class ParaClient {
 		params.putSingle("childrenonly", "true");
 		params.putSingle("field", field);
 		params.putSingle("term", term);
+		params.putAll(pagerToParams(pager));
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
 		return getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
 	}
@@ -946,6 +951,7 @@ public final class ParaClient {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
 		params.putSingle("childrenonly", "true");
 		params.putSingle("q", (query == null) ? "*" : query);
+		params.putAll(pagerToParams(pager));
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
 		return getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
 	}
