@@ -17,12 +17,14 @@
  */
 package com.erudika.para.rest;
 
+import com.erudika.para.Para;
 import static com.erudika.para.Para.*;
 import com.erudika.para.core.App;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
+import com.erudika.para.queue.Queue;
 import com.erudika.para.search.Search;
 import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.utils.Config;
@@ -80,6 +82,12 @@ public final class Api1 extends ResourceConfig {
 	public Api1() {
 		if (!Config.API_ENABLED) {
 			return;
+		}
+
+		// this enables the "River" feature - polls the deault queue for objects
+		// and imports them into Para
+		if (Config.getConfigBoolean("queue_link_enabled", true)) {
+			Para.getInstance(Queue.class).startPolling();
 		}
 
 		setApplicationName(Config.APP_NAME_NS);
@@ -676,7 +684,7 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> setupHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				String appid = pathParam("appid", ctx);
+				String appid = pathParam(Config._APPID, ctx);
 				if (!StringUtils.isBlank(appid)) {
 					App app = SecurityUtils.getAuthenticatedApp();
 					if (app.isRootApp()) {
