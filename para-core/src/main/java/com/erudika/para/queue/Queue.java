@@ -46,4 +46,16 @@ public interface Queue {
 	 * @param name a name
 	 */
 	void setName(String name);
+
+	/**
+	 * Start a new async task which polls the queue and automatically
+	 * processes the messages. This was inspired by Elasticsearch rivers.
+	 */
+	void startPolling();
+
+	/**
+	 * Stops the polling async task manually.
+	 * This method should always be called  on shutdown.
+	 */
+	void stopPolling();
 }

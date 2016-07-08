@@ -33,7 +33,7 @@ public abstract class QueueTest {
 	@Test
 	public void testPushPull() {
 		q.push(null);
-		assertEquals("[]", q.pull());
+		assertEquals("", q.pull());
 		String msg1 = "{\"test1\": 123 }";
 		String msg2 = "{\"test2\": 123 }";
 		String msg3 = "{\"test3\": 123 }";
@@ -44,7 +44,7 @@ public abstract class QueueTest {
 		assertEquals(msg1, q.pull());
 		assertEquals(msg2, q.pull());
 		assertEquals(msg3, q.pull());
-		assertEquals("[]", q.pull());
+		assertEquals("", q.pull());
 	}
 
 }

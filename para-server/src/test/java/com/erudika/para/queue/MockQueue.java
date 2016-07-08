@@ -43,7 +43,7 @@ public class MockQueue implements Queue {
 	@Override
 	public String pull() {
 		String s = q.poll();
-		return StringUtils.isBlank(s) ? "[]" : s;
+		return StringUtils.isBlank(s) ? "" : s;
 	}
 
 	@Override
@@ -61,6 +61,16 @@ public class MockQueue implements Queue {
 	@Override
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	@Override
+	public void startPolling() {
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
+
+	@Override
+	public void stopPolling() {
+		throw new UnsupportedOperationException("Not supported yet.");
 	}
 
 }

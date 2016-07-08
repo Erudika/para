@@ -17,10 +17,17 @@
  */
 package com.erudika.para.queue;
 
+import static com.erudika.para.queue.QueueTest.q;
+import java.util.ArrayList;
+import java.util.List;
 import org.elasticmq.rest.sqs.SQSRestServer;
 import org.elasticmq.rest.sqs.SQSRestServerBuilder;
 import org.junit.AfterClass;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  *
@@ -29,7 +36,6 @@ import org.junit.BeforeClass;
 public class AWSQueueIT extends QueueTest {
 
 	private static SQSRestServer sqsServer;
-	private static String endpoint = "http://localhost:9324";
 
 	static {
 		System.setProperty("para.aws_access_key", "x");
@@ -40,12 +46,28 @@ public class AWSQueueIT extends QueueTest {
 	public static void setUpClass() throws InterruptedException {
 		sqsServer = SQSRestServerBuilder.start();
 		Thread.sleep(1000);
-		q = new AWSQueue("testq", endpoint);
+		q = new AWSQueue("testq");
 	}
 
 	@AfterClass
 	public static void tearDownClass() {
 		sqsServer.stopAndWait();
+	}
+
+	@Test
+	public void testBatchSend() {
+		AWSQueue qu = new AWSQueue("testq2");
+		int n = 15;
+		List<String> list = new ArrayList<String>();
+		for (int i = 1; i <= n; i++) {
+			list.add("{\"test" + i + "\": " + i + "23 }");
+		}
+		AWSQueueUtils.pushMessages(qu.getUrl(), list, false);
+		List<String> result = AWSQueueUtils.pullMessages(qu.getUrl(), n);
+		assertNotNull(result);
+		assertFalse(result.isEmpty());
+		assertEquals(n, result.size());
+		assertEquals("", qu.pull());
 	}
 
 }

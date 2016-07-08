@@ -26,7 +26,7 @@ import com.google.inject.AbstractModule;
 public class QueueModule extends AbstractModule {
 
 	protected void configure() {
-		bind(Queue.class).to(AWSQueue.class);
+		bind(Queue.class).to(AWSQueue.class).asEagerSingleton();
 	}
 
 }
