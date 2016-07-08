@@ -13,7 +13,7 @@
 
 	<properties>
 		<springSecVer>4.1.0.RELEASE</springSecVer>
-		<hazelcastVer>3.6.3</hazelcastVer>
+		<hazelcastVer>3.6.4</hazelcastVer>
 	</properties>
 
 	<dependencies>
@@ -123,6 +123,21 @@
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk-sqs</artifactId>
 			<version>${awsJdkVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-iot</artifactId>
+			<version>${awsJdkVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-iot-device-sdk-java</artifactId>
+			<version>1.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.paho</groupId>
+			<artifactId>org.eclipse.paho.client.mqttv3</artifactId>
+			<version>1.1.0</version>
 		</dependency>
 
 		<!-- GUICE -->
