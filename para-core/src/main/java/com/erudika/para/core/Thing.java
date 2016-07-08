@@ -111,7 +111,7 @@ public class Thing extends Sysprop {
 	 * @param value a value
 	 * @return this
 	 */
-	public Thing addStateProperty(String key, String value) {
+	public Thing addStateProperty(String key, Object value) {
 		if (!StringUtils.isBlank(key) && value != null) {
 			getState().put(key, value);
 		}

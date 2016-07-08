@@ -125,7 +125,7 @@ public final class Config {
 	 */
 	public static final int MAX_ENTITY_SIZE_BYTES = getConfigInt("max_entity_size_bytes", 1024 * 1024);
 	/**
-	 * Default character encoding - 'UTF-8'
+	 * Default character encoding - 'UTF-8'.
 	 */
 	public static final String DEFAULT_ENCODING = getConfigParam("default_encoding", "UTF-8");
 	/**
@@ -133,17 +133,21 @@ public final class Config {
 	 */
 	public static final String ENVIRONMENT = getConfigParam("env", "embedded");
 	/**
-	 * AWS Access Key
+	 * AWS Access Key.
 	 */
 	public static final String AWS_ACCESSKEY = getAwsCredentials()[0];
 	/**
-	 * AWS ecret Key
+	 * AWS Secret Key.
 	 */
 	public static final String AWS_SECRETKEY = getAwsCredentials()[1];
 	/**
-	 * AWS Region
+	 * AWS Region.
 	 */
 	public static final String AWS_REGION = getConfigParam("aws_region", "eu-west-1");
+	/**
+	 * AWS Queue Role.
+	 */
+	public static final String AWS_QUEUE_ROLE = getConfigParam("aws_queue_role", "para_sqs_role");
 	/**
 	 * Facebook app id (for authentication)
 	 */
@@ -236,6 +240,10 @@ public final class Config {
 	 * The secret key for this deployment. Used as salt.
 	 */
 	public static final String APP_SECRET_KEY = getConfigParam("app_secret_key", Utils.MD5("paraseckey"));
+	/**
+	 * The default queue name which will be polled for incoming JSON messages.
+	 */
+	public static final String DEFAULT_QUEUE_NAME = getConfigParam("default_queue_name", Config.APP_NAME_NS + "-default");
 	/**
 	 * The package path (e.g. org.company.app.core) where all domain objects are defined.
 	 */
