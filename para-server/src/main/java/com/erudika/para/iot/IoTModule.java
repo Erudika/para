@@ -18,6 +18,7 @@
 package com.erudika.para.iot;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.name.Names;
 
 /**
  * The default IoT module.
@@ -27,7 +28,9 @@ public class IoTModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		// TODO: inject IoT handlers for AWS and Microsoft
+		bind(IoTService.class).annotatedWith(Names.named("AWSIoTService")).to(AWSIoTService.class).asEagerSingleton();
+		bind(IoTService.class).annotatedWith(Names.named("AzureIoTService")).to(AzureIoTService.class).asEagerSingleton();
+		bind(IoTServiceFactory.class).to(IoTServiceFactoryImpl.class).asEagerSingleton();
 	}
 
 }

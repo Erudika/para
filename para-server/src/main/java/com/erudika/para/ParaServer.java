@@ -23,6 +23,7 @@ import com.erudika.para.cache.CacheModule;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.email.EmailModule;
 import com.erudika.para.i18n.I18nModule;
+import com.erudika.para.iot.IoTModule;
 import com.erudika.para.persistence.PersistenceModule;
 import com.erudika.para.queue.QueueModule;
 import com.erudika.para.rest.Api1;
@@ -87,6 +88,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 			new SearchModule(),
 			new CacheModule(),
 			new AOPModule(),
+			new IoTModule(),
 			new EmailModule(),
 			new I18nModule(),
 			new QueueModule(),

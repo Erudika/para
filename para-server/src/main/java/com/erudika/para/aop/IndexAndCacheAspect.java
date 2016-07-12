@@ -17,6 +17,8 @@
  */
 package com.erudika.para.aop;
 
+import com.erudika.para.IOListener;
+import com.erudika.para.Para;
 import com.erudika.para.annotations.Cached;
 import com.erudika.para.annotations.Indexed;
 import com.erudika.para.cache.Cache;
@@ -238,6 +240,10 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 				default:
 					break;
 			}
+		}
+
+		for (IOListener ioListener : Para.getIOListeners()) {
+			ioListener.onInvoke(superMethod, result);
 		}
 
 		// both searching and caching are disabled - pass it through

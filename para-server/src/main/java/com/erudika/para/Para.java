@@ -20,6 +20,7 @@ package com.erudika.para;
 import com.erudika.para.cache.Cache;
 import com.erudika.para.core.App;
 import com.erudika.para.persistence.DAO;
+import com.erudika.para.queue.Queue;
 import com.erudika.para.rest.CustomResourceHandler;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
@@ -76,6 +77,7 @@ public final class Para {
 	private static final Logger logger = LoggerFactory.getLogger(Para.class);
 	private static final List<DestroyListener> destroyListeners = new ArrayList<DestroyListener>();
 	private static final List<InitializeListener> initListeners = new ArrayList<InitializeListener>();
+	private static final List<IOListener> ioListeners = new ArrayList<IOListener>();
 	private static final ExecutorService exec = Executors.newFixedThreadPool(Config.EXECUTOR_THREADS);
 	private static final ScheduledExecutorService execAt = Executors.newScheduledThreadPool(Config.EXECUTOR_THREADS);
 	private static Injector injector;
@@ -116,7 +118,13 @@ public final class Para {
 						initListener.onInitialize();
 					}
 				}
-				logger.info("Instance with id={} initialized.", Config.WORKER_ID);
+				// this enables the "River" feature - polls the deault queue for objects
+				// and imports them into Para
+				if (Config.getConfigBoolean("queue_link_enabled", false)) {
+					injector.getInstance(Queue.class).startPolling();
+				}
+
+				logger.info("Instance #{} initialized.", Config.WORKER_ID);
 			} catch (Exception e) {
 				logger.error(null, e);
 			}
@@ -217,7 +225,9 @@ public final class Para {
 	 * @param il the listener
 	 */
 	public static void addInitListener(InitializeListener il) {
-		initListeners.add(il);
+		if (il != null) {
+			initListeners.add(il);
+		}
 	}
 
 	/**
@@ -226,7 +236,28 @@ public final class Para {
 	 * @param dl the listener
 	 */
 	public static void addDestroyListener(DestroyListener dl) {
-		destroyListeners.add(dl);
+		if (dl != null) {
+			destroyListeners.add(dl);
+		}
+	}
+
+	/**
+	 * Registers a new Para I/O listener.
+	 *
+	 * @param iol the listener
+	 */
+	public static void addIOListener(IOListener iol) {
+		if (iol != null) {
+			ioListeners.add(iol);
+		}
+	}
+
+	/**
+	 * Returns a list of I/O listeners (callbacks).
+	 * @return the list of registered listeners
+	 */
+	public static List<IOListener> getIOListeners() {
+		return ioListeners;
 	}
 
 	/**
