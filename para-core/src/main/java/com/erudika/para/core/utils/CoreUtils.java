@@ -24,6 +24,7 @@ import com.erudika.para.core.Linker;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Votable.VoteValue;
 import com.erudika.para.core.Vote;
+import com.erudika.para.iot.IoTServiceFactory;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.search.MockSearch;
@@ -60,6 +61,7 @@ public final class CoreUtils implements InitializeListener {
 	@Inject private DAO dao;
 	@Inject private Search search;
 	@Inject private Cache cache;
+	@Inject private IoTServiceFactory iotFactory;
 
 	private static CoreUtils instance;
 
@@ -126,6 +128,14 @@ public final class CoreUtils implements InitializeListener {
 
 	public void setCache(Cache cache) {
 		this.cache = cache;
+	}
+
+	public IoTServiceFactory getIotFactory() {
+		return iotFactory;
+	}
+
+	public void setIotFactory(IoTServiceFactory iotFactory) {
+		this.iotFactory = iotFactory;
 	}
 
 	public String getObjectURI(ParaObject obj) {

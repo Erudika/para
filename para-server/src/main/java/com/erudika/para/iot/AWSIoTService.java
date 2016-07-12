@@ -20,11 +20,7 @@ package com.erudika.para.iot;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.iot.AWSIotAsyncClient;
 import com.amazonaws.services.iot.AWSIotClient;
-import com.amazonaws.services.iot.client.AWSIotDevice;
-import com.amazonaws.services.iot.client.AWSIotMqttClient;
-import com.amazonaws.services.iot.model.Action;
 import com.amazonaws.services.iot.model.AttachPrincipalPolicyRequest;
 import com.amazonaws.services.iot.model.AttachThingPrincipalRequest;
 import com.amazonaws.services.iot.model.AttributePayload;
@@ -34,7 +30,6 @@ import com.amazonaws.services.iot.model.CreateKeysAndCertificateResult;
 import com.amazonaws.services.iot.model.CreatePolicyRequest;
 import com.amazonaws.services.iot.model.CreateThingRequest;
 import com.amazonaws.services.iot.model.CreateThingResult;
-import com.amazonaws.services.iot.model.CreateTopicRuleRequest;
 import com.amazonaws.services.iot.model.DeleteCertificateRequest;
 import com.amazonaws.services.iot.model.DeletePolicyRequest;
 import com.amazonaws.services.iot.model.DeletePolicyVersionRequest;
@@ -46,9 +41,11 @@ import com.amazonaws.services.iot.model.DetachPrincipalPolicyRequest;
 import com.amazonaws.services.iot.model.DetachThingPrincipalRequest;
 import com.amazonaws.services.iot.model.ListPolicyVersionsRequest;
 import com.amazonaws.services.iot.model.PolicyVersion;
-import com.amazonaws.services.iot.model.SqsAction;
-import com.amazonaws.services.iot.model.TopicRulePayload;
 import com.amazonaws.services.iot.model.UpdateCertificateRequest;
+import com.amazonaws.services.iotdata.AWSIotDataClient;
+import com.amazonaws.services.iotdata.model.DeleteThingShadowRequest;
+import com.amazonaws.services.iotdata.model.GetThingShadowRequest;
+import com.amazonaws.services.iotdata.model.UpdateThingShadowRequest;
 import com.erudika.para.DestroyListener;
 import com.erudika.para.Para;
 import com.erudika.para.core.Thing;
@@ -56,8 +53,13 @@ import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.persistence.AWSDynamoUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,16 +68,16 @@ import org.slf4j.LoggerFactory;
  * AWS IoT client.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public final class AWSIoT {
+public class AWSIoTService implements IoTService {
 
 	private static AWSIotClient iotClient;
-	private static AWSIotAsyncClient iotAsyncClient;
-	private static final String QUEUE = Config.DEFAULT_QUEUE_NAME;
+	private static AWSIotDataClient iotDataClient;
+//	private static final String QUEUE = Config.DEFAULT_QUEUE_NAME;
 	private static final Logger logger = LoggerFactory.getLogger(AWSDynamoUtils.class);
 
-	private AWSIoT() { }
+	public AWSIoTService() { }
 
-	public static AWSIotClient getClient() {
+	protected AWSIotClient getClient() {
 		if (iotClient != null) {
 			return iotClient;
 		}
@@ -92,28 +94,28 @@ public final class AWSIoT {
 		return iotClient;
 	}
 
-	public static AWSIotAsyncClient getAsyncClient() {
-		if (iotAsyncClient != null) {
-			return iotAsyncClient;
+	protected AWSIotDataClient getDataClient() {
+		if (iotDataClient != null) {
+			return iotDataClient;
 		}
 
-		iotAsyncClient = new AWSIotAsyncClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
-		iotAsyncClient.setRegion(Region.getRegion(Regions.fromName(Config.AWS_REGION)));
+		iotDataClient = new AWSIotDataClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
+		iotDataClient.setRegion(Region.getRegion(Regions.fromName(Config.AWS_REGION)));
 
 		Para.addDestroyListener(new DestroyListener() {
 			public void onDestroy() {
-				shutdownAsyncClient();
+				shutdownDataClient();
 			}
 		});
 
-		return iotAsyncClient;
+		return iotDataClient;
 	}
 
 	/**
 	 * Stops the client and releases resources.
 	 * <b>There's no need to call this explicitly!</b>
 	 */
-	protected static void shutdownClient() {
+	protected void shutdownClient() {
 		if (iotClient != null) {
 			iotClient.shutdown();
 			iotClient = null;
@@ -124,17 +126,21 @@ public final class AWSIoT {
 	 * Stops the client and releases resources.
 	 * <b>There's no need to call this explicitly!</b>
 	 */
-	protected static void shutdownAsyncClient() {
-		if (iotAsyncClient != null) {
-			iotAsyncClient.shutdown();
-			iotAsyncClient = null;
+	protected void shutdownDataClient() {
+		if (iotDataClient != null) {
+			iotDataClient.shutdown();
+			iotDataClient = null;
 		}
 	}
 
-	public static Thing createThing(String appid, String name) {
-		if (StringUtils.isBlank(name) || StringUtils.isBlank(appid) || existsThing(name)) {
+	@Override
+	public Thing createThing(Thing thing) {
+		if (thing == null || StringUtils.isBlank(thing.getName()) || StringUtils.isBlank(thing.getAppid()) ||
+				existsThing(thing.getName())) {
 			return null;
 		}
+		String name = thing.getName();
+		String appid = thing.getAppid();
 		// STEP 1: Create thing
 		CreateThingResult resp1 = getClient().createThing(new CreateThingRequest().withThingName(name).
 				withAttributePayload(new AttributePayload().addAttributesEntry(Config._APPID, appid)));
@@ -144,14 +150,14 @@ public final class AWSIoT {
 				new CreateKeysAndCertificateRequest().withSetAsActive(true));
 
 		String accountId = getAccountIdFromARN(resp1.getThingArn());
-		String queueURL = "https://sqs." + Config.AWS_REGION + ".amazonaws.com/" + accountId + "/" + QUEUE;
-		String roleARN = "arn:aws:iam::" + accountId + ":role/" + Config.AWS_QUEUE_ROLE;
+//		String queueURL = "https://sqs." + Config.AWS_REGION + ".amazonaws.com/" + accountId + "/" + QUEUE;
+//		String roleARN = "arn:aws:iam::" + accountId + ":role/" + Config.AWS_QUEUE_ROLE;
 		String thingId = Utils.getNewId();
 		String type = Utils.type(Thing.class);
-		String roleSQL = "SELECT state, version, "
-				+ "'" + thingId + "' as " + Config._ID + ", "
-				+ "'" + appid + "' as " + Config._APPID + ", "
-				+ "'" + type + "' as " + Config._TYPE + " FROM '$aws/things/" + name + "/shadow/update/delta'";
+//		String roleSQL = "SELECT state, version, "
+//				+ "'" + thingId + "' as " + Config._ID + ", "
+//				+ "'" + appid + "' as " + Config._APPID + ", "
+//				+ "'" + type + "' as " + Config._TYPE + " FROM '$aws/things/" + name + "/shadow/update/delta'";
 
 		// STEP 3: Create policy
 		getClient().createPolicy(new CreatePolicyRequest().
@@ -167,17 +173,16 @@ public final class AWSIoT {
 				withPrincipal(resp2.getCertificateArn()).withThingName(name));
 
 		// STEP 6: Create rule to send thing state to SQS queue
-		getClient().createTopicRule(new CreateTopicRuleRequest().withRuleName(name + "_SQS_Link").
-				withTopicRulePayload(new TopicRulePayload().
-						withActions(new Action().withSqs(new SqsAction().
-								withQueueUrl(queueURL).
-								withRoleArn(roleARN).
-								withUseBase64(false))).
-						withSql(roleSQL).
-						withRuleDisabled(false)));
+//		getClient().createTopicRule(new CreateTopicRuleRequest().withRuleName(name + "_SQS_Link").
+//				withTopicRulePayload(new TopicRulePayload().
+//						withActions(new Action().withSqs(new SqsAction().
+//								withQueueUrl(queueURL).
+//								withRoleArn(roleARN).
+//								withUseBase64(false))).
+//						withSql(roleSQL).
+//						withRuleDisabled(false)));
 
-		Thing thing = new Thing(thingId);
-		thing.setAppid(appid);
+		thing.setId(thingId);
 		thing.setName(name);
 		thing.setServiceBroker("AWS");
 
@@ -196,39 +201,51 @@ public final class AWSIoT {
 		metadata.put("port", 8883);
 
 		thing.setMetadata(metadata);
-		thing.create();
 
 		return thing;
 	}
 
-	public static void updateThing(Thing thing) {
+	@Override
+	public Map<String, Object> readThing(String name) {
+		if (StringUtils.isBlank(name)) {
+			return Collections.emptyMap();
+		}
+		ByteBuffer bb =  getDataClient().getThingShadow(new GetThingShadowRequest().withThingName(name)).getPayload();
+		if (bb != null) {
+			ByteArrayInputStream bais = new ByteArrayInputStream(bb.array());
+			try {
+				return ParaObjectUtils.getJsonReader(Map.class).readValue(bais);
+			} catch (Exception ex) {
+				logger.warn("Failed to connect to IoT device {}: {}", name, ex.getMessage());
+			} finally {
+				IOUtils.closeQuietly(bais);
+			}
+		}
+		return Collections.emptyMap();
+	}
+
+	@Override
+	public void updateThing(Thing thing) {
 		if (thing == null || StringUtils.isBlank(thing.getName())) {
 			return;
 		}
 
-		String host = (String) thing.getMetadata().get("host");
-		String clientId = thing.getName() + "Serverside";
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
-			AWSIotMqttClient client = new AWSIotMqttClient(host, clientId, Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY);
-			AWSIotDevice device = new AWSIotDevice(thing.getName());
-			client.setMaxConnectionRetries(0);
-			client.setKeepAliveInterval(0);
-			client.setNumOfClientThreads(1);
-			client.setServerAckTimeout(0);
-
-			device.setReportInterval(0);
-			client.attach(device);
-			client.connect();
-			device.update("{\"state\": { \"desired\":" +
-					ParaObjectUtils.getJsonWriterNoIdent().writeValueAsString(thing.getState()) + "}}");
-			client.detach(device);
-			client.disconnect(10000, false);
+			Object data = Collections.singletonMap("state", Collections.singletonMap("desired", thing.getState()));
+			ParaObjectUtils.getJsonWriterNoIdent().writeValue(baos, data);
+			getDataClient().updateThingShadow(new UpdateThingShadowRequest().
+					withThingName(thing.getName()).
+					withPayload(ByteBuffer.wrap(baos.toByteArray())));
 		} catch (Exception ex) {
 			logger.warn("Failed to connect to IoT device {}: {}", thing.getName(), ex.getMessage());
+		} finally {
+			IOUtils.closeQuietly(baos);
 		}
 	}
 
-	public static void deleteThing(Thing thing) {
+	@Override
+	public void deleteThing(Thing thing) {
 		if (thing == null || StringUtils.isBlank(thing.getName())) {
 			return;
 		}
@@ -251,10 +268,12 @@ public final class AWSIoT {
 		getClient().deleteCertificate(new DeleteCertificateRequest().withCertificateId(certId));
 		getClient().deleteTopicRule(new DeleteTopicRuleRequest().withRuleName(name + "_SQS_Link"));
 		getClient().deleteThing(new DeleteThingRequest().withThingName(name));
-		thing.delete();
+		try {
+			getDataClient().deleteThingShadow(new DeleteThingShadowRequest().withThingName(name));
+		} catch (Exception e) {}
 	}
 
-	private static String getDefaultPolicyDocument(String accountId, String name) {
+	private String getDefaultPolicyDocument(String accountId, String name) {
 		return "{"
 			+ "  \"Version\": \"2012-10-17\","
 			+ "  \"Statement\": ["
@@ -287,7 +306,8 @@ public final class AWSIoT {
 			+ "}";
 	}
 
-	private static boolean existsThing(String name) {
+	@Override
+	public boolean existsThing(String name) {
 		try {
 			return getClient().describeThing(new DescribeThingRequest().withThingName(name)) != null;
 		} catch (Exception e) {
@@ -295,7 +315,7 @@ public final class AWSIoT {
 		}
 	}
 
-	private static String getAccountIdFromARN(String arn) {
+	private String getAccountIdFromARN(String arn) {
 		return StringUtils.contains(arn, ":") ? arn.split(":")[4] : "";
 	}
 
