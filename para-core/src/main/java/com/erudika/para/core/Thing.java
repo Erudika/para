@@ -19,10 +19,13 @@ package com.erudika.para.core;
 
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
+import com.erudika.para.core.utils.CoreUtils;
+import com.erudika.para.iot.IoTService;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
+import org.hibernate.validator.constraints.NotBlank;
 
 /**
  * A "thing" in the Internet of Things.
@@ -32,7 +35,7 @@ import org.apache.commons.lang3.StringUtils;
 public class Thing extends Sysprop {
 	private static final long serialVersionUID = 1L;
 
-	@Stored @Locked private String serviceBroker;
+	@Stored @Locked @NotBlank private String serviceBroker;
 	@Stored private Map<String, Object> state;
 	@Stored @Locked private Map<String, Object> metadata;
 
@@ -49,7 +52,6 @@ public class Thing extends Sysprop {
 	 */
 	public Thing(String id) {
 		super(id);
-		state = getProperties();
 	}
 
 	/**
@@ -152,6 +154,42 @@ public class Thing extends Sysprop {
 			return false;
 		}
 		return getState().containsKey(key);
+	}
+
+	@Override
+	public boolean exists() {
+		IoTService iot = CoreUtils.getInstance().getIotFactory().getIoTService(serviceBroker);
+		if (iot != null && !StringUtils.isBlank(getName())) {
+			return iot.existsThing(getName());
+		}
+		return super.exists();
+	}
+
+	@Override
+	public void delete() {
+		IoTService iot = CoreUtils.getInstance().getIotFactory().getIoTService(serviceBroker);
+		if (iot != null && !StringUtils.isBlank(getName())) {
+			iot.deleteThing(this);
+		}
+		super.delete();
+	}
+
+	@Override
+	public void update() {
+		IoTService iot = CoreUtils.getInstance().getIotFactory().getIoTService(serviceBroker);
+		if (iot != null && !StringUtils.isBlank(getName())) {
+			iot.updateThing(this);
+		}
+		super.update();
+	}
+
+	@Override
+	public String create() {
+		IoTService iot = CoreUtils.getInstance().getIotFactory().getIoTService(serviceBroker);
+		if (iot != null && !StringUtils.isBlank(getName())) {
+			iot.createThing(this);
+		}
+		return super.create();
 	}
 
 }

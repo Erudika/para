@@ -18,7 +18,9 @@
 package com.erudika.para.utils.filters;
 
 import com.erudika.para.core.ParaObject;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,7 +32,7 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.ext.Provider;
-import org.apache.commons.beanutils.BeanUtils;
+import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 
@@ -97,10 +99,14 @@ public class FieldFilter implements ContainerResponseFilter {
 	}
 
 	private Object getProperty(Object obj, String prop) {
-		try {
-			return BeanUtils.getProperty(obj, prop);
-		} catch (Exception e) {
-			return null;
+		if (obj != null && !StringUtils.isBlank(prop)) {
+			try {
+				Field f = obj.getClass().getDeclaredField(prop);
+				if (!f.isAnnotationPresent(JsonIgnore.class)) {
+					return PropertyUtils.getProperty(obj, prop);
+				}
+			} catch (Exception e) {	}
 		}
+		return null;
 	}
 }

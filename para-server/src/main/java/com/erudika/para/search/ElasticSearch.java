@@ -17,6 +17,7 @@
  */
 package com.erudika.para.search;
 
+import com.erudika.para.Para;
 import com.erudika.para.core.Address;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
@@ -75,13 +76,20 @@ import org.slf4j.LoggerFactory;
 public class ElasticSearch implements Search {
 
 	private static final Logger logger = LoggerFactory.getLogger(ElasticSearch.class);
-	private StandardQueryParser queryParserHelper = new StandardQueryParser();
+	private final StandardQueryParser queryParserHelper = new StandardQueryParser();
 	private DAO dao;
 
 	static {
 		if (Config.isSearchEnabled()) {
 			ElasticSearchUtils.getClient();
 		}
+	}
+
+	/**
+	 * No-args constructor
+	 */
+	public ElasticSearch() {
+		this(Para.getDAO());
 	}
 
 	/**
