@@ -19,8 +19,9 @@ package com.erudika.para.utils.filters;
 
 import com.erudika.para.core.ParaObject;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.beans.PropertyDescriptor;
 import java.io.IOException;
-import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -61,6 +62,7 @@ public class FieldFilter implements ContainerResponseFilter {
 					if (entity instanceof ParaObject) {
 						Map<String, Object> newItem = new HashMap<String, Object>();
 						for (String field : fields) {
+							field = StringUtils.trimToEmpty(field);
 							newItem.put(field, getProperty(entity, field));
 						}
 						newEntity = newItem;
@@ -70,6 +72,7 @@ public class FieldFilter implements ContainerResponseFilter {
 							for (ParaObject item : (List<ParaObject>) ((Map) entity).get("items")) {
 								Map<String, Object> newItem = new HashMap<String, Object>();
 								for (String field : fields) {
+									field = StringUtils.trimToEmpty(field);
 									newItem.put(field, getProperty(item, field));
 								}
 								((List) newEntity).add(newItem);
@@ -82,6 +85,7 @@ public class FieldFilter implements ContainerResponseFilter {
 							for (ParaObject item : (List<ParaObject>) entity) {
 								Map<String, Object> newItem = new HashMap<String, Object>();
 								for (String field : fields) {
+									field = StringUtils.trimToEmpty(field);
 									newItem.put(field, getProperty(item, field));
 								}
 								((List) newEntity).add(newItem);
@@ -101,8 +105,8 @@ public class FieldFilter implements ContainerResponseFilter {
 	private Object getProperty(Object obj, String prop) {
 		if (obj != null && !StringUtils.isBlank(prop)) {
 			try {
-				Field f = obj.getClass().getDeclaredField(prop);
-				if (!f.isAnnotationPresent(JsonIgnore.class)) {
+				Method m = PropertyUtils.getReadMethod(new PropertyDescriptor(prop, obj.getClass()));
+				if (m != null && !m.isAnnotationPresent(JsonIgnore.class)) {
 					return PropertyUtils.getProperty(obj, prop);
 				}
 			} catch (Exception e) {	}
