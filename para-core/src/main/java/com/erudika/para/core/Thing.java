@@ -36,8 +36,8 @@ public class Thing extends Sysprop {
 	private static final long serialVersionUID = 1L;
 
 	@Stored @Locked @NotBlank private String serviceBroker;
-	@Stored private Map<String, Object> state;
-	@Stored @Locked private Map<String, Object> metadata;
+	@Stored private Map<String, Object> deviceState;
+	@Stored @Locked private Map<String, Object> deviceMetadata;
 
 	/**
 	 * No-args constructor
@@ -76,35 +76,35 @@ public class Thing extends Sysprop {
 	 * @return a map
 	 */
 	@JsonIgnore
-	public Map<String, Object> getMetadata() {
-		return metadata;
+	public Map<String, Object> getDeviceMetadata() {
+		return deviceMetadata;
 	}
 
 	/**
 	 * Sets the device's metadata.
-	 * @param metadata a map
+	 * @param deviceMetadata a map
 	 */
-	public void setMetadata(Map<String, Object> metadata) {
-		this.metadata = metadata;
+	public void setDeviceMetadata(Map<String, Object> deviceMetadata) {
+		this.deviceMetadata = deviceMetadata;
 	}
 
 	/**
-	 * The state of the device.
+	 * The deviceState of the device.
 	 * @return a map of keys/values
 	 */
-	public Map<String, Object> getState() {
-		if (state == null) {
-			state = new HashMap<String, Object>();
+	public Map<String, Object> getDeviceState() {
+		if (deviceState == null) {
+			deviceState = new HashMap<String, Object>();
 		}
-		return state;
+		return deviceState;
 	}
 
 	/**
-	 * Sets the device's state.
+	 * Sets the device's deviceState.
 	 * @param state a map of keys/values
 	 */
-	public void setState(Map<String, Object> state) {
-		this.state = state;
+	public void setDeviceState(Map<String, Object> state) {
+		this.deviceState = state;
 	}
 
 	/**
@@ -115,7 +115,7 @@ public class Thing extends Sysprop {
 	 */
 	public Thing addStateProperty(String key, Object value) {
 		if (!StringUtils.isBlank(key) && value != null) {
-			getState().put(key, value);
+			getDeviceState().put(key, value);
 		}
 		return this;
 	}
@@ -127,7 +127,7 @@ public class Thing extends Sysprop {
 	 */
 	public Object getStateProperty(String key) {
 		if (!StringUtils.isBlank(key)) {
-			return getState().get(key);
+			return getDeviceState().get(key);
 		}
 		return null;
 	}
@@ -139,7 +139,7 @@ public class Thing extends Sysprop {
 	 */
 	public Thing removeStateProperty(String key) {
 		if (!StringUtils.isBlank(key)) {
-			getState().remove(key);
+			getDeviceState().remove(key);
 		}
 		return this;
 	}
@@ -153,7 +153,7 @@ public class Thing extends Sysprop {
 		if (StringUtils.isBlank(key)) {
 			return false;
 		}
-		return getState().containsKey(key);
+		return getDeviceState().containsKey(key);
 	}
 
 	@Override

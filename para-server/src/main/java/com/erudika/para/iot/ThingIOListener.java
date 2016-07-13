@@ -42,7 +42,7 @@ public class ThingIOListener implements IOListener {
 						@Override
 						public void run() {
 							Map<String, Object> state = iot.readThing(t.getName());
-							if (!t.getState().equals(state)) {
+							if (!t.getDeviceState().equals(state)) {
 								t.update();
 							}
 						}

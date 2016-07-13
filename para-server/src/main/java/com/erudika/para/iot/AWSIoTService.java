@@ -200,7 +200,7 @@ public class AWSIoTService implements IoTService {
 		metadata.put("host", getClient().describeEndpoint(new DescribeEndpointRequest()).getEndpointAddress());
 		metadata.put("port", 8883);
 
-		thing.setMetadata(metadata);
+		thing.setDeviceMetadata(metadata);
 
 		return thing;
 	}
@@ -232,7 +232,7 @@ public class AWSIoTService implements IoTService {
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
-			Object data = Collections.singletonMap("state", Collections.singletonMap("desired", thing.getState()));
+			Object data = Collections.singletonMap("state", Collections.singletonMap("desired", thing.getDeviceState()));
 			ParaObjectUtils.getJsonWriterNoIdent().writeValue(baos, data);
 			getDataClient().updateThingShadow(new UpdateThingShadowRequest().
 					withThingName(thing.getName()).
@@ -250,8 +250,8 @@ public class AWSIoTService implements IoTService {
 			return;
 		}
 		String name = thing.getName();
-		String cARN = (String) thing.getMetadata().get("clientCertARN");
-		String certId = (String) thing.getMetadata().get("clientCertId");
+		String cARN = (String) thing.getDeviceMetadata().get("clientCertARN");
+		String certId = (String) thing.getDeviceMetadata().get("clientCertId");
 		String policy = name + "-Policy";
 		for (PolicyVersion p : getClient().listPolicyVersions(new ListPolicyVersionsRequest().
 				withPolicyName(policy)).getPolicyVersions()) {
