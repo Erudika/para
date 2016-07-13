@@ -20,11 +20,13 @@ package com.erudika.para.iot;
 import com.erudika.para.Para;
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Singleton;
 
 /**
  * Returns the appropriate IoT service class.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
+@Singleton
 public class IoTServiceFactoryImpl implements IoTServiceFactory {
 
 	static {

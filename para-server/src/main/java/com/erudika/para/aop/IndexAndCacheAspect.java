@@ -242,13 +242,13 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 			}
 		}
 
-		for (IOListener ioListener : Para.getIOListeners()) {
-			ioListener.onInvoke(superMethod, result);
-		}
-
 		// both searching and caching are disabled - pass it through
 		if (indexedAnno == null && cachedAnno == null) {
 			result = mi.proceed();
+		}
+
+		for (IOListener ioListener : Para.getIOListeners()) {
+			ioListener.onInvoke(superMethod, result);
 		}
 
 		return result;

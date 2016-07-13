@@ -85,6 +85,7 @@ public final class CoreUtils implements InitializeListener {
 					search.getClass().getSimpleName(),
 					cache.getClass().getSimpleName());
 			CoreUtils.instance = new CoreUtils(dao, search, cache);
+			CoreUtils.instance.setIotFactory(iotFactory);
 		}
 	}
 

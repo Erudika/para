@@ -34,7 +34,6 @@ import com.amazonaws.services.iot.model.DeleteCertificateRequest;
 import com.amazonaws.services.iot.model.DeletePolicyRequest;
 import com.amazonaws.services.iot.model.DeletePolicyVersionRequest;
 import com.amazonaws.services.iot.model.DeleteThingRequest;
-import com.amazonaws.services.iot.model.DeleteTopicRuleRequest;
 import com.amazonaws.services.iot.model.DescribeEndpointRequest;
 import com.amazonaws.services.iot.model.DescribeThingRequest;
 import com.amazonaws.services.iot.model.DetachPrincipalPolicyRequest;
@@ -57,7 +56,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -72,7 +70,6 @@ public class AWSIoTService implements IoTService {
 
 	private static AWSIotClient iotClient;
 	private static AWSIotDataClient iotDataClient;
-//	private static final String QUEUE = Config.DEFAULT_QUEUE_NAME;
 	private static final Logger logger = LoggerFactory.getLogger(AWSDynamoUtils.class);
 
 	public AWSIoTService() { }
@@ -150,19 +147,13 @@ public class AWSIoTService implements IoTService {
 				new CreateKeysAndCertificateRequest().withSetAsActive(true));
 
 		String accountId = getAccountIdFromARN(resp1.getThingArn());
-//		String queueURL = "https://sqs." + Config.AWS_REGION + ".amazonaws.com/" + accountId + "/" + QUEUE;
-//		String roleARN = "arn:aws:iam::" + accountId + ":role/" + Config.AWS_QUEUE_ROLE;
 		String thingId = Utils.getNewId();
-		String type = Utils.type(Thing.class);
-//		String roleSQL = "SELECT state, version, "
-//				+ "'" + thingId + "' as " + Config._ID + ", "
-//				+ "'" + appid + "' as " + Config._APPID + ", "
-//				+ "'" + type + "' as " + Config._TYPE + " FROM '$aws/things/" + name + "/shadow/update/delta'";
+		String policyString = (String) (thing.getDeviceMetadata().containsKey("policyJSON") ?
+				thing.getDeviceMetadata().get("policyJSON") : getDefaultPolicyDocument(accountId, name));
 
 		// STEP 3: Create policy
 		getClient().createPolicy(new CreatePolicyRequest().
-				withPolicyDocument(getDefaultPolicyDocument(accountId, name)).
-				withPolicyName(name + "-Policy"));
+				withPolicyDocument(policyString).withPolicyName(name + "-Policy"));
 
 		// STEP 4: Attach policy to certificate
 		getClient().attachPrincipalPolicy(new AttachPrincipalPolicyRequest().
@@ -172,40 +163,30 @@ public class AWSIoTService implements IoTService {
 		getClient().attachThingPrincipal(new AttachThingPrincipalRequest().
 				withPrincipal(resp2.getCertificateArn()).withThingName(name));
 
-		// STEP 6: Create rule to send thing state to SQS queue
-//		getClient().createTopicRule(new CreateTopicRuleRequest().withRuleName(name + "_SQS_Link").
-//				withTopicRulePayload(new TopicRulePayload().
-//						withActions(new Action().withSqs(new SqsAction().
-//								withQueueUrl(queueURL).
-//								withRoleArn(roleARN).
-//								withUseBase64(false))).
-//						withSql(roleSQL).
-//						withRuleDisabled(false)));
+		thing.getDeviceMetadata().remove("policyJSON");
 
 		thing.setId(thingId);
 		thing.setName(name);
 		thing.setServiceBroker("AWS");
-
-		Map<String, Object> metadata = new LinkedHashMap<String, Object>(15);
-		metadata.put("thingId", thing.getId());
-		metadata.put("thingName", thing.getName());
-		metadata.put("thingARN", resp1.getThingArn());
-		metadata.put("clientId", thing.getName());
-		metadata.put("clientCertId", resp2.getCertificateId());
-		metadata.put("clientCertARN", resp2.getCertificateArn());
-		metadata.put("clientCert", resp2.getCertificatePem());
-		metadata.put("privateKey", resp2.getKeyPair().getPrivateKey());
-		metadata.put("publicKey", resp2.getKeyPair().getPublicKey());
-		metadata.put("region", Config.AWS_REGION);
-		metadata.put("host", getClient().describeEndpoint(new DescribeEndpointRequest()).getEndpointAddress());
-		metadata.put("port", 8883);
-
-		thing.setDeviceMetadata(metadata);
+		thing.getDeviceMetadata().put("thingId", thing.getId());
+		thing.getDeviceMetadata().put("thingName", thing.getName());
+		thing.getDeviceMetadata().put("thingARN", resp1.getThingArn());
+		thing.getDeviceMetadata().put("clientId", thing.getName());
+		thing.getDeviceMetadata().put("clientCertId", resp2.getCertificateId());
+		thing.getDeviceMetadata().put("clientCertARN", resp2.getCertificateArn());
+		thing.getDeviceMetadata().put("clientCert", resp2.getCertificatePem());
+		thing.getDeviceMetadata().put("privateKey", resp2.getKeyPair().getPrivateKey());
+		thing.getDeviceMetadata().put("publicKey", resp2.getKeyPair().getPublicKey());
+		thing.getDeviceMetadata().put("region", Config.AWS_REGION);
+		thing.getDeviceMetadata().put("port", 8883);
+		thing.getDeviceMetadata().put("host", getClient().
+				describeEndpoint(new DescribeEndpointRequest()).getEndpointAddress());
 
 		return thing;
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public Map<String, Object> readThing(String name) {
 		if (StringUtils.isBlank(name)) {
 			return Collections.emptyMap();
@@ -214,7 +195,10 @@ public class AWSIoTService implements IoTService {
 		if (bb != null) {
 			ByteArrayInputStream bais = new ByteArrayInputStream(bb.array());
 			try {
-				return ParaObjectUtils.getJsonReader(Map.class).readValue(bais);
+				Map<String, Object> payload = ParaObjectUtils.getJsonReader(Map.class).readValue(bais);
+				if (payload != null && payload.containsKey("state")) {
+					return (Map<String, Object>) ((Map<String, Object>) payload.get("state")).get("desired");
+				}
 			} catch (Exception ex) {
 				logger.warn("Failed to connect to IoT device {}: {}", name, ex.getMessage());
 			} finally {
@@ -229,7 +213,6 @@ public class AWSIoTService implements IoTService {
 		if (thing == null || StringUtils.isBlank(thing.getName())) {
 			return;
 		}
-
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		try {
 			Object data = Collections.singletonMap("state", Collections.singletonMap("desired", thing.getDeviceState()));
@@ -260,13 +243,24 @@ public class AWSIoTService implements IoTService {
 						withPolicyName(policy).withPolicyVersionId(p.getVersionId()));
 			}
 		}
-		getClient().detachThingPrincipal(new DetachThingPrincipalRequest().withPrincipal(cARN).withThingName(name));
-		getClient().detachPrincipalPolicy(new DetachPrincipalPolicyRequest().withPrincipal(cARN).withPolicyName(policy));
-		getClient().deletePolicy(new DeletePolicyRequest().withPolicyName(policy));
-		getClient().updateCertificate(new UpdateCertificateRequest().withCertificateId(certId).
-				withNewStatus(CertificateStatus.INACTIVE));
-		getClient().deleteCertificate(new DeleteCertificateRequest().withCertificateId(certId));
-		getClient().deleteTopicRule(new DeleteTopicRuleRequest().withRuleName(name + "_SQS_Link"));
+		try {
+			getClient().detachThingPrincipal(new DetachThingPrincipalRequest().
+					withPrincipal(cARN).withThingName(name));
+		} catch (Exception e) { }
+		try {
+			getClient().detachPrincipalPolicy(new DetachPrincipalPolicyRequest().
+					withPrincipal(cARN).withPolicyName(policy));
+		} catch (Exception e) { }
+		try {
+			getClient().deletePolicy(new DeletePolicyRequest().withPolicyName(policy));
+		} catch (Exception e) { }
+		try {
+			getClient().updateCertificate(new UpdateCertificateRequest().withCertificateId(certId).
+					withNewStatus(CertificateStatus.INACTIVE));
+		} catch (Exception e) { }
+		try {
+			getClient().deleteCertificate(new DeleteCertificateRequest().withCertificateId(certId));
+		} catch (Exception e) { }
 		getClient().deleteThing(new DeleteThingRequest().withThingName(name));
 		try {
 			getDataClient().deleteThingShadow(new DeleteThingShadowRequest().withThingName(name));

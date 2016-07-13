@@ -23,6 +23,7 @@ import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.iot.IoTService;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
@@ -38,6 +39,8 @@ public class Thing extends Sysprop {
 	@Stored @Locked @NotBlank private String serviceBroker;
 	@Stored private Map<String, Object> deviceState;
 	@Stored @Locked private Map<String, Object> deviceMetadata;
+
+	private transient Map<String, Object> deviceDetails;
 
 	/**
 	 * No-args constructor
@@ -77,6 +80,9 @@ public class Thing extends Sysprop {
 	 */
 	@JsonIgnore
 	public Map<String, Object> getDeviceMetadata() {
+		if (deviceMetadata == null) {
+			deviceMetadata = new LinkedHashMap<String, Object>(20);
+		}
 		return deviceMetadata;
 	}
 
@@ -156,20 +162,26 @@ public class Thing extends Sysprop {
 		return getDeviceState().containsKey(key);
 	}
 
-	@Override
-	public boolean exists() {
-		IoTService iot = CoreUtils.getInstance().getIotFactory().getIoTService(serviceBroker);
-		if (iot != null && !StringUtils.isBlank(getName())) {
-			return iot.existsThing(getName());
-		}
-		return super.exists();
+	/**
+	 * Temporarily set when a Thing is created.
+	 * Contains sensitive info shown only on {@link #create()}
+	 * @return device informations (same as metadata, but shown only once)
+	 */
+	public Map<String, Object> getDeviceDetails() {
+		return deviceDetails;
 	}
 
 	@Override
 	public void delete() {
-		IoTService iot = CoreUtils.getInstance().getIotFactory().getIoTService(serviceBroker);
-		if (iot != null && !StringUtils.isBlank(getName())) {
-			iot.deleteThing(this);
+		Thing t = this;
+		if (StringUtils.isBlank(serviceBroker)) {
+			t = CoreUtils.getInstance().getDao().read(getAppid(), getId());
+		}
+		if (t != null) {
+			IoTService iot = CoreUtils.getInstance().getIotFactory().getIoTService(t.getServiceBroker());
+			if (iot != null && !StringUtils.isBlank(t.getName())) {
+				iot.deleteThing(t);
+			}
 		}
 		super.delete();
 	}
@@ -188,8 +200,12 @@ public class Thing extends Sysprop {
 		IoTService iot = CoreUtils.getInstance().getIotFactory().getIoTService(serviceBroker);
 		if (iot != null && !StringUtils.isBlank(getName())) {
 			iot.createThing(this);
+			if (!getDeviceMetadata().isEmpty()) {
+				this.deviceDetails = getDeviceMetadata();
+				return super.create();
+			}
 		}
-		return super.create();
+		return null;
 	}
 
 }
