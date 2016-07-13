@@ -56,23 +56,23 @@ public class AWSQueue implements Queue {
 
 	@Override
 	public void push(String msg) {
-		AWSQueueUtils.pushMessages(url, Collections.singletonList(msg), false);
+		AWSQueueUtils.pushMessages(getUrl(), Collections.singletonList(msg));
 	}
 
 	@Override
 	public String pull() {
-		List<String> msgs = AWSQueueUtils.pullMessages(url, 1);
+		List<String> msgs = AWSQueueUtils.pullMessages(getUrl(), 1);
 		return msgs.isEmpty() ? "" : msgs.get(0);
 	}
 
 	@Override
 	public void startPolling() {
-		AWSQueueUtils.startPollingForMessages(url);
+		AWSQueueUtils.startPollingForMessages(getUrl());
 	}
 
 	@Override
 	public void stopPolling() {
-		AWSQueueUtils.stopPollingForMessages(url);
+		AWSQueueUtils.stopPollingForMessages(getUrl());
 	}
 
 	@Override
@@ -83,9 +83,6 @@ public class AWSQueue implements Queue {
 	@Override
 	public void setName(String name) {
 		this.name = name;
-		if (!StringUtils.isBlank(name)) {
-			this.url = AWSQueueUtils.createQueue(name);
-		}
 	}
 
 	/**
@@ -93,6 +90,9 @@ public class AWSQueue implements Queue {
 	 * @return
 	 */
 	public String getUrl() {
+		if (StringUtils.isBlank(url) && !StringUtils.isBlank(name)) {
+			this.url = AWSQueueUtils.createQueue(name);
+		}
 		return url;
 	}
 

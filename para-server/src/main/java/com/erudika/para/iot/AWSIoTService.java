@@ -270,7 +270,7 @@ public class AWSIoTService implements IoTService {
 		getClient().deleteThing(new DeleteThingRequest().withThingName(name));
 		try {
 			getDataClient().deleteThingShadow(new DeleteThingShadowRequest().withThingName(name));
-		} catch (Exception e) {}
+		} catch (Exception e) { }
 	}
 
 	private String getDefaultPolicyDocument(String accountId, String name) {

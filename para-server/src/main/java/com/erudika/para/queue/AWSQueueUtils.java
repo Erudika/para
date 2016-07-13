@@ -22,7 +22,7 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.sqs.AmazonSQSAsyncClient;
+import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.DeleteMessageBatchRequestEntry;
 import com.amazonaws.services.sqs.model.DeleteQueueRequest;
@@ -52,10 +52,11 @@ import org.slf4j.LoggerFactory;
  */
 public final class AWSQueueUtils {
 
-	private static AmazonSQSAsyncClient sqsClient;
+	private static AmazonSQSClient sqsClient;
 	private static final int MAX_MESSAGES = 10;  //max in bulk
-	private static final int POLLING_INTERVAL = Config.getConfigInt("queue.polling_interval_seconds", 20);
 	private static final int SLEEP = Config.getConfigInt("queue.polling_sleep_seconds", 60);
+	private static final int POLLING_INTERVAL = Config.getConfigInt("queue.polling_interval_seconds",
+			Config.IN_PRODUCTION ? 20 : 0);
 
 	private static final String LOCAL_ENDPOINT = "http://localhost:9324";
 	private static final String ENDPOINT = "https://sqs.".concat(Config.AWS_REGION).concat(".amazonaws.com");
@@ -72,16 +73,16 @@ public final class AWSQueueUtils {
 	 * Returns a client instance for AWS SQS
 	 * @return a client that talks to SQS
 	 */
-	public static AmazonSQSAsyncClient getClient() {
+	public static AmazonSQSClient getClient() {
 		if (sqsClient != null) {
 			return sqsClient;
 		}
 		if (Config.IN_PRODUCTION) {
-			sqsClient = new AmazonSQSAsyncClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
+			sqsClient = new AmazonSQSClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
 			sqsClient.setRegion(Region.getRegion(Regions.fromName(Config.AWS_REGION)));
 			sqsClient.setEndpoint(ENDPOINT);
 		} else {
-			sqsClient = new AmazonSQSAsyncClient(new BasicAWSCredentials("x", "x"));
+			sqsClient = new AmazonSQSClient(new BasicAWSCredentials("x", "x"));
 			sqsClient.setEndpoint(LOCAL_ENDPOINT);
 		}
 
@@ -122,7 +123,7 @@ public final class AWSQueueUtils {
 	public static void deleteQueue(String queueURL) {
 		if (!StringUtils.isBlank(queueURL)) {
 			try {
-				getClient().deleteQueueAsync(new DeleteQueueRequest(queueURL));
+				getClient().deleteQueue(new DeleteQueueRequest(queueURL));
 			} catch (AmazonServiceException ase) {
 				logException(ase);
 			} catch (AmazonClientException ace) {
@@ -164,9 +165,8 @@ public final class AWSQueueUtils {
 	 * Pushes a number of messages in batch to an SQS queue.
 	 * @param queueURL the URL of the SQS queue
 	 * @param messages the massage bodies
-	 * @param async if true, messages will be sent asynchronously
 	 */
-	public static void pushMessages(String queueURL, List<String> messages, boolean async) {
+	public static void pushMessages(String queueURL, List<String> messages) {
 		if (!StringUtils.isBlank(queueURL) && messages != null) {
 			// only allow strings - ie JSON
 			try {
@@ -179,11 +179,7 @@ public final class AWSQueueUtils {
 					}
 					if (++j >= MAX_MESSAGES || i == messages.size() - 1) {
 						if (!msgs.isEmpty()) {
-							if (async) {
-								getClient().sendMessageBatchAsync(queueURL, msgs);
-							} else {
-								getClient().sendMessageBatch(queueURL, msgs);
-							}
+							getClient().sendMessageBatch(queueURL, msgs);
 							msgs.clear();
 						}
 						j = 0;
@@ -223,7 +219,7 @@ public final class AWSQueueUtils {
 							messages.add(msg.getBody());
 							del.add(new DeleteMessageBatchRequestEntry(msg.getMessageId(), msg.getReceiptHandle()));
 						}
-						getClient().deleteMessageBatchAsync(queueURL, del);
+						getClient().deleteMessageBatch(queueURL, del);
 					}
 				}
 			} catch (AmazonServiceException ase) {

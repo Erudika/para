@@ -62,7 +62,7 @@ public class AWSQueueIT extends QueueTest {
 		for (int i = 1; i <= n; i++) {
 			list.add("{\"test" + i + "\": " + i + "23 }");
 		}
-		AWSQueueUtils.pushMessages(qu.getUrl(), list, false);
+		AWSQueueUtils.pushMessages(qu.getUrl(), list);
 		List<String> result = AWSQueueUtils.pullMessages(qu.getUrl(), n);
 		assertNotNull(result);
 		assertFalse(result.isEmpty());
