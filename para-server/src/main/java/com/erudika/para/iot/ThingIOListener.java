@@ -26,13 +26,16 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * Listens for I/O events and updates Things.
+ * Listens for I/O events and updates Things so that they're in sync with their cloud state.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class ThingIOListener implements IOListener {
 
 	@Override
-	public void onInvoke(Method method, Object result) {
+	public void onPreInvoke(Method method, Object[] args) { }
+
+	@Override
+	public void onPostInvoke(Method method, Object result) {
 		if (method != null && method.getName().equalsIgnoreCase("read")) {
 			if (result instanceof Thing) {
 				final Thing t = (Thing) result;

@@ -103,6 +103,11 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 
 		Object[] args = mi.getArguments();
 		String appid = AOPUtils.getFirstArgOfString(args);
+		List<IOListener> ioListeners = Para.getIOListeners();
+
+		for (IOListener ioListener : ioListeners) {
+			ioListener.onPreInvoke(superMethod, args);
+		}
 
 		if (indexedAnno != null) {
 			switch (indexedAnno.action()) {
@@ -247,8 +252,8 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 			result = mi.proceed();
 		}
 
-		for (IOListener ioListener : Para.getIOListeners()) {
-			ioListener.onInvoke(superMethod, result);
+		for (IOListener ioListener : ioListeners) {
+			ioListener.onPostInvoke(superMethod, result);
 		}
 
 		return result;

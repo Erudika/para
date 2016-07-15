@@ -20,16 +20,23 @@ package com.erudika.para;
 import java.lang.reflect.Method;
 
 /**
- * Called after an object is created/read/updated/deleted by the {@link com.erudika.para.persistence.DAO}.
+ * Listens for create/read/update/delete events when {@link com.erudika.para.persistence.DAO} is called.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public interface IOListener {
 
 	/**
+	 * Called before an I/O (CRUD) operation has occurred.
+	 * @param method the {@code DAO} method which will be invoked after this
+	 * @param args the list of arguments supplied to the {@code DAO} method called
+	 */
+	void onPreInvoke(Method method, Object[] args);
+
+	/**
 	 * Called after an I/O (CRUD) operation has occurred.
-	 * @param method the method which was invoked before this
+	 * @param method the {@code DAO} method which was invoked before this
 	 * @param result the result of the IO operation
 	 */
-	void onInvoke(Method method, Object result);
+	void onPostInvoke(Method method, Object result);
 
 }
