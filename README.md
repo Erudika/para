@@ -25,6 +25,7 @@ See how **Para** [compares to other open source backend frameworks](http://www.e
 - Full-text search (Elasticsearch by default)
 - Distributed object cache (Hazelcast by default)
 - Multi-tenancy support - each app has its own table, index and cache
+- IoT support and integration with AWS and Azure
 - Flexible security based on Spring Security (Social login, JWT support, CSRF protection, etc.)
 - Simple but effective resource permissions for client access control
 - Robust constraint validation mechanism based on JSR-303 and Hibernate Validator
