@@ -20,6 +20,7 @@ package com.erudika.para.queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -65,12 +66,12 @@ public class MockQueue implements Queue {
 
 	@Override
 	public void startPolling() {
-		throw new UnsupportedOperationException("Not supported yet.");
+		LoggerFactory.getLogger(MockQueue.class).info("Started polling...");
 	}
 
 	@Override
 	public void stopPolling() {
-		throw new UnsupportedOperationException("Not supported yet.");
+		LoggerFactory.getLogger(MockQueue.class).info("Stopped polling...");
 	}
 
 }

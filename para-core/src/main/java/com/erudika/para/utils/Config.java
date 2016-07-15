@@ -145,10 +145,6 @@ public final class Config {
 	 */
 	public static final String AWS_REGION = getConfigParam("aws_region", "eu-west-1");
 	/**
-	 * AWS Queue Role.
-	 */
-	public static final String AWS_QUEUE_ROLE = getConfigParam("aws_queue_role", "para_sqs_role");
-	/**
 	 * Facebook app id (for authentication)
 	 */
 	public static final String FB_APP_ID = getConfigParam("fb_app_id", "");
