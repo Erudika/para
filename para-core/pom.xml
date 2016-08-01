@@ -12,8 +12,8 @@
 	<name>para-core</name>
 
 	<properties>
-		<jacksonVer>2.7.4</jacksonVer>
-		<springVer>4.2.6.RELEASE</springVer>
+		<jacksonVer>2.8.1</jacksonVer>
+		<springVer>4.3.2.RELEASE</springVer>
 	</properties>
 
 	<dependencies>
@@ -89,6 +89,21 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
+			<version>${jacksonVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-cbor</artifactId>
+			<version>${jacksonVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-smile</artifactId>
+			<version>${jacksonVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-yaml</artifactId>
 			<version>${jacksonVer}</version>
 		</dependency>
 
@@ -187,14 +202,20 @@
 			<artifactId>compiler</artifactId>
 			<!--don't change! 0.9 requires jdk 1.8-->
 			<version>0.8.17</version>
+			<exclusions>
+				<exclusion>
+					<groupId>com.google.guava</groupId>
+					<artifactId>guava</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
-		<dependency>
+<!--		<dependency>
 			<groupId>javax</groupId>
 			<artifactId>javaee-web-api</artifactId>
 			<version>7.0</version>
 			<scope>provided</scope>
-		</dependency>
+		</dependency>-->
 	</dependencies>
 
 	<build>
