@@ -43,17 +43,15 @@ See how **Para** [compares to other open source backend frameworks](http://www.e
 |                  ____  ___ _ ____ ___ _                  |
 |                 / __ \/ __` / ___/ __` /                 |
 |                / /_/ / /_/ / /  / /_/ /                  |
-|               / .___/\__,_/_/   \__,_/                   |
-|              /_/                           +-------------+
-|                                            | Persistence |
+|               / .___/\__,_/_/   \__,_/     +-------------+
+|              /_/                           | Persistence |
 +-------------------+  +-----------------+   +-------------+
 |      REST API     |  |     Search      |   |    Cache    |
 +---------+---------+--+--------+--------+---+------+------+
           |                     |                   |
 +---------+---------+  +--------+--------+   +------+------+
-|  Validation of    |  |                 |   |             |
-|  Signed Requests  |  |  Search Index   +---+ Data Store  |
-|  and JWT Tokens   |  | (ElasticSearch) |   |             |
+|  Signed Requests  |  |  Search Index   +---+  Data Store |
+|  and JWT Tokens   |  | (ElasticSearch) |   |    (Any)    |
 +----+---------^----+  +-----------------+   +-------------+
      |         |
 +----v---------+-------------------------------------------+
