@@ -22,6 +22,7 @@ See how **Para** [compares to other open source backend frameworks](http://www.e
 ### Features
 
 - RESTful JSON API secured with Amazon's Signature 4 algorithm
+- Database-agnostic, designed for scalable data stores (DynamoDB, Cassandra, MongoDB, etc.)
 - Full-text search (Elasticsearch by default)
 - Distributed object cache (Hazelcast by default)
 - Multi-tenancy support - each app has its own table, index and cache
@@ -30,7 +31,6 @@ See how **Para** [compares to other open source backend frameworks](http://www.e
 - Simple but effective resource permissions for client access control
 - Robust constraint validation mechanism based on JSR-303 and Hibernate Validator
 - Per-object control of persistence, index and cache operations
-- Designed for scalable data stores (Amazon DynamoDB, Apache Cassandra, MongoDB)
 - Modular design powered by Google Guice and support for plugins
 - I18n utilities for translating language packs and working with currencies
 - Standalone executable WAR with embedded Jetty
