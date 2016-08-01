@@ -98,7 +98,7 @@ public final class CoreUtils implements InitializeListener {
 			DAO defaultDAO = new MockDAO();
 			Search defaultSearch = new MockSearch();
 			Cache defaultCache = new MockCache();
-			logger.info("Using default impementations - {}, {} and {}.",
+			logger.debug("Using default impementations - {}, {} and {}.",
 					defaultDAO.getClass().getSimpleName(),
 					defaultSearch.getClass().getSimpleName(),
 					defaultCache.getClass().getSimpleName());

@@ -61,8 +61,8 @@ public class FieldFilter implements ContainerResponseFilter {
 					Object newEntity = null;
 					if (entity instanceof ParaObject) {
 						Map<String, Object> newItem = new HashMap<String, Object>();
-						for (String field : fields) {
-							field = StringUtils.trimToEmpty(field);
+						for (String f : fields) {
+							String field = StringUtils.trimToEmpty(f);
 							newItem.put(field, getProperty(entity, field));
 						}
 						newEntity = newItem;
@@ -71,8 +71,8 @@ public class FieldFilter implements ContainerResponseFilter {
 							newEntity = new ArrayList<Map<String, Object>>();
 							for (ParaObject item : (List<ParaObject>) ((Map) entity).get("items")) {
 								Map<String, Object> newItem = new HashMap<String, Object>();
-								for (String field : fields) {
-									field = StringUtils.trimToEmpty(field);
+								for (String f : fields) {
+									String field = StringUtils.trimToEmpty(f);
 									newItem.put(field, getProperty(item, field));
 								}
 								((List) newEntity).add(newItem);
@@ -84,8 +84,8 @@ public class FieldFilter implements ContainerResponseFilter {
 						if (!((List) entity).isEmpty() && ((List) entity).get(0) instanceof ParaObject) {
 							for (ParaObject item : (List<ParaObject>) entity) {
 								Map<String, Object> newItem = new HashMap<String, Object>();
-								for (String field : fields) {
-									field = StringUtils.trimToEmpty(field);
+								for (String f : fields) {
+									String field = StringUtils.trimToEmpty(f);
 									newItem.put(field, getProperty(item, field));
 								}
 								((List) newEntity).add(newItem);
