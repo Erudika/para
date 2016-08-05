@@ -168,13 +168,13 @@
 		</dependency>
 		<dependency>
 			<groupId>com.microsoft.azure.iothub-java-client</groupId>
-			<artifactId>iothub-java-device-client</artifactId>
-			<version>1.0.9</version>
-		</dependency>
-		<dependency>
-			<groupId>com.microsoft.azure.iothub-java-client</groupId>
 			<artifactId>iothub-java-service-client</artifactId>
 			<version>1.0.7</version>
+		</dependency>
+		<dependency>
+			<groupId>com.microsoft.azure</groupId>
+			<artifactId>azure-eventhubs</artifactId>
+			<version>0.7.5</version>
 		</dependency>
 
 
@@ -221,7 +221,7 @@
 			<plugin>
 				<groupId>org.eclipse.jetty</groupId>
 				<artifactId>jetty-maven-plugin</artifactId>
-				<version>9.3.9.v20160517</version>
+				<version>9.3.11.v20160721</version>
 				<configuration>
 					<systemProperties>
 						<systemProperty>
