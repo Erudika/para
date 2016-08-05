@@ -49,7 +49,6 @@ import com.erudika.para.DestroyListener;
 import com.erudika.para.Para;
 import com.erudika.para.core.Thing;
 import com.erudika.para.core.utils.ParaObjectUtils;
-import com.erudika.para.persistence.AWSDynamoUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.io.ByteArrayInputStream;
@@ -70,7 +69,7 @@ public class AWSIoTService implements IoTService {
 
 	private static AWSIotClient iotClient;
 	private static AWSIotDataClient iotDataClient;
-	private static final Logger logger = LoggerFactory.getLogger(AWSDynamoUtils.class);
+	private static final Logger logger = LoggerFactory.getLogger(AWSIoTService.class);
 
 	public AWSIoTService() { }
 
@@ -133,7 +132,7 @@ public class AWSIoTService implements IoTService {
 	@Override
 	public Thing createThing(Thing thing) {
 		if (thing == null || StringUtils.isBlank(thing.getName()) || StringUtils.isBlank(thing.getAppid()) ||
-				existsThing(thing.getName())) {
+				existsThing(thing)) {
 			return null;
 		}
 		String name = thing.getName();
@@ -187,11 +186,12 @@ public class AWSIoTService implements IoTService {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public Map<String, Object> readThing(String name) {
-		if (StringUtils.isBlank(name)) {
+	public Map<String, Object> readThing(Thing thing) {
+		if (thing == null || StringUtils.isBlank(thing.getName())) {
 			return Collections.emptyMap();
 		}
-		ByteBuffer bb =  getDataClient().getThingShadow(new GetThingShadowRequest().withThingName(name)).getPayload();
+		ByteBuffer bb =  getDataClient().getThingShadow(new GetThingShadowRequest().
+				withThingName(thing.getName())).getPayload();
 		if (bb != null) {
 			ByteArrayInputStream bais = new ByteArrayInputStream(bb.array());
 			try {
@@ -200,7 +200,7 @@ public class AWSIoTService implements IoTService {
 					return (Map<String, Object>) ((Map<String, Object>) payload.get("state")).get("desired");
 				}
 			} catch (Exception ex) {
-				logger.warn("Failed to connect to IoT device {}: {}", name, ex.getMessage());
+				logger.warn("Failed to connect to IoT device {}: {}", thing.getName(), ex.getMessage());
 			} finally {
 				IOUtils.closeQuietly(bais);
 			}
@@ -301,9 +301,12 @@ public class AWSIoTService implements IoTService {
 	}
 
 	@Override
-	public boolean existsThing(String name) {
+	public boolean existsThing(Thing thing) {
+		if (thing == null) {
+			return false;
+		}
 		try {
-			return getClient().describeThing(new DescribeThingRequest().withThingName(name)) != null;
+			return getClient().describeThing(new DescribeThingRequest().withThingName(thing.getName())) != null;
 		} catch (Exception e) {
 			return false;
 		}

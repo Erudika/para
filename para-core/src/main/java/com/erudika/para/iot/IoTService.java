@@ -35,10 +35,10 @@ public interface IoTService {
 
 	/**
 	 * Returns the state of the thing, read from the cloud (not Para).
-	 * @param name a thing name
+	 * @param thing the thing object
 	 * @return the state properties map
 	 */
-	Map<String, Object> readThing(String name);
+	Map<String, Object> readThing(Thing thing);
 
 	/**
 	 * Updates the state of a thing in the cloud (not Para).
@@ -54,9 +54,9 @@ public interface IoTService {
 
 	/**
 	 * Checks if a thing exists in the cloud (not on Para).
-	 * @param name a thing name
+	 * @param thing a thing object
 	 * @return true if thing exists
 	 */
-	boolean existsThing(String name);
+	boolean existsThing(Thing thing);
 
 }

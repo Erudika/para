@@ -44,8 +44,8 @@ public class ThingIOListener implements IOListener {
 					Para.asyncExecute(new Runnable() {
 						@Override
 						public void run() {
-							Map<String, Object> state = iot.readThing(t.getName());
-							if (!t.getDeviceState().equals(state)) {
+							Map<String, Object> state = iot.readThing(t);
+							if (state != null && !t.getDeviceState().equals(state)) {
 								t.setDeviceState(state);
 								t.update();
 							}
