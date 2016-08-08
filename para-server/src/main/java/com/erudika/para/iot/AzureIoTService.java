@@ -47,8 +47,8 @@ import org.slf4j.LoggerFactory;
  */
 public class AzureIoTService implements IoTService {
 
-    private static final int MAX_MESSAGES = Config.getConfigInt("azure.iot_max_messages", 10);
-    private static final int PARTITIONS_COUNT = Config.getConfigInt("azure.iot_partitions", 2);
+	private static final int MAX_MESSAGES = Config.getConfigInt("azure.iot_max_messages", 10);
+	private static final int PARTITIONS_COUNT = Config.getConfigInt("azure.iot_partitions", 2);
 
 	private static final String serviceHostname = Config.getConfigParam("azure.iot_hostname", "");
 	private static final String serviceAccessKey = Config.getConfigParam("azure.iot_access_key", "");
@@ -128,16 +128,14 @@ public class AzureIoTService implements IoTService {
 			return null;
 		}
 		try {
-			String name = thing.getName();
-			String thingId = Utils.getNewId();
-			thing.setId(thingId);
-			thing.setName(name);
-			Device device = Device.createFromId(getClouID(thing), null, null);
+			thing.setId(Utils.getNewId());
+			String id = cloudIDForThing(thing);
+			Device device = Device.createFromId(id, null, null);
 			device = registryManager.addDevice(device);
-			logger.debug("Thing {} created on Azure.", thing.getName());
+			logger.debug("Thing {} created on Azure.", id);
 
 			thing.setServiceBroker("Azure");
-			thing.getDeviceMetadata().put("thingId", thing.getId());
+			thing.getDeviceMetadata().put("thingId", id);
 			thing.getDeviceMetadata().put("thingName", thing.getName());
 			thing.getDeviceMetadata().put("thingGenId", device.getGenerationId());
 			thing.getDeviceMetadata().put("status", device.getStatus());
@@ -145,7 +143,7 @@ public class AzureIoTService implements IoTService {
 			thing.getDeviceMetadata().put("secondaryKey", device.getSecondaryKey());
 			thing.getDeviceMetadata().put("lastActivity", device.getLastActivityTime());
 			thing.getDeviceMetadata().put("connectionState", device.getConnectionState());
-			thing.getDeviceMetadata().put("connectionString", "HostName=" + serviceHostname + ";DeviceId=" + name +
+			thing.getDeviceMetadata().put("connectionString", "HostName=" + serviceHostname + ";DeviceId=" + id +
 					";SharedAccessKey=" + device.getPrimaryKey());
 		} catch (Exception e) {
 			logger.warn(null, e);
@@ -179,7 +177,7 @@ public class AzureIoTService implements IoTService {
 //			messageToSend.setUserId(thing.getCreatorid());
 			messageToSend.clearCustomProperties();
 
-			getClient().send(getClouID(thing), messageToSend);
+			getClient().send(cloudIDForThing(thing), messageToSend);
 		} catch (Exception e) {
 			logger.warn("Couldn't create thing: {}", e.getMessage());
 		}
@@ -192,8 +190,9 @@ public class AzureIoTService implements IoTService {
 			return;
 		}
 		try {
-			registryManager.removeDeviceAsync(getClouID(thing));
-			logger.debug("Thing {} removed from Azure.", thing.getName());
+			String id = cloudIDForThing(thing);
+			registryManager.removeDeviceAsync(id);
+			logger.debug("Thing {} removed from Azure.", id);
 		} catch (Exception e) {
 			logger.warn("Couldn't delete thing: {}", e.getMessage());
 		}
@@ -206,7 +205,7 @@ public class AzureIoTService implements IoTService {
 			return false;
 		}
 		try {
-			return registryManager.getDevice(getClouID(thing)) != null;
+			return registryManager.getDevice(cloudIDForThing(thing)) != null;
 		} catch (Exception e) {
 			return false;
 		}
@@ -224,11 +223,11 @@ public class AzureIoTService implements IoTService {
 		return client;
 	}
 
-	private String getClouID(Thing thing) {
+	private String cloudIDForThing(Thing thing) {
 		return thing.getAppid().concat(Config.SEPARATOR).concat(thing.getId());
 	}
 
-	private static Thing getThingFromCloudID(String id) {
+	private static Thing thingFromCloudID(String id) {
 		if (!StringUtils.isBlank(id) && id.contains(Config.SEPARATOR)) {
 			String[] parts = id.split(Config.SEPARATOR);
 			Thing t = new Thing(parts[1]);
@@ -243,7 +242,7 @@ public class AzureIoTService implements IoTService {
 
 		private String partitionId;
 
-		public Receiver(String partitionId) {
+		Receiver(String partitionId) {
 			this.partitionId = partitionId;
 		}
 
@@ -263,7 +262,7 @@ public class AzureIoTService implements IoTService {
 							} catch (Exception e) {	}
 
 							if (deviceState != null) {
-								Thing t = getThingFromCloudID(deviceId);
+								Thing t = thingFromCloudID(deviceId);
 								if (t != null) {
 									t.setDeviceState(deviceState);
 									Para.getDAO().update(t.getAppid(), t);

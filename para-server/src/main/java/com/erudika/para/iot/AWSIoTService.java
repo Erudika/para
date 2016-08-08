@@ -135,10 +135,12 @@ public class AWSIoTService implements IoTService {
 				existsThing(thing)) {
 			return null;
 		}
-		String name = thing.getName();
+		thing.setId(Utils.getNewId());
+		String id = cloudIDForThing(thing);
 		String appid = thing.getAppid();
+
 		// STEP 1: Create thing
-		CreateThingResult resp1 = getClient().createThing(new CreateThingRequest().withThingName(name).
+		CreateThingResult resp1 = getClient().createThing(new CreateThingRequest().withThingName(id).
 				withAttributePayload(new AttributePayload().addAttributesEntry(Config._APPID, appid)));
 
 		// STEP 2: Create certificate
@@ -146,31 +148,28 @@ public class AWSIoTService implements IoTService {
 				new CreateKeysAndCertificateRequest().withSetAsActive(true));
 
 		String accountId = getAccountIdFromARN(resp1.getThingArn());
-		String thingId = Utils.getNewId();
 		String policyString = (String) (thing.getDeviceMetadata().containsKey("policyJSON") ?
-				thing.getDeviceMetadata().get("policyJSON") : getDefaultPolicyDocument(accountId, name));
+				thing.getDeviceMetadata().get("policyJSON") : getDefaultPolicyDocument(accountId, id));
 
 		// STEP 3: Create policy
 		getClient().createPolicy(new CreatePolicyRequest().
-				withPolicyDocument(policyString).withPolicyName(name + "-Policy"));
+				withPolicyDocument(policyString).withPolicyName(id + "-Policy"));
 
 		// STEP 4: Attach policy to certificate
 		getClient().attachPrincipalPolicy(new AttachPrincipalPolicyRequest().
-				withPrincipal(resp2.getCertificateArn()).withPolicyName(name + "-Policy"));
+				withPrincipal(resp2.getCertificateArn()).withPolicyName(id + "-Policy"));
 
 		// STEP 5: Attach thing to certificate
 		getClient().attachThingPrincipal(new AttachThingPrincipalRequest().
-				withPrincipal(resp2.getCertificateArn()).withThingName(name));
+				withPrincipal(resp2.getCertificateArn()).withThingName(id));
 
 		thing.getDeviceMetadata().remove("policyJSON");
 
-		thing.setId(thingId);
-		thing.setName(name);
 		thing.setServiceBroker("AWS");
 		thing.getDeviceMetadata().put("thingId", thing.getId());
-		thing.getDeviceMetadata().put("thingName", thing.getName());
+		thing.getDeviceMetadata().put("thingName", id);
 		thing.getDeviceMetadata().put("thingARN", resp1.getThingArn());
-		thing.getDeviceMetadata().put("clientId", thing.getName());
+		thing.getDeviceMetadata().put("clientId", id);
 		thing.getDeviceMetadata().put("clientCertId", resp2.getCertificateId());
 		thing.getDeviceMetadata().put("clientCertARN", resp2.getCertificateArn());
 		thing.getDeviceMetadata().put("clientCert", resp2.getCertificatePem());
@@ -187,11 +186,11 @@ public class AWSIoTService implements IoTService {
 	@Override
 	@SuppressWarnings("unchecked")
 	public Map<String, Object> readThing(Thing thing) {
-		if (thing == null || StringUtils.isBlank(thing.getName())) {
+		if (thing == null || StringUtils.isBlank(thing.getId())) {
 			return Collections.emptyMap();
 		}
-		ByteBuffer bb =  getDataClient().getThingShadow(new GetThingShadowRequest().
-				withThingName(thing.getName())).getPayload();
+		String id = cloudIDForThing(thing);
+		ByteBuffer bb =  getDataClient().getThingShadow(new GetThingShadowRequest().withThingName(id)).getPayload();
 		if (bb != null) {
 			ByteArrayInputStream bais = new ByteArrayInputStream(bb.array());
 			try {
@@ -200,7 +199,7 @@ public class AWSIoTService implements IoTService {
 					return (Map<String, Object>) ((Map<String, Object>) payload.get("state")).get("desired");
 				}
 			} catch (Exception ex) {
-				logger.warn("Failed to connect to IoT device {}: {}", thing.getName(), ex.getMessage());
+				logger.warn("Failed to connect to IoT device {}: {}", id, ex.getMessage());
 			} finally {
 				IOUtils.closeQuietly(bais);
 			}
@@ -210,18 +209,18 @@ public class AWSIoTService implements IoTService {
 
 	@Override
 	public void updateThing(Thing thing) {
-		if (thing == null || StringUtils.isBlank(thing.getName())) {
+		if (thing == null || StringUtils.isBlank(thing.getId())) {
 			return;
 		}
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		String id = cloudIDForThing(thing);
 		try {
 			Object data = Collections.singletonMap("state", Collections.singletonMap("desired", thing.getDeviceState()));
 			ParaObjectUtils.getJsonWriterNoIdent().writeValue(baos, data);
 			getDataClient().updateThingShadow(new UpdateThingShadowRequest().
-					withThingName(thing.getName()).
-					withPayload(ByteBuffer.wrap(baos.toByteArray())));
+					withThingName(id).withPayload(ByteBuffer.wrap(baos.toByteArray())));
 		} catch (Exception ex) {
-			logger.warn("Failed to connect to IoT device {}: {}", thing.getName(), ex.getMessage());
+			logger.warn("Failed to connect to IoT device {}: {}", id, ex.getMessage());
 		} finally {
 			IOUtils.closeQuietly(baos);
 		}
@@ -229,13 +228,13 @@ public class AWSIoTService implements IoTService {
 
 	@Override
 	public void deleteThing(Thing thing) {
-		if (thing == null || StringUtils.isBlank(thing.getName())) {
+		if (thing == null || StringUtils.isBlank(thing.getId())) {
 			return;
 		}
-		String name = thing.getName();
+		String id = cloudIDForThing(thing);
 		String cARN = (String) thing.getDeviceMetadata().get("clientCertARN");
 		String certId = (String) thing.getDeviceMetadata().get("clientCertId");
-		String policy = name + "-Policy";
+		String policy = id + "-Policy";
 		for (PolicyVersion p : getClient().listPolicyVersions(new ListPolicyVersionsRequest().
 				withPolicyName(policy)).getPolicyVersions()) {
 			if (!p.isDefaultVersion()) {
@@ -245,7 +244,7 @@ public class AWSIoTService implements IoTService {
 		}
 		try {
 			getClient().detachThingPrincipal(new DetachThingPrincipalRequest().
-					withPrincipal(cARN).withThingName(name));
+					withPrincipal(cARN).withThingName(id));
 		} catch (Exception e) { }
 		try {
 			getClient().detachPrincipalPolicy(new DetachPrincipalPolicyRequest().
@@ -261,13 +260,13 @@ public class AWSIoTService implements IoTService {
 		try {
 			getClient().deleteCertificate(new DeleteCertificateRequest().withCertificateId(certId));
 		} catch (Exception e) { }
-		getClient().deleteThing(new DeleteThingRequest().withThingName(name));
+		getClient().deleteThing(new DeleteThingRequest().withThingName(id));
 		try {
-			getDataClient().deleteThingShadow(new DeleteThingShadowRequest().withThingName(name));
+			getDataClient().deleteThingShadow(new DeleteThingShadowRequest().withThingName(id));
 		} catch (Exception e) { }
 	}
 
-	private String getDefaultPolicyDocument(String accountId, String name) {
+	private String getDefaultPolicyDocument(String accountId, String id) {
 		return "{"
 			+ "  \"Version\": \"2012-10-17\","
 			+ "  \"Statement\": ["
@@ -280,7 +279,7 @@ public class AWSIoTService implements IoTService {
 			+ "      \"Effect\": \"Allow\","
 			+ "      \"Action\": [\"iot:Publish\"],"
 			+ "      \"Resource\": ["
-			+ "        \"arn:aws:iot:" + Config.AWS_REGION + ":" + accountId + ":topic/$aws/things/" + name + "/*\""
+			+ "        \"arn:aws:iot:" + Config.AWS_REGION + ":" + accountId + ":topic/$aws/things/" + id + "/*\""
 			+ "      ]"
 			+ "    },"
 			+ "    {"
@@ -294,7 +293,7 @@ public class AWSIoTService implements IoTService {
 			+ "        \"iot:UpdateThingShadow\","
 			+ "        \"iot:GetThingShadow\""
 			+ "      ],"
-			+ "      \"Resource\": [\"arn:aws:iot:" + Config.AWS_REGION + ":" + accountId + ":thing/" + name + "\"]"
+			+ "      \"Resource\": [\"arn:aws:iot:" + Config.AWS_REGION + ":" + accountId + ":thing/" + id + "\"]"
 			+ "    }"
 			+ "  ]"
 			+ "}";
@@ -306,7 +305,7 @@ public class AWSIoTService implements IoTService {
 			return false;
 		}
 		try {
-			return getClient().describeThing(new DescribeThingRequest().withThingName(thing.getName())) != null;
+			return getClient().describeThing(new DescribeThingRequest().withThingName(cloudIDForThing(thing))) != null;
 		} catch (Exception e) {
 			return false;
 		}
@@ -314,6 +313,10 @@ public class AWSIoTService implements IoTService {
 
 	private String getAccountIdFromARN(String arn) {
 		return StringUtils.contains(arn, ":") ? arn.split(":")[4] : "";
+	}
+
+	private String cloudIDForThing(Thing thing) {
+		return thing.getAppid().concat("-").concat(thing.getId());
 	}
 
 }

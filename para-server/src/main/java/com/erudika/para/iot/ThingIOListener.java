@@ -40,7 +40,7 @@ public class ThingIOListener implements IOListener {
 			if (result instanceof Thing) {
 				final Thing t = (Thing) result;
 				final IoTService iot = CoreUtils.getInstance().getIotFactory().getIoTService(t.getServiceBroker());
-				if (iot != null && !StringUtils.isBlank(t.getName())) {
+				if (iot != null && !StringUtils.isBlank(t.getId())) {
 					Para.asyncExecute(new Runnable() {
 						@Override
 						public void run() {
