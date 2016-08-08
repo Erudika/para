@@ -249,7 +249,7 @@ public final class AWSQueueUtils {
 
 	/**
 	 * Stops the thread that has been polling for messages.
-	 * @param queueURL
+	 * @param queueURL the queue URL
 	 */
 	public static void stopPollingForMessages(String queueURL) {
 		if (!StringUtils.isBlank(queueURL) && pollingThreads.containsKey(queueURL)) {

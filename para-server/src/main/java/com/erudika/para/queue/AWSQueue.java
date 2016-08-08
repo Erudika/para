@@ -87,7 +87,7 @@ public class AWSQueue implements Queue {
 
 	/**
 	 * Returns the queue URL on SQS.
-	 * @return
+	 * @return returns the URL of this queue
 	 */
 	public String getUrl() {
 		if (StringUtils.isBlank(url) && !StringUtils.isBlank(name)) {
