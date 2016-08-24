@@ -28,8 +28,8 @@ import java.util.List;
 import static com.erudika.para.aop.AOPUtils.*;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -112,7 +112,7 @@ public class AOPUtilsTest {
 				}
 				return null;
 			}
-		}).when(search).index((ParaObject) anyObject());
+		}).when(search).index((ParaObject) any());
 
 		doAnswer(new Answer<Boolean>() {
 			public Boolean answer(InvocationOnMock invocation) throws Throwable {
@@ -122,7 +122,7 @@ public class AOPUtilsTest {
 				}
 				return null;
 			}
-		}).when(search).unindex((ParaObject) anyObject());
+		}).when(search).unindex((ParaObject) any());
 
 		when(search.findById(anyString())).thenAnswer(new Answer<ParaObject>() {
 			public ParaObject answer(InvocationOnMock invocation) throws Throwable {

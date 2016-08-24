@@ -12,7 +12,7 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>4.1.1.RELEASE</springSecVer>
+		<springSecVer>4.1.2.RELEASE</springSecVer>
 		<hazelcastVer>3.6.4</hazelcastVer>
 	</properties>
 
@@ -190,6 +190,12 @@
 			<artifactId>elasticmq-rest-sqs_2.11</artifactId>
 			<version>0.9.3</version>
 			<scope>test</scope>
+		 <exclusions>
+		  <exclusion>
+		   <groupId>org.joda</groupId>
+		   <artifactId>joda-convert</artifactId>
+		  </exclusion>
+		 </exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
@@ -228,23 +234,13 @@
 							<name>org.eclipse.jetty.util.log.Log</name>
 							<value>org.eclipse.jetty.util.log.Slf4jLog</value>
 						</systemProperty>
-						<systemProperty>
-							<name>logback.configurationFile</name>
-							<value>${basedir}/src/main/resources/logback.xml</value>
-						</systemProperty>
 					</systemProperties>
 					<webApp>
 						<contextPath>/</contextPath>
+						<webInfIncludeJarPattern>^((?!bouncycastle).)*$</webInfIncludeJarPattern>
 					</webApp>
 					<reload>manual</reload>
 				</configuration>
-				<dependencies>
-					<dependency>
-						<groupId>org.slf4j</groupId>
-						<artifactId>slf4j-api</artifactId>
-						<version>${slf4jVer}</version>
-					</dependency>
-				</dependencies>
 			</plugin>
 
 			<plugin>

@@ -25,6 +25,7 @@ import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -80,8 +81,7 @@ public class ParaObjectTest {
 		list.add(l1);
 		list.add(l2);
 
-		when(search.findTerms(anyString(), anyString(), anyMapOf(String.class, Object.class),
-				anyBoolean())).thenReturn(list);
+		when(search.findTerms(anyString(), anyString(), any(Map.class),	anyBoolean())).thenReturn(list);
 
 		assertEquals(0, u.getLinkedObjects(Utils.type(Tag.class), null, null).size());
 		assertEquals(0, u.getLinkedObjects(Utils.type(User.class), null, null).size());

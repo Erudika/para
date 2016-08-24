@@ -24,6 +24,7 @@ import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
 import com.erudika.para.validation.ValidationUtils;
 import java.util.ArrayList;
+import java.util.Map;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -117,7 +118,7 @@ public class UserTest {
 		list.add(new Sysprop(u.getIdentifier()));
 		list.add(new Sysprop(secIdent));
 
-		when(CoreUtils.getInstance().getSearch().findTerms(anyString(), anyString(), anyMapOf(String.class, Object.class),
+		when(CoreUtils.getInstance().getSearch().findTerms(anyString(), anyString(), any(Map.class),
 				anyBoolean())).thenReturn(list);
 
 		u.attachIdentifier(secIdent);
