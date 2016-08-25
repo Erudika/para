@@ -23,13 +23,14 @@ import com.erudika.para.utils.Config;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigValue;
+import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import javax.annotation.security.DeclareRoles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.RememberMeAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -52,6 +53,7 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 	private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
+	private static final String[] DEFAULT_ROLES = {"USER", "MOD", "ADMIN", "APP"};
 
 	private final CachedCsrfTokenRepository csrfTokenRepository;
 	private final SimpleRememberMeServices rememberMeServices;
@@ -118,7 +120,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	 */
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-		String[] defRoles = {"USER", "MOD", "ADMIN", "APP"};
 		Map<String, String> confMap = Config.getConfigMap();
 		ConfigObject protectedResources = Config.getConfig().getObject("security.protected");
 		ConfigValue apiSec = Config.getConfig().getValue("security.api_security");
@@ -129,23 +130,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 			http.authorizeRequests().requestMatchers(RestRequestMatcher.INSTANCE);
 		}
 
-		for (String key : protectedResources.keySet()) {
-			ConfigValue cv = protectedResources.get(key);
-			LinkedList<String> patterns = new LinkedList<String>();
-			LinkedList<String> roles = new LinkedList<String>();
-
-			for (ConfigValue configValue : (ConfigList) cv) {
-				if (configValue instanceof List) {
-					for (ConfigValue role : (ConfigList) configValue) {
-						roles.add(((String) role.unwrapped()).toUpperCase());
-					}
-				} else {
-					patterns.add((String) configValue.unwrapped());
-				}
-			}
-			String[] rolz = (roles.isEmpty()) ? defRoles : roles.toArray(new String[0]);
-			http.authorizeRequests().antMatchers(patterns.toArray(new String[0])).hasAnyRole(rolz);
-		}
+		parseProtectedResources(http, protectedResources);
 
 		if (Config.getConfigBoolean("security.csrf_protection", true)) {
 			http.csrf().requireCsrfProtectionMatcher(CsrfProtectionRequestMatcher.INSTANCE).
@@ -210,6 +195,45 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 			}
 			RestAuthFilter restFilter = new RestAuthFilter(new Signer());
 			http.addFilterAfter(restFilter, JWTRestfulAuthFilter.class);
+		}
+	}
+
+	private void parseProtectedResources(HttpSecurity http, ConfigObject protectedResources) throws Exception {
+		for (String key : protectedResources.keySet()) {
+			ConfigValue cv = protectedResources.get(key);
+			LinkedList<String> patterns = new LinkedList<String>();
+			LinkedList<String> roles = new LinkedList<String>();
+			HashSet<HttpMethod> methods = new HashSet<HttpMethod>();
+
+			for (ConfigValue configValue : (ConfigList) cv) {
+				try {
+					if (configValue instanceof ConfigList) {
+						for (ConfigValue role : (ConfigList) configValue) {
+							String r = ((String) role.unwrapped()).toUpperCase().trim();
+							// check if any HTTP methods appear here
+							HttpMethod m = HttpMethod.resolve(r);
+							if (m != null) {
+								methods.add(m);
+							} else {
+								roles.add(r);
+							}
+						}
+					} else {
+						patterns.add((String) configValue.unwrapped());
+					}
+				} catch (Exception e) {
+					logger.error("Invalid config syntax for protected resource: {}.", configValue.render());
+				}
+			}
+			String[] rolz = (roles.isEmpty()) ? DEFAULT_ROLES : roles.toArray(new String[0]);
+			String[] patternz = patterns.toArray(new String[0]);
+			if (methods.isEmpty()) {
+				http.authorizeRequests().antMatchers(patternz).hasAnyRole(rolz);
+			} else {
+				for (HttpMethod method : methods) {
+					http.authorizeRequests().antMatchers(method, patternz).hasAnyRole(rolz);
+				}
+			}
 		}
 	}
 
