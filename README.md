@@ -126,9 +126,9 @@ Use these client libraries to quickly integrate Para into your project:
 
 Use these `DAO` implementations to connect to different databases:
 
-- **DynamoDB**: `AWSDynamoDAO` (built-in)
+- **DynamoDB**: `AWSDynamoDAO` (part of the `para-server` package)
 - **MongoDB**: [para-dao-mongodb](https://github.com/erudika/para-dao-mongodb)
-- **Cassandra**: para-dao-cassandra (soon)
+- **Cassandra**: [para-dao-cassandra](https://github.com/Erudika/para-dao-cassandra)
 
 ## Wishlist / Roadmap
 
