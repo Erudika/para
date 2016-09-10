@@ -74,7 +74,7 @@ See how **Para** [compares to other open source backend frameworks](http://www.e
 
 Para can be compiled with JDK 6 and up, but we recommend running it on JDK 8+.
 
-Para uses Maven. Here's how you clone it and build it:
+To compile it you'll need Maven. Once you have it, just clone and build:
 
 ```sh
 $ git clone https://github.com/erudika/para.git && cd para
@@ -127,15 +127,15 @@ Use these client libraries to quickly integrate Para into your project:
 Use these `DAO` implementations to connect to different databases:
 
 - **DynamoDB**: `AWSDynamoDAO` (part of the `para-server` package)
-- **MongoDB**: [para-dao-mongodb](https://github.com/erudika/para-dao-mongodb)
+- **MongoDB**: [para-dao-mongodb](https://github.com/Erudika/para-dao-mongodb)
 - **Cassandra**: [para-dao-cassandra](https://github.com/Erudika/para-dao-cassandra)
 
 ## Wishlist / Roadmap
 
-- `DAO` implementations for popular databases like Cassandra (in progress), PostgreSQL, etc.
+- `DAO` implementation for PostgreSQL, etc.
 - Swagger support
 - GraphQL and/or ([JSON API](http://jsonapi.org/)) schema support
-- Integrations with Google App Engine, Heroku, Docker, Vagrant
+- Integrations with Google App Engine, Heroku
 
 ## Contributing
 
