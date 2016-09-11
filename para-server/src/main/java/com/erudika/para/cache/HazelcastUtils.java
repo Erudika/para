@@ -58,7 +58,6 @@ public final class HazelcastUtils {
 			cfg.setInstanceName(getNodeName());
 			cfg.getGroupConfig().setName(Config.CLUSTER_NAME);
 			MapConfig mapcfg = new MapConfig("default");
-			mapcfg.setEvictionPercentage(getEvictionPercentage());
 			mapcfg.setEvictionPolicy(getEvictionPolicy());
 			mapcfg.setTimeToLiveSeconds(Config.getConfigInt("hc.ttl_seconds", 3600));
 	//			mapcfg.setMapStoreConfig(new MapStoreConfig().setEnabled(false).setClassName(NODE_NAME));
