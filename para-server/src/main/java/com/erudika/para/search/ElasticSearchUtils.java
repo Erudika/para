@@ -172,7 +172,7 @@ public final class ElasticSearchUtils {
 			NodeBuilder nb = NodeBuilder.nodeBuilder();
 			nb.settings().put("number_of_shards", Integer.toString(shards));
 			nb.settings().put("number_of_replicas", Integer.toString(replicas));
-			nb.settings().put("auto_expand_replicas", "0-1");
+			nb.settings().put("auto_expand_replicas", Config.getConfigParam("es.auto_expand_replicas", "0-1"));
 			nb.settings().put("analysis.analyzer.default.type", "standard");
 			nb.settings().putArray("analysis.analyzer.default.stopwords",
 					"arabic", "armenian", "basque", "brazilian", "bulgarian", "catalan",
