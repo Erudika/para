@@ -110,10 +110,6 @@ public final class HazelcastUtils {
 				EvictionPolicy.LFU : EvictionPolicy.LRU;
 	}
 
-	private static int getEvictionPercentage() {
-		return Config.getConfigInt("hc.eviction_percentage", 25);
-	}
-
 	private static MaxSizeConfig getMaxSize() {
 		return new MaxSizeConfig().
 				setSize(Config.getConfigInt("hc.max_size", 25)).
