@@ -40,6 +40,7 @@ import com.google.inject.util.Modules;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import org.junit.AfterClass;
 import static org.junit.Assert.*;
@@ -222,7 +223,7 @@ public class AspectsIT {
 	}
 
 	@Test
-	public void testFlags() {
+	public void testFlags() throws InterruptedException {
 		// default - store=true, index=true, cache=true
 		Tag t1 = new Tag("tag1");
 		Sysprop o11 = new Sysprop("obj11");
@@ -383,6 +384,54 @@ public class AspectsIT {
 		assertNull(Para.getCache().get(t5.getId()));
 		assertNull(Para.getCache().get(o51.getId()));
 		assertNull(Para.getCache().get(o52.getId()));
+
+		// only in index - store=false, index=true, cache=false
+		Tag t6 = new Tag("tag6");
+		Sysprop o61 = new Sysprop("obj61");
+		Sysprop o62 = new Sysprop("obj62");
+		o61.addProperty("dont_lose_this", o61.getId());
+		o62.addProperty("dont_lose_this", o62.getId());
+		t6.setStored(false);
+		t6.setCached(false);
+		o61.setStored(false);
+		o61.setCached(false);
+		o62.setStored(false);
+		o62.setCached(false);
+		Para.getDAO().create(t6);
+		Para.getDAO().createAll(new LinkedList<ParaObject>(Arrays.asList(o61, o62)));
+		Thread.sleep(500);
+
+		System.setProperty("para.cache_enabled", "false");
+		assertNull(Para.getDAO().read(t6.getId()));
+		assertNull(Para.getDAO().read(o61.getId()));
+		assertNull(Para.getDAO().read(o62.getId()));
+		assertNotNull(Para.getSearch().findById(t6.getId()));
+		assertNotNull(Para.getSearch().findById(o61.getId()));
+		assertNotNull(Para.getSearch().findById(o62.getId()));
+		// special case: read_from_index (query multiple objects)
+		List<?> results = Para.getSearch().findQuery(o61.getType(), "*");
+		assertNotNull(results);
+		assertFalse(results.isEmpty());
+		assertEquals(2, results.size());
+		Sysprop first = ((Sysprop) results.get(0));
+		Sysprop second = ((Sysprop) results.get(1));
+		assertEquals(first.getId(), first.getProperty("dont_lose_this"));
+		assertEquals(second.getId(), second.getProperty("dont_lose_this"));
+
+		System.setProperty("para.cache_enabled", "true");
+		assertNull(Para.getCache().get(t6.getId()));
+		assertNull(Para.getCache().get(o61.getId()));
+		assertNull(Para.getCache().get(o62.getId()));
+		Para.getDAO().deleteAll(Arrays.asList(t6, o61, o62));
+		assertNull(Para.getDAO().read(t6.getId()));
+		assertNull(Para.getDAO().read(o61.getId()));
+		assertNull(Para.getDAO().read(o62.getId()));
+		assertNull(Para.getSearch().findById(t6.getId()));
+		assertNull(Para.getSearch().findById(o61.getId()));
+		assertNull(Para.getSearch().findById(o62.getId()));
+		assertNull(Para.getCache().get(t6.getId()));
+		assertNull(Para.getCache().get(o61.getId()));
+		assertNull(Para.getCache().get(o62.getId()));
 	}
 
 }
