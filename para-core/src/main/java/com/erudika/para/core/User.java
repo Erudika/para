@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -41,6 +42,7 @@ import org.slf4j.LoggerFactory;
  */
 public class User implements ParaObject {
 	private static final long serialVersionUID = 1L;
+	private static Logger logger = LoggerFactory.getLogger(User.class);
 
 	@Stored @Locked private String id;
 	@Stored @Locked private Long timestamp;
@@ -438,14 +440,17 @@ public class User implements ParaObject {
 			User user = CoreUtils.getInstance().getDao().read(u.getAppid(), s.getCreatorid());
 			if (user != null) {
 				if (!identifier.equals(user.getIdentifier())) {
+					logger.info("Identifier changed for user '{}', from {} to {}.",
+							user.getId(), user.getIdentifier(), identifier);
 					// the main identifier was changed - update
 					user.setIdentifier(identifier);
-					CoreUtils.getInstance().getDao().update(user);
+					CoreUtils.getInstance().getDao().update(user.getAppid(), user);
 				}
 				user.setPassword((String) s.getProperty(Config._PASSWORD));
 				return user;
 			}
 		}
+		logger.info("User not found for identifier {}/{}, {}.", u.getAppid(), identifier, s);
 		return null;
 	}
 
