@@ -249,10 +249,6 @@
 
 	<repositories>
 		<repository>
-			<id>softwaremill-releases</id>
-			<url>https://nexus.softwaremill.com/content/repositories/releases</url>
-		</repository>
-		<repository>
 			<id>spring-milestone</id>
 			<url>http://repo.spring.io/milestone</url>
 			<snapshots>
