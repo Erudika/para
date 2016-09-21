@@ -19,12 +19,10 @@ package com.erudika.para.utils;
 
 import com.erudika.para.annotations.Email;
 import com.erudika.para.core.ParaObject;
-import com.github.mustachejava.DefaultMustacheFactory;
-import com.github.mustachejava.MustacheFactory;
 import com.github.rjeschke.txtmark.Configuration;
 import com.github.rjeschke.txtmark.Processor;
+import com.samskivert.mustache.Mustache;
 import java.io.IOException;
-import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
@@ -74,7 +72,6 @@ public final class Utils {
 	// maps lowercase simple names to class objects
 	private static final Pattern emailz = Pattern.compile(Email.EMAIL_PATTERN);
 	private static final NumberFormat numberFormat = NumberFormat.getInstance();
-	private static final MustacheFactory mustache;
 	private static HumanTime humantime;
 	private static Utils instance;
 
@@ -96,7 +93,6 @@ public final class Utils {
 
 	static {
 		initIdGenerator();
-		mustache = new DefaultMustacheFactory();
 		numberFormat.setMinimumFractionDigits(2);
 		numberFormat.setMaximumFractionDigits(2);
 	}
@@ -270,19 +266,19 @@ public final class Utils {
 
 	/**
 	 * Compiles a mustache template with a given scope (map of fields and values).
-	 * @param scope a map of fields and values
+	 * @param context a map of fields and values
 	 * @param template a Mustache template
 	 * @return the compiled template string
 	 */
-	public static String compileMustache(Map<String, Object> scope, String template) {
-		if (scope == null || StringUtils.isBlank(template)) {
+	public static String compileMustache(Map<String, Object> context, String template) {
+		if (context == null || StringUtils.isBlank(template)) {
 			return "";
 		}
 		Writer writer = new StringWriter();
 		try {
-			mustache.compile(new StringReader(template), MD5(template)).execute(writer, scope);
+			Mustache.compiler().escapeHTML(false).emptyStringIsFalse(true).compile(template).execute(context, writer);
 		} finally {
-			try	{
+			try {
 				writer.close();
 			} catch (IOException e) {
 				logger.error(null, e);

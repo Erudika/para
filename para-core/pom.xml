@@ -198,16 +198,9 @@
 			<version>0.4.1</version>
 		</dependency>
 		<dependency>
-			<groupId>com.github.spullara.mustache.java</groupId>
-			<artifactId>compiler</artifactId>
-			<!--don't change! 0.9 requires jdk 1.8-->
-			<version>0.8.17</version>
-			<exclusions>
-				<exclusion>
-					<groupId>com.google.guava</groupId>
-					<artifactId>guava</artifactId>
-				</exclusion>
-			</exclusions>
+			<groupId>com.samskivert</groupId>
+			<artifactId>jmustache</artifactId>
+			<version>1.13</version>
 		</dependency>
 
 <!--		<dependency>
