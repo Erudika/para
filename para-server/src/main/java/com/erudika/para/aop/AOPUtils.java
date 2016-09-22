@@ -18,13 +18,22 @@
 package com.erudika.para.aop;
 
 import com.erudika.para.core.ParaObject;
+import com.erudika.para.core.Sysprop;
+import com.erudika.para.utils.Utils;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public final class AOPUtils {
+
+	private static final String SPECIAL_CHAR = "_";
 
 	private AOPUtils() { }
 
@@ -69,6 +78,43 @@ public final class AOPUtils {
 			}
 		}
 		return null;
+	}
+
+	static List<ParaObject> removeNotStoredNotIndexed(List<ParaObject> addUs, List<ParaObject> indexUs) {
+		if (addUs != null) {
+			if (indexUs == null) {
+				indexUs = new ArrayList<ParaObject>(addUs.size());
+			}
+			List<ParaObject> removed = new LinkedList<ParaObject>();
+			for (Iterator<ParaObject> it = addUs.iterator(); it.hasNext();) {
+				ParaObject obj = it.next();
+				if (obj != null) {
+					checkAndFixType(obj);
+					if (obj.getIndexed()) {
+						indexUs.add(obj);
+					}
+					if (!obj.getStored()) {
+						removed.add(obj);
+						it.remove();
+					}
+				}
+			}
+			return removed;
+		}
+		return Collections.emptyList();
+	}
+
+	/**
+	 * Object types should not start with '_' because it is in conflict with the API.
+	 * Some API resources have a path which also starts with '_' like {@code  /v1/_me}.
+	 */
+	static void checkAndFixType(ParaObject obj) {
+		if (obj != null && StringUtils.startsWith(obj.getType(), SPECIAL_CHAR)) {
+			obj.setType(StringUtils.replacePattern(obj.getType(), "^[_]+", ""));
+			if (obj.getType().isEmpty()) {
+				obj.setType(Utils.type(Sysprop.class));
+			}
+		}
 	}
 
 }

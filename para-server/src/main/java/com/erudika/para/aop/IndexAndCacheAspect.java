@@ -30,8 +30,6 @@ import com.erudika.para.validation.ValidationUtils;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -115,6 +113,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					ParaObject addMe = AOPUtils.getArgOfParaObject(args);
 					String[] errors = ValidationUtils.validateObject(addMe);
 					if (errors.length == 0) {
+						AOPUtils.checkAndFixType(addMe);
 						if (addMe.getStored()) {
 							result = mi.proceed();
 						}
@@ -136,7 +135,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 				case ADD_ALL:
 					List<ParaObject> addUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
 					List<ParaObject> indexUs = new LinkedList<ParaObject>();
-					List<ParaObject> removedObjects = removeNotStoredNotIndexed(addUs, indexUs);
+					List<ParaObject> removedObjects = AOPUtils.removeNotStoredNotIndexed(addUs, indexUs);
 					result = mi.proceed();
 					search.indexAll(appid, indexUs);
 					if (cachedAnno != null) {
@@ -259,23 +258,4 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		return result;
 	}
 
-	private List<ParaObject> removeNotStoredNotIndexed(List<ParaObject> addUs, List<ParaObject> indexUs) {
-		if (addUs != null) {
-			List<ParaObject> removed = new LinkedList<ParaObject>();
-			for (Iterator<ParaObject> it = addUs.iterator(); it.hasNext();) {
-				ParaObject obj = it.next();
-				if (obj != null) {
-					if (obj.getIndexed()) {
-						indexUs.add(obj);
-					}
-					if (!obj.getStored()) {
-						removed.add(obj);
-						it.remove();
-					}
-				}
-			}
-			return removed;
-		}
-		return Collections.emptyList();
-	}
 }

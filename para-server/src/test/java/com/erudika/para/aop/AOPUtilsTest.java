@@ -26,6 +26,7 @@ import com.erudika.para.search.Search;
 import java.util.ArrayList;
 import java.util.List;
 import static com.erudika.para.aop.AOPUtils.*;
+import com.erudika.para.utils.Utils;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -99,6 +100,38 @@ public class AOPUtilsTest {
 		assertNull(search.findById(tag1.getId()));
 		assertNull(search.findById(tag2.getId()));
 		assertNull(search.findById(tag3.getId()));
+
+		ArrayList<ParaObject> list3 = new ArrayList<ParaObject>();
+		ArrayList<ParaObject> indexUs = new ArrayList<ParaObject>();
+		tag.setIndexed(false);
+		tag.setStored(false);
+		list3.add(tag);
+		assertFalse(removeNotStoredNotIndexed(list3, null).isEmpty());
+		assertTrue(list3.isEmpty());
+		list3.clear();
+		tag.setIndexed(true);
+		tag.setStored(false);
+		list3.add(tag);
+		assertFalse(removeNotStoredNotIndexed(list3, indexUs).isEmpty());
+		assertTrue(list3.isEmpty());
+		assertFalse(indexUs.isEmpty());
+
+		Sysprop s = new Sysprop("custom_123");
+		s.setType("ok");
+		checkAndFixType(s);
+		assertEquals("ok", s.getType());
+
+		s.setType(null);
+		checkAndFixType(s);
+		assertNotNull(s.getType());
+
+		s.setType("___NOT_OK_");
+		checkAndFixType(s);
+		assertEquals("NOT_OK_", s.getType());
+
+		s.setType("____");
+		checkAndFixType(s);
+		assertEquals(Utils.type(Sysprop.class), s.getType());
 	}
 
 	private Search getSearch(final DAO dao) {
