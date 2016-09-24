@@ -49,10 +49,9 @@ import org.slf4j.LoggerFactory;
  * It allows the user to create separate apps running on the same infrastructure.
  * Every {@link ParaObject} belongs to an app.
  * <br>
- * There can be two types of apps - dedicated and shared.
- * Shared apps use their own database table and cache, but share the same search index.
- * Dedicated apps have their own separate database tables, caches and search index.
- * Sharding is done using the shard key which is usually the same as the appid.
+ * Apps can have a dedicated table or they can share the same table using prefixed keys.
+ * Also, apps can have a dedicated search index or share one. These are controlled by
+ * the two flags {@link #isSharingTable() } and {@link #isSharingIndex() }.
  * <br>
  * Usually when we have a multi-app environment there's a parent app (dedicated) and
  * lots of child apps (shared) that share the same index with the parent app.
@@ -81,7 +80,8 @@ public class App implements ParaObject {
 	@Stored private Boolean indexed;
 	@Stored private Boolean cached;
 
-	@Stored @Locked private boolean shared;
+	@Stored @Locked private boolean sharingIndex;
+	@Stored @Locked private boolean sharingTable;
 	@Stored @Locked private String secret;
 	@Stored @Locked private Boolean readOnly;
 	@Stored private Map<String, String> datatypes;
@@ -108,7 +108,7 @@ public class App implements ParaObject {
 	 * @param id the name of the app
 	 */
 	public App(String id) {
-		this.shared = true;
+		this.sharingIndex = true;
 		this.active = true;
 		this.readOnly = false;
 		setId(id);
@@ -345,19 +345,35 @@ public class App implements ParaObject {
 	}
 
 	/**
-	 * Is this a shared app (shared db, index, etc.)
-	 * @return true if shared
+	 * Is this a sharing the search index with other apps.
+	 * @return true if it does
 	 */
-	public boolean isShared() {
-		return shared;
+	public boolean isSharingIndex() {
+		return sharingIndex;
 	}
 
 	/**
-	 * Sets the shared flag
-	 * @param shared true if shared
+	 * Sets the sharingIndex flag.
+	 * @param sharingIndex false means this app should have its own dedicated index
 	 */
-	public void setShared(boolean shared) {
-		this.shared = shared;
+	public void setSharingIndex(boolean sharingIndex) {
+		this.sharingIndex = sharingIndex;
+	}
+
+	/**
+	 * Is this a sharing the database table with other apps.
+	 * @return true if it does
+	 */
+	public boolean isSharingTable() {
+		return sharingTable;
+	}
+
+	/**
+	 * Sets the sharingTable flag.
+	 * @param sharingTable false means this app should have its own dedicated table
+	 */
+	public void setSharingTable(boolean sharingTable) {
+		this.sharingTable = sharingTable;
 	}
 
 	/**

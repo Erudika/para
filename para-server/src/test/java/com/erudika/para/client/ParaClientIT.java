@@ -120,7 +120,7 @@ public class ParaClientIT {
 
 		App rootApp = new App(APP_NAME);
 		rootApp.setName(APP_NAME);
-		rootApp.setShared(false);
+		rootApp.setSharingIndex(false);
 		rootApp.create();
 		pc = new ParaClient(App.id(APP_NAME), rootApp.getSecret());
 		pc.setEndpoint(endpoint);

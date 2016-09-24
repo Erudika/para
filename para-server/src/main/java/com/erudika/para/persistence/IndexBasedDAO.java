@@ -37,11 +37,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An implementation of the {@link DAO} interface used for local development only.
+ * An implementation of the {@link DAO} interface used <b>for local development only<b>.
  * It uses is based on the {@link com.erudika.para.search.Search} implementation.
  * Objects are stored in the index rather than in a data store.
  *
- * <b>Note</b>: This implementation doesn't work well with shared apps (app.isShared() must be false).
+ * <b>Note</b>: This implementation doesn't work well with apps sharing one index (app.isSharingIndex() must be false).
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 @Singleton

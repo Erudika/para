@@ -320,8 +320,8 @@ public abstract class SearchTest {
 		// test multiapp support
 		App ap1 = new App(appid1);
 		App ap2 = new App(appid2);
-		ap1.setShared(true);
-		ap2.setShared(true);
+		ap1.setSharingIndex(true);
+		ap2.setSharingIndex(true);
 //		String routedAppid1 = ap1.getAppidWithRouting();
 //		String routedAppid2 = ap2.getAppidWithRouting();
 		ux.setId(u.getId()+"-APP1");

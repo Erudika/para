@@ -394,7 +394,7 @@ public final class Para {
 		App app = new App(appid);
 		if (!app.exists()) {
 			app.setName(name);
-			app.setShared(shared);
+			app.setSharingIndex(shared);
 			app.setActive(true);
 			app.create();
 			creds.putAll(app.getCredentials());
