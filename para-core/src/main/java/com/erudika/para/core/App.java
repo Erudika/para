@@ -109,6 +109,7 @@ public class App implements ParaObject {
 	 */
 	public App(String id) {
 		this.sharingIndex = true;
+		this.sharingTable = false;
 		this.active = true;
 		this.readOnly = false;
 		setId(id);

@@ -92,6 +92,7 @@ public class AspectsIT {
 		s2.setTags(CoreUtils.getInstance().addTags(s2.getTags(), "four", "five", "three"));
 
 		CoreUtils.getInstance().setDao(Para.getDAO());
+		CoreUtils.getInstance().setCache(Para.getCache());
 		CoreUtils.getInstance().setSearch(Para.getSearch());
 	}
 
@@ -399,7 +400,7 @@ public class AspectsIT {
 		o62.setCached(false);
 		Para.getDAO().create(t6);
 		Para.getDAO().createAll(new LinkedList<ParaObject>(Arrays.asList(o61, o62)));
-		Thread.sleep(500);
+		Thread.sleep(1000);
 
 		System.setProperty("para.cache_enabled", "false");
 		assertNull(Para.getDAO().read(t6.getId()));

@@ -38,7 +38,7 @@ public final class AOPUtils {
 	private AOPUtils() { }
 
 	@SuppressWarnings("unchecked")
-	static <T> List<T> getArgOfListOfType(Object[] args, Class<T> type) {
+	public static <T> List<T> getArgOfListOfType(Object[] args, Class<T> type) {
 		if (args != null) {
 			for (Object arg : args) {
 				if (arg != null) {
@@ -54,7 +54,7 @@ public final class AOPUtils {
 		return null;
 	}
 
-	static ParaObject getArgOfParaObject(Object[] args) {
+	public static ParaObject getArgOfParaObject(Object[] args) {
 		if (args != null) {
 			for (Object arg : args) {
 				if (arg != null) {
@@ -67,7 +67,7 @@ public final class AOPUtils {
 		return null;
 	}
 
-	static String getFirstArgOfString(Object[] args) {
+	public static String getFirstArgOfString(Object[] args) {
 		if (args != null) {
 			for (Object arg : args) {
 				if (arg != null) {
@@ -80,7 +80,7 @@ public final class AOPUtils {
 		return null;
 	}
 
-	static List<ParaObject> removeNotStoredNotIndexed(List<ParaObject> addUs, List<ParaObject> indexUs) {
+	public static List<ParaObject> removeNotStoredNotIndexed(List<ParaObject> addUs, List<ParaObject> indexUs) {
 		if (addUs != null) {
 			if (indexUs == null) {
 				indexUs = new ArrayList<ParaObject>(addUs.size());
@@ -108,7 +108,7 @@ public final class AOPUtils {
 	 * Object types should not start with '_' because it is in conflict with the API.
 	 * Some API resources have a path which also starts with '_' like {@code  /v1/_me}.
 	 */
-	static void checkAndFixType(ParaObject obj) {
+	public static void checkAndFixType(ParaObject obj) {
 		if (obj != null && StringUtils.startsWith(obj.getType(), SPECIAL_CHAR)) {
 			obj.setType(StringUtils.replacePattern(obj.getType(), "^[_]+", ""));
 			if (obj.getType().isEmpty()) {
