@@ -571,7 +571,7 @@ public class ElasticSearch implements Search {
 		}
 		Long count = 0L;
 		try {
-			SearchRequestBuilder crb = client().prepareSearch(appid).setSize(0).
+			SearchRequestBuilder crb = client().prepareSearch(getIndexName(appid)).setSize(0).
 					setQuery(QueryBuilders.matchAllQuery());
 
 			if (!StringUtils.isBlank(type)) {
@@ -621,7 +621,7 @@ public class ElasticSearch implements Search {
 	 * @return the correct index name
 	 */
 	private String getIndexName(String appid) {
-		return appid;
+		return StringUtils.trim(appid);
 	}
 
 	/**
