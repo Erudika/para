@@ -20,6 +20,7 @@ package com.erudika.para.persistence;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.DeleteTableRequest;
 import com.amazonaws.services.dynamodbv2.model.DescribeTableResult;
@@ -28,6 +29,7 @@ import com.amazonaws.services.dynamodbv2.model.KeyType;
 import com.amazonaws.services.dynamodbv2.model.ListTablesResult;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
+import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.amazonaws.services.dynamodbv2.model.UpdateTableRequest;
 import com.erudika.para.DestroyListener;
@@ -52,6 +54,8 @@ public final class AWSDynamoUtils {
 	private static final String LOCAL_ENDPOINT = "http://localhost:8000";
 	private static final String ENDPOINT = "dynamodb.".concat(Config.AWS_REGION).concat(".amazonaws.com");
 	private static final Logger logger = LoggerFactory.getLogger(AWSDynamoUtils.class);
+
+	public static final String SHARED_TABLE = Config.getConfigParam("shared_table_name", "0");
 
 	private AWSDynamoUtils() { }
 
@@ -130,7 +134,13 @@ public final class AWSDynamoUtils {
 	 * @return true if created
 	 */
 	public static boolean createTable(String appid, long readCapacity, long writeCapacity) {
-		if (StringUtils.isBlank(appid) || StringUtils.containsWhitespace(appid) || existsTable(appid)) {
+		if (StringUtils.isBlank(appid)) {
+			return false;
+		} else if (StringUtils.containsWhitespace(appid)) {
+			logger.warn("DynamoDB table name contains whitespace. The name '{}' is invalid.", appid);
+			return false;
+		} else if (existsTable(appid)) {
+			logger.warn("DynamoDB table '{}' already exists.", appid);
 			return false;
 		}
 		try {
@@ -247,9 +257,48 @@ public final class AWSDynamoUtils {
 		if (StringUtils.isBlank(appIdentifier)) {
 			return null;
 		} else {
+			if (isSharedAppid(appIdentifier)) {
+				// app is sharing a table with other apps
+				appIdentifier = SHARED_TABLE;
+			}
 			return (appIdentifier.equals(Config.APP_NAME_NS) || appIdentifier.startsWith(Config.PARA.concat("-"))) ?
 					appIdentifier : Config.PARA + "-" + appIdentifier;
 		}
+	}
+
+	/**
+	 * Returns the correct key for an object given the appid (table name).
+	 * @param key a row id
+	 * @param appIdentifier appid
+	 * @return the key
+	 */
+	public static String getKeyForAppid(String key, String appIdentifier) {
+		if (StringUtils.isBlank(key) || StringUtils.isBlank(appIdentifier)) {
+			return key;
+		}
+		if (isSharedAppid(appIdentifier)) {
+			// app is sharing a table with other apps, key is composite "appid_key"
+			return keyPrefix(appIdentifier) + key;
+		} else {
+			return key;
+		}
+	}
+
+	public static ScanRequest setScanFilter(ScanRequest scanRequest, String appIdentifier) {
+		if (scanRequest != null && isSharedAppid(appIdentifier)) {
+			return scanRequest.withFilterExpression("begins_with (" + Config._KEY + ", :prefix)").
+					withExpressionAttributeValues(Collections.singletonMap(":prefix",
+							new AttributeValue().withS(keyPrefix(appIdentifier))));
+		}
+		return scanRequest;
+	}
+
+	private static boolean isSharedAppid(String appIdentifier) {
+		return StringUtils.startsWith(appIdentifier, " ");
+	}
+
+	private static String keyPrefix(String appIdentifier) {
+		return StringUtils.join(appIdentifier, "_");
 	}
 
 }

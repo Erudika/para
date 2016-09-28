@@ -139,6 +139,7 @@ public class AWSDynamoDAO implements DAO {
 			return null;
 		}
 		try {
+			key = getKeyForAppid(key, appid);
 			setRowKey(key, row);
 			PutItemRequest putItemRequest = new PutItemRequest(getTableNameForAppid(appid), row);
 			client().putItem(putItemRequest);
@@ -158,7 +159,7 @@ public class AWSDynamoDAO implements DAO {
 				rou.put(attr.getKey(), new AttributeValueUpdate(attr.getValue(), AttributeAction.PUT));
 			}
 			UpdateItemRequest updateItemRequest = new UpdateItemRequest(getTableNameForAppid(appid),
-					Collections.singletonMap(Config._KEY, new AttributeValue(key)), rou);
+					Collections.singletonMap(Config._KEY, new AttributeValue(getKeyForAppid(key, appid))), rou);
 			client().updateItem(updateItemRequest);
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -172,7 +173,7 @@ public class AWSDynamoDAO implements DAO {
 		Map<String, AttributeValue> row = null;
 		try {
 			GetItemRequest getItemRequest = new GetItemRequest(getTableNameForAppid(appid),
-					Collections.singletonMap(Config._KEY, new AttributeValue(key)));
+					Collections.singletonMap(Config._KEY, new AttributeValue(getKeyForAppid(key, appid))));
 			GetItemResult res = client().getItem(getItemRequest);
 			if (res != null && res.getItem() != null && !res.getItem().isEmpty()) {
 				row = res.getItem();
@@ -189,7 +190,7 @@ public class AWSDynamoDAO implements DAO {
 		}
 		try {
 			DeleteItemRequest delItemRequest = new DeleteItemRequest(getTableNameForAppid(appid),
-					Collections.singletonMap(Config._KEY, new AttributeValue(key)));
+					Collections.singletonMap(Config._KEY, new AttributeValue(getKeyForAppid(key, appid))));
 			client().deleteItem(delItemRequest);
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -235,7 +236,7 @@ public class AWSDynamoDAO implements DAO {
 				while (it.hasNext() && j < MAX_KEYS_PER_READ) {
 					String key = it.next();
 					results.put(key, null);
-					keyz.add(Collections.singletonMap(Config._KEY, new AttributeValue(key)));
+					keyz.add(Collections.singletonMap(Config._KEY, new AttributeValue(getKeyForAppid(key, appid))));
 					j++;
 				}
 
@@ -276,7 +277,7 @@ public class AWSDynamoDAO implements DAO {
 					withExclusiveStartKey(lastKeyEvaluated).
 					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
 
-			ScanResult result = client().scan(scanRequest);
+			ScanResult result = client().scan(setScanFilter(scanRequest, appid));
 
 			for (Map<String, AttributeValue> item : result.getItems()) {
 				P obj = fromRow(item);
@@ -325,7 +326,8 @@ public class AWSDynamoDAO implements DAO {
 		for (ParaObject object : objects) {
 			if (object != null) {
 				reqs.add(new WriteRequest().withDeleteRequest(new DeleteRequest().
-						withKey(Collections.singletonMap(Config._KEY, new AttributeValue(object.getId())))));
+						withKey(Collections.singletonMap(Config._KEY,
+								new AttributeValue(getKeyForAppid(object.getId(), appid))))));
 			}
 		}
 		batchWrite(Collections.singletonMap(getTableNameForAppid(appid), reqs));
@@ -347,7 +349,9 @@ public class AWSDynamoDAO implements DAO {
 
 			for (Map<String, AttributeValue> item : res) {
 				P obj = fromRow(item);
-				results.put(item.get(Config._KEY).getS(), obj);
+				if (obj != null) {
+					results.put(obj.getId(), obj);
+				}
 			}
 			logger.debug("batchGet(): total {}, cc {}", res.size(), result.getConsumedCapacity());
 

@@ -227,11 +227,13 @@ public class App implements ParaObject {
 	}
 
 	/**
-	 * The App identifier (the id but without the prefix)
+	 * The App identifier (the id but without the prefix).
+	 * The identifier may start with a whitespace character e.g. " myapp".
+	 * This indicates that the app is sharing a table with other apps.
 	 * @return the identifier (appid)
 	 */
 	public String getAppIdentifier() {
-		return (getId() != null) ? getId().replaceFirst(prefix, "") : "";
+		return (getId() != null) ? getId().replaceFirst(prefix, isSharingTable() ? " " : "") : "";
 	}
 
 	/**

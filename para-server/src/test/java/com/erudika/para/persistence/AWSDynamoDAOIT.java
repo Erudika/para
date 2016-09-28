@@ -17,9 +17,14 @@
  */
 package com.erudika.para.persistence;
 
+import com.erudika.para.core.App;
+import com.erudika.para.core.Sysprop;
 import com.erudika.para.utils.Config;
 import org.junit.AfterClass;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -65,6 +70,49 @@ public class AWSDynamoDAOIT extends DAOTest {
 		assertFalse(AWSDynamoUtils.createTable(badAppid));
 		assertFalse(AWSDynamoUtils.existsTable(badAppid));
 		assertFalse(AWSDynamoUtils.deleteTable(badAppid));
+	}
+
+	@Test
+	public void testCRUDSharedTable() {
+		AWSDynamoUtils.createTable(AWSDynamoUtils.SHARED_TABLE);
+		assertTrue(AWSDynamoUtils.existsTable(AWSDynamoUtils.SHARED_TABLE));
+
+		App app = new App("shared-app1");
+		App app2 = new App("shared-app2");
+		app.setSharingTable(true);
+		app2.setSharingTable(true);
+		dao.create(app);
+		dao.create(app2);
+
+		Sysprop s = new Sysprop("sharedobj1");
+		s.setAppid(app.getAppIdentifier());
+		assertNotNull(dao.create(app.getAppIdentifier(), s));
+
+		assertNull(dao.read(app2.getAppIdentifier(), s.getId()));
+
+		Sysprop sr = dao.read(s.getAppid(), s.getId());
+		assertNull(dao.read(s.getId())); // not in root table
+		assertFalse(AWSDynamoUtils.existsTable(s.getAppid().trim()));
+		assertNotNull(sr);
+		assertEquals(s.getId(), sr.getId());
+
+		s.setName("I'm shared");
+		dao.update(s.getAppid(), s);
+		sr = dao.read(s.getAppid(), s.getId());
+		assertNull(dao.read(s.getId())); // not in root table
+		assertEquals("I'm shared", sr.getName());
+
+		dao.delete(sr);
+		assertNotNull(dao.read(s.getAppid(), s.getId())); // not in root table
+		dao.delete(s.getAppid(), s);
+		assertNull(dao.read(s.getAppid(), s.getId()));
+
+		AWSDynamoUtils.deleteTable(AWSDynamoUtils.SHARED_TABLE);
+	}
+
+	@Test
+	public void testBatchCRUDSharedTable() {
+
 	}
 
 }
