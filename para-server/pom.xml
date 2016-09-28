@@ -163,17 +163,17 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>4.26</version>
+			<version>4.26.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.microsoft.azure.iothub-java-client</groupId>
 			<artifactId>iothub-java-service-client</artifactId>
-			<version>1.0.8</version>
+			<version>1.0.9</version>
 		</dependency>
 		<dependency>
 			<groupId>com.microsoft.azure</groupId>
 			<artifactId>azure-eventhubs</artifactId>
-			<version>0.8.1</version>
+			<version>0.8.2</version>
 		</dependency>
 
 

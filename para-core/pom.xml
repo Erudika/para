@@ -12,8 +12,8 @@
 	<name>para-core</name>
 
 	<properties>
-		<jacksonVer>2.8.1</jacksonVer>
-		<springVer>4.3.2.RELEASE</springVer>
+		<jacksonVer>2.8.3</jacksonVer>
+		<springVer>4.3.3.RELEASE</springVer>
 	</properties>
 
 	<dependencies>
@@ -148,7 +148,7 @@
 		<dependency>
 			<groupId>commons-beanutils</groupId>
 			<artifactId>commons-beanutils</artifactId>
-			<version>1.9.2</version>
+			<version>1.9.3</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>commons-logging</artifactId>

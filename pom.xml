@@ -74,8 +74,8 @@
 		<slf4jVer>1.7.21</slf4jVer>
 		<logbackVer>1.1.7</logbackVer>
 		<awsJdkVer>1.11.33</awsJdkVer>
-		<jerseyVer>2.23.1</jerseyVer>
-		<springBootVer>1.4.0.RELEASE</springBootVer>
+		<jerseyVer>2.23.2</jerseyVer>
+		<springBootVer>1.4.1.RELEASE</springBootVer>
 	</properties>
 
 	<dependencies>
