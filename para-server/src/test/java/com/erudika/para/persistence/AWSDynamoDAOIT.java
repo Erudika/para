@@ -19,7 +19,10 @@ package com.erudika.para.persistence;
 
 import com.erudika.para.core.App;
 import com.erudika.para.core.Sysprop;
+import static com.erudika.para.persistence.DAOTest.dao;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Pager;
+import java.util.ArrayList;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -42,6 +45,7 @@ public class AWSDynamoDAOIT extends DAOTest {
 		AWSDynamoUtils.createTable(appid1);
 		AWSDynamoUtils.createTable(appid2);
 		AWSDynamoUtils.createTable(appid3);
+		AWSDynamoUtils.createSharedTable(1, 1);
 	}
 
 	@AfterClass
@@ -50,6 +54,7 @@ public class AWSDynamoDAOIT extends DAOTest {
 		AWSDynamoUtils.deleteTable(appid1);
 		AWSDynamoUtils.deleteTable(appid2);
 		AWSDynamoUtils.deleteTable(appid3);
+		AWSDynamoUtils.deleteTable(AWSDynamoUtils.SHARED_TABLE);
 		AWSDynamoUtils.shutdownClient();
 	}
 
@@ -74,15 +79,12 @@ public class AWSDynamoDAOIT extends DAOTest {
 
 	@Test
 	public void testCRUDSharedTable() {
-		AWSDynamoUtils.createTable(AWSDynamoUtils.SHARED_TABLE);
 		assertTrue(AWSDynamoUtils.existsTable(AWSDynamoUtils.SHARED_TABLE));
 
 		App app = new App("shared-app1");
 		App app2 = new App("shared-app2");
 		app.setSharingTable(true);
 		app2.setSharingTable(true);
-		dao.create(app);
-		dao.create(app2);
 
 		Sysprop s = new Sysprop("sharedobj1");
 		s.setAppid(app.getAppIdentifier());
@@ -106,13 +108,43 @@ public class AWSDynamoDAOIT extends DAOTest {
 		assertNotNull(dao.read(s.getAppid(), s.getId())); // not in root table
 		dao.delete(s.getAppid(), s);
 		assertNull(dao.read(s.getAppid(), s.getId()));
-
-		AWSDynamoUtils.deleteTable(AWSDynamoUtils.SHARED_TABLE);
 	}
 
 	@Test
 	public void testBatchCRUDSharedTable() {
 
+	}
+
+	@Test
+	public void testReadPageSharedTable() {
+		App app = new App("shared-app2");
+		App app2 = new App("shared-app3");
+		app.setSharingTable(true);
+		app2.setSharingTable(true);
+
+		ArrayList<Sysprop> list = new ArrayList<Sysprop>();
+		for (int i = 0; i < 22; i++) {
+			Sysprop s = new Sysprop("id_" + i);
+			s.addProperty("prop" + i, i);
+			s.setAppid(app.getAppIdentifier());
+			list.add(s);
+		}
+		dao.createAll(app.getAppIdentifier(), list);
+
+		Sysprop s = new Sysprop("sharedobj2");
+		assertNotNull(dao.create(app2.getAppIdentifier(), s));
+		dao.create(app2.getAppIdentifier(), s);
+
+		Pager p = new Pager(10);
+		assertTrue(dao.readPage(null, null).isEmpty());
+		assertFalse(dao.readPage(app.getAppIdentifier(), null).isEmpty());
+		assertEquals(10, dao.readPage(app.getAppIdentifier(), p).size()); // page 1
+		assertEquals(10, dao.readPage(app.getAppIdentifier(), p).size()); // page 2
+		assertEquals(2, dao.readPage(app.getAppIdentifier(), p).size());  // page 3
+		assertTrue(dao.readPage(app.getAppIdentifier(), p).isEmpty());  // end
+		assertEquals(22, p.getCount());
+
+		assertEquals(1, dao.readPage(app2.getAppIdentifier(), null).size());
 	}
 
 }

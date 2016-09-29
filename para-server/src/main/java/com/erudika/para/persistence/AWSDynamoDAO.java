@@ -25,6 +25,13 @@ import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
 import com.amazonaws.services.dynamodbv2.model.GetItemResult;
 import com.amazonaws.services.dynamodbv2.model.KeysAndAttributes;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.document.Index;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.Page;
+import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
+import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
+import com.amazonaws.services.dynamodbv2.document.utils.NameMap;
+import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.AttributeValueUpdate;
 import com.amazonaws.services.dynamodbv2.model.BatchGetItemRequest;
 import com.amazonaws.services.dynamodbv2.model.BatchWriteItemRequest;
@@ -265,35 +272,71 @@ public class AWSDynamoDAO implements DAO {
 		if (pager == null) {
 			pager = new Pager();
 		}
-		Map<String, AttributeValue> lastKeyEvaluated = null;
-		if (!StringUtils.isBlank(pager.getLastKey())) {
-			lastKeyEvaluated = Collections.singletonMap(Config._KEY, new AttributeValue(pager.getLastKey()));
-		}
+
+		String lastKey = null;
 
 		try {
-			ScanRequest scanRequest = new ScanRequest().
-					withTableName(getTableNameForAppid(appid)).
-					withLimit(pager.getLimit()).
-					withExclusiveStartKey(lastKeyEvaluated).
-					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
+			if (isSharedAppid(appid)) {
+				String lastKeyFragment = "";
+				ValueMap valueMap = new ValueMap().withString(":aid", appid);
+				NameMap nameMap = null;
 
-			ScanResult result = client().scan(setScanFilter(scanRequest, appid));
+				if (!StringUtils.isBlank(pager.getLastKey())) {
+					lastKeyFragment = " and #stamp > :ts";
+					valueMap.put(":ts", pager.getLastKey());
+					nameMap = new NameMap().with("#stamp", Config._TIMESTAMP);
+				}
 
-			for (Map<String, AttributeValue> item : result.getItems()) {
-				P obj = fromRow(item);
-				if (obj != null) {
-					results.add(obj);
+				Index index = getSharedIndex();
+				QuerySpec spec = new QuerySpec().
+						withMaxPageSize(pager.getLimit()).
+						withMaxResultSize(pager.getLimit()).
+						withKeyConditionExpression(Config._APPID + " = :aid" + lastKeyFragment).
+						withValueMap(valueMap).
+						withNameMap(nameMap);
+
+				if (index != null) {
+					Page<Item, QueryOutcome> items = index.query(spec).firstPage();
+					for (Item item : items) {
+						P obj = ParaObjectUtils.setAnnotatedFields(item.asMap());
+						if (obj != null) {
+							results.add(obj);
+						}
+					}
+					if (!results.isEmpty()) {
+						lastKey = Long.toString(results.peekLast().getTimestamp());
+					}
+				}
+			} else {
+				ScanRequest scanRequest = new ScanRequest().
+						withTableName(getTableNameForAppid(appid)).
+						withLimit(pager.getLimit()).
+						withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
+
+				if (!StringUtils.isBlank(pager.getLastKey())) {
+					scanRequest = scanRequest.withExclusiveStartKey(Collections.
+							singletonMap(Config._KEY, new AttributeValue(pager.getLastKey())));
+				}
+
+				ScanResult result = client().scan(scanRequest);
+
+				for (Map<String, AttributeValue> item : result.getItems()) {
+					P obj = fromRow(item);
+					if (obj != null) {
+						results.add(obj);
+					}
+				}
+				if (result.getLastEvaluatedKey() != null) {
+					lastKey = result.getLastEvaluatedKey().get(Config._KEY).getS();
 				}
 			}
-			lastKeyEvaluated = result.getLastEvaluatedKey();
-			if (lastKeyEvaluated != null) {
-				pager.setLastKey(lastKeyEvaluated.get(Config._KEY).getS());
+
+			if (lastKey != null) {
+				pager.setLastKey(lastKey);
 			} else if (!results.isEmpty()) {
 				// set last key to be equal to the last result - end reached.
 				pager.setLastKey(results.peekLast().getId());
 			}
-			logger.debug("readPage(): total {}, cc {}, last {}", result.getCount(),
-					result.getConsumedCapacity(), pager.getLastKey());
 			pager.setCount(pager.getCount() + results.size());
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -416,7 +459,7 @@ public class AWSDynamoDAO implements DAO {
 				}
 				object.setAppid(appid);
 				Map<String, AttributeValue> row = toRow(object, null);
-				setRowKey(object.getId(), row);
+				setRowKey(getKeyForAppid(object.getId(), appid), row);
 				reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(row)));
 				j++;
 			}

@@ -19,17 +19,21 @@ package com.erudika.para.persistence;
 
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Index;
+import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.DeleteTableRequest;
 import com.amazonaws.services.dynamodbv2.model.DescribeTableResult;
+import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndex;
 import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
 import com.amazonaws.services.dynamodbv2.model.KeyType;
 import com.amazonaws.services.dynamodbv2.model.ListTablesResult;
+import com.amazonaws.services.dynamodbv2.model.Projection;
+import com.amazonaws.services.dynamodbv2.model.ProjectionType;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
-import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.amazonaws.services.dynamodbv2.model.UpdateTableRequest;
 import com.erudika.para.DestroyListener;
@@ -51,6 +55,7 @@ import org.slf4j.LoggerFactory;
 public final class AWSDynamoUtils {
 
 	private static AmazonDynamoDBClient ddbClient;
+	private static DynamoDB ddb;
 	private static final String LOCAL_ENDPOINT = "http://localhost:8000";
 	private static final String ENDPOINT = "dynamodb.".concat(Config.AWS_REGION).concat(".amazonaws.com");
 	private static final Logger logger = LoggerFactory.getLogger(AWSDynamoUtils.class);
@@ -80,6 +85,8 @@ public final class AWSDynamoUtils {
 			createTable(Config.APP_NAME_NS);
 		}
 
+		ddb = new DynamoDB(ddbClient);
+
 		Para.addDestroyListener(new DestroyListener() {
 			public void onDestroy() {
 				shutdownClient();
@@ -97,6 +104,8 @@ public final class AWSDynamoUtils {
 		if (ddbClient != null) {
 			ddbClient.shutdown();
 			ddbClient = null;
+			ddb.shutdown();
+			ddb = null;
 		}
 	}
 
@@ -146,8 +155,7 @@ public final class AWSDynamoUtils {
 		try {
 			getClient().createTable(new CreateTableRequest().withTableName(getTableNameForAppid(appid)).
 					withKeySchema(new KeySchemaElement(Config._KEY, KeyType.HASH)).
-					withAttributeDefinitions(new AttributeDefinition().withAttributeName(Config._KEY).
-					withAttributeType(ScalarAttributeType.S)).
+					withAttributeDefinitions(new AttributeDefinition(Config._KEY, ScalarAttributeType.S)).
 					withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -193,6 +201,42 @@ public final class AWSDynamoUtils {
 		}
 		try {
 			getClient().deleteTable(new DeleteTableRequest().withTableName(getTableNameForAppid(appid)));
+		} catch (Exception e) {
+			logger.error(null, e);
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Creates a table in AWS DynamoDB which will be shared between apps.
+	 * @param tableName name of the table
+	 * @param readCapacity read capacity
+	 * @param writeCapacity write capacity
+	 * @return true if created
+	 */
+	public static boolean createSharedTable(long readCapacity, long writeCapacity) {
+		if (StringUtils.isBlank(SHARED_TABLE) || StringUtils.containsWhitespace(SHARED_TABLE) ||
+				existsTable(SHARED_TABLE)) {
+			return false;
+		}
+		try {
+			GlobalSecondaryIndex secIndex = new GlobalSecondaryIndex().
+					withIndexName(getSharedIndexName()).
+					withProvisionedThroughput(new ProvisionedThroughput().
+							withReadCapacityUnits(1L).
+							withWriteCapacityUnits(1L)).
+					withProjection(new Projection().withProjectionType(ProjectionType.ALL)).
+					withKeySchema(new KeySchemaElement().withAttributeName(Config._APPID).withKeyType(KeyType.HASH),
+							new KeySchemaElement().withAttributeName(Config._TIMESTAMP).withKeyType(KeyType.RANGE));
+
+			getClient().createTable(new CreateTableRequest().withTableName(getTableNameForAppid(SHARED_TABLE)).
+					withKeySchema(new KeySchemaElement(Config._KEY, KeyType.HASH)).
+					withAttributeDefinitions(new AttributeDefinition(Config._KEY, ScalarAttributeType.S),
+							new AttributeDefinition(Config._APPID, ScalarAttributeType.S),
+							new AttributeDefinition(Config._TIMESTAMP, ScalarAttributeType.S)).
+					withGlobalSecondaryIndexes(secIndex).
+					withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;
@@ -284,21 +328,40 @@ public final class AWSDynamoUtils {
 		}
 	}
 
-	public static ScanRequest setScanFilter(ScanRequest scanRequest, String appIdentifier) {
-		if (scanRequest != null && isSharedAppid(appIdentifier)) {
-			return scanRequest.withFilterExpression("begins_with (" + Config._KEY + ", :prefix)").
-					withExpressionAttributeValues(Collections.singletonMap(":prefix",
-							new AttributeValue().withS(keyPrefix(appIdentifier))));
+	/**
+	 * Returns the Index object for the shared table.
+	 * @return the Index object or null
+	 */
+	public static Index getSharedIndex() {
+		if (ddb == null) {
+			getClient();
 		}
-		return scanRequest;
+		try {
+			Table t = ddb.getTable(getTableNameForAppid(SHARED_TABLE));
+			if (t != null) {
+				return t.getIndex(getSharedIndexName());
+			}
+		} catch (Exception e) {
+			logger.info("Could not get shared index: {}.", e.getMessage());
+		}
+		return null;
 	}
 
-	private static boolean isSharedAppid(String appIdentifier) {
+	/**
+	 * Returns true if appid starts with a space " ".
+	 * @param appIdentifier appid
+	 * @return true if appid starts with " "
+	 */
+	public static boolean isSharedAppid(String appIdentifier) {
 		return StringUtils.startsWith(appIdentifier, " ");
 	}
 
+	private static String getSharedIndexName() {
+		return "Index_" + SHARED_TABLE;
+	}
+
 	private static String keyPrefix(String appIdentifier) {
-		return StringUtils.join(appIdentifier, "_");
+		return StringUtils.join(StringUtils.trim(appIdentifier), "_");
 	}
 
 }
