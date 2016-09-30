@@ -22,7 +22,10 @@ import com.erudika.para.core.Sysprop;
 import static com.erudika.para.persistence.DAOTest.dao;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
+import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Map;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -101,10 +104,11 @@ public class AWSDynamoDAOIT extends DAOTest {
 		s.setName("I'm shared");
 		dao.update(s.getAppid(), s);
 		sr = dao.read(s.getAppid(), s.getId());
+		assertNotNull(sr);
 		assertNull(dao.read(s.getId())); // not in root table
 		assertEquals("I'm shared", sr.getName());
 
-		dao.delete(sr);
+		dao.delete(sr); // no effect - different App (root appid)
 		assertNotNull(dao.read(s.getAppid(), s.getId())); // not in root table
 		dao.delete(s.getAppid(), s);
 		assertNull(dao.read(s.getAppid(), s.getId()));
@@ -112,7 +116,92 @@ public class AWSDynamoDAOIT extends DAOTest {
 
 	@Test
 	public void testBatchCRUDSharedTable() {
+		Sysprop t1 = new Sysprop("sps1");
+		Sysprop t2 = new Sysprop("sps2");
+		Sysprop t3 = new Sysprop("sps3");
+		Sysprop t4 = new Sysprop("sps4");
+		App app1 = new App("batch-shared-app1");
+		app1.setSharingTable(true);
+		App app2 = new App("batch-shared-app2");
+		app2.setSharingTable(true);
 
+		t1.setAppid(app1.getAppIdentifier());
+		t2.setAppid(app1.getAppIdentifier());
+		t3.setAppid(app2.getAppIdentifier());
+		t4.setAppid(app2.getAppIdentifier());
+
+		// multi app support
+		dao.createAll(app1.getAppIdentifier(), Arrays.asList(t1, t2));
+		dao.createAll(app2.getAppIdentifier(), Arrays.asList(t3, t4));
+		assertEquals(app1.getAppIdentifier(), dao.read(app1.getAppIdentifier(), t2.getId()).getAppid());
+		assertNull(dao.read(t2.getId()));
+		assertNull(dao.read(app2.getAppIdentifier(), t2.getId()));
+
+		assertNotNull(dao.read(app2.getAppIdentifier(), t3.getId()));
+		assertNotNull(dao.read(app2.getAppIdentifier(), t4.getId()));
+
+		// app1 must not see app2's objects, and vice versa
+		Map<String, Sysprop> m1 = dao.readAll(app1.getAppIdentifier(), Arrays.asList(t3.getId(), t4.getId()), true);
+		Map<String, Sysprop> m2 = dao.readAll(app2.getAppIdentifier(), Arrays.asList(t1.getId(), t2.getId()), true);
+		assertNull(m1.get(t3.getId()));
+		assertNull(m1.get(t4.getId()));
+		assertNull(m2.get(t1.getId()));
+		assertNull(m2.get(t2.getId()));
+
+		Map<String, Sysprop> props = dao.readAll(app1.getAppIdentifier(), Arrays.asList(t1.getId(), t2.getId()), true);
+		assertFalse(props.isEmpty());
+		assertTrue(props.containsKey(t1.getId()));
+		assertTrue(props.containsKey(t2.getId()));
+		assertFalse(props.containsKey(t3.getId()));
+		assertTrue(t1.equals(props.get(t1.getId())));
+		assertTrue(t2.equals(props.get(t2.getId())));
+
+		t1.setName("Name 1");
+		t2.setName("Name 2");
+		t3.setName("Name 3");
+		// these should go through (custom types support)
+		t1.setType("type1");
+		t2.setType("type2");
+		t3.setType("type3");
+
+		dao.updateAll(app1.getAppIdentifier(), Arrays.asList(t1, t2));
+		Sysprop tr1 = dao.read(app1.getAppIdentifier(), t1.getId());
+		Sysprop tr2 = dao.read(app1.getAppIdentifier(), t2.getId());
+		assertNull(dao.read(app1.getAppIdentifier(), t3.getId()));
+
+		assertNotNull(tr1);
+		assertNotNull(tr2);
+
+		assertEquals(t1.getId(), tr1.getId());
+		assertEquals(t2.getId(), tr2.getId());
+		assertEquals(Utils.type(Sysprop.class), tr1.getType());
+		assertEquals(Utils.type(Sysprop.class), tr2.getType());
+		assertEquals(t1.getName(), tr1.getName());
+		assertEquals(t2.getName(), tr2.getName());
+		assertNotNull(t1.getUpdated());
+		assertNotNull(t2.getUpdated());
+
+		dao.deleteAll(null);
+		dao.deleteAll(app1.getAppIdentifier(), Arrays.asList(t1, t2, t3));
+
+		assertNull(dao.read(app1.getAppIdentifier(), t1.getId()));
+		assertNull(dao.read(app1.getAppIdentifier(), t2.getId()));
+		assertNotNull(dao.read(app2.getAppIdentifier(), t3.getId()));
+		dao.deleteAll(app2.getAppIdentifier(), Arrays.asList(t3, t4));
+		assertNull(dao.read(app2.getAppIdentifier(), t1.getId()));
+		assertNull(dao.read(app2.getAppIdentifier(), t2.getId()));
+
+		// update locked field test
+		Sysprop ts4 = new Sysprop();
+		ts4.setParentid("123");
+		dao.create(app1.getAppIdentifier(), ts4);
+		ts4.setParentid("321");
+		ts4.setType("type4");
+		dao.update(app1.getAppIdentifier(), ts4);
+		Sysprop tr4 = dao.read(app1.getAppIdentifier(), ts4.getId());
+		assertEquals(ts4.getId(), tr4.getId());
+		assertEquals(Utils.type(Sysprop.class), tr4.getType());
+		assertEquals("123", tr4.getParentid());
 	}
 
 	@Test

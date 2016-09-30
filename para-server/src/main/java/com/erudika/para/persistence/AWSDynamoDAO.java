@@ -350,10 +350,9 @@ public class AWSDynamoDAO implements DAO {
 		// DynamoDB doesn't have a BatchUpdate API yet so we have to do one of the following:
 		// 1. update items one by one (chosen for simplicity)
 		// 2. call writeAll() - writeAll(appid, objects, true);
-		String table = getTableNameForAppid(appid);
 		if (objects != null) {
 			for (P object : objects) {
-				update(table, object);
+				update(appid, object);
 			}
 		}
 		logger.debug("DAO.updateAll() {}", (objects == null) ? 0 : objects.size());
