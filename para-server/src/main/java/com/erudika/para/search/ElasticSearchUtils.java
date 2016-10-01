@@ -378,7 +378,7 @@ public final class ElasticSearchUtils {
 	 * @param setRouting if true will route by appid (alias)
 	 * @return true if acknowledged
 	 */
-	public static boolean addIndexAlias(String indexName, final String alias, boolean setRouting) {
+	public static boolean addIndexAlias(String indexName, String alias, boolean setRouting) {
 		if (!existsIndex(indexName)) {
 			return false;
 		}
@@ -461,6 +461,16 @@ public final class ElasticSearchUtils {
 	public static boolean isClusterOK() {
 		return !getClient().admin().cluster().prepareClusterStats().execute().actionGet().
 				getStatus().equals(ClusterHealthStatus.RED);
+	}
+
+	/**
+	 * A method reserved for future use. It allows to have indexes with different names than the appid.
+	 *
+	 * @param appid an app identifer
+	 * @return the correct index name
+	 */
+	protected static String getIndexName(String appid) {
+		return appid;
 	}
 
 	/**

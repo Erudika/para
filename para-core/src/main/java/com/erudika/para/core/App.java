@@ -380,6 +380,13 @@ public class App implements ParaObject {
 	}
 
 	/**
+	 * @return returns true only if app has its own dedicated index and DB table
+	 */
+	public boolean isShared() {
+		return sharingIndex || sharingTable;
+	}
+
+	/**
 	 * Return true if the app is the root app (the first one created).
 	 * @return true if root
 	 */

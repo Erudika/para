@@ -23,6 +23,7 @@ import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.Tag;
 import com.erudika.para.persistence.DAO;
+import static com.erudika.para.search.ElasticSearchUtils.getIndexName;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -612,16 +613,6 @@ public class ElasticSearch implements Search {
 			}
 		}
 		return count;
-	}
-
-	/**
-	 * A method reserved for future use.
-	 * It allows to have indexes with different names than the appid.
-	 * @param appid an app identifer
-	 * @return the correct index name
-	 */
-	private String getIndexName(String appid) {
-		return StringUtils.trim(appid);
 	}
 
 	/**
