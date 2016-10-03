@@ -213,11 +213,11 @@ public final class Api1 extends ResourceConfig {
 		core.addChildResource("{id}/links").addMethod(DELETE).produces(JSON).handledBy(linksHandler);
 		// CRUD endpoints (batch)
 		Resource.Builder batch = Resource.builder("_batch");
-		batch.addMethod(POST).produces(JSON).consumes(JSON).handledBy(batchCreateHandler());
-		batch.addMethod(GET).produces(JSON).handledBy(batchReadHandler());
-		batch.addMethod(PUT).produces(JSON).consumes(JSON).handledBy(batchCreateHandler());
-		batch.addMethod(PATCH).produces(JSON).consumes(JSON).handledBy(batchUpdateHandler());
-		batch.addMethod(DELETE).produces(JSON).handledBy(batchDeleteHandler());
+		batch.addMethod(POST).produces(JSON).consumes(JSON).handledBy(batchCreateHandler(null));
+		batch.addMethod(GET).produces(JSON).handledBy(batchReadHandler(null));
+		batch.addMethod(PUT).produces(JSON).consumes(JSON).handledBy(batchCreateHandler(null));
+		batch.addMethod(PATCH).produces(JSON).consumes(JSON).handledBy(batchUpdateHandler(null));
+		batch.addMethod(DELETE).produces(JSON).handledBy(batchDeleteHandler(null));
 
 		registerResources(core.build());
 		registerResources(batch.build());
@@ -692,17 +692,19 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	public static Inflector<ContainerRequestContext, Response> createHandler(final App app, final String type) {
+	public static Inflector<ContainerRequestContext, Response> createHandler(final App a, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
+				App app = (a != null) ? a : RestUtils.getPrincipalApp();
 				return RestUtils.getCreateResponse(app, type, ctx.getEntityStream());
 			}
 		};
 	}
 
-	public static Inflector<ContainerRequestContext, Response> readHandler(final App app, final String type) {
+	public static Inflector<ContainerRequestContext, Response> readHandler(final App a, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
+				App app = (a != null) ? a : RestUtils.getPrincipalApp();
 				ParaObject obj = ParaObjectUtils.toObject(type);
 				obj.setId(pathParam(Config._ID, ctx));
 				if (app.getId().equals(obj.getId())) {
@@ -713,9 +715,10 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	public static Inflector<ContainerRequestContext, Response> updateHandler(final App app, final String type) {
+	public static Inflector<ContainerRequestContext, Response> updateHandler(final App a, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
+				App app = (a != null) ? a : RestUtils.getPrincipalApp();
 				ParaObject obj = ParaObjectUtils.toObject(type);
 				obj.setType(type);
 				obj.setId(pathParam(Config._ID, ctx));
@@ -726,18 +729,20 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	public static Inflector<ContainerRequestContext, Response> overwriteHandler(final App app, final String type) {
+	public static Inflector<ContainerRequestContext, Response> overwriteHandler(final App a, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				// full update - equivalent to PUT method
+				App app = (a != null) ? a : RestUtils.getPrincipalApp();
 				return RestUtils.getOverwriteResponse(app, pathParam(Config._ID, ctx), type, ctx.getEntityStream());
 			}
 		};
 	}
 
-	public static Inflector<ContainerRequestContext, Response> deleteHandler(final App app, final String type) {
+	public static Inflector<ContainerRequestContext, Response> deleteHandler(final App a, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
+				App app = (a != null) ? a : RestUtils.getPrincipalApp();
 				ParaObject obj = ParaObjectUtils.toObject(type);
 				obj.setType(type);
 				obj.setId(pathParam(Config._ID, ctx));
@@ -746,37 +751,37 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	public static Inflector<ContainerRequestContext, Response> batchCreateHandler() {
+	public static Inflector<ContainerRequestContext, Response> batchCreateHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : RestUtils.getPrincipalApp();
 				return RestUtils.getBatchCreateResponse(app, ctx.getEntityStream());
 			}
 		};
 	}
 
-	public static Inflector<ContainerRequestContext, Response> batchReadHandler() {
+	public static Inflector<ContainerRequestContext, Response> batchReadHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : RestUtils.getPrincipalApp();
 				return RestUtils.getBatchReadResponse(app, queryParams("ids", ctx));
 			}
 		};
 	}
 
-	public static Inflector<ContainerRequestContext, Response> batchUpdateHandler() {
+	public static Inflector<ContainerRequestContext, Response> batchUpdateHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : RestUtils.getPrincipalApp();
 				return RestUtils.getBatchUpdateResponse(app, ctx.getEntityStream());
 			}
 		};
 	}
 
-	public static Inflector<ContainerRequestContext, Response> batchDeleteHandler() {
+	public static Inflector<ContainerRequestContext, Response> batchDeleteHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : RestUtils.getPrincipalApp();
 				return RestUtils.getBatchDeleteResponse(app, queryParams("ids", ctx));
 			}
 		};

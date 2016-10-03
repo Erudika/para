@@ -64,6 +64,7 @@ public class App implements ParaObject {
 	public static final String ALLOW_ALL = "*";
 	private static final long serialVersionUID = 1L;
 	private static final String prefix = Utils.type(App.class).concat(Config.SEPARATOR);
+	private static final boolean prependEnabled = Config.getConfigBoolean("prepend_shared_appids_with_space", false);
 	private static final Logger logger = LoggerFactory.getLogger(App.class);
 
 	@Stored @Locked @NotBlank private String id;
@@ -227,13 +228,14 @@ public class App implements ParaObject {
 	}
 
 	/**
-	 * The App identifier (the id but without the prefix).
+	 * The App identifier (the id but without the prefix 'app:').
 	 * The identifier may start with a whitespace character e.g. " myapp".
 	 * This indicates that the app is sharing a table with other apps.
+	 * This is disabled by default unless 'para.prepend_shared_appids_with_space = true'
 	 * @return the identifier (appid)
 	 */
 	public String getAppIdentifier() {
-		return (getId() != null) ? getId().replaceFirst(prefix, isSharingTable() ? " " : "") : "";
+		return (getId() != null) ? getId().replaceFirst(prefix, (isSharingTable() && prependEnabled) ? " " : "") : "";
 	}
 
 	/**
