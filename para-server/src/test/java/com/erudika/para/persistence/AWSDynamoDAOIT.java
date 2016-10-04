@@ -43,6 +43,7 @@ public class AWSDynamoDAOIT extends DAOTest {
 
 	@BeforeClass
 	public static void setUpClass() throws InterruptedException {
+		System.setProperty("para.prepend_shared_appids_with_space", "true");
 		dao = new AWSDynamoDAO();
 		AWSDynamoUtils.createTable(Config.APP_NAME_NS);
 		AWSDynamoUtils.createTable(appid1);
@@ -59,6 +60,7 @@ public class AWSDynamoDAOIT extends DAOTest {
 		AWSDynamoUtils.deleteTable(appid3);
 		AWSDynamoUtils.deleteTable(AWSDynamoUtils.SHARED_TABLE);
 		AWSDynamoUtils.shutdownClient();
+		System.setProperty("para.prepend_shared_appids_with_space", "false");
 	}
 
 	@Test
@@ -133,7 +135,9 @@ public class AWSDynamoDAOIT extends DAOTest {
 		// multi app support
 		dao.createAll(app1.getAppIdentifier(), Arrays.asList(t1, t2));
 		dao.createAll(app2.getAppIdentifier(), Arrays.asList(t3, t4));
-		assertEquals(app1.getAppIdentifier(), dao.read(app1.getAppIdentifier(), t2.getId()).getAppid());
+		Sysprop s = dao.read(app1.getAppIdentifier(), t2.getId());
+		assertNotNull(s);
+		assertEquals(app1.getAppIdentifier(), s.getAppid());
 		assertNull(dao.read(t2.getId()));
 		assertNull(dao.read(app2.getAppIdentifier(), t2.getId()));
 
@@ -206,34 +210,34 @@ public class AWSDynamoDAOIT extends DAOTest {
 
 	@Test
 	public void testReadPageSharedTable() {
-		App app = new App("shared-app2");
-		App app2 = new App("shared-app3");
-		app.setSharingTable(true);
-		app2.setSharingTable(true);
+		App app3 = new App("shared-app3");
+		App app4 = new App("shared-app4");
+		app3.setSharingTable(true);
+		app4.setSharingTable(true);
 
 		ArrayList<Sysprop> list = new ArrayList<Sysprop>();
 		for (int i = 0; i < 22; i++) {
 			Sysprop s = new Sysprop("id_" + i);
 			s.addProperty("prop" + i, i);
-			s.setAppid(app.getAppIdentifier());
+			s.setAppid(app3.getAppIdentifier());
 			list.add(s);
 		}
-		dao.createAll(app.getAppIdentifier(), list);
+		dao.createAll(app3.getAppIdentifier(), list);
 
 		Sysprop s = new Sysprop("sharedobj2");
-		assertNotNull(dao.create(app2.getAppIdentifier(), s));
-		dao.create(app2.getAppIdentifier(), s);
+		assertNotNull(dao.create(app4.getAppIdentifier(), s));
+		dao.create(app4.getAppIdentifier(), s);
 
 		Pager p = new Pager(10);
 		assertTrue(dao.readPage(null, null).isEmpty());
-		assertFalse(dao.readPage(app.getAppIdentifier(), null).isEmpty());
-		assertEquals(10, dao.readPage(app.getAppIdentifier(), p).size()); // page 1
-		assertEquals(10, dao.readPage(app.getAppIdentifier(), p).size()); // page 2
-		assertEquals(2, dao.readPage(app.getAppIdentifier(), p).size());  // page 3
-		assertTrue(dao.readPage(app.getAppIdentifier(), p).isEmpty());  // end
+		assertFalse(dao.readPage(app3.getAppIdentifier(), null).isEmpty());
+		assertEquals(10, dao.readPage(app3.getAppIdentifier(), p).size()); // page 1
+		assertEquals(10, dao.readPage(app3.getAppIdentifier(), p).size()); // page 2
+		assertEquals(2, dao.readPage(app3.getAppIdentifier(), p).size());  // page 3
+		assertTrue(dao.readPage(app3.getAppIdentifier(), p).isEmpty());  // end
 		assertEquals(22, p.getCount());
 
-		assertEquals(1, dao.readPage(app2.getAppIdentifier(), null).size());
+		assertEquals(1, dao.readPage(app4.getAppIdentifier(), null).size());
 	}
 
 }

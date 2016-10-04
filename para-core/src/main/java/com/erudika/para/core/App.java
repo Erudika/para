@@ -64,7 +64,6 @@ public class App implements ParaObject {
 	public static final String ALLOW_ALL = "*";
 	private static final long serialVersionUID = 1L;
 	private static final String prefix = Utils.type(App.class).concat(Config.SEPARATOR);
-	private static final boolean prependEnabled = Config.getConfigBoolean("prepend_shared_appids_with_space", false);
 	private static final Logger logger = LoggerFactory.getLogger(App.class);
 
 	@Stored @Locked @NotBlank private String id;
@@ -235,7 +234,8 @@ public class App implements ParaObject {
 	 * @return the identifier (appid)
 	 */
 	public String getAppIdentifier() {
-		return (getId() != null) ? getId().replaceFirst(prefix, (isSharingTable() && prependEnabled) ? " " : "") : "";
+		String pre = isSharingTable() && Config.getConfigBoolean("prepend_shared_appids_with_space", false) ? " " : "";
+		return (getId() != null) ? getId().replaceFirst(prefix, pre) : "";
 	}
 
 	/**
