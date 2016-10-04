@@ -45,7 +45,7 @@ public class UserAuthentication implements Authentication {
 	 * A list of roles for the authenticated user
 	 * @return a list of roles
 	 */
-	public Collection<GrantedAuthority> getAuthorities() {
+	public Collection<? extends GrantedAuthority> getAuthorities() {
 		if (principal == null) {
 			return Collections.emptyList();
 		}
