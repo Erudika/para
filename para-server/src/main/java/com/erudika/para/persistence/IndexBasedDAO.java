@@ -37,7 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An implementation of the {@link DAO} interface used <b>for local development only<b>.
+ * An implementation of the {@link DAO} interface used <b>for local development only</b>.
  * It uses is based on the {@link com.erudika.para.search.Search} implementation.
  * Objects are stored in the index rather than in a data store.
  *

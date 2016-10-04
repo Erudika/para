@@ -210,7 +210,6 @@ public final class AWSDynamoUtils {
 
 	/**
 	 * Creates a table in AWS DynamoDB which will be shared between apps.
-	 * @param tableName name of the table
 	 * @param readCapacity read capacity
 	 * @param writeCapacity write capacity
 	 * @return true if created

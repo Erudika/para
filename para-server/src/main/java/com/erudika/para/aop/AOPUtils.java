@@ -107,6 +107,7 @@ public final class AOPUtils {
 	/**
 	 * Object types should not start with '_' because it is in conflict with the API.
 	 * Some API resources have a path which also starts with '_' like {@code  /v1/_me}.
+	 * @param obj an object
 	 */
 	public static void checkAndFixType(ParaObject obj) {
 		if (obj != null && StringUtils.startsWith(obj.getType(), SPECIAL_CHAR)) {
