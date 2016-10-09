@@ -671,6 +671,32 @@ public class ParaClientIT {
 	}
 
 	@Test
+	public void testAppSettings() {
+		Map<String, Object> settings = pc.appSettings();
+		assertNotNull(settings);
+		assertTrue(settings.isEmpty());
+
+		pc.addAppSetting("", null);
+		pc.addAppSetting(" ", " ");
+		pc.addAppSetting(null, " ");
+		pc.addAppSetting("prop1", 1);
+		pc.addAppSetting("prop2", true);
+		pc.addAppSetting("prop3", "string");
+
+		assertEquals(3, pc.appSettings().size());
+		assertEquals(pc.appSettings(), pc.appSettings(null));
+		assertEquals(Collections.singletonMap("value", 1), pc.appSettings("prop1"));
+		assertEquals(Collections.singletonMap("value", true), pc.appSettings("prop2"));
+		assertEquals(Collections.singletonMap("value", "string"), pc.appSettings("prop3"));
+
+		pc.removeAppSetting("prop3");
+		pc.removeAppSetting(" ");
+		pc.removeAppSetting(null);
+		assertTrue(pc.appSettings("prop3").isEmpty());
+		assertEquals(2, pc.appSettings().size());
+	}
+
+	@Test
 	public void testAccessTokens() throws IOException, InterruptedException {
 		assertNotNull(fbUser);
 		assertNull(pc2.getAccessToken());

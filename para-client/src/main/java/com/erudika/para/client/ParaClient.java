@@ -1240,6 +1240,51 @@ public final class ParaClient {
 	}
 
 	/////////////////////////////////////////////
+	//			App Settings
+	/////////////////////////////////////////////
+
+	/**
+	 * Returns the map containing app-specific settings.
+	 * @return a map
+	 */
+	public Map<String, Object> appSettings() {
+		return getEntity(invokeGet("_settings", null), Map.class);
+	}
+
+	/**
+	 * Returns the value of a specific app setting (property).
+	 * @param key a key
+	 * @return a map containing one element {"value": "the_value"} or an empty map.
+	 */
+	public Map<String, Object> appSettings(String key) {
+		if (StringUtils.isBlank(key)) {
+			return appSettings();
+		}
+		return getEntity(invokeGet(Utils.formatMessage("_settings/{0}", key), null), Map.class);
+	}
+
+	/**
+	 * Adds or overwrites an app-specific setting.
+	 * @param key a key
+	 * @param value a value
+	 */
+	public void addAppSetting(String key, Object value) {
+		if (!StringUtils.isBlank(key) && value != null) {
+			invokePut(Utils.formatMessage("_settings/{0}", key), Entity.json(Collections.singletonMap("value", value)));
+		}
+	}
+
+	/**
+	 * Removes an app-specific setting.
+	 * @param key a key
+	 */
+	public void removeAppSetting(String key) {
+		if (!StringUtils.isBlank(key)) {
+			invokeDelete(Utils.formatMessage("_settings/{0}", key), null);
+		}
+	}
+
+	/////////////////////////////////////////////
 	//				Access Tokens
 	/////////////////////////////////////////////
 

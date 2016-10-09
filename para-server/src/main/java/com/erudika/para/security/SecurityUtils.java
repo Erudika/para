@@ -166,7 +166,7 @@ public final class SecurityUtils {
 				signedJWT.sign(signer);
 				return signedJWT;
 			} catch (JOSEException e) {
-				logger.warn("Unable to sign JWT.", e);
+				logger.warn("Unable to sign JWT: {}.", e.getMessage());
 			}
 		}
 		return null;
