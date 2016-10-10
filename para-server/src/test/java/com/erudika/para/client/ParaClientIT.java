@@ -694,6 +694,8 @@ public class ParaClientIT {
 		pc.removeAppSetting(null);
 		assertTrue(pc.appSettings("prop3").isEmpty());
 		assertEquals(2, pc.appSettings().size());
+		pc.removeAppSetting("prop2");
+		pc.removeAppSetting("prop1");
 	}
 
 	@Test
