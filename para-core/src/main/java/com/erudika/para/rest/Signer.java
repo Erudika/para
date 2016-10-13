@@ -225,7 +225,7 @@ public final class Signer extends AWS4Signer {
 	}
 
 	/**
-	 * Returns a parsed Date
+	 * Returns a parsed Date.
 	 * @param date a date in the AWS format yyyyMMdd'T'HHmmss'Z'
 	 * @return a date
 	 */

@@ -28,9 +28,12 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
  */
 public final class RestRequestMatcher implements RequestMatcher {
 	/**
-	 * An instance of this class.
+	 * An instance of this class. Does not match /v1/_me.
 	 */
 	public static final RequestMatcher INSTANCE = new RestRequestMatcher();
+	/**
+	 * An instance of this class. Matches /v1/_me.
+	 */
 	public static final RequestMatcher INSTANCE_STRICT = new RestRequestMatcher(true);
 	private static final RegexRequestMatcher regex = new RegexRequestMatcher("^/v\\d[\\.\\d]*/(?!(_me)).*", null, true);
 	private static final RegexRequestMatcher regex_strict = new RegexRequestMatcher("^/v\\d[\\.\\d]*/.*", null, true);

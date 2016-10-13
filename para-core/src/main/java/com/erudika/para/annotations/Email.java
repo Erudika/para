@@ -40,6 +40,9 @@ import javax.validation.constraints.Pattern;
 @Documented
 public @interface Email {
 
+	/**
+	 * {@value #EMAIL_PATTERN}.
+	 */
 	String EMAIL_PATTERN = "[A-Za-z0-9.%+_\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z\\S]{2,4}$";
 
 	/**

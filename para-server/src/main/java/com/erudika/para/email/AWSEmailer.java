@@ -41,7 +41,7 @@ public class AWSEmailer implements Emailer {
 	private static AmazonSimpleEmailServiceClient sesclient;
 
 	/**
-	 * No-args constructor
+	 * No-args constructor.
 	 */
 	public AWSEmailer() {
 		sesclient = new AmazonSimpleEmailServiceClient(

@@ -111,6 +111,9 @@ public final class CORSFilter implements Filter {
 	private boolean decorateRequest;
 
 	// --------------------------------------------------------- Constructor(s)
+	/**
+	 * No-args constructor.
+	 */
 	public CORSFilter() {
 		this.allowedOrigins = new HashSet<String>();
 		this.allowedHttpMethods = new HashSet<String>();
@@ -803,7 +806,7 @@ public final class CORSFilter implements Filter {
 	}
 
 	/**
-	 * Determines is supports credentials is enabled
+	 * Determines is supports credentials is enabled.
 	 *
 	 * @return boolean
 	 */
@@ -865,7 +868,7 @@ public final class CORSFilter implements Filter {
 
 	/**
 	 * The Access-Control-Expose-Headers header indicates which headers are safe to expose to the API of a CORS API
-	 * specification
+	 * specification.
 	 */
 	public static final String RESPONSE_HEADER_ACCESS_CONTROL_EXPOSE_HEADERS
 			= "Access-Control-Expose-Headers";
@@ -1057,7 +1060,7 @@ public final class CORSFilter implements Filter {
 	public static final String DEFAULT_EXPOSED_HEADERS = "";
 
 	/**
-	 * By default, access log logging is turned off
+	 * By default, access log logging is turned off.
 	 */
 	public static final String DEFAULT_LOGGING_ENABLED = "false";
 

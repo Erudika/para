@@ -35,7 +35,7 @@ public class AWSQueue implements Queue {
 	private String url;
 
 	/**
-	 * No-args constructor
+	 * No-args constructor.
 	 */
 	public AWSQueue() {
 		this(Config.DEFAULT_QUEUE_NAME);

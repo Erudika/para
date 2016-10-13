@@ -52,7 +52,7 @@ public class IndexBasedDAO implements DAO {
 	private Search search;
 
 	/**
-	 * No-args constructor
+	 * No-args constructor.
 	 */
 	public IndexBasedDAO() { }
 
@@ -66,7 +66,7 @@ public class IndexBasedDAO implements DAO {
 	}
 
 	/**
-	 * Sets the search instance
+	 * Sets the search instance.
 	 * @param search a serch instance
 	 */
 	public void setSearch(Search search) {

@@ -26,26 +26,50 @@ public final class VersionInfo {
 	private VersionInfo() {
 	}
 
+	/**
+	 * Returns the current version from Maven.
+	 * @return version string
+	 */
 	public static String getVersion() {
 		return Version.getVersion();
 	}
 
+	/**
+	 * Returns the current group id from Maven.
+	 * @return id string
+	 */
 	public static String getGroupId() {
 		return Version.getGroupId();
 	}
 
+	/**
+	 * Returns the current artifact id from Maven.
+	 * @return id string
+	 */
 	public static String getArtifactId() {
 		return Version.getArtifactId();
 	}
 
+	/**
+	 * Returns the current revision from Git.
+	 * @return version string
+	 */
 	public static String getRevision() {
 		return Version.getRevision();
 	}
 
+	/**
+	 * Returns the Git repo starting with "scm:git:git" from Maven.
+	 * @return repo string
+	 */
 	public static String getGIT() {
 		return Version.getGIT();
 	}
 
+	/**
+	 * Returns the Git branch.
+	 * @return git branch name
+	 */
 	public static String getGITBranch() {
 		return Version.getGITBranch();
 	}

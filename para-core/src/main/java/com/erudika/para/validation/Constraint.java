@@ -18,6 +18,7 @@
 package com.erudika.para.validation;
 
 import com.erudika.para.annotations.Email;
+import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
@@ -58,7 +59,7 @@ public abstract class Constraint {
 	private String name;
 	private Map<String, Object> payload;
 
-	static Map<Class<? extends Annotation>, String> validators = new HashMap<Class<? extends Annotation>, String>() {
+	private static final Map<Class<?>, String> VALIDATORS = new HashMap<Class<?>, String>() {
 		private static final long serialVersionUID = 1L;
 
 		{
@@ -76,6 +77,20 @@ public abstract class Constraint {
 			put(Future.class, "future");
 			put(Past.class, "past");
 			put(URL.class, "url");
+		}
+	};
+
+	private static final Map<String, Constraint> SIMPLE_CONSTRAINTS = new HashMap<String, Constraint>() {
+		private static final long serialVersionUID = 1L;
+
+		{
+			put("required", required());
+			put("email", email());
+			put("false", falsy());
+			put("true", truthy());
+			put("future", future());
+			put("past", past());
+			put("url", url());
 		}
 	};
 
@@ -101,7 +116,7 @@ public abstract class Constraint {
 	}
 
 	/**
-	 * The payload (a map)
+	 * The payload (a map).
 	 * @return a map
 	 */
 	public Map<String, Object> getPayload() {
@@ -126,7 +141,7 @@ public abstract class Constraint {
 	 * @return true if known
 	 */
 	public static boolean matches(Class<? extends Annotation> anno, String consName) {
-		return validators.get(anno).equals(consName);
+		return VALIDATORS.get(anno).equals(consName);
 	}
 
 	/**
@@ -146,8 +161,8 @@ public abstract class Constraint {
 		} else if (anno instanceof Pattern) {
 			return pattern(((Pattern) anno).regexp());
 		} else {
-			return new Constraint(validators.get(anno.annotationType()),
-					simplePayload(validators.get(anno.annotationType()))) {
+			return new Constraint(VALIDATORS.get(anno.annotationType()),
+					simplePayload(VALIDATORS.get(anno.annotationType()))) {
 						public boolean isValid(Object actualValue) {
 							return true;
 						}
@@ -183,7 +198,7 @@ public abstract class Constraint {
 		return new LinkedHashMap<String, Object>() {
 			{
 				put("value", min);
-				put("message", "messages." + validators.get(Min.class));
+				put("message", "messages." + VALIDATORS.get(Min.class));
 			}
 		};
 	}
@@ -200,7 +215,7 @@ public abstract class Constraint {
 		return new LinkedHashMap<String, Object>() {
 			{
 				put("value", max);
-				put("message", "messages." + validators.get(Max.class));
+				put("message", "messages." + VALIDATORS.get(Max.class));
 			}
 		};
 	}
@@ -219,7 +234,7 @@ public abstract class Constraint {
 			{
 				put("min", min);
 				put("max", max);
-				put("message", "messages." + validators.get(Size.class));
+				put("message", "messages." + VALIDATORS.get(Size.class));
 			}
 		};
 	}
@@ -238,7 +253,7 @@ public abstract class Constraint {
 			{
 				put("integer", i);
 				put("fraction", f);
-				put("message", "messages." + validators.get(Digits.class));
+				put("message", "messages." + VALIDATORS.get(Digits.class));
 			}
 		};
 	}
@@ -255,7 +270,7 @@ public abstract class Constraint {
 		return new LinkedHashMap<String, Object>() {
 			{
 				put("value", regex);
-				put("message", "messages." + validators.get(Pattern.class));
+				put("message", "messages." + VALIDATORS.get(Pattern.class));
 			}
 		};
 	}
@@ -266,7 +281,7 @@ public abstract class Constraint {
 	 * @return true if validator is known
 	 */
 	public static boolean isValidConstraintName(String name) {
-		return name != null && validators.containsValue(name.toLowerCase());
+		return name != null && VALIDATORS.containsValue(name.toLowerCase());
 	}
 
 	/**
@@ -275,7 +290,7 @@ public abstract class Constraint {
 	 * @return true if validator is known
 	 */
 	public static boolean isValidConstraintType(Class<? extends Annotation> type) {
-		return type != null && validators.containsKey(type);
+		return type != null && VALIDATORS.containsKey(type);
 	}
 
 	/**
@@ -295,17 +310,15 @@ public abstract class Constraint {
 	 * @param min the minimum value
 	 * @return constraint
 	 */
-	public static Constraint min(final Object min) {
+	public static Constraint min(final Number min) {
 		return new Constraint("min", minPayload(min)) {
 			public boolean isValid(Object actualValue) {
 				if (actualValue != null) {
 					if (!(actualValue instanceof Number)) {
 						return false;
-					} else {
-						if (min != null && min instanceof Number) {
-							if (((Number) min).longValue() > ((Number) actualValue).longValue()) {
-								return false;
-							}
+					} else if (min != null) {
+						if (min.longValue() > ((Number) actualValue).longValue()) {
+							return false;
 						}
 					}
 				}
@@ -319,17 +332,15 @@ public abstract class Constraint {
 	 * @param max the maximum value
 	 * @return constraint
 	 */
-	public static Constraint max(final Object max) {
+	public static Constraint max(final Number max) {
 		return new Constraint("max", maxPayload(max)) {
 			public boolean isValid(Object actualValue) {
 				if (actualValue != null) {
 					if (!(actualValue instanceof Number)) {
 						return false;
-					} else {
-						if (max != null && max instanceof Number) {
-							if (((Number) max).longValue() < ((Number) actualValue).longValue()) {
-								return false;
-							}
+					} else if (max != null) {
+						if (max.longValue() < ((Number) actualValue).longValue()) {
+							return false;
 						}
 					}
 				}
@@ -345,39 +356,29 @@ public abstract class Constraint {
 	 * @param max the maximum length
 	 * @return constraint
 	 */
-	public static Constraint size(final Object min, final Object max) {
+	public static Constraint size(final Number min, final Number max) {
 		return new Constraint("size", sizePayload(min, max)) {
 			public boolean isValid(Object actualValue) {
-				if (actualValue != null) {
-					if (min != null && max != null && min instanceof Number && max instanceof Number) {
-						if (actualValue instanceof String) {
-							if (((String) actualValue).length() < ((Number) min).longValue()
-									|| ((String) actualValue).length() > ((Number) max).longValue()) {
-								return false;
-							}
-						} else if (actualValue instanceof Collection) {
-							if (((Collection) actualValue).size() < ((Number) min).longValue()
-									|| ((Collection) actualValue).size() > ((Number) max).longValue()) {
-								return false;
-							}
-						} else if (actualValue instanceof Map) {
-							if (((Map) actualValue).size() < ((Number) min).longValue()
-									|| ((Map) actualValue).size() > ((Number) max).longValue()) {
-								return false;
-							}
-						} else if (actualValue.getClass().isArray()) {
-							int len = ArrayUtils.getLength(actualValue);
-							if (len < ((Number) min).longValue() || len > ((Number) max).longValue()) {
-								return false;
-							}
-						} else {
-							return false;
-						}
+				if (actualValue != null && min != null && max != null) {
+					if (actualValue instanceof String) {
+						return !isOutOfRange(((String) actualValue).length(), min, max);
+					} else if (actualValue instanceof Collection) {
+						return !isOutOfRange(((Collection) actualValue).size(), min, max);
+					} else if (actualValue instanceof Map) {
+						return !isOutOfRange(((Map) actualValue).size(), min, max);
+					} else if (actualValue.getClass().isArray()) {
+						return !isOutOfRange(ArrayUtils.getLength(actualValue), min, max);
+					} else {
+						return false;
 					}
 				}
 				return true;
 			}
 		};
+	}
+
+	private static boolean isOutOfRange(int x, Number min, Number max) {
+		return (x < min.longValue() || x > max.longValue());
 	}
 
 	/**
@@ -389,23 +390,23 @@ public abstract class Constraint {
 	 * @param fraction the max number of digits for the fractional part
 	 * @return constraint
 	 */
-	public static Constraint digits(final Object integer, final Object fraction) {
+	public static Constraint digits(final Number integer, final Number fraction) {
 		return new Constraint("digits", digitsPayload(integer, fraction)) {
 			public boolean isValid(Object actualValue) {
 				if (actualValue != null) {
 					if (!((actualValue instanceof Number) || (actualValue instanceof String))) {
 						return false;
 					} else {
-						if (integer != null && fraction != null && integer instanceof Number && fraction instanceof Number) {
+						if (integer != null && fraction != null) {
 							String val = actualValue.toString();
 							String[] split = val.split("[,.]");
 							if (!NumberUtils.isDigits(split[0])) {
 								return false;
 							}
-							if (((Number) integer).intValue() < split[0].length()) {
+							if (integer.intValue() < split[0].length()) {
 								return false;
 							}
-							if (split.length > 1 && ((Number) fraction).intValue() < split[1].length()) {
+							if (split.length > 1 && fraction.intValue() < split[1].length()) {
 								return false;
 							}
 						}
@@ -545,37 +546,27 @@ public abstract class Constraint {
 	}
 
 	/**
-	 * Builds a new constraint from a given name and payload
+	 * Builds a new constraint from a given name and payload.
 	 * @param cname the constraint name
 	 * @param payload the payload
 	 * @return constraint
 	 */
 	public static Constraint build(String cname, Map<String, Object> payload) {
 		if (cname != null && payload != null) {
-			if ("required".equals(cname)) {
-				return required();
-			} else if ("email".equals(cname)) {
-				return email();
-			} else if ("false".equals(cname)) {
-				return falsy();
-			} else if ("true".equals(cname)) {
-				return truthy();
-			} else if ("future".equals(cname)) {
-				return future();
-			} else if ("past".equals(cname)) {
-				return past();
-			} else if ("url".equals(cname)) {
-				return url();
-			} else if ("min".equals(cname) && payload.containsKey("value")) {
-				return min(payload.get("value"));
+			if ("min".equals(cname) && payload.containsKey("value")) {
+				return min(NumberUtils.toLong(payload.get("value") + "", 0));
 			} else if ("max".equals(cname) && payload.containsKey("value")) {
-				return max(payload.get("value"));
+				return max(NumberUtils.toLong(payload.get("value") + "", Config.DEFAULT_LIMIT));
 			} else if ("size".equals(cname) && payload.containsKey("min") && payload.containsKey("max")) {
-				return size(payload.get("min"), payload.get("max"));
+				return size(NumberUtils.toLong(payload.get("min") + "", 0),
+						NumberUtils.toLong(payload.get("max") + "", Config.DEFAULT_LIMIT));
 			} else if ("digits".equals(cname) && payload.containsKey("integer") && payload.containsKey("fraction")) {
-				return digits(payload.get("integer"), payload.get("fraction"));
+				return digits(NumberUtils.toLong(payload.get("integer") + "", 0),
+					NumberUtils.toLong(payload.get("fraction") + "", 0));
 			} else if ("pattern".equals(cname) && payload.containsKey("value")) {
 				return pattern(payload.get("value"));
+			} else {
+				return SIMPLE_CONSTRAINTS.get(cname);
 			}
 		}
 		return null;

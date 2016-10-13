@@ -33,7 +33,7 @@ public class Pager {
 	private String lastKey;
 
 	/**
-	 * No-args constructor
+	 * No-args constructor.
 	 */
 	public Pager() {
 		this(1, null, true, Config.MAX_ITEMS_PER_PAGE);
@@ -96,7 +96,7 @@ public class Pager {
 	}
 
 	/**
-	 * Set the value of name
+	 * Set the value of name.
 	 * @param name the name (optional)
 	 */
 	public void setName(String name) {
@@ -112,7 +112,7 @@ public class Pager {
 	}
 
 	/**
-	 * Sets the value of sortby
+	 * Sets the value of sortby.
 	 * @param sortby the sort field
 	 */
 	public void setSortby(String sortby) {
@@ -128,7 +128,7 @@ public class Pager {
 	}
 
 	/**
-	 * Sets the value of desc
+	 * Sets the value of desc.
 	 * @param desc true if descending order
 	 */
 	public void setDesc(boolean desc) {
@@ -144,7 +144,7 @@ public class Pager {
 	}
 
 	/**
-	 * Set the value of limit
+	 * Set the value of limit.
 	 * @param limit the max number of results in one page
 	 */
 	public void setLimit(int limit) {
@@ -160,7 +160,7 @@ public class Pager {
 	}
 
 	/**
-	 * Set the value of count
+	 * Set the value of count.
 	 * @param count total count
 	 */
 	public void setCount(long count) {
@@ -176,7 +176,7 @@ public class Pager {
 	}
 
 	/**
-	 * Set the value of page
+	 * Set the value of page.
 	 * @param page the page number
 	 */
 	public void setPage(long page) {

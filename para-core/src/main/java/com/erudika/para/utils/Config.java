@@ -37,47 +37,49 @@ public final class Config {
 	private static com.typesafe.config.Config config;
 	private static Map<String, String> configMap;
 
+	private Config() { }
+
 	// GLOBAL SETTINGS
-	/** {@value #PARA} */
+	/** {@value #PARA}. */
 	public static final String PARA = "para";
-	/** {@value #_TYPE} */
+	/** {@value #_TYPE}. */
 	public static final String _TYPE = "type";
-	/** {@value #_APPID} */
+	/** {@value #_APPID}. */
 	public static final String _APPID = "appid";
-	/** {@value #_CREATORID} */
+	/** {@value #_CREATORID}. */
 	public static final String _CREATORID = "creatorid";
-	/** {@value #_ID} */
+	/** {@value #_ID}. */
 	public static final String _ID = "id";
-	/** {@value #_IDENTIFIER} */
+	/** {@value #_IDENTIFIER}. */
 	public static final String _IDENTIFIER = "identifier";
-	/** {@value #_KEY} */
+	/** {@value #_KEY}. */
 	public static final String _KEY = "key";
-	/** {@value #_NAME} */
+	/** {@value #_NAME}. */
 	public static final String _NAME = "name";
-	/** {@value #_PARENTID} */
+	/** {@value #_PARENTID}. */
 	public static final String _PARENTID = "parentid";
-	/** {@value #_PASSWORD} */
+	/** {@value #_PASSWORD}. */
 	public static final String _PASSWORD = "password";
-	/** {@value #_RESET_TOKEN} */
+	/** {@value #_RESET_TOKEN}. */
 	public static final String _RESET_TOKEN = "token";
-	/** {@value #_EMAIL_TOKEN} */
+	/** {@value #_EMAIL_TOKEN}. */
 	public static final String _EMAIL_TOKEN = "etoken";
-	/** {@value #_TIMESTAMP} */
+	/** {@value #_TIMESTAMP}. */
 	public static final String _TIMESTAMP = "timestamp";
-	/** {@value #_UPDATED} */
+	/** {@value #_UPDATED}. */
 	public static final String _UPDATED = "updated";
-	/** {@value #_TAGS} */
+	/** {@value #_TAGS}. */
 	public static final String _TAGS = "tags";
-	/** {@value #_EMAIL} */
+	/** {@value #_EMAIL}. */
 	public static final String _EMAIL = "email";
-	/** {@value #_GROUPS} */
+	/** {@value #_GROUPS}. */
 	public static final String _GROUPS = "groups";
 
 	static {
 		init(null);
 	}
 
-	/** {@value #DEFAULT_LIMIT} */
+	/** {@value #DEFAULT_LIMIT}. */
 	public static final int	DEFAULT_LIMIT = 10000;
 	/** String separator - default is colon ':'. */
 	public static final String SEPARATOR = getConfigParam("default_separator", ":");
@@ -94,9 +96,9 @@ public final class Config {
 	/** Microsoft prefix - defaults to 'ms:'. */
 	public static final String MICROSOFT_PREFIX = "ms" + SEPARATOR;
 
-	/**	{@value #AUTH_SIGNIN_SUCCESS_ATTR} */
+	/**	{@value #AUTH_SIGNIN_SUCCESS_ATTR}. */
 	public static final String AUTH_SIGNIN_SUCCESS_ATTR = "AUTH_SIGNIN_SUCCESS_ATTRIBUTE";
-	/**	{@value #AUTH_SIGNIN_FAILURE_ATTR} */
+	/**	{@value #AUTH_SIGNIN_FAILURE_ATTR}. */
 	public static final String AUTH_SIGNIN_FAILURE_ATTR = "AUTH_SIGNIN_FAILURE_ATTRIBUTE";
 
 	//////////  INITIALIZATION PARAMETERS  //////////////
@@ -145,63 +147,55 @@ public final class Config {
 	 */
 	public static final String AWS_REGION = getConfigParam("aws_region", "eu-west-1");
 	/**
-	 * Facebook app id (for authentication)
+	 * Facebook app id (for authentication).
 	 */
 	public static final String FB_APP_ID = getConfigParam("fb_app_id", "");
 	/**
-	 * Facebook app secret (for authentication)
+	 * Facebook app secret (for authentication).
 	 */
 	public static final String FB_SECRET = getConfigParam("fb_secret", "");
 	/**
-	 * Google+ app id (for authentication)
+	 * Google+ app id (for authentication).
 	 */
 	public static final String GPLUS_APP_ID = getConfigParam("gp_app_id", "");
 	/**
-	 * Google+ app secret (for authentication)
+	 * Google+ app secret (for authentication).
 	 */
 	public static final String GPLUS_SECRET = getConfigParam("gp_secret", "");
 	/**
-	 * LinkedIn app id (for authentication)
+	 * LinkedIn app id (for authentication).
 	 */
 	public static final String LINKEDIN_APP_ID = getConfigParam("in_app_id", "");
 	/**
-	 * LinkedIn app secret (for authentication)
+	 * LinkedIn app secret (for authentication).
 	 */
 	public static final String LINKEDIN_SECRET = getConfigParam("in_secret", "");
 	/**
-	 * Twitter app id (for authentication)
+	 * Twitter app id (for authentication).
 	 */
 	public static final String TWITTER_APP_ID = getConfigParam("tw_app_id", "");
 	/**
-	 * Twitter app secret (for authentication)
+	 * Twitter app secret (for authentication).
 	 */
 	public static final String TWITTER_SECRET = getConfigParam("tw_secret", "");
 	/**
-	 * GitHub app id (for authentication)
+	 * GitHub app id (for authentication).
 	 */
 	public static final String GITHUB_APP_ID = getConfigParam("gh_app_id", "");
 	/**
-	 * GitHub app secret (for authentication)
+	 * GitHub app secret (for authentication).
 	 */
 	public static final String GITHUB_SECRET = getConfigParam("gh_secret", "");
 	/**
-	 * Microsoft app id (for authentication)
+	 * Microsoft app id (for authentication).
 	 */
 	public static final String MICROSOFT_APP_ID = getConfigParam("ms_app_id", "");
 	/**
-	 * Microsoft app secret (for authentication)
+	 * Microsoft app secret (for authentication).
 	 */
 	public static final String MICROSOFT_SECRET = getConfigParam("ms_secret", "");
 	/**
-	 * OpenExchangeRates.org API key
-	 */
-	public static final String OPENX_API_KEY = getConfigParam("openx_api_key", "");
-	/**
-	 * Google Maps API key
-	 */
-	public static final String GMAPS_API_KEY = getConfigParam("gmaps_api_key", "");
-	/**
-	 * The identifier of the first administrator (can be email, OpenID, or Facebook user id)
+	 * The identifier of the first administrator (can be email, OpenID, or Facebook user id).
 	 */
 	public static final String ADMIN_IDENT = getConfigParam("admin_ident", "");
 	/**
@@ -293,7 +287,7 @@ public final class Config {
 	 */
 	public static final boolean IN_DEVELOPMENT = ENVIRONMENT.equals("development");
 	/**
-	 * The name of the cluster (can be used to separate deployments)
+	 * The name of the cluster (can be used to separate deployments).
 	 */
 	public static final String CLUSTER_NAME = getConfigParam("cluster_name", IN_PRODUCTION ? PARA + "-prod" : PARA + "-dev");
 
@@ -396,7 +390,7 @@ public final class Config {
 	}
 
 	/**
-	 * Default: true only if {@link #ENVIRONMENT} = "production"
+	 * Default: true only if {@link #ENVIRONMENT} = "production".
 	 * @return true if caching is enabled
 	 */
 	public static boolean isCacheEnabled() {
@@ -404,7 +398,7 @@ public final class Config {
 	}
 
 	/**
-	 * Default: true
+	 * Default: true.
 	 * @return true if indexing is enabled
 	 */
 	public static boolean isSearchEnabled() {

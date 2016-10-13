@@ -52,7 +52,7 @@ public class HazelcastCache implements Cache {
 	}
 
 	/**
-	 * No-args constructor
+	 * No-args constructor.
 	 */
 	public HazelcastCache() {
 	}
@@ -190,7 +190,7 @@ public class HazelcastCache implements Cache {
 	public void removeAll(String appid, List<String> ids) {
 		if (ids != null && !StringUtils.isBlank(appid)) {
 			try {
-				IMap<?,?> map = client().getMap(appid);
+				IMap<?, ?> map = client().getMap(appid);
 				for (String id : ids) {
 					if (!StringUtils.isBlank(id)) {
 						map.delete(id);

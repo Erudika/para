@@ -67,6 +67,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	private final MicrosoftAuthFilter microsoftFilter;
 	private final JWTRestfulAuthFilter jwtFilter;
 
+	/**
+	 * No-args constructor.
+	 */
 	public SecurityConfig() {
 		csrfTokenRepository = Para.getInstance(CachedCsrfTokenRepository.class);
 		rememberMeServices = Para.getInstance(SimpleRememberMeServices.class);
@@ -82,7 +85,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	}
 
 	/**
-	 * Configures the authentication providers
+	 * Configures the authentication providers.
 	 *
 	 * @param auth a builder
 	 * @throws Exception ex
@@ -101,7 +104,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	}
 
 	/**
-	 * Configures the unsecured public resources
+	 * Configures the unsecured public resources.
 	 *
 	 * @param web web sec object
 	 * @throws Exception ex
@@ -113,7 +116,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	}
 
 	/**
-	 * Configures the protected private resources
+	 * Configures the protected private resources.
 	 *
 	 * @param http HTTP sec object
 	 * @throws Exception ex

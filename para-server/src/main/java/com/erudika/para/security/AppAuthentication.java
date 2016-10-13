@@ -25,7 +25,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 /**
- * A simple wrapper for the authentication object
+ * A simple wrapper for the authentication object.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class AppAuthentication implements Authentication {
@@ -36,7 +36,7 @@ public class AppAuthentication implements Authentication {
 	private final boolean authenticated;
 
 	/**
-	 * Default constructor
+	 * Default constructor.
 	 * @param principal the application object
 	 */
 	public AppAuthentication(App principal) {
@@ -46,7 +46,7 @@ public class AppAuthentication implements Authentication {
 	}
 
 	/**
-	 * A list of roles for the authenticated application
+	 * A list of roles for the authenticated application.
 	 * @return a list of roles
 	 */
 	public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -62,7 +62,7 @@ public class AppAuthentication implements Authentication {
 	}
 
 	/**
-	 * The application object
+	 * The application object.
 	 * @return the application
 	 */
 	public Object getDetails() {
@@ -70,7 +70,7 @@ public class AppAuthentication implements Authentication {
 	}
 
 	/**
-	 * The application object
+	 * The application object.
 	 * @return the application
 	 */
 	public Object getPrincipal() {
@@ -78,7 +78,7 @@ public class AppAuthentication implements Authentication {
 	}
 
 	/**
-	 * Checks if the application is authenticated
+	 * Checks if the application is authenticated.
 	 * @return true if authenticated
 	 */
 	public boolean isAuthenticated() {
@@ -94,7 +94,7 @@ public class AppAuthentication implements Authentication {
 	}
 
 	/**
-	 * The application identifier
+	 * The application identifier.
 	 * @return the identifier
 	 */
 	public String getName() {

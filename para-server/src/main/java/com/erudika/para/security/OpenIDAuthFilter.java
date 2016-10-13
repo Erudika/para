@@ -34,7 +34,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 public class OpenIDAuthFilter extends OpenIDAuthenticationFilter {
 
 	/**
-	 * The default filter mapping
+	 * The default filter mapping.
 	 */
 	public static final String OPENID_ACTION = "openid_auth";
 

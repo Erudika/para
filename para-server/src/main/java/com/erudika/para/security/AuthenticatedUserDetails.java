@@ -37,7 +37,7 @@ public class AuthenticatedUserDetails implements UserDetails {
 	private User user;
 
 	/**
-	 * Default constructor
+	 * Default constructor.
 	 * @param user an authenticated user object (principal)
 	 */
 	public AuthenticatedUserDetails(User user) {
@@ -62,7 +62,7 @@ public class AuthenticatedUserDetails implements UserDetails {
 	}
 
 	/**
-	 * A list of roles for this user
+	 * A list of roles for this user.
 	 * @return a list of roles
 	 */
 	@JsonIgnore
@@ -91,7 +91,7 @@ public class AuthenticatedUserDetails implements UserDetails {
 	}
 
 	/**
-	 * Same as {@link User#getActive() }
+	 * Same as {@link User#getActive() }.
 	 * @return true if active
 	 * @see User#getActive()
 	 */
@@ -101,7 +101,7 @@ public class AuthenticatedUserDetails implements UserDetails {
 	}
 
 	/**
-	 * Same as {@link User#getActive() }
+	 * Same as {@link User#getActive() }.
 	 * @return true if active
 	 * @see User#getActive()
 	 */
@@ -111,7 +111,7 @@ public class AuthenticatedUserDetails implements UserDetails {
 	}
 
 	/**
-	 * Same as {@link User#getActive() }
+	 * Same as {@link User#getActive() }.
 	 * @return true if active
 	 * @see User#getActive()
 	 */
@@ -121,7 +121,7 @@ public class AuthenticatedUserDetails implements UserDetails {
 	}
 
 	/**
-	 * Same as {@link User#getActive() }
+	 * Same as {@link User#getActive() }.
 	 * @return true if active
 	 * @see User#getActive()
 	 */

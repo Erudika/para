@@ -26,15 +26,15 @@ package com.erudika.para.core;
 public interface Votable {
 
 	/**
-	 * The type of vote (negative or positive)
+	 * The type of vote (negative or positive).
 	 */
 	enum VoteValue {
 		/**
-		 * Positive vote +
+		 * Positive vote +.
 		 */
 		UP,
 		/**
-		 * Negative vote -
+		 * Negative vote -.
 		 */
 		DOWN;
 

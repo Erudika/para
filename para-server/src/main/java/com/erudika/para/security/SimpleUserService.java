@@ -61,7 +61,7 @@ public class SimpleUserService implements UserDetailsService,
 	}
 
 	/**
-	 * Loads a user from the data store or creates a new user from an OpenID profile
+	 * Loads a user from the data store or creates a new user from an OpenID profile.
 	 * @param token the OpenID authentication token holding the user profile
 	 * @return a user object or null if user is not found
 	 */

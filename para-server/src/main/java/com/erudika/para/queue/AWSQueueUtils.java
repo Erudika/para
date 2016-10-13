@@ -65,12 +65,12 @@ public final class AWSQueueUtils {
 	private static volatile Map<String, Future<?>> pollingThreads = new HashMap<String, Future<?>>();
 
 	/**
-	 * No-args constructor
+	 * No-args constructor.
 	 */
 	private AWSQueueUtils() { }
 
 	/**
-	 * Returns a client instance for AWS SQS
+	 * Returns a client instance for AWS SQS.
 	 * @return a client that talks to SQS
 	 */
 	public static AmazonSQSClient getClient() {

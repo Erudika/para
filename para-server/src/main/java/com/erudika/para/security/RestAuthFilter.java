@@ -55,7 +55,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 	private final Signer signer;
 
 	/**
-	 * Default constructor
+	 * Default constructor.
 	 * @param signer a request signer instance for request signature verification
 	 */
 	public RestAuthFilter(Signer signer) {
@@ -238,18 +238,21 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		return null;
 	}
 
+	/**
+	 * HttpServletRequest wrapper.
+	 */
 	private class BufferedRequestWrapper extends HttpServletRequestWrapper {
 
-		ByteArrayInputStream bais;
-		ByteArrayOutputStream baos;
-		BufferedServletInputStream bsis;
-		byte[] buffer;
+		private ByteArrayInputStream bais;
+		private ByteArrayOutputStream baos;
+		private BufferedServletInputStream bsis;
+		private byte[] buffer;
 
 		BufferedRequestWrapper(HttpServletRequest req) throws IOException {
 			super(req);
 			InputStream is = req.getInputStream();
 			baos = new ByteArrayOutputStream();
-			byte buf[] = new byte[1024];
+			byte[] buf = new byte[1024];
 			int length;
 			while ((length = is.read(buf)) > 0) {
 				baos.write(buf, 0, length);
@@ -257,6 +260,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 			buffer = baos.toByteArray();
 		}
 
+		@Override
 		public ServletInputStream getInputStream() {
 			try {
 				bais = new ByteArrayInputStream(buffer);
@@ -269,8 +273,11 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 
 	}
 
+	/**
+	 * Servlet Input Stream.
+	 */
 	private class BufferedServletInputStream extends ServletInputStream {
-		ByteArrayInputStream bais;
+		private ByteArrayInputStream bais;
 
 		BufferedServletInputStream(ByteArrayInputStream bais) {
 			this.bais = bais;

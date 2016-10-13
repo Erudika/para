@@ -56,14 +56,14 @@ public class Translation implements ParaObject {
 	@Stored private Boolean approved;
 
 	/**
-	 * No-args constructor
+	 * No-args constructor.
 	 */
 	public Translation() {
 		this(null, null, null);
 	}
 
 	/**
-	 * Default constructor
+	 * Default constructor.
 	 * @param id the id
 	 */
 	public Translation(String id) {
@@ -85,7 +85,7 @@ public class Translation implements ParaObject {
 	}
 
 	/**
-	 * Is this an approved translation?
+	 * Returns true if this is an approved translation.
 	 * @return true if approved by admin
 	 */
 	public Boolean getApproved() {
@@ -109,7 +109,7 @@ public class Translation implements ParaObject {
 	}
 
 	/**
-	 * Sets the translated string
+	 * Sets the translated string.
 	 * @param value the translation
 	 */
 	public void setValue(String value) {
@@ -117,7 +117,7 @@ public class Translation implements ParaObject {
 	}
 
 	/**
-	 * The locale
+	 * The locale.
 	 * @return the locale
 	 */
 	public String getLocale() {
@@ -125,7 +125,7 @@ public class Translation implements ParaObject {
 	}
 
 	/**
-	 * Sets the locale
+	 * Sets the locale.
 	 * @param locale the locale
 	 */
 	public void setLocale(String locale) {
@@ -133,7 +133,7 @@ public class Translation implements ParaObject {
 	}
 
 	/**
-	 * The translation key
+	 * The translation key.
 	 * @return the key
 	 */
 	public String getThekey() {
@@ -141,7 +141,7 @@ public class Translation implements ParaObject {
 	}
 
 	/**
-	 * Sets the key
+	 * Sets the key.
 	 * @param thekey the key
 	 */
 	public void setThekey(String thekey) {
@@ -169,7 +169,7 @@ public class Translation implements ParaObject {
 	}
 
 	/**
-	 * Approved check
+	 * Approved check.
 	 * @return true if approved
 	 */
 	public boolean isApproved() {

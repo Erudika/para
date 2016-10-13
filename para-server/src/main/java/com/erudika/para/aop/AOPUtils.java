@@ -28,7 +28,7 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- *
+ * A few helper methods.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public final class AOPUtils {
@@ -38,7 +38,7 @@ public final class AOPUtils {
 	private AOPUtils() { }
 
 	@SuppressWarnings("unchecked")
-	public static <T> List<T> getArgOfListOfType(Object[] args, Class<T> type) {
+	protected static <T> List<T> getArgOfListOfType(Object[] args, Class<T> type) {
 		if (args != null) {
 			for (Object arg : args) {
 				if (arg != null) {
@@ -54,7 +54,7 @@ public final class AOPUtils {
 		return null;
 	}
 
-	public static ParaObject getArgOfParaObject(Object[] args) {
+	protected static ParaObject getArgOfParaObject(Object[] args) {
 		if (args != null) {
 			for (Object arg : args) {
 				if (arg != null) {
@@ -67,7 +67,7 @@ public final class AOPUtils {
 		return null;
 	}
 
-	public static String getFirstArgOfString(Object[] args) {
+	protected static String getFirstArgOfString(Object[] args) {
 		if (args != null) {
 			for (Object arg : args) {
 				if (arg != null) {
@@ -80,7 +80,7 @@ public final class AOPUtils {
 		return null;
 	}
 
-	public static List<ParaObject> removeNotStoredNotIndexed(List<ParaObject> addUs, List<ParaObject> indexUs) {
+	protected static List<ParaObject> removeNotStoredNotIndexed(List<ParaObject> addUs, List<ParaObject> indexUs) {
 		if (addUs != null) {
 			if (indexUs == null) {
 				indexUs = new ArrayList<ParaObject>(addUs.size());
@@ -109,7 +109,7 @@ public final class AOPUtils {
 	 * Some API resources have a path which also starts with '_' like {@code  /v1/_me}.
 	 * @param obj an object
 	 */
-	public static void checkAndFixType(ParaObject obj) {
+	protected static void checkAndFixType(ParaObject obj) {
 		if (obj != null && StringUtils.startsWith(obj.getType(), SPECIAL_CHAR)) {
 			obj.setType(StringUtils.replacePattern(obj.getType(), "^[_]+", ""));
 			if (obj.getType().isEmpty()) {

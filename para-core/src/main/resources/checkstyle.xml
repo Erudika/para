@@ -6,10 +6,16 @@
 <module name="Checker">
 	<!--Checks whether files end with a new line.-->
 	<module name="NewlineAtEndOfFile">
-		<property name="fileExtensions" value="java, xml, properties" />
+		<property name="lineSeparator" value="lf"/>
+		<property name="fileExtensions" value="java, xml, properties, js, html, css" />
 	</module>
 
 	<module name="FileLength"/>
+	<module name="SuppressionCommentFilter">
+    <property name="offCommentFormat" value="CHECKSTYLE.OFF\: ([\w\|]+)"/>
+    <property name="onCommentFormat" value="CHECKSTYLE.ON\: ([\w\|]+)"/>
+    <property name="checkFormat" value="$1"/>
+</module>
 
 	<module name="TreeWalker">
 		<property name="cacheFile" value="${checkstyle.cache.file}"/>
@@ -25,10 +31,14 @@
 		</module>
 
 		<!--Checks for Javadoc comments.-->
-		<!--<module name="JavadocMethod"/>-->
-		<!--<module name="JavadocType"/>-->
-		<!--<module name="JavadocVariable"/>-->
-		<!--<module name="JavadocStyle"/>-->
+		<module name="JavadocType"/>
+		<module name="JavadocStyle"/>
+		<module name="JavadocMethod">
+			<property name="scope" value="public"/>
+		</module>
+		<module name="JavadocVariable">
+			<property name="scope" value="public"/>
+		</module>
 
 		<!--Checks for Naming Conventions.-->
 		<!--<module name="ConstantName"/>-->
@@ -52,19 +62,19 @@
 		</module>
 
 		<!--Checks for Size Violations.-->
-		<!--<module name="LineLength">-->
-		<!--<property name="max" value="140"/>-->
-		<!--</module>-->
+		<module name="LineLength">
+			<property name="max" value="180"/>
+		</module>
 		<!--<module name="MethodLength"/>-->
 		<!--<module name="ParameterNumber"/>-->
 
 		<!--Checks for whitespace-->
-		<!--<module name="EmptyForIteratorPad"/>-->
-		<!--<module name="MethodParamPad"/>-->
-		<!--<module name="NoWhitespaceAfter"/>-->
-		<!--<module name="NoWhitespaceBefore"/>-->
+		<module name="EmptyForIteratorPad"/>
+		<module name="MethodParamPad"/>
+		<module name="NoWhitespaceAfter"/>
+		<module name="NoWhitespaceBefore"/>
 		<!--<module name="OperatorWrap"/>-->
-		<!--<module name="WhitespaceAfter"/>-->
+		<module name="WhitespaceAfter"/>
 		<module name="ParenPad"/>
 		<module name="TypecastParenPad"/>
 		<module name="GenericWhitespace"/>
@@ -76,7 +86,7 @@
 		<module name="PackageAnnotation"/>
 
 		<!--Checks for blocks. You know, those {}'s-->
-		<!--<module name="AvoidNestedBlocks"/>-->
+		<module name="AvoidNestedBlocks"/>
 		<module name="EmptyBlock"/>
 		<module name="NeedBraces"/>
 		<module name="LeftCurly"/>
@@ -85,7 +95,7 @@
 		<!--Checks for common coding problems-->
 		<!--<module name="AvoidInlineConditionals"/>-->
 		<!--<module name="HiddenField"/>-->
-		<!--<module name="InnerAssignment"/>-->
+		<module name="InnerAssignment"/>
 		<!--<module name="MagicNumber"/>-->
 		<module name="EmptyStatement"/>
 		<module name="EqualsHashCode"/>
@@ -101,16 +111,19 @@
 
 		<!--Checks for class design-->
 		<!--<module name="DesignForExtension"/>-->
-		<!--<module name="HideUtilityClassConstructor"/>-->
-		<!--<module name="VisibilityModifier"/>-->
+		<module name="HideUtilityClassConstructor"/>
+		<module name="VisibilityModifier"/>
 		<module name="FinalClass"/>
 		<module name="InterfaceIsType"/>
 
 		<!--Miscellaneous other checks.-->
-		<!--<module name="ArrayTypeStyle"/>-->
+		<module name="ArrayTypeStyle"/>
 		<!--<module name="FinalParameters"/>-->
-		<!--<module name="TodoComment"/>-->
-		<!--<module name="UpperEll"/>-->
+		<module name="TodoComment"/>
+		<module name="UpperEll"/>
+		<module name="CyclomaticComplexity">
+			<property name="max" value="15"/>
+		</module>
 
 	</module>
 </module>

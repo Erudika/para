@@ -57,19 +57,31 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	private Search search;
 	private Cache cache;
 
+	/**
+	 * @return {@link Search}
+	 */
 	public Search getSearch() {
 		return search;
 	}
 
+	/**
+	 * @param search {@link Search}
+	 */
 	@Inject
 	public void setSearch(Search search) {
 		this.search = search;
 	}
 
+	/**
+	 * @return {@link Cache}
+	 */
 	public Cache getCache() {
 		return cache;
 	}
 
+	/**
+	 * @param cache {@link Cache}
+	 */
 	@Inject
 	public void setCache(Cache cache) {
 		this.cache = cache;

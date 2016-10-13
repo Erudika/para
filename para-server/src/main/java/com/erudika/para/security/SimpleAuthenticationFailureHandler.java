@@ -59,7 +59,7 @@ public class SimpleAuthenticationFailureHandler extends SimpleUrlAuthenticationF
 	}
 
 	/**
-	 * Checks if it is a rest request
+	 * Checks if it is a rest request.
 	 * @param request the request
 	 * @return true if rest or ajax
 	 */

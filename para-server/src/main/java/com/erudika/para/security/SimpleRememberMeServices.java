@@ -32,6 +32,11 @@ import org.springframework.security.web.authentication.rememberme.TokenBasedReme
  */
 public class SimpleRememberMeServices extends TokenBasedRememberMeServices {
 
+	/**
+	 * Default constructor.
+	 * @param key a key
+	 * @param userDetailsService a user object
+	 */
 	public SimpleRememberMeServices(String key, UserDetailsService userDetailsService) {
 		super(key, userDetailsService);
 	}

@@ -64,6 +64,9 @@ public class AzureIoTService implements IoTService {
 	private static RegistryManager registryManager = null;
 	private static final Logger logger = LoggerFactory.getLogger(AzureIoTService.class);
 
+	/**
+	 * No-args constructor.
+	 */
 	public AzureIoTService() {
 		if (!StringUtils.isBlank(serviceAccessKey)) {
 			if (!StringUtils.isBlank(eventHubEndpoint)) {
@@ -238,6 +241,9 @@ public class AzureIoTService implements IoTService {
 		return null;
 	}
 
+	/**
+	 * Receiver class.
+	 */
 	static class Receiver implements Consumer<PartitionReceiver> {
 
 		private String partitionId;

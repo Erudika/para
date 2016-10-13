@@ -87,7 +87,7 @@ public class ElasticSearch implements Search {
 	}
 
 	/**
-	 * No-args constructor
+	 * No-args constructor.
 	 */
 	public ElasticSearch() {
 		this(Para.getDAO());

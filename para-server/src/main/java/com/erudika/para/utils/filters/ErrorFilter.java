@@ -94,6 +94,9 @@ public class ErrorFilter implements Filter {
 		throw new IllegalStateException(ex);
 	}
 
+	/**
+	 * HttpServletResponse wrapper.
+	 */
 	private static class ErrorWrapperResponse extends HttpServletResponseWrapper {
 
 		private int status;

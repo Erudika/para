@@ -74,6 +74,11 @@ public final class ParaClient {
 	private Client apiClient;
 	private final Signer signer = new Signer();
 
+	/**
+	 * Default constructor.
+	 * @param accessKey app access key
+	 * @param secretKey app secret key
+	 */
 	public ParaClient(String accessKey, String secretKey) {
 		this.accessKey = accessKey;
 		this.secretKey = secretKey;
@@ -124,7 +129,7 @@ public final class ParaClient {
 	}
 
 	/**
-	 * Returns the endpoint URL
+	 * Returns the endpoint URL.
 	 * @return the endpoint
 	 */
 	public String getEndpoint() {
@@ -136,7 +141,7 @@ public final class ParaClient {
 	}
 
 	/**
-	 * Sets the API request path
+	 * Sets the API request path.
 	 * @param path a new path
 	 */
 	public void setApiPath(String path) {
@@ -144,7 +149,7 @@ public final class ParaClient {
 	}
 
 	/**
-	 * Returns the API request path
+	 * Returns the API request path.
 	 * @return the request path without parameters
 	 */
 	public String getApiPath() {
@@ -1031,7 +1036,7 @@ public final class ParaClient {
 	}
 
 	/**
-	 * Converts Markdown to HTML
+	 * Converts Markdown to HTML.
 	 * @param markdownString Markdown
 	 * @return HTML
 	 */

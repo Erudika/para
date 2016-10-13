@@ -35,28 +35,49 @@ public class JWTAuthentication extends UserAuthentication {
 	private SignedJWT jwt;
 	private JWTClaimsSet claims;
 
+	/**
+	 * Default constructor.
+	 * @param principal a user object
+	 */
 	public JWTAuthentication(AuthenticatedUserDetails principal) {
 		super(principal);
 	}
 
+	/**
+	 * @param jwt token
+	 * @return this
+	 */
 	public JWTAuthentication withJWT(SignedJWT jwt) {
 		this.jwt = jwt;
 		return this;
 	}
 
+	/**
+	 * @param app {@link App}
+	 * @return this
+	 */
 	public JWTAuthentication withApp(App app) {
 		this.app = app;
 		return this;
 	}
 
+	/**
+	 * @return the JWT token
+	 */
 	public SignedJWT getJwt() {
 		return jwt;
 	}
 
+	/**
+	 * @return the {@link App}
+	 */
 	public App getApp() {
 		return app;
 	}
 
+	/**
+	 * @return appid
+	 */
 	public String getAppid() {
 		if (app != null) {
 			return app.getId();
@@ -66,6 +87,9 @@ public class JWTAuthentication extends UserAuthentication {
 		return null;
 	}
 
+	/**
+	 * @return userid
+	 */
 	public String getUserid() {
 		if (claims != null) {
 			return claims.getSubject();
@@ -73,6 +97,9 @@ public class JWTAuthentication extends UserAuthentication {
 		return null;
 	}
 
+	/**
+	 * @return claims set
+	 */
 	public JWTClaimsSet getClaims() {
 		return claims;
 	}

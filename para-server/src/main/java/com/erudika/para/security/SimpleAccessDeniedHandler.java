@@ -26,7 +26,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandlerImpl;
 
 /**
- *
+ * Access denied handler.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class SimpleAccessDeniedHandler extends AccessDeniedHandlerImpl {
@@ -50,7 +50,7 @@ public class SimpleAccessDeniedHandler extends AccessDeniedHandlerImpl {
 	}
 
 	/**
-	 * Checks if it is a rest request
+	 * Checks if it is a rest request.
 	 * @param request request
 	 * @return true if rest or ajax
 	 */

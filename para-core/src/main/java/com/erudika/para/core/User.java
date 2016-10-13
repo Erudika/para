@@ -70,14 +70,14 @@ public class User implements ParaObject {
 	private transient String password;
 
 	/**
-	 * No-args constructor
+	 * No-args constructor.
 	 */
 	public User() {
 		this(null);
 	}
 
 	/**
-	 * Default constructor
+	 * Default constructor.
 	 * @param id the id
 	 */
 	public User(String id) {
@@ -143,7 +143,7 @@ public class User implements ParaObject {
 	}
 
 	/**
-	 * Is this account active?
+	 * Returns true if this account is active.
 	 * @return true if active
 	 */
 	public Boolean getActive() {
@@ -154,7 +154,7 @@ public class User implements ParaObject {
 	}
 
 	/**
-	 * Sets the account active
+	 * Sets the account active.
 	 * @param active true if active
 	 */
 	public void setActive(Boolean active) {
@@ -162,7 +162,7 @@ public class User implements ParaObject {
 	}
 
 	/**
-	 * Returns the security groups for this user
+	 * Returns the security groups for this user.
 	 * @return the groups string
 	 */
 	public String getGroups() {
@@ -170,7 +170,7 @@ public class User implements ParaObject {
 	}
 
 	/**
-	 * Sets the security groups for this user
+	 * Sets the security groups for this user.
 	 * @param groups the groups string
 	 */
 	public void setGroups(String groups) {
@@ -195,7 +195,7 @@ public class User implements ParaObject {
 	}
 
 	/**
-	 * The user's email
+	 * The user's email.
 	 * @return email
 	 */
 	public String getEmail() {
@@ -203,7 +203,7 @@ public class User implements ParaObject {
 	}
 
 	/**
-	 * Sets the email
+	 * Sets the email.
 	 * @param email email
 	 */
 	public void setEmail(String email) {
@@ -211,7 +211,7 @@ public class User implements ParaObject {
 	}
 
 	/**
-	 * The user's currency preference
+	 * The user's currency preference.
 	 * @return a currency 3-letter code in uppercase
 	 */
 	public String getCurrency() {
@@ -326,7 +326,7 @@ public class User implements ParaObject {
 	}
 
 	/**
-	 * Is the main identifier a Facebook id
+	 * Is the main identifier a Facebook id.
 	 * @return true if user is signed in with Facebook
 	 */
 	@JsonIgnore
@@ -335,7 +335,7 @@ public class User implements ParaObject {
 	}
 
 	/**
-	 * Is the main identifier a Google+ id
+	 * Is the main identifier a Google+ id.
 	 * @return true if user is signed in with Google+
 	 */
 	@JsonIgnore
@@ -344,7 +344,7 @@ public class User implements ParaObject {
 	}
 
 	/**
-	 * Is the main identifier a LinkedIn id
+	 * Is the main identifier a LinkedIn id.
 	 * @return true if user is signed in with LinkedIn
 	 */
 	@JsonIgnore
@@ -353,7 +353,7 @@ public class User implements ParaObject {
 	}
 
 	/**
-	 * Is the main identifier a Twitter id
+	 * Is the main identifier a Twitter id.
 	 * @return true if user is signed in with Twitter
 	 */
 	@JsonIgnore
@@ -362,7 +362,7 @@ public class User implements ParaObject {
 	}
 
 	/**
-	 * Is the main identifier a GitHub id
+	 * Is the main identifier a GitHub id.
 	 * @return true if user is signed in with GitHub
 	 */
 	@JsonIgnore
@@ -371,7 +371,16 @@ public class User implements ParaObject {
 	}
 
 	/**
-	 * Checks for admin rights
+	 * Is the main identifier a Microsoft/Windows account id.
+	 * @return true if user is signed in with a Microsoft account
+	 */
+	@JsonIgnore
+	public boolean isMicrosoftUser() {
+		return StringUtils.startsWithIgnoreCase(identifier, Config.MICROSOFT_PREFIX);
+	}
+
+	/**
+	 * Checks for admin rights.
 	 * @return true if user has admin rights
 	 */
 	@JsonIgnore
@@ -380,7 +389,7 @@ public class User implements ParaObject {
 	}
 
 	/**
-	 * Checks for moderator rights
+	 * Checks for moderator rights.
 	 * @return true if user has mod rights
 	 */
 	@JsonIgnore
@@ -637,7 +646,7 @@ public class User implements ParaObject {
 	private void setGravatarPicture() {
 		if (StringUtils.isBlank(picture)) {
 			if (email != null) {
-				String emailHash = Utils.MD5(email);//DigestUtils.md5DigestAsHex(email.getBytes());
+				String emailHash = Utils.MD5(email);
 				setPicture("https://www.gravatar.com/avatar/" + emailHash + "?size=400&d=mm&r=pg");
 			} else {
 				setPicture("https://www.gravatar.com/avatar?d=mm&size=400");
@@ -646,44 +655,46 @@ public class User implements ParaObject {
 	}
 
 	/**
-	 * Simple groups enum
+	 * Simple groups enum.
 	 */
 	public enum Groups {
 		/**
-		 * The standard user group
+		 * The standard user group.
 		 */
 		USERS,
 		/**
-		 * Moderators group
+		 * Moderators group.
 		 */
 		MODS,
 		/**
-		 * Administrators group
+		 * Administrators group.
 		 */
 		ADMINS;
 
+		@Override
 		public String toString() {
 			return this.name().toLowerCase();
 		}
 	}
 
 	/**
-	 * Simple user roles enum
+	 * Simple user roles enum.
 	 */
 	public enum Roles {
 		/**
-		 * The standard role
+		 * The standard role.
 		 */
 		USER,
 		/**
-		 * The moderator role
+		 * The moderator role.
 		 */
 		MOD,
 		/**
-		 * The administrator role
+		 * The administrator role.
 		 */
 		ADMIN;
 
+		@Override
 		public String toString() {
 			return "ROLE_".concat(this.name());
 		}

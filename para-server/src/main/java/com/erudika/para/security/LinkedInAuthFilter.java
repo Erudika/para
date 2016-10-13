@@ -56,7 +56,7 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 			+ "grant_type=authorization_code&code={0}&redirect_uri={1}&client_id={2}&client_secret={3}";
 
 	/**
-	 * The default filter mapping
+	 * The default filter mapping.
 	 */
 	public static final String LINKEDIN_ACTION = "linkedin_auth";
 

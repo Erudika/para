@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -243,7 +244,7 @@ public final class RestUtils {
 	/////////////////////////////////////////////
 
 	/**
-	 * Read response as JSON
+	 * Read response as JSON.
 	 * @param app the app object
 	 * @param content the object that was read
 	 * @return status code 200 or 404
@@ -259,7 +260,7 @@ public final class RestUtils {
 	}
 
 	/**
-	 * Create response as JSON
+	 * Create response as JSON.
 	 * @param type type of the object to create
 	 * @param is entity input stream
 	 * @param app the app object
@@ -303,7 +304,7 @@ public final class RestUtils {
 	}
 
 	/**
-	 * Overwrite response as JSON
+	 * Overwrite response as JSON.
 	 * @param id the object id
 	 * @param type type of the object to create
 	 * @param is entity input stream
@@ -348,7 +349,7 @@ public final class RestUtils {
 	}
 
 	/**
-	 * Update response as JSON
+	 * Update response as JSON.
 	 * @param object object to validate and update
 	 * @param is entity input stream
 	 * @param app the app object
@@ -384,7 +385,7 @@ public final class RestUtils {
 	}
 
 	/**
-	 * Delete response as JSON
+	 * Delete response as JSON.
 	 * @param content the object to delete
 	 * @param app the current App object
 	 * @return a status code 200 or 400
@@ -402,7 +403,7 @@ public final class RestUtils {
 	}
 
 	/**
-	 * Batch read response as JSON
+	 * Batch read response as JSON.
 	 * @param app the current App object
 	 * @param ids list of ids
 	 * @return status code 200 or 400
@@ -416,7 +417,7 @@ public final class RestUtils {
 	}
 
 	/**
-	 * Batch create response as JSON
+	 * Batch create response as JSON.
 	 * @param app the current App object
 	 * @param is entity input stream
 	 * @return a status code 200 or 400
@@ -459,7 +460,7 @@ public final class RestUtils {
 	}
 
 	/**
-	 * Batch update response as JSON
+	 * Batch update response as JSON.
 	 * @param app the current App object
 	 * @param is entity input stream
 	 * @return a status code 200 or 400
@@ -495,7 +496,7 @@ public final class RestUtils {
 	}
 
 	/**
-	 * Batch delete response as JSON
+	 * Batch delete response as JSON.
 	 * @param app the current App object
 	 * @param ids list of ids to delete
 	 * @return a status code 200 or 400
@@ -524,7 +525,7 @@ public final class RestUtils {
 	}
 
 	/**
-	 * A generic JSON response handler
+	 * A generic JSON response handler.
 	 * @param status status code
 	 * @param messages zero or more errors
 	 * @return a response as JSON
@@ -546,7 +547,7 @@ public final class RestUtils {
 	}
 
 	/**
-	 * A generic JSON response handler
+	 * A generic JSON response handler.
 	 * @param response the response to write to
 	 * @param status status code
 	 * @param message error message
@@ -593,6 +594,56 @@ public final class RestUtils {
 				out.close();
 			}
 		}
+	}
+
+	/**
+	 * Returns the path parameter value.
+	 * @param param a parameter name
+	 * @param ctx ctx
+	 * @return a value
+	 */
+	public static String pathParam(String param, ContainerRequestContext ctx) {
+		return ctx.getUriInfo().getPathParameters().getFirst(param);
+	}
+
+	/**
+	 * Returns the path parameters values.
+	 * @param param a parameter name
+	 * @param ctx ctx
+	 * @return a list of parameter values
+	 */
+	public static List<String> pathParams(String param, ContainerRequestContext ctx) {
+		return ctx.getUriInfo().getPathParameters().get(param);
+	}
+
+	/**
+	 * Returns  the query parameter value.
+	 * @param param a parameter name
+	 * @param ctx ctx
+	 * @return parameter value
+	 */
+	public static String queryParam(String param, ContainerRequestContext ctx) {
+		return ctx.getUriInfo().getQueryParameters().getFirst(param);
+	}
+
+	/**
+	 * Returns the query parameter values.
+	 * @param param a parameter name
+	 * @param ctx ctx
+	 * @return a list of values
+	 */
+	public static List<String> queryParams(String param, ContainerRequestContext ctx) {
+		return ctx.getUriInfo().getQueryParameters().get(param);
+	}
+
+	/**
+	 * Returns true if parameter exists.
+	 * @param param a parameter name
+	 * @param ctx ctx
+	 * @return true if parameter is set
+	 */
+	public static boolean hasQueryParam(String param, ContainerRequestContext ctx) {
+		return ctx.getUriInfo().getQueryParameters().containsKey(param);
 	}
 
 }

@@ -42,7 +42,7 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.LoggerFactory;
 
 /**
- * A converter that uses http://openexchangerates.org
+ * A converter that uses http://openexchangerates.org.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 @Singleton
@@ -52,12 +52,12 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 	private static final String FXRATES_KEY = "fxrates";
 	private static final long REFRESH_AFTER = 24 * 60 * 60 * 1000; // 24 hours in ms
 	private static final String SERVICE_URL = "http://openexchangerates.org/api/latest.json?app_id=".
-			concat(Config.OPENX_API_KEY);
+			concat(Config.getConfigParam("openx_api_key", ""));
 
 	private DAO dao;
 
 	/**
-	 * Default constructor
+	 * Default constructor.
 	 * @param dao dao
 	 */
 	@Inject

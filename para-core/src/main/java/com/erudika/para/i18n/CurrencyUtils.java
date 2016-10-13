@@ -64,7 +64,7 @@ public final class CurrencyUtils {
 	}
 
 	/**
-	 * Returns an instance of this class
+	 * Returns an instance of this class.
 	 * @return an instance
 	 */
 	public static CurrencyUtils getInstance() {
@@ -75,7 +75,7 @@ public final class CurrencyUtils {
 	}
 
 	/**
-	 * Formats a price for its specific locale, depending on the currency code
+	 * Formats a price for its specific locale, depending on the currency code.
 	 * @param price the amount
 	 * @param cur the 3-letter currency code
 	 * @return a formatted price with its currency symbol
@@ -120,7 +120,7 @@ public final class CurrencyUtils {
 	}
 
 	/**
-	 * Returns the currency instance for a given currency code
+	 * Returns the currency instance for a given currency code.
 	 * @param cur the 3-letter currency code
 	 * @return the currency
 	 */
@@ -139,7 +139,7 @@ public final class CurrencyUtils {
 
 	/**
 	 * Returns a map of all available currencies in the form:
-	 * currency code - full currency name and symbol
+	 * currency code - full currency name and symbol.
 	 * @return a map of known currencies
 	 */
 	public Map<String, String> getCurrenciesMap() {

@@ -39,7 +39,7 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 	private static final String EMAIL = "email";
 
 	/**
-	 * The default filter mapping
+	 * The default filter mapping.
 	 */
 	public static final String PASSWORD_ACTION = "password_auth";
 

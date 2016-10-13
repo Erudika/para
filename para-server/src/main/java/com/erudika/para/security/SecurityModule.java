@@ -51,6 +51,10 @@ public class SecurityModule extends AbstractModule {
 	protected void configure() {
 	}
 
+	/**
+	 * @param cache {@link Cache}
+	 * @return token repository
+	 */
 	@Provides
 	public CachedCsrfTokenRepository getCsrfTokenRepository(Cache cache) {
 		if (csrfTokenRepository == null) {
@@ -60,10 +64,16 @@ public class SecurityModule extends AbstractModule {
 		return csrfTokenRepository;
 	}
 
+	/**
+	 * @param csrfTokenRepository token repository
+	 */
 	public void setCsrfTokenRepository(CachedCsrfTokenRepository csrfTokenRepository) {
 		this.csrfTokenRepository = csrfTokenRepository;
 	}
 
+	/**
+	 * @return handler
+	 */
 	@Provides
 	public SimpleAuthenticationSuccessHandler getSuccessHandler() {
 		if (successHandler == null) {
@@ -75,10 +85,16 @@ public class SecurityModule extends AbstractModule {
 		return successHandler;
 	}
 
+	/**
+	 * @param successHandler handler
+	 */
 	public void setSuccessHandler(SimpleAuthenticationSuccessHandler successHandler) {
 		this.successHandler = successHandler;
 	}
 
+	/**
+	 * @return handler
+	 */
 	@Provides
 	public SimpleAuthenticationFailureHandler getFailureHandler() {
 		if (failureHandler == null) {
@@ -88,10 +104,16 @@ public class SecurityModule extends AbstractModule {
 		return failureHandler;
 	}
 
+	/**
+	 * @param failureHandler handler
+	 */
 	public void setFailureHandler(SimpleAuthenticationFailureHandler failureHandler) {
 		this.failureHandler = failureHandler;
 	}
 
+	/**
+	 * @return service
+	 */
 	@Provides
 	public SimpleRememberMeServices getRemembeMeServices() {
 		if (rememberMeServices == null) {
@@ -105,10 +127,16 @@ public class SecurityModule extends AbstractModule {
 		return rememberMeServices;
 	}
 
+	/**
+	 * @param rememberMeServices service
+	 */
 	public void setRememberMeServices(SimpleRememberMeServices rememberMeServices) {
 		this.rememberMeServices = rememberMeServices;
 	}
 
+	/**
+	 * @return filter
+	 */
 	@Provides
 	public PasswordAuthFilter getPasswordFilter() {
 		if (passwordFilter == null) {
@@ -120,10 +148,16 @@ public class SecurityModule extends AbstractModule {
 		return passwordFilter;
 	}
 
+	/**
+	 * @param passwordFilter filter
+	 */
 	public void setPasswordFilter(PasswordAuthFilter passwordFilter) {
 		this.passwordFilter = passwordFilter;
 	}
 
+	/**
+	 * @return filter
+	 */
 	@Provides
 	public OpenIDAuthFilter getOpenIDFilter() {
 		if (openidFilter == null) {
@@ -141,10 +175,16 @@ public class SecurityModule extends AbstractModule {
 		return openidFilter;
 	}
 
+	/**
+	 * @param openidFilter filter
+	 */
 	public void setOpenidFilter(OpenIDAuthFilter openidFilter) {
 		this.openidFilter = openidFilter;
 	}
 
+	/**
+	 * @return filter
+	 */
 	@Provides
 	public FacebookAuthFilter getFacebookFilter() {
 		if (facebookFilter == null) {
@@ -156,10 +196,16 @@ public class SecurityModule extends AbstractModule {
 		return facebookFilter;
 	}
 
+	/**
+	 * @param facebookFilter filter
+	 */
 	public void setFacebookFilter(FacebookAuthFilter facebookFilter) {
 		this.facebookFilter = facebookFilter;
 	}
 
+	/**
+	 * @return filter
+	 */
 	@Provides
 	public GoogleAuthFilter getGoogleFilter() {
 		if (googleFilter == null) {
@@ -171,10 +217,16 @@ public class SecurityModule extends AbstractModule {
 		return googleFilter;
 	}
 
+	/**
+	 * @param googleFilter filter
+	 */
 	public void setGoogleFilter(GoogleAuthFilter googleFilter) {
 		this.googleFilter = googleFilter;
 	}
 
+	/**
+	 * @return filter
+	 */
 	@Provides
 	public LinkedInAuthFilter getLinkedinFilter() {
 		if (linkedinFilter == null) {
@@ -186,10 +238,16 @@ public class SecurityModule extends AbstractModule {
 		return linkedinFilter;
 	}
 
+	/**
+	 * @param linkedinFilter filter
+	 */
 	public void setLinkedinFilter(LinkedInAuthFilter linkedinFilter) {
 		this.linkedinFilter = linkedinFilter;
 	}
 
+	/**
+	 * @return filter
+	 */
 	@Provides
 	public TwitterAuthFilter getTwitterFilter() {
 		if (twitterFilter == null) {
@@ -201,10 +259,16 @@ public class SecurityModule extends AbstractModule {
 		return twitterFilter;
 	}
 
+	/**
+	 * @param twitterFilter filter
+	 */
 	public void setTwitterFilter(TwitterAuthFilter twitterFilter) {
 		this.twitterFilter = twitterFilter;
 	}
 
+	/**
+	 * @return filter
+	 */
 	@Provides
 	public GitHubAuthFilter getGithubFilter() {
 		if (githubFilter == null) {
@@ -216,6 +280,9 @@ public class SecurityModule extends AbstractModule {
 		return githubFilter;
 	}
 
+	/**
+	 * @return filter
+	 */
 	@Provides
 	public MicrosoftAuthFilter getMicrosoftFilter() {
 		if (microsoftFilter == null) {
@@ -227,13 +294,27 @@ public class SecurityModule extends AbstractModule {
 		return microsoftFilter;
 	}
 
+	/**
+	 * @param githubFilter filter
+	 */
 	public void setGithubFilter(GitHubAuthFilter githubFilter) {
 		this.githubFilter = githubFilter;
 	}
 
+	/**
+	 * @param fbAuth filter
+	 * @param gpAuth filter
+	 * @param ghAuth filter
+	 * @param liAuth filter
+	 * @param twAuth filter
+	 * @param msAuth filter
+	 * @param pwAuth filter
+	 * @return filter
+	 */
 	@Provides
 	public JWTRestfulAuthFilter getJWTAuthFilter(FacebookAuthFilter fbAuth, GoogleAuthFilter gpAuth,
-			GitHubAuthFilter ghAuth, LinkedInAuthFilter liAuth, TwitterAuthFilter twAuth, PasswordAuthFilter pwAuth) {
+			GitHubAuthFilter ghAuth, LinkedInAuthFilter liAuth, TwitterAuthFilter twAuth,
+			MicrosoftAuthFilter msAuth, PasswordAuthFilter pwAuth) {
 		if (jwtFilter == null) {
 			jwtFilter = new JWTRestfulAuthFilter("/" + JWTRestfulAuthFilter.JWT_ACTION);
 			jwtFilter.setFacebookAuth(fbAuth);
@@ -241,11 +322,15 @@ public class SecurityModule extends AbstractModule {
 			jwtFilter.setGithubAuth(ghAuth);
 			jwtFilter.setLinkedinAuth(liAuth);
 			jwtFilter.setTwitterAuth(twAuth);
+			jwtFilter.setMicrosoftAuth(msAuth);
 			jwtFilter.setPasswordAuth(pwAuth);
 		}
 		return jwtFilter;
 	}
 
+	/**
+	 * @param jwtFilter filter
+	 */
 	public void setJwtFilter(JWTRestfulAuthFilter jwtFilter) {
 		this.jwtFilter = jwtFilter;
 	}

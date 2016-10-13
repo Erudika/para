@@ -327,26 +327,37 @@ public final class ParaObjectUtils {
 				props.remove(name);
 			}
 			// handle unknown (user-defined) fields
-			if (!props.isEmpty() && pojo instanceof Sysprop) {
-				for (Map.Entry<String, Object> entry : props.entrySet()) {
-					String name = entry.getKey();
-					Object value = entry.getValue();
-					// handle the case where we have custom user-defined properties
-					// which are not defined as Java class fields
-					if (!PropertyUtils.isReadable(pojo, name)) {
-						if (value == null) {
-							((Sysprop) pojo).removeProperty(name);
-						} else {
-							((Sysprop) pojo).addProperty(name, value);
-						}
-					}
-				}
-			}
+			setUserDefinedProperties(pojo, props);
 		} catch (Exception ex) {
 			logger.error(null, ex);
 			pojo = null;
 		}
 		return pojo;
+	}
+
+	/**
+	 * Handles "unknown" or user-defined fields. The Para object is populated with custom fields
+	 * which are stored within the "properties" field of {@link Sysprop}. Unknown or user-defined properties are
+	 * those which are not declared inside a Java class, but come from an API request.
+	 * @param pojo a Para object
+	 * @param props properties to apply to the object.
+	 */
+	private static <P> void setUserDefinedProperties(P pojo, Map<String, Object> props) {
+		if (props != null && pojo instanceof Sysprop) {
+			for (Map.Entry<String, Object> entry : props.entrySet()) {
+				String name = entry.getKey();
+				Object value = entry.getValue();
+				// handle the case where we have custom user-defined properties
+				// which are not defined as Java class fields
+				if (!PropertyUtils.isReadable(pojo, name)) {
+					if (value == null) {
+						((Sysprop) pojo).removeProperty(name);
+					} else {
+						((Sysprop) pojo).addProperty(name, value);
+					}
+				}
+			}
+		}
 	}
 
 	/**

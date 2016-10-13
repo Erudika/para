@@ -23,7 +23,7 @@ import java.io.OutputStream;
 import javax.servlet.WriteListener;
 
 /**
- * A custom {@link javax.servlet.ServletOutputStream} for use by our filters
+ * A custom {@link javax.servlet.ServletOutputStream} for use by our filters.
  * @version $Id: FilterServletOutputStream.java 744 2008-08-16 20:10:49Z gregluck $
  * @author <a href="mailto:gluck@thoughtworks.com">Greg Luck</a>
  */
@@ -48,12 +48,12 @@ class GZipServletOutputStream extends ServletOutputStream {
 	}
 
 	@Override
-	public void write(byte b[]) throws IOException {
+	public void write(byte[] b) throws IOException {
 		this.stream.write(b);
 	}
 
 	@Override
-	public void write(byte b[], int off, int len) throws IOException {
+	public void write(byte[] b, int off, int len) throws IOException {
 		this.stream.write(b, off, len);
 	}
 

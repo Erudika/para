@@ -45,7 +45,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
 /**
- * A filter that handles authentication requests to GitHub
+ * A filter that handles authentication requests to GitHub.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
@@ -57,7 +57,7 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 	private static final String PAYLOAD = "code={0}&redirect_uri={1}&scope=&client_id={2}"
 			+ "&client_secret={3}&grant_type=authorization_code";
 	/**
-	 * The default filter mapping
+	 * The default filter mapping.
 	 */
 	public static final String GITHUB_ACTION = "github_auth";
 

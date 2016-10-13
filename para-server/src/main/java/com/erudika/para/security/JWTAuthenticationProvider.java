@@ -32,7 +32,7 @@ import org.springframework.security.core.Authentication;
 public class JWTAuthenticationProvider implements AuthenticationProvider {
 
 	/**
-	 * Default constructor
+	 * Default constructor.
 	 */
 	public JWTAuthenticationProvider() {
 	}

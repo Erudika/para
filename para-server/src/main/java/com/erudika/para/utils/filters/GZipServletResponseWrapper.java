@@ -59,7 +59,7 @@ class GZipServletResponseWrapper extends HttpServletResponseWrapper {
 	}
 
 	/**
-	 * Flush OutputStream or PrintWriter
+	 * Flush OutputStream or PrintWriter.
 	 *
 	 * @throws IOException
 	 */

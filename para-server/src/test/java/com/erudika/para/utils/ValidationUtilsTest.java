@@ -25,6 +25,7 @@ import static com.erudika.para.validation.ValidationUtils.*;
 import static com.erudika.para.validation.Constraint.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import static org.junit.Assert.*;
@@ -229,5 +230,98 @@ public class ValidationUtilsTest {
 	@Test
 	public void testGetCoreValidationConstraints() {
 		assertTrue(getCoreValidationConstraints().containsKey("app"));
+	}
+
+	@Test
+	public void testAllConstraints() {
+		// null is ok, because value might not be required
+		assertTrue(email().isValid(null));
+		assertTrue(email().isValid("abc@de.com"));
+		assertFalse(email().isValid("abc@de."));
+		assertFalse(email().isValid("abc@.c"));
+		assertFalse(email().isValid(123));
+		assertFalse(email().isValid(" "));
+
+		assertTrue(falsy().isValid(null));
+		assertTrue(falsy().isValid("false"));
+		assertTrue(falsy().isValid("FALSE"));
+		assertTrue(falsy().isValid(false));
+		assertTrue(falsy().isValid("fals"));
+		assertTrue(falsy().isValid(" "));
+		assertFalse(falsy().isValid("true"));
+		assertFalse(falsy().isValid(true));
+
+		assertTrue(truthy().isValid(null));
+		assertTrue(truthy().isValid("true"));
+		assertTrue(truthy().isValid("True"));
+		assertTrue(truthy().isValid(true));
+		assertFalse(truthy().isValid(false));
+		assertFalse(truthy().isValid("a"));
+		assertFalse(truthy().isValid(" "));
+
+		assertFalse(required().isValid(null));
+		assertFalse(required().isValid(" "));
+		assertTrue(required().isValid("text"));
+		assertTrue(required().isValid(1));
+		assertTrue(required().isValid(true));
+
+		long now = System.currentTimeMillis();
+		assertTrue(future().isValid(null));
+		assertTrue(future().isValid(new Date(now + 1000)));
+		assertFalse(future().isValid(new Date(now - 1000)));
+
+		assertTrue(past().isValid(null));
+		assertTrue(past().isValid(new Date(now - 1000)));
+		assertFalse(past().isValid(new Date(now + 1000)));
+
+		assertTrue(url().isValid(null));
+		assertTrue(url().isValid("http://abc.co"));
+		assertFalse(url().isValid("htp://abc.co"));
+		assertFalse(url().isValid("abc.com"));
+		assertFalse(url().isValid(" "));
+		assertFalse(url().isValid(false));
+
+		assertTrue(min(3).isValid(null));
+		assertTrue(min(3).isValid(3));
+		assertTrue(min(3).isValid(4));
+		assertFalse(min(4).isValid(3));
+		assertFalse(min(2).isValid("3"));
+		assertFalse(min(4).isValid(true));
+		assertFalse(min(null).isValid(" "));
+
+		assertTrue(max(3).isValid(null));
+		assertTrue(max(3).isValid(3));
+		assertTrue(max(4).isValid(3));
+		assertFalse(max(3).isValid(4));
+		assertFalse(max(2).isValid("3"));
+		assertFalse(max(4).isValid(true));
+		assertFalse(max(null).isValid(" "));
+
+		assertTrue(size(2, 3).isValid(null));
+		assertTrue(size(2, 3).isValid("xx"));
+		assertFalse(size(3, 2).isValid("xx"));
+		assertFalse(size(2, 3).isValid("xxxx"));
+		assertFalse(size(2, 3).isValid("x"));
+		assertTrue(size(0, 0).isValid(""));
+		assertTrue(size(0, 0).isValid(new String[0]));
+		assertTrue(size(1, 2).isValid(new String[]{"a", "b"}));
+		assertTrue(size(1, 2).isValid(Arrays.asList(new String[]{"a", "b"})));
+		assertTrue(size(1, 2).isValid(Collections.singletonMap("a", "b")));
+
+		assertTrue(digits(2, 2).isValid(null));
+		assertTrue(digits(2, 2).isValid("22.22"));
+		assertFalse(digits(2, 2).isValid("22.222"));
+		assertFalse(digits(1, 2).isValid("2.222"));
+		assertTrue(digits(1, 2).isValid("2.22"));
+		assertTrue(digits(1, 2).isValid(2.22));
+		assertTrue(digits(1, 2).isValid(0));
+		assertFalse(digits(1, 2).isValid(12));
+		assertFalse(digits(0, 2).isValid(1));
+
+		assertTrue(pattern(null).isValid(null));
+		assertTrue(pattern("").isValid(""));
+		assertTrue(pattern("[ab]+").isValid("bababa"));
+		assertTrue(pattern("\\.[ab]+").isValid(".babababa"));
+		assertFalse(pattern("").isValid(" "));
 	}
 }

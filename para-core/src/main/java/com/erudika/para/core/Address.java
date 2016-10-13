@@ -100,7 +100,7 @@ public class Address implements ParaObject {
 	}
 
 	/**
-	 * Sets the coordinates in the form "LAT,LNG"
+	 * Sets the coordinates in the form "LAT,LNG".
 	 * @param latlng the coords
 	 */
 	public void setLatlng(String latlng) {
@@ -116,7 +116,7 @@ public class Address implements ParaObject {
 	}
 
 	/**
-	 * Sets a new phone number
+	 * Sets a new phone number.
 	 * @param phone the number as a string
 	 */
 	public void setPhone(String phone) {
@@ -132,7 +132,7 @@ public class Address implements ParaObject {
 	}
 
 	/**
-	 * Sets a new country name
+	 * Sets a new country name.
 	 * @param country the name of the country
 	 */
 	public void setCountry(String country) {
@@ -140,7 +140,7 @@ public class Address implements ParaObject {
 	}
 
 	/**
-	 * The street address and other address info
+	 * The street address and other address info.
 	 * @return the street address
 	 */
 	public String getAddress() {

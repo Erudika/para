@@ -62,7 +62,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Misc. Para utilities.
+ * Miscellaneous Para utilities.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 @SuppressWarnings("unchecked")
@@ -111,7 +111,7 @@ public final class Utils {
 	}
 
 	/**
-	 * HumanTime - a relative time formatter
+	 * HumanTime - a relative time formatter.
 	 * @return humantime instance
 	 */
 	public static HumanTime getHumanTime() {
@@ -143,7 +143,7 @@ public final class Utils {
 	/////////////////////////////////////////////
 
 	/**
-	 * MD5 hash function
+	 * MD5 hash function.
 	 * @param s the string to be hashed
 	 * @return an md5 hash
 	 */
@@ -155,7 +155,7 @@ public final class Utils {
 			MessageDigest md = MessageDigest.getInstance("MD5");
 			md.update(s.getBytes());
 
-			byte byteData[] = md.digest();
+			byte[] byteData = md.digest();
 
 			//convert the byte to hex format method 1
 			StringBuilder sb = new StringBuilder();
@@ -169,7 +169,7 @@ public final class Utils {
 	}
 
 	/**
-	 * bcrypt hash function implemented by Spring Security
+	 * bcrypt hash function implemented by Spring Security.
 	 *
 	 * @param s the string to be hashed
 	 * @return the hash
@@ -237,7 +237,7 @@ public final class Utils {
 	/////////////////////////////////////////////
 
 	/**
-	 * Escapes JavaScript
+	 * Escapes JavaScript.
 	 * @param str a javascript string
 	 * @return the escaped javascript string
 	 */
@@ -246,7 +246,7 @@ public final class Utils {
 	}
 
 	/**
-	 * Strips all HTML tags from a string
+	 * Strips all HTML tags from a string.
 	 * @param html HTML string
 	 * @return just the text
 	 */
@@ -255,7 +255,7 @@ public final class Utils {
 	}
 
 	/**
-	 * Converts Markdown to HTML
+	 * Converts Markdown to HTML.
 	 * @param markdownString Markdown
 	 * @return HTML
 	 */
@@ -288,7 +288,7 @@ public final class Utils {
 	}
 
 	/**
-	 * Abbreviates a string
+	 * Abbreviates a string.
 	 * @param str a string
 	 * @param max max length
 	 * @return a substring of that string
@@ -355,7 +355,7 @@ public final class Utils {
 	}
 
 	/**
-	 * Encodes a byte array to Base64
+	 * Encodes a byte array to Base64.
 	 * @param str the byte array
 	 * @return an encoded string
 	 */
@@ -379,7 +379,7 @@ public final class Utils {
 	}
 
 	/**
-	 * Decodes a string from Base64
+	 * Decodes a string from Base64.
 	 * @param str the encoded string
 	 * @return a decoded string
 	 */
@@ -437,7 +437,7 @@ public final class Utils {
 	}
 
 	/**
-	 * Java timestamp
+	 * Java timestamp.
 	 * @return {@link java.lang.System#currentTimeMillis()}
 	 */
 	public static long timestamp() {
@@ -462,7 +462,7 @@ public final class Utils {
 	/////////////////////////////////////////////
 
 	/**
-	 * Rounds a float to an int
+	 * Rounds a float to an int.
 	 * @param d a float
 	 * @return a rounded int
 	 */
@@ -471,7 +471,7 @@ public final class Utils {
 	}
 
 	/**
-	 * Returns the price with two fractional digits at the end
+	 * Returns the price with two fractional digits at the end.
 	 * @param price a price
 	 * @return $###.##
 	 */
@@ -480,7 +480,7 @@ public final class Utils {
 	}
 
 	/**
-	 * Round up a double using the "half up" method
+	 * Round up a double using the "half up" method.
 	 * @param d a double
 	 * @return a double
 	 */
@@ -489,7 +489,7 @@ public final class Utils {
 	}
 
 	/**
-	 * Round up a double using the "half up" method
+	 * Round up a double using the "half up" method.
 	 * @param d a double
 	 * @param scale the scale
 	 * @return a double
@@ -513,7 +513,7 @@ public final class Utils {
 		// 2 decimal places => 100, 3 => 1000, etc
 		decPlaces = (int) Math.pow(10, decPlaces);
 		// Enumerate number abbreviations
-		String[] abbrev = { "K", "M", "B", "T" };
+		String[] abbrev = {"K", "M", "B", "T"};
 		boolean done = false;
 		// Go through the array backwards, so we do the largest first
 		for (int i = abbrev.length - 1; i >= 0 && !done; i--) {
@@ -538,7 +538,7 @@ public final class Utils {
 	/////////////////////////////////////////////
 
 	/**
-	 * Decodes a URL-encoded string
+	 * Decodes a URL-encoded string.
 	 * @param s a string
 	 * @return the decoded string
 	 */
@@ -556,7 +556,7 @@ public final class Utils {
 	}
 
 	/**
-	 * URL-encodes a string
+	 * URL-encodes a string.
 	 * @param s a string
 	 * @return the encoded string
 	 */
@@ -574,7 +574,7 @@ public final class Utils {
 	}
 
 	/**
-	 * URL validation
+	 * URL validation.
 	 * @param url a URL
 	 * @return true if the URL is valid
 	 */
@@ -583,7 +583,7 @@ public final class Utils {
 	}
 
 	/**
-	 * Email validation
+	 * Email validation.
 	 * @param url a URL
 	 * @return true if the URL is valid
 	 */
@@ -592,7 +592,7 @@ public final class Utils {
 	}
 
 	/**
-	 * Returns the host part of the URL
+	 * Returns the host part of the URL.
 	 * @param url a URL
 	 * @return just the host
 	 */
@@ -603,7 +603,7 @@ public final class Utils {
 	}
 
 	/**
-	 * The basic URL without any parameters: &gt;scheme&lt;:&gt;authority&lt;
+	 * The basic URL without any parameters: &gt;scheme&lt;:&gt;authority&lt;.
 	 * @param url a full URL
 	 * @return the basic URL
 	 */
@@ -735,7 +735,7 @@ public final class Utils {
 		if (StringUtils.isBlank(name) || req == null) {
 			return null;
 		}
-		Cookie cookies[] = req.getCookies();
+		Cookie[] cookies = req.getCookies();
 		if (cookies == null || name == null || name.length() == 0) {
 			return null;
 		}
@@ -749,7 +749,7 @@ public final class Utils {
 	}
 
 	/**
-	 * Same as {@link java.lang.System#getProperty(java.lang.String)}
+	 * Same as {@link java.lang.System#getProperty(java.lang.String)}.
 	 * @param name the name of the property
 	 * @return the property value
 	 */
@@ -762,7 +762,7 @@ public final class Utils {
 	/////////////////////////////////////////////
 
 	/**
-	 * Returns the adjusted size of an image (doesn't do any resizing)
+	 * Returns the adjusted size of an image (doesn't do any resizing).
 	 * @param h an image height
 	 * @param w an image width
 	 * @return the adjusted width and height if they are larger than {@link Config#MAX_IMG_SIZE_PX}.

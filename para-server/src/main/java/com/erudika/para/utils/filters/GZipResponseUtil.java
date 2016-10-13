@@ -19,15 +19,13 @@ package com.erudika.para.utils.filters;
 
 import java.util.Collection;
 import javax.servlet.ServletException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- * A collection of response processing utilities, which are shared between 2 or more filters
+ * A collection of response processing utilities, which are shared between 2 or more filters.
  * @author Greg Luck
  * @version $Id: ResponseUtil.java 744 2008-08-16 20:10:49Z gregluck $
  */
@@ -46,9 +44,7 @@ public final class GZipResponseUtil {
 	/**
 	 * Utility class. No public constructor.
 	 */
-	private GZipResponseUtil() {
-		// noop
-	}
+	private GZipResponseUtil() { }
 
 	/**
 	 * Checks whether a gzipped body is actually empty and should just be zero. When the compressedBytes is
@@ -122,7 +118,7 @@ public final class GZipResponseUtil {
 	}
 
 	/**
-	 * Adds the Vary: Accept-Encoding header to the response if needed
+	 * Adds the Vary: Accept-Encoding header to the response if needed.
 	 * @param wrapper response
 	 */
 	protected static void addVaryAcceptEncoding(final GZipServletResponseWrapper wrapper) {

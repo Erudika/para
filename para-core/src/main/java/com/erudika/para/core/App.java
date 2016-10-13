@@ -60,8 +60,15 @@ import org.slf4j.LoggerFactory;
  */
 public class App implements ParaObject {
 
+	/**
+	 * {@value #APP_ROLE}.
+	 */
 	public static final String APP_ROLE = "ROLE_APP";
+	/**
+	 * {@value #ALLOW_ALL}.
+	 */
 	public static final String ALLOW_ALL = "*";
+
 	private static final long serialVersionUID = 1L;
 	private static final String prefix = Utils.type(App.class).concat(Config.SEPARATOR);
 	private static final Logger logger = LoggerFactory.getLogger(App.class);
@@ -97,14 +104,14 @@ public class App implements ParaObject {
 	@Stored private Map<String, Object> settings;
 
 	/**
-	 * No-args constructor
+	 * No-args constructor.
 	 */
 	public App() {
 		this(null);
 	}
 
 	/**
-	 * Default constructor
+	 * Default constructor.
 	 * @param id the name of the app
 	 */
 	public App(String id) {
@@ -116,6 +123,11 @@ public class App implements ParaObject {
 		setName(getName());
 	}
 
+	/**
+	 * Returns the correct id of this app with prefix.
+	 * @param id an id like "myapp"
+	 * @return the full id, e.g. "app:myapp"
+	 */
 	public static final String id(String id) {
 		if (StringUtils.startsWith(id, prefix)) {
 			return prefix.concat(Utils.noSpaces(Utils.stripAndTrim(id.replaceAll(prefix, ""), " "), "-"));
@@ -145,7 +157,7 @@ public class App implements ParaObject {
 	}
 
 	/**
-	 * Returns the value of a setting for a given key
+	 * Returns the value of a setting for a given key.
 	 * @param name the key
 	 * @return the value
 	 */
@@ -157,7 +169,7 @@ public class App implements ParaObject {
 	}
 
 	/**
-	 * Removes a setting from the map
+	 * Removes a setting from the map.
 	 * @param name the key
 	 * @return this
 	 */
@@ -169,7 +181,7 @@ public class App implements ParaObject {
 	}
 
 	/**
-	 * A map of all settings (key/values)
+	 * A map of all settings (key/values).
 	 * @return a map
 	 */
 	@JsonIgnore
@@ -219,7 +231,7 @@ public class App implements ParaObject {
 	}
 
 	/**
-	 * Sets the permissions map
+	 * Sets the permissions map.
 	 * @param resourcePermissions permissions map
 	 */
 	public void setResourcePermissions(Map<String, Map<String, List<String>>> resourcePermissions) {
@@ -239,7 +251,7 @@ public class App implements ParaObject {
 	}
 
 	/**
-	 * Returns true if this application is active (enabled)
+	 * Returns true if this application is active (enabled).
 	 * @return true if active
 	 */
 	public Boolean getActive() {
@@ -264,7 +276,7 @@ public class App implements ParaObject {
 	}
 
 	/**
-	 * Sets the time for deletion
+	 * Sets the time for deletion.
 	 * @param deleteOn a timestamp
 	 */
 	public void setDeleteOn(Long deleteOn) {
@@ -296,7 +308,7 @@ public class App implements ParaObject {
 	}
 
 	/**
-	 * Returns the app's secret key
+	 * Returns the app's secret key.
 	 * @return the secret key
 	 */
 	@JsonIgnore
@@ -305,7 +317,7 @@ public class App implements ParaObject {
 	}
 
 	/**
-	 * Sets the secret key
+	 * Sets the secret key.
 	 * @param secret a secret key
 	 */
 	public void setSecret(String secret) {
@@ -321,7 +333,7 @@ public class App implements ParaObject {
 	}
 
 	/**
-	 * Sets read-only mode
+	 * Sets read-only mode.
 	 * @param readOnly true if app is in read-only mode
 	 */
 	public void setReadOnly(Boolean readOnly) {
@@ -342,7 +354,7 @@ public class App implements ParaObject {
 	}
 
 	/**
-	 * Sets the data types for this app
+	 * Sets the data types for this app.
 	 * @param datatypes a map of type names (plural form to singular)
 	 */
 	public void setDatatypes(Map<String, String> datatypes) {
@@ -559,9 +571,7 @@ public class App implements ParaObject {
 				perm.put(resourcePath, new ArrayList<String>(permission.size()));
 				getResourcePermissions().put(subjectid, perm);
 			}
-			if (permission.containsAll(ALL) || permission.contains(READ_WRITE) ||			// * || rw = *
-					(permission.contains(READ_ONLY) && permission.contains(WRITE_ONLY)) ||	//   r + w = *
-					(permission.contains(GET) && permission.contains(WRITE_ONLY))) {		//   r + w = *
+			if (isAllowAllPermission(permission)) {
 				methods = EnumSet.copyOf(READ_AND_WRITE);
 			} else {
 				if (permission.contains(WRITE_ONLY)) {
@@ -581,6 +591,12 @@ public class App implements ParaObject {
 			return true;
 		}
 		return false;
+	}
+
+	private boolean isAllowAllPermission(EnumSet<AllowedMethods> permission) {
+		return permission != null && (permission.containsAll(ALL) || permission.contains(READ_WRITE) ||	// * || rw = *
+					(permission.contains(READ_ONLY) && permission.contains(WRITE_ONLY)) ||				//   r + w = *
+					(permission.contains(GET) && permission.contains(WRITE_ONLY)));						//   r + w = *
 	}
 
 	/**
@@ -1090,53 +1106,76 @@ public class App implements ParaObject {
 	public enum AllowedMethods {
 
 		/**
-		 * Allow unauthenticated requests (guest access)
+		 * Allow unauthenticated requests (guest access).
 		 */
 		GUEST,
 		/**
-		 * Deny all requests (no access)
+		 * Deny all requests (no access).
 		 */
 		EMPTY,
 		/**
-		 * Allows all HTTP methods (full access)
+		 * Allows all HTTP methods (full access).
 		 */
 		READ_WRITE,
 		/**
-		 * Allows GET method only
+		 * Allows GET method only.
 		 */
 		GET,
 		/**
-		 * Allows POST method only
+		 * Allows POST method only.
 		 */
 		POST,
 		/**
-		 * Allows PUT method only
+		 * Allows PUT method only.
 		 */
 		PUT,
 		/**
-		 * ALlows PATCH method only
+		 * ALlows PATCH method only.
 		 */
 		PATCH,
 		/**
-		 * Allows DELETE method only
+		 * Allows DELETE method only.
 		 */
 		DELETE,
 		/**
-		 * Allows read methods: GET, same as {@link #GET}
+		 * Allows read methods: GET, same as {@link #GET}.
 		 */
 		READ_ONLY,
 		/**
-		 * Allows write methods: POST, PUT, PATCH and DELETE
+		 * Allows write methods: POST, PUT, PATCH and DELETE.
 		 */
 		WRITE_ONLY;
 
+		/**
+		 * All methods allowed.
+		 */
 		public static final EnumSet<AllowedMethods> ALL = EnumSet.of(GET, POST, PUT, PATCH, DELETE);
+		/**
+		 * All methods allowed (*).
+		 */
 		public static final EnumSet<AllowedMethods> READ_AND_WRITE = EnumSet.of(READ_WRITE);
+		/**
+		 * Only GET is allowed.
+		 */
 		public static final EnumSet<AllowedMethods> READ = EnumSet.of(GET);
+		/**
+		 * All methods allowed, except GET.
+		 */
 		public static final EnumSet<AllowedMethods> WRITE = EnumSet.of(POST, PUT, PATCH, DELETE);
+		/**
+		 * All methods allowed, except DELETE.
+		 */
 		public static final EnumSet<AllowedMethods> ALL_EXCEPT_DELETE = EnumSet.of(GET, POST, PUT, PATCH);
+		/**
+		 * No methods allowed.
+		 */
 		public static final EnumSet<AllowedMethods> NONE = EnumSet.of(EMPTY);
 
+		/**
+		 * Constructs the enum from a string value.
+		 * @param value a method name, or ?,w
+		 * @return an enum instance
+		 */
 		@JsonCreator
 		public static AllowedMethods fromString(String value) {
 			if (ALLOW_ALL.equals(value)) {

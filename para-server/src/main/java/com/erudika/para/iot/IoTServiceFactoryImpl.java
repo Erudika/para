@@ -40,7 +40,7 @@ public class IoTServiceFactoryImpl implements IoTServiceFactory {
 	private IoTService azureIoTService;
 
 	/**
-	 * No-args constructor
+	 * No-args constructor.
 	 */
 	public IoTServiceFactoryImpl() { }
 

@@ -54,7 +54,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 	private static final String TOKEN_URL = "https://graph.facebook.com/oauth/access_token?"
 			+ "code={0}&redirect_uri={1}&client_id={2}&client_secret={3}";
 	/**
-	 * The default filter mapping
+	 * The default filter mapping.
 	 */
 	public static final String FACEBOOK_ACTION = "facebook_auth";
 

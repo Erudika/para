@@ -71,6 +71,9 @@ public class AWSIoTService implements IoTService {
 	private static AWSIotDataClient iotDataClient;
 	private static final Logger logger = LoggerFactory.getLogger(AWSIoTService.class);
 
+	/**
+	 * No-args constructor.
+	 */
 	public AWSIoTService() { }
 
 	protected AWSIotClient getClient() {

@@ -57,14 +57,14 @@ public class Sysprop implements ParaObject {
 	@Stored private Map<String, Object> properties;
 
 	/**
-	 * No-args constructor
+	 * No-args constructor.
 	 */
 	public Sysprop() {
 		this(null);
 	}
 
 	/**
-	 * The default constructor
+	 * The default constructor.
 	 * @param id the object id
 	 */
 	public Sysprop(String id) {
@@ -87,7 +87,7 @@ public class Sysprop implements ParaObject {
 	}
 
 	/**
-	 * Returns the value of a property for a given key
+	 * Returns the value of a property for a given key.
 	 * @param name the key
 	 * @return the value
 	 */
@@ -99,7 +99,7 @@ public class Sysprop implements ParaObject {
 	}
 
 	/**
-	 * Removes a property from the map
+	 * Removes a property from the map.
 	 * @param name the key
 	 * @return this
 	 */
@@ -111,7 +111,7 @@ public class Sysprop implements ParaObject {
 	}
 
 	/**
-	 * Checks for the existence of a property
+	 * Checks for the existence of a property.
 	 * @param name the key
 	 * @return true if a property with this key exists
 	 */
@@ -123,7 +123,7 @@ public class Sysprop implements ParaObject {
 	}
 
 	/**
-	 * A map of all properties (key/values)
+	 * A map of all properties (key/values).
 	 * @return a map
 	 */
 	@JsonAnyGetter

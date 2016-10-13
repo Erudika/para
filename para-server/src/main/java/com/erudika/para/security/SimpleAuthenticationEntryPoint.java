@@ -27,7 +27,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 
 /**
- *
+ * Authentication entry point.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class SimpleAuthenticationEntryPoint extends LoginUrlAuthenticationEntryPoint {
@@ -62,7 +62,7 @@ public class SimpleAuthenticationEntryPoint extends LoginUrlAuthenticationEntryP
 	}
 
 	/**
-	 * Checks if it is a rest request
+	 * Checks if it is a rest request.
 	 * @param request request
 	 * @return true if rest or ajax
 	 */

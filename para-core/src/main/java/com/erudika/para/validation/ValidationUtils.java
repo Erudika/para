@@ -22,6 +22,7 @@ import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.Sysprop;
+import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import static com.erudika.para.validation.Constraint.*;
 import java.lang.annotation.Annotation;
@@ -44,6 +45,7 @@ import javax.validation.constraints.Past;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import org.apache.commons.beanutils.PropertyUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.hibernate.validator.constraints.URL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -141,43 +143,7 @@ public final class ValidationUtils {
 						}
 						Map<String, Map<String, ?>> consMap = e.getValue();
 						for (Map.Entry<String, Map<String, ?>> constraint : consMap.entrySet()) {
-							String consName = constraint.getKey();
-							Map<String, ?> vals = constraint.getValue();
-							if (vals == null) {
-								vals = Collections.emptyMap();
-							}
-
-							Object val = vals.get("value");
-							Object min = vals.get("min");
-							Object max = vals.get("max");
-							Object in = vals.get("integer");
-							Object fr = vals.get("fraction");
-
-							if ("required".equals(consName) && !required().isValid(actualValue)) {
-								errors.add(Utils.formatMessage("{0} is required.", field));
-							} else if (matches(Min.class, consName) && !min(val).isValid(actualValue)) {
-								errors.add(Utils.formatMessage("{0} must be a number larger than {1}.", field, val));
-							} else if (matches(Max.class, consName) && !max(val).isValid(actualValue)) {
-								errors.add(Utils.formatMessage("{0} must be a number smaller than {1}.", field, val));
-							} else if (matches(Size.class, consName) && !size(min, max).isValid(actualValue)) {
-								errors.add(Utils.formatMessage("{0} must be between {1} and {2}.", field, min, max));
-							} else if (matches(Email.class, consName) && !email().isValid(actualValue)) {
-								errors.add(Utils.formatMessage("{0} is not a valid email.", field));
-							} else if (matches(Digits.class, consName) && !digits(in, fr).isValid(actualValue)) {
-								errors.add(Utils.formatMessage("{0} is not a valid number or within range.", field));
-							} else if (matches(Pattern.class, consName) && !pattern(val).isValid(actualValue)) {
-								errors.add(Utils.formatMessage("{0} doesn't match the pattern {1}.", field, val));
-							} else if (matches(AssertFalse.class, consName) && !falsy().isValid(actualValue)) {
-								errors.add(Utils.formatMessage("{0} must be false.", field));
-							} else if (matches(AssertTrue.class, consName) && !truthy().isValid(actualValue)) {
-								errors.add(Utils.formatMessage("{0} must be true.", field));
-							} else if (matches(Future.class, consName) && !future().isValid(actualValue)) {
-								errors.add(Utils.formatMessage("{0} must be in the future.", field));
-							} else if (matches(Past.class, consName) && !past().isValid(actualValue)) {
-								errors.add(Utils.formatMessage("{0} must be in the past.", field));
-							} else if (matches(URL.class, consName) && !url().isValid(actualValue)) {
-								errors.add(Utils.formatMessage("{0} is not a valid URL.", field));
-							}
+							buildAndValidateConstraint(constraint, field, actualValue, errors);
 						}
 					}
 					if (!errors.isEmpty()) {
@@ -189,6 +155,64 @@ public final class ValidationUtils {
 			logger.error(null, ex);
 		}
 		return validateObject(content);
+	}
+
+	private static void buildAndValidateConstraint(Map.Entry<String, Map<String, ?>> constraint, String field,
+			Object actualValue, LinkedList<String> errors) {
+		if (constraint == null) {
+			return;
+		}
+		String consName = constraint.getKey();
+		Map<String, ?> vals = constraint.getValue();
+		if (vals == null) {
+			vals = Collections.emptyMap();
+		}
+
+		Object val = vals.get("value");
+		long min = NumberUtils.toLong(vals.get("min") + "", 0);
+		long max = NumberUtils.toLong(vals.get("max") + "", Config.DEFAULT_LIMIT);
+
+		if (isValidSimpleConstraint(consName, field, actualValue, errors)) {
+			if (matches(Min.class, consName) && !min(NumberUtils.toLong(val + "", 0)).isValid(actualValue)) {
+				errors.add(Utils.formatMessage("{0} must be a number larger than {1}.", field, val));
+			} else if (matches(Max.class, consName) && !max(NumberUtils.toLong(val + "",
+					Config.DEFAULT_LIMIT)).isValid(actualValue)) {
+				errors.add(Utils.formatMessage("{0} must be a number smaller than {1}.", field, val));
+			} else if (matches(Size.class, consName) && !size(min, max).isValid(actualValue)) {
+				errors.add(Utils.formatMessage("{0} must be between {1} and {2}.", field, min, max));
+			} else if (matches(Digits.class, consName) && !digits(NumberUtils.toLong(vals.get("integer") + "", 0),
+					NumberUtils.toLong(vals.get("fraction") + "", 0)).isValid(actualValue)) {
+				errors.add(Utils.formatMessage("{0} is not a valid number or within range.", field));
+			} else if (matches(Pattern.class, consName) && !pattern(val).isValid(actualValue)) {
+				errors.add(Utils.formatMessage("{0} doesn't match the pattern {1}.", field, val));
+			}
+		}
+	}
+
+	private static boolean isValidSimpleConstraint(String cName, String field, Object actual, LinkedList<String> err) {
+		if ("required".equals(cName) && !required().isValid(actual)) {
+			err.add(Utils.formatMessage("{0} is required.", field));
+			return false;
+		} else if (matches(AssertFalse.class, cName) && !falsy().isValid(actual)) {
+			err.add(Utils.formatMessage("{0} must be false.", field));
+			return false;
+		} else if (matches(AssertTrue.class, cName) && !truthy().isValid(actual)) {
+			err.add(Utils.formatMessage("{0} must be true.", field));
+			return false;
+		} else if (matches(Future.class, cName) && !future().isValid(actual)) {
+			err.add(Utils.formatMessage("{0} must be in the future.", field));
+			return false;
+		} else if (matches(Past.class, cName) && !past().isValid(actual)) {
+			err.add(Utils.formatMessage("{0} must be in the past.", field));
+			return false;
+		} else if (matches(URL.class, cName) && !url().isValid(actual)) {
+			err.add(Utils.formatMessage("{0} is not a valid URL.", field));
+			return false;
+		} else if (matches(Email.class, cName) && !email().isValid(actual)) {
+			err.add(Utils.formatMessage("{0} is not a valid email.", field));
+			return false;
+		}
+		return true;
 	}
 
 	/**

@@ -57,7 +57,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 	private static final String PROFILE_URL = "https://api.twitter.com/1.1/account/verify_credentials.json";
 
 	/**
-	 * The default filter mapping
+	 * The default filter mapping.
 	 */
 	public static final String TWITTER_ACTION = "twitter_auth";
 

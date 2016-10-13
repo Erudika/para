@@ -32,6 +32,9 @@ import javax.ws.rs.ext.Provider;
 @Provider
 public class GenericExceptionMapper implements ExceptionMapper<Exception> {
 
+	/**
+	 * No-args constructor.
+	 */
 	public GenericExceptionMapper() { }
 
 	/**

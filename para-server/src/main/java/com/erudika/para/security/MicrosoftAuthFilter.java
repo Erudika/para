@@ -45,7 +45,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
 /**
- * A filter that handles authentication requests to Microsoft
+ * A filter that handles authentication requests to Microsoft.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter {
@@ -59,7 +59,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 			+ "&scope=https%3A%2F%2Fgraph.microsoft.com%2Fuser.read&client_id={2}"
 			+ "&client_secret={3}&grant_type=authorization_code";
 	/**
-	 * The default filter mapping
+	 * The default filter mapping.
 	 */
 	public static final String MICROSOFT_ACTION = "microsoft_auth";
 

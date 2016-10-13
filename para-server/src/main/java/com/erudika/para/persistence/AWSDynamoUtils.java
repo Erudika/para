@@ -60,12 +60,15 @@ public final class AWSDynamoUtils {
 	private static final String ENDPOINT = "dynamodb.".concat(Config.AWS_REGION).concat(".amazonaws.com");
 	private static final Logger logger = LoggerFactory.getLogger(AWSDynamoUtils.class);
 
+	/**
+	 * The name of the shared table. Default is "0".
+	 */
 	public static final String SHARED_TABLE = Config.getConfigParam("shared_table_name", "0");
 
 	private AWSDynamoUtils() { }
 
 	/**
-	 * Returns a client instance for AWS DynamoDB
+	 * Returns a client instance for AWS DynamoDB.
 	 * @return a client that talks to DynamoDB
 	 */
 	public static AmazonDynamoDBClient getClient() {
@@ -165,7 +168,7 @@ public final class AWSDynamoUtils {
 	}
 
 	/**
-	 * Updates the table settings (read and write capacities)
+	 * Updates the table settings (read and write capacities).
 	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param readCapacity read capacity
 	 * @param writeCapacity write capacity
@@ -287,7 +290,8 @@ public final class AWSDynamoUtils {
 			if (lastKey == null) {
 				break;
 			}
-		} while (!(ltr = getClient().listTables(lastKey, items)).getTableNames().isEmpty());
+			ltr = getClient().listTables(lastKey, items);
+		} while (!ltr.getTableNames().isEmpty());
 		return tables;
 	}
 

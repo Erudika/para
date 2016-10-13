@@ -79,7 +79,7 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 	}
 
 	/**
-	 * Checks if it is a rest request
+	 * Checks if it is a rest request.
 	 * @param request request
 	 * @return true if rest or ajax
 	 */

@@ -41,7 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Signs OAuth 1.0a requests using HMAC-SHA1
+ * Signs OAuth 1.0a requests using HMAC-SHA1.
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
@@ -49,8 +49,10 @@ public final class OAuth1HmacSigner {
 
 	private static final Logger logger = LoggerFactory.getLogger(OAuth1HmacSigner.class);
 
+	private OAuth1HmacSigner() { }
+
 	/**
-	 * Sign a request and return the "Authorization" header
+	 * Sign a request and return the "Authorization" header.
 	 *
 	 * @param httpMethod the HTTP method
 	 * @param url the request URL
@@ -216,7 +218,7 @@ public final class OAuth1HmacSigner {
 			}
 			if (pMap.get("oauth_nonce") == null) {
 				String nonce = Utils.stripAndTrim(Utils.generateSecurityToken(32));
-				pMap.put("oauth_nonce", new String[]{ nonce.length() > 32 ? nonce.substring(0, 32) : nonce });
+				pMap.put("oauth_nonce", new String[]{nonce.length() > 32 ? nonce.substring(0, 32) : nonce});
 			}
 			if (pMap.get("oauth_version") == null) {
 				pMap.put("oauth_version", new String[]{"1.0"});
@@ -224,6 +226,9 @@ public final class OAuth1HmacSigner {
 		}
 	}
 
+	/**
+	 * Comparable parameter.
+	 */
 	private static class ComparableParameter implements Comparable<ComparableParameter> {
 
 		ComparableParameter(String key, String value) {

@@ -43,14 +43,14 @@ public class Thing extends Sysprop {
 	private transient Map<String, Object> deviceDetails;
 
 	/**
-	 * No-args constructor
+	 * No-args constructor.
 	 */
 	public Thing() {
 		this(null);
 	}
 
 	/**
-	 * The default constructor
+	 * The default constructor.
 	 * @param id the object id
 	 */
 	public Thing(String id) {
@@ -127,7 +127,7 @@ public class Thing extends Sysprop {
 	}
 
 	/**
-	 * Returns the value of a property for a given key
+	 * Returns the value of a property for a given key.
 	 * @param key the key
 	 * @return the value
 	 */
@@ -139,7 +139,7 @@ public class Thing extends Sysprop {
 	}
 
 	/**
-	 * Removes a property from the map
+	 * Removes a property from the map.
 	 * @param key the key
 	 * @return this
 	 */
@@ -151,7 +151,7 @@ public class Thing extends Sysprop {
 	}
 
 	/**
-	 * Checks for the existence of a property
+	 * Checks for the existence of a property.
 	 * @param key the key
 	 * @return true if a property with this key exists
 	 */

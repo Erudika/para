@@ -107,43 +107,86 @@ public final class CoreUtils implements InitializeListener {
 		return instance;
 	}
 
+	/**
+	 * Returns the DAO object.
+	 * @return a {@link DAO} object
+	 */
 	public DAO getDao() {
 		return dao;
 	}
 
+	/**
+	 * Sets the DAO object.
+	 * @param dao {@link DAO}
+	 */
 	public void setDao(DAO dao) {
 		this.dao = dao;
 	}
 
+	/**
+	 * Returns the Search object.
+	 * @return {@link Search} object
+	 */
 	public Search getSearch() {
 		return search;
 	}
 
+	/**
+	 * Sets the Search object.
+	 * @param search {@link Search}
+	 */
 	public void setSearch(Search search) {
 		this.search = search;
 	}
 
+	/**
+	 * Returns the Cache object.
+	 * @return {@link Cache} object
+	 */
 	public Cache getCache() {
 		return cache;
 	}
 
+	/**
+	 * Sets the Cache object.
+	 * @param cache {@link Cache}
+	 */
 	public void setCache(Cache cache) {
 		this.cache = cache;
 	}
 
+	/**
+	 * Returns the default IoT factory.
+	 * @return factory instance
+	 */
 	public IoTServiceFactory getIotFactory() {
 		return iotFactory;
 	}
 
+	/**
+	 * Sets the IoT factory.
+	 * @param iotFactory factory instance
+	 */
 	public void setIotFactory(IoTServiceFactory iotFactory) {
 		this.iotFactory = iotFactory;
 	}
 
+	/**
+	 * Returns the relative path to the object, e.g. /user/1234
+	 * @param obj an object
+	 * @return a relative path
+	 */
 	public String getObjectURI(ParaObject obj) {
 		String defurl = "/".concat(obj.getPlural());
 		return (obj.getId() != null) ? defurl.concat("/").concat(obj.getId()) : defurl;
 	}
 
+	/**
+	 * Returns the default name property of an object.
+	 * @param name a name
+	 * @param id an id
+	 * @return a combination of name and id, unless this.name is set
+	 */
 	public String getName(String name, String id) {
 		return (name == null) ? "ParaObject ".concat((id == null) ? System.currentTimeMillis() + "" : id) : name;
 	}

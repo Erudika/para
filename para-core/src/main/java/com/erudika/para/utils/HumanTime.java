@@ -111,36 +111,13 @@ public class HumanTime implements Externalizable, Comparable<HumanTime>, Cloneab
 	}
 
 	static State getState(char c) {
-		State out;
-		switch (c) {
-			case '0':
-			case '1':
-			case '2':
-			case '3':
-			case '4':
-			case '5':
-			case '6':
-			case '7':
-			case '8':
-			case '9':
-				out = State.NUMBER;
-				break;
-			case 's':
-			case 'm':
-			case 'h':
-			case 'd':
-			case 'y':
-			case 'S':
-			case 'M':
-			case 'H':
-			case 'D':
-			case 'Y':
-				out = State.UNIT;
-				break;
-			default:
-				out = State.IGNORED;
+		if (Character.toString(c).matches("[0-9]")) {
+			return State.NUMBER;
+		} else if (Character.toString(c).matches("[smhdySMHDY]")) {
+			return State.UNIT;
+		} else {
+			return State.IGNORED;
 		}
-		return out;
 	}
 
 	/**
@@ -577,7 +554,7 @@ public class HumanTime implements Externalizable, Comparable<HumanTime>, Cloneab
 //                    }
 //                    a.append(ceil(d, MONTH));
 //                    a.append(' ');
-//                    a.append('n');
+//                    a.append('m');
 //                    ++parts;
 //                    rounded = true;
 //                    prependBlank = true;
@@ -588,7 +565,7 @@ public class HumanTime implements Externalizable, Comparable<HumanTime>, Cloneab
 				}
 				a.append(floor(d, MONTH));
 //                    a.append(' ');
-				a.append('n');
+				a.append('m');
 				++parts;
 				rounded = mod <= lowerCeiling(MONTH);
 				if (rounded) {
@@ -715,21 +692,21 @@ public class HumanTime implements Externalizable, Comparable<HumanTime>, Cloneab
 									return a;
 								}
 								prependBlank = true;
-							}
+							} else
 
-//								if (parts < 2) {
-//									d %= SECOND;
-//
-//									if (d > 0 && !rounded) {
-//										if (prependBlank) {
-//											a.append(' ');
-//										}
-//										a.append(Integer.toString((int) d));
+								if (parts < 2) {
+									d %= SECOND;
+
+									if (d > 0 && !rounded) {
+										if (prependBlank) {
+											a.append(' ');
+										}
+										a.append(Integer.toString((int) d));
 //										a.append(' ');
-//										a.append('m');
-//										a.append('s');
-//									}
-//								}
+										a.append('m');
+										a.append('s');
+									}
+								}
 						}
 					}
 				}
@@ -751,9 +728,7 @@ public class HumanTime implements Externalizable, Comparable<HumanTime>, Cloneab
 		return delta;
 	}
 
-	/**
-	 * @see java.lang.Object#equals(java.lang.Object)
-	 */
+	@Override
 	public boolean equals(Object obj) {
 		if (this == obj) {
 			return true;
@@ -764,58 +739,32 @@ public class HumanTime implements Externalizable, Comparable<HumanTime>, Cloneab
 		return delta == ((HumanTime) obj).delta;
 	}
 
-	/**
-	 * Returns a 32-bit representation of the time delta.
-	 *
-	 * @see java.lang.Object#hashCode()
-	 */
+	@Override
 	public int hashCode() {
 		return (int) (delta ^ (delta >> 32));
 	}
 
-	/**
-	 * Returns a String representation of this.
-	 * <p>
-	 * The output is identical to {@link #getExactly()}.
-	 *
-	 * @see java.lang.Object#toString()
-	 * @see #getExactly()
-	 * @return a String, never <code>null</code>
-	 */
+	@Override
 	public String toString() {
 		return getExactly();
 	}
 
-	/**
-	 * Compares this HumanTime to another HumanTime.
-	 *
-	 * @param t the other instance, may not be <code>null</code>
-	 * @return which one is greater
-	 */
+	@Override
 	public int compareTo(HumanTime t) {
 		return delta == t.delta ? 0 : (delta < t.delta ? -1 : 1);
 	}
 
-	/**
-	 * Deep-clones this object.
-	 *
-	 * @see java.lang.Object#clone()
-	 * @throws CloneNotSupportedException ex
-	 */
+	@Override
 	public Object clone() throws CloneNotSupportedException {
 		return super.clone();
 	}
 
-	/**
-	 * @see java.io.Externalizable#readExternal(java.io.ObjectInput)
-	 */
+	@Override
 	public void readExternal(ObjectInput in) throws IOException {
 		delta = in.readLong();
 	}
 
-	/**
-	 * @see java.io.Externalizable#writeExternal(java.io.ObjectOutput)
-	 */
+	@Override
 	public void writeExternal(ObjectOutput out) throws IOException {
 		out.writeLong(delta);
 	}

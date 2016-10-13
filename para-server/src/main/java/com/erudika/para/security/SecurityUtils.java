@@ -52,7 +52,7 @@ public final class SecurityUtils {
 	private SecurityUtils() { }
 
 	/**
-	 * Extracts a User object from the security context
+	 * Extracts a User object from the security context.
 	 * @return an authenticated user or null if a user is not authenticated
 	 */
 	public static User getAuthenticatedUser() {
@@ -60,7 +60,7 @@ public final class SecurityUtils {
 	}
 
 	/**
-	 * Extracts a User object from the security context
+	 * Extracts a User object from the security context.
 	 * @param auth the authentication object
 	 * @return an authenticated user or null if a user is not authenticated
 	 */
@@ -73,7 +73,7 @@ public final class SecurityUtils {
 	}
 
 	/**
-	 * Extracts a App object from the security context
+	 * Extracts a App object from the security context.
 	 * @return an authenticated app or null if a app is not authenticated
 	 */
 	public static App getAuthenticatedApp() {

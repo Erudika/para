@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Utility class for language operations.
- * These can be used to build a crowdsourced translation system. 
+ * These can be used to build a crowdsourced translation system.
  * @author Alex Bogdanovski [alex@erudika.com]
  * @see Translation
  */
@@ -195,7 +195,7 @@ public class LanguageUtils {
 	}
 
 	/**
-	 * Returns the default language code
+	 * Returns the default language code.
 	 * @return the 2-letter language code
 	 */
 	public String getDefaultLanguageCode() {
@@ -266,7 +266,7 @@ public class LanguageUtils {
 	}
 
 	/**
-	 * Returns a map of all language codes and their locales
+	 * Returns a map of all language codes and their locales.
 	 * @return a map of language codes to locales
 	 */
 	public Map<String, Locale> getAllLocales() {

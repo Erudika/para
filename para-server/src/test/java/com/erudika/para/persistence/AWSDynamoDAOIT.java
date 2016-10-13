@@ -36,7 +36,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- *
+ * DynamoDB integration test.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class AWSDynamoDAOIT extends DAOTest {

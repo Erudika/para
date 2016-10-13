@@ -58,14 +58,14 @@ public class Vote implements ParaObject {
 	@Stored @NotNull private Long expiresAfter;
 
 	/**
-	 * No-args constructor
+	 * No-args constructor.
 	 */
 	public Vote() {
 		this(null, null, null);
 	}
 
 	/**
-	 * Default constructor
+	 * Default constructor.
 	 * @param voterid the user id of the voter
 	 * @param voteeid the id of the object that will receive the vote
 	 * @param value up + or down -
@@ -115,7 +115,7 @@ public class Vote implements ParaObject {
 	}
 
 	/**
-	 * Sets the value of the vote
+	 * Sets the value of the vote.
 	 * @param value UP or DOWN
 	 */
 	public void setValue(String value) {
@@ -123,7 +123,7 @@ public class Vote implements ParaObject {
 	}
 
 	/**
-	 * Returns the expiration period
+	 * Returns the expiration period.
 	 * @return time in seconds
 	 */
 	public Long getExpiresAfter() {
@@ -134,7 +134,7 @@ public class Vote implements ParaObject {
 	}
 
 	/**
-	 * Sets the expiration period
+	 * Sets the expiration period.
 	 * @param expiresAfter time in seconds
 	 */
 	public void setExpiresAfter(Long expiresAfter) {
@@ -142,7 +142,7 @@ public class Vote implements ParaObject {
 	}
 
 	/**
-	 * Checks if expired
+	 * Checks if expired.
 	 * @return true if expired
 	 */
 	public boolean isExpired() {

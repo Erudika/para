@@ -23,6 +23,7 @@ import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
+import static com.erudika.para.rest.RestUtils.*;
 import com.erudika.para.search.Search;
 import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.utils.Config;
@@ -63,6 +64,9 @@ import org.slf4j.LoggerFactory;
  */
 public final class Api1 extends ResourceConfig {
 
+	/**
+	 * {@value #PATH}.
+	 */
 	public static final String PATH = "/v1/";
 
 	private static final Logger logger = LoggerFactory.getLogger(Api1.class);
@@ -257,7 +261,7 @@ public final class Api1 extends ResourceConfig {
 					long delta = NumberUtils.toLong(d, 1);
 					return Response.ok(HumanTime.approximately(delta), MediaType.TEXT_PLAIN_TYPE).build();
 				}
-				return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, "Unknown method: " +
+				return getStatusResponse(Response.Status.BAD_REQUEST, "Unknown method: " +
 						((method == null) ? "empty" : method));
 			}
 		};
@@ -280,7 +284,7 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				String typePlural = pathParam(Config._TYPE, ctx);
-				App app = RestUtils.getPrincipalApp();
+				App app = getPrincipalApp();
 				if (app != null && !StringUtils.isBlank(typePlural)) {
 					String type = ParaObjectUtils.getAllTypes(app).get(typePlural);
 					if (type == null) {
@@ -288,11 +292,16 @@ public final class Api1 extends ResourceConfig {
 					}
 					return crudHandler(app, type).apply(ctx);
 				}
-				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
 
+	/**
+	 * @param app {@link App}
+	 * @param type a type
+	 * @return response
+	 */
 	public static Inflector<ContainerRequestContext, Response> crudHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
@@ -316,11 +325,14 @@ public final class Api1 extends ResourceConfig {
 						return deleteHandler(app, type).apply(ctx);
 					}
 				}
-				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "Type '" + type + "' not found.");
+				return getStatusResponse(Response.Status.NOT_FOUND, "Type '" + type + "' not found.");
 			}
 		};
 	}
 
+	/**
+	 * @return response
+	 */
 	public static Inflector<ContainerRequestContext, Response> linksHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
@@ -330,10 +342,10 @@ public final class Api1 extends ResourceConfig {
 				String type = pathp.getFirst(Config._TYPE);
 				String id2 = pathp.getFirst("id2");
 				String type2 = pathp.getFirst("type2");
-				App app = RestUtils.getPrincipalApp();
+				App app = getPrincipalApp();
 
 				if (app == null) {
-					return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST);
+					return getStatusResponse(Response.Status.BAD_REQUEST);
 				}
 
 				String typeSingular = (type == null) ? null : ParaObjectUtils.getAllTypes(app).get(type);
@@ -360,13 +372,13 @@ public final class Api1 extends ResourceConfig {
 						if (id2 != null) {
 							String linkid = pobj.link(id2);
 							if (linkid == null) {
-								return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST,
+								return getStatusResponse(Response.Status.BAD_REQUEST,
 										"Failed to create link.");
 							} else {
 								return Response.ok(linkid, MediaType.TEXT_PLAIN_TYPE).build();
 							}
 						} else {
-							return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST,
+							return getStatusResponse(Response.Status.BAD_REQUEST,
 									"Parameters 'type' and 'id' are missing.");
 						}
 					} else if (GET.equals(ctx.getMethod())) {
@@ -407,7 +419,7 @@ public final class Api1 extends ResourceConfig {
 								return Response.ok(result).build();
 							}
 						} else {
-							return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST,
+							return getStatusResponse(Response.Status.BAD_REQUEST,
 									"Parameter 'type' is missing.");
 						}
 					} else if (DELETE.equals(ctx.getMethod())) {
@@ -423,7 +435,7 @@ public final class Api1 extends ResourceConfig {
 						return Response.ok().build();
 					}
 				}
-				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "Object not found: " + id);
+				return getStatusResponse(Response.Status.NOT_FOUND, "Object not found: " + id);
 			}
 		};
 	}
@@ -445,23 +457,30 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
+	/**
+	 * @return response
+	 */
 	public static Inflector<ContainerRequestContext, Response> readIdHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = RestUtils.getPrincipalApp();
+				App app = getPrincipalApp();
 				String id = pathParam(Config._ID, ctx);
 				if (app != null) {
-					return RestUtils.getReadResponse(app, getDAO().read(app.getAppIdentifier(), id));
+					return getReadResponse(app, getDAO().read(app.getAppIdentifier(), id));
 				}
-				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
 
+	/**
+	 * @param a {@link App}
+	 * @return response
+	 */
 	public static Inflector<ContainerRequestContext, Response> getConstrHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : getPrincipalApp();
 				String type = pathParam(Config._TYPE, ctx);
 				if (app != null) {
 					if (type != null) {
@@ -470,21 +489,25 @@ public final class Api1 extends ResourceConfig {
 						return Response.ok(app.getAllValidationConstraints()).build();
 					}
 				}
-				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
 
+	/**
+	 * @param a {@link App}
+	 * @return response
+	 */
 	@SuppressWarnings("unchecked")
 	public static Inflector<ContainerRequestContext, Response> addConstrHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : getPrincipalApp();
 				String type = pathParam(Config._TYPE, ctx);
 				String field = pathParam("field", ctx);
 				String cname = pathParam("cname", ctx);
 				if (app != null) {
-					Response payloadRes = RestUtils.getEntity(ctx.getEntityStream(), Map.class);
+					Response payloadRes = getEntity(ctx.getEntityStream(), Map.class);
 					if (payloadRes.getStatusInfo() == Response.Status.OK) {
 						Map<String, Object> payload = (Map<String, Object>) payloadRes.getEntity();
 						if (app.addValidationConstraint(type, field, Constraint.build(cname, payload))) {
@@ -493,15 +516,19 @@ public final class Api1 extends ResourceConfig {
 					}
 					return Response.ok(app.getAllValidationConstraints(type)).build();
 				}
-				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
 
+	/**
+	 * @param a {@link App}
+	 * @return response
+	 */
 	public static Inflector<ContainerRequestContext, Response> removeConstrHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : getPrincipalApp();
 				String type = pathParam(Config._TYPE, ctx);
 				String field = pathParam("field", ctx);
 				String cname = pathParam("cname", ctx);
@@ -511,15 +538,19 @@ public final class Api1 extends ResourceConfig {
 					}
 					return Response.ok(app.getAllValidationConstraints(type)).build();
 				}
-				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
 
+	/**
+	 * @param a {@link App}
+	 * @return response
+	 */
 	public static Inflector<ContainerRequestContext, Response> getPermitHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : getPrincipalApp();
 				String subjectid = pathParam("subjectid", ctx);
 				if (app != null) {
 					if (subjectid != null) {
@@ -528,15 +559,19 @@ public final class Api1 extends ResourceConfig {
 						return Response.ok(app.getAllResourcePermissions()).build();
 					}
 				}
-				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
 
+	/**
+	 * @param a {@link App}
+	 * @return response
+	 */
 	public static Inflector<ContainerRequestContext, Response> checkPermitHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : getPrincipalApp();
 				String subjectid = pathParam("subjectid", ctx);
 				String resourcePath = pathParam(Config._TYPE, ctx);
 				String httpMethod = pathParam("method", ctx);
@@ -544,20 +579,24 @@ public final class Api1 extends ResourceConfig {
 					return Response.ok(app.isAllowedTo(subjectid, resourcePath, httpMethod),
 							MediaType.TEXT_PLAIN_TYPE).build();
 				}
-				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
 
+	/**
+	 * @param a {@link App}
+	 * @return response
+	 */
 	@SuppressWarnings("unchecked")
 	public static Inflector<ContainerRequestContext, Response> grantPermitHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : getPrincipalApp();
 				String subjectid = pathParam("subjectid", ctx);
 				String resourcePath = pathParam(Config._TYPE, ctx);
 				if (app != null) {
-					Response resp = RestUtils.getEntity(ctx.getEntityStream(), List.class);
+					Response resp = getEntity(ctx.getEntityStream(), List.class);
 					if (resp.getStatusInfo() == Response.Status.OK) {
 						List<String> permission = (List<String>) resp.getEntity();
 						Set<App.AllowedMethods> set = new HashSet<App.AllowedMethods>(permission.size());
@@ -575,21 +614,25 @@ public final class Api1 extends ResourceConfig {
 							}
 							return Response.ok(app.getAllResourcePermissions(subjectid)).build();
 						} else {
-							return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST, "No allowed methods specified.");
+							return getStatusResponse(Response.Status.BAD_REQUEST, "No allowed methods specified.");
 						}
 					} else {
 						return resp;
 					}
 				}
-				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
 
+	/**
+	 * @param a {@link App}
+	 * @return response
+	 */
 	public static Inflector<ContainerRequestContext, Response> revokePermitHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : getPrincipalApp();
 				String subjectid = pathParam("subjectid", ctx);
 				String type = pathParam(Config._TYPE, ctx);
 				if (app != null) {
@@ -604,23 +647,27 @@ public final class Api1 extends ResourceConfig {
 					}
 					return Response.ok(app.getAllResourcePermissions(subjectid)).build();
 				}
-				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
 
+	/**
+	 * @param a {@link App}
+	 * @return response
+	 */
 	@SuppressWarnings("unchecked")
 	public static Inflector<ContainerRequestContext, Response> appSettingsHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : getPrincipalApp();
 				String key = pathParam("key", ctx);
 				if (app != null) {
 					if (StringUtils.isBlank(key)) {
 						return Response.ok(app.getSettings()).build();
 					} else {
 						if (PUT.equals(ctx.getMethod())) {
-							Response resp = RestUtils.getEntity(ctx.getEntityStream(), Map.class);
+							Response resp = getEntity(ctx.getEntityStream(), Map.class);
 							if (resp.getStatusInfo() == Response.Status.OK) {
 								Map<String, Object> setting = (Map<String, Object>) resp.getEntity();
 								if (setting.containsKey("value")) {
@@ -629,7 +676,7 @@ public final class Api1 extends ResourceConfig {
 								}
 								return Response.ok().build();
 							} else {
-								return RestUtils.getStatusResponse(Response.Status.BAD_REQUEST);
+								return getStatusResponse(Response.Status.BAD_REQUEST);
 							}
 						} else if (DELETE.equals(ctx.getMethod())) {
 							app.removeSetting(key);
@@ -640,7 +687,7 @@ public final class Api1 extends ResourceConfig {
 						}
 					}
 				}
-				return RestUtils.getStatusResponse(Response.Status.FORBIDDEN, "Not allowed.");
+				return getStatusResponse(Response.Status.FORBIDDEN, "Not allowed.");
 			}
 		};
 	}
@@ -648,11 +695,11 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> listTypesHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = RestUtils.getPrincipalApp();
+				App app = getPrincipalApp();
 				if (app != null) {
 					return Response.ok(ParaObjectUtils.getAllTypes(app)).build();
 				}
-				return RestUtils.getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
@@ -668,7 +715,7 @@ public final class Api1 extends ResourceConfig {
 					creds.put("info", "Save the secret key! It is showed only once!");
 					return Response.ok(creds).build();
 				}
-				return RestUtils.getStatusResponse(Response.Status.UNAUTHORIZED, "Not an app.");
+				return getStatusResponse(Response.Status.UNAUTHORIZED, "Not an app.");
 			}
 		};
 	}
@@ -683,7 +730,7 @@ public final class Api1 extends ResourceConfig {
 						boolean shared = "true".equals(queryParam("shared", ctx));
 						return Response.ok(setup(appid, queryParam("name", ctx), shared)).build();
 					} else {
-						return RestUtils.getStatusResponse(Response.Status.FORBIDDEN,
+						return getStatusResponse(Response.Status.FORBIDDEN,
 								"Only root app can create and initialize other apps.");
 					}
 				}
@@ -692,105 +739,151 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
+	/**
+	 * @param a {@link App}
+	 * @param type a type
+	 * @return response
+	 */
 	public static Inflector<ContainerRequestContext, Response> createHandler(final App a, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : RestUtils.getPrincipalApp();
-				return RestUtils.getCreateResponse(app, type, ctx.getEntityStream());
+				App app = (a != null) ? a : getPrincipalApp();
+				return getCreateResponse(app, type, ctx.getEntityStream());
 			}
 		};
 	}
 
+	/**
+	 * @param a {@link App}
+	 * @param type a type
+	 * @return response
+	 */
 	public static Inflector<ContainerRequestContext, Response> readHandler(final App a, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : getPrincipalApp();
 				ParaObject obj = ParaObjectUtils.toObject(type);
 				obj.setId(pathParam(Config._ID, ctx));
 				if (app.getId().equals(obj.getId())) {
-					return RestUtils.getReadResponse(app, app);
+					return getReadResponse(app, app);
 				}
-				return RestUtils.getReadResponse(app, getDAO().read(app.getAppIdentifier(), obj.getId()));
+				return getReadResponse(app, getDAO().read(app.getAppIdentifier(), obj.getId()));
 			}
 		};
 	}
 
+	/**
+	 * @param a {@link App}
+	 * @param type a type
+	 * @return response
+	 */
 	public static Inflector<ContainerRequestContext, Response> updateHandler(final App a, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : getPrincipalApp();
 				ParaObject obj = ParaObjectUtils.toObject(type);
 				obj.setType(type);
 				obj.setId(pathParam(Config._ID, ctx));
 				// partial update - equivalent to PATCH method
-				return RestUtils.getUpdateResponse(app, getDAO().read(app.getAppIdentifier(), obj.getId()),
+				return getUpdateResponse(app, getDAO().read(app.getAppIdentifier(), obj.getId()),
 						ctx.getEntityStream());
 			}
 		};
 	}
 
+	/**
+	 * @param a {@link App}
+	 * @param type a type
+	 * @return response
+	 */
 	public static Inflector<ContainerRequestContext, Response> overwriteHandler(final App a, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				// full update - equivalent to PUT method
-				App app = (a != null) ? a : RestUtils.getPrincipalApp();
-				return RestUtils.getOverwriteResponse(app, pathParam(Config._ID, ctx), type, ctx.getEntityStream());
+				App app = (a != null) ? a : getPrincipalApp();
+				return getOverwriteResponse(app, pathParam(Config._ID, ctx), type, ctx.getEntityStream());
 			}
 		};
 	}
 
+	/**
+	 * @param a {@link App}
+	 * @param type a type
+	 * @return response
+	 */
 	public static Inflector<ContainerRequestContext, Response> deleteHandler(final App a, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : RestUtils.getPrincipalApp();
+				App app = (a != null) ? a : getPrincipalApp();
 				ParaObject obj = ParaObjectUtils.toObject(type);
 				obj.setType(type);
 				obj.setId(pathParam(Config._ID, ctx));
-				return RestUtils.getDeleteResponse(app, obj);
+				return getDeleteResponse(app, obj);
 			}
 		};
 	}
 
+	/**
+	 * @param a {@link App}
+	 * @return response
+	 */
 	public static Inflector<ContainerRequestContext, Response> batchCreateHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : RestUtils.getPrincipalApp();
-				return RestUtils.getBatchCreateResponse(app, ctx.getEntityStream());
+				App app = (a != null) ? a : getPrincipalApp();
+				return getBatchCreateResponse(app, ctx.getEntityStream());
 			}
 		};
 	}
 
+	/**
+	 * @param a {@link App}
+	 * @return response
+	 */
 	public static Inflector<ContainerRequestContext, Response> batchReadHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : RestUtils.getPrincipalApp();
-				return RestUtils.getBatchReadResponse(app, queryParams("ids", ctx));
+				App app = (a != null) ? a : getPrincipalApp();
+				return getBatchReadResponse(app, queryParams("ids", ctx));
 			}
 		};
 	}
 
+	/**
+	 * @param a {@link App}
+	 * @return response
+	 */
 	public static Inflector<ContainerRequestContext, Response> batchUpdateHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : RestUtils.getPrincipalApp();
-				return RestUtils.getBatchUpdateResponse(app, ctx.getEntityStream());
+				App app = (a != null) ? a : getPrincipalApp();
+				return getBatchUpdateResponse(app, ctx.getEntityStream());
 			}
 		};
 	}
 
+	/**
+	 * @param a {@link App}
+	 * @return response
+	 */
 	public static Inflector<ContainerRequestContext, Response> batchDeleteHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : RestUtils.getPrincipalApp();
-				return RestUtils.getBatchDeleteResponse(app, queryParams("ids", ctx));
+				App app = (a != null) ? a : getPrincipalApp();
+				return getBatchDeleteResponse(app, queryParams("ids", ctx));
 			}
 		};
 	}
 
+	/**
+	 * @param app {@link App}
+	 * @param type a type
+	 * @return response
+	 */
 	public static Inflector<ContainerRequestContext, Response> searchHandler(final App app, final String type) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				App app1 = (app == null) ? RestUtils.getPrincipalApp() : app;
+				App app1 = (app == null) ? getPrincipalApp() : app;
 				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
 				String queryType = pathParam("querytype", ctx);
 				return Response.ok(buildQueryAndSearch(app1, queryType, params, type)).build();
@@ -883,26 +976,6 @@ public final class Api1 extends ResourceConfig {
 		result.put("page", pager.getPage());
 		result.put("totalHits", pager.getCount());
 		return result;
-	}
-
-	public static String pathParam(String param, ContainerRequestContext ctx) {
-		return ctx.getUriInfo().getPathParameters().getFirst(param);
-	}
-
-	public static List<String> pathParams(String param, ContainerRequestContext ctx) {
-		return ctx.getUriInfo().getPathParameters().get(param);
-	}
-
-	public static String queryParam(String param, ContainerRequestContext ctx) {
-		return ctx.getUriInfo().getQueryParameters().getFirst(param);
-	}
-
-	public static List<String> queryParams(String param, ContainerRequestContext ctx) {
-		return ctx.getUriInfo().getQueryParameters().get(param);
-	}
-
-	public static boolean hasQueryParam(String param, ContainerRequestContext ctx) {
-		return ctx.getUriInfo().getQueryParameters().containsKey(param);
 	}
 
 	private Locale getLocale(String localeStr) {

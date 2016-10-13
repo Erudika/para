@@ -300,7 +300,7 @@
 						<phase>validate</phase>
 						<configuration>
 							<skip>${skipTests}</skip>
-							<configLocation>${basedir}/src/main/resources/checkstyle.xml</configLocation>
+							<configLocation>../para-core/src/main/resources/checkstyle.xml</configLocation>
 							<encoding>UTF-8</encoding>
 							<consoleOutput>true</consoleOutput>
 							<failsOnError>true</failsOnError>

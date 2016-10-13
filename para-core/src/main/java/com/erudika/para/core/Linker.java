@@ -62,7 +62,7 @@ public final class Linker implements ParaObject {
 	@Stored private List<Map<String, Object>> nstd;
 
 	/**
-	 * No-args constructor
+	 * No-args constructor.
 	 */
 	public Linker() { }
 
@@ -155,7 +155,7 @@ public final class Linker implements ParaObject {
 	}
 
 	/**
-	 * Returns the additional information about the link
+	 * Returns the additional information about the link.
 	 * @return some info
 	 */
 	public String getMetadata() {
@@ -163,7 +163,7 @@ public final class Linker implements ParaObject {
 	}
 
 	/**
-	 * Sets additional information about the link
+	 * Sets additional information about the link.
 	 * @param metadata some info
 	 */
 	public void setMetadata(String metadata) {
@@ -195,7 +195,7 @@ public final class Linker implements ParaObject {
 	}
 
 	/**
-	 * Returns "id1" or "id2" depending on the alphabetical order of type
+	 * Returns "id1" or "id2" depending on the alphabetical order of type.
 	 * @param type the type
 	 * @return id1 or id2
 	 */

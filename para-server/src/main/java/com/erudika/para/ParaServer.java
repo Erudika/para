@@ -82,6 +82,10 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 
 	private static final Logger logger = LoggerFactory.getLogger(ParaServer.class);
 
+	/**
+	 * Returns the list of core modules.
+	 * @return the core modules
+	 */
 	public static Module[] getCoreModules() {
 		return new Module[] {
 			new PersistenceModule(),
@@ -102,6 +106,9 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		return 1;
 	}
 
+	/**
+	 * @return API servlet bean
+	 */
 	@Bean
 	public ServletRegistrationBean apiV1RegistrationBean() {
 		String path = Api1.PATH + "*";
@@ -114,6 +121,9 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		return reg;
 	}
 
+	/**
+	 * @return GZIP filter bean
+	 */
 	@Bean
 	public FilterRegistrationBean gzipFilterRegistrationBean() {
 		String path = Api1.PATH + "*";
@@ -127,6 +137,9 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		return frb;
 	}
 
+	/**
+	 * @return CORS filter bean
+	 */
 	@Bean
 	public FilterRegistrationBean corsFilterRegistrationBean() {
 		String path = Api1.PATH + "*";
@@ -146,6 +159,9 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		return frb;
 	}
 
+	/**
+	 * @return Jetty config bean
+	 */
 	@Bean
 	public EmbeddedServletContainerFactory jettyConfigBean() {
 		JettyEmbeddedServletContainerFactory jef = new JettyEmbeddedServletContainerFactory();
@@ -251,7 +267,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 
 	/**
 	 * This is the initializing method when running ParaServer as executable JAR (or WAR),
-	 * from the command line: java -jar para.jar
+	 * from the command line: java -jar para.jar.
 	 * @param args command line arguments array (same as those in {@code void main(String[] args)} )
 	 * @param sources the application classes that will be scanned
 	 */
@@ -266,6 +282,10 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		app.run(args);
 	}
 
+	/**
+	 * Para starts from here.
+	 * @param args args
+	 */
 	public static void main(String[] args) {
 		runAsJAR(args, ParaServer.class);
 	}

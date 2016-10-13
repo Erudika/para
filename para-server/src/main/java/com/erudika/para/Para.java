@@ -57,6 +57,9 @@ import org.slf4j.LoggerFactory;
  */
 public final class Para {
 
+	/**
+	 * The ASCII logo.
+	 */
 	public static final String LOGO;
 	static {
 		boolean printVer = Config.getConfigBoolean("print_version", true);
@@ -83,7 +86,10 @@ public final class Para {
 	private static Injector injector;
 	private static ClassLoader paraClassLoader;
 
-	public Para() { }
+	/**
+	 * No-args constructor.
+	 */
+	private Para() { }
 
 	/**
 	 * Initializes the Para core modules and allows the user to override them. Call this method first.
@@ -260,7 +266,7 @@ public final class Para {
 	}
 
 	/**
-	 * Returns the Para executor service
+	 * Returns the Para executor service.
 	 * @return a fixed thread executor service
 	 */
 	public static ExecutorService getExecutorService() {
@@ -268,7 +274,7 @@ public final class Para {
 	}
 
 	/**
-	 * Returns the Para scheduled executor service
+	 * Returns the Para scheduled executor service.
 	 * @return a scheduled executor service
 	 */
 	public static ScheduledExecutorService getScheduledExecutorService() {
@@ -276,7 +282,7 @@ public final class Para {
 	}
 
 	/**
-	 * Executes a {@link java.lang.Runnable} asynchronously
+	 * Executes a {@link java.lang.Runnable} asynchronously.
 	 * @param runnable a task
 	 */
 	public static void asyncExecute(Runnable runnable) {
@@ -295,7 +301,7 @@ public final class Para {
 	}
 
 	/**
-	 * Executes a {@link java.lang.Runnable} at a fixed interval, asynchronously
+	 * Executes a {@link java.lang.Runnable} at a fixed interval, asynchronously.
 	 * @param task a task
 	 * @param delay run after
 	 * @param interval run at this interval of time
@@ -371,7 +377,7 @@ public final class Para {
 	}
 
 	/**
-	 * Creates the root application and returns the
+	 * Creates the root application and returns the credentials for it.
 	 * @return credentials for the root app
 	 */
 	public static Map<String, String> setup() {
@@ -379,7 +385,7 @@ public final class Para {
 	}
 
 	/**
-	 * Creates a new application and returns the
+	 * Creates a new application and returns the credentials for it.
 	 * @param appid the app identifier
 	 * @param name the full name of the app
 	 * @param shared false if the app should have its own index

@@ -54,14 +54,14 @@ public class Tag implements ParaObject {
 	@Stored private Integer count;
 
 	/**
-	 * No-args constructor
+	 * No-args constructor.
 	 */
 	public Tag() {
 		this(null);
 	}
 
 	/**
-	 * Default constructor
+	 * Default constructor.
 	 * @param id the tag name
 	 */
 	public Tag(String id) {

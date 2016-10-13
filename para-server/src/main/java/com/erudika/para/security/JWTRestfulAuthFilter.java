@@ -67,10 +67,14 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	private PasswordAuthFilter passwordAuth;
 
 	/**
-	 * The default filter mapping
+	 * The default filter mapping.
 	 */
 	public static final String JWT_ACTION = "jwt_auth";
 
+	/**
+	 * Default constructor.
+	 * @param defaultFilterProcessesUrl filter URL
+	 */
 	public JWTRestfulAuthFilter(String defaultFilterProcessesUrl) {
 		Assert.hasLength(defaultFilterProcessesUrl);
 		setFilterProcessesUrl(defaultFilterProcessesUrl);
@@ -280,10 +284,16 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 		this.authenticationRequestMatcher = new AntPathRequestMatcher(filterProcessesUrl);
 	}
 
+	/**
+	 * @return auth manager
+	 */
 	protected AuthenticationManager getAuthenticationManager() {
 		return authenticationManager;
 	}
 
+	/**
+	 * @param authenticationManager auth manager
+	 */
 	public void setAuthenticationManager(AuthenticationManager authenticationManager) {
 		this.authenticationManager = authenticationManager;
 	}
@@ -293,64 +303,106 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 		Assert.notNull(authenticationManager, "authenticationManager cannot be null");
 	}
 
+	/**
+	 * @return auth filter
+	 */
 	public FacebookAuthFilter getFacebookAuth() {
 		return facebookAuth;
 	}
 
+	/**
+	 * @param facebookAuth auth filter
+	 */
 	@Inject
 	public void setFacebookAuth(FacebookAuthFilter facebookAuth) {
 		this.facebookAuth = facebookAuth;
 	}
 
+	/**
+	 * @return auth filter
+	 */
 	public GoogleAuthFilter getGoogleAuth() {
 		return googleAuth;
 	}
 
+	/**
+	 * @param googleAuth auth filter
+	 */
 	@Inject
 	public void setGoogleAuth(GoogleAuthFilter googleAuth) {
 		this.googleAuth = googleAuth;
 	}
 
+	/**
+	 * @return auth filter
+	 */
 	public GitHubAuthFilter getGithubAuth() {
 		return githubAuth;
 	}
 
+	/**
+	 * @param githubAuth auth filter
+	 */
 	@Inject
 	public void setGithubAuth(GitHubAuthFilter githubAuth) {
 		this.githubAuth = githubAuth;
 	}
 
+	/**
+	 * @return auth filter
+	 */
 	public LinkedInAuthFilter getLinkedinAuth() {
 		return linkedinAuth;
 	}
 
+	/**
+	 * @param linkedinAuth auth filter
+	 */
 	@Inject
 	public void setLinkedinAuth(LinkedInAuthFilter linkedinAuth) {
 		this.linkedinAuth = linkedinAuth;
 	}
 
+	/**
+	 * @return auth filter
+	 */
 	public TwitterAuthFilter getTwitterAuth() {
 		return twitterAuth;
 	}
 
+	/**
+	 * @param twitterAuth auth filter
+	 */
 	@Inject
 	public void setTwitterAuth(TwitterAuthFilter twitterAuth) {
 		this.twitterAuth = twitterAuth;
 	}
 
+	/**
+	 * @return auth filter
+	 */
 	public MicrosoftAuthFilter getMicrosoftAuth() {
 		return microsoftAuth;
 	}
 
+	/**
+	 * @param microsoftAuth auth filter
+	 */
 	@Inject
 	public void setMicrosoftAuth(MicrosoftAuthFilter microsoftAuth) {
 		this.microsoftAuth = microsoftAuth;
 	}
 
+	/**
+	 * @return auth filter
+	 */
 	public PasswordAuthFilter getPasswordAuth() {
 		return passwordAuth;
 	}
 
+	/**
+	 * @param passwordAuth auth filter
+	 */
 	@Inject
 	public void setPasswordAuth(PasswordAuthFilter passwordAuth) {
 		this.passwordAuth = passwordAuth;

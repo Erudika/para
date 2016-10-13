@@ -57,7 +57,7 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 	private static final String PAYLOAD = "code={0}&redirect_uri={1}&scope=&client_id={2}"
 			+ "&client_secret={3}&grant_type=authorization_code";
 	/**
-	 * The default filter mapping
+	 * The default filter mapping.
 	 */
 	public static final String GOOGLE_ACTION = "google_auth";
 

@@ -23,7 +23,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
 /**
- * A simple wrapper for the authentication object
+ * A simple wrapper for the authentication object.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class UserAuthentication implements Authentication {
@@ -33,7 +33,7 @@ public class UserAuthentication implements Authentication {
 	private final boolean authenticated;
 
 	/**
-	 * Default constructor
+	 * Default constructor.
 	 * @param principal the user object
 	 */
 	public UserAuthentication(AuthenticatedUserDetails principal) {
@@ -42,7 +42,7 @@ public class UserAuthentication implements Authentication {
 	}
 
 	/**
-	 * A list of roles for the authenticated user
+	 * A list of roles for the authenticated user.
 	 * @return a list of roles
 	 */
 	public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -61,7 +61,7 @@ public class UserAuthentication implements Authentication {
 	}
 
 	/**
-	 * The user details object
+	 * The user details object.
 	 * @return the user
 	 */
 	public Object getDetails() {
@@ -69,7 +69,7 @@ public class UserAuthentication implements Authentication {
 	}
 
 	/**
-	 * The user details object
+	 * The user details object.
 	 * @return the user
 	 */
 	public Object getPrincipal() {
@@ -77,7 +77,7 @@ public class UserAuthentication implements Authentication {
 	}
 
 	/**
-	 * Checks if the user is authenticated
+	 * Checks if the user is authenticated.
 	 * @return true if authenticated
 	 */
 	public boolean isAuthenticated() {
@@ -93,7 +93,7 @@ public class UserAuthentication implements Authentication {
 	}
 
 	/**
-	 * The user identifier
+	 * The user identifier.
 	 * @return the identifier
 	 */
 	public String getName() {

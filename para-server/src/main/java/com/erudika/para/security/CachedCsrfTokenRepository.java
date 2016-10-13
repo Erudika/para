@@ -59,7 +59,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	}
 
 	/**
-	 * Sets the cache object
+	 * Sets the cache object.
 	 * @param cache a cache object
 	 */
 	@Inject
@@ -161,7 +161,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	}
 
 	/**
-	 * Sets the {@link HttpServletRequest} parameter name that the {@link CsrfToken} is expected to appear on
+	 * Sets the {@link HttpServletRequest} parameter name that the {@link CsrfToken} is expected to appear on.
 	 * @param parameterName the new parameter name to use
 	 */
 	public void setParameterName(String parameterName) {

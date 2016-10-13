@@ -23,7 +23,7 @@ import org.springframework.security.openid.AxFetchListFactory;
 import org.springframework.security.openid.OpenIDAttribute;
 
 /**
- * OpenID attributes list
+ * OpenID attributes list.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class SimpleAxFetchListFactory implements AxFetchListFactory {

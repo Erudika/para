@@ -81,7 +81,7 @@ public class AWSDynamoDAO implements DAO {
 	private static final int MAX_KEYS_PER_READ = 100; // Amazon DynamoDB limit = 100
 
 	/**
-	 * No-args constructor
+	 * No-args constructor.
 	 */
 	public AWSDynamoDAO() { }
 
