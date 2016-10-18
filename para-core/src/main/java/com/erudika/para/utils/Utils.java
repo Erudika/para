@@ -52,6 +52,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -143,11 +144,11 @@ public final class Utils {
 	/////////////////////////////////////////////
 
 	/**
-	 * MD5 hash function.
+	 * md5 hash function.
 	 * @param s the string to be hashed
 	 * @return an md5 hash
 	 */
-	public static String MD5(String s) {
+	public static String md5(String s) {
 		if (s == null) {
 			return "";
 		}
@@ -455,6 +456,18 @@ public final class Utils {
 		}
 		DateFormatSymbols dfs = DateFormatSymbols.getInstance(locale);
 		return dfs.getMonths();
+	}
+
+	/**
+	 * @param localeStr locale string
+	 * @return a {@link Locale} instance from a locale string.
+	 */
+	public static Locale getLocale(String localeStr) {
+		try {
+			return LocaleUtils.toLocale(localeStr);
+		} catch (Exception e) {
+			return Locale.US;
+		}
 	}
 
 	/////////////////////////////////////////////

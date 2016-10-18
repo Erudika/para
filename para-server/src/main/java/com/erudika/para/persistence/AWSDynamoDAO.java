@@ -47,6 +47,10 @@ import com.amazonaws.services.dynamodbv2.model.UpdateItemRequest;
 import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
+import static com.erudika.para.persistence.AWSDynamoUtils.getKeyForAppid;
+import static com.erudika.para.persistence.AWSDynamoUtils.getSharedIndex;
+import static com.erudika.para.persistence.AWSDynamoUtils.getTableNameForAppid;
+import static com.erudika.para.persistence.AWSDynamoUtils.isSharedAppid;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -65,7 +69,6 @@ import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static com.erudika.para.persistence.AWSDynamoUtils.*;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -277,58 +280,9 @@ public class AWSDynamoDAO implements DAO {
 
 		try {
 			if (isSharedAppid(appid)) {
-				String lastKeyFragment = "";
-				ValueMap valueMap = new ValueMap().withString(":aid", appid);
-				NameMap nameMap = null;
-
-				if (!StringUtils.isBlank(pager.getLastKey())) {
-					lastKeyFragment = " and #stamp > :ts";
-					valueMap.put(":ts", pager.getLastKey());
-					nameMap = new NameMap().with("#stamp", Config._TIMESTAMP);
-				}
-
-				Index index = getSharedIndex();
-				QuerySpec spec = new QuerySpec().
-						withMaxPageSize(pager.getLimit()).
-						withMaxResultSize(pager.getLimit()).
-						withKeyConditionExpression(Config._APPID + " = :aid" + lastKeyFragment).
-						withValueMap(valueMap).
-						withNameMap(nameMap);
-
-				if (index != null) {
-					Page<Item, QueryOutcome> items = index.query(spec).firstPage();
-					for (Item item : items) {
-						P obj = ParaObjectUtils.setAnnotatedFields(item.asMap());
-						if (obj != null) {
-							results.add(obj);
-						}
-					}
-					if (!results.isEmpty()) {
-						lastKey = Long.toString(results.peekLast().getTimestamp());
-					}
-				}
+				lastKey = readPageFromSharedTable(appid, pager, results);
 			} else {
-				ScanRequest scanRequest = new ScanRequest().
-						withTableName(getTableNameForAppid(appid)).
-						withLimit(pager.getLimit()).
-						withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
-
-				if (!StringUtils.isBlank(pager.getLastKey())) {
-					scanRequest = scanRequest.withExclusiveStartKey(Collections.
-							singletonMap(Config._KEY, new AttributeValue(pager.getLastKey())));
-				}
-
-				ScanResult result = client().scan(scanRequest);
-
-				for (Map<String, AttributeValue> item : result.getItems()) {
-					P obj = fromRow(item);
-					if (obj != null) {
-						results.add(obj);
-					}
-				}
-				if (result.getLastEvaluatedKey() != null) {
-					lastKey = result.getLastEvaluatedKey().get(Config._KEY).getS();
-				}
+				lastKey = readPageFromTable(appid, pager, results);
 			}
 
 			if (lastKey != null) {
@@ -343,6 +297,68 @@ public class AWSDynamoDAO implements DAO {
 		}
 
 		return results;
+	}
+
+	private <P extends ParaObject> String readPageFromTable(String appid, Pager pager, LinkedList<P> results) {
+		ScanRequest scanRequest = new ScanRequest().
+				withTableName(getTableNameForAppid(appid)).
+				withLimit(pager.getLimit()).
+				withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
+
+		if (!StringUtils.isBlank(pager.getLastKey())) {
+			scanRequest = scanRequest.withExclusiveStartKey(Collections.
+					singletonMap(Config._KEY, new AttributeValue(pager.getLastKey())));
+		}
+
+		ScanResult result = client().scan(scanRequest);
+		for (Map<String, AttributeValue> item : result.getItems()) {
+			P obj = fromRow(item);
+			if (obj != null) {
+				results.add(obj);
+			}
+		}
+
+		if (result.getLastEvaluatedKey() != null) {
+			return result.getLastEvaluatedKey().get(Config._KEY).getS();
+		} else {
+			return null;
+		}
+	}
+
+	private <P extends ParaObject> String readPageFromSharedTable(String appid, Pager pager, LinkedList<P> results) {
+		String lastKeyFragment = "";
+		ValueMap valueMap = new ValueMap().withString(":aid", appid);
+		NameMap nameMap = null;
+
+		if (!StringUtils.isBlank(pager.getLastKey())) {
+			lastKeyFragment = " and #stamp > :ts";
+			valueMap.put(":ts", pager.getLastKey());
+			nameMap = new NameMap().with("#stamp", Config._TIMESTAMP);
+		}
+
+		Index index = getSharedIndex();
+		QuerySpec spec = new QuerySpec().
+				withMaxPageSize(pager.getLimit()).
+				withMaxResultSize(pager.getLimit()).
+				withKeyConditionExpression(Config._APPID + " = :aid" + lastKeyFragment).
+				withValueMap(valueMap).
+				withNameMap(nameMap);
+
+		if (index != null) {
+			Page<Item, QueryOutcome> items = index.query(spec).firstPage();
+			for (Item item : items) {
+				P obj = ParaObjectUtils.setAnnotatedFields(item.asMap());
+				if (obj != null) {
+					results.add(obj);
+				}
+			}
+		}
+
+		if (!results.isEmpty()) {
+			return Long.toString(results.peekLast().getTimestamp());
+		} else {
+			return null;
+		}
 	}
 
 	@Override

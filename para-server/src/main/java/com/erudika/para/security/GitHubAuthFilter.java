@@ -140,7 +140,7 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 			String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
 
 			if (respEntity != null && Utils.isJsonType(ctype)) {
-				Map<String, Object> profile = jreader.readValue(resp2.getEntity().getContent());
+				Map<String, Object> profile = jreader.readValue(respEntity.getContent());
 
 				if (profile != null && profile.containsKey("id")) {
 					Integer githubId = (Integer) profile.get("id");
@@ -181,7 +181,7 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 					}
 					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 				}
-				EntityUtils.consumeQuietly(resp2.getEntity());
+				EntityUtils.consumeQuietly(respEntity);
 			}
 		}
 		return userAuth;

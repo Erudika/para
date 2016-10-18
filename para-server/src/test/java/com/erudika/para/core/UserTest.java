@@ -110,6 +110,7 @@ public class UserTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void testDelete() {
 		u.create();
 

@@ -229,7 +229,7 @@ public final class Config {
 	/**
 	 * The secret key for this deployment. Used as salt.
 	 */
-	public static final String APP_SECRET_KEY = getConfigParam("app_secret_key", Utils.MD5("paraseckey"));
+	public static final String APP_SECRET_KEY = getConfigParam("app_secret_key", Utils.md5("paraseckey"));
 	/**
 	 * The default queue name which will be polled for incoming JSON messages.
 	 */

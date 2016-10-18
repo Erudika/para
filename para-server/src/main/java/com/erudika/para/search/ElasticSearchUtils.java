@@ -299,7 +299,8 @@ public final class ElasticSearchUtils {
 			BulkResponse resp;
 			int queueSize = 50;
 			int count = 0;
-			Pager p = (pager != null && pager.length > 0) ? pager[0] : new Pager(100);
+			Pager p = getPager(pager);
+			p.setLimit(100);
 
 			List<ParaObject> list;
 			do {
@@ -340,6 +341,10 @@ public final class ElasticSearchUtils {
 			return false;
 		}
 		return true;
+	}
+
+	protected static Pager getPager(Pager[] pager) {
+		return (pager != null && pager.length > 0) ? pager[0] : new Pager();
 	}
 
 	/**

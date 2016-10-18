@@ -24,12 +24,14 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
+import org.apache.http.ParseException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -95,53 +97,10 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 				throw new BadCredentialsException("Cancelled.");
 			}
 
-			if (verifier == null) {
-				String callback = Utils.urlEncode(redirectURI);
-				Map<String, String[]> params = new HashMap<String, String[]>();
-				params.put("oauth_callback", new String[]{callback});
-
-				HttpPost tokenPost = new HttpPost(FLOW_URL1);
-				tokenPost.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("POST", FLOW_URL1,
-						params, keys[0], keys[1], null, null));
-				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
-				CloseableHttpResponse resp1 = httpclient.execute(tokenPost);
-
-				if (resp1.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
-					String decoded = EntityUtils.toString(resp1.getEntity());
-					for (String pair : decoded.split("&")) {
-						if (pair.startsWith("oauth_token")) {
-							response.sendRedirect(FLOW_URL2 + pair);
-							return null;
-						}
-					}
-				}
-				EntityUtils.consumeQuietly(resp1.getEntity());
+			if (verifier == null && stepOne(response, redirectURI, keys)) {
+				return null;
 			} else {
-				String token = request.getParameter("oauth_token");
-				Map<String, String[]> params = new HashMap<String, String[]>();
-				params.put("oauth_verifier", new String[]{verifier});
-
-				HttpPost tokenPost = new HttpPost(FLOW_URL3);
-				tokenPost.setEntity(new StringEntity("oauth_verifier=" + verifier));
-				tokenPost.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("POST", FLOW_URL3,
-						params, keys[0], keys[1], token, null));
-				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
-				CloseableHttpResponse resp2 = httpclient.execute(tokenPost);
-
-				if (resp2.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
-					String decoded = EntityUtils.toString(resp2.getEntity());
-					String oauthToken = null;
-					String oauthSecret = null;
-					for (String pair : decoded.split("&")) {
-						if (pair.startsWith("oauth_token_secret")) {
-							oauthSecret = pair.substring(19);
-						} else if (pair.startsWith("oauth_token")) {
-							oauthToken = pair.substring(12);
-						}
-					}
-					userAuth = getOrCreateUser(appid, oauthToken + Config.SEPARATOR + oauthSecret);
-				}
-				EntityUtils.consumeQuietly(resp2.getEntity());
+				userAuth = stepTwo(request, verifier, keys, appid);
 			}
 		}
 
@@ -153,6 +112,59 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 			throw new LockedException("Account is locked.");
 		}
 		return userAuth;
+	}
+
+	private boolean stepOne(HttpServletResponse response, String redirectURI, String[] keys)
+			throws ParseException, IOException {
+		String callback = Utils.urlEncode(redirectURI);
+		Map<String, String[]> params = new HashMap<String, String[]>();
+		params.put("oauth_callback", new String[]{callback});
+		HttpPost tokenPost = new HttpPost(FLOW_URL1);
+		tokenPost.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("POST", FLOW_URL1,
+				params, keys[0], keys[1], null, null));
+		tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
+		CloseableHttpResponse resp1 = httpclient.execute(tokenPost);
+
+		if (resp1.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
+			String decoded = EntityUtils.toString(resp1.getEntity());
+			for (String pair : decoded.split("&")) {
+				if (pair.startsWith("oauth_token")) {
+					response.sendRedirect(FLOW_URL2 + pair);
+					return true;
+				}
+			}
+		}
+		EntityUtils.consumeQuietly(resp1.getEntity());
+		return false;
+	}
+
+	private UserAuthentication stepTwo(HttpServletRequest request, String verifier, String[] keys, String appid)
+			throws ParseException, UnsupportedEncodingException, IOException {
+		String token = request.getParameter("oauth_token");
+		Map<String, String[]> params = new HashMap<String, String[]>();
+		params.put("oauth_verifier", new String[]{verifier});
+		HttpPost tokenPost = new HttpPost(FLOW_URL3);
+		tokenPost.setEntity(new StringEntity("oauth_verifier=" + verifier));
+		tokenPost.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("POST", FLOW_URL3,
+				params, keys[0], keys[1], token, null));
+		tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
+		CloseableHttpResponse resp2 = httpclient.execute(tokenPost);
+
+		if (resp2.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
+			String decoded = EntityUtils.toString(resp2.getEntity());
+			String oauthToken = null;
+			String oauthSecret = null;
+			for (String pair : decoded.split("&")) {
+				if (pair.startsWith("oauth_token_secret")) {
+					oauthSecret = pair.substring(19);
+				} else if (pair.startsWith("oauth_token")) {
+					oauthToken = pair.substring(12);
+				}
+			}
+			EntityUtils.consumeQuietly(resp2.getEntity());
+			return getOrCreateUser(appid, oauthToken + Config.SEPARATOR + oauthSecret);
+		}
+		return null;
 	}
 
 	/**

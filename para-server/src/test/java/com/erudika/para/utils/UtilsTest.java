@@ -49,10 +49,10 @@ public class UtilsTest {
 
 	@Test
 	public void testMD5() {
-		assertEquals("098f6bcd4621d373cade4e832627b4f6", MD5("test"));
-		assertEquals("47ec2dd791e31e2ef2076caf64ed9b3d", MD5("test123456"));
-		assertEquals("d41d8cd98f00b204e9800998ecf8427e", MD5(""));
-		assertEquals("", MD5(null));
+		assertEquals("098f6bcd4621d373cade4e832627b4f6", md5("test"));
+		assertEquals("47ec2dd791e31e2ef2076caf64ed9b3d", md5("test123456"));
+		assertEquals("d41d8cd98f00b204e9800998ecf8427e", md5(""));
+		assertEquals("", md5(null));
 	}
 
 	@Test

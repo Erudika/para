@@ -30,6 +30,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * <p>
@@ -334,10 +335,8 @@ public final class CORSFilter implements Filter {
 		String accessControlRequestHeadersHeader
 				= request.getHeader(CORSFilter.REQUEST_HEADER_ACCESS_CONTROL_REQUEST_HEADERS);
 		List<String> accessControlRequestHeaders = new LinkedList<String>();
-		if (accessControlRequestHeadersHeader != null
-				&& !accessControlRequestHeadersHeader.trim().isEmpty()) {
-			String[] headers
-					= accessControlRequestHeadersHeader.trim().split(",");
+		if (StringUtils.isNotBlank(accessControlRequestHeadersHeader)) {
+			String[] headers = accessControlRequestHeadersHeader.trim().split(",");
 			for (String header : headers) {
 				accessControlRequestHeaders.add(header.trim().toLowerCase());
 			}
@@ -350,12 +349,10 @@ public final class CORSFilter implements Filter {
 		}
 
 		// Section 6.2.6
-		if (!accessControlRequestHeaders.isEmpty()) {
-			for (String header : accessControlRequestHeaders) {
-				if (!allowedHttpHeaders.contains(header)) {
-					handleInvalidCORS(request, response, filterChain);
-					return;
-				}
+		for (String header : accessControlRequestHeaders) {
+			if (!allowedHttpHeaders.contains(header)) {
+				handleInvalidCORS(request, response, filterChain);
+				return;
 			}
 		}
 
@@ -577,16 +574,14 @@ public final class CORSFilter implements Filter {
 			} else if (!isValidOrigin(originHeader)) {
 				requestType = CORSRequestType.INVALID_CORS;
 			} else {
-				String method = request.getMethod();
-				if (method != null && HTTP_METHODS.contains(method)) {
+				String method = StringUtils.trimToEmpty(request.getMethod());
+				if (HTTP_METHODS.contains(method)) {
 					if ("OPTIONS".equals(method)) {
 						String accessControlRequestMethodHeader
 								= request.getHeader(REQUEST_HEADER_ACCESS_CONTROL_REQUEST_METHOD);
-						if (accessControlRequestMethodHeader != null
-								&& !accessControlRequestMethodHeader.isEmpty()) {
+						if (StringUtils.isNotBlank(accessControlRequestMethodHeader)) {
 							requestType = CORSRequestType.PRE_FLIGHT;
-						} else if (accessControlRequestMethodHeader != null
-								&& accessControlRequestMethodHeader.isEmpty()) {
+						} else if (StringUtils.isWhitespace(accessControlRequestMethodHeader)) {
 							requestType = CORSRequestType.INVALID_CORS;
 						} else {
 							requestType = CORSRequestType.ACTUAL;

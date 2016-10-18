@@ -143,8 +143,8 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 				logger.warn("LinkedIn auth request failed: GET " + PROFILE_URL + accessToken, e);
 			}
 
-			if (resp2 != null && respEntity != null && Utils.isJsonType(ctype)) {
-				Map<String, Object> profile = jreader.readValue(resp2.getEntity().getContent());
+			if (respEntity != null && Utils.isJsonType(ctype)) {
+				Map<String, Object> profile = jreader.readValue(respEntity.getContent());
 
 				if (profile != null && profile.containsKey("id")) {
 					String linkedInID = (String) profile.get("id");
@@ -186,7 +186,7 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 					}
 					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 				}
-				EntityUtils.consumeQuietly(resp2.getEntity());
+				EntityUtils.consumeQuietly(respEntity);
 			}
 		}
 		return userAuth;

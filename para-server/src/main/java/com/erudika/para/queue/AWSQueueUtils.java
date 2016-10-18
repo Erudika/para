@@ -37,6 +37,7 @@ import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Thing;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.utils.Config;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -284,33 +285,10 @@ public final class AWSQueueUtils {
 				logger.debug("Pulled {} messages from queue.", msgs.size());
 
 				try {
-					for (String msg : msgs) {
+					for (final String msg : msgs) {
 						logger.debug("SQS MESSAGE: {}", msg);
 						if (StringUtils.contains(msg, Config._APPID) && StringUtils.contains(msg, Config._TYPE)) {
-							Map<String, Object> parsed = ParaObjectUtils.getJsonReader(Map.class).readValue(msg);
-							String id = parsed.containsKey(Config._ID) ? (String) parsed.get(Config._ID) : null;
-							String type = (String) parsed.get(Config._TYPE);
-							String appid = (String) parsed.get(Config._APPID);
-							Class<?> clazz = ParaObjectUtils.toClass(type);
-							boolean isWhitelistedType = clazz.equals(Thing.class) || clazz.equals(Sysprop.class);
-
-							if (!StringUtils.isBlank(appid) && isWhitelistedType) {
-								if (parsed.containsKey("_delete") && "true".equals(parsed.get("_delete"))) {
-									Sysprop s = new Sysprop(id);
-									s.setAppid(appid);
-									deleteList.add(s);
-								} else {
-									if (id == null) {
-										ParaObject obj = ParaObjectUtils.setAnnotatedFields(parsed);
-										if (obj != null) {
-											createList.add(obj);
-										}
-									} else {
-										updateList.add(ParaObjectUtils.setAnnotatedFields(Para.getDAO().
-												read(appid, id), parsed, Locked.class));
-									}
-								}
-							}
+							parseAndCategorizeMessage(msg, createList, updateList, deleteList);
 						}
 					}
 
@@ -339,6 +317,34 @@ public final class AWSQueueUtils {
 					}
 				} catch (Exception e) {
 					logger.error("Batch processing operation failed: {}", e);
+				}
+			}
+		}
+	}
+
+	private static void parseAndCategorizeMessage(final String msg, ArrayList<ParaObject> createList,
+			ArrayList<ParaObject> updateList, ArrayList<ParaObject> deleteList) throws IOException {
+		Map<String, Object> parsed = ParaObjectUtils.getJsonReader(Map.class).readValue(msg);
+		String id = parsed.containsKey(Config._ID) ? (String) parsed.get(Config._ID) : null;
+		String type = (String) parsed.get(Config._TYPE);
+		String appid = (String) parsed.get(Config._APPID);
+		Class<?> clazz = ParaObjectUtils.toClass(type);
+		boolean isWhitelistedType = clazz.equals(Thing.class) || clazz.equals(Sysprop.class);
+
+		if (!StringUtils.isBlank(appid) && isWhitelistedType) {
+			if (parsed.containsKey("_delete") && "true".equals(parsed.get("_delete"))) {
+				Sysprop s = new Sysprop(id);
+				s.setAppid(appid);
+				deleteList.add(s);
+			} else {
+				if (id == null) {
+					ParaObject obj = ParaObjectUtils.setAnnotatedFields(parsed);
+					if (obj != null) {
+						createList.add(obj);
+					}
+				} else {
+					updateList.add(ParaObjectUtils.setAnnotatedFields(Para.getDAO().
+							read(appid, id), parsed, Locked.class));
 				}
 			}
 		}

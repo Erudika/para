@@ -490,7 +490,7 @@ public class ElasticSearch implements Search {
 		if (StringUtils.isBlank(appid)) {
 			return null;
 		}
-		Pager page = (pager != null && pager.length > 0) ? pager[0] : new Pager();
+		Pager page = ElasticSearchUtils.getPager(pager);
 		SortOrder order = page.isDesc() ? SortOrder.DESC : SortOrder.ASC;
 		SortBuilder sort = StringUtils.isBlank(page.getSortby()) ?
 				SortBuilders.scoreSort() : SortBuilders.fieldSort(page.getSortby()).order(order);

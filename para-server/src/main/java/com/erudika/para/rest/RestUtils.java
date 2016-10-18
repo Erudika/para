@@ -26,6 +26,7 @@ import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import com.erudika.para.validation.ValidationUtils;
 import com.fasterxml.jackson.core.JsonParseException;
@@ -34,6 +35,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -42,8 +46,10 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -240,7 +246,7 @@ public final class RestUtils {
 	}
 
 	/////////////////////////////////////////////
-	//			REST RESPONSE HANDLERS
+	//		CORE REST RESPONSE HANDLERS
 	/////////////////////////////////////////////
 
 	/**
@@ -524,6 +530,234 @@ public final class RestUtils {
 		return Response.ok().build();
 	}
 
+	/////////////////////////////////////////////
+	//		 LINKS REST RESPONSE HANDLERS
+	/////////////////////////////////////////////
+
+	/**
+	 * Handles requests to search for linked objects.
+	 * @param pobj the object to operate on
+	 * @param id2 the id of the second object (optional)
+	 * @param type2 the type of the second object
+	 * @param params query parameters
+	 * @param pager a {@link Pager} object
+	 * @param childrenOnly find only directly linked objects in 1-to-many relationship
+	 * @return a Response
+	 */
+	public static Response readLinksHandler(ParaObject pobj, String id2, String type2,
+			MultivaluedMap<String, String> params, Pager pager, boolean childrenOnly) {
+		Map<String, Object> result = new HashMap<String, Object>();
+		String query = params.getFirst("q");
+		if (type2 != null) {
+			if (id2 != null) {
+				return Response.ok(pobj.isLinked(type2, id2), MediaType.TEXT_PLAIN_TYPE).build();
+			} else {
+				List<ParaObject> items = new ArrayList<ParaObject>();
+				if (childrenOnly) {
+					if (params.containsKey("count")) {
+						pager.setCount(pobj.countChildren(type2));
+					} else {
+						if (params.containsKey("field") && params.containsKey("term")) {
+							items = pobj.getChildren(type2, params.getFirst("field"), params.getFirst("term"), pager);
+						} else {
+							if (StringUtils.isBlank(query)) {
+								items = pobj.getChildren(type2, pager);
+							} else {
+								items = pobj.findChildren(type2, query, pager);
+							}
+						}
+					}
+				} else {
+					if (params.containsKey("count")) {
+						pager.setCount(pobj.countLinks(type2));
+					} else {
+						if (StringUtils.isBlank(query)) {
+							items = pobj.getLinkedObjects(type2, pager);
+						} else {
+							items = pobj.findLinkedObjects(type2, params.getFirst("field"), query, pager);
+						}
+					}
+				}
+				result.put("items", items);
+				result.put("totalHits", pager.getCount());
+				return Response.ok(result).build();
+			}
+		} else {
+			return getStatusResponse(Response.Status.BAD_REQUEST, "Parameter 'type' is missing.");
+		}
+	}
+
+	/**
+	 * Handles requests to delete linked objects.
+	 * @param pobj the object to operate on
+	 * @param id2 the id of the second object (optional)
+	 * @param type2 the type of the second object
+	 * @param childrenOnly find only directly linked objects in 1-to-many relationship
+	 * @return a Response
+	 */
+	public static Response deleteLinksHandler(ParaObject pobj, String id2, String type2, boolean childrenOnly) {
+		if (type2 == null && id2 == null) {
+			pobj.unlinkAll();
+		} else if (type2 != null) {
+			if (id2 != null) {
+				pobj.unlink(type2, id2);
+			} else if (childrenOnly) {
+				pobj.deleteChildren(type2);
+			}
+		}
+		return Response.ok().build();
+	}
+
+	/**
+	 * Handles requests to link an object to other objects.
+	 * @param pobj the object to operate on
+	 * @param id2 the id of the second object (optional)
+	 * @return a Response
+	 */
+	public static Response createLinksHandler(ParaObject pobj, String id2) {
+		if (id2 != null && pobj != null) {
+			String linkid = pobj.link(id2);
+			if (linkid == null) {
+				return getStatusResponse(Response.Status.BAD_REQUEST, "Failed to create link.");
+			} else {
+				return Response.ok(linkid, MediaType.TEXT_PLAIN_TYPE).build();
+			}
+		} else {
+			return getStatusResponse(Response.Status.BAD_REQUEST, "Parameters 'type' and 'id' are missing.");
+		}
+	}
+
+	/////////////////////////////////////////////
+	//			SEARCH RESPONSE HANDLERS
+	/////////////////////////////////////////////
+
+	static <P extends ParaObject> Map<String, Object> buildQueryAndSearch(App app, String queryType,
+			MultivaluedMap<String, String> params, String typeOverride) {
+		String query = paramOrDefault(params, "q", "*");
+		String appid = app.getAppIdentifier();
+		Pager pager = getPagerFromParams(params);
+		List<P> items = Collections.emptyList();
+		queryType = StringUtils.isBlank(queryType) ? params.getFirst("querytype") : queryType;
+
+		String type;
+		if (!StringUtils.isBlank(typeOverride) && !"search".equals(typeOverride)) {
+			type = typeOverride;
+		} else {
+			type = params.getFirst(Config._TYPE);
+		}
+
+		if ("id".equals(queryType)) {
+			items = findByIdQuery(params, appid, pager);
+		} else if ("ids".equals(queryType)) {
+			items = Para.getSearch().findByIds(appid, params.get("ids"));
+			pager.setCount(items.size());
+		} else if ("nested".equals(queryType)) {
+			items = Para.getSearch().findNestedQuery(appid, type, params.getFirst("field"), query, pager);
+		} else if ("nearby".equals(queryType)) {
+			items = findNearbyQuery(params, appid, type, query, pager);
+		} else if ("prefix".equals(queryType)) {
+			items = Para.getSearch().findPrefix(appid, type, params.getFirst("field"), params.getFirst("prefix"), pager);
+		} else if ("similar".equals(queryType)) {
+			items = findSimilarQuery(params, appid, type, pager);
+		} else if ("tagged".equals(queryType)) {
+			items = findTaggedQuery(params, appid, type, pager);
+		} else if ("in".equals(queryType)) {
+			items = Para.getSearch().findTermInList(appid, type, params.getFirst("field"), params.get("terms"), pager);
+		} else if ("terms".equals(queryType)) {
+			items = findTermsQuery(params, pager, appid, type);
+		} else if ("wildcard".equals(queryType)) {
+			items = Para.getSearch().findWildcard(appid, type, params.getFirst("field"), query, pager);
+		} else if ("count".equals(queryType)) {
+			pager.setCount(Para.getSearch().getCount(appid, type));
+		} else {
+			items = Para.getSearch().findQuery(appid, type, query, pager);
+		}
+
+		Map<String, Object> result = new HashMap<String, Object>();
+		result.put("items", items);
+		result.put("page", pager.getPage());
+		result.put("totalHits", pager.getCount());
+		return result;
+	}
+
+	private static Pager getPagerFromParams(MultivaluedMap<String, String> params) {
+		Pager pager = new Pager();
+		pager.setPage(NumberUtils.toLong(params.getFirst("page"), 0));
+		pager.setSortby(params.getFirst("sort"));
+		pager.setDesc(Boolean.parseBoolean(paramOrDefault(params, "desc", "true")));
+		pager.setLimit(NumberUtils.toInt(params.getFirst("limit"), pager.getLimit()));
+		return pager;
+	}
+
+	private static <P extends ParaObject> List<P> findTermsQuery(MultivaluedMap<String, String> params,
+			Pager pager, String appid, String type) {
+		String matchAll = paramOrDefault(params, "matchall", "true");
+		List<String> termsList = params.get("terms");
+		if (termsList != null) {
+			Map<String, String> terms = new HashMap<String, String>(termsList.size());
+			for (String termTuple : termsList) {
+				if (!StringUtils.isBlank(termTuple) && termTuple.contains(Config.SEPARATOR)) {
+					String[] split = termTuple.split(Config.SEPARATOR, 2);
+					terms.put(split[0], split[1]);
+				}
+			}
+			if (params.containsKey("count")) {
+				pager.setCount(Para.getSearch().getCount(appid, type, terms));
+			} else {
+				return Para.getSearch().findTerms(appid, type, terms, Boolean.parseBoolean(matchAll), pager);
+			}
+		}
+		return Collections.emptyList();
+	}
+
+	private static <P extends ParaObject> List<P> findTaggedQuery(MultivaluedMap<String, String> params,
+			String appid, String type, Pager pager) {
+		List<String> tags = params.get("tags");
+		String[] tagz = tags != null ? tags.toArray(new String[0]) : null;
+		return Para.getSearch().findTagged(appid, type, tagz, pager);
+	}
+
+	private static <P extends ParaObject> List<P> findSimilarQuery(MultivaluedMap<String, String> params,
+			String appid, String type, Pager pager) {
+		List<String> fields = params.get("fields");
+		String[] fieldz = (fields != null) ? fields.toArray(new String[0]) : null;
+		return Para.getSearch().findSimilar(appid, type, params.getFirst("filterid"),
+				fieldz, params.getFirst("like"), pager);
+	}
+
+	private static <P extends ParaObject> List<P> findNearbyQuery(MultivaluedMap<String, String> params,
+			String appid, String type, String query, Pager pager) {
+		String latlng = params.getFirst("latlng");
+		if (StringUtils.contains(latlng, ",")) {
+			String[] coords = latlng.split(",", 2);
+			String rad = paramOrDefault(params, "radius", null);
+			int radius = NumberUtils.toInt(rad, 10);
+			double lat = NumberUtils.toDouble(coords[0], 0);
+			double lng = NumberUtils.toDouble(coords[1], 0);
+			return Para.getSearch().findNearby(appid, type, query, radius, lat, lng, pager);
+		}
+		return Collections.emptyList();
+	}
+
+	private static <P extends ParaObject> List<P> findByIdQuery(MultivaluedMap<String, String> params,
+			String appid, Pager pager) {
+		String id = paramOrDefault(params, Config._ID, null);
+		P obj = Para.getSearch().findById(appid, id);
+		if (obj != null) {
+			pager.setCount(1);
+			return Collections.singletonList(obj);
+		}
+		return Collections.emptyList();
+	}
+
+	private static String paramOrDefault(MultivaluedMap<String, String> params, String name, String defaultValue) {
+		return params != null && params.containsKey(name) ? params.getFirst(name) : defaultValue;
+	}
+
+	/////////////////////////////////////////////
+	//			MISC RESPONSE HANDLERS
+	/////////////////////////////////////////////
+
 	/**
 	 * A generic JSON response handler.
 	 * @param status status code
@@ -547,7 +781,7 @@ public final class RestUtils {
 	}
 
 	/**
-	 * A generic JSON response handler.
+	 * A generic JSON response handler. Returns a message and response code.
 	 * @param response the response to write to
 	 * @param status status code
 	 * @param message error message

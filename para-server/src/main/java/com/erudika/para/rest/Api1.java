@@ -17,14 +17,30 @@
  */
 package com.erudika.para.rest;
 
-import static com.erudika.para.Para.*;
+import static com.erudika.para.Para.getCustomResourceHandlers;
+import static com.erudika.para.Para.getDAO;
+import static com.erudika.para.Para.getVersion;
+import static com.erudika.para.Para.setup;
 import com.erudika.para.core.App;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
-import static com.erudika.para.rest.RestUtils.*;
-import com.erudika.para.search.Search;
+import static com.erudika.para.rest.RestUtils.getBatchCreateResponse;
+import static com.erudika.para.rest.RestUtils.getBatchDeleteResponse;
+import static com.erudika.para.rest.RestUtils.getBatchReadResponse;
+import static com.erudika.para.rest.RestUtils.getBatchUpdateResponse;
+import static com.erudika.para.rest.RestUtils.getCreateResponse;
+import static com.erudika.para.rest.RestUtils.getDeleteResponse;
+import static com.erudika.para.rest.RestUtils.getEntity;
+import static com.erudika.para.rest.RestUtils.getOverwriteResponse;
+import static com.erudika.para.rest.RestUtils.getPrincipalApp;
+import static com.erudika.para.rest.RestUtils.getReadResponse;
+import static com.erudika.para.rest.RestUtils.getStatusResponse;
+import static com.erudika.para.rest.RestUtils.getUpdateResponse;
+import static com.erudika.para.rest.RestUtils.pathParam;
+import static com.erudika.para.rest.RestUtils.queryParam;
+import static com.erudika.para.rest.RestUtils.queryParams;
 import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.HumanTime;
@@ -33,10 +49,8 @@ import com.erudika.para.utils.Utils;
 import com.erudika.para.utils.filters.FieldFilter;
 import com.erudika.para.validation.Constraint;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -48,7 +62,6 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.glassfish.jersey.process.Inflector;
@@ -240,7 +253,7 @@ public final class Api1 extends ResourceConfig {
 				} else if ("formatdate".equals(method)) {
 					String format = params.getFirst("format");
 					String locale = params.getFirst("locale");
-					Locale loc = getLocale(locale);
+					Locale loc = Utils.getLocale(locale);
 					return Response.ok(Utils.formatDate(format, loc), MediaType.TEXT_PLAIN_TYPE).build();
 				} else if ("formatmessage".equals(method)) {
 					String msg = params.getFirst("message");
@@ -365,74 +378,14 @@ public final class Api1 extends ResourceConfig {
 				pager.setLimit(NumberUtils.toInt(params.getFirst("limit"), pager.getLimit()));
 
 				String childrenOnly = params.getFirst("childrenonly");
-				String query = params.getFirst("q");
 
 				if (pobj != null) {
 					if (POST.equals(ctx.getMethod()) || PUT.equals(ctx.getMethod())) {
-						if (id2 != null) {
-							String linkid = pobj.link(id2);
-							if (linkid == null) {
-								return getStatusResponse(Response.Status.BAD_REQUEST,
-										"Failed to create link.");
-							} else {
-								return Response.ok(linkid, MediaType.TEXT_PLAIN_TYPE).build();
-							}
-						} else {
-							return getStatusResponse(Response.Status.BAD_REQUEST,
-									"Parameters 'type' and 'id' are missing.");
-						}
+						return RestUtils.createLinksHandler(pobj, id2);
 					} else if (GET.equals(ctx.getMethod())) {
-						Map<String, Object> result = new HashMap<String, Object>();
-						if (type2 != null) {
-							if (id2 != null) {
-								return Response.ok(pobj.isLinked(type2, id2), MediaType.TEXT_PLAIN_TYPE).build();
-							} else {
-								List<ParaObject> items = new ArrayList<ParaObject>();
-								if (childrenOnly == null) {
-									if (params.containsKey("count")) {
-										pager.setCount(pobj.countLinks(type2));
-									} else {
-										if (StringUtils.isBlank(query)) {
-											items = pobj.getLinkedObjects(type2, pager);
-										} else {
-											items = pobj.findLinkedObjects(type2, params.getFirst("field"), query, pager);
-										}
-									}
-								} else {
-									if (params.containsKey("count")) {
-										pager.setCount(pobj.countChildren(type2));
-									} else {
-										if (params.containsKey("field") && params.containsKey("term")) {
-											items = pobj.getChildren(type2, params.getFirst("field"),
-													params.getFirst("term"), pager);
-										} else {
-											if (StringUtils.isBlank(query)) {
-												items = pobj.getChildren(type2, pager);
-											} else {
-												items = pobj.findChildren(type2, query, pager);
-											}
-										}
-									}
-								}
-								result.put("items", items);
-								result.put("totalHits", pager.getCount());
-								return Response.ok(result).build();
-							}
-						} else {
-							return getStatusResponse(Response.Status.BAD_REQUEST,
-									"Parameter 'type' is missing.");
-						}
+						return RestUtils.readLinksHandler(pobj, id2, type2, params, pager, childrenOnly != null);
 					} else if (DELETE.equals(ctx.getMethod())) {
-						if (type2 == null && id2 == null) {
-							pobj.unlinkAll();
-						} else if (type2 != null) {
-							if (id2 != null) {
-								pobj.unlink(type2, id2);
-							} else if (childrenOnly != null) {
-								pobj.deleteChildren(type2);
-							}
-						}
-						return Response.ok().build();
+						return RestUtils.deleteLinksHandler(pobj, id2, type2, childrenOnly != null);
 					}
 				}
 				return getStatusResponse(Response.Status.NOT_FOUND, "Object not found: " + id);
@@ -886,103 +839,8 @@ public final class Api1 extends ResourceConfig {
 				App app1 = (app == null) ? getPrincipalApp() : app;
 				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
 				String queryType = pathParam("querytype", ctx);
-				return Response.ok(buildQueryAndSearch(app1, queryType, params, type)).build();
+				return Response.ok(RestUtils.buildQueryAndSearch(app1, queryType, params, type)).build();
 			}
 		};
-	}
-
-	private static <P extends ParaObject> Map<String, Object> buildQueryAndSearch(App app, String queryType,
-			MultivaluedMap<String, String> params, String typeOverride) {
-		String query = params.containsKey("q") ? params.getFirst("q") : "*";
-		String appid = app.getAppIdentifier();
-		String type = (!StringUtils.isBlank(typeOverride) && !"search".equals(typeOverride)) ?
-				typeOverride : params.getFirst(Config._TYPE);
-
-		Search search = getSearch();
-		Pager pager = new Pager();
-		pager.setPage(NumberUtils.toLong(params.getFirst("page"), 0));
-		pager.setSortby(params.getFirst("sort"));
-		pager.setDesc(Boolean.parseBoolean(params.containsKey("desc") ? params.getFirst("desc") : "true"));
-		pager.setLimit(NumberUtils.toInt(params.getFirst("limit"), pager.getLimit()));
-
-		queryType = StringUtils.isBlank(queryType) ? params.getFirst("querytype") : queryType;
-		Map<String, Object> result = new HashMap<String, Object>();
-		List<P> items = new ArrayList<P>();
-
-		if ("id".equals(queryType)) {
-			String id = params.containsKey(Config._ID) ? params.getFirst(Config._ID) : null;
-			P obj = search.findById(appid, id);
-			if (obj != null) {
-				items = Collections.singletonList(obj);
-				pager.setCount(1);
-			}
-		} else if ("ids".equals(queryType)) {
-			List<String> ids = params.get("ids");
-			items = search.findByIds(appid, ids);
-			pager.setCount(items.size());
-		} else if ("nested".equals(queryType)) {
-			items = search.findNestedQuery(appid, type, params.getFirst("field"), query, pager);
-		} else if ("nearby".equals(queryType)) {
-			String latlng = params.getFirst("latlng");
-			if (StringUtils.contains(latlng, ",")) {
-				String[] coords = latlng.split(",", 2);
-				String rad = params.containsKey("radius") ? params.getFirst("radius") : null;
-				int radius = NumberUtils.toInt(rad, 10);
-				double lat = NumberUtils.toDouble(coords[0], 0);
-				double lng = NumberUtils.toDouble(coords[1], 0);
-				items = search.findNearby(appid, type, query, radius, lat, lng, pager);
-			}
-		} else if ("prefix".equals(queryType)) {
-			items = search.findPrefix(appid, type, params.getFirst("field"), params.getFirst("prefix"), pager);
-		} else if ("similar".equals(queryType)) {
-			List<String> fields = params.get("fields");
-			if (fields != null) {
-				items = search.findSimilar(appid, type, params.getFirst("filterid"),
-						fields.toArray(new String[]{}), params.getFirst("like"), pager);
-			}
-		} else if ("tagged".equals(queryType)) {
-			List<String> tags = params.get("tags");
-			if (tags != null) {
-				items = search.findTagged(appid, type, tags.toArray(new String[]{}), pager);
-			}
-		} else if ("in".equals(queryType)) {
-			items = search.findTermInList(appid, type, params.getFirst("field"), params.get("terms"), pager);
-		} else if ("terms".equals(queryType)) {
-			String matchAll = params.containsKey("matchall") ? params.getFirst("matchall") : "true";
-			List<String> termsList = params.get("terms");
-			if (termsList != null) {
-				Map<String, String> terms = new HashMap<String, String>(termsList.size());
-				for (String termTuple : termsList) {
-					if (!StringUtils.isBlank(termTuple) && termTuple.contains(Config.SEPARATOR)) {
-						String[] split = termTuple.split(Config.SEPARATOR, 2);
-						terms.put(split[0], split[1]);
-					}
-				}
-				if (params.containsKey("count")) {
-					pager.setCount(search.getCount(appid, type, terms));
-				} else {
-					items = search.findTerms(appid, type, terms, Boolean.parseBoolean(matchAll), pager);
-				}
-			}
-		} else if ("wildcard".equals(queryType)) {
-			items = search.findWildcard(appid, type, params.getFirst("field"), query, pager);
-		} else if ("count".equals(queryType)) {
-			pager.setCount(search.getCount(appid, type));
-		} else {
-			items = search.findQuery(appid, type, query, pager);
-		}
-
-		result.put("items", items);
-		result.put("page", pager.getPage());
-		result.put("totalHits", pager.getCount());
-		return result;
-	}
-
-	private Locale getLocale(String localeStr) {
-		try {
-			return LocaleUtils.toLocale(localeStr);
-		} catch (Exception e) {
-			return Locale.US;
-		}
 	}
 }

@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Iterator;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -67,7 +68,7 @@ import org.slf4j.LoggerFactory;
  * @see <a href="http://johannburkard.de/blog/programming/java/date-formatting-parsing-humans-humantime.html">Date
  * Formatting and Parsing for Humans in Java with HumanTime</a>
  */
-public class HumanTime implements Externalizable, Comparable<HumanTime>, Cloneable {
+public final class HumanTime implements Externalizable, Comparable<HumanTime>, Cloneable {
 
 	/**
 	 * The serial version UID.
@@ -518,195 +519,36 @@ public class HumanTime implements Externalizable, Comparable<HumanTime>, Cloneab
 	public <T extends Appendable> T getApproximately(T a) {
 
 		try {
-			int parts = 0;
+			MutableInt parts = new MutableInt(0);
 			boolean rounded = false;
-			boolean prependBlank = false;
 			long d = delta;
 			long mod = d % YEAR;
 
-//            if (mod >= upperCeiling(YEAR)) {
-//                a.append(ceil(d, YEAR));
-//                a.append(' ');
-//                a.append('y');
-//                ++parts;
-//                rounded = true;
-//                prependBlank = true;
-//            }else
-
-			if (d >= YEAR) {
-				a.append(floor(d, YEAR));
-//                a.append(' ');
-				a.append('y');
-				++parts;
-				rounded = mod <= lowerCeiling(YEAR);
-				if (rounded) {
-					return a;
-				}
-				prependBlank = true;
-			}
-
-			d %= YEAR;
-			mod = d % MONTH;
-
-//                if (mod >= upperCeiling(MONTH)) {
-//                    if (prependBlank) {
-//                        a.append(' ');
-//                    }
-//                    a.append(ceil(d, MONTH));
-//                    a.append(' ');
-//                    a.append('m');
-//                    ++parts;
-//                    rounded = true;
-//                    prependBlank = true;
-//                }else
-			if (d >= MONTH) {
-				if (prependBlank) {
-					a.append(' ');
-				}
-				a.append(floor(d, MONTH));
-//                    a.append(' ');
-				a.append('m');
-				++parts;
-				rounded = mod <= lowerCeiling(MONTH);
-				if (rounded) {
-					return a;
-				}
-				prependBlank = true;
-			}
-
-			if (parts < 2) {
-				d %= MONTH;
-				mod = d % DAY;
-
-//					if (mod >= upperCeiling(DAY)) {
-//						if (prependBlank) {
-//							a.append(' ');
-//						}
-//						a.append(ceil(d, DAY));
-//						a.append(' ');
-//						a.append('d');
-//						++parts;
-//						rounded = true;
-//						prependBlank = true;
-//					}else
-				if (d >= DAY) {
-					if (prependBlank) {
-						a.append(' ');
-					}
-					a.append(floor(d, DAY));
-//						a.append(' ');
-					a.append('d');
-					++parts;
-					rounded = mod <= lowerCeiling(DAY);
-					if (rounded) {
-						return a;
-					}
-					prependBlank = true;
-				}
-
-				if (parts < 2) {
-					d %= DAY;
-					mod = d % HOUR;
-
-//						if (mod >= upperCeiling(HOUR)) {
-//							if (prependBlank) {
-//								a.append(' ');
-//							}
-//							a.append(ceil(d, HOUR));
-//							a.append(' ');
-//							a.append('h');
-//							++parts;
-//							rounded = true;
-//							prependBlank = true;
-//						}else
-					if (d >= HOUR && !rounded) {
-						if (prependBlank) {
-							a.append(' ');
-						}
-						a.append(floor(d, HOUR));
-//							a.append(' ');
-						a.append('h');
-						++parts;
-						rounded = mod <= lowerCeiling(HOUR);
-						if (rounded) {
-							return a;
-						}
-						prependBlank = true;
-					}
-
-					if (parts < 2) {
-						d %= HOUR;
-						mod = d % MINUTE;
-
-//							if (mod >= upperCeiling(MINUTE)) {
-//								if (prependBlank) {
-//									a.append(' ');
-//								}
-//								a.append(ceil(d, MINUTE));
-//								a.append(' ');
-//								a.append('m');
-//								++parts;
-//								rounded = true;
-//								prependBlank = true;
-//							}else
-						if (d >= MINUTE && !rounded) {
-							if (prependBlank) {
-								a.append(' ');
-							}
-							a.append(floor(d, MINUTE));
-//								a.append(' ');
-							a.append('m');
-							++parts;
-							rounded = mod <= lowerCeiling(MINUTE);
-							if (rounded) {
-								return a;
-							}
-							prependBlank = true;
-						}
-
-						if (parts < 2) {
-							d %= MINUTE;
-							mod = d % SECOND;
-
-//								if (mod >= upperCeiling(SECOND)) {
-//									if (prependBlank) {
-//										a.append(' ');
-//									}
-//									a.append(ceil(d, SECOND));
-//									a.append(' ');
-//									a.append('s');
-//									++parts;
-//									rounded = true;
-//									prependBlank = true;
-//								}else
-							if (d >= SECOND && !rounded) {
-								if (prependBlank) {
-									a.append(' ');
-								}
-								a.append(floor(d, SECOND));
-//									a.append(' ');
-								a.append('s');
-								++parts;
-								rounded = mod <= lowerCeiling(SECOND);
-								if (rounded) {
-									return a;
-								}
-								prependBlank = true;
-							} else
-
-								if (parts < 2) {
+			if (!append(d, mod, YEAR, 'y', a, parts)) {
+				d %= YEAR;
+				mod = d % MONTH;
+				if (!append(d, mod, MONTH, 'm', a, parts) && parts.intValue() < 2) {
+					d %= MONTH;
+					mod = d % DAY;
+					if (!append(d, mod, DAY, 'd', a, parts) && parts.intValue() < 2) {
+						d %= DAY;
+						mod = d % HOUR;
+						if (!append(d, mod, HOUR, 'h', a, parts) && parts.intValue() < 2) {
+							d %= HOUR;
+							mod = d % MINUTE;
+							if (!append(d, mod, MINUTE, 'm', a, parts) && parts.intValue() < 2) {
+								d %= MINUTE;
+								mod = d % SECOND;
+								if (!append(d, mod, SECOND, 's', a, parts) && parts.intValue() < 2) {
 									d %= SECOND;
-
 									if (d > 0 && !rounded) {
-										if (prependBlank) {
-											a.append(' ');
-										}
 										a.append(Integer.toString((int) d));
-//										a.append(' ');
+	//										a.append(' ');
 										a.append('m');
 										a.append('s');
 									}
 								}
+							}
 						}
 					}
 				}
@@ -717,6 +559,19 @@ public class HumanTime implements Externalizable, Comparable<HumanTime>, Cloneab
 		}
 
 		return a;
+	}
+
+	private boolean append(long d, long mod, long unit, char u, Appendable a, MutableInt parts) throws IOException {
+		if (d >= unit) {
+			a.append(floor(d, unit));
+//                a.append(' ');
+			a.append(u);
+			parts.increment();
+			if (mod <= lowerCeiling(unit)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

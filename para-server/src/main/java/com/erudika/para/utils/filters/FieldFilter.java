@@ -56,50 +56,42 @@ public class FieldFilter implements ContainerResponseFilter {
 			if (responseContext.getEntity() != null && !StringUtils.isBlank(request.getParameter("select"))) {
 				String[] sarr = StringUtils.split(request.getParameter("select"), ",");
 				List<String> fields = sarr == null ? new ArrayList<String>(0) : Arrays.asList(sarr);
-				if (!fields.isEmpty()) {
-					Object entity = responseContext.getEntity();
-					Object newEntity = null;
-					if (entity instanceof ParaObject) {
-						Map<String, Object> newItem = new HashMap<String, Object>();
-						for (String f : fields) {
-							String field = StringUtils.trimToEmpty(f);
-							newItem.put(field, getProperty(entity, field));
-						}
-						newEntity = newItem;
-					} else if (entity instanceof Map) {
-						if (((Map) entity).containsKey("items")) {
-							newEntity = new ArrayList<Map<String, Object>>();
-							for (ParaObject item : (List<ParaObject>) ((Map) entity).get("items")) {
-								Map<String, Object> newItem = new HashMap<String, Object>();
-								for (String f : fields) {
-									String field = StringUtils.trimToEmpty(f);
-									newItem.put(field, getProperty(item, field));
-								}
-								((List) newEntity).add(newItem);
-							}
-							((Map) entity).put("items", newEntity);
-						}
-					} else if (entity instanceof List) {
+				Object entity = responseContext.getEntity();
+				Object newEntity = null;
+				if (entity instanceof ParaObject) {
+					newEntity = getFilteredProperties(entity, fields);
+				} else if (entity instanceof Map) {
+					if (((Map) entity).containsKey("items")) {
 						newEntity = new ArrayList<Map<String, Object>>();
-						if (!((List) entity).isEmpty() && ((List) entity).get(0) instanceof ParaObject) {
-							for (ParaObject item : (List<ParaObject>) entity) {
-								Map<String, Object> newItem = new HashMap<String, Object>();
-								for (String f : fields) {
-									String field = StringUtils.trimToEmpty(f);
-									newItem.put(field, getProperty(item, field));
-								}
-								((List) newEntity).add(newItem);
-							}
+						for (ParaObject item : (List<ParaObject>) ((Map) entity).get("items")) {
+							((List) newEntity).add(getFilteredProperties(item, fields));
+						}
+						((Map) entity).put("items", newEntity);
+					}
+				} else if (entity instanceof List) {
+					newEntity = new ArrayList<Map<String, Object>>();
+					if (!((List) entity).isEmpty() && ((List) entity).get(0) instanceof ParaObject) {
+						for (ParaObject item : (List<ParaObject>) entity) {
+							((List) newEntity).add(getFilteredProperties(item, fields));
 						}
 					}
-					if (newEntity != null) {
-						responseContext.setEntity(newEntity);
-					}
+				}
+				if (newEntity != null) {
+					responseContext.setEntity(newEntity);
 				}
 			}
 		} catch (Exception e) {
-			LoggerFactory.getLogger(this.getClass()).warn(null, e);
+			LoggerFactory.getLogger(this.getClass()).warn("Failed to limit returned fields using ?select=: {}", e);
 		}
+	}
+
+	private Map<String, Object> getFilteredProperties(Object object, List<String> fields) {
+		Map<String, Object> newItem = new HashMap<String, Object>();
+		for (String f : fields) {
+			String field = StringUtils.trimToEmpty(f);
+			newItem.put(field, getProperty(object, field));
+		}
+		return newItem;
 	}
 
 	private Object getProperty(Object obj, String prop) {

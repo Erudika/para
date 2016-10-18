@@ -138,7 +138,7 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 			String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
 
 			if (respEntity != null && Utils.isJsonType(ctype)) {
-				Map<String, Object> profile = jreader.readValue(resp2.getEntity().getContent());
+				Map<String, Object> profile = jreader.readValue(respEntity.getContent());
 
 				if (profile != null && profile.containsKey("sub")) {
 					String googleSubId = (String) profile.get("sub");
@@ -179,7 +179,7 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 					}
 					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 				}
-				EntityUtils.consumeQuietly(resp2.getEntity());
+				EntityUtils.consumeQuietly(respEntity);
 			}
 		}
 		return userAuth;

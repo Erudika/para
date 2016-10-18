@@ -34,7 +34,8 @@ import junit.framework.TestCase;
  *
  * @author <a href="mailto:jb@eaio.com">Johann Burkard</a>
  * @version $Id: HumanTimeTest.java 323 2008-10-08 19:06:22Z Johann $
- * @see <a href="http://johannburkard.de/blog/programming/java/date-formatting-parsing-humans-humantime.html">Date Formatting and Parsing for Humans in Java with HumanTime</a>
+ * @see <a href="http://johannburkard.de/blog/programming/java/date-formatting-parsing-humans-humantime.html">Date
+ * Formatting and Parsing for Humans in Java with HumanTime</a>
  */
 public class HumanTimeTest extends TestCase {
 
