@@ -31,14 +31,23 @@ import org.junit.BeforeClass;
  */
 public class IndexBasedDAOIT extends DAOTest {
 
+	public IndexBasedDAOIT() {
+		super(get());
+	}
+
+	private static DAO get() {
+		DAO dao = new IndexBasedDAO();
+		Search search = new ElasticSearch(dao);
+		((IndexBasedDAO) dao).setSearch(search);
+		return dao;
+	}
+
 	@BeforeClass
 	public static void setUpClass() {
 		System.setProperty("para.env", "embedded");
 		System.setProperty("para.app_name", "para-test");
 		System.setProperty("para.cluster_name", "para-test");
-		dao = new IndexBasedDAO();
-		Search search = new ElasticSearch(dao);
-		((IndexBasedDAO) dao).setSearch(search);
+
 		ElasticSearchUtils.createIndex(Config.APP_NAME_NS);
 		ElasticSearchUtils.createIndex(appid1);
 		ElasticSearchUtils.createIndex(appid2);

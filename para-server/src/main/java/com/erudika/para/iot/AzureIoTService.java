@@ -50,15 +50,15 @@ public class AzureIoTService implements IoTService {
 	private static final int MAX_MESSAGES = Config.getConfigInt("azure.iot_max_messages", 10);
 	private static final int PARTITIONS_COUNT = Config.getConfigInt("azure.iot_partitions", 2);
 
-	private static final String serviceHostname = Config.getConfigParam("azure.iot_hostname", "");
-	private static final String serviceAccessKey = Config.getConfigParam("azure.iot_access_key", "");
-	private static final String serviceConnString = "HostName=" + serviceHostname +
-			";SharedAccessKeyName=iothubowner;SharedAccessKey=" + serviceAccessKey;
+	private static final String SERVICE_HOSTNAME = Config.getConfigParam("azure.iot_hostname", "");
+	private static final String SERVICE_ACCESS_KEY = Config.getConfigParam("azure.iot_access_key", "");
+	private static final String SERVICE_CONN_STR = "HostName=" + SERVICE_HOSTNAME +
+			";SharedAccessKeyName=iothubowner;SharedAccessKey=" + SERVICE_ACCESS_KEY;
 
-	private static String eventHubName = Config.getConfigParam("azure.iot_eventhub_name", "");
-	private static String eventHubEndpoint = Config.getConfigParam("azure.iot_eventhub_endpoint", "");
-	private static String eventHubConnString = "Endpoint=" + eventHubEndpoint + ";EntityPath=" + eventHubName +
-			";SharedAccessKeyName=iothubowner;SharedAccessKey=" + serviceAccessKey;
+	private static final String EVENTHUB_NAME = Config.getConfigParam("azure.iot_eventhub_name", "");
+	private static final String EVENTHUB_ENDPOINT = Config.getConfigParam("azure.iot_eventhub_endpoint", "");
+	private static final String EVENTHUB_CONN_STR = "Endpoint=" + EVENTHUB_ENDPOINT + ";EntityPath=" + EVENTHUB_NAME +
+			";SharedAccessKeyName=iothubowner;SharedAccessKey=" + SERVICE_ACCESS_KEY;
 
 	private static ServiceClient serviceClient = null;
 	private static RegistryManager registryManager = null;
@@ -68,8 +68,8 @@ public class AzureIoTService implements IoTService {
 	 * No-args constructor.
 	 */
 	public AzureIoTService() {
-		if (!StringUtils.isBlank(serviceAccessKey)) {
-			if (!StringUtils.isBlank(eventHubEndpoint)) {
+		if (!StringUtils.isBlank(SERVICE_ACCESS_KEY)) {
+			if (!StringUtils.isBlank(EVENTHUB_ENDPOINT)) {
 				final ArrayList<EventHubClient> recievers = new ArrayList<EventHubClient>();
 				for (int i = 0; i < PARTITIONS_COUNT; i++) {
 					recievers.add(receiveEventsAsync(i + ""));
@@ -83,7 +83,7 @@ public class AzureIoTService implements IoTService {
 				});
 			}
 			try {
-				registryManager = RegistryManager.createFromConnectionString(serviceConnString);
+				registryManager = RegistryManager.createFromConnectionString(SERVICE_CONN_STR);
 			} catch (Exception ex) {
 				logger.warn("Couldn't initialize Azure registry manager: {}", ex.getMessage());
 			}
@@ -95,7 +95,7 @@ public class AzureIoTService implements IoTService {
 			if (serviceClient != null) {
 				return serviceClient;
 			}
-			serviceClient = ServiceClient.createFromConnectionString(serviceConnString, IotHubServiceClientProtocol.AMQPS);
+			serviceClient = ServiceClient.createFromConnectionString(SERVICE_CONN_STR, IotHubServiceClientProtocol.AMQPS);
 			serviceClient.open();
 
 			Para.addDestroyListener(new DestroyListener() {
@@ -127,7 +127,7 @@ public class AzureIoTService implements IoTService {
 	@Override
 	public Thing createThing(Thing thing) {
 		if (thing == null || StringUtils.isBlank(thing.getName()) || StringUtils.isBlank(thing.getAppid()) ||
-				StringUtils.isBlank(serviceAccessKey) || existsThing(thing)) {
+				StringUtils.isBlank(SERVICE_ACCESS_KEY) || existsThing(thing)) {
 			return null;
 		}
 		try {
@@ -146,7 +146,7 @@ public class AzureIoTService implements IoTService {
 			thing.getDeviceMetadata().put("secondaryKey", device.getSecondaryKey());
 			thing.getDeviceMetadata().put("lastActivity", device.getLastActivityTime());
 			thing.getDeviceMetadata().put("connectionState", device.getConnectionState());
-			thing.getDeviceMetadata().put("connectionString", "HostName=" + serviceHostname + ";DeviceId=" + id +
+			thing.getDeviceMetadata().put("connectionString", "HostName=" + SERVICE_HOSTNAME + ";DeviceId=" + id +
 					";SharedAccessKey=" + device.getPrimaryKey());
 		} catch (Exception e) {
 			logger.warn(null, e);
@@ -164,7 +164,7 @@ public class AzureIoTService implements IoTService {
 	@Override
 	public void updateThing(Thing thing) {
 		if (thing == null || StringUtils.isBlank(thing.getId()) || StringUtils.isBlank(thing.getAppid()) ||
-				StringUtils.isBlank(serviceAccessKey)) {
+				StringUtils.isBlank(SERVICE_ACCESS_KEY)) {
 			return;
 		}
 		try {
@@ -189,7 +189,7 @@ public class AzureIoTService implements IoTService {
 	@Override
 	public void deleteThing(Thing thing) {
 		if (thing == null || StringUtils.isBlank(thing.getId()) || StringUtils.isBlank(thing.getAppid()) ||
-				StringUtils.isBlank(serviceAccessKey)) {
+				StringUtils.isBlank(SERVICE_ACCESS_KEY)) {
 			return;
 		}
 		try {
@@ -204,7 +204,7 @@ public class AzureIoTService implements IoTService {
 	@Override
 	public boolean existsThing(Thing thing) {
 		if (thing == null || StringUtils.isBlank(thing.getId()) || StringUtils.isBlank(thing.getAppid()) ||
-				StringUtils.isBlank(serviceAccessKey)) {
+				StringUtils.isBlank(SERVICE_ACCESS_KEY)) {
 			return false;
 		}
 		try {
@@ -217,7 +217,7 @@ public class AzureIoTService implements IoTService {
 	private static EventHubClient receiveEventsAsync(final String partitionId) {
 		EventHubClient client = null;
 		try {
-			client = EventHubClient.createFromConnectionStringSync(eventHubConnString);
+			client = EventHubClient.createFromConnectionStringSync(EVENTHUB_CONN_STR);
 			client.createReceiver(EventHubClient.DEFAULT_CONSUMER_GROUP_NAME, partitionId, Instant.now()).
 					thenAccept(new Receiver(partitionId));
 		} catch (Exception e) {

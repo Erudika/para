@@ -313,7 +313,7 @@ public class User implements ParaObject {
 	}
 
 	/**
-	 * Detaches an identifier from this user.
+	 * Detaches a secondary identifier which is not already used by this user.
 	 * @param identifier an attached identifier
 	 */
 	public void detachIdentifier(String identifier) {

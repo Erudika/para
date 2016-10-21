@@ -19,7 +19,6 @@ package com.erudika.para.persistence;
 
 import com.erudika.para.core.App;
 import com.erudika.para.core.Sysprop;
-import static com.erudika.para.persistence.DAOTest.dao;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -41,10 +40,13 @@ import org.junit.Test;
  */
 public class AWSDynamoDAOIT extends DAOTest {
 
+	public AWSDynamoDAOIT() {
+		super(new AWSDynamoDAO());
+	}
+
 	@BeforeClass
 	public static void setUpClass() throws InterruptedException {
 		System.setProperty("para.prepend_shared_appids_with_space", "true");
-		dao = new AWSDynamoDAO();
 		AWSDynamoUtils.createTable(Config.APP_NAME_NS);
 		AWSDynamoUtils.createTable(appid1);
 		AWSDynamoUtils.createTable(appid2);
@@ -93,27 +95,27 @@ public class AWSDynamoDAOIT extends DAOTest {
 
 		Sysprop s = new Sysprop("sharedobj1");
 		s.setAppid(app.getAppIdentifier());
-		assertNotNull(dao.create(app.getAppIdentifier(), s));
+		assertNotNull(dao().create(app.getAppIdentifier(), s));
 
-		assertNull(dao.read(app2.getAppIdentifier(), s.getId()));
+		assertNull(dao().read(app2.getAppIdentifier(), s.getId()));
 
-		Sysprop sr = dao.read(s.getAppid(), s.getId());
-		assertNull(dao.read(s.getId())); // not in root table
+		Sysprop sr = dao().read(s.getAppid(), s.getId());
+		assertNull(dao().read(s.getId())); // not in root table
 		assertFalse(AWSDynamoUtils.existsTable(s.getAppid().trim()));
 		assertNotNull(sr);
 		assertEquals(s.getId(), sr.getId());
 
 		s.setName("I'm shared");
-		dao.update(s.getAppid(), s);
-		sr = dao.read(s.getAppid(), s.getId());
+		dao().update(s.getAppid(), s);
+		sr = dao().read(s.getAppid(), s.getId());
 		assertNotNull(sr);
-		assertNull(dao.read(s.getId())); // not in root table
+		assertNull(dao().read(s.getId())); // not in root table
 		assertEquals("I'm shared", sr.getName());
 
-		dao.delete(sr); // no effect - different App (root appid)
-		assertNotNull(dao.read(s.getAppid(), s.getId())); // not in root table
-		dao.delete(s.getAppid(), s);
-		assertNull(dao.read(s.getAppid(), s.getId()));
+		dao().delete(sr); // no effect - different App (root appid)
+		assertNotNull(dao().read(s.getAppid(), s.getId())); // not in root table
+		dao().delete(s.getAppid(), s);
+		assertNull(dao().read(s.getAppid(), s.getId()));
 	}
 
 	@Test
@@ -133,26 +135,26 @@ public class AWSDynamoDAOIT extends DAOTest {
 		t4.setAppid(app2.getAppIdentifier());
 
 		// multi app support
-		dao.createAll(app1.getAppIdentifier(), Arrays.asList(t1, t2));
-		dao.createAll(app2.getAppIdentifier(), Arrays.asList(t3, t4));
-		Sysprop s = dao.read(app1.getAppIdentifier(), t2.getId());
+		dao().createAll(app1.getAppIdentifier(), Arrays.asList(t1, t2));
+		dao().createAll(app2.getAppIdentifier(), Arrays.asList(t3, t4));
+		Sysprop s = dao().read(app1.getAppIdentifier(), t2.getId());
 		assertNotNull(s);
 		assertEquals(app1.getAppIdentifier(), s.getAppid());
-		assertNull(dao.read(t2.getId()));
-		assertNull(dao.read(app2.getAppIdentifier(), t2.getId()));
+		assertNull(dao().read(t2.getId()));
+		assertNull(dao().read(app2.getAppIdentifier(), t2.getId()));
 
-		assertNotNull(dao.read(app2.getAppIdentifier(), t3.getId()));
-		assertNotNull(dao.read(app2.getAppIdentifier(), t4.getId()));
+		assertNotNull(dao().read(app2.getAppIdentifier(), t3.getId()));
+		assertNotNull(dao().read(app2.getAppIdentifier(), t4.getId()));
 
 		// app1 must not see app2's objects, and vice versa
-		Map<String, Sysprop> m1 = dao.readAll(app1.getAppIdentifier(), Arrays.asList(t3.getId(), t4.getId()), true);
-		Map<String, Sysprop> m2 = dao.readAll(app2.getAppIdentifier(), Arrays.asList(t1.getId(), t2.getId()), true);
+		Map<String, Sysprop> m1 = dao().readAll(app1.getAppIdentifier(), Arrays.asList(t3.getId(), t4.getId()), true);
+		Map<String, Sysprop> m2 = dao().readAll(app2.getAppIdentifier(), Arrays.asList(t1.getId(), t2.getId()), true);
 		assertNull(m1.get(t3.getId()));
 		assertNull(m1.get(t4.getId()));
 		assertNull(m2.get(t1.getId()));
 		assertNull(m2.get(t2.getId()));
 
-		Map<String, Sysprop> props = dao.readAll(app1.getAppIdentifier(), Arrays.asList(t1.getId(), t2.getId()), true);
+		Map<String, Sysprop> props = dao().readAll(app1.getAppIdentifier(), Arrays.asList(t1.getId(), t2.getId()), true);
 		assertFalse(props.isEmpty());
 		assertTrue(props.containsKey(t1.getId()));
 		assertTrue(props.containsKey(t2.getId()));
@@ -168,10 +170,10 @@ public class AWSDynamoDAOIT extends DAOTest {
 		t2.setType("type2");
 		t3.setType("type3");
 
-		dao.updateAll(app1.getAppIdentifier(), Arrays.asList(t1, t2));
-		Sysprop tr1 = dao.read(app1.getAppIdentifier(), t1.getId());
-		Sysprop tr2 = dao.read(app1.getAppIdentifier(), t2.getId());
-		assertNull(dao.read(app1.getAppIdentifier(), t3.getId()));
+		dao().updateAll(app1.getAppIdentifier(), Arrays.asList(t1, t2));
+		Sysprop tr1 = dao().read(app1.getAppIdentifier(), t1.getId());
+		Sysprop tr2 = dao().read(app1.getAppIdentifier(), t2.getId());
+		assertNull(dao().read(app1.getAppIdentifier(), t3.getId()));
 
 		assertNotNull(tr1);
 		assertNotNull(tr2);
@@ -185,24 +187,24 @@ public class AWSDynamoDAOIT extends DAOTest {
 		assertNotNull(t1.getUpdated());
 		assertNotNull(t2.getUpdated());
 
-		dao.deleteAll(null);
-		dao.deleteAll(app1.getAppIdentifier(), Arrays.asList(t1, t2, t3));
+		dao().deleteAll(null);
+		dao().deleteAll(app1.getAppIdentifier(), Arrays.asList(t1, t2, t3));
 
-		assertNull(dao.read(app1.getAppIdentifier(), t1.getId()));
-		assertNull(dao.read(app1.getAppIdentifier(), t2.getId()));
-		assertNotNull(dao.read(app2.getAppIdentifier(), t3.getId()));
-		dao.deleteAll(app2.getAppIdentifier(), Arrays.asList(t3, t4));
-		assertNull(dao.read(app2.getAppIdentifier(), t1.getId()));
-		assertNull(dao.read(app2.getAppIdentifier(), t2.getId()));
+		assertNull(dao().read(app1.getAppIdentifier(), t1.getId()));
+		assertNull(dao().read(app1.getAppIdentifier(), t2.getId()));
+		assertNotNull(dao().read(app2.getAppIdentifier(), t3.getId()));
+		dao().deleteAll(app2.getAppIdentifier(), Arrays.asList(t3, t4));
+		assertNull(dao().read(app2.getAppIdentifier(), t1.getId()));
+		assertNull(dao().read(app2.getAppIdentifier(), t2.getId()));
 
 		// update locked field test
 		Sysprop ts4 = new Sysprop();
 		ts4.setParentid("123");
-		dao.create(app1.getAppIdentifier(), ts4);
+		dao().create(app1.getAppIdentifier(), ts4);
 		ts4.setParentid("321");
 		ts4.setType("type4");
-		dao.update(app1.getAppIdentifier(), ts4);
-		Sysprop tr4 = dao.read(app1.getAppIdentifier(), ts4.getId());
+		dao().update(app1.getAppIdentifier(), ts4);
+		Sysprop tr4 = dao().read(app1.getAppIdentifier(), ts4.getId());
 		assertEquals(ts4.getId(), tr4.getId());
 		assertEquals(Utils.type(Sysprop.class), tr4.getType());
 		assertEquals("123", tr4.getParentid());
@@ -222,22 +224,22 @@ public class AWSDynamoDAOIT extends DAOTest {
 			s.setAppid(app3.getAppIdentifier());
 			list.add(s);
 		}
-		dao.createAll(app3.getAppIdentifier(), list);
+		dao().createAll(app3.getAppIdentifier(), list);
 
 		Sysprop s = new Sysprop("sharedobj2");
-		assertNotNull(dao.create(app4.getAppIdentifier(), s));
-		dao.create(app4.getAppIdentifier(), s);
+		assertNotNull(dao().create(app4.getAppIdentifier(), s));
+		dao().create(app4.getAppIdentifier(), s);
 
 		Pager p = new Pager(10);
-		assertTrue(dao.readPage(null, null).isEmpty());
-		assertFalse(dao.readPage(app3.getAppIdentifier(), null).isEmpty());
-		assertEquals(10, dao.readPage(app3.getAppIdentifier(), p).size()); // page 1
-		assertEquals(10, dao.readPage(app3.getAppIdentifier(), p).size()); // page 2
-		assertEquals(2, dao.readPage(app3.getAppIdentifier(), p).size());  // page 3
-		assertTrue(dao.readPage(app3.getAppIdentifier(), p).isEmpty());  // end
+		assertTrue(dao().readPage(null, null).isEmpty());
+		assertFalse(dao().readPage(app3.getAppIdentifier(), null).isEmpty());
+		assertEquals(10, dao().readPage(app3.getAppIdentifier(), p).size()); // page 1
+		assertEquals(10, dao().readPage(app3.getAppIdentifier(), p).size()); // page 2
+		assertEquals(2, dao().readPage(app3.getAppIdentifier(), p).size());  // page 3
+		assertTrue(dao().readPage(app3.getAppIdentifier(), p).isEmpty());  // end
 		assertEquals(22, p.getCount());
 
-		assertEquals(1, dao.readPage(app4.getAppIdentifier(), null).size());
+		assertEquals(1, dao().readPage(app4.getAppIdentifier(), null).size());
 	}
 
 }

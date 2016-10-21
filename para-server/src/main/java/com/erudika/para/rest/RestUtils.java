@@ -450,7 +450,7 @@ public final class RestUtils {
 				Para.asyncExecute(new Runnable() {
 					public void run() {
 						int typesCount = app.getDatatypes().size();
-						app.addDatatypes(objects.toArray(new ParaObject[objects.size()]));
+						app.addDatatypes(objects.toArray(new ParaObject[0]));
 						if (typesCount < app.getDatatypes().size()) {
 							app.update();
 						}

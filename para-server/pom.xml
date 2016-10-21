@@ -245,7 +245,7 @@
 			<plugin>
 				<groupId>com.jcabi</groupId>
 				<artifactId>jcabi-dynamodb-maven-plugin</artifactId>
-				<version>0.7.1</version>
+				<version>0.8</version>
 				<executions>
 					<execution>
 						<id>dynamodb-integration-test</id>

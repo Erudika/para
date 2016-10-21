@@ -78,11 +78,11 @@ public final class Para {
 	}
 
 	private static final Logger logger = LoggerFactory.getLogger(Para.class);
-	private static final List<DestroyListener> destroyListeners = new ArrayList<DestroyListener>();
-	private static final List<InitializeListener> initListeners = new ArrayList<InitializeListener>();
-	private static final List<IOListener> ioListeners = new ArrayList<IOListener>();
-	private static final ExecutorService exec = Executors.newFixedThreadPool(Config.EXECUTOR_THREADS);
-	private static final ScheduledExecutorService execAt = Executors.newScheduledThreadPool(Config.EXECUTOR_THREADS);
+	private static final List<DestroyListener> DESTROY_LISTENERS = new ArrayList<DestroyListener>();
+	private static final List<InitializeListener> INIT_LISTENERS = new ArrayList<InitializeListener>();
+	private static final List<IOListener> IO_LISTENERS = new ArrayList<IOListener>();
+	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(Config.EXECUTOR_THREADS);
+	private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(Config.EXECUTOR_THREADS);
 	private static Injector injector;
 	private static ClassLoader paraClassLoader;
 
@@ -118,7 +118,7 @@ public final class Para {
 					injector = Guice.createInjector(stage, coreModules);
 				}
 
-				for (InitializeListener initListener : initListeners) {
+				for (InitializeListener initListener : INIT_LISTENERS) {
 					if (initListener != null) {
 						injectInto(initListener);
 						initListener.onInitialize();
@@ -143,7 +143,7 @@ public final class Para {
 		try {
 			if (injector != null) {
 				logger.info("--- Para.destroy() ---");
-				for (DestroyListener destroyListener : destroyListeners) {
+				for (DestroyListener destroyListener : DESTROY_LISTENERS) {
 					if (destroyListener != null) {
 						injectInto(destroyListener);
 						destroyListener.onDestroy();
@@ -151,13 +151,13 @@ public final class Para {
 				}
 				injector = null;
 			}
-			if (!exec.isShutdown()) {
-				exec.shutdown();
-				exec.awaitTermination(60, TimeUnit.SECONDS);
+			if (!EXECUTOR.isShutdown()) {
+				EXECUTOR.shutdown();
+				EXECUTOR.awaitTermination(60, TimeUnit.SECONDS);
 			}
-			if (!execAt.isShutdown()) {
-				execAt.shutdown();
-				execAt.awaitTermination(60, TimeUnit.SECONDS);
+			if (!SCHEDULER.isShutdown()) {
+				SCHEDULER.shutdown();
+				SCHEDULER.awaitTermination(60, TimeUnit.SECONDS);
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -231,7 +231,7 @@ public final class Para {
 	 */
 	public static void addInitListener(InitializeListener il) {
 		if (il != null) {
-			initListeners.add(il);
+			INIT_LISTENERS.add(il);
 		}
 	}
 
@@ -242,7 +242,7 @@ public final class Para {
 	 */
 	public static void addDestroyListener(DestroyListener dl) {
 		if (dl != null) {
-			destroyListeners.add(dl);
+			DESTROY_LISTENERS.add(dl);
 		}
 	}
 
@@ -253,7 +253,7 @@ public final class Para {
 	 */
 	public static void addIOListener(IOListener iol) {
 		if (iol != null) {
-			ioListeners.add(iol);
+			IO_LISTENERS.add(iol);
 		}
 	}
 
@@ -262,7 +262,7 @@ public final class Para {
 	 * @return the list of registered listeners
 	 */
 	public static List<IOListener> getIOListeners() {
-		return ioListeners;
+		return IO_LISTENERS;
 	}
 
 	/**
@@ -270,7 +270,7 @@ public final class Para {
 	 * @return a fixed thread executor service
 	 */
 	public static ExecutorService getExecutorService() {
-		return exec;
+		return EXECUTOR;
 	}
 
 	/**
@@ -278,7 +278,7 @@ public final class Para {
 	 * @return a scheduled executor service
 	 */
 	public static ScheduledExecutorService getScheduledExecutorService() {
-		return execAt;
+		return SCHEDULER;
 	}
 
 	/**

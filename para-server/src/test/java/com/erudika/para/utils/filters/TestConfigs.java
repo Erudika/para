@@ -20,6 +20,7 @@ import java.util.Enumeration;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
 
+@SuppressWarnings("unchecked")
 public class TestConfigs {
     public static final String HTTPS_WWW_APACHE_ORG = "https://www.apache.org";
     public static final String HTTP_TOMCAT_APACHE_ORG =
@@ -30,7 +31,7 @@ public class TestConfigs {
      */
     public static final String ANY_ORIGIN = "*";
 
-    public static final MockServletContext mockServletContext =
+    public static final MockServletContext MOCK_SERVLET_CONTEXT =
             new MockServletContext();
 
     public static FilterConfig getDefaultFilterConfig() {
@@ -265,7 +266,7 @@ public class TestConfigs {
             }
 
             public ServletContext getServletContext() {
-                return mockServletContext;
+                return MOCK_SERVLET_CONTEXT;
             }
 
             public String getInitParameter(String name) {
@@ -297,8 +298,7 @@ public class TestConfigs {
                 return null;
             }
 
-            @SuppressWarnings("rawtypes")
-            public Enumeration getInitParameterNames() {
+            public Enumeration<String> getInitParameterNames() {
                 return null;
             }
         };

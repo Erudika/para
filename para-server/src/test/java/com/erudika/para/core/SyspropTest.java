@@ -21,7 +21,6 @@ import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.persistence.DAO;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import org.junit.Before;
 
 /**
  *
@@ -29,22 +28,23 @@ import org.junit.Before;
  */
 public class SyspropTest {
 
-	private static DAO dao;
-	private static Sysprop s;
-
-	@Before
-	public void setUp() {
-		dao = CoreUtils.getInstance().getDao(); //new MockDAO();
-		s = new Sysprop("5");
+	private Sysprop s() {
+		Sysprop s = new Sysprop("5");
 		s.addProperty("test1", "ok");
 		s.addProperty("test2", "nope");
 		s.addProperty("test3", "sure");
 		s.addProperty("test4", false);
 		s.addProperty("test5", 42);
+		return s;
+	}
+
+	public DAO dao() {
+		return CoreUtils.getInstance().getDao(); //new MockDAO();
 	}
 
 	@Test
 	public void testAddRemoveHasProperty() {
+		Sysprop s = s();
 		s.setProperties(null);
 		assertTrue(s.getProperties().isEmpty());
 		s.addProperty(null, "asd");
@@ -61,8 +61,9 @@ public class SyspropTest {
 
 	@Test
 	public void testGetProperty() {
+		Sysprop s = s();
 		s.create();
-		Sysprop s1 = dao.read(s.getId());
+		Sysprop s1 = dao().read(s.getId());
 		assertEquals(s.getProperty("test5"), s1.getProperty("test5"));
 		assertEquals(s.getProperty("test4"), s1.getProperty("test4"));
 		assertEquals(s.getProperty("test3"), s1.getProperty("test3"));

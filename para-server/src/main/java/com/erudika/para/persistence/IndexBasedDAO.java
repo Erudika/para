@@ -25,11 +25,11 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
@@ -48,7 +48,8 @@ import org.slf4j.LoggerFactory;
 public class IndexBasedDAO implements DAO {
 
 	private static final Logger logger = LoggerFactory.getLogger(IndexBasedDAO.class);
-	private Map<String, Map<String, ParaObject>> maps = new HashMap<String, Map<String, ParaObject>>();
+	private static final Map<String, Map<String, ParaObject>> MAPS =
+			new ConcurrentHashMap<String, Map<String, ParaObject>>();
 	private Search search;
 
 	/**
@@ -212,7 +213,7 @@ public class IndexBasedDAO implements DAO {
 	public <P extends ParaObject> void deleteAll(String appid, List<P> objects) {
 		if (!StringUtils.isBlank(appid) && objects != null) {
 			for (P obj : objects) {
-				if (obj != null && getMap(appid).containsKey(obj.getId())) {
+				if (obj != null) {
 					delete(appid, obj);
 				}
 			}
@@ -221,10 +222,10 @@ public class IndexBasedDAO implements DAO {
 	}
 
 	private Map<String, ParaObject> getMap(String appid) {
-		if (!maps.containsKey(appid)) {
-			maps.put(appid, new  HashMap<String, ParaObject>());
+		if (!MAPS.containsKey(appid)) {
+			MAPS.put(appid, new  LinkedHashMap<String, ParaObject>());
 		}
-		return maps.get(appid);
+		return MAPS.get(appid);
 	}
 
 	private String getAppidWithRouting(String appid) {

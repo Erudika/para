@@ -24,11 +24,11 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -43,7 +43,8 @@ import org.slf4j.LoggerFactory;
 public class MockDAO implements DAO {
 
 	private static final Logger logger = LoggerFactory.getLogger(MockDAO.class);
-	private Map<String, Map<String, ParaObject>> maps = new HashMap<String, Map<String, ParaObject>>();
+	private static final Map<String, Map<String, ParaObject>> MAPS =
+			new ConcurrentHashMap<String, Map<String, ParaObject>>();
 
 	@Override
 	public <P extends ParaObject> String create(String appid, P so) {
@@ -79,8 +80,8 @@ public class MockDAO implements DAO {
 		if (so != null && !StringUtils.isBlank(appid)) {
 			so.setUpdated(Utils.timestamp());
 			ParaObject soUpdated = getMap(appid).get(so.getId());
-			ParaObjectUtils.setAnnotatedFields(soUpdated, ParaObjectUtils.getAnnotatedFields(so), Locked.class);
-			getMap(appid).put(so.getId(), soUpdated);
+			getMap(appid).put(so.getId(), ParaObjectUtils.setAnnotatedFields(soUpdated,
+					ParaObjectUtils.getAnnotatedFields(so), Locked.class));
 			logger.debug("DAO.update() {}", so.getId());
 		}
 	}
@@ -178,10 +179,10 @@ public class MockDAO implements DAO {
 	}
 
 	private Map<String, ParaObject> getMap(String appid) {
-		if (!maps.containsKey(appid)) {
-			maps.put(appid, new LinkedHashMap<String, ParaObject>());
+		if (!MAPS.containsKey(appid)) {
+			MAPS.put(appid, new ConcurrentHashMap<String, ParaObject>());
 		}
-		return maps.get(appid);
+		return MAPS.get(appid);
 	}
 
 	////////////////////////////////////////////////////////////////////

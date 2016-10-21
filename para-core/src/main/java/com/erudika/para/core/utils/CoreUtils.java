@@ -22,6 +22,7 @@ import com.erudika.para.cache.Cache;
 import com.erudika.para.cache.MockCache;
 import com.erudika.para.core.Linker;
 import com.erudika.para.core.ParaObject;
+import com.erudika.para.core.Votable;
 import com.erudika.para.core.Votable.VoteValue;
 import com.erudika.para.core.Vote;
 import com.erudika.para.iot.IoTServiceFactory;
@@ -43,7 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,170 +53,399 @@ import org.slf4j.LoggerFactory;
  * @author Alex Bogdanovski [alex@erudika.com]
  * @see ParaObject
  */
-@Singleton
-public final class CoreUtils implements InitializeListener {
-
-	private static final Logger logger = LoggerFactory.getLogger(CoreUtils.class);
-
-	@Inject private DAO dao;
-	@Inject private Search search;
-	@Inject private Cache cache;
-	@Inject private IoTServiceFactory iotFactory;
-
-	private static CoreUtils instance;
+public enum CoreUtils implements InitializeListener {
 
 	/**
-	 * Default constructor.
-	 * @param dao a {@link com.erudika.para.persistence.DAO} object
-	 * @param search a {@link com.erudika.para.search.Search} object
-	 * @param cache a {@link com.erudika.para.cache.Cache} object
+	 * Singleton.
 	 */
-	public CoreUtils(DAO dao, Search search, Cache cache) {
-		this.dao = dao;
-		this.search = search;
-		this.cache = cache;
-	}
+	INSTANCE {
+		private final Logger logger = LoggerFactory.getLogger(CoreUtils.class);
 
-	@Override
-	public void onInitialize() {
-		if (dao != null && search != null && cache != null) {
-			logger.info("Loaded new DAO, Search and Cache implementations - {}, {} and {}.",
+		private DAO dao;
+		private Search search;
+		private Cache cache;
+		private IoTServiceFactory iotFactory;
+
+		{
+			dao = new MockDAO();
+			search = new MockSearch();
+			cache = new MockCache();
+			logger.debug("Using default impementations - {}, {} and {}.",
 					dao.getClass().getSimpleName(),
 					search.getClass().getSimpleName(),
 					cache.getClass().getSimpleName());
-			CoreUtils.instance = new CoreUtils(dao, search, cache);
-			CoreUtils.instance.setIotFactory(iotFactory);
 		}
-	}
+
+		@Override
+		public void onInitialize() {
+			// switch to the real DAO, Search and Cache implementations at runtime
+			if (dao != null && search != null && cache != null) {
+				logger.info("Loaded new DAO, Search and Cache implementations - {}, {} and {}.",
+						dao.getClass().getSimpleName(),
+						search.getClass().getSimpleName(),
+						cache.getClass().getSimpleName());
+				setIotFactory(iotFactory);
+			}
+		}
+
+		@Override
+		public DAO getDao() {
+			return dao;
+		}
+
+		@Inject
+		@Override
+		public void setDao(DAO dao) {
+			this.dao = dao;
+		}
+
+		@Override
+		public Search getSearch() {
+			return search;
+		}
+
+		@Inject
+		@Override
+		public void setSearch(Search search) {
+			this.search = search;
+		}
+
+		@Override
+		public Cache getCache() {
+			return cache;
+		}
+
+		@Inject
+		@Override
+		public void setCache(Cache cache) {
+			this.cache = cache;
+		}
+
+		@Override
+		public IoTServiceFactory getIotFactory() {
+			return iotFactory;
+		}
+
+		@Inject
+		@Override
+		public void setIotFactory(IoTServiceFactory iotFactory) {
+			this.iotFactory = iotFactory;
+		}
+
+		@Override
+		public String getObjectURI(ParaObject obj) {
+			String defurl = "/".concat(obj.getPlural());
+			return (obj.getId() != null) ? defurl.concat("/").concat(obj.getId()) : defurl;
+		}
+
+		@Override
+		public String getName(String name, String id) {
+			return (name == null) ? "ParaObject ".concat((id == null) ? System.currentTimeMillis() + "" : id) : name;
+		}
+
+		@Override
+		public String overwrite(ParaObject obj) {
+			return overwrite(Config.APP_NAME_NS, obj);
+		}
+
+		@Override
+		public String overwrite(String appid, ParaObject obj) {
+			if (obj != null && obj.getId() != null) {
+				if (obj.getUpdated() == null) {
+					obj.setUpdated(System.currentTimeMillis());
+				}
+				return getDao().create(appid, obj);
+			}
+			return null;
+		}
+
+		///////////////////////////////////////
+		//	    	TAGGING METHODS
+		///////////////////////////////////////
+
+		@Override
+		public List<String> addTags(List<String> objectTags, String... tag) {
+			if (tag != null && tag.length > 0) {
+				Set<String> tagz;
+				if (objectTags == null || objectTags.isEmpty()) {
+					tagz = new HashSet<String>();
+				} else {
+					tagz = new HashSet<String>(objectTags);
+				}
+				for (String t : tag) {
+					if (!StringUtils.isBlank(t)) {
+						tagz.add(Utils.noSpaces(Utils.stripAndTrim(t), "-"));
+					}
+				}
+				tagz.remove(null);
+				tagz.remove("");
+				return new ArrayList<String>(tagz);
+			}
+			return objectTags;
+		}
+
+		@Override
+		public List<String> removeTags(List<String> objectTags, String... tag) {
+			if (objectTags != null && tag != null && tag.length > 0) {
+				Set<String> tagz = new HashSet<String>(objectTags);
+				tagz.removeAll(Arrays.asList(tag));
+				return new ArrayList<String>(tagz);
+			}
+			return objectTags;
+		}
+
+		///////////////////////////////////////
+		//			LINKER METHODS
+		///////////////////////////////////////
+
+		@Override
+		public String link(ParaObject obj, String id2) {
+			ParaObject second = getDao().read(obj.getAppid(), id2);
+			if (second == null || obj.getId() == null) {
+				return null;
+			}
+			// auto correct the second type
+			Linker link = new Linker(obj.getType(), second.getType(), obj.getId(), id2);
+			link.addNestedObject(obj);
+			link.addNestedObject(second);
+			return getDao().create(obj.getAppid(), link);
+		}
+
+		@Override
+		public void unlink(ParaObject obj, String type2, String id2) {
+			getDao().delete(obj.getAppid(), new Linker(obj.getType(), type2, obj.getId(), id2));
+		}
+
+		@Override
+		public void unlinkAll(ParaObject obj) {
+			Map<String, Object> terms = new HashMap<String, Object>();
+			// delete all links where id1 == id OR id2 == id
+			terms.put("id1", obj.getId());
+			terms.put("id2", obj.getId());
+			getDao().deleteAll(obj.getAppid(), getSearch().
+					findTerms(obj.getAppid(), Utils.type(Linker.class), terms, false));
+		}
+
+		@Override
+		public List<Linker> getLinks(ParaObject obj, String type2, Pager... pager) {
+			if (type2 == null) {
+				return Collections.emptyList();
+			}
+			Linker link = new Linker(obj.getType(), type2, null, null);
+			String idField = link.getIdFieldNameFor(obj.getType());
+			Map<String, Object> terms = new HashMap<String, Object>();
+			terms.put(Config._NAME, link.getName());
+			terms.put(idField, obj.getId());
+			return getSearch().findTerms(obj.getAppid(), link.getType(), terms, true, pager);
+		}
+
+		@Override
+		public boolean isLinked(ParaObject obj, String type2, String id2) {
+			if (type2 == null) {
+				return false;
+			}
+			return getDao().read(obj.getAppid(), new Linker(obj.getType(), type2, obj.getId(), id2).getId()) != null;
+		}
+
+		@Override
+		public boolean isLinked(ParaObject obj, ParaObject toObj) {
+			if (toObj == null) {
+				return false;
+			}
+			return isLinked(obj, toObj.getType(), toObj.getId());
+		}
+
+		@Override
+		public Long countLinks(ParaObject obj, String type2) {
+			if (obj.getId() == null) {
+				return 0L;
+			}
+			Linker link = new Linker(obj.getType(), type2, null, null);
+			String idField = link.getIdFieldNameFor(obj.getType());
+			Map<String, Object> terms = new HashMap<String, Object>();
+			terms.put(Config._NAME, link.getName());
+			terms.put(idField, obj.getId());
+			return getSearch().getCount(obj.getAppid(), link.getType(), terms);
+		}
+
+		@Override
+		public Long countChildren(ParaObject obj, String type2) {
+			return getSearch().getCount(obj.getAppid(), type2);
+		}
+
+		@Override
+		public <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, Pager... pager) {
+			return getChildren(obj, type2, null, null, pager);
+		}
+
+		@Override
+		public <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, String field, String term,
+				Pager... pager) {
+			Map<String, Object> terms = new HashMap<String, Object>();
+			if (!StringUtils.isBlank(field) && !StringUtils.isBlank(term)) {
+				terms.put(field, term);
+			}
+			terms.put(Config._PARENTID, obj.getId());
+			return getSearch().findTerms(obj.getAppid(), type2, terms, true, pager);
+		}
+
+		@Override
+		public <P extends ParaObject> List<P> findChildren(ParaObject obj, String type2, String query, Pager... pager) {
+			if (StringUtils.isBlank(query)) {
+				query = "*";
+			}
+			query = Config._PARENTID + ":" + obj.getId() + " AND " + query;
+			return getSearch().findQuery(obj.getAppid(), type2, query, pager);
+		}
+
+		@Override
+		public void deleteChildren(ParaObject obj, String type2) {
+			if (!StringUtils.isBlank(obj.getId())) {
+				getDao().deleteAll(obj.getAppid(), getSearch().findTerms(obj.getAppid(),
+						type2, Collections.singletonMap(Config._PARENTID, obj.getId()), true));
+			}
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public <P extends ParaObject> List<P> getLinkedObjects(ParaObject obj, String type2, Pager... pager) {
+			List<Linker> links = getLinks(obj, type2, pager);
+			LinkedList<String> keys = new LinkedList<String>();
+			for (Linker link : links) {
+				keys.add(link.isFirst(type2) ? link.getId1() : link.getId2());
+			}
+			return new ArrayList<P>((Collection<? extends P>) getDao().readAll(obj.getAppid(), keys, true).values());
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public <P extends ParaObject> List<P> findLinkedObjects(ParaObject obj, String type2, String field, String query,
+				Pager... pager) {
+			if (StringUtils.isBlank(query)) {
+				query = "*";
+			}
+			List<Linker> links = getSearch().findNestedQuery(obj.getAppid(), Utils.type(Linker.class), field, query, pager);
+			LinkedList<String> keys = new LinkedList<String>();
+			for (Linker link : links) {
+				// ignore the part of the link that is equal to the given object
+				// e.g. (NOT id:$obj.getId()) AND $query
+				if (link.getId1().equals(obj.getId())) {
+					keys.add(link.getId2());
+				} else {
+					keys.add(link.getId1());
+				}
+			}
+			return new ArrayList<P>((Collection<? extends P>) getDao().readAll(obj.getAppid(), keys, true).values());
+		}
+
+		@Override
+		public <P extends ParaObject> P getParent(ParaObject obj) {
+			return getDao().read(obj.getAppid(), obj.getParentid());
+		}
+
+		@Override
+		public <P extends ParaObject> P getCreator(ParaObject obj) {
+			return getDao().read(obj.getAppid(), obj.getCreatorid());
+		}
+
+		///////////////////////////////////////
+		//	    	VOTING METHODS
+		///////////////////////////////////////
+
+		@Override
+		public boolean vote(ParaObject votable, String userid, VoteValue upDown) {
+			if (StringUtils.isBlank(userid) || votable == null || votable.getId() == null || upDown == null) {
+				return false;
+			}
+			//no voting on your own stuff!
+			if (userid.equals(votable.getCreatorid()) || userid.equals(votable.getId())) {
+				return false;
+			}
+
+			Vote v = new Vote(userid, votable.getId(), upDown.toString());
+			Vote saved = getDao().read(votable.getAppid(), v.getId());
+			boolean done = false;
+			int vote = (upDown == VoteValue.UP) ? 1 : -1;
+
+			if (saved != null) {
+				boolean isUpvote = upDown.equals(VoteValue.UP);
+				boolean wasUpvote = VoteValue.UP.toString().equals(saved.getValue());
+				boolean voteHasChanged = isUpvote ^ wasUpvote;
+
+				if (saved.isExpired()) {
+					done = getDao().create(votable.getAppid(), v) != null;
+				} else if (saved.isAmendable() && voteHasChanged) {
+					getDao().delete(votable.getAppid(), saved);
+					done = true;
+				}
+			} else {
+				done = getDao().create(votable.getAppid(), v) != null;
+			}
+
+			if (done) {
+				synchronized (votable) {
+					votable.setVotes(votable.getVotes() + vote);
+				}
+			}
+			return done;
+		}
+	};
 
 	/**
-	 * Provides a default instance using fake DAO and Search implementations.
+	 * Provides a default instance using fake DAO, Search and Cache implementations.
 	 * @return an instance of this class
 	 */
 	public static synchronized CoreUtils getInstance() {
-		if (instance == null) {
-			DAO defaultDAO = new MockDAO();
-			Search defaultSearch = new MockSearch();
-			Cache defaultCache = new MockCache();
-			logger.debug("Using default impementations - {}, {} and {}.",
-					defaultDAO.getClass().getSimpleName(),
-					defaultSearch.getClass().getSimpleName(),
-					defaultCache.getClass().getSimpleName());
-			instance = new CoreUtils(defaultDAO, defaultSearch, defaultCache);
-		}
-		return instance;
+		return INSTANCE;
 	}
 
 	/**
 	 * Returns the DAO object.
 	 * @return a {@link DAO} object
 	 */
-	public DAO getDao() {
-		return dao;
-	}
+	public abstract DAO getDao();
 
 	/**
 	 * Sets the DAO object.
 	 * @param dao {@link DAO}
 	 */
-	public void setDao(DAO dao) {
-		this.dao = dao;
-	}
+	public abstract void setDao(DAO dao);
 
 	/**
 	 * Returns the Search object.
 	 * @return {@link Search} object
 	 */
-	public Search getSearch() {
-		return search;
-	}
+	public abstract Search getSearch();
 
 	/**
 	 * Sets the Search object.
 	 * @param search {@link Search}
 	 */
-	public void setSearch(Search search) {
-		this.search = search;
-	}
+	public abstract void setSearch(Search search);
 
 	/**
 	 * Returns the Cache object.
 	 * @return {@link Cache} object
 	 */
-	public Cache getCache() {
-		return cache;
-	}
+	public abstract Cache getCache();
 
 	/**
 	 * Sets the Cache object.
 	 * @param cache {@link Cache}
 	 */
-	public void setCache(Cache cache) {
-		this.cache = cache;
-	}
+	public abstract void setCache(Cache cache);
 
 	/**
 	 * Returns the default IoT factory.
 	 * @return factory instance
 	 */
-	public IoTServiceFactory getIotFactory() {
-		return iotFactory;
-	}
+	public abstract IoTServiceFactory getIotFactory();
 
 	/**
 	 * Sets the IoT factory.
 	 * @param iotFactory factory instance
 	 */
-	public void setIotFactory(IoTServiceFactory iotFactory) {
-		this.iotFactory = iotFactory;
-	}
-
-	/**
-	 * Returns the relative path to the object, e.g. /user/1234
-	 * @param obj an object
-	 * @return a relative path
-	 */
-	public String getObjectURI(ParaObject obj) {
-		String defurl = "/".concat(obj.getPlural());
-		return (obj.getId() != null) ? defurl.concat("/").concat(obj.getId()) : defurl;
-	}
-
-	/**
-	 * Returns the default name property of an object.
-	 * @param name a name
-	 * @param id an id
-	 * @return a combination of name and id, unless this.name is set
-	 */
-	public String getName(String name, String id) {
-		return (name == null) ? "ParaObject ".concat((id == null) ? System.currentTimeMillis() + "" : id) : name;
-	}
-
-	/**
-	 * Creates the object again (use with caution!).
-	 * Same as {@link com.erudika.para.persistence.DAO#create(com.erudika.para.core.ParaObject)}.
-	 * @param obj an object
-	 * @return the object id or null
-	 */
-	public String overwrite(ParaObject obj) {
-		return overwrite(Config.APP_NAME_NS, obj);
-	}
-
-	/**
-	 * Creates the object again (use with caution!).
-	 * Same as {@link com.erudika.para.persistence.DAO#create(java.lang.String, com.erudika.para.core.ParaObject)}.
-	 * @param appid the app id
-	 * @param obj an object
-	 * @return the object id or null
-	 */
-	public String overwrite(String appid, ParaObject obj) {
-		if (obj != null && obj.getId() != null) {
-			if (obj.getUpdated() == null) {
-				obj.setUpdated(System.currentTimeMillis());
-			}
-			return getDao().create(appid, obj);
-		}
-		return null;
-	}
+	public abstract void setIotFactory(IoTServiceFactory iotFactory);
 
 	///////////////////////////////////////
 	//	    	TAGGING METHODS
@@ -224,203 +453,55 @@ public final class CoreUtils implements InitializeListener {
 
 	/**
 	 * Adds any number of tags to the set of tags.
+	 *
 	 * @param tag a tag, must not be null or empty
 	 * @param objectTags the object tags
 	 * @return a new list of tags
 	 */
-	public List<String> addTags(List<String> objectTags, String... tag) {
-		if (tag != null && tag.length > 0) {
-			Set<String> tagz;
-			if (objectTags == null || objectTags.isEmpty()) {
-				tagz = new HashSet<String>();
-			} else {
-				tagz = new HashSet<String>(objectTags);
-			}
-			for (String t : tag) {
-				if (!StringUtils.isBlank(t)) {
-					tagz.add(Utils.noSpaces(Utils.stripAndTrim(t), "-"));
-				}
-			}
-			tagz.remove(null);
-			tagz.remove("");
-			return new ArrayList<String>(tagz);
-		}
-		return objectTags;
-	}
+	public abstract List<String> addTags(List<String> objectTags, String... tag);
 
 	/**
 	 * Removes a tag from the set of tags.
+	 *
 	 * @param tag a tag, must not be null or empty
 	 * @param objectTags the object
 	 * @return a new list of tags
 	 */
-	public List<String> removeTags(List<String> objectTags, String... tag) {
-		if (objectTags != null && tag != null && tag.length > 0) {
-			Set<String> tagz = new HashSet<String>(objectTags);
-			tagz.removeAll(Arrays.asList(tag));
-			return new ArrayList<String>(tagz);
-		}
-		return objectTags;
-	}
+	public abstract List<String> removeTags(List<String> objectTags, String... tag);
 
 	///////////////////////////////////////
 	//			LINKER METHODS
 	///////////////////////////////////////
 
 	/**
-	 * Links an object to this one in a many-to-many relationship.
-	 * Only a link is created. Objects are left untouched.
-	 * The type of the second object is automatically determined on read.
-	 * @param id2 link to the object with this id
-	 * @param obj the object to execute this method on
-	 * @return the id of the {@link com.erudika.para.core.Linker} object that is created
-	 */
-	public String link(ParaObject obj, String id2) {
-		ParaObject second = getDao().read(obj.getAppid(), id2);
-		if (second == null || obj.getId() == null) {
-			return null;
-		}
-		// auto correct the second type
-		Linker link = new Linker(obj.getType(), second.getType(), obj.getId(), id2);
-		link.addNestedObject(obj);
-		link.addNestedObject(second);
-		return getDao().create(obj.getAppid(), link);
-	}
-
-	/**
-	 * Unlinks an object from this one.
-	 * Only a link is deleted. Objects are left untouched.
-	 * @param type2 the other type
-	 * @param obj the object to execute this method on
-	 * @param id2 the other id
-	 */
-	public void unlink(ParaObject obj, String type2, String id2) {
-		getDao().delete(obj.getAppid(), new Linker(obj.getType(), type2, obj.getId(), id2));
-	}
-
-	/**
-	 * Unlinks all objects that are linked to this one.
-	 * Deletes all {@link com.erudika.para.core.Linker} objects.
-	 * Only the links are deleted. Objects are left untouched.
-	 * @param obj the object to execute this method on
-	 */
-	public void unlinkAll(ParaObject obj) {
-		Map<String, Object> terms = new HashMap<String, Object>();
-		// delete all links where id1 == id OR id2 == id
-		terms.put("id1", obj.getId());
-		terms.put("id2", obj.getId());
-		getDao().deleteAll(obj.getAppid(), getSearch().
-				findTerms(obj.getAppid(), Utils.type(Linker.class), terms, false));
-	}
-
-	/**
-	 * Returns a list of all Linker objects for a given object.
-	 * @param obj the object to execute this method on
-	 * @param type2 the other type
-	 * @param pager a {@link com.erudika.para.utils.Pager}
-	 * @return a list of Linker objects
-	 */
-	public List<Linker> getLinks(ParaObject obj, String type2, Pager... pager) {
-		if (type2 == null) {
-			return Collections.emptyList();
-		}
-		Linker link = new Linker(obj.getType(), type2, null, null);
-		String idField = link.getIdFieldNameFor(obj.getType());
-		Map<String, Object> terms = new HashMap<String, Object>();
-		terms.put(Config._NAME, link.getName());
-		terms.put(idField, obj.getId());
-		return getSearch().findTerms(obj.getAppid(), link.getType(), terms, true, pager);
-	}
-
-	/**
-	 * Checks if this object is linked to another.
-	 * @param type2 the other type
-	 * @param id2 the other id
-	 * @param obj the object to execute this method on
-	 * @return true if the two are linked
-	 */
-	public boolean isLinked(ParaObject obj, String type2, String id2) {
-		if (type2 == null) {
-			return false;
-		}
-		return getDao().read(obj.getAppid(), new Linker(obj.getType(), type2, obj.getId(), id2).getId()) != null;
-	}
-
-	/**
-	 * Checks if a given object is linked to this one.
-	 * @param toObj the other object
-	 * @param obj the object to execute this method on
-	 * @return true if linked
-	 */
-	public boolean isLinked(ParaObject obj, ParaObject toObj) {
-		if (toObj == null) {
-			return false;
-		}
-		return isLinked(obj, toObj.getType(), toObj.getId());
-	}
-
-	/**
-	 * Count the total number of links between this object and another type of object.
-	 * @param type2 the other type of object
-	 * @param obj the object to execute this method on
-	 * @return the number of links for the given object
-	 */
-	public Long countLinks(ParaObject obj, String type2) {
-		if (obj.getId() == null) {
-			return 0L;
-		}
-		Linker link = new Linker(obj.getType(), type2, null, null);
-		String idField = link.getIdFieldNameFor(obj.getType());
-		Map<String, Object> terms = new HashMap<String, Object>();
-		terms.put(Config._NAME, link.getName());
-		terms.put(idField, obj.getId());
-		return getSearch().getCount(obj.getAppid(), link.getType(), terms);
-	}
-
-	/**
 	 * Count the total number of child objects for this object.
+	 *
 	 * @param type2 the type of the other object
 	 * @param obj the object to execute this method on
 	 * @return the number of links
 	 */
-	public Long countChildren(ParaObject obj, String type2) {
-		return getSearch().getCount(obj.getAppid(), type2);
-	}
+	public abstract Long countChildren(ParaObject obj, String type2);
 
 	/**
-	 * Returns all child objects linked to this object.
-	 * @param <P> the type of children
-	 * @param type2 the type of children to look for
+	 * Count the total number of links between this object and another type of object.
+	 *
+	 * @param type2 the other type of object
 	 * @param obj the object to execute this method on
-	 * @param pager a {@link com.erudika.para.utils.Pager}
-	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
+	 * @return the number of links for the given object
 	 */
-	public <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, Pager... pager) {
-		return getChildren(obj, type2, null, null, pager);
-	}
+	public abstract Long countLinks(ParaObject obj, String type2);
 
 	/**
-	 * Returns all child objects linked to this object.
-	 * @param <P> the type of children
-	 * @param type2 the type of children to look for
-	 * @param field the field name to use as filter
-	 * @param term the field value to use as filter
+	 * Deletes all child objects permanently.
+	 *
 	 * @param obj the object to execute this method on
-	 * @param pager a {@link com.erudika.para.utils.Pager}
-	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
+	 * @param type2 the children's type.
 	 */
-	public <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, String field, String term,
-			Pager... pager) {
-		Map<String, Object> terms = new HashMap<String, Object>();
-		if (!StringUtils.isBlank(field) && !StringUtils.isBlank(term)) {
-			terms.put(field, term);
-		}
-		terms.put(Config._PARENTID, obj.getId());
-		return getSearch().findTerms(obj.getAppid(), type2, terms, true, pager);
-	}
+	public abstract void deleteChildren(ParaObject obj, String type2);
 
 	/**
 	 * Searches through child objects in a one-to-many relationship.
+	 *
 	 * @param <P> the type of children
 	 * @param type2 the type of children to look for
 	 * @param obj the object to execute this method on
@@ -428,46 +509,11 @@ public final class CoreUtils implements InitializeListener {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
-	public <P extends ParaObject> List<P> findChildren(ParaObject obj, String type2, String query, Pager... pager) {
-		if (StringUtils.isBlank(query)) {
-			query = "*";
-		}
-		query = Config._PARENTID + ":" + obj.getId() + " AND " + query;
-		return getSearch().findQuery(obj.getAppid(), type2, query, pager);
-	}
-
-	/**
-	 * Deletes all child objects permanently.
-	 * @param obj the object to execute this method on
-	 * @param type2 the children's type.
-	 */
-	public void deleteChildren(ParaObject obj, String type2) {
-		if (!StringUtils.isBlank(obj.getId())) {
-			getDao().deleteAll(obj.getAppid(), getSearch().findTerms(obj.getAppid(),
-					type2, Collections.singletonMap(Config._PARENTID, obj.getId()), true));
-		}
-	}
-
-	/**
-	 * Returns all objects linked to the given one. Only applicable to many-to-many relationships.
-	 * @param <P> type of linked objects
-	 * @param type2 type of linked objects to search for
-	 * @param obj the object to execute this method on
-	 * @param pager a {@link com.erudika.para.utils.Pager}
-	 * @return a list of linked objects
-	 */
-	@SuppressWarnings("unchecked")
-	public <P extends ParaObject> List<P> getLinkedObjects(ParaObject obj, String type2, Pager... pager) {
-		List<Linker> links = getLinks(obj, type2, pager);
-		LinkedList<String> keys = new LinkedList<String>();
-		for (Linker link : links) {
-			keys.add(link.isFirst(type2) ? link.getId1() : link.getId2());
-		}
-		return new ArrayList<P>((Collection<? extends P>) getDao().readAll(obj.getAppid(), keys, true).values());
-	}
+	public abstract <P extends ParaObject> List<P> findChildren(ParaObject obj, String type2, String query, Pager... pager);
 
 	/**
 	 * Searches through all linked objects in many-to-many relationships.
+	 *
 	 * @param <P> type of linked objects
 	 * @param type2 type of linked objects to search for
 	 * @param obj the object to execute this method on
@@ -476,46 +522,155 @@ public final class CoreUtils implements InitializeListener {
 	 * @param query a query string
 	 * @return a list of linked objects matching the search query
 	 */
-	@SuppressWarnings("unchecked")
-	public <P extends ParaObject> List<P> findLinkedObjects(ParaObject obj, String type2, String field, String query,
-			Pager... pager) {
-		if (StringUtils.isBlank(query)) {
-			query = "*";
-		}
-		List<Linker> links = getSearch().findNestedQuery(obj.getAppid(), Utils.type(Linker.class), field, query, pager);
-		LinkedList<String> keys = new LinkedList<String>();
-		for (Linker link : links) {
-			// ignore the part of the link that is equal to the given object
-			// e.g. (NOT id:$obj.getId()) AND $query
-			if (link.getId1().equals(obj.getId())) {
-				keys.add(link.getId2());
-			} else {
-				keys.add(link.getId1());
-			}
-		}
-		return new ArrayList<P>((Collection<? extends P>) getDao().readAll(obj.getAppid(), keys, true).values());
-	}
+	public abstract <P extends ParaObject> List<P> findLinkedObjects(ParaObject obj, String type2, String field,
+			String query, Pager... pager);
 
 	/**
-	 * The parent object.
-	 * @param <P> type of linked objects
-	 * @param obj find the parent of this object
-	 * @return the parent or null if {@code obj.getParentid()} is null
+	 * Returns all child objects linked to this object.
+	 *
+	 * @param <P> the type of children
+	 * @param type2 the type of children to look for
+	 * @param obj the object to execute this method on
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
-	public <P extends ParaObject> P getParent(ParaObject obj) {
-		return getDao().read(obj.getAppid(), obj.getParentid());
-	}
+	public abstract <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, Pager... pager);
+
+	/**
+	 * Returns all child objects linked to this object.
+	 *
+	 * @param <P> the type of children
+	 * @param type2 the type of children to look for
+	 * @param field the field name to use as filter
+	 * @param term the field value to use as filter
+	 * @param obj the object to execute this method on
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
+	 */
+	public abstract <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, String field,
+			String term, Pager... pager);
 
 	/**
 	 * The user object of the creator.
+	 *
 	 * @param <P> type of linked objects
 	 * @param obj find the creator of this object
 	 * @return the user who created this or null if {@code obj.getCreatorid()} is null
 	 * @see com.erudika.para.core.User
 	 */
-	public <P extends ParaObject> P getCreator(ParaObject obj) {
-		return getDao().read(obj.getAppid(), obj.getCreatorid());
-	}
+	public abstract <P extends ParaObject> P getCreator(ParaObject obj);
+
+	/**
+	 * Returns all objects linked to the given one. Only applicable to many-to-many relationships.
+	 *
+	 * @param <P> type of linked objects
+	 * @param type2 type of linked objects to search for
+	 * @param obj the object to execute this method on
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of linked objects
+	 */
+	public abstract <P extends ParaObject> List<P> getLinkedObjects(ParaObject obj, String type2, Pager... pager);
+
+	/**
+	 * Returns a list of all Linker objects for a given object.
+	 *
+	 * @param obj the object to execute this method on
+	 * @param type2 the other type
+	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @return a list of Linker objects
+	 */
+	public abstract List<Linker> getLinks(ParaObject obj, String type2, Pager... pager);
+
+	/**
+	 * Returns the default name property of an object.
+	 *
+	 * @param name a name
+	 * @param id an id
+	 * @return a combination of name and id, unless this.name is set
+	 */
+	public abstract String getName(String name, String id);
+
+	/**
+	 * Returns the relative path to the object, e.g. /user/1234
+	 *
+	 * @param obj an object
+	 * @return a relative path
+	 */
+	public abstract String getObjectURI(ParaObject obj);
+
+	/**
+	 * The parent object.
+	 *
+	 * @param <P> type of linked objects
+	 * @param obj find the parent of this object
+	 * @return the parent or null if {@code obj.getParentid()} is null
+	 */
+	public abstract <P extends ParaObject> P getParent(ParaObject obj);
+
+	/**
+	 * Checks if this object is linked to another.
+	 *
+	 * @param type2 the other type
+	 * @param id2 the other id
+	 * @param obj the object to execute this method on
+	 * @return true if the two are linked
+	 */
+	public abstract boolean isLinked(ParaObject obj, String type2, String id2);
+
+	/**
+	 * Checks if a given object is linked to this one.
+	 *
+	 * @param toObj the other object
+	 * @param obj the object to execute this method on
+	 * @return true if linked
+	 */
+	public abstract boolean isLinked(ParaObject obj, ParaObject toObj);
+
+	/**
+	 * Links an object to this one in a many-to-many relationship. Only a link is created. Objects are left untouched.
+	 * The type of the second object is automatically determined on read.
+	 *
+	 * @param id2 link to the object with this id
+	 * @param obj the object to execute this method on
+	 * @return the id of the {@link com.erudika.para.core.Linker} object that is created
+	 */
+	public abstract String link(ParaObject obj, String id2);
+
+	/**
+	 * Creates the object again (use with caution!). Same as
+	 * {@link com.erudika.para.persistence.DAO#create(com.erudika.para.core.ParaObject)}.
+	 *
+	 * @param obj an object
+	 * @return the object id or null
+	 */
+	public abstract String overwrite(ParaObject obj);
+
+	/**
+	 * Creates the object again (use with caution!). Same as
+	 * {@link com.erudika.para.persistence.DAO#create(java.lang.String, com.erudika.para.core.ParaObject)}.
+	 *
+	 * @param appid the app id
+	 * @param obj an object
+	 * @return the object id or null
+	 */
+	public abstract String overwrite(String appid, ParaObject obj);
+
+	/**
+	 * Unlinks an object from this one. Only a link is deleted. Objects are left untouched.
+	 *
+	 * @param type2 the other type
+	 * @param obj the object to execute this method on
+	 * @param id2 the other id
+	 */
+	public abstract void unlink(ParaObject obj, String type2, String id2);
+
+	/**
+	 * Unlinks all objects that are linked to this one. Deletes all {@link com.erudika.para.core.Linker} objects. Only
+	 * the links are deleted. Objects are left untouched.
+	 *
+	 * @param obj the object to execute this method on
+	 */
+	public abstract void unlinkAll(ParaObject obj);
 
 	///////////////////////////////////////
 	//	    	VOTING METHODS
@@ -523,46 +678,11 @@ public final class CoreUtils implements InitializeListener {
 
 	/**
 	 * Casts a vote on a given object.
+	 *
 	 * @param votable the object to vote on
 	 * @param userid the voter
 	 * @param upDown up or down
 	 * @return true if the vote was successful
 	 */
-	public boolean vote(ParaObject votable, String userid, VoteValue upDown) {
-		if (StringUtils.isBlank(userid) || votable == null || votable.getId() == null || upDown == null) {
-			return false;
-		}
-		//no voting on your own stuff!
-		if (userid.equals(votable.getCreatorid()) || userid.equals(votable.getId())) {
-			return false;
-		}
-
-		Vote v = new Vote(userid, votable.getId(), upDown.toString());
-		Vote saved = getDao().read(votable.getAppid(), v.getId());
-		boolean done = false;
-		int vote = (upDown == VoteValue.UP) ? 1 : -1;
-
-		if (saved != null) {
-			boolean isUpvote = upDown.equals(VoteValue.UP);
-			boolean wasUpvote = VoteValue.UP.toString().equals(saved.getValue());
-			boolean voteHasChanged = isUpvote ^ wasUpvote;
-
-			if (saved.isExpired()) {
-				done = getDao().create(votable.getAppid(), v) != null;
-			} else if (saved.isAmendable() && voteHasChanged) {
-				getDao().delete(votable.getAppid(), saved);
-				done = true;
-			}
-		} else {
-			done = getDao().create(votable.getAppid(), v) != null;
-		}
-
-		if (done) {
-			synchronized (votable) {
-				votable.setVotes(votable.getVotes() + vote);
-			}
-		}
-		return done;
-	}
-
+	public abstract boolean vote(ParaObject votable, String userid, Votable.VoteValue upDown);
 }

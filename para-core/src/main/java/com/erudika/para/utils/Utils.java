@@ -71,22 +71,22 @@ public final class Utils {
 
 	private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 	// maps lowercase simple names to class objects
-	private static final Pattern emailz = Pattern.compile(Email.EMAIL_PATTERN);
-	private static final NumberFormat numberFormat = NumberFormat.getInstance();
+	private static final Pattern EMAIL_PATTERN = Pattern.compile(Email.EMAIL_PATTERN);
+	private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance();
 	private static HumanTime humantime;
 	private static Utils instance;
 
 	//////////  ID GEN VARS  //////////////
 	private static final long TIMER_OFFSET = 1310084584692L; // ~July 2011
-	private static final long workerIdBits = 5L;
-	private static final long dataCenterIdBits = 5L;
-	private static final long maxWorkerId = -1L ^ (-1L << workerIdBits);
-	private static final long maxDataCenterId = -1L ^ (-1L << dataCenterIdBits);
-	private static final long sequenceBits = 12L;
-	private static final long workerIdShift = sequenceBits;
-	private static final long dataCenterIdShift = sequenceBits + workerIdBits;
-	private static final long timestampLeftShift = sequenceBits + workerIdBits + dataCenterIdBits;
-	private static final long sequenceMask = -1L ^ (-1L << sequenceBits);
+	private static final long WORKER_ID_BITS = 5L;
+	private static final long DATACENTER_ID_BITS = 5L;
+	private static final long MAX_WORKER_ID = -1L ^ (-1L << WORKER_ID_BITS);
+	private static final long MAX_DATACENTER_ID = -1L ^ (-1L << DATACENTER_ID_BITS);
+	private static final long SEQUENCE_BITS = 12L;
+	private static final long WORKER_ID_SHIFT = SEQUENCE_BITS;
+	private static final long DATACENTER_ID_SHIFT = SEQUENCE_BITS + WORKER_ID_BITS;
+	private static final long TIMESTAMP_LEFT_SHIFT = SEQUENCE_BITS + WORKER_ID_BITS + DATACENTER_ID_BITS;
+	private static final long SEQUENCE_MASK = -1L ^ (-1L << SEQUENCE_BITS);
 	private static long lastTimestamp = -1L;
 	private static long dataCenterId = 0L;	// only one datacenter atm
 	private static long workerId;	// max 1024
@@ -94,8 +94,8 @@ public final class Utils {
 
 	static {
 		initIdGenerator();
-		numberFormat.setMinimumFractionDigits(2);
-		numberFormat.setMaximumFractionDigits(2);
+		NUMBER_FORMAT.setMinimumFractionDigits(2);
+		NUMBER_FORMAT.setMaximumFractionDigits(2);
 	}
 
 	private Utils() { }
@@ -130,12 +130,12 @@ public final class Utils {
 		String workerID = Config.WORKER_ID;
 		workerId = NumberUtils.toLong(workerID, 1);
 
-		if (workerId > maxWorkerId || workerId < 0) {
-			workerId = new Random().nextInt((int) maxWorkerId + 1);
+		if (workerId > MAX_WORKER_ID || workerId < 0) {
+			workerId = new Random().nextInt((int) MAX_WORKER_ID + 1);
 		}
 
-		if (dataCenterId > maxDataCenterId || dataCenterId < 0) {
-			dataCenterId =  new Random().nextInt((int) maxDataCenterId + 1);
+		if (dataCenterId > MAX_DATACENTER_ID || dataCenterId < 0) {
+			dataCenterId =  new Random().nextInt((int) MAX_DATACENTER_ID + 1);
 		}
 	}
 
@@ -489,7 +489,7 @@ public final class Utils {
 	 * @return $###.##
 	 */
 	public static String formatPrice(double price) {
-		return numberFormat.format(price);
+		return NUMBER_FORMAT.format(price);
 	}
 
 	/**
@@ -601,7 +601,7 @@ public final class Utils {
 	 * @return true if the URL is valid
 	 */
 	public static boolean isValidEmail(String url) {
-		return emailz.matcher(url).matches();
+		return EMAIL_PATTERN.matcher(url).matches();
 	}
 
 	/**
@@ -904,7 +904,7 @@ public final class Utils {
 		long timestamp = timestamp();
 
 		if (lastTimestamp == timestamp) {
-			sequence = (sequence + 1) & sequenceMask;
+			sequence = (sequence + 1) & SEQUENCE_MASK;
 			if (sequence == 0) {
 				timestamp = tilNextMillis(lastTimestamp);
 			}
@@ -918,9 +918,9 @@ public final class Utils {
 		}
 
 		lastTimestamp = timestamp;
-		return Long.toString(((timestamp - TIMER_OFFSET) << timestampLeftShift) |
-											(dataCenterId << dataCenterIdShift) |
-													(workerId << workerIdShift) |
+		return Long.toString(((timestamp - TIMER_OFFSET) << TIMESTAMP_LEFT_SHIFT) |
+											(dataCenterId << DATACENTER_ID_SHIFT) |
+													(workerId << WORKER_ID_SHIFT) |
 																	(sequence));
 
 	}

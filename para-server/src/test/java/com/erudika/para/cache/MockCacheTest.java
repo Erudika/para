@@ -24,8 +24,7 @@ package com.erudika.para.cache;
 public class MockCacheTest extends CacheTest {
 
 	public MockCacheTest() {
-		super();
-		c = new MockCache();
+		super(new MockCache());
 	}
 
 }

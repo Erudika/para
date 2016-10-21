@@ -60,23 +60,23 @@ public final class ParaObjectUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(ParaObjectUtils.class);
 	// maps plural to singular type definitions
-	private static final Map<String, String> coreTypes = new DualHashBidiMap();
+	private static final Map<String, String> CORE_TYPES = new DualHashBidiMap();
 	// maps lowercase simple names to class objects
-	private static final Map<String, Class<? extends ParaObject>> coreClasses = new DualHashBidiMap();
-	private static final CoreClassScanner scanner = new CoreClassScanner();
-	private static final ObjectMapper jsonMapper = new ObjectMapper();
-	private static final ObjectReader jsonReader;
-	private static final ObjectWriter jsonWriter;
+	private static final Map<String, Class<? extends ParaObject>> CORE_CLASSES = new DualHashBidiMap();
+	private static final CoreClassScanner SCANNER = new CoreClassScanner();
+	private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+	private static final ObjectReader JSON_READER;
+	private static final ObjectWriter JSON_WRITER;
 
 	static {
-		jsonMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
-		jsonMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-		jsonMapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
-		jsonMapper.enable(SerializationFeature.INDENT_OUTPUT);
-		jsonMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-		jsonMapper.disable(SerializationFeature.WRITE_NULL_MAP_VALUES);
-		jsonReader = jsonMapper.reader();
-		jsonWriter = jsonMapper.writer();
+		JSON_MAPPER.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+		JSON_MAPPER.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+		JSON_MAPPER.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
+		JSON_MAPPER.enable(SerializationFeature.INDENT_OUTPUT);
+		JSON_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+		JSON_MAPPER.disable(SerializationFeature.WRITE_NULL_MAP_VALUES);
+		JSON_READER = JSON_MAPPER.reader();
+		JSON_WRITER = JSON_MAPPER.writer();
 	}
 
 	private ParaObjectUtils() { }
@@ -87,7 +87,7 @@ public final class ParaObjectUtils {
 	 * @return JSON object mapper
 	 */
 	public static ObjectMapper getJsonMapper() {
-		return jsonMapper;
+		return JSON_MAPPER;
 	}
 
 	/**
@@ -97,7 +97,7 @@ public final class ParaObjectUtils {
 	 * @return JSON object reader
 	 */
 	public static ObjectReader getJsonReader(Class<?> type) {
-		return jsonReader.forType(type);
+		return JSON_READER.forType(type);
 	}
 
 	/**
@@ -106,7 +106,7 @@ public final class ParaObjectUtils {
 	 * @return JSON object writer
 	 */
 	public static ObjectWriter getJsonWriter() {
-		return jsonWriter;
+		return JSON_WRITER;
 	}
 
 	/**
@@ -115,7 +115,7 @@ public final class ParaObjectUtils {
 	 * @return JSON object writer with indentation disabled
 	 */
 	public static ObjectWriter getJsonWriterNoIdent() {
-		return jsonWriter.without(SerializationFeature.INDENT_OUTPUT);
+		return JSON_WRITER.without(SerializationFeature.INDENT_OUTPUT);
 	}
 
 	/////////////////////////////////////////////
@@ -159,17 +159,17 @@ public final class ParaObjectUtils {
 	 * @return a map of type plural - type singular form
 	 */
 	public static Map<String, String> getCoreTypes() {
-		if (coreTypes.isEmpty()) {
+		if (CORE_TYPES.isEmpty()) {
 			try {
 				for (Class<? extends ParaObject> clazz : ParaObjectUtils.getCoreClassesMap().values()) {
 					ParaObject p = clazz.newInstance();
-					coreTypes.put(p.getPlural(), p.getType());
+					CORE_TYPES.put(p.getPlural(), p.getType());
 				}
 			} catch (Exception ex) {
 				logger.error(null, ex);
 			}
 		}
-		return Collections.unmodifiableMap(coreTypes);
+		return Collections.unmodifiableMap(CORE_TYPES);
 	}
 
 	/**
@@ -269,7 +269,7 @@ public final class ParaObjectUtils {
 			logger.error(null, ex);
 		}
 
-		return map;
+		return Collections.unmodifiableMap(map);
 	}
 
 	/**
@@ -413,11 +413,11 @@ public final class ParaObjectUtils {
 	 * @return a map of simple class names (lowercase) to class objects
 	 */
 	public static Map<String, Class<? extends ParaObject>> getCoreClassesMap() {
-		if (coreClasses.isEmpty()) {
+		if (CORE_CLASSES.isEmpty()) {
 			try {
-				Set<Class<? extends ParaObject>> s = scanner.getComponentClasses(ParaObject.class.getPackage().getName());
+				Set<Class<? extends ParaObject>> s = SCANNER.getComponentClasses(ParaObject.class.getPackage().getName());
 				if (!Config.CORE_PACKAGE_NAME.isEmpty()) {
-					Set<Class<? extends ParaObject>> s2 = scanner.getComponentClasses(Config.CORE_PACKAGE_NAME);
+					Set<Class<? extends ParaObject>> s2 = SCANNER.getComponentClasses(Config.CORE_PACKAGE_NAME);
 					s.addAll(s2);
 				}
 
@@ -426,15 +426,15 @@ public final class ParaObjectUtils {
 					boolean isInterface = Modifier.isInterface(coreClass.getModifiers());
 					boolean isCoreObject = ParaObject.class.isAssignableFrom(coreClass);
 					if (isCoreObject && !isAbstract && !isInterface) {
-						coreClasses.put(coreClass.getSimpleName().toLowerCase(), coreClass);
+						CORE_CLASSES.put(coreClass.getSimpleName().toLowerCase(), coreClass);
 					}
 				}
-				logger.debug("Found {} ParaObject classes: {}", coreClasses.size(), coreClasses);
+				logger.debug("Found {} ParaObject classes: {}", CORE_CLASSES.size(), CORE_CLASSES);
 			} catch (Exception ex) {
 				logger.error(null, ex);
 			}
 		}
-		return Collections.unmodifiableMap(coreClasses);
+		return Collections.unmodifiableMap(CORE_CLASSES);
 	}
 
 	/**

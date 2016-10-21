@@ -33,9 +33,13 @@ import org.junit.Ignore;
 @Ignore
 public abstract class CacheTest {
 
-	protected static Cache c;
-	private String testApp1 = "testApp1";
-	private String testApp2 = "testApp2";
+	private final Cache c;
+	private final String testApp1 = "testApp1";
+	private final String testApp2 = "testApp2";
+
+	public CacheTest(Cache c) {
+		this.c = c;
+	}
 
 	@Before
 	public void setUp() {

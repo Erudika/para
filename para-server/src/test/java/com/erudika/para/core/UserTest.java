@@ -22,9 +22,11 @@ import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Utils;
 import com.erudika.para.validation.ValidationUtils;
 import java.util.ArrayList;
 import java.util.Map;
+import org.junit.After;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -36,26 +38,33 @@ import org.junit.Before;
  */
 public class UserTest {
 
-	private static DAO dao;
-	private static User u;
+	private static User u() {
+		User u = new User(Utils.getNewId());
+		u.setName("Name");
+		u.setGroups(Groups.USERS.toString());
+		u.setEmail(u.getId() + "@email.com");
+		u.setIdentifier(u.getEmail());
+		u.setPassword("123456");
+		return u;
+	}
+
+	private static DAO dao() {
+		return CoreUtils.getInstance().getDao(); //new MockDAO();
+	}
 
 	@Before
 	public void setUp() {
-		dao = CoreUtils.getInstance().getDao(); //new MockDAO();
-		u = new User("111");
-//		u.setSearch(mock(Search.class));
-		u.setName("Name");
-		u.setGroups(Groups.USERS.toString());
-		u.setEmail("asd@asd.com");
-		u.setIdentifier(u.getEmail());
-		u.setPassword("123456");
-
 		CoreUtils.getInstance().setSearch(mock(Search.class));
-		assertNotNull(u.getPicture());
+	}
+
+	@After
+	public void tearDown() {
 	}
 
 	@Test
 	public void testSetEmail() {
+		User u = u();
+		assertNotNull(u.getPicture());
 		assertTrue(ValidationUtils.isValidObject(u));
 		u.setEmail("asd@asd");
 		assertFalse(ValidationUtils.isValidObject(u));
@@ -63,6 +72,7 @@ public class UserTest {
 
 	@Test
 	public void testSetCurrency() {
+		User u = u();
 		u.setCurrency("asd");
 		assertEquals("EUR", u.getCurrency());
 		u.setCurrency("usd");
@@ -75,6 +85,7 @@ public class UserTest {
 
 	@Test
 	public void testCanModify() {
+		User u = u();
 		Sysprop p = new Sysprop("test");
 		assertFalse(u.canModify(null));
 		assertFalse(u.canModify(p));
@@ -99,19 +110,21 @@ public class UserTest {
 
 	@Test
 	public void testCreate() {
+		User u = u();
 		u.setIdentifier(null);
 		assertNull(u.create());
 		u.setPassword("123");
 		assertNull(u.create());
 		u.setPassword("123456");
-		u.setIdentifier("fb:1");
+		u.setIdentifier("fb:2");
 		assertNotNull(u.create());
-		assertNotNull(dao.read(u.getIdentifier()));
+		assertNotNull(dao().read(u.getIdentifier()));
 	}
 
 	@Test
 	@SuppressWarnings("unchecked")
 	public void testDelete() {
+		User u = u();
 		u.create();
 
 		String secIdent = "t:1";
@@ -123,58 +136,63 @@ public class UserTest {
 				anyBoolean())).thenReturn(list);
 
 		u.attachIdentifier(secIdent);
-		assertNotNull(dao.read(secIdent));
+		assertNotNull(dao().read(secIdent));
 
+		String oldId = u.getId();
 		u.setId(null);
 		u.delete();
-		u.setId("111");
-		assertNotNull(dao.read(u.getId()));
-		assertNotNull(dao.read(u.getIdentifier()));
-		assertNotNull(dao.read(secIdent));
+		u.setId(oldId);
+		assertNotNull(dao().read(u.getId()));
+		assertNotNull(dao().read(u.getIdentifier()));
+		assertNotNull(dao().read(secIdent));
 
 		u.delete();
-		assertNull(dao.read(u.getId()));
-		assertNull(dao.read(u.getIdentifier()));
-		assertNull(dao.read(secIdent));
+		assertNull(dao().read(u.getId()));
+		assertNull(dao().read(u.getIdentifier()));
+		assertNull(dao().read(secIdent));
 	}
 
 	@Test
 	public void testAttachIdentifier() {
-		String secIdent = "t:1";
+		User u = u();
+		String secIdent = "t:2";
 		u.attachIdentifier(secIdent);
-		assertNull(dao.read(u.getId()));
-		assertNull(dao.read(secIdent));
+		assertNull(User.readUserForIdentifier(u));
+		assertNull(dao().read(secIdent));
 
 		u.create();
 		u.attachIdentifier(secIdent);
-		assertNotNull(dao.read(u.getId()));
-		assertNotNull(dao.read(secIdent));
+		assertNotNull(dao().read(u.getId()));
+		assertNotNull(dao().read(secIdent));
 	}
 
 	@Test
 	public void testDetachIdentifier() {
+		User u = u();
 		u.create();
-		assertNotNull(dao.read(u.getIdentifier()));
+		assertNotNull(dao().read(u.getIdentifier()));
 		u.detachIdentifier(u.getIdentifier());
-		assertNotNull(dao.read(u.getIdentifier()));
+		assertNotNull(dao().read(u.getIdentifier()));
 
-		String secIdent = "t:1";
+		String secIdent = "t:3";
 		u.attachIdentifier(secIdent);
-		assertNotNull(dao.read(secIdent));
+		assertNotNull(dao().read(secIdent));
 
 		u.detachIdentifier(secIdent);
-		assertNull(dao.read(secIdent));
+		assertNull(dao().read(secIdent));
 	}
 
 	@Test
 	public void testIsFacebookUser() {
+		User u = u();
 		assertFalse(u.isFacebookUser());
-		u.setIdentifier("fb:1");
+		u.setIdentifier("fb:0");
 		assertTrue(u.isFacebookUser());
 	}
 
 	@Test
 	public void testIsAdmin() {
+		User u = u();
 		assertFalse(u.isAdmin());
 		u.setGroups(Groups.ADMINS.toString());
 		assertTrue(u.isAdmin());
@@ -182,6 +200,7 @@ public class UserTest {
 
 	@Test
 	public void testIsModerator() {
+		User u = u();
 		assertFalse(u.isModerator());
 
 		u.setGroups(Groups.ADMINS.toString());
@@ -194,6 +213,7 @@ public class UserTest {
 
 	@Test
 	public void testReadUserForIdentifier() {
+		User u = u();
 		String secIdent = "fb:1";
 		u.create();
 		u.attachIdentifier(secIdent);
@@ -222,6 +242,7 @@ public class UserTest {
 
 	@Test
 	public void testPasswordMatches() {
+		User u = u();
 		u.create();
 		u.setPassword("123456");
 		assertTrue(User.passwordMatches(u));
@@ -244,20 +265,21 @@ public class UserTest {
 
 	@Test
 	public void testGeneratePasswordResetToken() {
+		User u = u();
 		String fail = u.generatePasswordResetToken();
 		assertTrue(fail.isEmpty());
-		Sysprop s = dao.read(u.getIdentifier());
+		Sysprop s = dao().read(u.getIdentifier());
 		assertNull(s);
 
 		u.create();
 
 		String token1 = u.generatePasswordResetToken();
-		s = dao.read(u.getIdentifier());
+		s = dao().read(u.getIdentifier());
 		assertNotNull(s);
 		assertEquals(token1, s.getProperty(Config._RESET_TOKEN));
 
 		String token2 = u.generatePasswordResetToken();
-		s = dao.read(u.getIdentifier());
+		s = dao().read(u.getIdentifier());
 		assertNotNull(s);
 		assertEquals(token2, s.getProperty(Config._RESET_TOKEN));
 		assertNotEquals(token1, s.getProperty(Config._RESET_TOKEN));
@@ -265,6 +287,7 @@ public class UserTest {
 
 	@Test
 	public void testResetPassword() {
+		User u = u();
 		u.create();
 		String token = u.generatePasswordResetToken();
 		String newpass = "1234567890";
@@ -280,28 +303,29 @@ public class UserTest {
 		assertFalse(u.resetPassword(u.generatePasswordResetToken(), "                  "));
 
 		u.delete();
-		dao.delete(new Sysprop(u.getIdentifier()));
+		dao().delete(new Sysprop(u.getIdentifier()));
 		assertFalse(u.resetPassword(u.generatePasswordResetToken(), "654321"));
 	}
 
 	@Test
 	public void testGenerateEmailConfirmationToken() {
+		User u = u();
 		u.delete();
-		dao.delete(new Sysprop(u.getIdentifier()));
+		dao().delete(new Sysprop(u.getIdentifier()));
 		String fail = u.generateEmailConfirmationToken();
 		assertTrue(fail.isEmpty());
-		Sysprop s = dao.read(u.getIdentifier());
+		Sysprop s = dao().read(u.getIdentifier());
 		assertNull(s);
 
 		u.create();
 
 		String token1 = u.generateEmailConfirmationToken();
-		s = dao.read(u.getIdentifier());
+		s = dao().read(u.getIdentifier());
 		assertNotNull(s);
 		assertEquals(token1, s.getProperty(Config._EMAIL_TOKEN));
 
 		String token2 = u.generateEmailConfirmationToken();
-		s = dao.read(u.getIdentifier());
+		s = dao().read(u.getIdentifier());
 		assertNotNull(s);
 		assertEquals(token2, s.getProperty(Config._EMAIL_TOKEN));
 		assertNotEquals(token1, s.getProperty(Config._EMAIL_TOKEN));
@@ -309,6 +333,7 @@ public class UserTest {
 
 	@Test
 	public void testActivateWithEmailToken() {
+		User u = u();
 		String fail = u.generateEmailConfirmationToken();
 		assertTrue(fail.isEmpty());
 		assertFalse(u.getActive());
@@ -323,7 +348,7 @@ public class UserTest {
 		assertTrue(u.getActive());
 
 		u.delete();
-		dao.delete(new Sysprop(u.getIdentifier()));
+		dao().delete(new Sysprop(u.getIdentifier()));
 		assertFalse(u.activateWithEmailToken(u.generatePasswordResetToken()));
 	}
 

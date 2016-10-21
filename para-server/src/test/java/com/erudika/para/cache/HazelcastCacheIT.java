@@ -18,7 +18,6 @@
 package com.erudika.para.cache;
 
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 
 /**
  *
@@ -26,9 +25,8 @@ import org.junit.BeforeClass;
  */
 public class HazelcastCacheIT extends CacheTest {
 
-	@BeforeClass
-	public static void setUpClass() {
-		c = new HazelcastCache();
+	public HazelcastCacheIT() {
+		super(new HazelcastCache());
 	}
 
 	@AfterClass

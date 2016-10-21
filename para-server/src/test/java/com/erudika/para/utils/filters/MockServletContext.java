@@ -34,6 +34,7 @@ import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
 import javax.servlet.descriptor.JspConfigDescriptor;
 
+@SuppressWarnings("unchecked")
 public class MockServletContext implements ServletContext {
 
     public String getContextPath() {

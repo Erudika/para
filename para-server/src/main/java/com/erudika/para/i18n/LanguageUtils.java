@@ -50,18 +50,26 @@ public class LanguageUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(LanguageUtils.class);
 
-	private HashMap<String, Locale> allLocales = new HashMap<String, Locale>();
-	private HashMap<String, Integer> progressMap = new HashMap<String, Integer>();
+	private static final HashMap<String, Locale> ALL_LOCALES = new HashMap<String, Locale>();
 	private Map<String, String> deflang;
 	private String deflangCode;
-	private String keyPrefix = "language".concat(Config.SEPARATOR);
-	private String progressKey = keyPrefix.concat("progress");
+	private final String keyPrefix = "language".concat(Config.SEPARATOR);
+	private final String progressKey = keyPrefix.concat("progress");
 
 	private static final int PLUS = -1;
 	private static final int MINUS = -2;
 
-	private Search search;
-	private DAO dao;
+	private final Search search;
+	private final DAO dao;
+
+	static {
+		for (Locale loc : LocaleUtils.availableLocaleList()) {
+			String locstr = loc.getLanguage();
+			if (!StringUtils.isBlank(locstr)) {
+				ALL_LOCALES.put(locstr, loc);
+			}
+		}
+	}
 
 	/**
 	 * Default constructor.
@@ -72,14 +80,7 @@ public class LanguageUtils {
 	public LanguageUtils(Search search, DAO dao) {
 		this.search = search;
 		this.dao = dao;
-		for (Object loc : LocaleUtils.availableLocaleList()) {
-			Locale locale = new Locale(((Locale) loc).getLanguage());
-			String locstr = locale.getLanguage();
-			if (!StringUtils.isBlank(locstr)) {
-				allLocales.put(locstr, locale);
-				progressMap.put(locstr, 0);
-			}
-		}
+
 	}
 
 	/**
@@ -90,7 +91,7 @@ public class LanguageUtils {
 	 * @return the language map
 	 */
 	public Map<String, String> readLanguage(String appid, String langCode) {
-		if (StringUtils.isBlank(langCode) || !allLocales.containsKey(langCode)) {
+		if (StringUtils.isBlank(langCode) || !ALL_LOCALES.containsKey(langCode)) {
 			return getDefaultLanguage();
 		}
 		if (search == null || dao == null) {
@@ -136,7 +137,7 @@ public class LanguageUtils {
 	 */
 	public void writeLanguage(String appid, String langCode, Map<String, String> lang) {
 		if (lang == null || lang.isEmpty() || dao == null ||
-				StringUtils.isBlank(langCode) || !allLocales.containsKey(langCode)) {
+				StringUtils.isBlank(langCode) || !ALL_LOCALES.containsKey(langCode)) {
 			return;
 		}
 
@@ -168,9 +169,9 @@ public class LanguageUtils {
 	 */
 	public Locale getProperLocale(String langCode) {
 		langCode = StringUtils.substring(langCode, 0, 2);
-		langCode = (StringUtils.isBlank(langCode) || !allLocales.containsKey(langCode)) ?
+		langCode = (StringUtils.isBlank(langCode) || !ALL_LOCALES.containsKey(langCode)) ?
 				"en" : langCode.trim().toLowerCase();
-		return allLocales.get(langCode);
+		return ALL_LOCALES.get(langCode);
 	}
 
 	/**
@@ -253,15 +254,13 @@ public class LanguageUtils {
 	 */
 	public Map<String, Integer> getTranslationProgressMap(String appid) {
 		if (dao == null) {
-			return progressMap;
+			return Collections.emptyMap();
 		}
 		Sysprop progress = getProgressMap(appid);
-
-		Map<String, Object> props = progress.getProperties();
-		for (String key : props.keySet()) {
-			progressMap.put(key, (Integer) props.get(key));
+		Map<String, Integer> progressMap = new HashMap<String, Integer>(ALL_LOCALES.size());
+		for (String key : progress.getProperties().keySet()) {
+			progressMap.put(key, (Integer) progress.getProperties().get(key));
 		}
-
 		return progressMap;
 	}
 
@@ -270,7 +269,7 @@ public class LanguageUtils {
 	 * @return a map of language codes to locales
 	 */
 	public Map<String, Locale> getAllLocales() {
-		return allLocales;
+		return ALL_LOCALES;
 	}
 
 	/**
@@ -357,8 +356,8 @@ public class LanguageUtils {
 		Sysprop progress = dao.read(appid, progressKey);
 		if (progress == null) {
 			progress = new Sysprop(progressKey);
-			for (String key : progressMap.keySet()) {
-				progress.addProperty(key, progressMap.get(key));
+			for (String langCode : ALL_LOCALES.keySet()) {
+				progress.addProperty(langCode, 0);
 			}
 			progress.addProperty(getDefaultLanguageCode(), 100);
 			dao.create(appid, progress);

@@ -35,8 +35,8 @@ public final class RestRequestMatcher implements RequestMatcher {
 	 * An instance of this class. Matches /v1/_me.
 	 */
 	public static final RequestMatcher INSTANCE_STRICT = new RestRequestMatcher(true);
-	private static final RegexRequestMatcher regex = new RegexRequestMatcher("^/v\\d[\\.\\d]*/(?!(_me)).*", null, true);
-	private static final RegexRequestMatcher regex_strict = new RegexRequestMatcher("^/v\\d[\\.\\d]*/.*", null, true);
+	private static final RegexRequestMatcher REGEX = new RegexRequestMatcher("^/v\\d[\\.\\d]*/(?!(_me)).*", null, true);
+	private static final RegexRequestMatcher REGEX_STRICT = new RegexRequestMatcher("^/v\\d[\\.\\d]*/.*", null, true);
 
 	private final boolean strict;
 
@@ -51,7 +51,7 @@ public final class RestRequestMatcher implements RequestMatcher {
 	@Override
 	public boolean matches(HttpServletRequest request) {
 		// Determine if the request is RESTful.
-		return strict ? regex_strict.matches(request) : regex.matches(request);
+		return strict ? REGEX_STRICT.matches(request) : REGEX.matches(request);
 	}
 
 }

@@ -22,6 +22,7 @@ import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.search.Search;
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -34,7 +35,6 @@ import static org.mockito.Mockito.*;
 public class LanguageUtilsTest {
 
 	private LanguageUtils lu;
-	private String appid = "para-test";
 
 	private Map<String, String> deflang = new HashMap<String, String>() {
 		private static final long serialVersionUID = 1L;{
@@ -64,8 +64,13 @@ public class LanguageUtilsTest {
 		lu.setDefaultLanguage(deflang);
 	}
 
+	@After
+	public void tearDown() {
+	}
+
 	@Test
 	public void testReadWriteLanguage() {
+		String appid = "para-test-rwl";
 		assertNotNull(lu.readLanguage(appid, null));
 		assertNotNull(lu.readLanguage(appid, ""));
 		assertTrue(lu.readLanguage(appid, "").containsKey("hello"));
@@ -103,11 +108,12 @@ public class LanguageUtilsTest {
 
 	@Test
 	public void testReadAllTranslationsForKey() {
-		assertTrue(lu.readAllTranslationsForKey(appid, null, null, null).isEmpty());
+		assertTrue(lu.readAllTranslationsForKey("x", null, null, null).isEmpty());
 	}
 
 	@Test
 	public void testGetApprovedTransKeys() {
+		String appid = "para-test-gatk";
 		lu.writeLanguage(appid, "es", es);
 		assertTrue(lu.getApprovedTransKeys(appid, null).isEmpty());
 		assertTrue(lu.getApprovedTransKeys(appid, "xxx").isEmpty());
@@ -116,6 +122,7 @@ public class LanguageUtilsTest {
 
 	@Test
 	public void testGetTranslationProgressMap() {
+		String appid = "para-test-gtp";
 		lu.writeLanguage(appid, "es", es);
 		lu.writeLanguage(appid, "de", de);
 		assertEquals("66", lu.getTranslationProgressMap(appid).get("de").toString());
@@ -132,6 +139,7 @@ public class LanguageUtilsTest {
 
 	@Test
 	public void testApproveTranslation() {
+		String appid = "para-test-gat";
 		lu.writeLanguage(appid, "es", es);
 		lu.writeLanguage(appid, "de", de);
 		assertEquals("66", lu.getTranslationProgressMap(appid).get("de").toString());
@@ -148,6 +156,7 @@ public class LanguageUtilsTest {
 
 	@Test
 	public void testDisapproveTranslation() {
+		String appid = "para-test-dt";
 		lu.writeLanguage(appid, "es", es);
 		lu.writeLanguage(appid, "de", de);
 		assertEquals("66", lu.getTranslationProgressMap(appid).get("de").toString());

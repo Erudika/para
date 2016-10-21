@@ -72,7 +72,7 @@ import org.slf4j.LoggerFactory;
 public final class ValidationUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(ValidationUtils.class);
-	private static final Map<String, Map<String, Map<String, Map<String, ?>>>> coreValidationConstraints =
+	private static final Map<String, Map<String, Map<String, Map<String, ?>>>> CORE_CONSTRAINTS =
 			new HashMap<String, Map<String, Map<String, Map<String, ?>>>>();
 	private static Validator validator;
 
@@ -235,7 +235,7 @@ public final class ValidationUtils {
 	 * @return a map of all core types to all core annotated constraints. See JSR-303.
 	 */
 	public static Map<String, Map<String, Map<String, Map<String, ?>>>> getCoreValidationConstraints() {
-		if (coreValidationConstraints.isEmpty()) {
+		if (CORE_CONSTRAINTS.isEmpty()) {
 			for (Map.Entry<String, Class<? extends ParaObject>> e : ParaObjectUtils.getCoreClassesMap().entrySet()) {
 				String type = e.getKey();
 				List<Field> fieldlist = Utils.getAllDeclaredFields(e.getValue());
@@ -252,15 +252,15 @@ public final class ValidationUtils {
 							}
 						}
 						if (!constrMap.isEmpty()) {
-							if (!coreValidationConstraints.containsKey(type)) {
-								coreValidationConstraints.put(type, new HashMap<String, Map<String, Map<String, ?>>>());
+							if (!CORE_CONSTRAINTS.containsKey(type)) {
+								CORE_CONSTRAINTS.put(type, new HashMap<String, Map<String, Map<String, ?>>>());
 							}
-							coreValidationConstraints.get(type).put(field.getName(), constrMap);
+							CORE_CONSTRAINTS.get(type).put(field.getName(), constrMap);
 						}
 					}
 				}
 			}
 		}
-		return Collections.unmodifiableMap(coreValidationConstraints);
+		return Collections.unmodifiableMap(CORE_CONSTRAINTS);
 	}
 }

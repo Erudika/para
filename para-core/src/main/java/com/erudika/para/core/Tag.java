@@ -34,7 +34,7 @@ import org.hibernate.validator.constraints.NotBlank;
  */
 public class Tag implements ParaObject {
 	private static final long serialVersionUID = 1L;
-	private static final String prefix = Utils.type(Tag.class).concat(Config.SEPARATOR);
+	private static final String PREFIX = Utils.type(Tag.class).concat(Config.SEPARATOR);
 
 	@Stored @Locked private String id;
 	@Stored @Locked private Long timestamp;
@@ -72,12 +72,12 @@ public class Tag implements ParaObject {
 
 	@Override
 	public final void setId(String id) {
-		if (StringUtils.startsWith(id, prefix)) {
-			setTag(id.replaceAll(prefix, ""));
-			this.id = prefix.concat(getTag());
+		if (StringUtils.startsWith(id, PREFIX)) {
+			setTag(id.replaceAll(PREFIX, ""));
+			this.id = PREFIX.concat(getTag());
 		} else if (id != null) {
 			setTag(id);
-			this.id = prefix.concat(getTag());
+			this.id = PREFIX.concat(getTag());
 		}
 	}
 

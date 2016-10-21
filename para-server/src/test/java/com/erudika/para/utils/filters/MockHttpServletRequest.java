@@ -44,6 +44,7 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
 
+@SuppressWarnings("unchecked")
 public class MockHttpServletRequest implements HttpServletRequest {
 
     private Map<String, Object> attributes = new HashMap<String, Object>();

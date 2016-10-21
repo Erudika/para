@@ -586,6 +586,8 @@ public class ParaClientIT {
 
  		pc.addValidationConstraint(kittenType, "paws", required());
 		constraint = pc.validationConstraints(kittenType);
+		assertNotNull(constraint);
+		assertNotNull(constraint.get(kittenType));
 		assertTrue(constraint.get(kittenType).containsKey("paws"));
 
 		Sysprop ct = new Sysprop("felix");

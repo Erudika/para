@@ -121,8 +121,9 @@
 				<version>2.19.1</version>
 				<configuration>
 					<skipTests>${skipUTs}</skipTests>
-					<!--<parallel>methods</parallel>-->
-					<!--<threadCount>10</threadCount>-->
+<!--					<parallel>methods</parallel>
+					<threadCount>10</threadCount>
+					<forkCount>2C</forkCount>-->
 				</configuration>
 			</plugin>
 
@@ -234,7 +235,65 @@
 				</plugins>
 			</build>
 		</profile>
+
+		<profile>
+			<id>coverage</id>
+			<activation>
+				<property>
+					<name>performCoverage</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.pitest</groupId>
+						<artifactId>pitest-maven</artifactId>
+						<version>1.1.10</version>
+						<executions>
+							<execution>
+								<goals>
+									<goal>mutationCoverage</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<verbose>true</verbose>
+							<targetClasses>
+								<param>com.erudika.para*</param>
+							</targetClasses>
+							<targetTests>
+								<param>com.erudika.para*</param>
+							</targetTests>
+							<avoidCallsTo>
+								<avoidCallsTo>java.util.logging</avoidCallsTo>
+								<avoidCallsTo>org.apache.log4j</avoidCallsTo>
+								<avoidCallsTo>org.slf4j</avoidCallsTo>
+								<avoidCallsTo>org.apache.commons.logging</avoidCallsTo>
+							</avoidCallsTo>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
 	</profiles>
+
+	<reporting>
+		<plugins>
+			<plugin>
+				<groupId>org.pitest</groupId>
+				<artifactId>pitest-maven</artifactId>
+				<version>1.1.10</version>
+				<reportSets>
+					<reportSet>
+						<reports>
+							<report>report</report>
+						</reports>
+					</reportSet>
+				</reportSets>
+			</plugin>
+		</plugins>
+	</reporting>
 
 	<distributionManagement>
 		<snapshotRepository>

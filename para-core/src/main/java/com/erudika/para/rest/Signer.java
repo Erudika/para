@@ -65,7 +65,7 @@ import org.slf4j.LoggerFactory;
 public final class Signer extends AWS4Signer {
 
 	private static final Logger logger = LoggerFactory.getLogger(Signer.class);
-	private static final DateTimeFormatter timeFormatter = DateTimeFormat.
+	private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormat.
 			forPattern("yyyyMMdd'T'HHmmss'Z'").withZoneUTC();
 
 	/**
@@ -233,7 +233,7 @@ public final class Signer extends AWS4Signer {
 		if (date == null) {
 			return null;
 		}
-		return timeFormatter.parseDateTime(date).toDate();
+		return TIME_FORMATTER.parseDateTime(date).toDate();
 	}
 
 	/**

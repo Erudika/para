@@ -77,7 +77,7 @@ public class App implements ParaObject {
 	public static final String ALLOW_ALL = "*";
 
 	private static final long serialVersionUID = 1L;
-	private static final String prefix = Utils.type(App.class).concat(Config.SEPARATOR);
+	private static final String PREFIX = Utils.type(App.class).concat(Config.SEPARATOR);
 	private static final Logger logger = LoggerFactory.getLogger(App.class);
 
 	@Stored @Locked @NotBlank private String id;
@@ -136,10 +136,10 @@ public class App implements ParaObject {
 	 * @return the full id, e.g. "app:myapp"
 	 */
 	public static final String id(String id) {
-		if (StringUtils.startsWith(id, prefix)) {
-			return prefix.concat(Utils.noSpaces(Utils.stripAndTrim(id.replaceAll(prefix, ""), " "), "-"));
+		if (StringUtils.startsWith(id, PREFIX)) {
+			return PREFIX.concat(Utils.noSpaces(Utils.stripAndTrim(id.replaceAll(PREFIX, ""), " "), "-"));
 		} else if (id != null) {
-			return prefix.concat(Utils.noSpaces(Utils.stripAndTrim(id, " "), "-"));
+			return PREFIX.concat(Utils.noSpaces(Utils.stripAndTrim(id, " "), "-"));
 		} else {
 			return null;
 		}
@@ -254,7 +254,7 @@ public class App implements ParaObject {
 	 */
 	public String getAppIdentifier() {
 		String pre = isSharingTable() && Config.getConfigBoolean("prepend_shared_appids_with_space", false) ? " " : "";
-		return (getId() != null) ? getId().replaceFirst(prefix, pre) : "";
+		return (getId() != null) ? getId().replaceFirst(PREFIX, pre) : "";
 	}
 
 	/**

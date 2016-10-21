@@ -24,8 +24,7 @@ package com.erudika.para.persistence;
 public class MockDAOTest extends DAOTest {
 
 	public MockDAOTest() {
-		super();
-		dao = new MockDAO();
+		super(new MockDAO());
 	}
 
 }
