@@ -28,7 +28,6 @@ import com.erudika.para.utils.Utils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
-import org.junit.After;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -76,10 +75,6 @@ public abstract class DAOTest {
 		CoreUtils.getInstance().setSearch(mock(Search.class));
 	}
 
-	@After
-	public void tearDown() {
-	}
-
 	@Test
 	public void testCreate() {
 		User u = u();
@@ -91,9 +86,8 @@ public abstract class DAOTest {
 
 		User x = dao.read(u.getId());
 		assertEquals(u.getEmail(), x.getEmail());
-		// email CAN be empty or null because @NotBlank validation is skipped here
-		x.setEmail(null);
-		assertNotNull(dao.create(x));
+		x.setEmail(null); // on test, this CAN be empty or null because @NotBlank will not be checked on testing
+		assertNotNull(dao.create(x)); // this create doesn't create a new object but replace the old one because the same id
 		x = dao.read(u.getId());
 		assertNull(x.getEmail());
 
@@ -291,17 +285,23 @@ public abstract class DAOTest {
 		assertNull(dao.read(t2.getId()));
 		assertNull(dao.read(t3.getId()));
 
-		// update locked field test
-		Sysprop t4 = new Sysprop();
-		t4.setParentid("123");
+		// try update locked fields
+		String parentId = Utils.getNewId();
+		Sysprop t4 = new Sysprop(Utils.getNewId());
+		t4.setParentid(parentId);
 		dao.create(t4);
-		t4.setParentid("321");
+		assertNotNull(t4.getParentid());
+
+		t4.setParentid("cant_change_it");
 		t4.setType("type4");
 		dao.update(t4);
+		assertNotNull(t4.getId());
+
 		Sysprop tr4 = dao.read(t4.getId());
-		assertEquals(t4.getId(), tr4.getId());
 		assertEquals(Utils.type(Sysprop.class), tr4.getType());
-		assertEquals("123", tr4.getParentid());
+		assertEquals(t4.getId(), tr4.getId());
+		assertNotNull(tr4.getParentid());
+		assertEquals(parentId, tr4.getParentid());
 	}
 
 	@Test

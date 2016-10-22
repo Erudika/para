@@ -21,7 +21,6 @@ import com.erudika.para.Para;
 import com.erudika.para.search.ElasticSearch;
 import com.erudika.para.search.ElasticSearchUtils;
 import com.erudika.para.search.Search;
-import com.erudika.para.utils.Config;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -30,6 +29,8 @@ import org.junit.BeforeClass;
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class IndexBasedDAOIT extends DAOTest {
+
+	private static final String ROOT_APP_NAME = "para-test";
 
 	public IndexBasedDAOIT() {
 		super(get());
@@ -45,10 +46,10 @@ public class IndexBasedDAOIT extends DAOTest {
 	@BeforeClass
 	public static void setUpClass() {
 		System.setProperty("para.env", "embedded");
-		System.setProperty("para.app_name", "para-test");
-		System.setProperty("para.cluster_name", "para-test");
+		System.setProperty("para.app_name", ROOT_APP_NAME);
+		System.setProperty("para.cluster_name", ROOT_APP_NAME);
 
-		ElasticSearchUtils.createIndex(Config.APP_NAME_NS);
+		ElasticSearchUtils.createIndex(ROOT_APP_NAME);
 		ElasticSearchUtils.createIndex(appid1);
 		ElasticSearchUtils.createIndex(appid2);
 		ElasticSearchUtils.createIndex(appid3);
@@ -56,7 +57,7 @@ public class IndexBasedDAOIT extends DAOTest {
 
 	@AfterClass
 	public static void tearDownClass() {
-		ElasticSearchUtils.deleteIndex(Config.APP_NAME_NS);
+		ElasticSearchUtils.deleteIndex(ROOT_APP_NAME);
 		ElasticSearchUtils.deleteIndex(appid1);
 		ElasticSearchUtils.deleteIndex(appid2);
 		ElasticSearchUtils.deleteIndex(appid3);

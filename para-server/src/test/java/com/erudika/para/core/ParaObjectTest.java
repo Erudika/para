@@ -51,6 +51,7 @@ public class ParaObjectTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void testLinks() {
 		Search search = mock(Search.class);
 		DAO dao = new MockDAO();
