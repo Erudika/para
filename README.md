@@ -17,7 +17,7 @@ Para to power your mobile or web application backend.
 **Para** can be used in two ways - as the backbone of your JVM-based application or as a standalone API server with
 multiple applications and clients connecting to it.
 
-See how **Para** [compares to other open source backend frameworks](http://www.erudika.com/blog/2015/10/21/backend-frameworks-usergrid-loopback-para-baasbox-deployd-telepat/).
+See how **Para** [compares to other open source backend frameworks](https://erudika.com/blog/2015/10/21/backend-frameworks-usergrid-loopback-para-baasbox-deployd-telepat/).
 
 ### Features
 
@@ -34,7 +34,7 @@ See how **Para** [compares to other open source backend frameworks](http://www.e
 - Modular design powered by Google Guice and support for plugins
 - I18n utilities for translating language packs and working with currencies
 - Standalone executable WAR with embedded Jetty
-- [Para Web Console](http://console.paraio.org) - admin user interface
+- [Para Web Console](https://console.paraio.org) - admin user interface
 
 ### Architecture
 
@@ -61,14 +61,14 @@ See how **Para** [compares to other open source backend frameworks](http://www.e
 
 ## Documentation
 
-### [Read the Docs](http://paraio.org/docs)
+### [Read the Docs](https://paraio.org/docs)
 
 ## Quick Start
 
 1. [Download the latest executable WAR](https://github.com/Erudika/para/releases)
 2. Execute it with `java -jar para-X.Y.Z.war`
 3. Call `curl localhost:8080/v1/_setup` to get the access and secret keys
-4. Open [Para Web Console](http://console.paraio.org) or integrate with one of the API clients below.
+4. Open [Para Web Console](https://console.paraio.org) or integrate with one of the API clients below.
 
 ### Building Para
 
@@ -89,7 +89,7 @@ You can run Para as a standalone server by downloading the executable WAR and th
 $ java -jar para-X.Y.Z.war
 ```
 
-The you can browse your objects through the **Para Web Console** [console.paraio.org](http://console.paraio.org).
+The you can browse your objects through the **Para Web Console** [console.paraio.org](https://console.paraio.org).
 Simply change the API endpoint to be your local server and connect your access keys.
 The admin interface is client-side only and your secret key is never sent over the the network. Instead,
 a JWT access token is generated locally and sent to the server on each request.

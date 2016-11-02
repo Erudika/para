@@ -33,7 +33,7 @@ ParaClient client = new ParaClient('ACCESS_KEY', 'SECRET_KEY');
 ```
 ## Documentation
 
-### [Read the Docs](http://paraio.org/docs)
+### [Read the Docs](https://paraio.org/docs)
 
 ## Contributing
 

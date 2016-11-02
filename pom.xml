@@ -8,12 +8,12 @@
 
 	<organization>
 		<name>Erudika</name>
-		<url>http://erudika.com</url>
+		<url>https://erudika.com</url>
 	</organization>
 
 	<name>Para</name>
 	<description>Para - a general-purpose back-end framework for the cloud.</description>
-	<url>http://paraio.org</url>
+	<url>https://paraio.org</url>
 
 	<modules>
 		<module>para-server</module>
