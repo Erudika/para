@@ -24,6 +24,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Generic exception mapper.
@@ -31,6 +33,8 @@ import javax.ws.rs.ext.Provider;
  */
 @Provider
 public class GenericExceptionMapper implements ExceptionMapper<Exception> {
+
+	private static final Logger logger = LoggerFactory.getLogger(GenericExceptionMapper.class);
 
 	/**
 	 * No-args constructor.
@@ -42,6 +46,7 @@ public class GenericExceptionMapper implements ExceptionMapper<Exception> {
 	 * @return a response
 	 */
 	public Response toResponse(final Exception ex) {
+		logger.error("API request error: {}", ex);
 		if (ex instanceof WebApplicationException) {
 			return getExceptionResponse(((WebApplicationException) ex).
 					getResponse().getStatus(), ex.getMessage());
