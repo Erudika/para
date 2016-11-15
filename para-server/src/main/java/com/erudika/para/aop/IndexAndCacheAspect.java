@@ -127,7 +127,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		}
 
 		// both searching and caching are disabled - pass it through
-		if (indexedAnno == null && cachedAnno == null) {
+		if (result == null && cachingResult == null) {
 			result = mi.proceed();
 		}
 

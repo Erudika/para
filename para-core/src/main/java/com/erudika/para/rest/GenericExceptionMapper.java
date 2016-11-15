@@ -46,7 +46,7 @@ public class GenericExceptionMapper implements ExceptionMapper<Exception> {
 	 * @return a response
 	 */
 	public Response toResponse(final Exception ex) {
-		logger.error("API request error: {}", ex);
+		logger.error("API request error: ", ex);
 		if (ex instanceof WebApplicationException) {
 			return getExceptionResponse(((WebApplicationException) ex).
 					getResponse().getStatus(), ex.getMessage());
