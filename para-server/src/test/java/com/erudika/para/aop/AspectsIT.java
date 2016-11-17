@@ -23,7 +23,6 @@ import com.erudika.para.cache.Cache;
 import com.erudika.para.cache.MockCache;
 import com.erudika.para.core.App;
 import com.erudika.para.core.utils.CoreUtils;
-import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
@@ -107,10 +106,11 @@ public class AspectsIT {
 	}
 
 	@Test
-	public void test() {
+	public void test() throws InterruptedException {
 		DAO d = Para.getDAO();
 		Search s = Para.getSearch();
 		Cache c = Para.getCache();
+		System.setProperty("para.cache_enabled", "true");
 
 		assertNotNull(s0.create());
 		assertNotNull(d.read(s0.getId()));
@@ -230,7 +230,7 @@ public class AspectsIT {
 		Sysprop o11 = new Sysprop("obj11");
 		Sysprop o12 = new Sysprop("obj12");
 		Para.getDAO().create(t1);
-		Para.getDAO().createAll(new LinkedList<ParaObject>(Arrays.asList(o11, o12)));
+		Para.getDAO().createAll(new LinkedList<Sysprop>(Arrays.asList(o11, o12)));
 
 		assertNotNull(Para.getDAO().read(t1.getId()));
 		assertNotNull(Para.getDAO().read(o11.getId()));
@@ -251,6 +251,10 @@ public class AspectsIT {
 		assertNull(Para.getCache().get(t1.getId()));
 		assertNull(Para.getCache().get(o11.getId()));
 		assertNull(Para.getCache().get(o12.getId()));
+		// special case - readAll should always return an empty list and never null
+		Map<String, ?> deleted = Para.getDAO().readAll(Arrays.asList(t1.getId(), o11.getId(), o12.getId()), true);
+		assertNotNull(deleted);
+		assertTrue(deleted.isEmpty());
 
 		// not in DB - store=false, index=true, cache=true
 		Tag t2 = new Tag("tag2");
@@ -260,7 +264,7 @@ public class AspectsIT {
 		o21.setStored(false);
 		o22.setStored(false);
 		Para.getDAO().create(t2);
-		Para.getDAO().createAll(new LinkedList<ParaObject>(Arrays.asList(o21, o22)));
+		Para.getDAO().createAll(new LinkedList<Sysprop>(Arrays.asList(o21, o22)));
 
 		System.setProperty("para.cache_enabled", "false");
 		assertNull(Para.getDAO().read(t2.getId()));
@@ -295,7 +299,7 @@ public class AspectsIT {
 		o32.setStored(false);
 		o32.setIndexed(false);
 		Para.getDAO().create(t3);
-		Para.getDAO().createAll(new LinkedList<ParaObject>(Arrays.asList(o31, o32)));
+		Para.getDAO().createAll(new LinkedList<Sysprop>(Arrays.asList(o31, o32)));
 
 		System.setProperty("para.cache_enabled", "false");
 		assertNull(Para.getDAO().read(t3.getId()));
@@ -327,7 +331,7 @@ public class AspectsIT {
 		o41.setCached(false);
 		o42.setCached(false);
 		Para.getDAO().create(t4);
-		Para.getDAO().createAll(new LinkedList<ParaObject>(Arrays.asList(o41, o42)));
+		Para.getDAO().createAll(new LinkedList<Sysprop>(Arrays.asList(o41, o42)));
 
 		System.setProperty("para.cache_enabled", "false");
 		assertNotNull(Para.getDAO().read(t4.getId()));
@@ -362,7 +366,7 @@ public class AspectsIT {
 		o52.setIndexed(false);
 		o52.setCached(false);
 		Para.getDAO().create(t5);
-		Para.getDAO().createAll(new LinkedList<ParaObject>(Arrays.asList(o51, o52)));
+		Para.getDAO().createAll(new LinkedList<Sysprop>(Arrays.asList(o51, o52)));
 
 		System.setProperty("para.cache_enabled", "false");
 		assertNotNull(Para.getDAO().read(t5.getId()));
@@ -399,7 +403,7 @@ public class AspectsIT {
 		o62.setStored(false);
 		o62.setCached(false);
 		Para.getDAO().create(t6);
-		Para.getDAO().createAll(new LinkedList<ParaObject>(Arrays.asList(o61, o62)));
+		Para.getDAO().createAll(new LinkedList<Sysprop>(Arrays.asList(o61, o62)));
 		Thread.sleep(1000);
 
 		System.setProperty("para.cache_enabled", "false");

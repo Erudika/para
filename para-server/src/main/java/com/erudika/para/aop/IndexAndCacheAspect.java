@@ -30,6 +30,7 @@ import com.erudika.para.validation.ValidationUtils;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -127,7 +128,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		}
 
 		// both searching and caching are disabled - pass it through
-		if (result == null && cachingResult == null) {
+		if (indexedAnno == null && cachedAnno == null) {
 			result = mi.proceed();
 		}
 
@@ -280,14 +281,13 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	}
 
 	private Object readFromCacheBatchOperation(String appid, Object[] args, MethodInvocation mi) throws Throwable {
-		Object result = null;
+		Object result = Collections.emptyMap();
 		List<String> getUs = AOPUtils.getArgOfListOfType(args, String.class);
 		if (getUs != null) {
 			Map<String, ParaObject> cached = cache.getAll(appid, getUs);
 			logger.debug("{}: Cache getAll(): {}->{}", getClass().getSimpleName(), appid, getUs);
 			// hit the database if even a single object is missing from cache, then cache it
-			boolean missingFromCache = cached.size() < getUs.size();
-			if (result == null && missingFromCache) {
+			if (cached.size() < getUs.size()) {
 				logger.debug("{}: Cache getAll() will read from DB: {}", getClass().getSimpleName(), appid);
 				result = mi.proceed();
 				if (result != null) {
@@ -303,7 +303,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					}
 				}
 			}
-			if (result == null) {
+			if (result == null || ((Map) result).isEmpty()) {
 				result = cached;
 			}
 		}

@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -36,7 +37,7 @@ import org.slf4j.LoggerFactory;
 public class MockCache implements Cache {
 
 	private static final Logger logger = LoggerFactory.getLogger(MockCache.class);
-	private Map<String, Map<String, Object>> maps = new HashMap<String, Map<String, Object>>();
+	private Map<String, Map<String, Object>> maps = new ConcurrentHashMap<String, Map<String, Object>>();
 
 	@Override
 	public boolean contains(String appid, String id) {

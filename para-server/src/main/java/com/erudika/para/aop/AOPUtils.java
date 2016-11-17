@@ -20,7 +20,6 @@ package com.erudika.para.aop;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.utils.Utils;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -82,15 +81,12 @@ public final class AOPUtils {
 
 	protected static List<ParaObject> removeNotStoredNotIndexed(List<ParaObject> addUs, List<ParaObject> indexUs) {
 		if (addUs != null) {
-			if (indexUs == null) {
-				indexUs = new ArrayList<ParaObject>(addUs.size());
-			}
 			List<ParaObject> removed = new LinkedList<ParaObject>();
 			for (Iterator<ParaObject> it = addUs.iterator(); it.hasNext();) {
 				ParaObject obj = it.next();
 				if (obj != null) {
 					checkAndFixType(obj);
-					if (obj.getIndexed()) {
+					if (obj.getIndexed() && indexUs != null) {
 						indexUs.add(obj);
 					}
 					if (!obj.getStored()) {
