@@ -181,6 +181,20 @@ public abstract class DAOTest {
 		app3.update();
 		assertEquals(secret, ((App) dao.read(app2.getId())).getSecret());
 
+		// partial update should work even with null appid
+		Sysprop sys = new Sysprop("partial_" + app2.getAppIdentifier());
+		sys.setName("Partial Test 1");
+		sys.setAppid(app2.getAppIdentifier());
+		dao.create(app2.getAppIdentifier(), sys);
+
+		Sysprop sys2 = new Sysprop(sys.getId());
+		sys2.setAppid(app2.getAppIdentifier());
+		sys2.addProperty("new", "prop");
+		sys2.update();
+
+		Sysprop sys2read = dao.read(app2.getAppIdentifier(), sys.getId());
+		assertEquals(sys2.getProperty("new"), sys2read.getProperty("new"));
+
 		dao.delete(app);
 		dao.delete(u);
 	}

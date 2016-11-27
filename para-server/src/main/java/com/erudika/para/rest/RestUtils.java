@@ -31,6 +31,7 @@ import com.erudika.para.utils.Utils;
 import com.erudika.para.validation.ValidationUtils;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -202,8 +203,9 @@ public final class RestUtils {
 	/**
 	 * Returns a Response with the entity object inside it and 200 status code.
 	 * If there was and error the status code is different than 200.
+	 *
 	 * @param is the entity input stream
-	 * @param type the type to convert the entity into, for example a Map.
+	 * @param type the type to convert the entity into, for example a Map. If null, this returns the InputStream.
 	 * @return response with 200 or error status
 	 */
 	public static Response getEntity(InputStream is, Class<?> type) {
@@ -215,7 +217,11 @@ public final class RestUtils {
 							"Request is too large - the maximum is " +
 							(Config.MAX_ENTITY_SIZE_BYTES / 1024) + " KB.");
 				}
-				entity = ParaObjectUtils.getJsonReader(type).readValue(is);
+				if (type == null) {
+					entity = is;
+				} else {
+					entity = ParaObjectUtils.getJsonReader(type).readValue(is);
+				}
 			} else {
 				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
 			}
@@ -243,6 +249,39 @@ public final class RestUtils {
 			return !app.getType().equals(object.getType()) || app.getId().equals(object.getId()) || app.isRootApp();
 		}
 		return false;
+	}
+
+	/**
+	 * Reads the bytes from an InputStream.
+	 * @param in an InputStream
+	 * @return byte[]
+	 */
+	public static byte[] readEntityBytes(InputStream in) {
+		byte[] jsonEntity = null;
+		try {
+			if (in != null && in.available() > 0) {
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				byte buf[] = new byte[1024];
+				int length;
+				while ((length = in.read(buf)) > 0) {
+					baos.write(buf, 0, length);
+				}
+				jsonEntity = baos.toByteArray();
+			} else {
+				jsonEntity = new byte[0];
+			}
+		} catch (IOException ex) {
+			logger.error(null, ex);
+		} finally {
+			try {
+				if (in != null) {
+					in.close();
+				}
+			} catch (IOException ex) {
+				logger.error(null, ex);
+			}
+		}
+		return jsonEntity;
 	}
 
 	/////////////////////////////////////////////
@@ -371,21 +410,19 @@ public final class RestUtils {
 			} else {
 				return entityRes;
 			}
-			if (object.getAppid() != null) {
-				ParaObjectUtils.setAnnotatedFields(object, newContent, Locked.class);
-				// app can't modify other apps except itself
-				if (checkImplicitAppPermissions(app, object)) {
-					// This is the primary validation pass (validates not only core POJOS but also user defined objects).
-					errors = ValidationUtils.validateObject(app, object);
-					if (errors.length == 0) {
-						// Secondary validation pass: object is validated again before being updated
-						object.update();
-						return Response.ok(object).build();
-					}
+			object.setAppid(app.getAppIdentifier());
+			ParaObjectUtils.setAnnotatedFields(object, newContent, Locked.class);
+			// app can't modify other apps except itself
+			if (checkImplicitAppPermissions(app, object)) {
+				// This is the primary validation pass (validates not only core POJOS but also user defined objects).
+				errors = ValidationUtils.validateObject(app, object);
+				if (errors.length == 0) {
+					// Secondary validation pass: object is validated again before being updated
+					object.update();
+					return Response.ok(object).build();
 				}
-				return getStatusResponse(Response.Status.BAD_REQUEST, errors);
 			}
-			return getStatusResponse(Response.Status.BAD_REQUEST, "Missing appid. Object must belong to an app.");
+			return getStatusResponse(Response.Status.BAD_REQUEST, errors);
 		}
 		return getStatusResponse(Response.Status.NOT_FOUND);
 	}
@@ -478,6 +515,9 @@ public final class RestUtils {
 			if (entityRes.getStatusInfo() == Response.Status.OK) {
 				List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
 				// WARN: objects will not be validated here as this would require them to be read first
+
+				TODO READ BEFORE UPDATE
+						
 				for (Map<String, Object> item : items) {
 					if (item != null && item.containsKey(Config._ID) && item.containsKey(Config._TYPE)) {
 						// can't update multiple apps in batch
@@ -486,6 +526,7 @@ public final class RestUtils {
 							if (pobj != null) {
 								pobj.setId((String) item.get(Config._ID));
 								pobj.setType((String) item.get(Config._TYPE));
+								pobj.setAppid(app.getAppIdentifier());
 								objects.add(pobj);
 							}
 						}
