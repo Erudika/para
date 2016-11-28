@@ -49,6 +49,7 @@ import com.erudika.para.utils.Utils;
 import com.erudika.para.utils.filters.FieldFilter;
 import com.erudika.para.validation.Constraint;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -806,11 +807,22 @@ public final class Api1 extends ResourceConfig {
 	 * @param a {@link App}
 	 * @return response
 	 */
+	@SuppressWarnings("unchecked")
 	public static Inflector<ContainerRequestContext, Response> batchUpdateHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : getPrincipalApp();
-				return getBatchUpdateResponse(app, ctx.getEntityStream());
+				Response entityRes = getEntity(ctx.getEntityStream(), List.class);
+				if (entityRes.getStatusInfo() == Response.Status.OK) {
+					List<Map<String, Object>> newProps = (List<Map<String, Object>>) entityRes.getEntity();
+					ArrayList<String> ids = new ArrayList<String>(newProps.size());
+					for (Map<String, Object> props : newProps) {
+						ids.add((String) props.get(Config._ID));
+					}
+					return getBatchUpdateResponse(app, getDAO().readAll(app.getAppIdentifier(), ids, true), newProps);
+				} else {
+					return entityRes;
+				}
 			}
 		};
 	}

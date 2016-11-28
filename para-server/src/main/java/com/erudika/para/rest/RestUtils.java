@@ -261,7 +261,7 @@ public final class RestUtils {
 		try {
 			if (in != null && in.available() > 0) {
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				byte buf[] = new byte[1024];
+				byte[] buf = new byte[1024];
 				int length;
 				while ((length = in.read(buf)) > 0) {
 					baos.write(buf, 0, length);
@@ -467,27 +467,27 @@ public final class RestUtils {
 	 */
 	public static Response getBatchCreateResponse(final App app, InputStream is) {
 		if (app != null) {
-			final LinkedList<ParaObject> objects = new LinkedList<ParaObject>();
+			final LinkedList<ParaObject> newObjects = new LinkedList<ParaObject>();
 			Response entityRes = getEntity(is, List.class);
 			if (entityRes.getStatusInfo() == Response.Status.OK) {
 				List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
 				for (Map<String, Object> object : items) {
 					// can't create multiple apps in batch
-					if (!Utils.type(App.class).equals(object.get(Config._TYPE))) {
+					if (!app.getType().equals(object.get(Config._TYPE))) {
 						ParaObject pobj = ParaObjectUtils.setAnnotatedFields(object);
 						if (pobj != null && ValidationUtils.isValidObject(pobj)) {
 							pobj.setAppid(app.getAppIdentifier());
-							objects.add(pobj);
+							newObjects.add(pobj);
 						}
 					}
 				}
 
-				Para.getDAO().createAll(app.getAppIdentifier(), objects);
+				Para.getDAO().createAll(app.getAppIdentifier(), newObjects);
 
 				Para.asyncExecute(new Runnable() {
 					public void run() {
 						int typesCount = app.getDatatypes().size();
-						app.addDatatypes(objects.toArray(new ParaObject[0]));
+						app.addDatatypes(newObjects.toArray(new ParaObject[0]));
 						if (typesCount < app.getDatatypes().size()) {
 							app.update();
 						}
@@ -496,7 +496,7 @@ public final class RestUtils {
 			} else {
 				return entityRes;
 			}
-			return Response.ok(objects).build();
+			return Response.ok(newObjects).build();
 		} else {
 			return getStatusResponse(Response.Status.BAD_REQUEST);
 		}
@@ -505,38 +505,29 @@ public final class RestUtils {
 	/**
 	 * Batch update response as JSON.
 	 * @param app the current App object
-	 * @param is entity input stream
+	 * @param oldObjects a list of old objects read from DB
+	 * @param newProperties a list of new object properties to be updated
 	 * @return a status code 200 or 400
 	 */
-	public static Response getBatchUpdateResponse(App app, InputStream is) {
-		if (app != null) {
-			LinkedList<ParaObject> objects = new LinkedList<ParaObject>();
-			Response entityRes = getEntity(is, List.class);
-			if (entityRes.getStatusInfo() == Response.Status.OK) {
-				List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
-				// WARN: objects will not be validated here as this would require them to be read first
-
-				TODO READ BEFORE UPDATE
-						
-				for (Map<String, Object> item : items) {
-					if (item != null && item.containsKey(Config._ID) && item.containsKey(Config._TYPE)) {
-						// can't update multiple apps in batch
-						if (!Utils.type(App.class).equals(item.get(Config._TYPE))) {
-							ParaObject pobj = ParaObjectUtils.setAnnotatedFields(null, item, Locked.class);
-							if (pobj != null) {
-								pobj.setId((String) item.get(Config._ID));
-								pobj.setType((String) item.get(Config._TYPE));
-								pobj.setAppid(app.getAppIdentifier());
-								objects.add(pobj);
-							}
+	public static Response getBatchUpdateResponse(App app, Map<String, ParaObject> oldObjects,
+			List<Map<String, Object>> newProperties) {
+		if (app != null && oldObjects != null && newProperties != null) {
+			LinkedList<ParaObject> updatedObjects = new LinkedList<ParaObject>();
+			for (Map<String, Object> newProps : newProperties) {
+				if (newProps != null && newProps.containsKey(Config._ID)) {
+					ParaObject oldObject = oldObjects.get((String) newProps.get(Config._ID));
+					// updating apps in batch is not allowed
+					if (oldObject != null && checkImplicitAppPermissions(app, oldObject)) {
+						ParaObject updatedObject = ParaObjectUtils.setAnnotatedFields(oldObject, newProps, Locked.class);
+						if (ValidationUtils.isValidObject(app, updatedObject)) {
+							updatedObject.setAppid(app.getAppIdentifier());
+							updatedObjects.add(updatedObject);
 						}
 					}
 				}
-				Para.getDAO().updateAll(app.getAppIdentifier(), objects);
-			} else {
-				return entityRes;
 			}
-			return Response.ok(objects).build();
+			Para.getDAO().updateAll(app.getAppIdentifier(), updatedObjects);
+			return Response.ok(updatedObjects).build();
 		} else {
 			return getStatusResponse(Response.Status.BAD_REQUEST);
 		}
@@ -554,8 +545,8 @@ public final class RestUtils {
 			if (ids.size() <= Config.MAX_ITEMS_PER_PAGE) {
 				for (ParaObject pobj : Para.getDAO().readAll(app.getAppIdentifier(), ids, false).values()) {
 					if (pobj != null && pobj.getId() != null && pobj.getType() != null) {
-						// can't delete multiple apps in batch
-						if (!Utils.type(App.class).equals(pobj.getType())) {
+						// deleting apps in batch is not allowed
+						if (!app.getType().equals(pobj.getType())) {
 							objects.add(pobj);
 						}
 					}

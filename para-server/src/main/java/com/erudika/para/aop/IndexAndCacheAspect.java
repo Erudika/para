@@ -197,7 +197,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		ParaObject addMe = AOPUtils.getArgOfParaObject(args);
 		String[] errors = ValidationUtils.validateObject(addMe);
 		Object result = null;
-		if (errors.length == 0) {
+		if (addMe != null && errors.length == 0) {
 			AOPUtils.checkAndFixType(addMe);
 			if (addMe.getStored()) {
 				result = mi.proceed();
@@ -231,7 +231,9 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		search.indexAll(appid, indexUs);
 		// restore removed objects - needed if we have to cache them later
 		// do not remove this line - breaks tests
-		addUs.addAll(removedObjects); // don't delete!
+		if (addUs != null) {
+			addUs.addAll(removedObjects); // don't delete!
+		}
 		logger.debug("{}: Indexed all {}->{}", getClass().getSimpleName(),
 				appid, (indexUs == null) ? null : indexUs.size());
 		return result;

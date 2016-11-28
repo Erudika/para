@@ -68,10 +68,12 @@ public class ParaClientIT {
 	private static final Logger logger = LoggerFactory.getLogger(ParaClientIT.class);
 	private static ParaClient pc;
 	private static ParaClient pc2;
+	private static ParaClient pcc;
 	private static final String catsType = "cat";
 	private static final String dogsType = "dog";
 	private static final String batsType = "bat";
 	private static final String APP_NAME = "para-test";
+	private static final String APP_NAME_CHILD = "para-test-child";
 
 	protected static Sysprop u;
 	protected static Sysprop u1;
@@ -122,10 +124,18 @@ public class ParaClientIT {
 		rootApp.setName(APP_NAME);
 		rootApp.setSharingIndex(false);
 		rootApp.create();
+
+		App childApp = new App(APP_NAME_CHILD);
+		childApp.setName(APP_NAME_CHILD);
+		childApp.setSharingIndex(true);
+		childApp.create();
+
 		pc = new ParaClient(App.id(APP_NAME), rootApp.getSecret());
 		pc.setEndpoint(endpoint);
 		pc2 = new ParaClient(App.id(APP_NAME), rootApp.getSecret());
 		pc2.setEndpoint(endpoint);
+		pcc = new ParaClient(App.id(APP_NAME_CHILD), childApp.getSecret());
+		pcc.setEndpoint(endpoint);
 		logger.info("accessKey: {}, secretKey: {}", rootApp.getId(), rootApp.getSecret());
 
 		u = new Sysprop("111");
@@ -297,6 +307,76 @@ public class ParaClientIT {
 		assertTrue(l4.isEmpty());
 
 		assertTrue(pc.getApp().getDatatypes().containsValue(dogsType));
+	}
+
+	@Test
+	public void testBatchCRUDForChildApp() throws InterruptedException {
+		ArrayList<Sysprop> articles = new ArrayList<Sysprop>();
+		for (int i = 0; i < 3; i++) {
+			Sysprop s = new Sysprop();
+			s.setType("article");
+			// DO NOT SET appid, must be always set automatically on the server
+			// depending on which app is currently in context (i.e. making the requests)
+			s.addProperty("text", "a b c");
+			articles.add(s);
+		}
+
+		List<Sysprop> l1 = pcc.createAll(articles);
+		assertEquals(3, l1.size());
+		assertNotNull(l1.get(0).getId());
+		assertNotNull(l1.get(1).getId());
+		assertNotNull(l1.get(2).getId());
+		assertTrue(l1.get(0).hasProperty("text"));
+		assertEquals("a b c", l1.get(0).getProperty("text"));
+
+		assertEquals(APP_NAME_CHILD, l1.get(0).getAppid());
+		assertEquals(APP_NAME_CHILD, l1.get(1).getAppid());
+		assertEquals(APP_NAME_CHILD, l1.get(2).getAppid());
+
+		// test if appid is set on partial update
+		// test if old data is not lost on partial update
+		// test if new custom properties are merged with old ones in case of partial update
+		Sysprop part1 = new Sysprop(l1.get(0).getId());
+		Sysprop part2 = new Sysprop(l1.get(1).getId());
+		Sysprop part3 = new Sysprop(l1.get(2).getId());
+		// DO NOT SET appid - should work without it in partial updateAll()
+		part1.setType("update_must_not_change_type");
+		part2.setType("update_must_not_change_type");
+		part3.setType("update_must_not_change_type");
+
+		part1.addProperty("text2", "d e f");
+		part2.addProperty("text2", "d e f");
+		part2.setName("NewName2");
+		part3.setName("NewName3");
+
+		List<Sysprop> lu = pcc.updateAll(Arrays.asList(part1, part2, part3));
+		assertEquals(3, lu.size());
+		List<Sysprop> l2 = pcc.readAll(Arrays.asList(part1.getId(), part2.getId(), part3.getId()));
+		assertEquals(3, l2.size());
+		assertTrue(l2.get(0).hasProperty("text"));
+		assertTrue(l2.get(1).hasProperty("text"));
+		assertTrue(l2.get(2).hasProperty("text"));
+		assertTrue(l2.get(0).hasProperty("text2"));
+		assertTrue(l2.get(1).hasProperty("text2"));
+		assertEquals(2, l2.get(0).getProperties().size());
+		assertEquals("a b c", l2.get(0).getProperty("text"));
+		assertEquals(part2.getName(), l2.get(1).getName());
+		assertEquals(part3.getName(), l2.get(2).getName());
+		assertEquals("article", l2.get(0).getType());
+		assertEquals("article", l2.get(1).getType());
+		assertEquals("article", l2.get(2).getType());
+		assertEquals(APP_NAME_CHILD, l2.get(0).getAppid());
+		assertEquals(APP_NAME_CHILD, l2.get(1).getAppid());
+		assertEquals(APP_NAME_CHILD, l2.get(2).getAppid());
+
+		// test if objects are validated on updateAll()
+		pcc.addValidationConstraint("article", "text", required());
+		part1.addProperty("text", "");
+		part2.addProperty("text", "");
+		List<Sysprop> lu2 = pcc.updateAll(Arrays.asList(part1, part2));
+		assertTrue(lu2.isEmpty());
+
+		pcc.deleteAll(Arrays.asList(part1.getId(), part2.getId(), part3.getId()));
 	}
 
 	@Test
@@ -737,13 +817,14 @@ public class ParaClientIT {
 		pc2.grantResourcePermission(fbUser.getId(), App.ALLOW_ALL, AllowedMethods.READ_AND_WRITE);
 		signedIn = pc2.signIn("facebook", "test_token");
 		logger.info(pc2.getAccessToken());
+		Thread.sleep(500);
 		assertNotNull(signedIn);
 		assertNotNull(pc2.getAccessToken());
 		me = pc2.me();
 		assertNotNull(me);
 		assertFalse(pc2.newId().isEmpty());
 		assertEquals(signedIn.getName(), me.getName());
-		Thread.sleep(1000);
+		Thread.sleep(500);
 
 		// now switch back to App access
 		pc2.signOut();
