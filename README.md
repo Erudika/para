@@ -107,8 +107,16 @@ Here's the Maven snippet to include in your `pom.xml`:
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para-server</artifactId>
-  <version>1.21.0</version>
+  <version>1.21.1</version>
 </dependency>
+```
+
+## Command-line tool
+
+- **Para CLI**: [para-cli](https://github.com/erudika/para-cli)
+
+```sh
+$ npm install -g para-cli
 ```
 
 ## API clients
@@ -133,9 +141,10 @@ Use these `DAO` implementations to connect to different databases:
 ## Wishlist / Roadmap
 
 - `DAO` implementation for PostgreSQL, etc.
-- Swagger support
+- Server-side JavaScript support for implementing custom API resources
+- Integrations with Google App Engine, Heroku, DigitalOcean
 - GraphQL and/or ([JSON API](http://jsonapi.org/)) schema support
-- Integrations with Google App Engine, Heroku
+- Swagger support
 
 ## Contributing
 
