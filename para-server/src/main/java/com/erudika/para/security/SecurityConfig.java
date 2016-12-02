@@ -65,6 +65,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	private final TwitterAuthFilter twitterFilter;
 	private final GitHubAuthFilter githubFilter;
 	private final MicrosoftAuthFilter microsoftFilter;
+	private final GenericOAuth2Filter oauth2Filter;
 	private final JWTRestfulAuthFilter jwtFilter;
 
 	/**
@@ -81,6 +82,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		twitterFilter = Para.getInstance(TwitterAuthFilter.class);
 		githubFilter = Para.getInstance(GitHubAuthFilter.class);
 		microsoftFilter = Para.getInstance(MicrosoftAuthFilter.class);
+		oauth2Filter = Para.getInstance(GenericOAuth2Filter.class);
 		jwtFilter = Para.getInstance(JWTRestfulAuthFilter.class);
 	}
 
@@ -189,6 +191,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		if (microsoftFilter != null) {
 			microsoftFilter.setAuthenticationManager(authenticationManager());
 			http.addFilterAfter(microsoftFilter, BasicAuthenticationFilter.class);
+		}
+
+		if (oauth2Filter != null) {
+			oauth2Filter.setAuthenticationManager(authenticationManager());
+			http.addFilterAfter(oauth2Filter, BasicAuthenticationFilter.class);
 		}
 
 		if (enableRestFilter) {

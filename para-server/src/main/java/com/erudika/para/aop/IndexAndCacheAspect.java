@@ -117,6 +117,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 
 		for (IOListener ioListener : ioListeners) {
 			ioListener.onPreInvoke(superMethod, args);
+			logger.debug("Executed {}.onPreInvoke().", ioListener.getClass().getName());
 		}
 
 		Object result = handleIndexing(indexedAnno, appid, args, mi);
@@ -134,6 +135,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 
 		for (IOListener ioListener : ioListeners) {
 			ioListener.onPostInvoke(superMethod, result);
+			logger.debug("Executed {}.onPostInvoke().", ioListener.getClass().getName());
 		}
 
 		return result;

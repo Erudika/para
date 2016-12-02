@@ -46,6 +46,7 @@ public class SecurityModule extends AbstractModule {
 	private TwitterAuthFilter twitterFilter;
 	private GitHubAuthFilter githubFilter;
 	private MicrosoftAuthFilter microsoftFilter;
+	private GenericOAuth2Filter oauth2Filter;
 	private JWTRestfulAuthFilter jwtFilter;
 
 	protected void configure() {
@@ -281,6 +282,13 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * @param githubFilter filter
+	 */
+	public void setGithubFilter(GitHubAuthFilter githubFilter) {
+		this.githubFilter = githubFilter;
+	}
+
+	/**
 	 * @return filter
 	 */
 	@Provides
@@ -295,10 +303,31 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
-	 * @param githubFilter filter
+	 * @param microsoftFilter filter
 	 */
-	public void setGithubFilter(GitHubAuthFilter githubFilter) {
-		this.githubFilter = githubFilter;
+	public void setMicrosoftFilter(MicrosoftAuthFilter microsoftFilter) {
+		this.microsoftFilter = microsoftFilter;
+	}
+
+	/**
+	 * @return filter
+	 */
+	@Provides
+	public GenericOAuth2Filter getGenericOAuth2Filter() {
+		if (oauth2Filter == null) {
+			oauth2Filter = new GenericOAuth2Filter("/" + GenericOAuth2Filter.OAUTH2_ACTION);
+			oauth2Filter.setAuthenticationSuccessHandler(getSuccessHandler());
+			oauth2Filter.setAuthenticationFailureHandler(getFailureHandler());
+			oauth2Filter.setRememberMeServices(getRemembeMeServices());
+		}
+		return oauth2Filter;
+	}
+
+	/**
+	 * @param oauth2Filter filter
+	 */
+	public void setGenericOAuth2Filter(GenericOAuth2Filter oauth2Filter) {
+		this.oauth2Filter = oauth2Filter;
 	}
 
 	/**
@@ -308,13 +337,14 @@ public class SecurityModule extends AbstractModule {
 	 * @param liAuth filter
 	 * @param twAuth filter
 	 * @param msAuth filter
+	 * @param oAuth2 filter
 	 * @param pwAuth filter
 	 * @return filter
 	 */
 	@Provides
 	public JWTRestfulAuthFilter getJWTAuthFilter(FacebookAuthFilter fbAuth, GoogleAuthFilter gpAuth,
 			GitHubAuthFilter ghAuth, LinkedInAuthFilter liAuth, TwitterAuthFilter twAuth,
-			MicrosoftAuthFilter msAuth, PasswordAuthFilter pwAuth) {
+			MicrosoftAuthFilter msAuth, GenericOAuth2Filter oAuth2, PasswordAuthFilter pwAuth) {
 		if (jwtFilter == null) {
 			jwtFilter = new JWTRestfulAuthFilter("/" + JWTRestfulAuthFilter.JWT_ACTION);
 			jwtFilter.setFacebookAuth(fbAuth);
@@ -323,6 +353,7 @@ public class SecurityModule extends AbstractModule {
 			jwtFilter.setLinkedinAuth(liAuth);
 			jwtFilter.setTwitterAuth(twAuth);
 			jwtFilter.setMicrosoftAuth(msAuth);
+			jwtFilter.setGenericOAuth2Auth(oAuth2);
 			jwtFilter.setPasswordAuth(pwAuth);
 		}
 		return jwtFilter;

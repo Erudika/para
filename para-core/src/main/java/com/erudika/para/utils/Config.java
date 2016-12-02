@@ -95,6 +95,8 @@ public final class Config {
 	public static final String GITHUB_PREFIX = "gh" + SEPARATOR;
 	/** Microsoft prefix - defaults to 'ms:'. */
 	public static final String MICROSOFT_PREFIX = "ms" + SEPARATOR;
+	/** OAuth2 generic prefix - defaults to 'oa2:'. */
+	public static final String OAUTH2_PREFIX = "oa2" + SEPARATOR;
 
 	/**	{@value #AUTH_SIGNIN_SUCCESS_ATTR}. */
 	public static final String AUTH_SIGNIN_SUCCESS_ATTR = "AUTH_SIGNIN_SUCCESS_ATTRIBUTE";
