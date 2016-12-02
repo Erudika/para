@@ -122,6 +122,7 @@ public final class Para {
 					if (initListener != null) {
 						injectInto(initListener);
 						initListener.onInitialize();
+						logger.debug("Executed {}.onInitialize().", initListener.getClass().getName());
 					}
 				}
 				// this enables the "River" feature - polls the deault queue for objects and imports them into Para
@@ -147,6 +148,7 @@ public final class Para {
 					if (destroyListener != null) {
 						injectInto(destroyListener);
 						destroyListener.onDestroy();
+						logger.debug("Executed {}.onDestroy().", destroyListener.getClass().getName());
 					}
 				}
 				injector = null;
@@ -357,7 +359,7 @@ public final class Para {
 			try {
 				ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
 				List<URL> jars = new ArrayList<URL>();
-				File lib = new File("lib/");
+				File lib = new File(Config.getConfigParam("plugin_folder", "lib/"));
 				if (lib.exists() && lib.isDirectory()) {
 					for (File file : FileUtils.listFiles(lib, new String[]{"jar"}, false)) {
 						jars.add(file.toURI().toURL());
@@ -419,7 +421,7 @@ public final class Para {
 	}
 
 	/**
-	 * Current version.
+	 * The current version of Para.
 	 * @return version string, from pom.xml
 	 */
 	public static String getVersion() {
