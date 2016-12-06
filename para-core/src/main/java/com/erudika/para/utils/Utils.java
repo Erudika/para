@@ -827,7 +827,7 @@ public final class Utils {
 	 * @return a guess of its plural form
 	 */
 	public static String singularToPlural(String singul) {
-		return StringUtils.isBlank(singul) ? singul :
+		return (StringUtils.isBlank(singul) || singul.endsWith("es") || singul.endsWith("ies")) ? singul :
 				(singul.endsWith("s") ? singul + "es" :
 				(singul.endsWith("y") ? StringUtils.removeEndIgnoreCase(singul, "y") + "ies" :
 										singul + "s"));

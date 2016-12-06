@@ -257,6 +257,10 @@ public class UtilsTest {
 		assertNull(singularToPlural(null));
 		assertNotNull(singularToPlural(""));
 		assertEquals("users", singularToPlural("user"));
+		assertEquals("recipes", singularToPlural("recipe"));
+		assertEquals("recipes", singularToPlural("recipes"));
+		assertEquals("cities", singularToPlural("city"));
+		assertEquals("cities", singularToPlural("cities"));
 	}
 
 //	@Test
