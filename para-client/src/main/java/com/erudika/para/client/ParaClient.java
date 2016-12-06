@@ -376,7 +376,7 @@ public final class ParaClient {
 		if (obj == null) {
 			return null;
 		}
-		return getEntity(invokePatch(obj.getObjectURI(), Entity.json(obj)), obj.getClass());
+		return getEntity(invokePatch(obj.getType().concat("/").concat(obj.getId()), Entity.json(obj)), obj.getClass());
 	}
 
 	/**
@@ -385,10 +385,10 @@ public final class ParaClient {
 	 * @param obj the object
 	 */
 	public <P extends ParaObject> void delete(P obj) {
-		if (obj == null) {
+		if (obj == null || obj.getId() == null) {
 			return;
 		}
-		invokeDelete(obj.getObjectURI(), null);
+		invokeDelete(obj.getType().concat("/").concat(obj.getId()), null);
 	}
 
 	/**

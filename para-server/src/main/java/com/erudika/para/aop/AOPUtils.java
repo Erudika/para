@@ -32,7 +32,7 @@ import org.apache.commons.lang3.StringUtils;
  */
 public final class AOPUtils {
 
-	private static final String SPECIAL_CHAR = "_";
+	private static final String SPECIAL_PREFIX = "_";
 
 	private AOPUtils() { }
 
@@ -106,8 +106,14 @@ public final class AOPUtils {
 	 * @param obj an object
 	 */
 	protected static void checkAndFixType(ParaObject obj) {
-		if (obj != null && StringUtils.startsWith(obj.getType(), SPECIAL_CHAR)) {
-			obj.setType(StringUtils.replacePattern(obj.getType(), "^[_]+", ""));
+		if (obj != null) {
+			if (StringUtils.startsWith(obj.getType(), SPECIAL_PREFIX)) {
+				obj.setType(obj.getType().replaceAll("^[" + SPECIAL_PREFIX + "]*", ""));
+			}
+			if (StringUtils.contains(obj.getType(), "#")) {
+				// ElasticSearch doesn't allow # in type mappings
+				obj.setType(obj.getType().replaceAll("#", ""));
+			}
 			if (obj.getType().isEmpty()) {
 				obj.setType(Utils.type(Sysprop.class));
 			}

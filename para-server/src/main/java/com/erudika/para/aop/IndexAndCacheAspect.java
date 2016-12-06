@@ -218,6 +218,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	private Object removeFromIndexOperation(String appid, Object[] args, MethodInvocation mi) throws Throwable {
 		Object result = mi.proceed(); // delete from DB even if "isStored = false"
 		ParaObject removeMe = AOPUtils.getArgOfParaObject(args);
+		AOPUtils.checkAndFixType(removeMe);
 		search.unindex(appid, removeMe); // remove from index even if "isIndexed = false"
 		logger.debug("{}: Unindexed {}->{}", getClass().getSimpleName(), appid,
 				(removeMe == null) ? null : removeMe.getId());
@@ -252,7 +253,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 
 	private Object readFromCacheOperation(String appid, Object[] args, MethodInvocation mi) throws Throwable {
 		Object result = null;
-		String getMeId = (String) args[1];
+		String getMeId = (args != null && args.length > 1) ? (String) args[1] : null;
 		if (cache.contains(appid, getMeId)) {
 			result = cache.get(appid, getMeId);
 			logger.debug("{}: Cache hit: {}->{}", getClass().getSimpleName(), appid, getMeId);

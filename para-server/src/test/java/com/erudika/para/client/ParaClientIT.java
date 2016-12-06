@@ -380,6 +380,51 @@ public class ParaClientIT {
 	}
 
 	@Test
+	public void testCRUDWithNonStandardIDs() throws InterruptedException {
+		String id1 = "test/123/file.txt";
+		String id2 = "file.txt?/!./=-+)))(*&^%+$#@><`~±_|'";
+		String type1 = "type?/!./=-+)))(*&^%+$#@><`~±_|'";	// # should be removed
+		String type2 = "___ type 123  +__";
+		Sysprop so1 = new Sysprop(Utils.urlEncode(id1));
+		Sysprop so2 = new Sysprop(Utils.urlEncode(id2));
+		so1.setType(Utils.urlEncode(type1));
+		so2.setType(Utils.urlEncode(type2));
+		Sysprop obj1 = pc.create(so1);
+		Sysprop obj2 = pc.create(so2);
+		assertNotNull(obj1);
+		assertNotNull(obj2);
+		Sysprop sr1 = pc.read(so1.getId());
+		Sysprop sr2 = pc.read(so2.getId());
+		assertNotNull(sr1);
+		assertNotNull(sr2);
+		assertNotNull(sr1.getTimestamp());
+		assertNotNull(sr2.getTimestamp());
+		assertEquals(id1, sr1.getId());
+		assertEquals(id2, sr2.getId());
+		assertNotNull(pc.read(Utils.urlEncode(obj1.getType()), Utils.urlEncode(obj1.getId())));
+		assertNotNull(pc.read(Utils.urlEncode(obj2.getType()), Utils.urlEncode(obj2.getId())));
+		so1.setName("test name");
+		Sysprop su = pc.update(so1);
+		assertNotNull(su);
+		assertEquals(so1.getName(), su.getName());
+		assertNotNull(su.getUpdated());
+		pc.delete(so1);
+		pc.delete(so2);
+		assertNull(pc.read(so1.getId()));
+		assertNull(pc.read(so2.getId()));
+		assertNull(pc.read(so1.getType(), so1.getId()));
+		assertNull(pc.read(so2.getType(), so2.getId()));
+
+		pc.createAll(Arrays.asList(sr1, sr2));
+		List<Sysprop> srl = pc.readAll(Arrays.asList(id1, id2));
+		assertEquals(2, srl.size());
+		assertEquals(id1, srl.get(0).getId());
+		assertEquals(id2, srl.get(1).getId());
+		pc.deleteAll(Arrays.asList(id1, id2));
+		assertTrue(pc.readAll(Arrays.asList(id1, id2)).isEmpty());
+	}
+
+	@Test
 	public void testList() throws InterruptedException {
 		ArrayList<ParaObject> cats = new ArrayList<ParaObject>();
 		for (int i = 0; i < 3; i++) {
