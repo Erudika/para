@@ -39,6 +39,7 @@ import javax.annotation.PreDestroy;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletException;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
@@ -200,6 +201,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 				}
 			}
 		});
+		jef.setPort(NumberUtils.toInt(System.getProperty("server.port"), 8080));
 		logger.info("Listening on port {}...", jef.getPort());
 		return jef;
 	}
