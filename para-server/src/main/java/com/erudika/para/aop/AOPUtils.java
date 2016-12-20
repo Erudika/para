@@ -114,6 +114,10 @@ public final class AOPUtils {
 				// ElasticSearch doesn't allow # in type mappings
 				obj.setType(obj.getType().replaceAll("#", ""));
 			}
+			if (StringUtils.contains(obj.getType(), "/")) {
+				// type must not contain "/"
+				obj.setType(obj.getType().replaceAll("/", ""));
+			}
 			if (obj.getType().isEmpty()) {
 				obj.setType(Utils.type(Sysprop.class));
 			}

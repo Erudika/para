@@ -129,6 +129,14 @@ public class AOPUtilsTest {
 		checkAndFixType(s);
 		assertEquals("NOT_OK_", s.getType());
 
+		s.setType("NOT/_OK_");
+		checkAndFixType(s);
+		assertEquals("NOT_OK_", s.getType());
+
+		s.setType("NOT/OK/.OK");
+		checkAndFixType(s);
+		assertEquals("NOTOK.OK", s.getType());
+
 		s.setType("____");
 		checkAndFixType(s);
 		assertEquals(Utils.type(Sysprop.class), s.getType());
