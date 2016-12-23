@@ -1306,10 +1306,13 @@ public final class ParaClient {
 	 * use that as the provider access token.</b>
 	 * @param provider identity provider, e.g. 'facebook', 'google'...
 	 * @param providerToken access token from a provider like Facebook, Google, Twitter
-	 * @return a {@link  User} object or null if something failed
+	 * @param rememberJWT it true the access token returned by Para will be stored locally and
+	 * available through {@link #getAccessToken()}
+	 * @return a {@link User} object or null if something failed. The JWT is available
+	 * on the returned User object via {@link User#getPassword()}.
 	 */
 	@SuppressWarnings("unchecked")
-	public User signIn(String provider, String providerToken) {
+	public User signIn(String provider, String providerToken, boolean rememberJWT) {
 		if (!StringUtils.isBlank(provider) && !StringUtils.isBlank(providerToken)) {
 			Map<String, String> credentials = new HashMap<String, String>();
 			credentials.put("appid", accessKey);
@@ -1318,16 +1321,29 @@ public final class ParaClient {
 			Map<String, Object> result = getEntity(invokePost(JWT_PATH, Entity.json(credentials)), Map.class);
 			if (result != null && result.containsKey("user") && result.containsKey("jwt")) {
 				Map<?, ?> jwtData = (Map<?, ?>) result.get("jwt");
-				Map<String, Object> userData = (Map<String, Object>) result.get("user");
-				tokenKey = (String) jwtData.get("access_token");
-				tokenKeyExpires = (Long) jwtData.get("expires");
-				tokenKeyNextRefresh = (Long) jwtData.get("refresh");
-				return ParaObjectUtils.setAnnotatedFields(userData);
+				if (rememberJWT) {
+					tokenKey = (String) jwtData.get("access_token");
+					tokenKeyExpires = (Long) jwtData.get("expires");
+					tokenKeyNextRefresh = (Long) jwtData.get("refresh");
+				}
+				User signedInUser = ParaObjectUtils.setAnnotatedFields((Map<String, Object>) result.get("user"));
+				signedInUser.setPassword((String) jwtData.get("access_token"));
+				return signedInUser;
 			} else {
 				clearAccessToken();
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * @see #signIn(java.lang.String, java.lang.String, boolean)
+	 * @param provider identity provider, e.g. 'facebook', 'google'...
+	 * @param providerToken access token from a provider like Facebook, Google, Twitter
+	 * @return a {@link User} object or null if something failed
+	 */
+	public User signIn(String provider, String providerToken) {
+		return signIn(provider, providerToken, true);
 	}
 
 	/**
