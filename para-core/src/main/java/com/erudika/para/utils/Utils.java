@@ -727,7 +727,7 @@ public final class Utils {
 	 */
 	public static void setRawCookie(String name, String value, HttpServletRequest req,
 			HttpServletResponse res, boolean httpOnly, int maxAge) {
-		if (StringUtils.isBlank(name) || StringUtils.isBlank(value) || req == null || res == null) {
+		if (StringUtils.isBlank(name) || value == null || req == null || res == null) {
 			return;
 		}
 		Cookie cookie = new Cookie(name, value);
