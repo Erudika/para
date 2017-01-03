@@ -71,11 +71,11 @@
 		<skipITs>${skipTests}</skipITs>
 		<skipUTs>${skipTests}</skipUTs>
 		<deployPluginVer>2.8.2</deployPluginVer>
-		<slf4jVer>1.7.21</slf4jVer>
-		<logbackVer>1.1.7</logbackVer>
-		<awsJdkVer>1.11.33</awsJdkVer>
-		<jerseyVer>2.23.2</jerseyVer>
-		<springBootVer>1.4.1.RELEASE</springBootVer>
+		<slf4jVer>1.7.22</slf4jVer>
+		<logbackVer>1.1.8</logbackVer>
+		<awsJdkVer>1.11.75</awsJdkVer>
+		<jerseyVer>2.25</jerseyVer>
+		<springBootVer>1.4.3.RELEASE</springBootVer>
 	</properties>
 
 	<dependencies>
@@ -83,7 +83,7 @@
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-core</artifactId>
-			<version>2.0.107-beta</version>
+			<version>2.5.0</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -130,7 +130,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.5.1</version>
+				<version>3.6.0</version>
 				<configuration>
 					<source>1.6</source>
 					<target>1.6</target>
@@ -249,7 +249,7 @@
 					<plugin>
 						<groupId>org.pitest</groupId>
 						<artifactId>pitest-maven</artifactId>
-						<version>1.1.10</version>
+						<version>1.1.11</version>
 						<executions>
 							<execution>
 								<goals>
@@ -283,7 +283,7 @@
 			<plugin>
 				<groupId>org.pitest</groupId>
 				<artifactId>pitest-maven</artifactId>
-				<version>1.1.10</version>
+				<version>1.1.11</version>
 				<reportSets>
 					<reportSet>
 						<reports>
