@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 Erudika. https://erudika.com
+ * Copyright 2013-2017 Erudika. https://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -408,7 +408,7 @@ public final class Utils {
 	 */
 	public static String formatDate(Long timestamp, String format, Locale loc) {
 		if (StringUtils.isBlank(format)) {
-			format = DateFormatUtils.ISO_DATE_FORMAT.getPattern();
+			format = DateFormatUtils.ISO_8601_EXTENDED_DATE_FORMAT.getPattern();
 		}
 		if (timestamp == null) {
 			timestamp = timestamp();

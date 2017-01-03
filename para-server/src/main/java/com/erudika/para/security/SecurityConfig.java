@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 Erudika. https://erudika.com
+ * Copyright 2013-2017 Erudika. https://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import org.springframework.security.openid.OpenIDAuthenticationProvider;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.firewall.DefaultHttpFirewall;
 
 /**
  * Programmatic configuration for Spring Security.
@@ -114,6 +115,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	@Override
 	public void configure(WebSecurity web) throws Exception {
 		web.ignoring().requestMatchers(IgnoredRequestMatcher.INSTANCE);
+		DefaultHttpFirewall firewall = new DefaultHttpFirewall();
+		firewall.setAllowUrlEncodedSlash(true);
+		web.httpFirewall(firewall);
 		//web.debug(true);
 	}
 

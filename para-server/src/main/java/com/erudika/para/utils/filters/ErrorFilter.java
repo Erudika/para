@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2016 Erudika. https://erudika.com
+ * Copyright 2013-2017 Erudika. https://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -61,7 +62,8 @@ public class ErrorFilter implements Filter {
 					setErrorAttributes(request, status, wrapped.getMessage());
 				}
 			} catch (Throwable ex) {
-				rethrow(ex);
+//				rethrow(ex);
+				LoggerFactory.getLogger(getClass()).error(null, ex);
 			}
 			response.flushBuffer();
 		} else {
