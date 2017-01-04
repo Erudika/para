@@ -149,7 +149,7 @@ public class IndexBasedDAO implements DAO {
 		if (list.isEmpty()) {
 			for (String key : keys) {
 				if (getMap(appid).containsKey(key)) {
-					results.put(key, (P) read(key));
+					results.put(key, (P) read(appid, key));
 				}
 			}
 		} else {

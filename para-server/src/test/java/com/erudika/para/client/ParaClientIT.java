@@ -475,7 +475,13 @@ public class ParaClientIT {
 		assertNotNull(pc.findById(t.getId()));
 
 		assertTrue(pc.findByIds(null).isEmpty());
-		assertEquals(3, pc.findByIds(Arrays.asList(u.getId(), u1.getId(), u2.getId())).size());
+		List<?> res1 = pc.findByIds(Arrays.asList(u.getId(), u1.getId(), u2.getId()));
+		assertEquals(3, res1.size());
+
+		Sysprop withRouting = new Sysprop("routed_object");
+		withRouting.setAppid(APP_NAME_CHILD);
+		pcc.create(withRouting);
+		assertFalse(pcc.findByIds(Arrays.asList(withRouting.getId())).isEmpty());
 
 		assertTrue(pc.findNearby(null, null, 100, 1, 1).isEmpty());
 		assertFalse(pc.findNearby(u.getType(), "*", 10, 40.60, -73.90).isEmpty());

@@ -114,7 +114,7 @@ public class MockDAO implements DAO {
 		Map<String, P> results = new LinkedHashMap<String, P>(keys.size());
 		for (String key : keys) {
 			if (getMap(appid).containsKey(key)) {
-				results.put(key, (P) read(key));
+				results.put(key, (P) read(appid, key));
 			}
 		}
 		logger.debug("DAO.readAll() {}", results.size());
