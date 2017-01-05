@@ -14,7 +14,7 @@ by a search engine and finally, cached.
 The name "pára" means "steam" in Bulgarian. And just like steam is used to power stuff, you can use
 Para to power your mobile or web application backend.
 
-**Para** can be used in two ways - as the backbone of your JVM-based application or as a standalone API server with
+**Para** can be used as a direct dependency to your JVM-based application or as a standalone API server with
 multiple applications and clients connecting to it.
 
 See how **Para** [compares to other open source backend frameworks](https://erudika.com/blog/2015/10/21/backend-frameworks-usergrid-loopback-para-baasbox-deployd-telepat/).
@@ -107,7 +107,7 @@ Here's the Maven snippet to include in your `pom.xml`:
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para-server</artifactId>
-  <version>1.21.1</version>
+  <version>1.22.0</version>
 </dependency>
 ```
 
@@ -128,7 +128,7 @@ Use these client libraries to quickly integrate Para into your project:
 - **PHP**: [para-client-php](https://github.com/erudika/para-client-php)
 - **C# / .NET**: [para-client-csharp](https://github.com/erudika/para-client-csharp)
 - **Android**: [para-client-android](https://github.com/erudika/para-client-android)
-- **Swift / iOS / OSX**: [para-client-ios](https://github.com/erudika/para-client-ios)
+- **Swift / iOS**: [para-client-ios](https://github.com/erudika/para-client-ios)
 
 ## Database integrations
 
