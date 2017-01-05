@@ -16,14 +16,12 @@
 		<file>para.log</file>
 		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
 			<!-- rollover monthly -->
-			<fileNamePattern>para-%d{yyyy-MM}.%i.log.zip</fileNamePattern>
-			<timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-				<!-- or whenever the file size reaches 50MB -->
-				<maxFileSize>50MB</maxFileSize>
-			</timeBasedFileNamingAndTriggeringPolicy>
+			<fileNamePattern>para-%d{yyyy-MM}.log.zip</fileNamePattern>
+			<maxHistory>12</maxHistory>
+			<totalSizeCap>3GB</totalSizeCap>
 		</rollingPolicy>
 		<encoder>
-			<pattern>%-26(%d [%-5level]) %msg%n</pattern>
+			<pattern>%-26(%d [%-5level]) %logger{35} - %msg%n</pattern>
 		</encoder>
 	</appender>
 
