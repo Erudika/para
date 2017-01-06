@@ -25,7 +25,6 @@ import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigValue;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.Map;
 import javax.annotation.security.DeclareRoles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -129,10 +128,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	 */
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-		Map<String, String> confMap = Config.getConfigMap();
 		ConfigObject protectedResources = Config.getConfig().getObject("security.protected");
 		ConfigValue apiSec = Config.getConfig().getValue("security.api_security");
 		boolean enableRestFilter = apiSec != null && Boolean.TRUE.equals(apiSec.unwrapped());
+		String signinPath = Config.getConfigParam("security.signin", "/signin");
+		String signoutPath = Config.getConfigParam("security.signout", "/signout");
+		String accessDeniedPath = Config.getConfigParam("security.access_denied", "/403");
+		String signoutSuccessPath = Config.getConfigParam("security.signout_success", signinPath);
 
 		// If API security is disabled don't add the API endpoint to the list of protected resources
 		if (enableRestFilter) {
@@ -151,10 +153,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		http.sessionManagement().enableSessionUrlRewriting(false);
 		http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.NEVER);
 		http.sessionManagement().sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy());
-		http.exceptionHandling().authenticationEntryPoint(new SimpleAuthenticationEntryPoint(confMap.get("security.signin")));
-		http.exceptionHandling().accessDeniedHandler(new SimpleAccessDeniedHandler(confMap.get("security.access_denied")));
+		http.exceptionHandling().authenticationEntryPoint(new SimpleAuthenticationEntryPoint(signinPath));
+		http.exceptionHandling().accessDeniedHandler(new SimpleAccessDeniedHandler(accessDeniedPath));
 		http.requestCache().requestCache(new SimpleRequestCache());
-		http.logout().logoutUrl(confMap.get("security.signout")).logoutSuccessUrl(confMap.get("security.signout_success"));
+		http.logout().logoutUrl(signoutPath).logoutSuccessUrl(signoutSuccessPath);
 		http.rememberMe().rememberMeServices(rememberMeServices);
 
 		if (passwordFilter != null) {

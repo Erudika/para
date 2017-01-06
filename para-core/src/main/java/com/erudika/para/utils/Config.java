@@ -361,23 +361,16 @@ public final class Config {
 		if (StringUtils.isBlank(key)) {
 			return defaultValue;
 		}
+		String keyVar = key.replaceAll("\\.", "_");
+		String env = System.getenv(keyVar) == null ? System.getenv(PARA + "_" + keyVar) : System.getenv(keyVar);
 		String sys = System.getProperty(key, System.getProperty(PARA + "." + key));
 		if (!StringUtils.isBlank(sys)) {
 			return sys;
+		} else if (!StringUtils.isBlank(env)) {
+			return env;
 		} else {
 			return (!StringUtils.isBlank(key) && config.hasPath(key)) ? config.getString(key) : defaultValue;
 		}
-	}
-
-	/**
-	 * Returns a map of configuration parameters and their values.
-	 * @return the main configuration map
-	 */
-	public static Map<String, String> getConfigMap() {
-		if (configMap == null) {
-			init(null);
-		}
-		return configMap;
 	}
 
 	/**

@@ -22,7 +22,6 @@ import com.erudika.para.utils.Config;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import java.util.Collections;
-import java.util.Map;
 import org.openid4java.consumer.ConsumerException;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.openid.OpenID4JavaConsumer;
@@ -33,7 +32,6 @@ import org.springframework.security.openid.OpenID4JavaConsumer;
  */
 public class SecurityModule extends AbstractModule {
 
-	private final Map<String, String> confMap = Config.getConfigMap();
 	private CachedCsrfTokenRepository csrfTokenRepository;
 	private SimpleAuthenticationSuccessHandler successHandler;
 	private SimpleAuthenticationFailureHandler failureHandler;
@@ -79,8 +77,8 @@ public class SecurityModule extends AbstractModule {
 	public SimpleAuthenticationSuccessHandler getSuccessHandler() {
 		if (successHandler == null) {
 			successHandler = new SimpleAuthenticationSuccessHandler();
-			successHandler.setDefaultTargetUrl(confMap.get("security.signin_success"));
-			successHandler.setTargetUrlParameter(confMap.get("security.returnto"));
+			successHandler.setDefaultTargetUrl(Config.getConfigParam("security.signin_success", "/"));
+			successHandler.setTargetUrlParameter(Config.getConfigParam("security.returnto", "returnto"));
 			successHandler.setUseReferer(false);
 		}
 		return successHandler;
@@ -100,7 +98,7 @@ public class SecurityModule extends AbstractModule {
 	public SimpleAuthenticationFailureHandler getFailureHandler() {
 		if (failureHandler == null) {
 			failureHandler = new SimpleAuthenticationFailureHandler();
-			failureHandler.setDefaultFailureUrl(confMap.get("security.signin_failure"));
+			failureHandler.setDefaultFailureUrl(Config.getConfigParam("security.signin_failure", "/signin?error"));
 		}
 		return failureHandler;
 	}
@@ -168,7 +166,7 @@ public class SecurityModule extends AbstractModule {
 			} catch (ConsumerException ex) {
 				LoggerFactory.getLogger(SecurityModule.class).error(null, ex);
 			}
-			openidFilter.setReturnToUrlParameters(Collections.singleton(confMap.get("security.returnto")));
+			openidFilter.setReturnToUrlParameters(Collections.singleton(Config.getConfigParam("security.returnto", "/")));
 			openidFilter.setAuthenticationSuccessHandler(getSuccessHandler());
 			openidFilter.setAuthenticationFailureHandler(getFailureHandler());
 			openidFilter.setRememberMeServices(getRemembeMeServices());

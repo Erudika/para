@@ -32,13 +32,10 @@ public class ConfigTest {
 		assertNull(Config.getConfigParam("", null));
 		assertNull(Config.getConfigParam("null", null));
 		assertEquals("test", Config.getConfigParam("null", "test"));
-	}
 
-	@Test
-	public void testGetConfigMap() {
-		assertFalse(Config.getConfigMap().isEmpty());
-		assertFalse(Config.getConfigMap().containsKey("null"));
-		assertTrue(Config.getConfigMap().containsKey("env"));
+		assertEquals("embedded", Config.getConfigParam("env", ""));
+		System.setProperty("para.env", "production");
+		assertEquals("production", Config.getConfigParam("env", ""));
 	}
 
 	@Test

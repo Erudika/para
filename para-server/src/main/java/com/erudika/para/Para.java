@@ -219,14 +219,6 @@ public final class Para {
 	}
 
 	/**
-	 * @return an instance of the configuration map.
-	 * @see Config
-	 */
-	public static Map<String, String> getConfig() {
-		return Config.getConfigMap();
-	}
-
-	/**
 	 * Registers a new initialization listener.
 	 *
 	 * @param il the listener
