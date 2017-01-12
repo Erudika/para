@@ -1096,6 +1096,23 @@ public final class ParaClient {
 		return ParaObjectUtils.setAnnotatedFields(data);
 	}
 
+	/**
+	 * Verifies a given JWT and returns the authenticated subject. This request will not remember the JWT in memory.
+	 * @param <P> an App or User
+	 * @param accessToken a valid JWT access token
+	 * @return a {@link com.erudika.para.core.User} or an {@link com.erudika.para.core.App}
+	 */
+	public <P extends ParaObject> P me(String accessToken) {
+		if (!StringUtils.isBlank(accessToken)) {
+			String auth = accessToken.startsWith("Bearer") ? accessToken : "Bearer " + accessToken;
+			Response res = signer.invokeSignedRequest(getApiClient(), accessKey, auth, GET,
+					getEndpoint(), getFullPath("_me"), null, null, new byte[0]);
+			Map<String, Object> data = getEntity(res, Map.class);
+			return ParaObjectUtils.setAnnotatedFields(data);
+		}
+		return me();
+	}
+
 	/////////////////////////////////////////////
 	//			Validation Constraints
 	/////////////////////////////////////////////
