@@ -174,6 +174,18 @@ public final class ParaClient {
 	}
 
 	/**
+	 * @return the version of Para server
+	 */
+	public String getServerVersion() {
+		Map<String, Object> res = getEntity(invokeGet("", null), Map.class);
+		if (res == null || StringUtils.isBlank((String) res.get("version"))) {
+			return "unknown";
+		} else {
+			return (String) res.get("version");
+		}
+	}
+
+	/**
 	 * Sets the JWT access token.
 	 * @param token a valid token
 	 */
