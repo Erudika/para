@@ -50,6 +50,7 @@ public class Translation implements ParaObject {
 	@Stored private Boolean indexed;
 	@Stored private Boolean cached;
 
+	@Stored @Locked @NotBlank private String authorName;
 	@Stored @Locked @NotBlank private String locale;	// actually a language code
 	@Stored @Locked @NotBlank private String thekey;
 	@Stored @NotBlank private String value;
@@ -81,7 +82,24 @@ public class Translation implements ParaObject {
 		this.thekey = thekey;
 		this.value = value;
 		this.approved = false;
+		this.authorName = "unknown";
 		setName(getType());
+	}
+
+	/**
+	 * The name of the person who wrote the translated string.
+	 * @return a name
+	 */
+	public String getAuthorName() {
+		return authorName;
+	}
+
+	/**
+	 * Sets the name of the translator.
+	 * @param authorName a name
+	 */
+	public void setAuthorName(String authorName) {
+		this.authorName = authorName;
 	}
 
 	/**
@@ -146,34 +164,6 @@ public class Translation implements ParaObject {
 	 */
 	public void setThekey(String thekey) {
 		this.thekey = thekey;
-	}
-
-	/**
-	 * Approves the translation.
-	 */
-	@Deprecated
-	public void approve() {
-		this.approved = true;
-//		getLangutils().approveTranslation(getAppid(), locale, thekey, value);
-		update();
-	}
-
-	/**
-	 * Disapproves the translation.
-	 */
-	@Deprecated
-	public void disapprove() {
-		this.approved = false;
-//		getLangutils().disapproveTranslation(getAppid(), locale, thekey);
-		update();
-	}
-
-	/**
-	 * Approved check.
-	 * @return true if approved
-	 */
-	public boolean isApproved() {
-		return (approved != null) ? approved : false;
 	}
 
 	////////////////////////////////////////////////////////
