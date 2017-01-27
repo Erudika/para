@@ -80,7 +80,6 @@ public class LanguageUtils {
 	public LanguageUtils(Search search, DAO dao) {
 		this.search = search;
 		this.dao = dao;
-
 	}
 
 	/**
@@ -180,7 +179,7 @@ public class LanguageUtils {
 	 */
 	public Map<String, String> getDefaultLanguage() {
 		if (deflang == null) {
-			logger.warn("Default language not set.");
+			logger.info("Default language map not set using LanguageUtils.setDefaultLanguage().");
 			deflang = new HashMap<String, String>();
 			getDefaultLanguageCode();
 		}
@@ -223,8 +222,10 @@ public class LanguageUtils {
 	 * @return a list of translations
 	 */
 	public List<Translation> readAllTranslationsForKey(String appid, String locale, String key, Pager pager) {
-		return search.findTerms(appid, Utils.type(Translation.class),
-				Collections.singletonMap(Config._PARENTID, key), true, pager);
+		Map<String, Object> terms = new HashMap<String, Object>(2);
+		terms.put("thekey", key);
+		terms.put("locale", locale);
+		return search.findTerms(appid, Utils.type(Translation.class), terms, true, pager);
 	}
 
 	/**
