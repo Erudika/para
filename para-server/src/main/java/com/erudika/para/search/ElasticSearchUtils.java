@@ -493,14 +493,15 @@ public final class ElasticSearchUtils {
 						startObject("tag").field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._ID).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._KEY).field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._APPID).field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(Config._TYPE).field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(Config._TAGS).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._EMAIL).field("type", "string").field("index", "not_analyzed").endObject().
+						startObject(Config._APPID).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._GROUPS).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._UPDATED).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._PASSWORD).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._PARENTID).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._CREATORID).field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._TYPE).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._TIMESTAMP).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._IDENTIFIER).field("type", "string").field("index", "not_analyzed").endObject().
 						startObject(Config._RESET_TOKEN).field("type", "string").field("index", "not_analyzed").endObject().
