@@ -87,11 +87,11 @@ public class HumanTimeTest extends TestCase {
     public void testApproximately() {
         assertEquals("42ms", HumanTime.approximately(42));
         assertEquals("1s", HumanTime.approximately(1042));
-        assertEquals("11m", HumanTime.approximately("350 d 18 h"));
+        assertEquals("11n", HumanTime.approximately("350 d 18 h"));
         assertEquals("1y", HumanTime.approximately("365 d 8 h"));
         assertEquals("1y", HumanTime.approximately("380 d 14 h 20 m 40s"));
         assertEquals("1y", HumanTime.approximately("700 d"));
-        assertEquals("1m", HumanTime.approximately("50d 20 s"));
+        assertEquals("1n", HumanTime.approximately("50d 20 s"));
         assertEquals("2d", HumanTime.approximately("2d 22h"));
         assertEquals("2d", HumanTime.approximately("2 d 1 h 20 m 50 s"));
         assertEquals("2d", HumanTime.approximately("2 d 8 h 20 m 50 s"));

@@ -527,7 +527,7 @@ public final class HumanTime implements Externalizable, Comparable<HumanTime>, C
 			if (!append(d, mod, YEAR, 'y', a, parts)) {
 				d %= YEAR;
 				mod = d % MONTH;
-				if (!append(d, mod, MONTH, 'm', a, parts) && parts.intValue() < 2) {
+				if (!append(d, mod, MONTH, 'n', a, parts) && parts.intValue() < 2) {
 					d %= MONTH;
 					mod = d % DAY;
 					if (!append(d, mod, DAY, 'd', a, parts) && parts.intValue() < 2) {
