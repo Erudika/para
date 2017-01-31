@@ -260,26 +260,31 @@ public final class ParaClient {
 	}
 
 	private Response invokeGet(String resourcePath, MultivaluedMap<String, String> params) {
+		logger.debug("GET {}, params: {}", getFullPath(resourcePath), params);
 		return signer.invokeSignedRequest(getApiClient(), accessKey, key(!JWT_PATH.equals(resourcePath)), GET,
 				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
 	}
 
 	private Response invokePost(String resourcePath, Entity<?> entity) {
+		logger.debug("POST {}, entity: {}", getFullPath(resourcePath), entity);
 		return signer.invokeSignedRequest(getApiClient(), accessKey, key(true), POST,
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
 	private Response invokePut(String resourcePath, Entity<?> entity) {
+		logger.debug("PUT {}, entity: {}", getFullPath(resourcePath), entity);
 		return signer.invokeSignedRequest(getApiClient(), accessKey, key(true), PUT,
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
 	private Response invokePatch(String resourcePath, Entity<?> entity) {
+		logger.debug("PATCH {}, entity: {}", getFullPath(resourcePath), entity);
 		return signer.invokeSignedRequest(getApiClient(), accessKey, key(true), "PATCH",
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
 	private Response invokeDelete(String resourcePath, MultivaluedMap<String, String> params) {
+		logger.debug("DELETE {}, params: {}", getFullPath(resourcePath), params);
 		return signer.invokeSignedRequest(getApiClient(), accessKey, key(true), DELETE,
 				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
 	}
