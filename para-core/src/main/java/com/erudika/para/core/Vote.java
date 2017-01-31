@@ -26,9 +26,11 @@ import static com.erudika.para.core.Votable.VoteValue.UP;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import javax.validation.constraints.NotNull;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
 
 /**
@@ -49,14 +51,12 @@ public class Vote implements ParaObject {
 	@Stored @Locked private String creatorid;
 	@Stored private Long updated;
 	@Stored private String name;
-	@Stored private List<String> tags;
-	@Stored private Integer votes;
 	@Stored private Boolean stored;
 	@Stored private Boolean indexed;
 	@Stored private Boolean cached;
 
-	@Stored @NotBlank private String value;
-	@Stored @NotNull private Long expiresAfter;
+	@Stored @Locked @NotBlank private String value;
+	@Stored @Locked @NotNull private Long expiresAfter;
 
 	/**
 	 * No-args constructor.
@@ -71,12 +71,12 @@ public class Vote implements ParaObject {
 	 * @param voteeid the id of the object that will receive the vote
 	 * @param value up + or down -
 	 */
-	public Vote(String voterid, String voteeid, String value) {
+	public Vote(String voterid, String voteeid, VoteValue value) {
 		creatorid = voterid;
 		parentid = voteeid;
 		timestamp = Utils.timestamp();
 		setName(getType());
-		this.value = value;
+		this.value = value != null ? value.toString() : null;
 		this.expiresAfter = Config.VOTE_EXPIRES_AFTER_SEC;
 	}
 
@@ -105,6 +105,20 @@ public class Vote implements ParaObject {
 	public Vote down() {
 		this.value = DOWN.toString();
 		return this;
+	}
+
+	/**
+	 * @return true if vote is positive
+	 */
+	public boolean isUpvote() {
+		return StringUtils.equals(this.value, UP.toString());
+	}
+
+	/**
+	 * @return true if vote is negative
+	 */
+	public boolean isDownvote() {
+		return StringUtils.equals(this.value, DOWN.toString());
 	}
 
 	/**
@@ -150,10 +164,9 @@ public class Vote implements ParaObject {
 		if (getTimestamp() == null || getExpiresAfter() == 0) {
 			return false;
 		}
-		long timestamp = getTimestamp();
 		long expires = (getExpiresAfter() * 1000);
 		long now = Utils.timestamp();
-		return (timestamp + expires) <= now;
+		return (getTimestamp() + expires) <= now;
 	}
 
 	/**
@@ -164,10 +177,9 @@ public class Vote implements ParaObject {
 		if (getTimestamp() == null) {
 			return false;
 		}
-		long timestamp = getTimestamp();
 		long now = Utils.timestamp();
 		// check timestamp for recent correction,
-		return (timestamp + (Config.VOTE_LOCKED_AFTER_SEC * 1000)) > now;
+		return (getTimestamp() + (Config.VOTE_LOCKED_AFTER_SEC * 1000)) > now;
 	}
 
 	////////////////////////////////////////////////////////
@@ -179,8 +191,7 @@ public class Vote implements ParaObject {
 
 	@Override
 	public final String getType() {
-		type = (type == null) ? Utils.type(this.getClass()) : type;
-		return type;
+		return Utils.type(this.getClass());
 	}
 
 	@Override
@@ -206,12 +217,11 @@ public class Vote implements ParaObject {
 
 	@Override
 	public List<String> getTags() {
-		return tags;
+		return Collections.emptyList();
 	}
 
 	@Override
 	public void setTags(List<String> tags) {
-		this.tags = tags;
 	}
 
 	@Override
@@ -330,99 +340,93 @@ public class Vote implements ParaObject {
 
 	@Override
 	public boolean voteUp(String userid) {
-		return CoreUtils.getInstance().vote(this, userid, VoteValue.UP);
+		return false;
 	}
 
 	@Override
 	public boolean voteDown(String userid) {
-		return CoreUtils.getInstance().vote(this, userid, VoteValue.DOWN);
+		return false;
 	}
 
 	@Override
 	public Integer getVotes() {
-		return (votes == null) ? 0 : votes;
+		return 0;
 	}
 
 	@Override
 	public void setVotes(Integer votes) {
-		this.votes = votes;
 	}
 
 	@Override
 	public Long countLinks(String type2) {
-		return CoreUtils.getInstance().countLinks(this, type2);
+		return 0L;
 	}
 
 	@Override
 	public List<Linker> getLinks(String type2, Pager... pager) {
-		return CoreUtils.getInstance().getLinks(this, type2, pager);
+		return Collections.emptyList();
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> getLinkedObjects(String type, Pager... pager) {
-		return CoreUtils.getInstance().getLinkedObjects(this, type, pager);
+		return Collections.emptyList();
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> findLinkedObjects(String type, String field, String query, Pager... pager) {
-		return CoreUtils.getInstance().findLinkedObjects(this, type, field, query, pager);
+		return Collections.emptyList();
 	}
 
 	@Override
 	public boolean isLinked(String type2, String id2) {
-		return CoreUtils.getInstance().isLinked(this, type2, id2);
+		return false;
 	}
 
 	@Override
 	public boolean isLinked(ParaObject toObj) {
-		return CoreUtils.getInstance().isLinked(this, toObj);
+		return false;
 	}
 
 	@Override
 	public String link(String id2) {
-		return CoreUtils.getInstance().link(this, id2);
+		return null;
 	}
 
 	@Override
 	public void unlink(String type, String id2) {
-		CoreUtils.getInstance().unlink(this, type, id2);
 	}
 
 	@Override
 	public void unlinkAll() {
-		CoreUtils.getInstance().unlinkAll(this);
 	}
 
 	@Override
 	public Long countChildren(String type) {
-		return CoreUtils.getInstance().countChildren(this, type);
+		return 0L;
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> getChildren(String type, Pager... pager) {
-		return CoreUtils.getInstance().getChildren(this, type, pager);
+		return Collections.emptyList();
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> getChildren(String type, String field, String term, Pager... pager) {
-		return CoreUtils.getInstance().getChildren(this, type, field, term, pager);
+		return Collections.emptyList();
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> findChildren(String type, String query, Pager... pager) {
-		return CoreUtils.getInstance().findChildren(this, type, query, pager);
+		return Collections.emptyList();
 	}
 
 	@Override
 	public void deleteChildren(String type) {
-		CoreUtils.getInstance().deleteChildren(this, type);
 	}
 
 	@Override
 	public int hashCode() {
-		int hash = 7;
-		hash = 67 * hash + Objects.hashCode(this.id) + Objects.hashCode(this.name);
-		return hash;
+		return Objects.hash(this.id, this.value);
 	}
 
 	@Override
@@ -433,11 +437,8 @@ public class Vote implements ParaObject {
 		if (getClass() != obj.getClass()) {
 			return false;
 		}
-		final ParaObject other = (ParaObject) obj;
-		if (!Objects.equals(this.id, other.getId())) {
-			return false;
-		}
-		return true;
+		final Vote other = (Vote) obj;
+		return Objects.equals(this.id, other.getId()) && Objects.equals(this.value, other.getValue());
 	}
 
 	@Override

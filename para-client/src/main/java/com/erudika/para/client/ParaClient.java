@@ -92,7 +92,8 @@ public final class ParaClient {
 		clientConfig.register(GenericExceptionMapper.class);
 		clientConfig.register(new JacksonJsonProvider(ParaObjectUtils.getJsonMapper()));
 		clientConfig.connectorProvider(new HttpUrlConnectorProvider().useSetMethodWorkaround());
-		SSLContext sslContext = SslConfigurator.newInstance().securityProtocol("TLSv1.2").createSSLContext();
+		SSLContext sslContext = SslConfigurator.newInstance().securityProtocol("TLSv1").createSSLContext();
+		System.setProperty("https.protocols", "TLSv1");
 		apiClient = ClientBuilder.newBuilder().
 				sslContext(sslContext).
 				withConfig(clientConfig).build();
@@ -1123,6 +1124,34 @@ public final class ParaClient {
 			return ParaObjectUtils.setAnnotatedFields(data);
 		}
 		return me();
+	}
+
+	/**
+	 * Upvote an object and register the vote in DB.
+	 * @param obj the object to receive +1 votes
+	 * @param voterid the userid of the voter
+	 * @return true if vote was successful
+	 */
+	public boolean voteUp(ParaObject obj, String voterid) {
+		if (obj == null || StringUtils.isBlank(voterid)) {
+			return false;
+		}
+		return getEntity(invokePatch(obj.getType().concat("/").concat(obj.getId()),
+				Entity.json(Collections.singletonMap("_voteup", voterid))), Boolean.class);
+	}
+
+	/**
+	 * Downvote an object and register the vote in DB.
+	 * @param obj the object to receive -1 votes
+	 * @param voterid the userid of the voter
+	 * @return true if vote was successful
+	 */
+	public boolean voteDown(ParaObject obj, String voterid) {
+		if (obj == null || StringUtils.isBlank(voterid)) {
+			return false;
+		}
+		return getEntity(invokePatch(obj.getType().concat("/").concat(obj.getId()),
+				Entity.json(Collections.singletonMap("_votedown", voterid))), Boolean.class);
 	}
 
 	/////////////////////////////////////////////

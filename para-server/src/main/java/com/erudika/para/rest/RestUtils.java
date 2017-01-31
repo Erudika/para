@@ -284,6 +284,29 @@ public final class RestUtils {
 		return jsonEntity;
 	}
 
+	/**
+	 * Process voting request and create vote object.
+	 * @param object the object to cast vote on
+	 * @param entity request entity data
+	 * @return status codetrue if vote was successful
+	 */
+	public static Response getVotingResponse(ParaObject object, Map<String, Object> entity) {
+		boolean voteSuccess = false;
+		if (object != null && entity != null) {
+			String upvoterId = (String) entity.get("_voteup");
+			String downvoterId = (String) entity.get("_votedown");
+			if (!StringUtils.isBlank(upvoterId)) {
+				voteSuccess = object.voteUp(upvoterId);
+			} else if (!StringUtils.isBlank(downvoterId)) {
+				voteSuccess = object.voteDown(downvoterId);
+			}
+			if (voteSuccess) {
+				object.update();
+			}
+		}
+		return Response.ok(voteSuccess).build();
+	}
+
 	/////////////////////////////////////////////
 	//		CORE REST RESPONSE HANDLERS
 	/////////////////////////////////////////////
@@ -411,15 +434,19 @@ public final class RestUtils {
 				return entityRes;
 			}
 			object.setAppid(app.getAppIdentifier());
-			ParaObjectUtils.setAnnotatedFields(object, newContent, Locked.class);
-			// app can't modify other apps except itself
-			if (checkImplicitAppPermissions(app, object)) {
-				// This is the primary validation pass (validates not only core POJOS but also user defined objects).
-				errors = ValidationUtils.validateObject(app, object);
-				if (errors.length == 0) {
-					// Secondary validation pass: object is validated again before being updated
-					object.update();
-					return Response.ok(object).build();
+			if (newContent.containsKey("_voteup") || newContent.containsKey("_votedown")) {
+				return getVotingResponse(object, newContent);
+			} else {
+				ParaObjectUtils.setAnnotatedFields(object, newContent, Locked.class);
+				// app can't modify other apps except itself
+				if (checkImplicitAppPermissions(app, object)) {
+					// This is the primary validation pass (validates not only core POJOS but also user defined objects).
+					errors = ValidationUtils.validateObject(app, object);
+					if (errors.length == 0) {
+						// Secondary validation pass: object is validated again before being updated
+						object.update();
+						return Response.ok(object).build();
+					}
 				}
 			}
 			return getStatusResponse(Response.Status.BAD_REQUEST, errors);

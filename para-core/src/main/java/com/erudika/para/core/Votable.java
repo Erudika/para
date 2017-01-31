@@ -30,13 +30,26 @@ public interface Votable {
 	 */
 	enum VoteValue {
 		/**
-		 * Positive vote +.
+		 * Positive vote +1.
 		 */
-		UP,
+		UP(1),
 		/**
-		 * Negative vote -.
+		 * Negative vote -1.
 		 */
-		DOWN;
+		DOWN(-1);
+
+		private final int value;
+
+		VoteValue(int v) {
+			this.value = v;
+		}
+
+		/**
+		 * @return -1 if DOWN, 1 if UP
+		 */
+		public int getValue() {
+			return value;
+		}
 
 		public String toString() {
 			return name().toLowerCase();

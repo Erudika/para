@@ -362,14 +362,13 @@ public enum CoreUtils implements InitializeListener {
 				return false;
 			}
 
-			Vote v = new Vote(userid, votable.getId(), upDown.toString());
+			Vote v = new Vote(userid, votable.getId(), upDown);
 			Vote saved = getDao().read(votable.getAppid(), v.getId());
 			boolean done = false;
-			int vote = (upDown == VoteValue.UP) ? 1 : -1;
 
 			if (saved != null) {
 				boolean isUpvote = upDown.equals(VoteValue.UP);
-				boolean wasUpvote = VoteValue.UP.toString().equals(saved.getValue());
+				boolean wasUpvote = saved.isUpvote();
 				boolean voteHasChanged = isUpvote ^ wasUpvote;
 
 				if (saved.isExpired()) {
@@ -384,7 +383,7 @@ public enum CoreUtils implements InitializeListener {
 
 			if (done) {
 				synchronized (votable) {
-					votable.setVotes(votable.getVotes() + vote);
+					votable.setVotes(votable.getVotes() + upDown.getValue());
 				}
 			}
 			return done;

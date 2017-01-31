@@ -736,6 +736,19 @@ public class ParaClientIT {
 		pc.removeValidationConstraint(kittenType, "paws", "required");
 		constraint = pc.validationConstraints(kittenType);
 		assertFalse(constraint.containsKey(kittenType));
+
+		Integer votes = ct.getVotes() + 1;
+		assertTrue(pc.voteUp(ct, u.getId()));
+		assertEquals(votes, pc.read(ct.getId()).getVotes());
+		assertFalse(pc.voteUp(ct, u.getId()));
+		votes -= 1;
+		assertTrue(pc.voteDown(ct, u.getId()));
+		assertEquals(votes, pc.read(ct.getId()).getVotes());
+		votes -= 1;
+		assertTrue(pc.voteDown(ct, u.getId()));
+		assertFalse(pc.voteDown(ct, u.getId()));
+		assertEquals(votes, pc.read(ct.getId()).getVotes());
+		pc.delete(ct);
 	}
 
 	@Test
