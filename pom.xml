@@ -73,9 +73,9 @@
 		<deployPluginVer>2.8.2</deployPluginVer>
 		<slf4jVer>1.7.22</slf4jVer>
 		<logbackVer>1.1.8</logbackVer>
-		<awsJdkVer>1.11.75</awsJdkVer>
+		<awsJdkVer>1.11.81</awsJdkVer>
 		<jerseyVer>2.25</jerseyVer>
-		<springBootVer>1.4.3.RELEASE</springBootVer>
+		<springBootVer>1.4.4.RELEASE</springBootVer>
 	</properties>
 
 	<dependencies>
@@ -188,11 +188,6 @@
 								<goals>
 									<goal>jar-no-fork</goal>
 								</goals>
-								<configuration>
-									<excludes>
-										<exclude>**/rebel.xml</exclude>
-									</excludes>
-								</configuration>
 							</execution>
 						</executions>
 					</plugin>
