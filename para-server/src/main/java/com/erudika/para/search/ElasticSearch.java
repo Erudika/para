@@ -63,6 +63,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.fetch.source.FetchSourceContext;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -249,7 +250,9 @@ public class ElasticSearch implements Search {
 		try {
 			MultiGetRequestBuilder mgr = client().prepareMultiGet();
 			for (String id : ids) {
-				MultiGetRequest.Item i = new MultiGetRequest.Item(getIndexName(appid), null, id);
+				MultiGetRequest.Item i = new MultiGetRequest.Item(getIndexName(appid), null, id).
+						fetchSourceContext(FetchSourceContext.FETCH_SOURCE).
+						routing(getIndexName(appid));
 				mgr.add(i);
 			}
 
