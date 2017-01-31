@@ -17,7 +17,6 @@
  */
 package com.erudika.para.core.utils;
 
-import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
@@ -121,38 +120,6 @@ public final class ParaObjectUtils {
 	/////////////////////////////////////////////
 	//	     OBJECT MAPPING & CLASS UTILS
 	/////////////////////////////////////////////
-
-	/**
-	 * Populates an object with an array of query parameters (dangerous!).
-	 * <b>This method is deprecated. Use {@link #setAnnotatedFields(ParaObject, java.util.Map, java.lang.Class) }
-	 * instead.</b>
-	 * @param <P> the object type
-	 * @param transObject an object
-	 * @param paramMap a query parameters map
-	 */
-	@Deprecated
-	public static <P extends ParaObject> void populate(P transObject, Map<String, String[]> paramMap) {
-		if (transObject == null || paramMap == null || paramMap.isEmpty()) {
-			return;
-		}
-		Class<Locked> locked = (paramMap.containsKey(Config._ID)) ? Locked.class : null;
-		Map<String, Object> fields = getAnnotatedFields(transObject, locked);
-		Map<String, Object> data = new HashMap<String, Object>();
-		// populate an object with converted param values from param map.
-		try {
-			for (Map.Entry<String, String[]> ks : paramMap.entrySet()) {
-				String param = ks.getKey();
-				String[] values = ks.getValue();
-				String value = (values.length > 1) ? getJsonWriter().writeValueAsString(values) : values[0];
-				if (fields.containsKey(param)) {
-					data.put(param, value);
-				}
-			}
-			setAnnotatedFields(transObject, data, locked);
-		} catch (Exception ex) {
-			logger.error(null, ex);
-		}
-	}
 
 	/**
 	 * Returns a map of the core data types.
