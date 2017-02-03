@@ -406,16 +406,16 @@ public class ElasticSearch implements Search {
 		}
 
 		// then find their parent objects
-		String[] ridsarr = new String[(int) hits1.getTotalHits()];
-		for (int i = 0; i < hits1.getTotalHits(); i++) {
+		ArrayList<String> parentids = new ArrayList<String>(hits1.getHits().length);
+		for (int i = 0; i < hits1.getHits().length; i++) {
 			Object pid = hits1.getAt(i).getSource().get(Config._PARENTID);
 			if (pid != null) {
-				ridsarr[i] = pid.toString();
+				parentids.add((String) pid);
 			}
 		}
 
 		QueryBuilder qb2 = QueryBuilders.boolQuery().must(QueryBuilders.queryStringQuery(qs(query))).
-				filter(QueryBuilders.idsQuery(type).ids(ridsarr));
+				filter(QueryBuilders.idsQuery(type).ids(parentids));
 		SearchHits hits2 = searchQueryRaw(appid, type, qb2, pager);
 
 		return searchQuery(appid, hits2);
