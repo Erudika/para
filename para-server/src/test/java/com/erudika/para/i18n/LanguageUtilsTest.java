@@ -20,9 +20,13 @@ package com.erudika.para.i18n;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.search.Search;
+import com.erudika.para.utils.Config;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -68,6 +72,12 @@ public class LanguageUtilsTest {
 	public void tearDown() {
 	}
 
+	@AfterClass
+	public static void tearDownClass() throws Exception {
+		Files.delete(FileSystems.getDefault().getPath("./lang_es.properties"));
+		Files.delete(FileSystems.getDefault().getPath("./lang_de.properties"));
+	}
+
 	@Test
 	public void testReadWriteLanguage() {
 		String appid = "para-test-rwl";
@@ -76,10 +86,10 @@ public class LanguageUtilsTest {
 		assertTrue(lu.readLanguage(appid, "").containsKey("hello"));
 		assertEquals("hello", lu.readLanguage(appid, "").get("hello"));
 
-		lu.writeLanguage(appid, "", es);
-		assertEquals("hello", lu.readLanguage(appid, "es").get("hello"));
+		lu.writeLanguage(appid, "", es, true);
+		assertEquals(es.get("hello"), lu.readLanguage(appid, "es").get("hello"));
 
-		lu.writeLanguage(appid, "es", es);
+		lu.writeLanguage(appid, "es", es, true);
 		assertEquals(es.get("hello"), lu.readLanguage(appid, "es").get("hello"));
 	}
 
@@ -95,15 +105,16 @@ public class LanguageUtilsTest {
 
 	@Test
 	public void testGetDefaultLanguage() {
-		assertTrue(!lu.getDefaultLanguage().isEmpty());
+		assertTrue(!lu.getDefaultLanguage(Config.APP_NAME_NS).isEmpty());
 	}
 
 	@Test
 	public void testSetDefaultLanguage() {
 		lu.setDefaultLanguage(null);
-		assertTrue(lu.getDefaultLanguage().isEmpty());
+		assertNotNull(lu.getDefaultLanguage(Config.APP_NAME_NS));
+		assertFalse(lu.getDefaultLanguage(Config.APP_NAME_NS).isEmpty());
 		lu.setDefaultLanguage(es);
-		assertEquals(es.get("hello"), lu.getDefaultLanguage().get("hello"));
+		assertEquals(es.get("hello"), lu.getDefaultLanguage(Config.APP_NAME_NS).get("hello"));
 	}
 
 	@Test
@@ -114,7 +125,7 @@ public class LanguageUtilsTest {
 	@Test
 	public void testGetApprovedTransKeys() {
 		String appid = "para-test-gatk";
-		lu.writeLanguage(appid, "es", es);
+		lu.writeLanguage(appid, "es", es, true);
 		assertTrue(lu.getApprovedTransKeys(appid, null).isEmpty());
 		assertTrue(lu.getApprovedTransKeys(appid, "xxx").isEmpty());
 		assertEquals(es.keySet(), lu.getApprovedTransKeys(appid, "es"));
@@ -123,8 +134,8 @@ public class LanguageUtilsTest {
 	@Test
 	public void testGetTranslationProgressMap() {
 		String appid = "para-test-gtp";
-		lu.writeLanguage(appid, "es", es);
-		lu.writeLanguage(appid, "de", de);
+		lu.writeLanguage(appid, "es", es, true);
+		lu.writeLanguage(appid, "de", de, true);
 		assertEquals("66", lu.getTranslationProgressMap(appid).get("de").toString());
 		assertEquals("100", lu.getTranslationProgressMap(appid).get("es").toString());
 		assertEquals("100", lu.getTranslationProgressMap(appid).get("en").toString());
@@ -140,8 +151,8 @@ public class LanguageUtilsTest {
 	@Test
 	public void testApproveTranslation() {
 		String appid = "para-test-gat";
-		lu.writeLanguage(appid, "es", es);
-		lu.writeLanguage(appid, "de", de);
+		lu.writeLanguage(appid, "es", es, true);
+		lu.writeLanguage(appid, "de", de, true);
 		assertEquals("66", lu.getTranslationProgressMap(appid).get("de").toString());
 		assertEquals("100", lu.getTranslationProgressMap(appid).get("es").toString());
 
@@ -157,8 +168,8 @@ public class LanguageUtilsTest {
 	@Test
 	public void testDisapproveTranslation() {
 		String appid = "para-test-dt";
-		lu.writeLanguage(appid, "es", es);
-		lu.writeLanguage(appid, "de", de);
+		lu.writeLanguage(appid, "es", es, true);
+		lu.writeLanguage(appid, "de", de, true);
 		assertEquals("66", lu.getTranslationProgressMap(appid).get("de").toString());
 		assertEquals("100", lu.getTranslationProgressMap(appid).get("es").toString());
 

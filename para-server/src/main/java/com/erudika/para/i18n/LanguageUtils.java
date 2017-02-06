@@ -24,14 +24,20 @@ import com.erudika.para.core.Sysprop;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -51,7 +57,18 @@ public class LanguageUtils {
 	private static final Logger logger = LoggerFactory.getLogger(LanguageUtils.class);
 
 	private static final HashMap<String, Locale> ALL_LOCALES = new HashMap<String, Locale>();
-	private Map<String, String> deflang;
+	static {
+		for (Locale loc : LocaleUtils.availableLocaleList()) {
+			String locstr = loc.getLanguage();
+			if (!StringUtils.isBlank(locstr)) {
+				ALL_LOCALES.put(locstr, loc);
+			}
+		}
+	}
+
+	private static final Map<String, Map<String, String>> LANG_CACHE =
+			new ConcurrentHashMap<String, Map<String, String>>(ALL_LOCALES.size());
+
 	private String deflangCode;
 	private final String keyPrefix = "language".concat(Config.SEPARATOR);
 	private final String progressKey = keyPrefix.concat("progress");
@@ -62,14 +79,6 @@ public class LanguageUtils {
 	private final Search search;
 	private final DAO dao;
 
-	static {
-		for (Locale loc : LocaleUtils.availableLocaleList()) {
-			String locstr = loc.getLanguage();
-			if (!StringUtils.isBlank(locstr)) {
-				ALL_LOCALES.put(locstr, loc);
-			}
-		}
-	}
 
 	/**
 	 * Default constructor.
@@ -90,42 +99,32 @@ public class LanguageUtils {
 	 * @return the language map
 	 */
 	public Map<String, String> readLanguage(String appid, String langCode) {
-		if (StringUtils.isBlank(langCode) || !ALL_LOCALES.containsKey(langCode)) {
-			return getDefaultLanguage();
+		if (StringUtils.isBlank(langCode) || !ALL_LOCALES.containsKey(langCode) ||
+				langCode.equals(getDefaultLanguageCode())) {
+			return getDefaultLanguage(appid);
+		} else if (LANG_CACHE.containsKey(langCode)) {
+			return LANG_CACHE.get(langCode);
 		}
-		if (search == null || dao == null) {
-			return getDefaultLanguage();
+
+		// load language map from file
+		Map<String, String> lang = readLanguageFromFile(appid, langCode);
+		if (lang == null || lang.isEmpty()) {
+			// or try to load from DB
+			Sysprop s = dao.read(appid, keyPrefix.concat(langCode));
+			if (s != null && !s.getProperties().isEmpty()) {
+				Map<String, Object> loaded = s.getProperties();
+				lang = new TreeMap<String, String>();
+				for (String key : loaded.keySet()) {
+					lang.put(key, loaded.get(key).toString());
+				}
+			}
 		}
-
-		Sysprop s = dao.read(appid, keyPrefix.concat(langCode));
-		TreeMap<String, String> lang = new TreeMap<String, String>();
-
-		if (s == null || s.getProperties().isEmpty()) {
-			Map<String, Object> terms = new HashMap<String, Object>();
-			terms.put("locale", langCode);
-			terms.put("approved", true);
-			List<Translation> tlist = search.findTerms(appid, Utils.type(Translation.class), terms, true);
-
-			Sysprop saved = new Sysprop(keyPrefix.concat(langCode));
-			lang.putAll(getDefaultLanguage());	// copy default langmap
-			int approved = 0;
-
-			for (Translation trans : tlist) {
-				lang.put(trans.getThekey(), trans.getValue());
-				saved.addProperty(trans.getThekey(), trans.getValue());
-				approved++;
-			}
-			if (approved > 0) {
-				updateTranslationProgressMap(appid, langCode, approved);
-			}
-			dao.create(appid, saved);
+		if (lang == null || lang.isEmpty()) {
+			return getDefaultLanguage(appid);
 		} else {
-			Map<String, Object> loaded = s.getProperties();
-			for (String key : loaded.keySet()) {
-				lang.put(key, loaded.get(key).toString());
-			}
+			LANG_CACHE.put(langCode, lang);
+			return Collections.unmodifiableMap(lang);
 		}
-		return lang;
 	}
 
 	/**
@@ -133,32 +132,27 @@ public class LanguageUtils {
 	 * @param appid appid name of the {@link com.erudika.para.core.App}
 	 * @param langCode the 2-letter language code
 	 * @param lang the language map
+	 * @param writeToDatabase true if you want the language map to be stored in the DB as well
 	 */
-	public void writeLanguage(String appid, String langCode, Map<String, String> lang) {
-		if (lang == null || lang.isEmpty() || dao == null ||
-				StringUtils.isBlank(langCode) || !ALL_LOCALES.containsKey(langCode)) {
+	public void writeLanguage(String appid, String langCode, Map<String, String> lang, boolean writeToDatabase) {
+		if (lang == null || lang.isEmpty() || StringUtils.isBlank(langCode) || !ALL_LOCALES.containsKey(langCode)) {
 			return;
 		}
+		writeLanguageToFile(appid, langCode, lang);
 
-		// this will overwrite a saved language map!
-		Sysprop s = new Sysprop(keyPrefix.concat(langCode));
-		Map<String, String> dlang = getDefaultLanguage();
-		int approved = 0;
-
-		for (String key : dlang.keySet()) {
-			if (lang.containsKey(key)) {
-				s.addProperty(key, lang.get(key));
-				if (!dlang.get(key).equals(lang.get(key))) {
-					approved++;
+		if (writeToDatabase) {
+			// this will overwrite a saved language map!
+			Sysprop s = new Sysprop(keyPrefix.concat(langCode));
+			Map<String, String> dlang = getDefaultLanguage(appid);
+			for (String key : dlang.keySet()) {
+				if (lang.containsKey(key)) {
+					s.addProperty(key, lang.get(key));
+				} else {
+					s.addProperty(key, dlang.get(key));
 				}
-			} else {
-				s.addProperty(key, dlang.get(key));
 			}
+			dao.create(appid, s);
 		}
-		if (approved > 0) {
-			updateTranslationProgressMap(appid, langCode, approved);
-		}
-		dao.create(appid, s);
 	}
 
 	/**
@@ -175,15 +169,19 @@ public class LanguageUtils {
 
 	/**
 	 * Returns the default language map.
+	 * @param appid appid name of the {@link com.erudika.para.core.App}
 	 * @return the default language map or an empty map if the default isn't set.
 	 */
-	public Map<String, String> getDefaultLanguage() {
-		if (deflang == null) {
-			logger.info("Default language map not set using LanguageUtils.setDefaultLanguage().");
-			deflang = new HashMap<String, String>();
-			getDefaultLanguageCode();
+	public Map<String, String> getDefaultLanguage(String appid) {
+		if (!LANG_CACHE.containsKey(getDefaultLanguageCode())) {
+			logger.info("Default language map not set, loading English.");
+			Map<String, String> deflang = readLanguageFromFile(appid, getDefaultLanguageCode());
+			if (deflang != null && !deflang.isEmpty()) {
+				LANG_CACHE.put(getDefaultLanguageCode(), deflang);
+				return Collections.unmodifiableMap(deflang);
+			}
 		}
-		return deflang;
+		return Collections.unmodifiableMap(LANG_CACHE.get(getDefaultLanguageCode()));
 	}
 
 	/**
@@ -191,7 +189,9 @@ public class LanguageUtils {
 	 * @param deflang the default language map
 	 */
 	public void setDefaultLanguage(Map<String, String> deflang) {
-		this.deflang = deflang;
+		if (deflang != null && !deflang.isEmpty()) {
+			LANG_CACHE.put(getDefaultLanguageCode(), deflang);
+		}
 	}
 
 	/**
@@ -241,7 +241,7 @@ public class LanguageUtils {
 		}
 
 		for (Map.Entry<String, String> entry : readLanguage(appid, langCode).entrySet()) {
-			if (!getDefaultLanguage().get(entry.getKey()).equals(entry.getValue())) {
+			if (!getDefaultLanguage(appid).get(entry.getKey()).equals(entry.getValue())) {
 				approvedTransKeys.add(entry.getKey());
 			}
 		}
@@ -308,7 +308,7 @@ public class LanguageUtils {
 			return false;
 		}
 		Sysprop s = dao.read(appid, keyPrefix.concat(langCode));
-		String defStr = getDefaultLanguage().get(key);
+		String defStr = getDefaultLanguage(appid).get(key);
 
 		if (s != null && !defStr.equals(s.getProperty(key))) {
 			s.addProperty(key, defStr);
@@ -330,18 +330,19 @@ public class LanguageUtils {
 			return;
 		}
 
-		double defsize = getDefaultLanguage().size();
+		double defsize = getDefaultLanguage(appid).size();
 		double approved = value;
 
 		Sysprop progress = getProgressMap(appid);
-
+		Integer percent = (Integer) progress.getProperty(langCode);
 		if (value == PLUS) {
-			approved = Math.round((Integer) progress.getProperty(langCode) * (defsize / 100) + 1);
+			approved = Math.round(percent * (defsize / 100) + 1);
 		} else if (value == MINUS) {
-			approved = Math.round((Integer) progress.getProperty(langCode) * (defsize / 100) - 1);
+			approved = Math.round(percent * (defsize / 100) - 1);
 		}
-
-		if (approved > defsize) {
+		int allowedUntranslated = defsize > 10 ? 3 : 0;
+		// allow 3 identical words per language (i.e. Email, etc)
+		if (approved >= defsize - allowedUntranslated) {
 			approved = defsize;
 		}
 
@@ -350,7 +351,9 @@ public class LanguageUtils {
 		} else {
 			progress.addProperty(langCode, (int) ((approved / defsize) * 100));
 		}
-		dao.update(appid, progress);
+		if (percent < 100 && approved >= (percent * defsize) / 100) {
+			dao.update(appid, progress);
+		}
 	}
 
 	private Sysprop getProgressMap(String appid) {
@@ -364,5 +367,84 @@ public class LanguageUtils {
 			dao.create(appid, progress);
 		}
 		return progress;
+	}
+
+	private Map<String, String> readLanguageFromFile(String appid, String langCode) {
+		if (langCode != null && langCode.length() == 2) {
+			Properties lang = new Properties();
+			String file = "lang_" + langCode + ".properties";
+			InputStream ins = null;
+			try {
+				ins = LanguageUtils.class.getClassLoader().getResourceAsStream(file);
+				if (ins != null) {
+					lang.load(ins);
+					if (!lang.isEmpty()) {
+						int progress = 0;
+						Map<String, String> langmap = new TreeMap<String, String>();
+						for (String propKey : lang.stringPropertyNames()) {
+							String propVal = lang.getProperty(propKey);
+							if (!langCode.equals(getDefaultLanguageCode())) {
+								String defaultVal = getDefaultLanguage(appid).get(propKey);
+								if (!StringUtils.isBlank(propVal) && !StringUtils.equalsIgnoreCase(propVal, defaultVal)) {
+									progress++;
+								}
+							}
+							langmap.put(propKey, propVal);
+						}
+						if (langCode.equals(getDefaultLanguageCode())) {
+							progress = langmap.size(); // 100%
+						}
+						if (progress > 0) {
+							updateTranslationProgressMap(appid, langCode, progress);
+						}
+						return langmap;
+					}
+				}
+			} catch (Exception e) {
+				logger.info("Could not read language file " + file + ": {}", e.toString());
+			} finally {
+				try {
+					if (ins != null) {
+						ins.close();
+					}
+				} catch (IOException ex) {
+					logger.error(null, ex);
+				}
+			}
+		}
+		return null;
+	}
+
+	private void writeLanguageToFile(String appid, String langCode, Map<String, String> lang) {
+		if (lang != null && !lang.isEmpty() && langCode != null && langCode.length() == 2) {
+			FileOutputStream fos = null;
+			try {
+				Properties langProps = new Properties();
+				langProps.putAll(lang);
+				File file = new File("lang_" + langCode + ".properties");
+				fos = new FileOutputStream(file);
+				langProps.store(fos, langCode);
+
+				int progress = 0;
+				for (Map.Entry<String, String> entry : lang.entrySet()) {
+					if (!getDefaultLanguage(appid).get(entry.getKey()).equals(entry.getValue())) {
+						progress++;
+					}
+				}
+				if (progress > 0) {
+					updateTranslationProgressMap(appid, langCode, progress);
+				}
+			} catch (Exception ex) {
+				logger.error("Could not write language to file: {}", ex.toString());
+			} finally {
+				try {
+					if (fos != null) {
+						fos.close();
+					}
+				} catch (IOException ex) {
+					logger.error(null, ex);
+				}
+			}
+		}
 	}
 }
