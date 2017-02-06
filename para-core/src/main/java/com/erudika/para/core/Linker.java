@@ -24,6 +24,7 @@ import com.erudika.para.annotations.Stored;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,7 @@ import org.hibernate.validator.constraints.NotBlank;
  * This class represents a many-to-many relationship (link) between two objects.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public final class Linker implements ParaObject {
+public final class Linker implements ParaObject, Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Stored @Locked private String id;

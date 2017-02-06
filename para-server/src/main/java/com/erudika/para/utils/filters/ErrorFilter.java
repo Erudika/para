@@ -61,7 +61,7 @@ public class ErrorFilter implements Filter {
 				if (status >= 400) {
 					setErrorAttributes(request, status, wrapped.getMessage());
 				}
-			} catch (Throwable ex) {
+			} catch (Exception ex) {
 //				rethrow(ex);
 				LoggerFactory.getLogger(getClass()).error(null, ex);
 			}

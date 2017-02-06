@@ -47,8 +47,6 @@ import org.elasticsearch.cluster.metadata.AliasMetaData;
 import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
@@ -64,6 +62,33 @@ public final class ElasticSearchUtils {
 	private static final Logger logger = LoggerFactory.getLogger(ElasticSearchUtils.class);
 	private static Client searchClient;
 	private static Node searchNode;
+	/**
+	 * A list of default mappings that are defined upon index creation.
+	 */
+	private static final String DEFAULT_MAPPING =
+			"{\n" +
+			"  \"_default_\": {\n" +
+			"    \"properties\": {\n" +
+			"      \"nstd\": {\"type\": \"nested\"},\n" +
+			"      \"latlng\": {\"type\": \"geo_point\"},\n" +
+			"      \"tag\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
+			"      \"id\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
+			"      \"key\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
+			"      \"type\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
+			"      \"tags\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
+			"      \"email\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
+			"      \"appid\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
+			"      \"groups\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
+			"      \"updated\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
+			"      \"password\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
+			"      \"parentid\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
+			"      \"creatorid\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
+			"      \"timestamp\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
+			"      \"identifier\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
+			"      \"token\": {\"type\": \"string\", \"index\": \"not_analyzed\"}\n" +
+			"    }\n" +
+			"  }\n" +
+			"}";
 
 	private ElasticSearchUtils() { }
 
@@ -185,7 +210,7 @@ public final class ElasticSearchUtils {
 					setSettings(nb.settings().build());
 
 			// default system mapping (all the rest are dynamic)
-			create.addMapping("_default_", getDefaultMapping());
+			create.addMapping("_default_", DEFAULT_MAPPING);
 			create.execute().actionGet();
 			logger.info("Created a new index '{}' with {} shards, {} replicas.", name, shards, replicas);
 		} catch (Exception e) {
@@ -289,7 +314,7 @@ public final class ElasticSearchUtils {
 				return false;
 			}
 			if (!isShared) {
-				newName = oldName.substring(0, oldName.indexOf("_")) + "_" + Utils.timestamp();
+				newName = oldName.substring(0, oldName.indexOf('_')) + "_" + Utils.timestamp();
 				createIndexWithoutAlias(newName, -1, -1);
 			}
 
@@ -476,38 +501,6 @@ public final class ElasticSearchUtils {
 	 */
 	protected static String getIndexName(String appid) {
 		return appid;
-	}
-
-	/**
-	 * A list of default mappings that are defined upon index creation.
-	 * @return a json object of default mappings
-	 * @throws Exception
-	 */
-	private static XContentBuilder getDefaultMapping() throws Exception {
-		return XContentFactory.jsonBuilder().
-			startObject().
-				startObject("_default_").
-					startObject("properties").
-						startObject("nstd").field("type", "nested").endObject().
-						startObject("latlng").field("type", "geo_point").endObject().
-						startObject("tag").field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._ID).field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._KEY).field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._TYPE).field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._TAGS).field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._EMAIL).field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._APPID).field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._GROUPS).field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._UPDATED).field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._PASSWORD).field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._PARENTID).field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._CREATORID).field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._TIMESTAMP).field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._IDENTIFIER).field("type", "string").field("index", "not_analyzed").endObject().
-						startObject(Config._RESET_TOKEN).field("type", "string").field("index", "not_analyzed").endObject().
-					endObject().
-				endObject().
-			endObject();
 	}
 
 }

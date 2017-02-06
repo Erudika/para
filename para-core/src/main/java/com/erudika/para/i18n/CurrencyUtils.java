@@ -37,7 +37,7 @@ public enum CurrencyUtils {
 	 * Singleton.
 	 */
 	INSTANCE {
-		private final Logger logger = LoggerFactory.getLogger(CurrencyUtils.class);
+		private final transient Logger logger = LoggerFactory.getLogger(CurrencyUtils.class);
 
 		private final Map<String, Locale> countryToLocaleMap = new HashMap<String, Locale>();
 		private final Map<String, Locale> currencyToLocaleMap = new HashMap<String, Locale>();

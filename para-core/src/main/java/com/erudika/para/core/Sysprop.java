@@ -26,6 +26,7 @@ import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +38,7 @@ import org.apache.commons.lang3.StringUtils;
  * It is essentially a map of keys and values.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class Sysprop implements ParaObject {
+public class Sysprop implements ParaObject, Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Stored @Locked private String id;

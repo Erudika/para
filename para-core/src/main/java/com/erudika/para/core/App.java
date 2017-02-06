@@ -37,6 +37,7 @@ import com.erudika.para.validation.ValidationUtils;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -65,7 +66,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class App implements ParaObject {
+public class App implements ParaObject, Serializable {
 
 	/**
 	 * {@value #APP_ROLE}.
@@ -690,11 +691,11 @@ public class App implements ParaObject {
 				// special case where we have wildcard permissions * but public access is not allowed
 				wildcard = httpMethod;
 			}
-			if (StringUtils.contains(resourcePath, "/")) {
+			if (StringUtils.contains(resourcePath, '/')) {
 				// we assume that a full resource path is given like: 'users/something/123'
 				// so we check to see if 'users/something' is in the list of resources
 				// if there is only 'users' this will match, also 'users/someth' matches
-				String fragment = resourcePath.substring(0, resourcePath.lastIndexOf("/"));
+				String fragment = resourcePath.substring(0, resourcePath.lastIndexOf('/'));
 				for (String resource : getResourcePermissions().get(subjectid).keySet()) {
 					if (StringUtils.startsWith(fragment, resource) && (
 						getResourcePermissions().get(subjectid).get(resource).contains(httpMethod) ||

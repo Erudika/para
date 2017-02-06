@@ -99,7 +99,7 @@
 		<dependency>
 			<groupId>com.hazelcast</groupId>
 			<artifactId>hazelcast</artifactId>
-			<version>3.7.4</version>
+			<version>3.7.5</version>
 		</dependency>
 		<dependency>
 			<groupId>com.hazelcast</groupId>
@@ -108,11 +108,6 @@
 		</dependency>
 
 		<!-- AWS JAVA SDK -->
-<!--		<dependency>
-			<groupId>com.amazonaws</groupId>
-			<artifactId>aws-java-sdk-ec2</artifactId>
-			<version>${awsJdkVer}</version>
-		</dependency>-->
 		<dependency>
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk-dynamodb</artifactId>
@@ -174,7 +169,7 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>4.34</version>
+			<version>4.34.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.microsoft.azure.iothub-java-client</groupId>

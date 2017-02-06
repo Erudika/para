@@ -131,7 +131,6 @@ public class HumanTimeTest extends TestCase {
     public void testHashCode() throws CloneNotSupportedException {
         assertEquals(0, new HumanTime(0L).hashCode());
         assertTrue(HumanTime.eval("42 s").hashCode() != 0);
-        assertEquals(HumanTime.eval("42 s").hashCode(), HumanTime.eval(" 42s ").clone().hashCode());
     }
 
     public void testSerialization() throws IOException, ClassNotFoundException {

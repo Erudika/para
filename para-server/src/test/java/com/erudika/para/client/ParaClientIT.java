@@ -125,16 +125,13 @@ public class ParaClientIT {
 		rootApp.setSharingIndex(false);
 		rootApp.create();
 
-		App childApp = new App(APP_NAME_CHILD);
-		childApp.setName(APP_NAME_CHILD);
-		childApp.setSharingIndex(true);
-		childApp.create();
+		String childAppSecret = Para.setup(APP_NAME_CHILD, "Child app with routing", true).get("secretKey");
 
 		pc = new ParaClient(App.id(APP_NAME), rootApp.getSecret());
 		pc.setEndpoint(endpoint);
 		pc2 = new ParaClient(App.id(APP_NAME), rootApp.getSecret());
 		pc2.setEndpoint(endpoint);
-		pcc = new ParaClient(App.id(APP_NAME_CHILD), childApp.getSecret());
+		pcc = new ParaClient(App.id(APP_NAME_CHILD), childAppSecret);
 		pcc.setEndpoint(endpoint);
 		logger.info("accessKey: {}, secretKey: {}", rootApp.getId(), rootApp.getSecret());
 
@@ -478,10 +475,13 @@ public class ParaClientIT {
 		List<?> res1 = pc.findByIds(Arrays.asList(u.getId(), u1.getId(), u2.getId()));
 		assertEquals(3, res1.size());
 
-		Sysprop withRouting = new Sysprop("routed_object");
-		withRouting.setAppid(APP_NAME_CHILD);
-		pcc.create(withRouting);
-		assertFalse(pcc.findByIds(Arrays.asList(withRouting.getId())).isEmpty());
+		Sysprop withRouting1 = new Sysprop("routed_object1");
+		Sysprop withRouting2 = new Sysprop("routed_object2");
+		withRouting1.setAppid(APP_NAME_CHILD);
+		withRouting2.setAppid(APP_NAME_CHILD);
+		pcc.create(withRouting1);
+		pcc.create(withRouting2);
+		assertFalse(pcc.findByIds(Arrays.asList(withRouting1.getId())).isEmpty());
 
 		assertTrue(pc.findNearby(null, null, 100, 1, 1).isEmpty());
 		assertFalse(pc.findNearby(u.getType(), "*", 10, 40.60, -73.90).isEmpty());

@@ -43,11 +43,9 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 			Authentication authentication) throws IOException, ServletException {
 		User u = SecurityUtils.getAuthenticatedUser(authentication);
-		if (u != null) {
-			if (!StringUtils.equals(request.getRemoteAddr(), u.getLastIp())) {
-				u.setLastIp(request.getRemoteAddr());
-				u.update();
-			}
+		if (u != null && !StringUtils.equals(request.getRemoteAddr(), u.getLastIp())) {
+			u.setLastIp(request.getRemoteAddr());
+			u.update();
 		}
 		String customURI = (String) request.getAttribute(Config.AUTH_SIGNIN_SUCCESS_ATTR);
 		if (customURI == null && request.getParameter("appid") != null) {

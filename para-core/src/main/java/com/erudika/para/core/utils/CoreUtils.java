@@ -59,12 +59,12 @@ public enum CoreUtils implements InitializeListener {
 	 * Singleton.
 	 */
 	INSTANCE {
-		private final Logger logger = LoggerFactory.getLogger(CoreUtils.class);
+		private final transient Logger logger = LoggerFactory.getLogger(CoreUtils.class);
 
-		private DAO dao;
-		private Search search;
-		private Cache cache;
-		private IoTServiceFactory iotFactory;
+		private transient DAO dao;
+		private transient Search search;
+		private transient Cache cache;
+		private transient IoTServiceFactory iotFactory;
 
 		{
 			dao = new MockDAO();
@@ -140,7 +140,8 @@ public enum CoreUtils implements InitializeListener {
 
 		@Override
 		public String getName(String name, String id) {
-			return (name == null) ? "ParaObject ".concat((id == null) ? System.currentTimeMillis() + "" : id) : name;
+			return (name == null) ? "ParaObject ".concat((id == null) ?
+					Long.toString(System.currentTimeMillis()) : id) : name;
 		}
 
 		@Override

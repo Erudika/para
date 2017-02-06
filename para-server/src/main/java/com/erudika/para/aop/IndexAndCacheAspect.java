@@ -237,8 +237,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		if (addUs != null) {
 			addUs.addAll(removedObjects); // don't delete!
 		}
-		logger.debug("{}: Indexed all {}->{}", getClass().getSimpleName(),
-				appid, (indexUs == null) ? null : indexUs.size());
+		logger.debug("{}: Indexed all {}->{}", getClass().getSimpleName(), appid, indexUs.size());
 		return result;
 	}
 

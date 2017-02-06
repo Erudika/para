@@ -25,8 +25,8 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
+import java.io.IOException;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import javax.inject.Inject;
@@ -94,12 +94,13 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 
 	@SuppressWarnings("unchecked")
 	private Sysprop fetchFxRatesJSON() {
-		Map<String, Object> map = new HashMap<String, Object>();
+		Map<String, Object> map;
 		Sysprop s = new Sysprop();
 		ObjectReader reader = ParaObjectUtils.getJsonReader(Map.class);
+		CloseableHttpClient http = null;
 
 		try {
-			CloseableHttpClient http = HttpClients.createDefault();
+			http = HttpClients.createDefault();
 			HttpGet httpGet = new HttpGet(SERVICE_URL);
 			HttpResponse res = http.execute(httpGet);
 			HttpEntity entity = res.getEntity();
@@ -121,6 +122,14 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 			logger.debug("Fetched rates from OpenExchange for {}.", new Date().toString());
 		} catch (Exception e) {
 			logger.error("TimerTask failed: {}", e);
+		} finally {
+			if (http != null) {
+				try {
+					http.close();
+				} catch (IOException ex) {
+					logger.error(null, ex);
+				}
+			}
 		}
 		return s;
 	}

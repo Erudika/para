@@ -65,11 +65,21 @@ public class LocalFileStore implements FileStore {
 			path = path.substring(1);
 		}
 		if (!StringUtils.isBlank(path)) {
+			FileInputStream fis = null;
 			try {
 				File f = new File(folder + File.separator + path);
-				return f.canRead() ? new BufferedInputStream(new FileInputStream(f)) : null;
+				fis = new FileInputStream(f);
+				return f.canRead() ? new BufferedInputStream(fis) : null;
 			} catch (FileNotFoundException ex) {
 				logger.error(null, ex);
+			} finally {
+				if (fis != null) {
+					try {
+						fis.close();
+					} catch (IOException ex) {
+						logger.error(null, ex);
+					}
+				}
 			}
 		}
 		return null;
@@ -104,8 +114,12 @@ public class LocalFileStore implements FileStore {
 			logger.error(null, e);
 		} finally {
 			try {
-				fos.close();
-				bos.close();
+				if (fos != null) {
+					fos.close();
+				}
+				if (bos != null) {
+					bos.close();
+				}
 				data.close();
 			} catch (IOException e) {
 				logger.error(null, e);

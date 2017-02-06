@@ -93,11 +93,9 @@ public final class RestUtils {
 				accessKey = StringUtils.substringBetween(auth, "=", "/");
 			}
 		}
-		if (isAnonymousRequest) {
-			if (StringUtils.isBlank(accessKey)) {
-				// try to get access key from parameter
-				accessKey = request.getParameter("accessKey");
-			}
+		if (isAnonymousRequest && StringUtils.isBlank(accessKey)) {
+			// try to get access key from parameter
+			accessKey = request.getParameter("accessKey");
 		}
 		return accessKey;
 	}
@@ -143,7 +141,7 @@ public final class RestUtils {
 		// get request path, strip first slash '/'
 		String uri = request.getRequestURI().substring(1);
 		// skip to the end of API version prefix '/v1/'
-		int start = uri.indexOf("/");
+		int start = uri.indexOf('/');
 
 		if (start >= 0 && start + 1 < uri.length()) {
 			return uri.substring(start + 1);
@@ -318,11 +316,9 @@ public final class RestUtils {
 	 * @return status code 200 or 404
 	 */
 	public static Response getReadResponse(App app, ParaObject content) {
-		if (app != null && content != null) {
-			// app can't modify other apps except itself
-			if (checkImplicitAppPermissions(app, content)) {
-				return Response.ok(content).build();
-			}
+		// app can't modify other apps except itself
+		if (app != null && content != null && checkImplicitAppPermissions(app, content)) {
+			return Response.ok(content).build();
 		}
 		return getStatusResponse(Response.Status.NOT_FOUND);
 	}

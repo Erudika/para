@@ -240,7 +240,7 @@ public final class ParaClient {
 				Map<String, Object> error = res.hasEntity() ? res.readEntity(Map.class) : null;
 				if (error != null && error.containsKey("code")) {
 					String msg = error.containsKey("message") ? (String) error.get("message") : "error";
-					logger.error(msg + " - {}", new WebApplicationException((Integer) error.get("code")).getMessage());
+					logger.error("{} - {}", msg, new WebApplicationException((Integer) error.get("code")).getMessage());
 				}
 			}
 		}

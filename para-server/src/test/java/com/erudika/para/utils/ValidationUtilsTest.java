@@ -288,6 +288,7 @@ public class ValidationUtilsTest {
 		assertFalse(min(2).isValid("3"));
 		assertFalse(min(4).isValid(true));
 		assertFalse(min(null).isValid(" "));
+		assertFalse(min(null).isValid(3));
 
 		assertTrue(max(3).isValid(null));
 		assertTrue(max(3).isValid(3));
@@ -296,6 +297,7 @@ public class ValidationUtilsTest {
 		assertFalse(max(2).isValid("3"));
 		assertFalse(max(4).isValid(true));
 		assertFalse(max(null).isValid(" "));
+		assertFalse(max(null).isValid(3));
 
 		assertTrue(size(2, 3).isValid(null));
 		assertTrue(size(2, 3).isValid("xx"));

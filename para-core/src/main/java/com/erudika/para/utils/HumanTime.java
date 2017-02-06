@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
  * @see <a href="http://johannburkard.de/blog/programming/java/date-formatting-parsing-humans-humantime.html">Date
  * Formatting and Parsing for Humans in Java with HumanTime</a>
  */
-public final class HumanTime implements Externalizable, Comparable<HumanTime>, Cloneable {
+public final class HumanTime implements Externalizable, Comparable<HumanTime> {
 
 	/**
 	 * The serial version UID.
@@ -607,11 +607,6 @@ public final class HumanTime implements Externalizable, Comparable<HumanTime>, C
 	@Override
 	public int compareTo(HumanTime t) {
 		return delta == t.delta ? 0 : (delta < t.delta ? -1 : 1);
-	}
-
-	@Override
-	public Object clone() throws CloneNotSupportedException {
-		return super.clone();
 	}
 
 	@Override

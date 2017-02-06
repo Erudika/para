@@ -19,6 +19,7 @@ package com.erudika.para.search;
 
 import com.erudika.para.Para;
 import com.erudika.para.core.Address;
+import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.Tag;
@@ -248,12 +249,17 @@ public class ElasticSearch implements Search {
 			return list;
 		}
 		try {
+			String aid = getIndexName(appid);
+			Map<String, Object> terms = new HashMap<String, Object>(2);
+			terms.put(Config._ID, App.id(aid));
+			terms.put("sharingIndex", true);
+			boolean hasRouting = !App.isRoot(aid) && getCount(appid, terms) > 0;
+
 			MultiGetRequestBuilder mgr = client().prepareMultiGet();
 			for (String id : ids) {
-				MultiGetRequest.Item i = new MultiGetRequest.Item(getIndexName(appid), null, id).
+				mgr.add(new MultiGetRequest.Item(aid, null, id).
 						fetchSourceContext(FetchSourceContext.FETCH_SOURCE).
-						routing(getIndexName(appid));
-				mgr.add(i);
+						routing(hasRouting ? aid : null));
 			}
 
 			MultiGetResponse response = mgr.execute().actionGet();

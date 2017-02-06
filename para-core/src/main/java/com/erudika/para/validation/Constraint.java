@@ -313,16 +313,8 @@ public abstract class Constraint {
 	public static Constraint min(final Number min) {
 		return new Constraint("min", minPayload(min)) {
 			public boolean isValid(Object actualValue) {
-				if (actualValue != null) {
-					if (!(actualValue instanceof Number)) {
-						return false;
-					} else if (min != null) {
-						if (min.longValue() > ((Number) actualValue).longValue()) {
-							return false;
-						}
-					}
-				}
-				return true;
+				return actualValue == null || (actualValue instanceof Number && min != null &&
+						min.longValue() <= ((Number) actualValue).longValue());
 			}
 		};
 	}
@@ -335,16 +327,8 @@ public abstract class Constraint {
 	public static Constraint max(final Number max) {
 		return new Constraint("max", maxPayload(max)) {
 			public boolean isValid(Object actualValue) {
-				if (actualValue != null) {
-					if (!(actualValue instanceof Number)) {
-						return false;
-					} else if (max != null) {
-						if (max.longValue() < ((Number) actualValue).longValue()) {
-							return false;
-						}
-					}
-				}
-				return true;
+				return actualValue == null || (actualValue instanceof Number && max != null &&
+						max.longValue() >= ((Number) actualValue).longValue());
 			}
 		};
 	}

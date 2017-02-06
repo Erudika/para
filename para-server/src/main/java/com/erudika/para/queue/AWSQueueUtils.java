@@ -142,6 +142,7 @@ public final class AWSQueueUtils {
 		try {
 			return getClient().getQueueUrl(name).getQueueUrl();
 		} catch (Exception e) {
+			logger.error("{}", e);
 			return null;
 		}
 	}

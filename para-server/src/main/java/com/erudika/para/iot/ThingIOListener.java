@@ -36,22 +36,20 @@ public class ThingIOListener implements IOListener {
 
 	@Override
 	public void onPostInvoke(Method method, Object result) {
-		if (method != null && method.getName().equalsIgnoreCase("read")) {
-			if (result instanceof Thing) {
-				final Thing t = (Thing) result;
-				final IoTService iot = CoreUtils.getInstance().getIotFactory().getIoTService(t.getServiceBroker());
-				if (iot != null && !StringUtils.isBlank(t.getId())) {
-					Para.asyncExecute(new Runnable() {
-						@Override
-						public void run() {
-							Map<String, Object> state = iot.readThing(t);
-							if (state != null && !t.getDeviceState().equals(state)) {
-								t.setDeviceState(state);
-								t.update();
-							}
+		if (method != null && method.getName().equalsIgnoreCase("read") && result instanceof Thing) {
+			final Thing t = (Thing) result;
+			final IoTService iot = CoreUtils.getInstance().getIotFactory().getIoTService(t.getServiceBroker());
+			if (iot != null && !StringUtils.isBlank(t.getId())) {
+				Para.asyncExecute(new Runnable() {
+					@Override
+					public void run() {
+						Map<String, Object> state = iot.readThing(t);
+						if (state != null && !t.getDeviceState().equals(state)) {
+							t.setDeviceState(state);
+							t.update();
 						}
-					});
-				}
+					}
+				});
 			}
 		}
 	}

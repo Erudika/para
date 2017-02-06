@@ -141,6 +141,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 			c.setMaxAge(Config.SESSION_TIMEOUT_SEC.intValue());
 			// don't enable HttpOnly - javascript can't access the cookie if enabled
 			c.setHttpOnly(false);
+			c.setSecure("https".equalsIgnoreCase(request.getScheme()));
 			c.setPath("/");
 			response.addCookie(c);
 		}

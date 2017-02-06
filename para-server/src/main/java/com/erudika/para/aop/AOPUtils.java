@@ -40,12 +40,10 @@ public final class AOPUtils {
 	protected static <T> List<T> getArgOfListOfType(Object[] args, Class<T> type) {
 		if (args != null) {
 			for (Object arg : args) {
-				if (arg != null) {
-					if (arg instanceof List) {
-						List<T> list = (List) arg;
-						if (!list.isEmpty() && type.isAssignableFrom((list.get(0).getClass()))) {
-							return list;
-						}
+				if (arg != null && arg instanceof List) {
+					List<T> list = (List) arg;
+					if (!list.isEmpty() && type.isAssignableFrom(list.get(0).getClass())) {
+						return list;
 					}
 				}
 			}
@@ -56,10 +54,8 @@ public final class AOPUtils {
 	protected static ParaObject getArgOfParaObject(Object[] args) {
 		if (args != null) {
 			for (Object arg : args) {
-				if (arg != null) {
-					if (ParaObject.class.isAssignableFrom(arg.getClass())) {
-						return (ParaObject) arg;
-					}
+				if (arg != null && ParaObject.class.isAssignableFrom(arg.getClass())) {
+					return (ParaObject) arg;
 				}
 			}
 		}
@@ -69,10 +65,8 @@ public final class AOPUtils {
 	protected static String getFirstArgOfString(Object[] args) {
 		if (args != null) {
 			for (Object arg : args) {
-				if (arg != null) {
-					if (arg instanceof String) {
-						return (String) arg;
-					}
+				if (arg != null && arg instanceof String) {
+					return (String) arg;
 				}
 			}
 		}
