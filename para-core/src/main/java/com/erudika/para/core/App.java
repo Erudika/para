@@ -756,15 +756,17 @@ public class App implements ParaObject, Serializable {
 	public void addDatatype(String pluralDatatype, String datatype) {
 		pluralDatatype = Utils.noSpaces(Utils.stripAndTrim(pluralDatatype, " "), "-");
 		datatype = Utils.noSpaces(Utils.stripAndTrim(datatype, " "), "-");
-		if (getDatatypes().size() < Config.MAX_DATATYPES_PER_APP) {
-			if (!StringUtils.isBlank(pluralDatatype) && !StringUtils.isBlank(datatype) &&
-					!getDatatypes().containsValue(datatype) &&
-					!ParaObjectUtils.getCoreTypes().containsKey(pluralDatatype)) {
-				getDatatypes().putIfAbsent(pluralDatatype, datatype);
-			}
-		} else {
+		if (StringUtils.isBlank(pluralDatatype) || StringUtils.isBlank(datatype)) {
+			return;
+		}
+		if (getDatatypes().size() >= Config.MAX_DATATYPES_PER_APP) {
 			LoggerFactory.getLogger(App.class).warn("Maximum number of types per app reached - {}.",
 					Config.MAX_DATATYPES_PER_APP);
+			return;
+		}
+		if (!getDatatypes().containsKey(pluralDatatype) && !getDatatypes().containsValue(datatype) &&
+					!ParaObjectUtils.getCoreTypes().containsKey(pluralDatatype)) {
+			getDatatypes().put(pluralDatatype, datatype);
 		}
 	}
 

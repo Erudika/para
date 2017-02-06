@@ -619,7 +619,7 @@ public class ParaClientIT {
 		assertNotNull(pc.link(u, second2.getId()));
 		assertNotNull(pc.link(u, second3.getId()));
 
-		Thread.sleep(1000);
+		Thread.sleep(2000);
 
 		// test linked objects search
 		assertEquals(3, pc.findLinkedObjects(u, second1.getType(), Config._NAME, null).size());
@@ -881,7 +881,7 @@ public class ParaClientIT {
 		pc2.grantResourcePermission(fbUser.getId(), App.ALLOW_ALL, AllowedMethods.READ_AND_WRITE);
 		signedIn = pc2.signIn("facebook", "test_token");
 		logger.info(pc2.getAccessToken());
-		Thread.sleep(500);
+		Thread.sleep(700);
 		assertNotNull(signedIn);
 		assertNotNull(pc2.getAccessToken());
 		me = pc2.me();

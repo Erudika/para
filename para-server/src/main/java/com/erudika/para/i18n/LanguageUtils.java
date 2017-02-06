@@ -370,80 +370,78 @@ public class LanguageUtils {
 	}
 
 	private Map<String, String> readLanguageFromFile(String appid, String langCode) {
-		if (langCode != null && langCode.length() == 2) {
-			Properties lang = new Properties();
-			String file = "lang_" + langCode + ".properties";
-			InputStream ins = null;
+		Map<String, String> langmap = new TreeMap<String, String>();
+		if (langCode == null || langCode.length() != 2) {
+			return langmap;
+		}
+		Properties lang = new Properties();
+		String file = "lang_" + langCode + ".properties";
+		InputStream ins = null;
+		try {
+			ins = LanguageUtils.class.getClassLoader().getResourceAsStream(file);
+			if (ins == null) {
+				return langmap;
+			}
+			int progress = 0;
+			lang.load(ins);
+			for (String propKey : lang.stringPropertyNames()) {
+				String propVal = lang.getProperty(propKey);
+				if (!langCode.equals(getDefaultLanguageCode()) && !StringUtils.isBlank(propVal) &&
+						!StringUtils.equalsIgnoreCase(propVal, getDefaultLanguage(appid).get(propKey))) {
+					progress++;
+				}
+				langmap.put(propKey, propVal);
+			}
+			if (langCode.equals(getDefaultLanguageCode())) {
+				progress = langmap.size(); // 100%
+			}
+			if (progress > 0) {
+				updateTranslationProgressMap(appid, langCode, progress);
+			}
+		} catch (Exception e) {
+			logger.info("Could not read language file " + file + ": {}", e.toString());
+		} finally {
 			try {
-				ins = LanguageUtils.class.getClassLoader().getResourceAsStream(file);
 				if (ins != null) {
-					lang.load(ins);
-					if (!lang.isEmpty()) {
-						int progress = 0;
-						Map<String, String> langmap = new TreeMap<String, String>();
-						for (String propKey : lang.stringPropertyNames()) {
-							String propVal = lang.getProperty(propKey);
-							if (!langCode.equals(getDefaultLanguageCode())) {
-								String defaultVal = getDefaultLanguage(appid).get(propKey);
-								if (!StringUtils.isBlank(propVal) && !StringUtils.equalsIgnoreCase(propVal, defaultVal)) {
-									progress++;
-								}
-							}
-							langmap.put(propKey, propVal);
-						}
-						if (langCode.equals(getDefaultLanguageCode())) {
-							progress = langmap.size(); // 100%
-						}
-						if (progress > 0) {
-							updateTranslationProgressMap(appid, langCode, progress);
-						}
-						return langmap;
-					}
+					ins.close();
 				}
-			} catch (Exception e) {
-				logger.info("Could not read language file " + file + ": {}", e.toString());
-			} finally {
-				try {
-					if (ins != null) {
-						ins.close();
-					}
-				} catch (IOException ex) {
-					logger.error(null, ex);
-				}
+			} catch (IOException ex) {
+				logger.error(null, ex);
 			}
 		}
-		return null;
+		return langmap;
 	}
 
 	private void writeLanguageToFile(String appid, String langCode, Map<String, String> lang) {
-		if (lang != null && !lang.isEmpty() && langCode != null && langCode.length() == 2) {
-			FileOutputStream fos = null;
-			try {
-				Properties langProps = new Properties();
-				langProps.putAll(lang);
-				File file = new File("lang_" + langCode + ".properties");
-				fos = new FileOutputStream(file);
-				langProps.store(fos, langCode);
+		if (lang == null || lang.isEmpty() || langCode == null || langCode.length() != 2) {
+			return;
+		}
+		FileOutputStream fos = null;
+		try {
+			Properties langProps = new Properties();
+			langProps.putAll(lang);
+			File file = new File("lang_" + langCode + ".properties");
+			fos = new FileOutputStream(file);
+			langProps.store(fos, langCode);
 
-				int progress = 0;
-				for (Map.Entry<String, String> entry : lang.entrySet()) {
-					if (!getDefaultLanguage(appid).get(entry.getKey()).equals(entry.getValue())) {
-						progress++;
-					}
+			int progress = 0;
+			for (Map.Entry<String, String> entry : lang.entrySet()) {
+				if (!getDefaultLanguage(appid).get(entry.getKey()).equals(entry.getValue())) {
+					progress++;
 				}
-				if (progress > 0) {
-					updateTranslationProgressMap(appid, langCode, progress);
+			}
+			if (progress > 0) {
+				updateTranslationProgressMap(appid, langCode, progress);
+			}
+		} catch (Exception ex) {
+			logger.error("Could not write language to file: {}", ex.toString());
+		} finally {
+			try {
+				if (fos != null) {
+					fos.close();
 				}
-			} catch (Exception ex) {
-				logger.error("Could not write language to file: {}", ex.toString());
-			} finally {
-				try {
-					if (fos != null) {
-						fos.close();
-					}
-				} catch (IOException ex) {
-					logger.error(null, ex);
-				}
+			} catch (IOException ex) {
+				logger.error(null, ex);
 			}
 		}
 	}

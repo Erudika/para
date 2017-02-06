@@ -4,7 +4,9 @@ install: true
 jdk:
   - oraclejdk8
 script:
-  - mvn clean install
+  - jdk_switcher use oraclejdk8
+  - mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install sonar:sonar
+  #- mvn clean install
 addons:
   sonarqube:
     token:
@@ -14,7 +16,7 @@ cache:
     - '$HOME/.m2/repository'
     - '$HOME/.sonar/cache'
 before_deploy:
-- export PARA_WAR_FILE=$(find ./target/checkout/para-war/taget -maxdepth 1 -name para-*.war)
+- export PARA_WAR_FILE=$(find ./para-war/target -maxdepth 1 -name para-*.war -print -quit)
 deploy:
   provider: releases
   api_key:
@@ -24,3 +26,5 @@ deploy:
   on:
     tags: true
     repo: Erudika/para
+notifications:
+  email: false
