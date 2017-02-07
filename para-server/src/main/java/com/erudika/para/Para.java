@@ -397,8 +397,10 @@ public final class Para {
 			app.setSharingIndex(shared);
 			app.setActive(true);
 			app.create();
+			logger.info("Created new {}app '{}'. Make sure to create a table and index for it.",
+					shared ? "'shared' " : "", app.getAppIdentifier());
 			creds.putAll(app.getCredentials());
-			creds.put("message", "Save the secret key! It is showed only once!");
+			creds.put("message", "Save the secret key - it is shown only once!");
 		}
 		return creds;
 	}
