@@ -250,11 +250,7 @@ public class ElasticSearch implements Search {
 		}
 		try {
 			String aid = getIndexName(appid);
-			Map<String, Object> terms = new HashMap<String, Object>(2);
-			terms.put(Config._ID, App.id(aid));
-			terms.put("sharingIndex", true);
-			boolean hasRouting = !App.isRoot(aid) && getCount(null, terms) > 0;
-			logger.info("hasRouting({}) {}", aid, hasRouting);
+			boolean hasRouting = !App.isRoot(aid) && ElasticSearchUtils.existsIndexAlias(Config.APP_NAME_NS, aid);
 			MultiGetRequestBuilder mgr = client().prepareMultiGet();
 			for (String id : ids) {
 				mgr.add(new MultiGetRequest.Item(aid, null, id).

@@ -5,7 +5,7 @@ jdk:
   - oraclejdk8
 script:
   - jdk_switcher use oraclejdk8
-  - mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install sonar:sonar
+  - mvn clean install sonar:sonar
   #- mvn clean install
 addons:
   sonarqube:

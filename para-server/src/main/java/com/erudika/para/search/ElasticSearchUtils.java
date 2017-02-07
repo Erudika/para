@@ -442,6 +442,17 @@ public final class ElasticSearchUtils {
 	}
 
 	/**
+	 * Checks if an index has a registered alias.
+	 * @param indexName the index name
+	 * @param alias the alias
+	 * @return true if alias is set on index
+	 */
+	public static boolean existsIndexAlias(String indexName, String alias) {
+		return getClient().admin().indices().prepareAliasesExist(indexName).addAliases(alias).
+				execute().actionGet().exists();
+	}
+
+	/**
 	 * Replaces the index to which an alias points with another index.
 	 * @param oldIndex the index name to be replaced
 	 * @param newIndex the new index name to switch to
