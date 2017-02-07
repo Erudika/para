@@ -126,6 +126,7 @@ public class ParaClientIT {
 		rootApp.create();
 
 		String childAppSecret = Para.setup(APP_NAME_CHILD, "Child app with routing", true).get("secretKey");
+		ElasticSearchUtils.addIndexAlias(APP_NAME, APP_NAME_CHILD, true);
 
 		pc = new ParaClient(App.id(APP_NAME), rootApp.getSecret());
 		pc.setEndpoint(endpoint);
