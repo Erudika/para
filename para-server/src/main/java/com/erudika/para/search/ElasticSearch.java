@@ -253,7 +253,7 @@ public class ElasticSearch implements Search {
 			Map<String, Object> terms = new HashMap<String, Object>(2);
 			terms.put(Config._ID, App.id(aid));
 			terms.put("sharingIndex", true);
-			boolean hasRouting = !App.isRoot(aid) && getCount(appid, terms) > 0;
+			boolean hasRouting = !App.isRoot(aid) && getCount(null, terms) > 0;
 
 			MultiGetRequestBuilder mgr = client().prepareMultiGet();
 			for (String id : ids) {
