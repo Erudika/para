@@ -145,7 +145,7 @@ public class IndexBasedDAO implements DAO {
 		}
 		Map<String, P> results = new LinkedHashMap<String, P>(keys.size());
 		List<P> list = search.findByIds(getAppidWithRouting(appid), keys);
-
+		logger.info("readAll({}, {}, {}) -> {} results", appid, keys, getAllColumns, list.size());
 		if (list.isEmpty()) {
 			for (String key : keys) {
 				if (getMap(appid).containsKey(key)) {

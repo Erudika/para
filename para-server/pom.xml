@@ -219,6 +219,12 @@
 	<build>
 		<plugins>
 			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>${springBootVer}</version>
+			</plugin>
+
+			<plugin>
 				<groupId>com.jcabi</groupId>
 				<artifactId>jcabi-dynamodb-maven-plugin</artifactId>
 				<version>0.8</version>

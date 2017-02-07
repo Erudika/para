@@ -480,8 +480,10 @@ public class ParaClientIT {
 		Sysprop withRouting2 = new Sysprop("routed_object2");
 		withRouting1.setAppid(APP_NAME_CHILD);
 		withRouting2.setAppid(APP_NAME_CHILD);
-		pcc.create(withRouting1);
-		pcc.create(withRouting2);
+		pcc.createAll(Arrays.asList(withRouting1, withRouting2));
+
+		Thread.sleep(1000);
+
 		assertFalse(pcc.findByIds(Arrays.asList(withRouting1.getId())).isEmpty());
 
 		assertTrue(pc.findNearby(null, null, 100, 1, 1).isEmpty());
@@ -616,11 +618,13 @@ public class ParaClientIT {
 
 		pc.createAll(Arrays.asList(second1, second2, second3, child1, child2, child3));
 
+		Thread.sleep(1000);
+
 		assertNotNull(pc.link(u, second1.getId()));
 		assertNotNull(pc.link(u, second2.getId()));
 		assertNotNull(pc.link(u, second3.getId()));
 
-		Thread.sleep(2000);
+		Thread.sleep(1000);
 
 		// test linked objects search
 		assertEquals(3, pc.findLinkedObjects(u, second1.getType(), Config._NAME, null).size());
