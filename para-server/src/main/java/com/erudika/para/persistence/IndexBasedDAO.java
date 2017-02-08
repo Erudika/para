@@ -182,7 +182,7 @@ public class IndexBasedDAO implements DAO {
 				results.add(obj);
 			}
 		}
-		if (results.size() > 0) {
+		if (!results.isEmpty()) {
 			pager.setPage(pager.getPage() + 1);
 		}
 		return results;
