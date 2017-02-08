@@ -21,7 +21,6 @@ import com.erudika.para.Para;
 import com.erudika.para.ParaServer;
 import com.erudika.para.cache.Cache;
 import com.erudika.para.cache.MockCache;
-import com.erudika.para.core.App;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
@@ -62,6 +61,7 @@ public class AspectsIT {
 	@BeforeClass
 	public static void setUpClass() throws Exception {
 		System.setProperty("para.env", "embedded");
+		System.setProperty("para.print_logo", "false");
 		System.setProperty("para.app_name", "para-test");
 		System.setProperty("para.cluster_name", "para-test");
 		System.setProperty("para.cache_enabled", "true");
@@ -75,17 +75,17 @@ public class AspectsIT {
 
 		ElasticSearchUtils.createIndex(Config.APP_NAME_NS);
 
-		s0 = new Sysprop("111");
+		s0 = new Sysprop("s111");
 		s0.setName("John Doe");
 		s0.setTimestamp(Utils.timestamp());
 		s0.setTags(CoreUtils.getInstance().addTags(s0.getTags(), "one", "two", "three"));
 
-		s1 = new Sysprop("222");
+		s1 = new Sysprop("s222");
 		s1.setName("Joe Black");
 		s1.setTimestamp(Utils.timestamp());
 		s1.setTags(CoreUtils.getInstance().addTags(s1.getTags(), "two", "four", "three"));
 
-		s2 = new Sysprop("333");
+		s2 = new Sysprop("s333");
 		s2.setName("Ann Smith");
 		s2.setTimestamp(Utils.timestamp());
 		s2.setTags(CoreUtils.getInstance().addTags(s2.getTags(), "four", "five", "three"));
@@ -97,12 +97,10 @@ public class AspectsIT {
 
 	@AfterClass
 	public static void tearDownClass() throws Exception {
-		Para.getDAO().delete(new App(Config.APP_NAME_NS));
-		ElasticSearchUtils.deleteIndex(Config.APP_NAME_NS);
+//		Para.getDAO().delete(new App(Config.APP_NAME_NS));
+		Para.getDAO().deleteAll(Arrays.asList(s0, s1, s2));
+//		ElasticSearchUtils.deleteIndex(Config.APP_NAME_NS);
 		Para.destroy();
-		s0 = null;
-		s1 = null;
-		s2 = null;
 	}
 
 	@Test
@@ -174,6 +172,7 @@ public class AspectsIT {
 
 		logger.debug("---- delete all ----");
 		d.deleteAll(list);
+		Thread.sleep(500);
 		assertNull(d.read(s0.getId()));
 		assertNull(s.findById(s0.getId()));
 		assertNull(c.get(s0.getId()));
@@ -414,7 +413,7 @@ public class AspectsIT {
 		assertNotNull(Para.getSearch().findById(o61.getId()));
 		assertNotNull(Para.getSearch().findById(o62.getId()));
 		// special case: read_from_index (query multiple objects)
-		List<?> results = Para.getSearch().findQuery(o61.getType(), "*");
+		List<?> results = Para.getSearch().findByIds(Arrays.asList(o61.getId(), o62.getId()));
 		assertNotNull(results);
 		assertFalse(results.isEmpty());
 		assertEquals(2, results.size());

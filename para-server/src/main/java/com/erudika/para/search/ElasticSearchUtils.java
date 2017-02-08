@@ -434,7 +434,7 @@ public final class ElasticSearchUtils {
 	 * @return true if acknowledged
 	 */
 	public static boolean removeIndexAlias(String indexName, String alias) {
-		if (!existsIndex(alias)) {
+		if (!existsIndex(indexName)) {
 			return false;
 		}
 		return getClient().admin().indices().prepareAliases().removeAlias(indexName, alias).

@@ -27,6 +27,8 @@ import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
+import com.erudika.para.core.Votable;
+import com.erudika.para.core.Vote;
 import com.erudika.para.search.ElasticSearchUtils;
 import com.erudika.para.security.AuthenticatedUserDetails;
 import com.erudika.para.security.FacebookAuthFilter;
@@ -88,8 +90,9 @@ public class ParaClientIT {
 	@BeforeClass
 	public static void setUpClass() throws InterruptedException, IOException {
 		System.setProperty("para.env", "embedded");
+		System.setProperty("para.print_logo", "false");
 		System.setProperty("para.app_name", APP_NAME);
-		System.setProperty("para.cluster_name", APP_NAME);
+		System.setProperty("para.cluster_name", "para-test");
 		String endpoint = "http://localhost:8080";
 
 		fbUser = new User("fbUser_1");
@@ -120,33 +123,39 @@ public class ParaClientIT {
 		assertNull(temp.me());
 		assertTrue(temp.newId().isEmpty());
 
-		App rootApp = new App(APP_NAME);
-		rootApp.setName(APP_NAME);
-		rootApp.setSharingIndex(false);
-		rootApp.create();
+		App rootApp = Para.getDAO().read(App.id(APP_NAME));
+		if (rootApp == null) {
+			rootApp = new App(APP_NAME);
+			rootApp.setName(APP_NAME);
+			rootApp.setSharingIndex(false);
+			rootApp.create();
+		} else {
+			rootApp.resetSecret();
+			Para.getDAO().create(rootApp);
+		}
 
-		String childAppSecret = Para.setup(APP_NAME_CHILD, "Child app with routing", true).get("secretKey");
+		Map<String, String> creds = Para.setup(APP_NAME_CHILD, "Child app with routing", true);
 		ElasticSearchUtils.addIndexAlias(APP_NAME, APP_NAME_CHILD, true);
 
 		pc = new ParaClient(App.id(APP_NAME), rootApp.getSecret());
 		pc.setEndpoint(endpoint);
 		pc2 = new ParaClient(App.id(APP_NAME), rootApp.getSecret());
 		pc2.setEndpoint(endpoint);
-		pcc = new ParaClient(App.id(APP_NAME_CHILD), childAppSecret);
+		pcc = new ParaClient(App.id(APP_NAME_CHILD), creds.get("secretKey"));
 		pcc.setEndpoint(endpoint);
 		logger.info("accessKey: {}, secretKey: {}", rootApp.getId(), rootApp.getSecret());
 
-		u = new Sysprop("111");
+		u = new Sysprop("c111");
 		u.setName("John Doe");
 		u.setTimestamp(Utils.timestamp());
 		u.setTags(CoreUtils.getInstance().addTags(u.getTags(), "one", "two", "three"));
 
-		u1 = new Sysprop("222");
+		u1 = new Sysprop("c222");
 		u1.setName("Joe Black");
 		u1.setTimestamp(Utils.timestamp());
 		u1.setTags(CoreUtils.getInstance().addTags(u1.getTags(), "two", "four", "three"));
 
-		u2 = new Sysprop("333");
+		u2 = new Sysprop("c333");
 		u2.setName("Ann Smith");
 		u2.setTimestamp(Utils.timestamp());
 		u2.setTags(CoreUtils.getInstance().addTags(u2.getTags(), "four", "five", "three"));
@@ -187,8 +196,8 @@ public class ParaClientIT {
 	@AfterClass
 	public static void tearDownClass() {
 		System.setProperty("para.clients_can_access_root_app", "false");
-		Para.getDAO().delete(new App(APP_NAME));
-		ElasticSearchUtils.deleteIndex(APP_NAME);
+		Para.getDAO().delete(new App(APP_NAME_CHILD));
+		Para.getDAO().deleteAll(Arrays.asList(u, u1, u2, t, s1, s2, a1, a2));
 		Para.destroy();
 	}
 
@@ -319,6 +328,7 @@ public class ParaClientIT {
 			articles.add(s);
 		}
 
+		Para.getDAO().deleteAll(pcc.findQuery("article", "*"));
 		List<Sysprop> l1 = pcc.createAll(articles);
 		assertEquals(3, l1.size());
 		assertNotNull(l1.get(0).getId());
@@ -373,7 +383,7 @@ public class ParaClientIT {
 		part2.addProperty("text", "");
 		List<Sysprop> lu2 = pcc.updateAll(Arrays.asList(part1, part2));
 		assertTrue(lu2.isEmpty());
-
+		Para.getDAO().deleteAll(l1);
 		pcc.deleteAll(Arrays.asList(part1.getId(), part2.getId(), part3.getId()));
 	}
 
@@ -457,16 +467,6 @@ public class ParaClientIT {
 
 	@Test
 	public void testSearch() throws InterruptedException {
-//		ArrayList<Sysprop> bats = new ArrayList<Sysprop>();
-//		for (int i = 0; i < 5; i++) {
-//			Sysprop s = new Sysprop(batsType + i);
-//			s.setType(batsType);
-//			s.addProperty("foo", "bat");
-//			bats.add(s);
-//		}
-//		pc.createAll(bats);
-//		Thread.sleep(1000);
-
 		assertNull(pc.findById(null));
 		assertNull(pc.findById(""));
 		assertNotNull(pc.findById(u.getId()));
@@ -478,13 +478,15 @@ public class ParaClientIT {
 
 		Sysprop withRouting1 = new Sysprop("routed_object1");
 		Sysprop withRouting2 = new Sysprop("routed_object2");
+		Para.getDAO().deleteAll(Arrays.asList(withRouting1, withRouting2));
 		withRouting1.setAppid(APP_NAME_CHILD);
 		withRouting2.setAppid(APP_NAME_CHILD);
 		pcc.createAll(Arrays.asList(withRouting1, withRouting2));
 
 		Thread.sleep(1000);
 
-		assertFalse(pcc.findByIds(Arrays.asList(withRouting1.getId())).isEmpty());
+		assertEquals(2, pcc.findByIds(Arrays.asList(withRouting1.getId(), withRouting2.getId())).size());
+		Para.getDAO().deleteAll(APP_NAME_CHILD, Arrays.asList(withRouting1, withRouting2));
 
 		assertTrue(pc.findNearby(null, null, 100, 1, 1).isEmpty());
 		assertFalse(pc.findNearby(u.getType(), "*", 10, 40.60, -73.90).isEmpty());
@@ -658,6 +660,7 @@ public class ParaClientIT {
 		assertTrue(result3.get(0).getId().equals(child1.getId()) || result3.get(1).getId().equals(child1.getId()));
 		assertTrue(result3.get(0).getId().equals(child2.getId()) || result3.get(1).getId().equals(child2.getId()));
 
+		pc.unlinkAll(u);
 		pc.deleteAll(Arrays.asList(second1.getId(), second2.getId(), second3.getId(),
 				child1.getId(), child2.getId(), child3.getId()));
 	}
@@ -727,6 +730,8 @@ public class ParaClientIT {
 		assertTrue(constraint.get(kittenType).containsKey("paws"));
 
 		Sysprop ct = new Sysprop("felix");
+		Para.getDAO().delete(ct);
+		Para.getDAO().deleteAll(pc.findQuery("vote", "*"));
 		ct.setType(kittenType);
 		Sysprop ct2 = null;
 		try {
@@ -753,7 +758,8 @@ public class ParaClientIT {
 		assertTrue(pc.voteDown(ct, u.getId()));
 		assertFalse(pc.voteDown(ct, u.getId()));
 		assertEquals(votes, pc.read(ct.getId()).getVotes());
-		pc.delete(ct);
+		Para.getDAO().delete(ct);
+		Para.getDAO().delete(new Vote(u.getId(), ct.getId(), Votable.VoteValue.UP));
 	}
 
 	@Test
@@ -861,6 +867,7 @@ public class ParaClientIT {
 		// should fail to create user for root app
 		System.setProperty("para.clients_can_access_root_app", "false");
 		User notSignedIn = pc2.signIn("facebook", "test_token");
+		Thread.sleep(500);
 		logger.info(pc2.getAccessToken());
 		assertNull(notSignedIn);
 		assertNull(pc2.getAccessToken());
@@ -875,6 +882,7 @@ public class ParaClientIT {
 		assertTrue(signedIn.getActive());
 
 		// test without permissions - signed in but you can't access anything yet
+		pc2.revokeAllResourcePermissions(fbUser.getId());
 		ParaObject me = pc2.me();
 		assertNotNull(me);
 		assertEquals("user", me.getType());
@@ -886,7 +894,7 @@ public class ParaClientIT {
 		pc2.grantResourcePermission(fbUser.getId(), App.ALLOW_ALL, AllowedMethods.READ_AND_WRITE);
 		signedIn = pc2.signIn("facebook", "test_token");
 		logger.info(pc2.getAccessToken());
-		Thread.sleep(700);
+		Thread.sleep(800);
 		assertNotNull(signedIn);
 		assertNotNull(pc2.getAccessToken());
 		me = pc2.me();
@@ -904,6 +912,7 @@ public class ParaClientIT {
 		assertFalse(pc2.newId().isEmpty());
 		signedIn = pc2.signIn("facebook", "test_token");
 		logger.info(pc2.getAccessToken());
+		Thread.sleep(500);
 		me = pc2.me(); // user
 		assertNotNull(me);
 		assertEquals("user", me.getType());
@@ -929,19 +938,20 @@ public class ParaClientIT {
 		assertTrue(guest.getTimestamp() > 0);
 
 		// test user should not be created twice if signed in with email and password
-		long existingUsers = pc2.getCount("user");
 		User signedInWithEmail = pc2.signIn("password", "test@user.com::123456");
 		assertNotNull(signedInWithEmail);
 		pc2.signOut();
-		Thread.sleep(700);
-		long existingUsers2 = pc2.getCount("user");
-		assertEquals(existingUsers2, existingUsers + 1);
+		Thread.sleep(800);
+		long existingUsers = pc2.getCount("user");
 		pc2.signIn("password", "test@user.com::123456");
 		pc2.signOut();
+		long existingUsers2 = pc2.getCount("user");
+		assertEquals(existingUsers2, existingUsers);
 		User badPass = pc2.signIn("password", "test@user.com::1234567");
 		assertNull(badPass);
 		pc2.signOut();
 		long existingUsers3 = pc2.getCount("user");
 		assertEquals(existingUsers3, existingUsers2);
+		fbUser.delete();
 	}
 }

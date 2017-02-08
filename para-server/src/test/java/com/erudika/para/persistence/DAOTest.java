@@ -119,6 +119,7 @@ public abstract class DAOTest {
 		Tag tag2 = new Tag("testtagid");
 		assertTrue(tag2.exists());
 
+		dao.delete(app);
 		dao.delete(u);
 		dao.delete(t);
 	}
@@ -279,7 +280,8 @@ public abstract class DAOTest {
 		assertNotNull(t3.getUpdated());
 
 		dao.deleteAll(null);
-		dao.deleteAll(Arrays.asList(t1, t2, t3));
+		dao.deleteAll(Arrays.asList(tr1, tr2, tr3));
+		dao.deleteAll(appid1, Arrays.asList(tr1, tr2, tr3));
 
 		assertNull(dao.read(t1.getId()));
 		assertNull(dao.read(t2.getId()));
@@ -305,7 +307,7 @@ public abstract class DAOTest {
 	}
 
 	@Test
-	public void testReadPage() {
+	public void testReadPage() throws InterruptedException {
 		ArrayList<Sysprop> list = new ArrayList<Sysprop>();
 		for (int i = 0; i < 22; i++) {
 			Sysprop s = new Sysprop("id_" + i);
@@ -313,6 +315,7 @@ public abstract class DAOTest {
 			list.add(s);
 		}
 		dao.createAll(appid3, list);
+		Thread.sleep(1000);
 
 		Pager p = new Pager(10);
 		assertTrue(dao.readPage(null, null).isEmpty());

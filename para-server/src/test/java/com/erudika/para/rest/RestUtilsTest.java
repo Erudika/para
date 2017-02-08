@@ -59,6 +59,7 @@ public class RestUtilsTest {
 	public static void setUpClass() {
 		System.setProperty("para.env", "embedded");
 		System.setProperty("para.app_name", "para-test");
+		System.setProperty("para.cluster_name", "para-test");
 		System.setProperty("para.print_logo", "false");
 		Para.initialize(new Module() {
 			public void configure(Binder binder) {

@@ -54,7 +54,7 @@ public class ElasticSearchIT extends SearchTest {
 
 	@AfterClass
 	public static void tearDownClass() {
-		ElasticSearchUtils.deleteIndex(Config.APP_NAME_NS);
+//		ElasticSearchUtils.deleteIndex(Config.APP_NAME_NS);
 		ElasticSearchUtils.deleteIndex(appid1);
 		ElasticSearchUtils.deleteIndex(appid2);
 		ElasticSearchUtils.deleteIndex("root-index");

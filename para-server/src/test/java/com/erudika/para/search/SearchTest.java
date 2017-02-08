@@ -131,6 +131,7 @@ public abstract class SearchTest {
 
 
 	public static void cleanup() {
+		s.unindexAll(Arrays.asList(u, u1, u2, t, s1, s2, a1, a2, l1));
 		u = null;
 		t = null;
 		u1 = null;
@@ -372,12 +373,12 @@ public abstract class SearchTest {
 		assertNull(s.findById(tt2.getId()));
 		assertNull(s.findById(tt3.getId()));
 
-		Sysprop sp1 = new Sysprop("sp1");
-		Sysprop sp2 = new Sysprop("sp2");
-		Sysprop sp3 = new Sysprop("sp3");
+		Sysprop sp1 = new Sysprop("sps1");
+		Sysprop sp2 = new Sysprop("sps2");
+		Sysprop sp3 = new Sysprop("sps3");
 		sp1.setName("xx");
 		sp2.setName("xx");
-		sp3.setName("sp3");
+		sp3.setName("sps3");
 		sp1.setTimestamp(123L);
 		sp2.setTimestamp(123L);
 		sp3.setTimestamp(1234L);
