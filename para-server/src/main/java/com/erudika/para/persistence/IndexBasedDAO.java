@@ -25,11 +25,11 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
@@ -48,8 +48,6 @@ import org.slf4j.LoggerFactory;
 public class IndexBasedDAO implements DAO {
 
 	private static final Logger logger = LoggerFactory.getLogger(IndexBasedDAO.class);
-	private static final Map<String, Map<String, ParaObject>> MAPS =
-			new ConcurrentHashMap<String, Map<String, ParaObject>>();
 	private Search search;
 
 	/**
@@ -86,7 +84,8 @@ public class IndexBasedDAO implements DAO {
 			so.setTimestamp(Utils.timestamp());
 		}
 		so.setAppid(appid);
-		getMap(appid).put(so.getId(), ParaObjectUtils.setAnnotatedFields(ParaObjectUtils.toObject(so.getType()),
+		so.setIndexed(false); // skip indexing - already indexed here
+		search.index(appid, ParaObjectUtils.setAnnotatedFields(ParaObjectUtils.toObject(so.getType()),
 				ParaObjectUtils.getAnnotatedFields(so), null));
 		logger.debug("DAO.create() {}", so.getId());
 		return so.getId();
@@ -98,11 +97,7 @@ public class IndexBasedDAO implements DAO {
 		if (key == null || StringUtils.isBlank(appid) || search == null) {
 			return null;
 		}
-
 		P so = search.findById(getAppidWithRouting(appid), key);
-		if (so == null) {
-			so = (P) getMap(appid).get(key);
-		}
 		logger.debug("DAO.read() {} -> {}", key, so == null ? null : so.getType());
 		return so;
 	}
@@ -111,8 +106,9 @@ public class IndexBasedDAO implements DAO {
 	public <P extends ParaObject> void update(String appid, P so) {
 		if (so != null && !StringUtils.isBlank(appid)) {
 			so.setUpdated(Utils.timestamp());
-			ParaObject soUpdated = getMap(appid).get(so.getId());
-			getMap(appid).put(so.getId(), ParaObjectUtils.setAnnotatedFields(soUpdated,
+			so.setIndexed(false); // skip indexing - already indexed here
+			ParaObject soUpdated = read(appid, so.getId());
+			search.index(appid, ParaObjectUtils.setAnnotatedFields(soUpdated,
 					ParaObjectUtils.getAnnotatedFields(so), Locked.class));
 			logger.debug("DAO.update() {}", so.getId());
 		}
@@ -121,7 +117,7 @@ public class IndexBasedDAO implements DAO {
 	@Override
 	public <P extends ParaObject> void delete(String appid, P so) {
 		if (so != null && !StringUtils.isBlank(appid)) {
-			getMap(appid).remove(so.getId());
+			search.unindex(appid, so);
 			logger.debug("DAO.delete() {}", so.getId());
 		}
 	}
@@ -131,9 +127,23 @@ public class IndexBasedDAO implements DAO {
 		if (StringUtils.isBlank(appid) || objects == null) {
 			return;
 		}
-		for (P p : objects) {
-			create(appid, p);
+		Iterator<P> iter = objects.iterator();
+		while (iter.hasNext()) {
+			P p = iter.next();
+			if (p == null) {
+				iter.remove();
+				continue;
+			}
+			p.setAppid(appid);
+			p.setIndexed(false);
+			if (StringUtils.isBlank(p.getId())) {
+				p.setId(Utils.getNewId());
+			}
+			if (p.getTimestamp() == null) {
+				p.setTimestamp(Utils.timestamp());
+			}
 		}
+		search.indexAll(appid, objects);
 		logger.debug("DAO.createAll() {}", objects.size());
 	}
 
@@ -146,17 +156,9 @@ public class IndexBasedDAO implements DAO {
 		Map<String, P> results = new LinkedHashMap<String, P>(keys.size());
 		List<P> list = search.findByIds(getAppidWithRouting(appid), keys);
 
-		if (list.isEmpty()) {
-			for (String key : keys) {
-				if (getMap(appid).containsKey(key)) {
-					results.put(key, (P) read(appid, key));
-				}
-			}
-		} else {
-			for (P p : list) {
-				if (p != null) {
-					results.put(p.getId(), p);
-				}
+		for (P p : list) {
+			if (p != null) {
+				results.put(p.getId(), p);
 			}
 		}
 
@@ -165,7 +167,6 @@ public class IndexBasedDAO implements DAO {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> readPage(String appid, Pager pager) {
 		List<P> results = new LinkedList<P>();
 		if (StringUtils.isBlank(appid)) {
@@ -174,26 +175,16 @@ public class IndexBasedDAO implements DAO {
 		if (pager == null) {
 			pager = new Pager();
 		}
-		if (pager.getCount() >= getMap(appid).size()) {
-			return results;
-		}
 
-		String lastKey = pager.getLastKey();
-		boolean found = false;
-		int	i = 0;
-		for (String key : getMap(appid).keySet()) {
-			if (lastKey != null && !found) {
-				found = key.equals(lastKey);
-			} else {
-				results.add((P) getMap(appid).get(key));
-				i++;
-			}
-			if (i >= pager.getLimit()) {
-				pager.setLastKey(key);
-				break;
+		List<P> res = search.findQuery(appid, null, "*", pager);
+		for (P obj : res) {
+			if (obj != null) {
+				results.add(obj);
 			}
 		}
-		pager.setCount(pager.getCount() + i);
+		if (results.size() > 0) {
+			pager.setPage(pager.getPage() + 1);
+		}
 		return results;
 	}
 
@@ -212,20 +203,9 @@ public class IndexBasedDAO implements DAO {
 	@Override
 	public <P extends ParaObject> void deleteAll(String appid, List<P> objects) {
 		if (!StringUtils.isBlank(appid) && objects != null) {
-			for (P obj : objects) {
-				if (obj != null) {
-					delete(appid, obj);
-				}
-			}
+			search.unindexAll(appid, objects);
 			logger.debug("DAO.deleteAll() {}", objects.size());
 		}
-	}
-
-	private Map<String, ParaObject> getMap(String appid) {
-		if (!MAPS.containsKey(appid)) {
-			MAPS.put(appid, new  LinkedHashMap<String, ParaObject>());
-		}
-		return MAPS.get(appid);
 	}
 
 	private String getAppidWithRouting(String appid) {

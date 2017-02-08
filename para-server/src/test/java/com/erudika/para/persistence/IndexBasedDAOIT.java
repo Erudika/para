@@ -17,7 +17,6 @@
  */
 package com.erudika.para.persistence;
 
-import com.erudika.para.Para;
 import com.erudika.para.search.ElasticSearch;
 import com.erudika.para.search.ElasticSearchUtils;
 import com.erudika.para.search.Search;
@@ -47,7 +46,7 @@ public class IndexBasedDAOIT extends DAOTest {
 	public static void setUpClass() {
 		System.setProperty("para.env", "embedded");
 		System.setProperty("para.app_name", ROOT_APP_NAME);
-		System.setProperty("para.cluster_name", ROOT_APP_NAME);
+		System.setProperty("para.cluster_name", "para-test");
 
 		ElasticSearchUtils.createIndex(ROOT_APP_NAME);
 		ElasticSearchUtils.createIndex(appid1);
@@ -57,11 +56,10 @@ public class IndexBasedDAOIT extends DAOTest {
 
 	@AfterClass
 	public static void tearDownClass() {
-		ElasticSearchUtils.deleteIndex(ROOT_APP_NAME);
+//		ElasticSearchUtils.deleteIndex(ROOT_APP_NAME);
 		ElasticSearchUtils.deleteIndex(appid1);
 		ElasticSearchUtils.deleteIndex(appid2);
 		ElasticSearchUtils.deleteIndex(appid3);
-		Para.destroy();
 	}
 
 }
