@@ -680,7 +680,7 @@ public final class Api1 extends ResourceConfig {
 				String appid = pathParam(Config._APPID, ctx);
 				if (!StringUtils.isBlank(appid)) {
 					App app = SecurityUtils.getAuthenticatedApp();
-					if (app.isRootApp()) {
+					if (app != null && app.isRootApp()) {
 						boolean shared = "true".equals(queryParam("shared", ctx));
 						return Response.ok(setup(appid, queryParam("name", ctx), shared)).build();
 					} else {
