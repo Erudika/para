@@ -6,7 +6,6 @@ jdk:
 script:
   - jdk_switcher use oraclejdk8
   - mvn clean install sonar:sonar
-  #- mvn clean install
 addons:
   sonarqube:
     token:
@@ -15,16 +14,5 @@ cache:
   directories:
     - '$HOME/.m2/repository'
     - '$HOME/.sonar/cache'
-before_deploy:
-- export PARA_WAR_FILE=$(find ./para-war/target -maxdepth 1 -name para-*.war -print -quit)
-deploy:
-  provider: releases
-  api_key:
-    secure: "mYS5XtJsyo674fwe1Ay61Ak2jjjZmeE2cCYte/YHCChWje46ezHYZ3iu/2XmwSXJViZo7Htt8PFkl0XA6zD/TSaHeXeRiuhATmQKPHRsRLax1+VbmExVd3dbOI97TMi+7kguKvlXWA7nwfUZVNsSV/0gmg0LuPTv4vD14UIwPbI="
-  file: "${PARA_WAR_FILE}"
-  skip_cleanup: true
-  on:
-    tags: true
-    repo: Erudika/para
 notifications:
   email: false
