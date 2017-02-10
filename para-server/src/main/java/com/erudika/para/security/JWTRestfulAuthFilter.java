@@ -17,6 +17,14 @@
  */
 package com.erudika.para.security;
 
+import com.erudika.para.security.filters.PasswordAuthFilter;
+import com.erudika.para.security.filters.GoogleAuthFilter;
+import com.erudika.para.security.filters.TwitterAuthFilter;
+import com.erudika.para.security.filters.MicrosoftAuthFilter;
+import com.erudika.para.security.filters.GitHubAuthFilter;
+import com.erudika.para.security.filters.LinkedInAuthFilter;
+import com.erudika.para.security.filters.GenericOAuth2Filter;
+import com.erudika.para.security.filters.FacebookAuthFilter;
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.utils.CoreUtils;
@@ -130,14 +138,13 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 		String token = (String) entity.get("token");
 
 		if (provider != null && appid != null && token != null) {
-			App app = new App(appid);
 			// don't allow clients to create users on root app unless this is explicitly configured
-			if (!app.isRootApp() || Config.getConfigBoolean("clients_can_access_root_app", false)) {
-				UserAuthentication userAuth = getOrCreateUser(app.getAppIdentifier(), provider, token);
-				User user = SecurityUtils.getAuthenticatedUser(userAuth);
-				if (user != null) {
-					app = Para.getDAO().read(app.getId());
-					if (app != null) {
+			if (!App.isRoot(appid) || Config.getConfigBoolean("clients_can_access_root_app", false)) {
+				App app = Para.getDAO().read(App.id(appid));
+				if (app != null) {
+					UserAuthentication userAuth = getOrCreateUser(app.getAppIdentifier(), provider, token);
+					User user = SecurityUtils.getAuthenticatedUser(userAuth);
+					if (user != null) {
 						// issue token
 						SignedJWT newJWT = SecurityUtils.generateJWToken(user, app);
 						if (newJWT != null) {
@@ -146,17 +153,18 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 						}
 					} else {
 						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-								"User belongs to an app that does not exist.");
+								"Failed to authenticate user with " + provider);
 						return false;
 					}
 				} else {
 					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-							"Failed to authenticate user with " + provider);
+							"User belongs to an app that does not exist.");
 					return false;
 				}
 			} else {
 				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
-							"Can't authenticate user with app '" + app.getId() + "'");
+							"Can't authenticate user with app '" + appid + "' using provider '" + provider + "'. "
+									+ "Reason: clients aren't allowed to access root app.");
 					return false;
 			}
 		}
@@ -244,10 +252,9 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 				SignedJWT jwt = SignedJWT.parse(token.substring(6).trim());
 				String userid = jwt.getJWTClaimsSet().getSubject();
 				String appid = (String) jwt.getJWTClaimsSet().getClaim("appid");
-				App app = new App(appid);
-				User user = Para.getDAO().read(app.getAppIdentifier(), userid);
-				app = Para.getDAO().read(app.getId());
+				App app = Para.getDAO().read(App.id(appid));
 				if (app != null) {
+					User user = Para.getDAO().read(app.getAppIdentifier(), userid);
 					if (user != null) {
 						return new JWTAuthentication(new AuthenticatedUserDetails(user)).withJWT(jwt).withApp(app);
 					} else {

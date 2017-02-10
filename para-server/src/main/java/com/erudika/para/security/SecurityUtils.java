@@ -195,6 +195,7 @@ public final class SecurityUtils {
 	 * @return an array ["app_id", "secret_key"] or ["", ""]
 	 */
 	public static String[] getCustomAuthSettings(String appid, String prefix, HttpServletRequest request) {
+		// TODO: refactor this method
 		prefix = StringUtils.removeEnd(prefix + "", Config.SEPARATOR);
 		String appIdKey = prefix + "_app_id";
 		String secretKey = prefix + "_secret";
@@ -202,26 +203,23 @@ public final class SecurityUtils {
 		String authSecret = Config.getConfigParam(secretKey, "");
 		String[] keys = new String[]{authAppId, authSecret};
 
-		if (appid != null) {
-			App app = new App(appid);
-			if (!StringUtils.isBlank(appid) && !app.isRootApp()) {
-				app = Para.getDAO().read(app.getId());
-				if (app != null) {
-					Map<String, Object> settings = app.getSettings();
-					if (settings.containsKey(appIdKey) && settings.containsKey(secretKey)) {
-						authAppId = settings.get(appIdKey) + "";
-						authSecret = settings.get(secretKey) + "";
-						keys[0] = authAppId;
-						keys[1] = authSecret;
+		if (!StringUtils.isBlank(appid) && !App.isRoot(appid)) {
+			App app = Para.getDAO().read(App.id(appid));
+			if (app != null) {
+				Map<String, Object> settings = app.getSettings();
+				if (settings.containsKey(appIdKey) && settings.containsKey(secretKey)) {
+					authAppId = settings.get(appIdKey) + "";
+					authSecret = settings.get(secretKey) + "";
+					keys[0] = authAppId;
+					keys[1] = authSecret;
+				}
+				// why not also set these while we have the custom settings loaded
+				if (request != null) {
+					if (settings.containsKey("signin_success")) {
+						request.setAttribute(Config.AUTH_SIGNIN_SUCCESS_ATTR, settings.get("signin_success"));
 					}
-					// why not also set these while we have the custom settings loaded
-					if (request != null) {
-						if (settings.containsKey("signin_success")) {
-							request.setAttribute(Config.AUTH_SIGNIN_SUCCESS_ATTR, settings.get("signin_success"));
-						}
-						if (settings.containsKey("signin_failure")) {
-							request.setAttribute(Config.AUTH_SIGNIN_FAILURE_ATTR, settings.get("signin_failure"));
-						}
+					if (settings.containsKey("signin_failure")) {
+						request.setAttribute(Config.AUTH_SIGNIN_FAILURE_ATTR, settings.get("signin_failure"));
 					}
 				}
 			}

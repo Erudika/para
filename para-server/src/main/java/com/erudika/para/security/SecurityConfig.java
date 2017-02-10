@@ -17,6 +17,15 @@
  */
 package com.erudika.para.security;
 
+import com.erudika.para.security.filters.OpenIDAuthFilter;
+import com.erudika.para.security.filters.GoogleAuthFilter;
+import com.erudika.para.security.filters.PasswordAuthFilter;
+import com.erudika.para.security.filters.TwitterAuthFilter;
+import com.erudika.para.security.filters.MicrosoftAuthFilter;
+import com.erudika.para.security.filters.GitHubAuthFilter;
+import com.erudika.para.security.filters.LinkedInAuthFilter;
+import com.erudika.para.security.filters.GenericOAuth2Filter;
+import com.erudika.para.security.filters.FacebookAuthFilter;
 import com.erudika.para.Para;
 import com.erudika.para.rest.Signer;
 import com.erudika.para.utils.Config;
@@ -237,7 +246,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 						patterns.add((String) configValue.unwrapped());
 					}
 				} catch (Exception e) {
-					logger.error("Invalid config syntax for protected resource: {}.", configValue.render());
+					logger.error("Invalid config syntax for protected resource: {}.", configValue.render(), e);
 				}
 			}
 			String[] rolz = (roles.isEmpty()) ? DEFAULT_ROLES : roles.toArray(new String[0]);

@@ -97,9 +97,7 @@ public class AspectsIT {
 
 	@AfterClass
 	public static void tearDownClass() throws Exception {
-//		Para.getDAO().delete(new App(Config.APP_NAME_NS));
 		Para.getDAO().deleteAll(Arrays.asList(s0, s1, s2));
-//		ElasticSearchUtils.deleteIndex(Config.APP_NAME_NS);
 		Para.destroy();
 	}
 

@@ -31,7 +31,7 @@ import com.erudika.para.core.Votable;
 import com.erudika.para.core.Vote;
 import com.erudika.para.search.ElasticSearchUtils;
 import com.erudika.para.security.AuthenticatedUserDetails;
-import com.erudika.para.security.FacebookAuthFilter;
+import com.erudika.para.security.filters.FacebookAuthFilter;
 import com.erudika.para.security.SecurityModule;
 import com.erudika.para.security.UserAuthentication;
 import com.erudika.para.utils.Config;

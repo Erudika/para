@@ -17,6 +17,15 @@
  */
 package com.erudika.para.security;
 
+import com.erudika.para.security.filters.OpenIDAuthFilter;
+import com.erudika.para.security.filters.GoogleAuthFilter;
+import com.erudika.para.security.filters.PasswordAuthFilter;
+import com.erudika.para.security.filters.TwitterAuthFilter;
+import com.erudika.para.security.filters.MicrosoftAuthFilter;
+import com.erudika.para.security.filters.GitHubAuthFilter;
+import com.erudika.para.security.filters.LinkedInAuthFilter;
+import com.erudika.para.security.filters.GenericOAuth2Filter;
+import com.erudika.para.security.filters.FacebookAuthFilter;
 import com.erudika.para.cache.Cache;
 import com.erudika.para.utils.Config;
 import com.google.inject.AbstractModule;
