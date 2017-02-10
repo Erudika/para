@@ -257,10 +257,23 @@ public class LanguageUtils {
 		if (dao == null) {
 			return Collections.emptyMap();
 		}
-		Sysprop progress = getProgressMap(appid);
+		Sysprop progress = dao.read(appid, progressKey);
 		Map<String, Integer> progressMap = new HashMap<String, Integer>(ALL_LOCALES.size());
-		for (String key : progress.getProperties().keySet()) {
-			progressMap.put(key, (Integer) progress.getProperties().get(key));
+		boolean isMissing = progress == null;
+		if (isMissing) {
+			progress = new Sysprop(progressKey);
+			progress.addProperty(getDefaultLanguageCode(), 100);
+		}
+		for (String langCode : ALL_LOCALES.keySet()) {
+			Object percent = progress.getProperties().get(langCode);
+			if (percent != null && percent instanceof Number) {
+				progressMap.put(langCode, (Integer) percent);
+			} else {
+				progressMap.put(langCode, 0);
+			}
+		}
+		if (isMissing) {
+			dao.create(appid, progress);
 		}
 		return progressMap;
 	}
@@ -333,8 +346,8 @@ public class LanguageUtils {
 		double defsize = getDefaultLanguage(appid).size();
 		double approved = value;
 
-		Sysprop progress = getProgressMap(appid);
-		Integer percent = (Integer) progress.getProperty(langCode);
+		Map<String, Integer> progress = getTranslationProgressMap(appid);
+		Integer percent = progress.get(langCode);
 		if (value == PLUS) {
 			approved = Math.round(percent * (defsize / 100) + 1);
 		} else if (value == MINUS) {
@@ -347,26 +360,17 @@ public class LanguageUtils {
 		}
 
 		if (defsize == 0) {
-			progress.addProperty(langCode, 0);
+			progress.put(langCode, 0);
 		} else {
-			progress.addProperty(langCode, (int) ((approved / defsize) * 100));
+			progress.put(langCode, (int) ((approved / defsize) * 100));
 		}
 		if (percent < 100 && approved >= (percent * defsize) / 100) {
-			dao.update(appid, progress);
-		}
-	}
-
-	private Sysprop getProgressMap(String appid) {
-		Sysprop progress = dao.read(appid, progressKey);
-		if (progress == null) {
-			progress = new Sysprop(progressKey);
-			for (String langCode : ALL_LOCALES.keySet()) {
-				progress.addProperty(langCode, 0);
+			Sysprop s = new Sysprop(progressKey);
+			for (Map.Entry<String, Integer> entry : progress.entrySet()) {
+				s.addProperty(entry.getKey(), entry.getValue());
 			}
-			progress.addProperty(getDefaultLanguageCode(), 100);
-			dao.create(appid, progress);
+			dao.create(appid, s);
 		}
-		return progress;
 	}
 
 	private Map<String, String> readLanguageFromFile(String appid, String langCode) {
