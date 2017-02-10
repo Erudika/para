@@ -18,6 +18,8 @@
 package com.erudika.para.persistence;
 
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Index;
@@ -57,7 +59,6 @@ public final class AWSDynamoUtils {
 	private static AmazonDynamoDBClient ddbClient;
 	private static DynamoDB ddb;
 	private static final String LOCAL_ENDPOINT = "http://localhost:8000";
-	private static final String ENDPOINT = "dynamodb.".concat(Config.AWS_REGION).concat(".amazonaws.com");
 	private static final Logger logger = LoggerFactory.getLogger(AWSDynamoUtils.class);
 
 	/**
@@ -77,11 +78,13 @@ public final class AWSDynamoUtils {
 		}
 
 		if (Config.IN_PRODUCTION) {
-			ddbClient = new AmazonDynamoDBClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
-			ddbClient.setEndpoint(ENDPOINT);
+			Region region = Regions.getCurrentRegion();
+			region = region != null ? region : Region.getRegion(Regions.fromName(Config.AWS_REGION));
+			ddbClient = new AmazonDynamoDBClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY)).
+					withRegion(region);
+
 		} else {
-			ddbClient = new AmazonDynamoDBClient(new BasicAWSCredentials("local", "null"));
-			ddbClient.setEndpoint(LOCAL_ENDPOINT);
+			ddbClient = new AmazonDynamoDBClient(new BasicAWSCredentials("local", "null")).withEndpoint(LOCAL_ENDPOINT);
 		}
 
 		if (!existsTable(Config.APP_NAME_NS)) {

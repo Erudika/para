@@ -60,7 +60,6 @@ public final class AWSQueueUtils {
 			Config.IN_PRODUCTION ? 20 : 0);
 
 	private static final String LOCAL_ENDPOINT = "http://localhost:9324";
-	private static final String ENDPOINT = "https://sqs.".concat(Config.AWS_REGION).concat(".amazonaws.com");
 	private static final Logger logger = LoggerFactory.getLogger(AWSQueueUtils.class);
 
 	private static volatile Map<String, Future<?>> pollingThreads = new HashMap<String, Future<?>>();
@@ -79,12 +78,12 @@ public final class AWSQueueUtils {
 			return sqsClient;
 		}
 		if (Config.IN_PRODUCTION) {
-			sqsClient = new AmazonSQSClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
-			sqsClient.setRegion(Region.getRegion(Regions.fromName(Config.AWS_REGION)));
-			sqsClient.setEndpoint(ENDPOINT);
+			Region region = Regions.getCurrentRegion();
+			region = region != null ? region : Region.getRegion(Regions.fromName(Config.AWS_REGION));
+			sqsClient = new AmazonSQSClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY)).
+					withRegion(region);
 		} else {
-			sqsClient = new AmazonSQSClient(new BasicAWSCredentials("x", "x"));
-			sqsClient.setEndpoint(LOCAL_ENDPOINT);
+			sqsClient = new AmazonSQSClient(new BasicAWSCredentials("x", "x")).withEndpoint(LOCAL_ENDPOINT);
 		}
 
 		Para.addDestroyListener(new DestroyListener() {

@@ -18,6 +18,8 @@
 package com.erudika.para.storage;
 
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -58,7 +60,9 @@ public class AWSFileStore implements FileStore {
 	public AWSFileStore(String bucket) {
 		this.bucket = bucket;
 		this.awsCredentials = new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY);
-		this.s3 = new AmazonS3Client(awsCredentials);
+		Region region = Regions.getCurrentRegion();
+		region = region != null ? region : Region.getRegion(Regions.fromName(Config.AWS_REGION));
+		this.s3 = new AmazonS3Client(awsCredentials).withRegion(region);
 	}
 
 	@Override

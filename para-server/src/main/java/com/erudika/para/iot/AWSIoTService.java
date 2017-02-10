@@ -81,8 +81,10 @@ public class AWSIoTService implements IoTService {
 			return iotClient;
 		}
 
-		iotClient = new AWSIotClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
-		iotClient.setRegion(Region.getRegion(Regions.fromName(Config.AWS_REGION)));
+		Region region = Regions.getCurrentRegion();
+		region = region != null ? region : Region.getRegion(Regions.fromName(Config.AWS_REGION));
+		iotClient = new AWSIotClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY)).
+				withRegion(region);
 
 		Para.addDestroyListener(new DestroyListener() {
 			public void onDestroy() {
@@ -98,8 +100,10 @@ public class AWSIoTService implements IoTService {
 			return iotDataClient;
 		}
 
-		iotDataClient = new AWSIotDataClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
-		iotDataClient.setRegion(Region.getRegion(Regions.fromName(Config.AWS_REGION)));
+		Region region = Regions.getCurrentRegion();
+		region = region != null ? region : Region.getRegion(Regions.fromName(Config.AWS_REGION));
+		iotDataClient = new AWSIotDataClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY)).
+				withRegion(region);
 
 		Para.addDestroyListener(new DestroyListener() {
 			public void onDestroy() {
