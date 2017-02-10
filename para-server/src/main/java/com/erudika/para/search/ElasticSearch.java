@@ -449,7 +449,7 @@ public class ElasticSearch implements Search {
 					P pobj = ParaObjectUtils.setAnnotatedFields(hit.getSource());
 					results.add(pobj);
 				}
-				logger.debug("Search result: appid={}, {}->{}", appid, hit.getSource().get("appid"), hit.getId());
+				logger.debug("Search result: appid={}, {}->{}", appid, hit.getSource().get(Config._APPID), hit.getId());
 			}
 
 			if (!readFromIndex && !keys.isEmpty()) {

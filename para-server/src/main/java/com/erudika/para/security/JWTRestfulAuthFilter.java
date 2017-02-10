@@ -134,7 +134,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 		}
 		Map<String, Object> entity = (Map<String, Object>) res.getEntity();
 		String provider = (String) entity.get("provider");
-		String appid = (String) entity.get("appid");
+		String appid = (String) entity.get(Config._APPID);
 		String token = (String) entity.get("token");
 
 		if (provider != null && appid != null && token != null) {
@@ -251,7 +251,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			try {
 				SignedJWT jwt = SignedJWT.parse(token.substring(6).trim());
 				String userid = jwt.getJWTClaimsSet().getSubject();
-				String appid = (String) jwt.getJWTClaimsSet().getClaim("appid");
+				String appid = (String) jwt.getJWTClaimsSet().getClaim(Config._APPID);
 				App app = Para.getDAO().read(App.id(appid));
 				if (app != null) {
 					User user = Para.getDAO().read(app.getAppIdentifier(), userid);

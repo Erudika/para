@@ -156,7 +156,7 @@ public final class SecurityUtils {
 				claimsSet.expirationTime(new Date(now.getTime() + (app.getTokenValiditySec() * 1000)));
 				claimsSet.notBeforeTime(now);
 				claimsSet.claim("refresh", getNextRefresh(app.getTokenValiditySec()));
-				claimsSet.claim("appid", app.getId());
+				claimsSet.claim(Config._APPID, app.getId());
 				if (user != null) {
 					claimsSet.subject(user.getId());
 					userSecret = user.getTokenSecret();
@@ -195,7 +195,7 @@ public final class SecurityUtils {
 	 * @return an array ["app_id", "secret_key"] or ["", ""]
 	 */
 	public static String[] getCustomAuthSettings(String appid, String prefix, HttpServletRequest request) {
-		// TODO: refactor this method
+		//TO DO: refactor this method
 		prefix = StringUtils.removeEnd(prefix + "", Config.SEPARATOR);
 		String appIdKey = prefix + "_app_id";
 		String secretKey = prefix + "_secret";

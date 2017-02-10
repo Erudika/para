@@ -17,6 +17,8 @@
  */
 package com.erudika.para.security.filters;
 
+import com.erudika.para.Para;
+import com.erudika.para.core.App;
 import com.erudika.para.core.User;
 import com.erudika.para.security.AuthenticatedUserDetails;
 import com.erudika.para.security.UserAuthentication;
@@ -71,7 +73,13 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (requestURI.endsWith(PASSWORD_ACTION)) {
 			user.setIdentifier(request.getParameter(EMAIL));
 			user.setPassword(request.getParameter(PASSWORD));
-
+			String appid = request.getParameter(Config._APPID);
+			if (!App.isRoot(appid)) {
+				App app = Para.getDAO().read(App.id(appid));
+				if (app != null) {
+					user.setAppid(app.getId());
+				}
+			}
 			if (User.passwordMatches(user) && StringUtils.contains(user.getIdentifier(), "@")) {
 				//success!
 				user = User.readUserForIdentifier(user);

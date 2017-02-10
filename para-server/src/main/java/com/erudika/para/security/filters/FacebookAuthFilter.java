@@ -87,7 +87,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (requestURI.endsWith(FACEBOOK_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
-				String appid = request.getParameter("appid");
+				String appid = request.getParameter(Config._APPID);
 				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
 				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.FB_PREFIX, request);
 				CloseableHttpResponse resp1 = null;

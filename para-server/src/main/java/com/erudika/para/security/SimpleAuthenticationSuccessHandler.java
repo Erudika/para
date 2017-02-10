@@ -48,9 +48,9 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 			u.update();
 		}
 		String customURI = (String) request.getAttribute(Config.AUTH_SIGNIN_SUCCESS_ATTR);
-		if (customURI == null && request.getParameter("appid") != null) {
+		if (customURI == null && request.getParameter(Config._APPID) != null) {
 			// try to reload custom redirect URI from app
-			SecurityUtils.getCustomAuthSettings(request.getParameter("appid"), null, request);
+			SecurityUtils.getCustomAuthSettings(request.getParameter(Config._APPID), null, request);
 			customURI = (String) request.getAttribute(Config.AUTH_SIGNIN_SUCCESS_ATTR);
 		}
 		if (!StringUtils.isBlank(customURI)) {

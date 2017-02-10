@@ -92,7 +92,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		if (requestURI.endsWith(OAUTH2_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
-				String appid = request.getParameter("appid");
+				String appid = request.getParameter(Config._APPID);
 				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
 				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.OAUTH2_PREFIX, request);
 				String entity = Utils.formatMessage(PAYLOAD,

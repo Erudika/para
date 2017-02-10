@@ -42,9 +42,9 @@ public class SimpleAuthenticationFailureHandler extends SimpleUrlAuthenticationF
 			AuthenticationException exception) throws IOException, ServletException {
 
 		String customURI = (String) request.getAttribute(Config.AUTH_SIGNIN_FAILURE_ATTR);
-		if (customURI == null && request.getParameter("appid") != null) {
+		if (customURI == null && request.getParameter(Config._APPID) != null) {
 			// try to reload custom redirect URI from app
-			SecurityUtils.getCustomAuthSettings(request.getParameter("appid"), null, request);
+			SecurityUtils.getCustomAuthSettings(request.getParameter(Config._APPID), null, request);
 			customURI = (String) request.getAttribute(Config.AUTH_SIGNIN_FAILURE_ATTR);
 		}
 		if (!StringUtils.isBlank(customURI)) {

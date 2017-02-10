@@ -18,6 +18,7 @@
 package com.erudika.para.security;
 
 import com.erudika.para.core.App;
+import com.erudika.para.utils.Config;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import org.slf4j.LoggerFactory;
@@ -82,7 +83,7 @@ public class JWTAuthentication extends UserAuthentication {
 		if (app != null) {
 			return app.getId();
 		} else if (claims != null && claims.getClaims() != null) {
-			return (String) claims.getClaims().get("appid");
+			return (String) claims.getClaims().get(Config._APPID);
 		}
 		return null;
 	}

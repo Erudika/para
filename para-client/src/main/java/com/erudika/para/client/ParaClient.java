@@ -1378,7 +1378,7 @@ public final class ParaClient {
 	public User signIn(String provider, String providerToken, boolean rememberJWT) {
 		if (!StringUtils.isBlank(provider) && !StringUtils.isBlank(providerToken)) {
 			Map<String, String> credentials = new HashMap<String, String>();
-			credentials.put("appid", accessKey);
+			credentials.put(Config._APPID, accessKey);
 			credentials.put("provider", provider);
 			credentials.put("token", providerToken);
 			Map<String, Object> result = getEntity(invokePost(JWT_PATH, Entity.json(credentials)), Map.class);
