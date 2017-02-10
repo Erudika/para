@@ -15,11 +15,14 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.security;
+package com.erudika.para.security.filters;
 
 import com.eaio.uuid.UUID;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
+import com.erudika.para.security.AuthenticatedUserDetails;
+import com.erudika.para.security.SecurityUtils;
+import com.erudika.para.security.UserAuthentication;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -45,27 +48,29 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
 /**
- * A filter that handles authentication requests to GitHub.
+ * A filter that handles authentication requests to a generic OAuth 2.0 identity server.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
+public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter {
 
 	private final CloseableHttpClient httpclient;
 	private final ObjectReader jreader;
-	private static final String PROFILE_URL = "https://api.github.com/user";
-	private static final String TOKEN_URL = "https://github.com/login/oauth/access_token";
-	private static final String PAYLOAD = "code={0}&redirect_uri={1}&scope=&client_id={2}"
-			+ "&client_secret={3}&grant_type=authorization_code";
+	private static final String DOMAIN = Config.getConfigParam("security.oauth.domain", "invalid.co");
+	private static final String PROFILE_URL = Config.getConfigParam("security.oauth.profile_url", "");
+	private static final String TOKEN_URL = Config.getConfigParam("security.oauth.token_url", "");
+	private static final String PAYLOAD = "code={0}&redirect_uri={1}"
+			+ "&scope={2}&client_id={3}&client_secret={4}&grant_type=authorization_code";
+
 	/**
 	 * The default filter mapping.
 	 */
-	public static final String GITHUB_ACTION = "github_auth";
+	public static final String OAUTH2_ACTION = "oauth2_auth";
 
 	/**
 	 * Default constructor.
 	 * @param defaultFilterProcessesUrl the url of the filter
 	 */
-	public GitHubAuthFilter(final String defaultFilterProcessesUrl) {
+	public GenericOAuth2Filter(final String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
 		this.jreader = ParaObjectUtils.getJsonReader(Map.class);
 		this.httpclient = HttpClients.createDefault();
@@ -84,20 +89,25 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 		final String requestURI = request.getRequestURI();
 		UserAuthentication userAuth = null;
 
-		if (requestURI.endsWith(GITHUB_ACTION)) {
+		if (requestURI.endsWith(OAUTH2_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = request.getParameter("appid");
 				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
-				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.GITHUB_PREFIX, request);
+				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.OAUTH2_PREFIX, request);
 				String entity = Utils.formatMessage(PAYLOAD,
 						URLEncoder.encode(authCode, "UTF-8"),
-						URLEncoder.encode(redirectURI, "UTF-8"), keys[0], keys[1]);
+						URLEncoder.encode(redirectURI, "UTF-8"),
+						URLEncoder.encode(Config.getConfigParam("security.oauth.scope", ""), "UTF-8"),
+						keys[0], keys[1]);
 
+				String acceptHeader = Config.getConfigParam("security.oauth.accept_header", "");
 				HttpPost tokenPost = new HttpPost(TOKEN_URL);
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
-				tokenPost.setHeader(HttpHeaders.ACCEPT, "application/json");
 				tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
+				if (!StringUtils.isBlank(acceptHeader)) {
+					tokenPost.setHeader(HttpHeaders.ACCEPT, acceptHeader);
+				}
 				CloseableHttpResponse resp1 = httpclient.execute(tokenPost);
 
 				if (resp1 != null && resp1.getEntity() != null) {
@@ -121,7 +131,7 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 	}
 
 	/**
-	 * Calls the GitHub API to get the user profile using a given access token.
+	 * Calls an external API to get the user profile using a given access token.
 	 * @param appid app identifier of the parent app, use null for root app
 	 * @param accessToken access token
 	 * @return {@link UserAuthentication} object or null if something went wrong
@@ -132,34 +142,41 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (accessToken != null) {
 			User user = new User();
 			user.setAppid(appid);
+			String acceptHeader = Config.getConfigParam("security.oauth.accept_header", "");
 			HttpGet profileGet = new HttpGet(PROFILE_URL);
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-			profileGet.setHeader(HttpHeaders.ACCEPT, "application/json");
+			if (!StringUtils.isBlank(acceptHeader)) {
+				profileGet.setHeader(HttpHeaders.ACCEPT, acceptHeader);
+			}
 			CloseableHttpResponse resp2 = httpclient.execute(profileGet);
 			HttpEntity respEntity = resp2.getEntity();
 			String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
 
 			if (respEntity != null && Utils.isJsonType(ctype)) {
 				Map<String, Object> profile = jreader.readValue(respEntity.getContent());
+				String accountIdParam = Config.getConfigParam("security.oauth.parameters.id", "id");
+				String pictureParam = Config.getConfigParam("security.oauth.parameters.picture", "picture");
+				String emailParam = Config.getConfigParam("security.oauth.parameters.email", "email");
+				String nameParam = Config.getConfigParam("security.oauth.parameters.name", "name");
 
-				if (profile != null && profile.containsKey("id")) {
-					Integer githubId = (Integer) profile.get("id");
-					String pic = (String) profile.get("avatar_url");
-					String email = (String) profile.get("email");
-					String name = (String) profile.get("name");
+				if (profile != null && profile.containsKey(accountIdParam)) {
+					String oauthAccountId = (String) profile.get(accountIdParam);
+					String pic = (String) profile.get(pictureParam);
+					String email = (String) profile.get(emailParam);
+					String name = (String) profile.get(nameParam);
 
-					user.setIdentifier(Config.GITHUB_PREFIX + githubId);
+					user.setIdentifier(Config.OAUTH2_PREFIX.concat(oauthAccountId));
 					user = User.readUserForIdentifier(user);
 					if (user == null) {
 						//user is new
 						user = new User();
 						user.setActive(true);
 						user.setAppid(appid);
-						user.setEmail(StringUtils.isBlank(email) ? githubId + "@github.com" : email);
+						user.setEmail(StringUtils.isBlank(email) ? oauthAccountId + "@" + DOMAIN : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());
 						user.setPicture(getPicture(pic));
-						user.setIdentifier(Config.GITHUB_PREFIX + githubId);
+						user.setIdentifier(Config.OAUTH2_PREFIX.concat(oauthAccountId));
 						String id = user.create();
 						if (id == null) {
 							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");

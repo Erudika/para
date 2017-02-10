@@ -15,15 +15,19 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.security;
+package com.erudika.para.security.filters;
 
 import com.eaio.uuid.UUID;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
+import com.erudika.para.security.AuthenticatedUserDetails;
+import com.erudika.para.security.SecurityUtils;
+import com.erudika.para.security.UserAuthentication;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -32,6 +36,8 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
@@ -42,27 +48,29 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
 /**
- * A filter that handles authentication requests to Facebook.
+ * A filter that handles authentication requests to Microsoft.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
+public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private final CloseableHttpClient httpclient;
 	private final ObjectReader jreader;
-	private static final String PROFILE_URL = "https://graph.facebook.com/me?"
-			+ "fields=name,email,picture.width(400).type(square).height(400)&access_token=";
-	private static final String TOKEN_URL = "https://graph.facebook.com/oauth/access_token?"
-			+ "code={0}&redirect_uri={1}&client_id={2}&client_secret={3}";
+	private static final String PROFILE_URL = "https://graph.microsoft.com/v1.0/me";
+	private static final String PHOTO_URL = "https://apis.live.net/v5.0/{0}/picture?type=large";
+	private static final String TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
+	private static final String PAYLOAD = "code={0}&redirect_uri={1}"
+			+ "&scope=https%3A%2F%2Fgraph.microsoft.com%2Fuser.read&client_id={2}"
+			+ "&client_secret={3}&grant_type=authorization_code";
 	/**
 	 * The default filter mapping.
 	 */
-	public static final String FACEBOOK_ACTION = "facebook_auth";
+	public static final String MICROSOFT_ACTION = "microsoft_auth";
 
 	/**
 	 * Default constructor.
 	 * @param defaultFilterProcessesUrl the url of the filter
 	 */
-	public FacebookAuthFilter(String defaultFilterProcessesUrl) {
+	public MicrosoftAuthFilter(final String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
 		this.jreader = ParaObjectUtils.getJsonReader(Map.class);
 		this.httpclient = HttpClients.createDefault();
@@ -81,26 +89,26 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 		final String requestURI = request.getRequestURI();
 		UserAuthentication userAuth = null;
 
-		if (requestURI.endsWith(FACEBOOK_ACTION)) {
+		if (requestURI.endsWith(MICROSOFT_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = request.getParameter("appid");
 				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
-				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.FB_PREFIX, request);
-				CloseableHttpResponse resp1 = null;
-				String url = Utils.formatMessage(TOKEN_URL, authCode, redirectURI, keys[0], keys[1]);
-				try {
-					HttpGet tokenPost = new HttpGet(url);
-					resp1 = httpclient.execute(tokenPost);
-				} catch (Exception e) {
-					logger.warn("Facebook auth request failed: GET " + url, e);
-				}
+				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.MICROSOFT_PREFIX, request);
+				String entity = Utils.formatMessage(PAYLOAD,
+						URLEncoder.encode(authCode, "UTF-8"),
+						URLEncoder.encode(redirectURI, "UTF-8"), keys[0], keys[1]);
+
+				HttpPost tokenPost = new HttpPost(TOKEN_URL);
+				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
+				tokenPost.setHeader(HttpHeaders.ACCEPT, "application/json");
+				tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
+				CloseableHttpResponse resp1 = httpclient.execute(tokenPost);
 
 				if (resp1 != null && resp1.getEntity() != null) {
-					String token = EntityUtils.toString(resp1.getEntity(), Config.DEFAULT_ENCODING);
-					if (token != null && token.startsWith("access_token")) {
-						String accessToken = token.substring(token.indexOf("=") + 1, token.indexOf("&"));
-						userAuth = getOrCreateUser(appid, accessToken);
+					Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
+					if (token != null && token.containsKey("access_token")) {
+						userAuth = getOrCreateUser(appid, (String) token.get("access_token"));
 					}
 					EntityUtils.consumeQuietly(resp1.getEntity());
 				}
@@ -118,68 +126,54 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 	}
 
 	/**
-	 * Calls the Facebook API to get the user profile using a given access token.
+	 * Calls the Microsoft Graph API to get the user profile using a given access token.
 	 * @param appid app identifier of the parent app, use null for root app
 	 * @param accessToken access token
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException ex
 	 */
-	@SuppressWarnings("unchecked")
 	public UserAuthentication getOrCreateUser(String appid, String accessToken) throws IOException {
 		UserAuthentication userAuth = null;
 		if (accessToken != null) {
 			User user = new User();
 			user.setAppid(appid);
-
-			String ctype = null;
-			HttpEntity respEntity = null;
-			CloseableHttpResponse resp2 = null;
-			try {
-				HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
-				resp2 = httpclient.execute(profileGet);
-				respEntity = resp2.getEntity();
-				ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
-			} catch (Exception e) {
-				logger.warn("Facebook auth request failed: GET " + PROFILE_URL + accessToken, e);
-			}
+			HttpGet profileGet = new HttpGet(PROFILE_URL);
+			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+			profileGet.setHeader(HttpHeaders.ACCEPT, "application/json");
+			CloseableHttpResponse resp2 = httpclient.execute(profileGet);
+			HttpEntity respEntity = resp2.getEntity();
+			String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
 
 			if (respEntity != null && Utils.isJsonType(ctype)) {
 				Map<String, Object> profile = jreader.readValue(respEntity.getContent());
 
 				if (profile != null && profile.containsKey("id")) {
-					String fbId = (String) profile.get("id");
-					Map<String, Object> pic = (Map<String, Object>) profile.get("picture");
-					String email = (String) profile.get("email");
-					String name = (String) profile.get("name");
+					String microsoftId = (String) profile.get("id");
+					String email = (String) profile.get("userPrincipalName");
+					String name = (String) profile.get("displayName");
+					if (StringUtils.isBlank(email) || !StringUtils.contains(email, "@")) {
+						email = (String) profile.get("mail");
+					}
 
-					user.setIdentifier(Config.FB_PREFIX.concat(fbId));
+					user.setIdentifier(Config.MICROSOFT_PREFIX + microsoftId);
 					user = User.readUserForIdentifier(user);
 					if (user == null) {
 						//user is new
 						user = new User();
 						user.setActive(true);
 						user.setAppid(appid);
-						user.setEmail(StringUtils.isBlank(email) ? fbId + "@facebook.com" : email);
+						user.setEmail(StringUtils.isBlank(email) ? microsoftId + "@windowslive.com" : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());
-						user.setPicture(getPicture(fbId, pic));
-						user.setIdentifier(Config.FB_PREFIX.concat(fbId));
+						user.setPicture(getPicture(microsoftId));
+						user.setIdentifier(Config.MICROSOFT_PREFIX + microsoftId);
 						String id = user.create();
 						if (id == null) {
 							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 						}
 					} else {
-						String picture = getPicture(fbId, pic);
-						boolean update = false;
-						if (!StringUtils.equals(user.getPicture(), picture)) {
-							user.setPicture(picture);
-							update = true;
-						}
 						if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
 							user.setEmail(email);
-							update = true;
-						}
-						if (update) {
 							user.update();
 						}
 					}
@@ -191,16 +185,9 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 		return userAuth;
 	}
 
-	@SuppressWarnings("unchecked")
-	private static String getPicture(String fbId, Map<String, Object> pic) {
-		if (pic != null) {
-			Map<String, Object> data = (Map<String, Object>) pic.get("data");
-			// try to get the direct url to the profile pic
-			if (data != null && data.containsKey("url")) {
-				return (String) data.get("url");
-			} else {
-				return "http://graph.facebook.com/" + fbId + "/picture?width=400&height=400&type=square";
-			}
+	private String getPicture(String cid) {
+		if (cid != null) {
+			return Utils.formatMessage(PHOTO_URL, cid);
 		}
 		return null;
 	}

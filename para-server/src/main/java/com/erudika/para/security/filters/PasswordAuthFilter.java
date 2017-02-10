@@ -15,9 +15,11 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.security;
+package com.erudika.para.security.filters;
 
 import com.erudika.para.core.User;
+import com.erudika.para.security.AuthenticatedUserDetails;
+import com.erudika.para.security.UserAuthentication;
 import com.erudika.para.utils.Config;
 import java.io.IOException;
 import javax.servlet.ServletException;

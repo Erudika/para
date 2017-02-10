@@ -15,11 +15,14 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.security;
+package com.erudika.para.security.filters;
 
 import com.eaio.uuid.UUID;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
+import com.erudika.para.security.AuthenticatedUserDetails;
+import com.erudika.para.security.SecurityUtils;
+import com.erudika.para.security.UserAuthentication;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -45,27 +48,27 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
 /**
- * A filter that handles authentication requests to Google+ API.
+ * A filter that handles authentication requests to GitHub.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
+public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private final CloseableHttpClient httpclient;
 	private final ObjectReader jreader;
-	private static final String PROFILE_URL = "https://www.googleapis.com/plus/v1/people/me/openIdConnect";
-	private static final String TOKEN_URL = "https://accounts.google.com/o/oauth2/token";
+	private static final String PROFILE_URL = "https://api.github.com/user";
+	private static final String TOKEN_URL = "https://github.com/login/oauth/access_token";
 	private static final String PAYLOAD = "code={0}&redirect_uri={1}&scope=&client_id={2}"
 			+ "&client_secret={3}&grant_type=authorization_code";
 	/**
 	 * The default filter mapping.
 	 */
-	public static final String GOOGLE_ACTION = "google_auth";
+	public static final String GITHUB_ACTION = "github_auth";
 
 	/**
 	 * Default constructor.
 	 * @param defaultFilterProcessesUrl the url of the filter
 	 */
-	public GoogleAuthFilter(final String defaultFilterProcessesUrl) {
+	public GitHubAuthFilter(final String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
 		this.jreader = ParaObjectUtils.getJsonReader(Map.class);
 		this.httpclient = HttpClients.createDefault();
@@ -84,18 +87,19 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 		final String requestURI = request.getRequestURI();
 		UserAuthentication userAuth = null;
 
-		if (requestURI.endsWith(GOOGLE_ACTION)) {
+		if (requestURI.endsWith(GITHUB_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = request.getParameter("appid");
 				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
-				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.GPLUS_PREFIX, request);
+				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.GITHUB_PREFIX, request);
 				String entity = Utils.formatMessage(PAYLOAD,
 						URLEncoder.encode(authCode, "UTF-8"),
 						URLEncoder.encode(redirectURI, "UTF-8"), keys[0], keys[1]);
 
 				HttpPost tokenPost = new HttpPost(TOKEN_URL);
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
+				tokenPost.setHeader(HttpHeaders.ACCEPT, "application/json");
 				tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
 				CloseableHttpResponse resp1 = httpclient.execute(tokenPost);
 
@@ -120,7 +124,7 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 	}
 
 	/**
-	 * Calls the Google+ API to get the user profile using a given access token.
+	 * Calls the GitHub API to get the user profile using a given access token.
 	 * @param appid app identifier of the parent app, use null for root app
 	 * @param accessToken access token
 	 * @return {@link UserAuthentication} object or null if something went wrong
@@ -133,6 +137,7 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 			user.setAppid(appid);
 			HttpGet profileGet = new HttpGet(PROFILE_URL);
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+			profileGet.setHeader(HttpHeaders.ACCEPT, "application/json");
 			CloseableHttpResponse resp2 = httpclient.execute(profileGet);
 			HttpEntity respEntity = resp2.getEntity();
 			String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
@@ -140,24 +145,24 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 			if (respEntity != null && Utils.isJsonType(ctype)) {
 				Map<String, Object> profile = jreader.readValue(respEntity.getContent());
 
-				if (profile != null && profile.containsKey("sub")) {
-					String googleSubId = (String) profile.get("sub");
-					String pic = (String) profile.get("picture");
+				if (profile != null && profile.containsKey("id")) {
+					Integer githubId = (Integer) profile.get("id");
+					String pic = (String) profile.get("avatar_url");
 					String email = (String) profile.get("email");
 					String name = (String) profile.get("name");
 
-					user.setIdentifier(Config.GPLUS_PREFIX.concat(googleSubId));
+					user.setIdentifier(Config.GITHUB_PREFIX + githubId);
 					user = User.readUserForIdentifier(user);
 					if (user == null) {
 						//user is new
 						user = new User();
 						user.setActive(true);
 						user.setAppid(appid);
-						user.setEmail(StringUtils.isBlank(email) ? googleSubId + "@google.com" : email);
+						user.setEmail(StringUtils.isBlank(email) ? githubId + "@github.com" : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());
 						user.setPicture(getPicture(pic));
-						user.setIdentifier(Config.GPLUS_PREFIX.concat(googleSubId));
+						user.setIdentifier(Config.GITHUB_PREFIX + githubId);
 						String id = user.create();
 						if (id == null) {
 							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");

@@ -15,11 +15,14 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.security;
+package com.erudika.para.security.filters;
 
 import com.eaio.uuid.UUID;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
+import com.erudika.para.security.AuthenticatedUserDetails;
+import com.erudika.para.security.SecurityUtils;
+import com.erudika.para.security.UserAuthentication;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -32,7 +35,6 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
@@ -43,28 +45,27 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
 /**
- * A filter that handles authentication requests to LinkedIn.
+ * A filter that handles authentication requests to Facebook.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
+public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private final CloseableHttpClient httpclient;
 	private final ObjectReader jreader;
-	private static final String PROFILE_URL = "https://api.linkedin.com/v1/people/~"
-			+ ":(id,firstName,lastName,email-address,picture-url)?format=json&oauth2_access_token=";
-	private static final String TOKEN_URL = "https://www.linkedin.com/uas/oauth2/accessToken?"
-			+ "grant_type=authorization_code&code={0}&redirect_uri={1}&client_id={2}&client_secret={3}";
-
+	private static final String PROFILE_URL = "https://graph.facebook.com/me?"
+			+ "fields=name,email,picture.width(400).type(square).height(400)&access_token=";
+	private static final String TOKEN_URL = "https://graph.facebook.com/oauth/access_token?"
+			+ "code={0}&redirect_uri={1}&client_id={2}&client_secret={3}";
 	/**
 	 * The default filter mapping.
 	 */
-	public static final String LINKEDIN_ACTION = "linkedin_auth";
+	public static final String FACEBOOK_ACTION = "facebook_auth";
 
 	/**
 	 * Default constructor.
 	 * @param defaultFilterProcessesUrl the url of the filter
 	 */
-	public LinkedInAuthFilter(final String defaultFilterProcessesUrl) {
+	public FacebookAuthFilter(String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
 		this.jreader = ParaObjectUtils.getJsonReader(Map.class);
 		this.httpclient = HttpClients.createDefault();
@@ -83,25 +84,26 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 		final String requestURI = request.getRequestURI();
 		UserAuthentication userAuth = null;
 
-		if (requestURI.endsWith(LINKEDIN_ACTION)) {
+		if (requestURI.endsWith(FACEBOOK_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = request.getParameter("appid");
 				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
-				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.LINKEDIN_PREFIX, request);
+				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.FB_PREFIX, request);
 				CloseableHttpResponse resp1 = null;
 				String url = Utils.formatMessage(TOKEN_URL, authCode, redirectURI, keys[0], keys[1]);
 				try {
-					HttpPost tokenPost = new HttpPost(url);
+					HttpGet tokenPost = new HttpGet(url);
 					resp1 = httpclient.execute(tokenPost);
 				} catch (Exception e) {
-					logger.warn("LinkedIn auth request failed: GET " + url, e);
+					logger.warn("Facebook auth request failed: GET " + url, e);
 				}
 
 				if (resp1 != null && resp1.getEntity() != null) {
-					Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
-					if (token != null && token.containsKey("access_token")) {
-						userAuth = getOrCreateUser(appid, (String) token.get("access_token"));
+					String token = EntityUtils.toString(resp1.getEntity(), Config.DEFAULT_ENCODING);
+					if (token != null && token.startsWith("access_token")) {
+						String accessToken = token.substring(token.indexOf("=") + 1, token.indexOf("&"));
+						userAuth = getOrCreateUser(appid, accessToken);
 					}
 					EntityUtils.consumeQuietly(resp1.getEntity());
 				}
@@ -119,12 +121,13 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 	}
 
 	/**
-	 * Calls the LinkedIn API to get the user profile using a given access token.
+	 * Calls the Facebook API to get the user profile using a given access token.
 	 * @param appid app identifier of the parent app, use null for root app
 	 * @param accessToken access token
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException ex
 	 */
+	@SuppressWarnings("unchecked")
 	public UserAuthentication getOrCreateUser(String appid, String accessToken) throws IOException {
 		UserAuthentication userAuth = null;
 		if (accessToken != null) {
@@ -140,40 +143,39 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 				respEntity = resp2.getEntity();
 				ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
 			} catch (Exception e) {
-				logger.warn("LinkedIn auth request failed: GET " + PROFILE_URL + accessToken, e);
+				logger.warn("Facebook auth request failed: GET " + PROFILE_URL + accessToken, e);
 			}
 
 			if (respEntity != null && Utils.isJsonType(ctype)) {
 				Map<String, Object> profile = jreader.readValue(respEntity.getContent());
 
 				if (profile != null && profile.containsKey("id")) {
-					String linkedInID = (String) profile.get("id");
-					String email = (String) profile.get("emailAddress");
-					String pic = (String) profile.get("pictureUrl");
-					String fName = (String) profile.get("firstName");
-					String lName = (String) profile.get("lastName");
-					String name = fName + " " + lName;
+					String fbId = (String) profile.get("id");
+					Map<String, Object> pic = (Map<String, Object>) profile.get("picture");
+					String email = (String) profile.get("email");
+					String name = (String) profile.get("name");
 
-					user.setIdentifier(Config.LINKEDIN_PREFIX.concat(linkedInID));
+					user.setIdentifier(Config.FB_PREFIX.concat(fbId));
 					user = User.readUserForIdentifier(user);
 					if (user == null) {
 						//user is new
 						user = new User();
 						user.setActive(true);
 						user.setAppid(appid);
-						user.setEmail(StringUtils.isBlank(email) ? linkedInID + "@linkedin.com" : email);
+						user.setEmail(StringUtils.isBlank(email) ? fbId + "@facebook.com" : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());
-						user.setPicture(pic);
-						user.setIdentifier(Config.LINKEDIN_PREFIX.concat(linkedInID));
+						user.setPicture(getPicture(fbId, pic));
+						user.setIdentifier(Config.FB_PREFIX.concat(fbId));
 						String id = user.create();
 						if (id == null) {
 							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 						}
 					} else {
+						String picture = getPicture(fbId, pic);
 						boolean update = false;
-						if (!StringUtils.equals(user.getPicture(), pic)) {
-							user.setPicture(pic);
+						if (!StringUtils.equals(user.getPicture(), picture)) {
+							user.setPicture(picture);
 							update = true;
 						}
 						if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
@@ -190,5 +192,19 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 		}
 		return userAuth;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static String getPicture(String fbId, Map<String, Object> pic) {
+		if (pic != null) {
+			Map<String, Object> data = (Map<String, Object>) pic.get("data");
+			// try to get the direct url to the profile pic
+			if (data != null && data.containsKey("url")) {
+				return (String) data.get("url");
+			} else {
+				return "http://graph.facebook.com/" + fbId + "/picture?width=400&height=400&type=square";
+			}
+		}
+		return null;
 	}
 }

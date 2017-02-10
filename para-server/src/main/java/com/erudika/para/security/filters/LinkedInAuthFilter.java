@@ -15,16 +15,18 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.security;
+package com.erudika.para.security.filters;
 
 import com.eaio.uuid.UUID;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
+import com.erudika.para.security.AuthenticatedUserDetails;
+import com.erudika.para.security.SecurityUtils;
+import com.erudika.para.security.UserAuthentication;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -34,7 +36,6 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
@@ -45,29 +46,28 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
 /**
- * A filter that handles authentication requests to a generic OAuth 2.0 identity server.
+ * A filter that handles authentication requests to LinkedIn.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter {
+public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private final CloseableHttpClient httpclient;
 	private final ObjectReader jreader;
-	private static final String DOMAIN = Config.getConfigParam("security.oauth.domain", "invalid.co");
-	private static final String PROFILE_URL = Config.getConfigParam("security.oauth.profile_url", "");
-	private static final String TOKEN_URL = Config.getConfigParam("security.oauth.token_url", "");
-	private static final String PAYLOAD = "code={0}&redirect_uri={1}"
-			+ "&scope={2}&client_id={3}&client_secret={4}&grant_type=authorization_code";
+	private static final String PROFILE_URL = "https://api.linkedin.com/v1/people/~"
+			+ ":(id,firstName,lastName,email-address,picture-url)?format=json&oauth2_access_token=";
+	private static final String TOKEN_URL = "https://www.linkedin.com/uas/oauth2/accessToken?"
+			+ "grant_type=authorization_code&code={0}&redirect_uri={1}&client_id={2}&client_secret={3}";
 
 	/**
 	 * The default filter mapping.
 	 */
-	public static final String OAUTH2_ACTION = "oauth2_auth";
+	public static final String LINKEDIN_ACTION = "linkedin_auth";
 
 	/**
 	 * Default constructor.
 	 * @param defaultFilterProcessesUrl the url of the filter
 	 */
-	public GenericOAuth2Filter(final String defaultFilterProcessesUrl) {
+	public LinkedInAuthFilter(final String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
 		this.jreader = ParaObjectUtils.getJsonReader(Map.class);
 		this.httpclient = HttpClients.createDefault();
@@ -86,26 +86,20 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		final String requestURI = request.getRequestURI();
 		UserAuthentication userAuth = null;
 
-		if (requestURI.endsWith(OAUTH2_ACTION)) {
+		if (requestURI.endsWith(LINKEDIN_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = request.getParameter("appid");
 				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
-				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.OAUTH2_PREFIX, request);
-				String entity = Utils.formatMessage(PAYLOAD,
-						URLEncoder.encode(authCode, "UTF-8"),
-						URLEncoder.encode(redirectURI, "UTF-8"),
-						URLEncoder.encode(Config.getConfigParam("security.oauth.scope", ""), "UTF-8"),
-						keys[0], keys[1]);
-
-				String acceptHeader = Config.getConfigParam("security.oauth.accept_header", "");
-				HttpPost tokenPost = new HttpPost(TOKEN_URL);
-				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
-				tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
-				if (!StringUtils.isBlank(acceptHeader)) {
-					tokenPost.setHeader(HttpHeaders.ACCEPT, acceptHeader);
+				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.LINKEDIN_PREFIX, request);
+				CloseableHttpResponse resp1 = null;
+				String url = Utils.formatMessage(TOKEN_URL, authCode, redirectURI, keys[0], keys[1]);
+				try {
+					HttpPost tokenPost = new HttpPost(url);
+					resp1 = httpclient.execute(tokenPost);
+				} catch (Exception e) {
+					logger.warn("LinkedIn auth request failed: GET " + url, e);
 				}
-				CloseableHttpResponse resp1 = httpclient.execute(tokenPost);
 
 				if (resp1 != null && resp1.getEntity() != null) {
 					Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
@@ -128,7 +122,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	}
 
 	/**
-	 * Calls an external API to get the user profile using a given access token.
+	 * Calls the LinkedIn API to get the user profile using a given access token.
 	 * @param appid app identifier of the parent app, use null for root app
 	 * @param accessToken access token
 	 * @return {@link UserAuthentication} object or null if something went wrong
@@ -139,50 +133,50 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		if (accessToken != null) {
 			User user = new User();
 			user.setAppid(appid);
-			String acceptHeader = Config.getConfigParam("security.oauth.accept_header", "");
-			HttpGet profileGet = new HttpGet(PROFILE_URL);
-			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-			if (!StringUtils.isBlank(acceptHeader)) {
-				profileGet.setHeader(HttpHeaders.ACCEPT, acceptHeader);
+
+			String ctype = null;
+			HttpEntity respEntity = null;
+			CloseableHttpResponse resp2 = null;
+			try {
+				HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
+				resp2 = httpclient.execute(profileGet);
+				respEntity = resp2.getEntity();
+				ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
+			} catch (Exception e) {
+				logger.warn("LinkedIn auth request failed: GET " + PROFILE_URL + accessToken, e);
 			}
-			CloseableHttpResponse resp2 = httpclient.execute(profileGet);
-			HttpEntity respEntity = resp2.getEntity();
-			String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
 
 			if (respEntity != null && Utils.isJsonType(ctype)) {
 				Map<String, Object> profile = jreader.readValue(respEntity.getContent());
-				String accountIdParam = Config.getConfigParam("security.oauth.parameters.id", "id");
-				String pictureParam = Config.getConfigParam("security.oauth.parameters.picture", "picture");
-				String emailParam = Config.getConfigParam("security.oauth.parameters.email", "email");
-				String nameParam = Config.getConfigParam("security.oauth.parameters.name", "name");
 
-				if (profile != null && profile.containsKey(accountIdParam)) {
-					String oauthAccountId = (String) profile.get(accountIdParam);
-					String pic = (String) profile.get(pictureParam);
-					String email = (String) profile.get(emailParam);
-					String name = (String) profile.get(nameParam);
+				if (profile != null && profile.containsKey("id")) {
+					String linkedInID = (String) profile.get("id");
+					String email = (String) profile.get("emailAddress");
+					String pic = (String) profile.get("pictureUrl");
+					String fName = (String) profile.get("firstName");
+					String lName = (String) profile.get("lastName");
+					String name = fName + " " + lName;
 
-					user.setIdentifier(Config.OAUTH2_PREFIX.concat(oauthAccountId));
+					user.setIdentifier(Config.LINKEDIN_PREFIX.concat(linkedInID));
 					user = User.readUserForIdentifier(user);
 					if (user == null) {
 						//user is new
 						user = new User();
 						user.setActive(true);
 						user.setAppid(appid);
-						user.setEmail(StringUtils.isBlank(email) ? oauthAccountId + "@" + DOMAIN : email);
+						user.setEmail(StringUtils.isBlank(email) ? linkedInID + "@linkedin.com" : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());
-						user.setPicture(getPicture(pic));
-						user.setIdentifier(Config.OAUTH2_PREFIX.concat(oauthAccountId));
+						user.setPicture(pic);
+						user.setIdentifier(Config.LINKEDIN_PREFIX.concat(linkedInID));
 						String id = user.create();
 						if (id == null) {
 							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 						}
 					} else {
-						String picture = getPicture(pic);
 						boolean update = false;
-						if (!StringUtils.equals(user.getPicture(), picture)) {
-							user.setPicture(picture);
+						if (!StringUtils.equals(user.getPicture(), pic)) {
+							user.setPicture(pic);
 							update = true;
 						}
 						if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
@@ -199,17 +193,5 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			}
 		}
 		return userAuth;
-	}
-
-	private static String getPicture(String pic) {
-		if (pic != null) {
-			if (pic.indexOf('?') > 0) {
-				// user picture migth contain size parameters - remove them
-				return pic.substring(0, pic.indexOf('?'));
-			} else {
-				return pic;
-			}
-		}
-		return null;
 	}
 }

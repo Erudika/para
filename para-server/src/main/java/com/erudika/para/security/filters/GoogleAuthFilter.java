@@ -15,11 +15,14 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.security;
+package com.erudika.para.security.filters;
 
 import com.eaio.uuid.UUID;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
+import com.erudika.para.security.AuthenticatedUserDetails;
+import com.erudika.para.security.SecurityUtils;
+import com.erudika.para.security.UserAuthentication;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -45,29 +48,27 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
 /**
- * A filter that handles authentication requests to Microsoft.
+ * A filter that handles authentication requests to Google+ API.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter {
+public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private final CloseableHttpClient httpclient;
 	private final ObjectReader jreader;
-	private static final String PROFILE_URL = "https://graph.microsoft.com/v1.0/me";
-	private static final String PHOTO_URL = "https://apis.live.net/v5.0/{0}/picture?type=large";
-	private static final String TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
-	private static final String PAYLOAD = "code={0}&redirect_uri={1}"
-			+ "&scope=https%3A%2F%2Fgraph.microsoft.com%2Fuser.read&client_id={2}"
+	private static final String PROFILE_URL = "https://www.googleapis.com/plus/v1/people/me/openIdConnect";
+	private static final String TOKEN_URL = "https://accounts.google.com/o/oauth2/token";
+	private static final String PAYLOAD = "code={0}&redirect_uri={1}&scope=&client_id={2}"
 			+ "&client_secret={3}&grant_type=authorization_code";
 	/**
 	 * The default filter mapping.
 	 */
-	public static final String MICROSOFT_ACTION = "microsoft_auth";
+	public static final String GOOGLE_ACTION = "google_auth";
 
 	/**
 	 * Default constructor.
 	 * @param defaultFilterProcessesUrl the url of the filter
 	 */
-	public MicrosoftAuthFilter(final String defaultFilterProcessesUrl) {
+	public GoogleAuthFilter(final String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
 		this.jreader = ParaObjectUtils.getJsonReader(Map.class);
 		this.httpclient = HttpClients.createDefault();
@@ -86,19 +87,18 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 		final String requestURI = request.getRequestURI();
 		UserAuthentication userAuth = null;
 
-		if (requestURI.endsWith(MICROSOFT_ACTION)) {
+		if (requestURI.endsWith(GOOGLE_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = request.getParameter("appid");
 				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
-				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.MICROSOFT_PREFIX, request);
+				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.GPLUS_PREFIX, request);
 				String entity = Utils.formatMessage(PAYLOAD,
 						URLEncoder.encode(authCode, "UTF-8"),
 						URLEncoder.encode(redirectURI, "UTF-8"), keys[0], keys[1]);
 
 				HttpPost tokenPost = new HttpPost(TOKEN_URL);
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
-				tokenPost.setHeader(HttpHeaders.ACCEPT, "application/json");
 				tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
 				CloseableHttpResponse resp1 = httpclient.execute(tokenPost);
 
@@ -123,7 +123,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 	}
 
 	/**
-	 * Calls the Microsoft Graph API to get the user profile using a given access token.
+	 * Calls the Google+ API to get the user profile using a given access token.
 	 * @param appid app identifier of the parent app, use null for root app
 	 * @param accessToken access token
 	 * @return {@link UserAuthentication} object or null if something went wrong
@@ -136,7 +136,6 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 			user.setAppid(appid);
 			HttpGet profileGet = new HttpGet(PROFILE_URL);
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-			profileGet.setHeader(HttpHeaders.ACCEPT, "application/json");
 			CloseableHttpResponse resp2 = httpclient.execute(profileGet);
 			HttpEntity respEntity = resp2.getEntity();
 			String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
@@ -144,33 +143,40 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 			if (respEntity != null && Utils.isJsonType(ctype)) {
 				Map<String, Object> profile = jreader.readValue(respEntity.getContent());
 
-				if (profile != null && profile.containsKey("id")) {
-					String microsoftId = (String) profile.get("id");
-					String email = (String) profile.get("userPrincipalName");
-					String name = (String) profile.get("displayName");
-					if (StringUtils.isBlank(email) || !StringUtils.contains(email, "@")) {
-						email = (String) profile.get("mail");
-					}
+				if (profile != null && profile.containsKey("sub")) {
+					String googleSubId = (String) profile.get("sub");
+					String pic = (String) profile.get("picture");
+					String email = (String) profile.get("email");
+					String name = (String) profile.get("name");
 
-					user.setIdentifier(Config.MICROSOFT_PREFIX + microsoftId);
+					user.setIdentifier(Config.GPLUS_PREFIX.concat(googleSubId));
 					user = User.readUserForIdentifier(user);
 					if (user == null) {
 						//user is new
 						user = new User();
 						user.setActive(true);
 						user.setAppid(appid);
-						user.setEmail(StringUtils.isBlank(email) ? microsoftId + "@windowslive.com" : email);
+						user.setEmail(StringUtils.isBlank(email) ? googleSubId + "@google.com" : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());
-						user.setPicture(getPicture(microsoftId));
-						user.setIdentifier(Config.MICROSOFT_PREFIX + microsoftId);
+						user.setPicture(getPicture(pic));
+						user.setIdentifier(Config.GPLUS_PREFIX.concat(googleSubId));
 						String id = user.create();
 						if (id == null) {
 							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 						}
 					} else {
+						String picture = getPicture(pic);
+						boolean update = false;
+						if (!StringUtils.equals(user.getPicture(), picture)) {
+							user.setPicture(picture);
+							update = true;
+						}
 						if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
 							user.setEmail(email);
+							update = true;
+						}
+						if (update) {
 							user.update();
 						}
 					}
@@ -182,9 +188,14 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 		return userAuth;
 	}
 
-	private String getPicture(String cid) {
-		if (cid != null) {
-			return Utils.formatMessage(PHOTO_URL, cid);
+	private static String getPicture(String pic) {
+		if (pic != null) {
+			if (pic.indexOf('?') > 0) {
+				// user picture migth contain size parameters - remove them
+				return pic.substring(0, pic.indexOf('?'));
+			} else {
+				return pic;
+			}
 		}
 		return null;
 	}
