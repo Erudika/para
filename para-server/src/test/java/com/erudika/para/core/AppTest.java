@@ -73,6 +73,12 @@ public class AppTest {
 		// if coming from db
 		app.setId("app:test-app");
 		assertEquals("app:test-app", app.getId());
+		app.setId(" test-app");
+		assertEquals("app:test-app", app.getId());
+		assertEquals("test-app", app.getAppIdentifier());
+		app.setId("  test-app  ");
+		assertEquals("app:test-app", app.getId());
+		assertEquals("test-app", app.getAppIdentifier());
 	}
 
 	@Test
