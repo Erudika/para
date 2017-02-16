@@ -419,8 +419,9 @@ public final class ParaObjectUtils {
 			Set<Class<? extends ParaObject>> classes = new HashSet<Class<? extends ParaObject>>();
 			for (BeanDefinition candidate : findCandidateComponents(basePackage)) {
 				try {
-					Class<? extends ParaObject> cls = (Class<? extends ParaObject>) ClassUtils.
-							resolveClassName(candidate.getBeanClassName(), ClassUtils.getDefaultClassLoader());
+					Class<? extends ParaObject> cls = (Class<? extends ParaObject>)
+							ClassUtils.resolveClassName(candidate.getBeanClassName(),
+									Thread.currentThread().getContextClassLoader());
 					classes.add(cls);
 				} catch (Exception ex) {
 					logger.error(null, ex);
