@@ -267,7 +267,9 @@ public class User implements ParaObject {
 		// admin detected
 		if (!Config.ADMIN_IDENT.isEmpty() && Config.ADMIN_IDENT.equals(getIdentifier())) {
 			setGroups(User.Groups.ADMINS.toString());
-		} else {
+		}
+
+		if (StringUtils.isBlank(getGroups())) {
 			setGroups(User.Groups.USERS.toString());
 		}
 
