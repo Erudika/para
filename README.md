@@ -47,11 +47,11 @@ See how **Para** [compares to other open source backend frameworks](https://erud
 |               / .___/\__,_/_/   \__,_/     +-------------+
 |              /_/                           | Persistence |
 +-------------------+  +-----------------+   +-------------+
-|      REST API     |  |     Search      |   |    Cache    |
+|      REST API     |  |     Search      |---|    Cache    |
 +---------+---------+--+--------+--------+---+------+------+
           |                     |                   |
 +---------+---------+  +--------+--------+   +------+------+
-|  Signed Requests  |  |  Search Index   +---+  Data Store |
+|  Signed Requests  |  |  Search Index   |   |  Data Store |
 |  and JWT Tokens   |  | (ElasticSearch) |   |    (Any)    |
 +----+---------^----+  +-----------------+   +-------------+
      |         |
@@ -108,7 +108,7 @@ Here's the Maven snippet to include in your `pom.xml`:
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para-server</artifactId>
-  <version>1.23.1</version>
+  <version>1.23.2</version>
 </dependency>
 ```
 
