@@ -56,7 +56,12 @@ public final class HazelcastUtils {
 			}
 			com.hazelcast.config.Config cfg = new com.hazelcast.config.Config();
 			cfg.setInstanceName(getNodeName());
-			cfg.getGroupConfig().setName(Config.CLUSTER_NAME);
+			cfg.getGroupConfig().setName(Config.CLUSTER_NAME).
+					setPassword(Config.getConfigParam("hc.password", "hcpasswd"));
+			cfg.getManagementCenterConfig().
+					setEnabled(Config.getConfigBoolean("hc.mancenter_enabled", !Config.IN_PRODUCTION)).
+					setUrl(Config.getConfigParam("hc.mancenter_url", "http://localhost:8001/mancenter"));
+
 			MapConfig mapcfg = new MapConfig("default");
 			mapcfg.setEvictionPolicy(getEvictionPolicy());
 			mapcfg.setTimeToLiveSeconds(Config.getConfigInt("hc.ttl_seconds", 3600));
