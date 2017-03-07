@@ -23,24 +23,45 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Index;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.Page;
+import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
 import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
+import com.amazonaws.services.dynamodbv2.document.utils.NameMap;
+import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.BatchGetItemRequest;
+import com.amazonaws.services.dynamodbv2.model.BatchGetItemResult;
+import com.amazonaws.services.dynamodbv2.model.BatchWriteItemRequest;
+import com.amazonaws.services.dynamodbv2.model.BatchWriteItemResult;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
+import com.amazonaws.services.dynamodbv2.model.DeleteRequest;
 import com.amazonaws.services.dynamodbv2.model.DeleteTableRequest;
 import com.amazonaws.services.dynamodbv2.model.DescribeTableResult;
 import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndex;
 import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
 import com.amazonaws.services.dynamodbv2.model.KeyType;
+import com.amazonaws.services.dynamodbv2.model.KeysAndAttributes;
 import com.amazonaws.services.dynamodbv2.model.ListTablesResult;
 import com.amazonaws.services.dynamodbv2.model.Projection;
 import com.amazonaws.services.dynamodbv2.model.ProjectionType;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
+import com.amazonaws.services.dynamodbv2.model.ReturnConsumedCapacity;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
+import com.amazonaws.services.dynamodbv2.model.ScanRequest;
+import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.amazonaws.services.dynamodbv2.model.UpdateTableRequest;
+import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.erudika.para.DestroyListener;
 import com.erudika.para.Para;
+import com.erudika.para.core.ParaObject;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Pager;
+import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -331,6 +352,219 @@ public final class AWSDynamoUtils {
 			return keyPrefix(appIdentifier) + key;
 		} else {
 			return key;
+		}
+	}
+
+	/**
+	 * Converts a {@link ParaObject} to DynamoDB row.
+	 * @param <P> type of object
+	 * @param so an object
+	 * @param filter used to filter out fields on update.
+	 * @return a row representation of the given object.
+	 */
+	protected static <P extends ParaObject> Map<String, AttributeValue> toRow(P so, Class<? extends Annotation> filter) {
+		HashMap<String, AttributeValue> row = new HashMap<String, AttributeValue>();
+		if (so == null) {
+			return row;
+		}
+		for (Map.Entry<String, Object> entry : ParaObjectUtils.getAnnotatedFields(so, filter).entrySet()) {
+			Object value = entry.getValue();
+			if (value != null && !StringUtils.isBlank(value.toString())) {
+				row.put(entry.getKey(), new AttributeValue(value.toString()));
+			}
+		}
+		return row;
+	}
+
+	/**
+	 * Converts a DynamoDB row to a {@link ParaObject}.
+	 * @param <P> type of object
+	 * @param row a DynamoDB row
+	 * @return a populated Para object.
+	 */
+	protected static <P extends ParaObject> P fromRow(Map<String, AttributeValue> row) {
+		if (row == null || row.isEmpty()) {
+			return null;
+		}
+		Map<String, Object> props = new HashMap<String, Object>();
+		for (Map.Entry<String, AttributeValue> col : row.entrySet()) {
+			props.put(col.getKey(), col.getValue().getS());
+		}
+		return ParaObjectUtils.setAnnotatedFields(props);
+	}
+
+	/**
+	 * Reads multiple items from DynamoDB, in batch.
+	 * @param <P> type of object
+	 * @param kna a map of row key->data
+	 * @param results a map of ID->ParaObject
+	 */
+	protected static <P extends ParaObject> void batchGet(Map<String, KeysAndAttributes> kna, Map<String, P> results) {
+		if (kna == null || kna.isEmpty() || results == null) {
+			return;
+		}
+		try {
+			BatchGetItemResult result = getClient().batchGetItem(new BatchGetItemRequest().
+					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL).withRequestItems(kna));
+			if (result == null) {
+				return;
+			}
+
+			List<Map<String, AttributeValue>> res = result.getResponses().get(kna.keySet().iterator().next());
+
+			for (Map<String, AttributeValue> item : res) {
+				P obj = fromRow(item);
+				if (obj != null) {
+					results.put(obj.getId(), obj);
+				}
+			}
+			logger.debug("batchGet(): total {}, cc {}", res.size(), result.getConsumedCapacity());
+
+			if (result.getUnprocessedKeys() != null && !result.getUnprocessedKeys().isEmpty()) {
+				Thread.sleep(1000);
+				logger.warn("{} UNPROCESSED read requests!", result.getUnprocessedKeys().size());
+				batchGet(result.getUnprocessedKeys(), results);
+			}
+		} catch (Exception e) {
+			logger.error(null, e);
+		}
+	}
+
+	/**
+	 * Writes multiple items in batch.
+	 * @param items a map of tables->write requests
+	 */
+	protected static void batchWrite(Map<String, List<WriteRequest>> items) {
+		if (items == null || items.isEmpty()) {
+			return;
+		}
+		try {
+			BatchWriteItemResult result = getClient().batchWriteItem(new BatchWriteItemRequest().
+					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL).withRequestItems(items));
+			if (result == null) {
+				return;
+			}
+			logger.debug("batchWrite(): total {}, cc {}", items.size(), result.getConsumedCapacity());
+
+			if (result.getUnprocessedItems() != null && !result.getUnprocessedItems().isEmpty()) {
+				Thread.sleep(1000);
+				logger.warn("{} UNPROCESSED write requests!", result.getUnprocessedItems().size());
+				batchWrite(result.getUnprocessedItems());
+			}
+		} catch (Exception e) {
+			logger.error(null, e);
+		}
+	}
+
+	/**
+	 * Reads a page from a standard DynamoDB table.
+	 * @param <P> type of object
+	 * @param appid the app identifier (name)
+	 * @param pager a {@link Pager}
+	 * @param results the results list to which results will be added
+	 * @return the last row key of the page, or null.
+	 */
+	public static <P extends ParaObject> String readPageFromTable(String appid, Pager pager, LinkedList<P> results) {
+		ScanRequest scanRequest = new ScanRequest().
+				withTableName(getTableNameForAppid(appid)).
+				withLimit(pager.getLimit()).
+				withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
+
+		if (!StringUtils.isBlank(pager.getLastKey())) {
+			scanRequest = scanRequest.withExclusiveStartKey(Collections.
+					singletonMap(Config._KEY, new AttributeValue(pager.getLastKey())));
+		}
+
+		ScanResult result = getClient().scan(scanRequest);
+		for (Map<String, AttributeValue> item : result.getItems()) {
+			P obj = fromRow(item);
+			if (obj != null) {
+				results.add(obj);
+			}
+		}
+
+		if (result.getLastEvaluatedKey() != null) {
+			return result.getLastEvaluatedKey().get(Config._KEY).getS();
+		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * Reads a page from a "shared" DynamoDB table. Shared tables are tables that have global secondary indexes
+	 * and can contain the objects of multiple apps.
+	 * @param <P> type of object
+	 * @param appid the app identifier (name)
+	 * @param pager a {@link Pager}
+	 * @param results the results list to which results will be added
+	 * @return the timestamp of the last object on the page, or null.
+	 */
+	public static <P extends ParaObject> String readPageFromSharedTable(String appid, Pager pager, LinkedList<P> results) {
+		if (results == null) {
+			return null;
+		}
+		Page<Item, QueryOutcome> items = readPageFromSharedTable(appid, pager);
+		if (items != null) {
+			for (Item item : items) {
+				P obj = ParaObjectUtils.setAnnotatedFields(item.asMap());
+				if (obj != null) {
+					results.add(obj);
+				}
+			}
+		}
+		return !results.isEmpty() ? Long.toString(results.peekLast().getTimestamp()) : null;
+	}
+
+	private static Page<Item, QueryOutcome> readPageFromSharedTable(String appid, Pager pager) {
+		if (pager == null) {
+			pager = new Pager();
+		}
+		String lastKeyFragment = "";
+		ValueMap valueMap = new ValueMap().withString(":aid", appid);
+		NameMap nameMap = null;
+
+		if (!StringUtils.isBlank(pager.getLastKey())) {
+			lastKeyFragment = " and #stamp > :ts";
+			valueMap.put(":ts", pager.getLastKey());
+			nameMap = new NameMap().with("#stamp", Config._TIMESTAMP);
+		}
+
+		Index index = getSharedIndex();
+		QuerySpec spec = new QuerySpec().
+				withMaxPageSize(pager.getLimit()).
+				withMaxResultSize(pager.getLimit()).
+				withKeyConditionExpression(Config._APPID + " = :aid" + lastKeyFragment).
+				withValueMap(valueMap).
+				withNameMap(nameMap);
+
+		return index != null ? index.query(spec).firstPage() : null;
+	}
+
+	/**
+	 * Deletes all objects in a shared table, which belong to a given appid, by scanning the GSI.
+	 * @param appid app id
+	 */
+	public static void deleteAllFromSharedTable(String appid) {
+		if (!StringUtils.isBlank(appid) && isSharedAppid(appid)) {
+			Pager pager = new Pager(100);
+			List<WriteRequest> reqs = new LinkedList<WriteRequest>();
+			do {
+				Page<Item, QueryOutcome> items = readPageFromSharedTable(appid, pager);
+				if (items != null) {
+					for (Item item : items) {
+						String key = item.getString(Config._KEY);
+						// only delete rows which belong to the given appid
+						if (StringUtils.startsWith(key, appid)) {
+							logger.debug("Preparing to delete '{}' from shared table, appid: '{}'.", key, appid);
+							pager.setLastKey(item.getString(Config._TIMESTAMP));
+							reqs.add(new WriteRequest().withDeleteRequest(new DeleteRequest().
+									withKey(Collections.singletonMap(Config._KEY, new AttributeValue(key)))));
+						}
+					}
+				}
+			} while (pager.getLastKey() != null);
+			logger.info("Deleting {} items belonging to app '{}', from shared table...", reqs.size(), appid);
+			batchWrite(Collections.singletonMap(getTableNameForAppid(appid), reqs));
 		}
 	}
 

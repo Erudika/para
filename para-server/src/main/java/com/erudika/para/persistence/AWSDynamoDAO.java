@@ -20,41 +20,30 @@ package com.erudika.para.persistence;
 import com.erudika.para.annotations.Locked;
 import com.amazonaws.services.dynamodbv2.model.AttributeAction;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.BatchGetItemResult;
 import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
 import com.amazonaws.services.dynamodbv2.model.GetItemResult;
 import com.amazonaws.services.dynamodbv2.model.KeysAndAttributes;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.amazonaws.services.dynamodbv2.document.Index;
-import com.amazonaws.services.dynamodbv2.document.Item;
-import com.amazonaws.services.dynamodbv2.document.Page;
-import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
-import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
-import com.amazonaws.services.dynamodbv2.document.utils.NameMap;
-import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.AttributeValueUpdate;
-import com.amazonaws.services.dynamodbv2.model.BatchGetItemRequest;
-import com.amazonaws.services.dynamodbv2.model.BatchWriteItemRequest;
-import com.amazonaws.services.dynamodbv2.model.BatchWriteItemResult;
 import com.amazonaws.services.dynamodbv2.model.DeleteItemRequest;
 import com.amazonaws.services.dynamodbv2.model.DeleteRequest;
 import com.amazonaws.services.dynamodbv2.model.PutItemRequest;
 import com.amazonaws.services.dynamodbv2.model.PutRequest;
-import com.amazonaws.services.dynamodbv2.model.ReturnConsumedCapacity;
-import com.amazonaws.services.dynamodbv2.model.ScanRequest;
-import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.dynamodbv2.model.UpdateItemRequest;
 import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.core.utils.ParaObjectUtils;
+import static com.erudika.para.persistence.AWSDynamoUtils.batchGet;
+import static com.erudika.para.persistence.AWSDynamoUtils.batchWrite;
+import static com.erudika.para.persistence.AWSDynamoUtils.fromRow;
 import static com.erudika.para.persistence.AWSDynamoUtils.getKeyForAppid;
-import static com.erudika.para.persistence.AWSDynamoUtils.getSharedIndex;
 import static com.erudika.para.persistence.AWSDynamoUtils.getTableNameForAppid;
 import static com.erudika.para.persistence.AWSDynamoUtils.isSharedAppid;
+import static com.erudika.para.persistence.AWSDynamoUtils.readPageFromSharedTable;
+import static com.erudika.para.persistence.AWSDynamoUtils.readPageFromTable;
+import static com.erudika.para.persistence.AWSDynamoUtils.toRow;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
-import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -213,7 +202,40 @@ public class AWSDynamoDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> void createAll(String appid, List<P> objects) {
-		writeAll(appid, objects, false);
+		if (objects == null || objects.isEmpty() || StringUtils.isBlank(appid)) {
+			return;
+		}
+
+		List<WriteRequest> reqs = new ArrayList<WriteRequest>(objects.size());
+		int batchSteps = 1;
+		if ((objects.size() > MAX_ITEMS_PER_WRITE)) {
+			batchSteps = (objects.size() / MAX_ITEMS_PER_WRITE) +
+					((objects.size() % MAX_ITEMS_PER_WRITE > 0) ? 1 : 0);
+		}
+
+		Iterator<P> it = objects.iterator();
+		int j = 0;
+
+		for (int i = 0; i < batchSteps; i++) {
+			while (it.hasNext() && j < MAX_ITEMS_PER_WRITE) {
+				ParaObject object = it.next();
+				if (StringUtils.isBlank(object.getId())) {
+					object.setId(Utils.getNewId());
+				}
+				if (object.getTimestamp() == null) {
+					object.setTimestamp(Utils.timestamp());
+				}
+				//if (updateOp) object.setUpdated(Utils.timestamp());
+				object.setAppid(appid);
+				Map<String, AttributeValue> row = toRow(object, null);
+				setRowKey(getKeyForAppid(object.getId(), appid), row);
+				reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(row)));
+				j++;
+			}
+			batchWrite(Collections.singletonMap(getTableNameForAppid(appid), reqs));
+			reqs.clear();
+			j = 0;
+		}
 		logger.debug("DAO.createAll() {}->{}", appid, (objects == null) ? 0 : objects.size());
 	}
 
@@ -299,73 +321,11 @@ public class AWSDynamoDAO implements DAO {
 		return results;
 	}
 
-	private <P extends ParaObject> String readPageFromTable(String appid, Pager pager, LinkedList<P> results) {
-		ScanRequest scanRequest = new ScanRequest().
-				withTableName(getTableNameForAppid(appid)).
-				withLimit(pager.getLimit()).
-				withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
-
-		if (!StringUtils.isBlank(pager.getLastKey())) {
-			scanRequest = scanRequest.withExclusiveStartKey(Collections.
-					singletonMap(Config._KEY, new AttributeValue(pager.getLastKey())));
-		}
-
-		ScanResult result = client().scan(scanRequest);
-		for (Map<String, AttributeValue> item : result.getItems()) {
-			P obj = fromRow(item);
-			if (obj != null) {
-				results.add(obj);
-			}
-		}
-
-		if (result.getLastEvaluatedKey() != null) {
-			return result.getLastEvaluatedKey().get(Config._KEY).getS();
-		} else {
-			return null;
-		}
-	}
-
-	private <P extends ParaObject> String readPageFromSharedTable(String appid, Pager pager, LinkedList<P> results) {
-		String lastKeyFragment = "";
-		ValueMap valueMap = new ValueMap().withString(":aid", appid);
-		NameMap nameMap = null;
-
-		if (!StringUtils.isBlank(pager.getLastKey())) {
-			lastKeyFragment = " and #stamp > :ts";
-			valueMap.put(":ts", pager.getLastKey());
-			nameMap = new NameMap().with("#stamp", Config._TIMESTAMP);
-		}
-
-		Index index = getSharedIndex();
-		QuerySpec spec = new QuerySpec().
-				withMaxPageSize(pager.getLimit()).
-				withMaxResultSize(pager.getLimit()).
-				withKeyConditionExpression(Config._APPID + " = :aid" + lastKeyFragment).
-				withValueMap(valueMap).
-				withNameMap(nameMap);
-
-		if (index != null) {
-			Page<Item, QueryOutcome> items = index.query(spec).firstPage();
-			for (Item item : items) {
-				P obj = ParaObjectUtils.setAnnotatedFields(item.asMap());
-				if (obj != null) {
-					results.add(obj);
-				}
-			}
-		}
-
-		if (!results.isEmpty()) {
-			return Long.toString(results.peekLast().getTimestamp());
-		} else {
-			return null;
-		}
-	}
-
 	@Override
 	public <P extends ParaObject> void updateAll(String appid, List<P> objects) {
 		// DynamoDB doesn't have a BatchUpdate API yet so we have to do one of the following:
 		// 1. update items one by one (chosen for simplicity)
-		// 2. call writeAll() - writeAll(appid, objects, true);
+		// 2. readAll() first, then call writeAll() with updated objects (2 ops)
 		if (objects != null) {
 			for (P object : objects) {
 				update(appid, object);
@@ -392,126 +352,9 @@ public class AWSDynamoDAO implements DAO {
 		logger.debug("DAO.deleteAll() {}", objects.size());
 	}
 
-	private <P extends ParaObject> void batchGet(Map<String, KeysAndAttributes> kna, Map<String, P> results) {
-		if (kna == null || kna.isEmpty() || results == null) {
-			return;
-		}
-		try {
-			BatchGetItemResult result = client().batchGetItem(new BatchGetItemRequest().
-					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL).withRequestItems(kna));
-			if (result == null) {
-				return;
-			}
-
-			List<Map<String, AttributeValue>> res = result.getResponses().get(kna.keySet().iterator().next());
-
-			for (Map<String, AttributeValue> item : res) {
-				P obj = fromRow(item);
-				if (obj != null) {
-					results.put(obj.getId(), obj);
-				}
-			}
-			logger.debug("batchGet(): total {}, cc {}", res.size(), result.getConsumedCapacity());
-
-			if (result.getUnprocessedKeys() != null && !result.getUnprocessedKeys().isEmpty()) {
-				Thread.sleep(1000);
-				logger.warn("UNPROCESSED {}", result.getUnprocessedKeys().size());
-				batchGet(result.getUnprocessedKeys(), results);
-			}
-		} catch (Exception e) {
-			logger.error(null, e);
-		}
-	}
-
-	private void batchWrite(Map<String, List<WriteRequest>> items) {
-		if (items == null || items.isEmpty()) {
-			return;
-		}
-		try {
-			BatchWriteItemResult result = client().batchWriteItem(new BatchWriteItemRequest().
-					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL).withRequestItems(items));
-			if (result == null) {
-				return;
-			}
-			logger.debug("batchWrite(): total {}, cc {}", items.size(), result.getConsumedCapacity());
-
-			if (result.getUnprocessedItems() != null && !result.getUnprocessedItems().isEmpty()) {
-				Thread.sleep(1000);
-				logger.warn("UNPROCESSED {0}", result.getUnprocessedItems().size());
-				batchWrite(result.getUnprocessedItems());
-			}
-		} catch (Exception e) {
-			logger.error(null, e);
-		}
-	}
-
-	private <P extends ParaObject> void writeAll(String appid, List<P> objects, boolean updateOp) {
-		if (objects == null || objects.isEmpty() || StringUtils.isBlank(appid)) {
-			return;
-		}
-
-		List<WriteRequest> reqs = new ArrayList<WriteRequest>(objects.size());
-		int batchSteps = 1;
-		if ((objects.size() > MAX_ITEMS_PER_WRITE)) {
-			batchSteps = (objects.size() / MAX_ITEMS_PER_WRITE) +
-					((objects.size() % MAX_ITEMS_PER_WRITE > 0) ? 1 : 0);
-		}
-
-		Iterator<P> it = objects.iterator();
-		int j = 0;
-
-		for (int i = 0; i < batchSteps; i++) {
-			while (it.hasNext() && j < MAX_ITEMS_PER_WRITE) {
-				ParaObject object = it.next();
-				if (StringUtils.isBlank(object.getId())) {
-					object.setId(Utils.getNewId());
-				}
-				if (object.getTimestamp() == null) {
-					object.setTimestamp(Utils.timestamp());
-				}
-				if (updateOp) {
-					object.setUpdated(Utils.timestamp());
-				}
-				object.setAppid(appid);
-				Map<String, AttributeValue> row = toRow(object, null);
-				setRowKey(getKeyForAppid(object.getId(), appid), row);
-				reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(row)));
-				j++;
-			}
-			batchWrite(Collections.singletonMap(getTableNameForAppid(appid), reqs));
-			reqs.clear();
-			j = 0;
-		}
-	}
-
 	/////////////////////////////////////////////
 	//				MISC FUNCTIONS
 	/////////////////////////////////////////////
-
-	private <P extends ParaObject> Map<String, AttributeValue> toRow(P so, Class<? extends Annotation> filter) {
-		HashMap<String, AttributeValue> row = new HashMap<String, AttributeValue>();
-		if (so == null) {
-			return row;
-		}
-		for (Entry<String, Object> entry : ParaObjectUtils.getAnnotatedFields(so, filter).entrySet()) {
-			Object value = entry.getValue();
-			if (value != null && !StringUtils.isBlank(value.toString())) {
-				row.put(entry.getKey(), new AttributeValue(value.toString()));
-			}
-		}
-		return row;
-	}
-
-	private <P extends ParaObject> P fromRow(Map<String, AttributeValue> row) {
-		if (row == null || row.isEmpty()) {
-			return null;
-		}
-		Map<String, Object> props = new HashMap<String, Object>();
-		for (Entry<String, AttributeValue> col : row.entrySet()) {
-			props.put(col.getKey(), col.getValue().getS());
-		}
-		return ParaObjectUtils.setAnnotatedFields(props);
-	}
 
 	private void setRowKey(String key, Map<String, AttributeValue> row) {
 		if (row.containsKey(Config._KEY)) {
