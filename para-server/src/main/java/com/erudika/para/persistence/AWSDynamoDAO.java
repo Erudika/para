@@ -69,8 +69,8 @@ import java.util.TreeSet;
 public class AWSDynamoDAO implements DAO {
 
 	private static final Logger logger = LoggerFactory.getLogger(AWSDynamoDAO.class);
-	private static final int MAX_ITEMS_PER_WRITE = 10; // Amazon DynamoDB limit ~= WRITE CAP
-	private static final int MAX_KEYS_PER_READ = 100; // Amazon DynamoDB limit = 100
+	private static final int MAX_ITEMS_PER_WRITE = 20;
+	private static final int MAX_KEYS_PER_READ = 100;
 
 	/**
 	 * No-args constructor.
@@ -214,6 +214,7 @@ public class AWSDynamoDAO implements DAO {
 		}
 
 		Iterator<P> it = objects.iterator();
+		String tableName = getTableNameForAppid(appid);
 		int j = 0;
 
 		for (int i = 0; i < batchSteps; i++) {
@@ -232,7 +233,7 @@ public class AWSDynamoDAO implements DAO {
 				reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(row)));
 				j++;
 			}
-			batchWrite(Collections.singletonMap(getTableNameForAppid(appid), reqs));
+			batchWrite(Collections.singletonMap(tableName, reqs));
 			reqs.clear();
 			j = 0;
 		}
@@ -262,6 +263,7 @@ public class AWSDynamoDAO implements DAO {
 			}
 
 			Iterator<String> it = keySet.iterator();
+			String tableName = getTableNameForAppid(appid);
 			int j = 0;
 
 			for (int i = 0; i < batchSteps; i++) {
@@ -277,7 +279,7 @@ public class AWSDynamoDAO implements DAO {
 					kna.setAttributesToGet(Arrays.asList(Config._KEY, Config._TYPE));
 				}
 
-				batchGet(Collections.singletonMap(getTableNameForAppid(appid), kna), results);
+				batchGet(Collections.singletonMap(tableName, kna), results);
 				keyz.clear();
 				j = 0;
 			}
