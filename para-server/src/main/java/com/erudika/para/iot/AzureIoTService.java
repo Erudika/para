@@ -260,7 +260,7 @@ public class AzureIoTService implements IoTService {
 					int batchSize = 0;
 					if (receivedEvents != null) {
 						for (EventData receivedEvent : receivedEvents) {
-							String deviceId = receivedEvent.getProperties().get("iothub-connection-device-id");
+							String deviceId = (String) receivedEvent.getProperties().get("iothub-connection-device-id");
 							Map<String, Object> deviceState = null;
 							try {
 								deviceState = ParaObjectUtils.getJsonReader(Map.class).readValue(receivedEvent.getBody());
