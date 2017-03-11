@@ -148,7 +148,6 @@ public class IndexBasedDAO implements DAO {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> Map<String, P> readAll(String appid, List<String> keys, boolean getAllColumns) {
 		if (keys == null || StringUtils.isBlank(appid)) {
 			return Collections.emptyMap();

@@ -24,11 +24,11 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Index;
 import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.KeyAttribute;
 import com.amazonaws.services.dynamodbv2.document.Page;
 import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
 import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
-import com.amazonaws.services.dynamodbv2.document.utils.NameMap;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
@@ -255,13 +255,13 @@ public final class AWSDynamoUtils {
 							withWriteCapacityUnits(1L)).
 					withProjection(new Projection().withProjectionType(ProjectionType.ALL)).
 					withKeySchema(new KeySchemaElement().withAttributeName(Config._APPID).withKeyType(KeyType.HASH),
-							new KeySchemaElement().withAttributeName(Config._TIMESTAMP).withKeyType(KeyType.RANGE));
+							new KeySchemaElement().withAttributeName(Config._ID).withKeyType(KeyType.RANGE));
 
 			getClient().createTable(new CreateTableRequest().withTableName(getTableNameForAppid(SHARED_TABLE)).
 					withKeySchema(new KeySchemaElement(Config._KEY, KeyType.HASH)).
 					withAttributeDefinitions(new AttributeDefinition(Config._KEY, ScalarAttributeType.S),
 							new AttributeDefinition(Config._APPID, ScalarAttributeType.S),
-							new AttributeDefinition(Config._TIMESTAMP, ScalarAttributeType.S)).
+							new AttributeDefinition(Config._ID, ScalarAttributeType.S)).
 					withGlobalSecondaryIndexes(secIndex).
 					withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
 		} catch (Exception e) {
@@ -462,10 +462,12 @@ public final class AWSDynamoUtils {
 	 * @param <P> type of object
 	 * @param appid the app identifier (name)
 	 * @param pager a {@link Pager}
-	 * @param results the results list to which results will be added
 	 * @return the last row key of the page, or null.
 	 */
-	public static <P extends ParaObject> String readPageFromTable(String appid, Pager pager, LinkedList<P> results) {
+	public static <P extends ParaObject> List<P> readPageFromTable(String appid, Pager pager) {
+		if (pager == null) {
+			pager = new Pager();
+		}
 		ScanRequest scanRequest = new ScanRequest().
 				withTableName(getTableNameForAppid(appid)).
 				withLimit(pager.getLimit()).
@@ -477,6 +479,7 @@ public final class AWSDynamoUtils {
 		}
 
 		ScanResult result = getClient().scan(scanRequest);
+		LinkedList<P> results = new LinkedList<P>();
 		for (Map<String, AttributeValue> item : result.getItems()) {
 			P obj = fromRow(item);
 			if (obj != null) {
@@ -485,10 +488,12 @@ public final class AWSDynamoUtils {
 		}
 
 		if (result.getLastEvaluatedKey() != null) {
-			return result.getLastEvaluatedKey().get(Config._KEY).getS();
-		} else {
-			return null;
+			pager.setLastKey(result.getLastEvaluatedKey().get(Config._KEY).getS());
+		} else if (!results.isEmpty()) {
+			// set last key to be equal to the last result - end reached.
+			pager.setLastKey(results.peekLast().getId());
 		}
+		return results;
 	}
 
 	/**
@@ -497,14 +502,14 @@ public final class AWSDynamoUtils {
 	 * @param <P> type of object
 	 * @param appid the app identifier (name)
 	 * @param pager a {@link Pager}
-	 * @param results the results list to which results will be added
-	 * @return the timestamp of the last object on the page, or null.
+	 * @return the id of the last object on the page, or null.
 	 */
-	public static <P extends ParaObject> String readPageFromSharedTable(String appid, Pager pager, LinkedList<P> results) {
-		if (results == null) {
-			return null;
+	public static <P extends ParaObject> List<P> readPageFromSharedTable(String appid, Pager pager) {
+		LinkedList<P> results = new LinkedList<P>();
+		if (StringUtils.isBlank(appid)) {
+			return results;
 		}
-		Page<Item, QueryOutcome> items = readPageFromSharedTable(appid, pager);
+		Page<Item, QueryOutcome> items = queryGSI(appid, pager);
 		if (items != null) {
 			for (Item item : items) {
 				P obj = ParaObjectUtils.setAnnotatedFields(item.asMap());
@@ -513,31 +518,28 @@ public final class AWSDynamoUtils {
 				}
 			}
 		}
-		return !results.isEmpty() ? Long.toString(results.peekLast().getTimestamp()) : null;
+		if (!results.isEmpty()) {
+			pager.setLastKey(results.peekLast().getId());
+		}
+		return results;
 	}
 
-	private static Page<Item, QueryOutcome> readPageFromSharedTable(String appid, Pager pager) {
+	private static Page<Item, QueryOutcome> queryGSI(String appid, Pager pager) {
 		if (pager == null) {
 			pager = new Pager();
 		}
-		String lastKeyFragment = "";
-		ValueMap valueMap = new ValueMap().withString(":aid", appid);
-		NameMap nameMap = null;
-
-		if (!StringUtils.isBlank(pager.getLastKey())) {
-			lastKeyFragment = " and #stamp > :ts";
-			valueMap.put(":ts", pager.getLastKey());
-			nameMap = new NameMap().with("#stamp", Config._TIMESTAMP);
-		}
-
 		Index index = getSharedIndex();
 		QuerySpec spec = new QuerySpec().
 				withMaxPageSize(pager.getLimit()).
 				withMaxResultSize(pager.getLimit()).
-				withKeyConditionExpression(Config._APPID + " = :aid" + lastKeyFragment).
-				withValueMap(valueMap).
-				withNameMap(nameMap);
+				withKeyConditionExpression(Config._APPID + " = :aid").
+				withValueMap(new ValueMap().withString(":aid", appid));
 
+		if (!StringUtils.isBlank(pager.getLastKey())) {
+			spec = spec.withExclusiveStartKey(new KeyAttribute(Config._APPID, appid),	// HASH/PARTITION KEY
+					new KeyAttribute(Config._ID, pager.getLastKey()), // RANGE/SORT KEY
+					new KeyAttribute(Config._KEY, getKeyForAppid(pager.getLastKey(), appid))); // TABLE PRIMARY KEY
+		}
 		return index != null ? index.query(spec).firstPage() : null;
 	}
 
@@ -549,22 +551,23 @@ public final class AWSDynamoUtils {
 		if (!StringUtils.isBlank(appid) && isSharedAppid(appid)) {
 			Pager pager = new Pager(50);
 			List<WriteRequest> allDeletes = new LinkedList<WriteRequest>();
+			Page<Item, QueryOutcome> items;
 			// read all phase
 			do {
-				Page<Item, QueryOutcome> items = readPageFromSharedTable(appid, pager);
+				items = queryGSI(appid, pager);
 				if (items != null) {
 					for (Item item : items) {
 						String key = item.getString(Config._KEY);
 						// only delete rows which belong to the given appid
 						if (StringUtils.startsWith(key, appid.trim())) {
 							logger.debug("Preparing to delete '{}' from shared table, appid: '{}'.", key, appid);
-							pager.setLastKey(item.getString(Config._TIMESTAMP));
+							pager.setLastKey(item.getString(Config._ID));
 							allDeletes.add(new WriteRequest().withDeleteRequest(new DeleteRequest().
 									withKey(Collections.singletonMap(Config._KEY, new AttributeValue(key)))));
 						}
 					}
 				}
-			} while (pager.getLastKey() != null);
+			} while (items != null && items.iterator().hasNext());
 
 			// delete all phase
 			final int maxItems = 20;
@@ -577,7 +580,7 @@ public final class AWSDynamoUtils {
 					reqs.add(it.next());
 				}
 				logger.info("Deleting {} items belonging to app '{}', from shared table (page {}/{})...",
-						reqs.size(), appid, i, batchSteps);
+						reqs.size(), appid, i + 1, batchSteps);
 				batchWrite(Collections.singletonMap(tableName, reqs));
 				reqs.clear();
 			}
@@ -613,7 +616,7 @@ public final class AWSDynamoUtils {
 	}
 
 	private static String getSharedIndexName() {
-		return "Index_" + SHARED_TABLE;
+		return "GSI_" + SHARED_TABLE;
 	}
 
 	private static String keyPrefix(String appIdentifier) {

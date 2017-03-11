@@ -285,41 +285,30 @@ public class AWSDynamoDAO implements DAO {
 			}
 			logger.debug("DAO.readAll({}) {}", keySet, results.size());
 		} catch (Exception e) {
-			logger.error("Failed to readAll({}), {}", keys, e);
+			logger.error("Failed to readAll({}): {}", keys, e);
 		}
 		return results;
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> readPage(String appid, Pager pager) {
-		LinkedList<P> results = new LinkedList<P>();
 		if (StringUtils.isBlank(appid)) {
-			return results;
+			return Collections.emptyList();
 		}
 		if (pager == null) {
 			pager = new Pager();
 		}
-
-		String lastKey = null;
-
+		List<P> results = new LinkedList<P>();
 		try {
 			if (isSharedAppid(appid)) {
-				lastKey = readPageFromSharedTable(appid, pager, results);
+				results = readPageFromSharedTable(appid, pager);
 			} else {
-				lastKey = readPageFromTable(appid, pager, results);
-			}
-
-			if (lastKey != null) {
-				pager.setLastKey(lastKey);
-			} else if (!results.isEmpty()) {
-				// set last key to be equal to the last result - end reached.
-				pager.setLastKey(results.peekLast().getId());
+				results = readPageFromTable(appid, pager);
 			}
 			pager.setCount(pager.getCount() + results.size());
 		} catch (Exception e) {
-			logger.error(null, e);
+			logger.error("Failed to readPage({}): {}", appid, e);
 		}
-
 		return results;
 	}
 

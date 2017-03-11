@@ -240,6 +240,11 @@ public class AWSDynamoDAOIT extends DAOTest {
 		assertEquals(22, p.getCount());
 
 		assertEquals(1, dao().readPage(app4.getAppIdentifier(), null).size());
+
+		// test deleteAllFromSharedTable()
+		AWSDynamoUtils.deleteAllFromSharedTable(app3.getAppIdentifier());
+		assertEquals(0, dao().readPage(app3.getAppIdentifier(), null).size());
+		assertEquals(1, dao().readPage(app4.getAppIdentifier(), null).size());
 	}
 
 }
