@@ -17,6 +17,8 @@
  */
 package com.erudika.para.utils;
 
+import com.amazonaws.regions.Region;
+import com.amazonaws.regions.Regions;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueType;
@@ -139,15 +141,15 @@ public final class Config {
 	/**
 	 * AWS Access Key.
 	 */
-	public static final String AWS_ACCESSKEY = getAwsCredentials()[0];
+	public static final String AWS_ACCESSKEY = getConfigParam("aws_access_key", "");
 	/**
 	 * AWS Secret Key.
 	 */
-	public static final String AWS_SECRETKEY = getAwsCredentials()[1];
+	public static final String AWS_SECRETKEY = getConfigParam("aws_secret_key", "");
 	/**
 	 * AWS Region.
 	 */
-	public static final String AWS_REGION = getConfigParam("aws_region", "eu-west-1");
+	public static final String AWS_REGION = getConfigParam("aws_region", getDefaultAwsRegion());
 	/**
 	 * Facebook app id (for authentication).
 	 */
@@ -401,14 +403,10 @@ public final class Config {
 	}
 
 	/**
-	 * Try loading the AWS credentials from the config file.
-	 * If they're missing try from the local metadata service.
-	 * @return
+	 * @return returns the current or default region.
 	 */
-	private static String[] getAwsCredentials() {
-		String accessK = getConfigParam("aws_access_key", "");
-		String secretK = getConfigParam("aws_secret_key", "");
-		return new String[]{accessK, secretK};
+	private static String getDefaultAwsRegion() {
+		Region region = Regions.getCurrentRegion();
+		return region != null ? region.toString() : Regions.EU_WEST_1.toString();
 	}
-
 }

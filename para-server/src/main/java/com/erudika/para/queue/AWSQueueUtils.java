@@ -19,10 +19,11 @@ package com.erudika.para.queue;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.DeleteMessageBatchRequestEntry;
 import com.amazonaws.services.sqs.model.DeleteQueueRequest;
@@ -53,7 +54,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class AWSQueueUtils {
 
-	private static AmazonSQSClient sqsClient;
+	private static AmazonSQS sqsClient;
 	private static final int MAX_MESSAGES = 10;  //max in bulk
 	private static final int SLEEP = Config.getConfigInt("queue.polling_sleep_seconds", 60);
 	private static final int POLLING_INTERVAL = Config.getConfigInt("queue.polling_interval_seconds",
@@ -73,17 +74,18 @@ public final class AWSQueueUtils {
 	 * Returns a client instance for AWS SQS.
 	 * @return a client that talks to SQS
 	 */
-	public static AmazonSQSClient getClient() {
+	public static AmazonSQS getClient() {
 		if (sqsClient != null) {
 			return sqsClient;
 		}
 		if (Config.IN_PRODUCTION) {
-			Region region = Regions.getCurrentRegion();
-			region = region != null ? region : Region.getRegion(Regions.fromName(Config.AWS_REGION));
-			sqsClient = new AmazonSQSClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY)).
-					withRegion(region);
+			sqsClient = AmazonSQSClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(
+				new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY))).
+					withRegion(Config.AWS_REGION).build();
 		} else {
-			sqsClient = new AmazonSQSClient(new BasicAWSCredentials("x", "x")).withEndpoint(LOCAL_ENDPOINT);
+			sqsClient = AmazonSQSClientBuilder.standard().
+					withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"))).
+							withEndpointConfiguration(new EndpointConfiguration(LOCAL_ENDPOINT, "")).build();
 		}
 
 		Para.addDestroyListener(new DestroyListener() {

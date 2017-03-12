@@ -17,10 +17,10 @@
  */
 package com.erudika.para.iot;
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.iot.AWSIotClient;
+import com.amazonaws.services.iot.AWSIot;
+import com.amazonaws.services.iot.AWSIotClientBuilder;
 import com.amazonaws.services.iot.model.AttachPrincipalPolicyRequest;
 import com.amazonaws.services.iot.model.AttachThingPrincipalRequest;
 import com.amazonaws.services.iot.model.AttributePayload;
@@ -41,7 +41,8 @@ import com.amazonaws.services.iot.model.DetachThingPrincipalRequest;
 import com.amazonaws.services.iot.model.ListPolicyVersionsRequest;
 import com.amazonaws.services.iot.model.PolicyVersion;
 import com.amazonaws.services.iot.model.UpdateCertificateRequest;
-import com.amazonaws.services.iotdata.AWSIotDataClient;
+import com.amazonaws.services.iotdata.AWSIotData;
+import com.amazonaws.services.iotdata.AWSIotDataClientBuilder;
 import com.amazonaws.services.iotdata.model.DeleteThingShadowRequest;
 import com.amazonaws.services.iotdata.model.GetThingShadowRequest;
 import com.amazonaws.services.iotdata.model.UpdateThingShadowRequest;
@@ -67,8 +68,8 @@ import org.slf4j.LoggerFactory;
  */
 public class AWSIoTService implements IoTService {
 
-	private static AWSIotClient iotClient;
-	private static AWSIotDataClient iotDataClient;
+	private static AWSIot iotClient;
+	private static AWSIotData iotDataClient;
 	private static final Logger logger = LoggerFactory.getLogger(AWSIoTService.class);
 
 	/**
@@ -76,15 +77,14 @@ public class AWSIoTService implements IoTService {
 	 */
 	public AWSIoTService() { }
 
-	protected AWSIotClient getClient() {
+	protected AWSIot getClient() {
 		if (iotClient != null) {
 			return iotClient;
 		}
 
-		Region region = Regions.getCurrentRegion();
-		region = region != null ? region : Region.getRegion(Regions.fromName(Config.AWS_REGION));
-		iotClient = new AWSIotClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY)).
-				withRegion(region);
+		iotClient = AWSIotClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(
+				new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY))).
+				withRegion(Config.AWS_REGION).build();
 
 		Para.addDestroyListener(new DestroyListener() {
 			public void onDestroy() {
@@ -95,16 +95,15 @@ public class AWSIoTService implements IoTService {
 		return iotClient;
 	}
 
-	protected AWSIotDataClient getDataClient() {
+	protected AWSIotData getDataClient() {
 		if (iotDataClient != null) {
 			return iotDataClient;
 		}
 
-		Region region = Regions.getCurrentRegion();
-		region = region != null ? region : Region.getRegion(Regions.fromName(Config.AWS_REGION));
-		iotDataClient = new AWSIotDataClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY)).
-				withRegion(region);
-
+		iotDataClient = AWSIotDataClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(
+				new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY))).
+				withRegion(Config.AWS_REGION).build();
+		
 		Para.addDestroyListener(new DestroyListener() {
 			public void onDestroy() {
 				shutdownDataClient();

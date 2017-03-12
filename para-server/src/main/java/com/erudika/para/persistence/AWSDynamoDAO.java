@@ -17,13 +17,13 @@
  */
 package com.erudika.para.persistence;
 
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.erudika.para.annotations.Locked;
 import com.amazonaws.services.dynamodbv2.model.AttributeAction;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
 import com.amazonaws.services.dynamodbv2.model.GetItemResult;
 import com.amazonaws.services.dynamodbv2.model.KeysAndAttributes;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.AttributeValueUpdate;
 import com.amazonaws.services.dynamodbv2.model.DeleteItemRequest;
 import com.amazonaws.services.dynamodbv2.model.DeleteRequest;
@@ -77,7 +77,7 @@ public class AWSDynamoDAO implements DAO {
 	 */
 	public AWSDynamoDAO() { }
 
-	AmazonDynamoDBClient client() {
+	AmazonDynamoDB client() {
 		return AWSDynamoUtils.getClient();
 	}
 

@@ -17,10 +17,10 @@
  */
 package com.erudika.para.storage;
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
@@ -42,8 +42,7 @@ public class AWSFileStore implements FileStore {
 
 	private static final Logger logger = LoggerFactory.getLogger(AWSFileStore.class);
 	private final String baseUrl = "https://s3-{0}.amazonaws.com/{1}/{2}";
-	private final BasicAWSCredentials awsCredentials;
-	private AmazonS3Client s3;
+	private AmazonS3 s3;
 	private String bucket;
 
 	/**
@@ -59,10 +58,9 @@ public class AWSFileStore implements FileStore {
 	 */
 	public AWSFileStore(String bucket) {
 		this.bucket = bucket;
-		this.awsCredentials = new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY);
-		Region region = Regions.getCurrentRegion();
-		region = region != null ? region : Region.getRegion(Regions.fromName(Config.AWS_REGION));
-		this.s3 = new AmazonS3Client(awsCredentials).withRegion(region);
+		this.s3 = AmazonS3ClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(
+				new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY))).
+				withRegion(Config.AWS_REGION).build();
 	}
 
 	@Override

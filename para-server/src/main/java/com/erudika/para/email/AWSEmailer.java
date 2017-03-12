@@ -17,8 +17,10 @@
  */
 package com.erudika.para.email;
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
+import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
+import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClientBuilder;
 import com.amazonaws.services.simpleemail.model.Body;
 import com.amazonaws.services.simpleemail.model.Content;
 import com.amazonaws.services.simpleemail.model.Destination;
@@ -38,14 +40,15 @@ import org.apache.commons.lang3.StringUtils;
 @Singleton
 public class AWSEmailer implements Emailer {
 
-	private static AmazonSimpleEmailServiceClient sesclient;
+	private static AmazonSimpleEmailService sesclient;
 
 	/**
 	 * No-args constructor.
 	 */
 	public AWSEmailer() {
-		sesclient = new AmazonSimpleEmailServiceClient(
-				new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY));
+		sesclient = AmazonSimpleEmailServiceClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(
+				new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY))).
+				withRegion(Config.AWS_REGION).build();
 	}
 
 	@Override

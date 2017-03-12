@@ -17,10 +17,11 @@
  */
 package com.erudika.para.persistence;
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Index;
 import com.amazonaws.services.dynamodbv2.document.Item;
@@ -78,7 +79,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class AWSDynamoUtils {
 
-	private static AmazonDynamoDBClient ddbClient;
+	private static AmazonDynamoDB ddbClient;
 	private static DynamoDB ddb;
 	private static final String LOCAL_ENDPOINT = "http://localhost:8000";
 	private static final Logger logger = LoggerFactory.getLogger(AWSDynamoUtils.class);
@@ -94,19 +95,19 @@ public final class AWSDynamoUtils {
 	 * Returns a client instance for AWS DynamoDB.
 	 * @return a client that talks to DynamoDB
 	 */
-	public static AmazonDynamoDBClient getClient() {
+	public static AmazonDynamoDB getClient() {
 		if (ddbClient != null) {
 			return ddbClient;
 		}
 
 		if (Config.IN_PRODUCTION) {
-			Region region = Regions.getCurrentRegion();
-			region = region != null ? region : Region.getRegion(Regions.fromName(Config.AWS_REGION));
-			ddbClient = new AmazonDynamoDBClient(new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY)).
-					withRegion(region);
-
+			ddbClient = AmazonDynamoDBClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(
+				new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY))).
+					withRegion(Config.AWS_REGION).build();
 		} else {
-			ddbClient = new AmazonDynamoDBClient(new BasicAWSCredentials("local", "null")).withEndpoint(LOCAL_ENDPOINT);
+			ddbClient = AmazonDynamoDBClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(
+					new BasicAWSCredentials("local", "null"))).
+					withEndpointConfiguration(new EndpointConfiguration(LOCAL_ENDPOINT, "")).build();
 		}
 
 		if (!existsTable(Config.APP_NAME_NS)) {
