@@ -103,7 +103,7 @@ public class AWSIoTService implements IoTService {
 		iotDataClient = AWSIotDataClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(
 				new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY))).
 				withRegion(Config.AWS_REGION).build();
-		
+
 		Para.addDestroyListener(new DestroyListener() {
 			public void onDestroy() {
 				shutdownDataClient();
