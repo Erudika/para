@@ -257,9 +257,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 			result = cache.get(appid, getMeId);
 			logger.debug("{}: Cache hit: {}->{}", getClass().getSimpleName(), appid, getMeId);
 		} else if (getMeId != null) {
-			if (result == null) {
-				result = mi.proceed();
-			}
+			result = mi.proceed();
 			if (result != null && ((ParaObject) result).getCached()) {
 				cache.put(appid, getMeId, result);
 				logger.debug("{}: Cache miss: {}->{}", getClass().getSimpleName(), appid, getMeId);
@@ -268,7 +266,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		return result;
 	}
 
-	private void addToCacheOperation(String appid, Object[] args) throws Throwable {
+	private void addToCacheOperation(String appid, Object[] args) {
 		ParaObject putMe = AOPUtils.getArgOfParaObject(args);
 		if (putMe != null && putMe.getCached()) {
 			cache.put(appid, putMe.getId(), putMe);
@@ -276,7 +274,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		}
 	}
 
-	private void removeFromCacheOperation(String appid, Object[] args) throws Throwable {
+	private void removeFromCacheOperation(String appid, Object[] args) {
 		ParaObject deleteMe = AOPUtils.getArgOfParaObject(args);
 		if (deleteMe != null) { // clear from cache even if "isCached = false"
 			cache.remove(appid, deleteMe.getId());
@@ -314,7 +312,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		return result;
 	}
 
-	private void addToCacheBatchOperation(String appid, Object[] args) throws Throwable {
+	private void addToCacheBatchOperation(String appid, Object[] args) {
 		List<ParaObject> putUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
 		if (putUs != null && !putUs.isEmpty()) {
 			Map<String, ParaObject> map1 = new LinkedHashMap<String, ParaObject>(putUs.size());
@@ -330,7 +328,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		}
 	}
 
-	private void removeFromCacheBatchOperation(String appid, Object[] args) throws Throwable {
+	private void removeFromCacheBatchOperation(String appid, Object[] args) {
 		List<ParaObject> deleteUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
 		if (deleteUs != null && !deleteUs.isEmpty()) {
 			List<String> list = new ArrayList<String>(deleteUs.size());

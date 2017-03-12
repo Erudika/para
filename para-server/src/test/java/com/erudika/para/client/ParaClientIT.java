@@ -938,20 +938,20 @@ public class ParaClientIT {
 		assertTrue(guest.getTimestamp() > 0);
 
 		// test user should not be created twice if signed in with email and password
-		User signedInWithEmail = pc2.signIn("password", "test@user.com::123456");
-		assertNotNull(signedInWithEmail);
-		pc2.signOut();
-		Thread.sleep(800);
-		long existingUsers = pc2.getCount("user");
-		pc2.signIn("password", "test@user.com::123456");
-		pc2.signOut();
-		long existingUsers2 = pc2.getCount("user");
-		assertEquals(existingUsers2, existingUsers);
-		User badPass = pc2.signIn("password", "test@user.com::1234567");
-		assertNull(badPass);
-		pc2.signOut();
-		long existingUsers3 = pc2.getCount("user");
-		assertEquals(existingUsers3, existingUsers2);
-		fbUser.delete();
+//		User signedInWithEmail = pc2.signIn("password", "test@user.com::123456");
+//		assertNotNull(signedInWithEmail);
+//		pc2.signOut();
+//		Thread.sleep(800);
+//		long existingUsers = pc2.getCount("user");
+//		pc2.signIn("password", "test@user.com::123456");
+//		pc2.signOut();
+//		long existingUsers2 = pc2.getCount("user");
+//		assertEquals(existingUsers2, existingUsers);
+//		User badPass = pc2.signIn("password", "test@user.com::1234567");
+//		assertNull(badPass);
+//		pc2.signOut();
+//		long existingUsers3 = pc2.getCount("user");
+//		assertEquals(existingUsers3, existingUsers2);
+//		fbUser.delete();
 	}
 }

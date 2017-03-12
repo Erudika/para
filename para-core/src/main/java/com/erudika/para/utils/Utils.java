@@ -749,7 +749,7 @@ public final class Utils {
 			return null;
 		}
 		Cookie[] cookies = req.getCookies();
-		if (cookies == null || name == null || name.length() == 0) {
+		if (cookies == null) {
 			return null;
 		}
 		//Otherwise, we have to do a linear scan for the cookie.

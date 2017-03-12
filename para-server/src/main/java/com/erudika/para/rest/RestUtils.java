@@ -601,7 +601,6 @@ public final class RestUtils {
 	 */
 	public static Response readLinksHandler(ParaObject pobj, String id2, String type2,
 			MultivaluedMap<String, String> params, Pager pager, boolean childrenOnly) {
-		Map<String, Object> result = new HashMap<String, Object>();
 		String query = params.getFirst("q");
 		if (type2 != null) {
 			if (id2 != null) {
@@ -633,9 +632,7 @@ public final class RestUtils {
 						}
 					}
 				}
-				result.put("items", items);
-				result.put("totalHits", pager.getCount());
-				return Response.ok(result).build();
+				return Response.ok(getResponseObject(items, pager)).build();
 			}
 		} else {
 			return getStatusResponse(Response.Status.BAD_REQUEST, "Parameter 'type' is missing.");
@@ -686,19 +683,20 @@ public final class RestUtils {
 	//			SEARCH RESPONSE HANDLERS
 	/////////////////////////////////////////////
 
-	static <P extends ParaObject> Map<String, Object> buildQueryAndSearch(App app, String queryType,
+	static <P extends ParaObject> Map<String, Object> buildQueryAndSearch(App app, String querytype,
 			MultivaluedMap<String, String> params, String typeOverride) {
 		String query = paramOrDefault(params, "q", "*");
 		String appid = app.getAppIdentifier();
 		Pager pager = getPagerFromParams(params);
 		List<P> items = Collections.emptyList();
-		queryType = StringUtils.isBlank(queryType) ? params.getFirst("querytype") : queryType;
-
-		String type;
+		String queryType = paramOrDefault(params, "querytype", querytype);
+		String type = paramOrDefault(params, Config._TYPE, null);
 		if (!StringUtils.isBlank(typeOverride) && !"search".equals(typeOverride)) {
 			type = typeOverride;
-		} else {
-			type = params.getFirst(Config._TYPE);
+		}
+
+		if (params == null) {
+			return getResponseObject(Para.getSearch().findQuery(appid, type, query, pager), pager);
 		}
 
 		if ("id".equals(queryType)) {
@@ -727,21 +725,16 @@ public final class RestUtils {
 		} else {
 			items = Para.getSearch().findQuery(appid, type, query, pager);
 		}
-
-		Map<String, Object> result = new HashMap<String, Object>();
-		result.put("items", items);
-		result.put("page", pager.getPage());
-		result.put("totalHits", pager.getCount());
-		return result;
+		return getResponseObject(items, pager);
 	}
 
 	private static Pager getPagerFromParams(MultivaluedMap<String, String> params) {
 		Pager pager = new Pager();
 		boolean isPaginationLimited = Config.getConfigBoolean("limited_pagination", true);
-		long page = NumberUtils.toLong(params.getFirst("page"), 0);
-		int limit = NumberUtils.toInt(params.getFirst("limit"), pager.getLimit());
+		long page = NumberUtils.toLong(paramOrDefault(params, "page", ""), 0);
+		int limit = NumberUtils.toInt(paramOrDefault(params, "limit", ""), pager.getLimit());
 		pager.setPage(isPaginationLimited && page > 1000 ? 1000 : page);
-		pager.setSortby(params.getFirst("sort"));
+		pager.setSortby(paramOrDefault(params, "sort", pager.getSortby()));
 		pager.setDesc(Boolean.parseBoolean(paramOrDefault(params, "desc", "true")));
 		pager.setLimit(isPaginationLimited && limit > (3 * Config.MAX_ITEMS_PER_PAGE) ? limit / 3 : limit);
 		return pager;
@@ -749,6 +742,9 @@ public final class RestUtils {
 
 	private static <P extends ParaObject> List<P> findTermsQuery(MultivaluedMap<String, String> params,
 			Pager pager, String appid, String type) {
+		if (params == null) {
+			return Collections.emptyList();
+		}
 		String matchAll = paramOrDefault(params, "matchall", "true");
 		List<String> termsList = params.get("terms");
 		if (termsList != null) {
@@ -810,6 +806,14 @@ public final class RestUtils {
 
 	private static String paramOrDefault(MultivaluedMap<String, String> params, String name, String defaultValue) {
 		return params != null && params.containsKey(name) ? params.getFirst(name) : defaultValue;
+	}
+
+	private static <P extends ParaObject> Map<String, Object> getResponseObject(List<P> items, Pager pager) {
+		Map<String, Object> result = new HashMap<String, Object>();
+		result.put("items", items);
+		result.put("page", pager.getPage());
+		result.put("totalHits", pager.getCount());
+		return result;
 	}
 
 	/////////////////////////////////////////////

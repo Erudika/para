@@ -520,7 +520,6 @@ public final class HumanTime implements Externalizable, Comparable<HumanTime> {
 
 		try {
 			MutableInt parts = new MutableInt(0);
-			boolean rounded = false;
 			long d = delta;
 			long mod = d % YEAR;
 
@@ -541,9 +540,8 @@ public final class HumanTime implements Externalizable, Comparable<HumanTime> {
 								mod = d % SECOND;
 								if (!append(d, mod, SECOND, 's', a, parts) && parts.intValue() < 2) {
 									d %= SECOND;
-									if (d > 0 && !rounded) {
+									if (d > 0) {
 										a.append(Integer.toString((int) d));
-	//										a.append(' ');
 										a.append('m');
 										a.append('s');
 									}

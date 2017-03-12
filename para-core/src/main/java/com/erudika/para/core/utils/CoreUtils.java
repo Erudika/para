@@ -383,9 +383,7 @@ public enum CoreUtils implements InitializeListener {
 			}
 
 			if (done) {
-				synchronized (votable) {
-					votable.setVotes(votable.getVotes() + upDown.getValue());
-				}
+				votable.setVotes(votable.getVotes() + upDown.getValue());
 			}
 			return done;
 		}

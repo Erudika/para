@@ -22,7 +22,6 @@ import com.erudika.para.annotations.Stored;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.iot.IoTService;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -34,7 +33,7 @@ import org.hibernate.validator.constraints.NotBlank;
  * Generic IoT object for describing a device in the cloud.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class Thing extends Sysprop implements Serializable {
+public class Thing extends Sysprop {
 	private static final long serialVersionUID = 1L;
 
 	@Stored @Locked @NotBlank private String serviceBroker;

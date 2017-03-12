@@ -161,11 +161,12 @@ public final class OAuth1HmacSigner {
 
 		StringBuilder sb = new StringBuilder();
 		Iterator<ComparableParameter> iter = paramz.iterator();
-		for (int i = 0; iter.hasNext(); i++) {
+		boolean first = true;
+		while (iter.hasNext()) {
 			ComparableParameter p = iter.next();
 			String param = p.key;
 			String value = p.value;
-			if (i > 0) {
+			if (!first) {
 				sb.append("&");
 			}
 			if (value == null) {
@@ -173,6 +174,7 @@ public final class OAuth1HmacSigner {
 			} else {
 				sb.append(param.concat("=").concat(value));
 			}
+			first = false;
 		}
 		String s = sb.toString();
 		return s;
@@ -187,8 +189,9 @@ public final class OAuth1HmacSigner {
 					.replaceAll("\\+", "%20").replaceAll("\\*", "%2A")
 					.replaceAll("%7E", "~");
 		} catch (UnsupportedEncodingException ex) {
-			throw new RuntimeException(ex.getMessage(), ex);
+			logger.error(ex.getMessage(), ex);
 		}
+		return "";
 	}
 
 	private static Map<String, SortedSet<String>> getOAuthParameters(Map<String, String[]> params) {

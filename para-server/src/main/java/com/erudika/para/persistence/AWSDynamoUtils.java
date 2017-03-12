@@ -462,13 +462,11 @@ public final class AWSDynamoUtils {
 	 * Reads a page from a standard DynamoDB table.
 	 * @param <P> type of object
 	 * @param appid the app identifier (name)
-	 * @param pager a {@link Pager}
+	 * @param p a {@link Pager}
 	 * @return the last row key of the page, or null.
 	 */
-	public static <P extends ParaObject> List<P> readPageFromTable(String appid, Pager pager) {
-		if (pager == null) {
-			pager = new Pager();
-		}
+	public static <P extends ParaObject> List<P> readPageFromTable(String appid, Pager p) {
+		Pager pager = (p != null) ? p : new Pager();
 		ScanRequest scanRequest = new ScanRequest().
 				withTableName(getTableNameForAppid(appid)).
 				withLimit(pager.getLimit()).
@@ -519,16 +517,14 @@ public final class AWSDynamoUtils {
 				}
 			}
 		}
-		if (!results.isEmpty()) {
+		if (!results.isEmpty() && pager != null) {
 			pager.setLastKey(results.peekLast().getId());
 		}
 		return results;
 	}
 
-	private static Page<Item, QueryOutcome> queryGSI(String appid, Pager pager) {
-		if (pager == null) {
-			pager = new Pager();
-		}
+	private static Page<Item, QueryOutcome> queryGSI(String appid, Pager p) {
+		Pager pager = (p != null) ? p : new Pager();
 		Index index = getSharedIndex();
 		QuerySpec spec = new QuerySpec().
 				withMaxPageSize(pager.getLimit()).
@@ -549,42 +545,44 @@ public final class AWSDynamoUtils {
 	 * @param appid app id
 	 */
 	public static void deleteAllFromSharedTable(String appid) {
-		if (!StringUtils.isBlank(appid) && isSharedAppid(appid)) {
-			Pager pager = new Pager(50);
-			List<WriteRequest> allDeletes = new LinkedList<WriteRequest>();
-			Page<Item, QueryOutcome> items;
-			// read all phase
-			do {
-				items = queryGSI(appid, pager);
-				if (items != null) {
-					for (Item item : items) {
-						String key = item.getString(Config._KEY);
-						// only delete rows which belong to the given appid
-						if (StringUtils.startsWith(key, appid.trim())) {
-							logger.debug("Preparing to delete '{}' from shared table, appid: '{}'.", key, appid);
-							pager.setLastKey(item.getString(Config._ID));
-							allDeletes.add(new WriteRequest().withDeleteRequest(new DeleteRequest().
-									withKey(Collections.singletonMap(Config._KEY, new AttributeValue(key)))));
-						}
-					}
-				}
-			} while (items != null && items.iterator().hasNext());
-
-			// delete all phase
-			final int maxItems = 20;
-			int batchSteps = (allDeletes.size() > maxItems) ? (allDeletes.size() / maxItems) + 1 : 1;
-			List<WriteRequest> reqs = new LinkedList<WriteRequest>();
-			Iterator<WriteRequest> it = allDeletes.iterator();
-			String tableName = getTableNameForAppid(appid);
-			for (int i = 0; i < batchSteps; i++) {
-				while (it.hasNext() && reqs.size() < maxItems) {
-					reqs.add(it.next());
-				}
-				logger.info("Deleting {} items belonging to app '{}', from shared table (page {}/{})...",
-						reqs.size(), appid, i + 1, batchSteps);
-				batchWrite(Collections.singletonMap(tableName, reqs));
-				reqs.clear();
+		if (StringUtils.isBlank(appid) || !isSharedAppid(appid)) {
+			return;
+		}
+		Pager pager = new Pager(50);
+		List<WriteRequest> allDeletes = new LinkedList<WriteRequest>();
+		Page<Item, QueryOutcome> items;
+		// read all phase
+		do {
+			items = queryGSI(appid, pager);
+			if (items == null) {
+				break;
 			}
+			for (Item item : items) {
+				String key = item.getString(Config._KEY);
+				// only delete rows which belong to the given appid
+				if (StringUtils.startsWith(key, appid.trim())) {
+					logger.debug("Preparing to delete '{}' from shared table, appid: '{}'.", key, appid);
+					pager.setLastKey(item.getString(Config._ID));
+					allDeletes.add(new WriteRequest().withDeleteRequest(new DeleteRequest().
+							withKey(Collections.singletonMap(Config._KEY, new AttributeValue(key)))));
+				}
+			}
+		} while (items.iterator().hasNext());
+
+		// delete all phase
+		final int maxItems = 20;
+		int batchSteps = (allDeletes.size() > maxItems) ? (allDeletes.size() / maxItems) + 1 : 1;
+		List<WriteRequest> reqs = new LinkedList<WriteRequest>();
+		Iterator<WriteRequest> it = allDeletes.iterator();
+		String tableName = getTableNameForAppid(appid);
+		for (int i = 0; i < batchSteps; i++) {
+			while (it.hasNext() && reqs.size() < maxItems) {
+				reqs.add(it.next());
+			}
+			logger.info("Deleting {} items belonging to app '{}', from shared table (page {}/{})...",
+					reqs.size(), appid, i + 1, batchSteps);
+			batchWrite(Collections.singletonMap(tableName, reqs));
+			reqs.clear();
 		}
 	}
 

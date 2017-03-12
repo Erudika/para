@@ -312,7 +312,8 @@ public final class AWSQueueUtils {
 								logger.debug("Queue {} is empty. Sleeping for {}s...", queueURL, SLEEP);
 								Thread.sleep(SLEEP * 1000);
 							} catch (InterruptedException e) {
-								logger.info("SQS river interrupted.");
+								logger.warn("SQS river interrupted: ", e);
+								Thread.currentThread().interrupt();
 								break;
 							}
 						}

@@ -244,7 +244,7 @@ public final class ElasticSearchUtils {
 		boolean created = createIndexWithoutAlias(name, shards, replicas);
 		if (created) {
 			boolean aliased = addIndexAlias(name, appid);
-			if (created && !aliased) {
+			if (!aliased) {
 				logger.warn("Index '{}' was created but not aliased to '{}'.", name, appid);
 			}
 		}

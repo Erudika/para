@@ -321,13 +321,12 @@ public final class ParaClient {
 		return Collections.emptyList();
 	}
 
-	@SuppressWarnings("unchecked")
 	private <P extends ParaObject> List<P> getItems(Map<String, Object> result, Pager... pager) {
 		if (result != null && !result.isEmpty() && result.containsKey("items")) {
 			if (pager != null && pager.length > 0 && pager[0] != null && result.containsKey("totalHits")) {
 				pager[0].setCount(((Integer) result.get("totalHits")).longValue());
 			}
-			return (List<P>) getItemsFromList((List<?>) result.get("items"));
+			return getItemsFromList((List<?>) result.get("items"));
 		}
 		return Collections.emptyList();
 	}
@@ -489,7 +488,6 @@ public final class ParaClient {
 	 * @param id the id
 	 * @return the object if found or null
 	 */
-	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> P findById(String id) {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
 		params.putSingle(Config._ID, id);
@@ -503,11 +501,10 @@ public final class ParaClient {
 	 * @param ids a list of ids to search for
 	 * @return a list of object found
 	 */
-	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> findByIds(List<String> ids) {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
 		params.put("ids", ids);
-		return (List<P>) getItems(find("ids", params));
+		return getItems(find("ids", params));
 	}
 
 	/**
