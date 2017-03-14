@@ -17,8 +17,6 @@
  */
 package com.erudika.para.utils;
 
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueType;
@@ -149,7 +147,7 @@ public final class Config {
 	/**
 	 * AWS Region.
 	 */
-	public static final String AWS_REGION = getConfigParam("aws_region", getDefaultAwsRegion());
+	public static final String AWS_REGION = getConfigParam("aws_region", "");
 	/**
 	 * Facebook app id (for authentication).
 	 */
@@ -400,13 +398,5 @@ public final class Config {
 	 */
 	public static boolean isSearchEnabled() {
 		return getConfigBoolean("search_enabled", true);
-	}
-
-	/**
-	 * @return returns the current or default region.
-	 */
-	private static String getDefaultAwsRegion() {
-		Region region = Regions.getCurrentRegion();
-		return region != null ? region.toString() : Regions.EU_WEST_1.toString();
 	}
 }

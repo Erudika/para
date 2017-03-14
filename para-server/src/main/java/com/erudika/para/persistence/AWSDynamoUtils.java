@@ -105,8 +105,8 @@ public final class AWSDynamoUtils {
 				new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY))).
 					withRegion(Config.AWS_REGION).build();
 		} else {
-			ddbClient = AmazonDynamoDBClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(
-					new BasicAWSCredentials("local", "null"))).
+			ddbClient = AmazonDynamoDBClientBuilder.standard().
+					withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("local", "null"))).
 					withEndpointConfiguration(new EndpointConfiguration(LOCAL_ENDPOINT, "")).build();
 		}
 

@@ -85,7 +85,7 @@ public final class AWSQueueUtils {
 		} else {
 			sqsClient = AmazonSQSClientBuilder.standard().
 					withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"))).
-							withEndpointConfiguration(new EndpointConfiguration(LOCAL_ENDPOINT, "")).build();
+					withEndpointConfiguration(new EndpointConfiguration(LOCAL_ENDPOINT, "")).build();
 		}
 
 		Para.addDestroyListener(new DestroyListener() {
