@@ -12,7 +12,7 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>4.2.1.RELEASE</springSecVer>
+		<springSecVer>4.2.2.RELEASE</springSecVer>
 	</properties>
 
 	<dependencies>
@@ -70,7 +70,7 @@
 			<artifactId>spring-boot-starter-logging</artifactId>
 			<version>${springBootVer}</version>
 		</dependency>
-<!--		<dependency>
+		<!--		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 			<version>${springBootVer}</version>
@@ -82,12 +82,12 @@
 			<groupId>org.elasticsearch</groupId>
 			<artifactId>elasticsearch</artifactId>
 			<version>2.4.4</version>
-		 <exclusions>
-		  <exclusion>
-		   <groupId>org.yaml</groupId>
-		   <artifactId>snakeyaml</artifactId>
-		  </exclusion>
-		 </exclusions>
+			<exclusions>
+				<exclusion>
+					<groupId>org.yaml</groupId>
+					<artifactId>snakeyaml</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>net.java.dev.jna</groupId>
@@ -155,12 +155,12 @@
 			<!-- Skip 4.4 because it causes SSL exceptions with some hostnames-->
 			<version>4.5.3</version>
 		</dependency>
-	 <dependency>
-	  <groupId>org.yaml</groupId>
-	  <artifactId>snakeyaml</artifactId>
-	  <version>1.18</version>
-	 </dependency>
-	 <dependency>
+		<dependency>
+			<groupId>org.yaml</groupId>
+			<artifactId>snakeyaml</artifactId>
+			<version>1.18</version>
+		</dependency>
+		<dependency>
 			<groupId>javax</groupId>
 			<artifactId>javaee-web-api</artifactId>
 			<version>7.0</version>
@@ -181,7 +181,11 @@
 			<artifactId>azure-eventhubs</artifactId>
 			<version>0.11.0</version>
 		</dependency>
-
+		<dependency>
+			<groupId>org.apache.qpid</groupId>
+			<artifactId>proton-j</artifactId>
+			<version>0.18.0</version>
+		</dependency>
 
 		<!-- TESTING -->
 		<dependency>
@@ -195,12 +199,12 @@
 			<artifactId>elasticmq-rest-sqs_2.11</artifactId>
 			<version>0.9.3</version>
 			<scope>test</scope>
-		 <exclusions>
-		  <exclusion>
-		   <groupId>org.joda</groupId>
-		   <artifactId>joda-convert</artifactId>
-		  </exclusion>
-		 </exclusions>
+			<exclusions>
+				<exclusion>
+					<groupId>org.joda</groupId>
+					<artifactId>joda-convert</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>

@@ -12,8 +12,8 @@
 	<name>para-core</name>
 
 	<properties>
-		<jacksonVer>2.8.1</jacksonVer>
-		<springVer>4.3.5.RELEASE</springVer>
+		<jacksonVer>2.8.7</jacksonVer>
+		<springVer>4.3.7.RELEASE</springVer>
 	</properties>
 
 	<dependencies>
