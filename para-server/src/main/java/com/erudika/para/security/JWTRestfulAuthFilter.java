@@ -85,7 +85,6 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	 * @param defaultFilterProcessesUrl filter URL
 	 */
 	public JWTRestfulAuthFilter(String defaultFilterProcessesUrl) {
-		Assert.hasLength(defaultFilterProcessesUrl);
 		setFilterProcessesUrl(defaultFilterProcessesUrl);
 	}
 
