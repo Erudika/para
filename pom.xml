@@ -80,7 +80,7 @@
 		<deployPluginVer>2.8.2</deployPluginVer>
 		<slf4jVer>1.7.22</slf4jVer>
 		<logbackVer>1.1.8</logbackVer>
-		<awsJdkVer>1.11.104</awsJdkVer>
+		<awsJdkVer>1.11.105</awsJdkVer>
 		<jerseyVer>2.25.1</jerseyVer>
 		<springBootVer>1.4.4.RELEASE</springBootVer>
 	</properties>
