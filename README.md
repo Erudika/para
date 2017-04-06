@@ -139,13 +139,20 @@ Use these `DAO` implementations to connect to different databases:
 - **MongoDB**: [para-dao-mongodb](https://github.com/Erudika/para-dao-mongodb)
 - **Cassandra**: [para-dao-cassandra](https://github.com/Erudika/para-dao-cassandra)
 
+## Projects using Para
+
+- [Scoold](https://scoold.com) - an open source StackOverflow clone
+- [ParaIO.com](https://paraio.com) - managed Para hosting
+- [Erudika.com](https://erudika.com/blog) - the search bar on our blog uses Para
+- [Angular2 primer](https://github.com/albogdano/angular2-para) - a sample Angular2 project
+
 ## Wishlist / Roadmap
 
-- `DAO` implementation for PostgreSQL, etc.
+- `DAO` implementation for PostgreSQL.
+- Separate Elasticsearch from Para and create a new `para-search-elasticsearch` plugin
 - Server-side JavaScript support for implementing custom API resources
 - Integrations with Google App Engine, Heroku, DigitalOcean
-- GraphQL and/or ([JSON API](http://jsonapi.org/)) schema support
-- Swagger support
+- GraphQL or ([JSON API](http://jsonapi.org/)) compatible API at `/v2`
 
 ## Contributing
 
