@@ -29,6 +29,7 @@ import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
@@ -280,7 +281,7 @@ public class User implements ParaObject {
 		}
 
 		if (CoreUtils.getInstance().getDao().create(getAppid(), this) != null) {
-			createIdentifier(getId(), getIdentifier(), getPassword());
+			createIdentifier(getIdentifier(), getPassword());
 		}
 
 		return getId();
@@ -414,8 +415,10 @@ public class User implements ParaObject {
 			return "twitter";
 		} else if (isLinkedInUser()) {
 			return "linkedin";
+		} else if (isMicrosoftUser()) {
+			return "microsoft";
 		} else {
-			return "none";
+			return "generic";
 		}
 	}
 
@@ -441,25 +444,46 @@ public class User implements ParaObject {
 	 * @param u a user having a valid identifier set.
 	 * @return a user or null if no user is found for this identifier
 	 */
-	public static final User readUserForIdentifier(User u) {
+	public static final User readUserForIdentifier(final User u) {
 		if (u == null || StringUtils.isBlank(u.getIdentifier())) {
 			return null;
 		}
+		User user = null;
+		String password = null;
 		String identifier = u.getIdentifier();
+		// Try to read the identifier object first, then read the user object linked to it.
 		Sysprop s = CoreUtils.getInstance().getDao().read(u.getAppid(), identifier);
 		if (s != null && s.getCreatorid() != null) {
-			User user = CoreUtils.getInstance().getDao().read(u.getAppid(), s.getCreatorid());
-			if (user != null) {
-				if (!identifier.equals(user.getIdentifier())) {
-					logger.info("Identifier changed for user '{}', from {} to {}.",
-							user.getId(), user.getIdentifier(), identifier);
-					// the main identifier was changed - update
-					user.setIdentifier(identifier);
-					CoreUtils.getInstance().getDao().update(user.getAppid(), user);
-				}
-				user.setPassword((String) s.getProperty(Config._PASSWORD));
-				return user;
+			user = CoreUtils.getInstance().getDao().read(u.getAppid(), s.getCreatorid());
+			password = (String) s.getProperty(Config._PASSWORD);
+		}
+		// Try to find the user by email if already created, but with a different identifier.
+		// This prevents users with identical emails to have separate accounts by signing in through
+		// different identity providers.
+		if (user == null && !StringUtils.isBlank(u.getEmail())) {
+			List<User> users = CoreUtils.getInstance().getSearch().findTerms(u.getAppid(), u.getType(),
+					new HashMap<String, Object>(){{
+						put(Config._EMAIL, u.getEmail());
+						put(Config._APPID, u.getAppid());
+					}}, true, new Pager(1));
+			if (!users.isEmpty()) {
+				user = users.get(0);
+				password = new UUID().toString();
+				user.createIdentifier(u.getIdentifier(), password);
 			}
+		}
+		if (user != null) {
+			if (password != null) {
+				user.setPassword(password);
+			}
+			if (!identifier.equals(user.getIdentifier())) {
+				logger.info("Identifier changed for user '{}', from {} to {}.",
+						user.getId(), user.getIdentifier(), identifier);
+				// the main identifier was changed - update
+				user.setIdentifier(identifier);
+				CoreUtils.getInstance().getDao().update(user.getAppid(), user);
+			}
+			return user;
 		}
 		logger.info("User not found for identifier {}/{}, {}.", u.getAppid(), identifier, u.getId());
 		return null;
@@ -534,26 +558,21 @@ public class User implements ParaObject {
 		return false;
 	}
 
-	private boolean createIdentifier(String userid, String newIdent) {
-		return createIdentifier(userid, newIdent, null);
-	}
-
 	/**
 	 * Creates a new identifier object using {@link Sysprop}.
 	 * Used for identifying a user when signing in.
-	 * @param userid a user id
 	 * @param newIdent a new identifier
 	 * @param password a password for the user (optional)
 	 * @return true if successful
 	 */
-	private boolean createIdentifier(String userid, String newIdent, String password) {
-		if (StringUtils.isBlank(userid) || StringUtils.isBlank(newIdent)) {
+	private boolean createIdentifier(String newIdent, String password) {
+		if (StringUtils.isBlank(getId()) || StringUtils.isBlank(newIdent)) {
 			return false;
 		}
 		Sysprop s = new Sysprop();
 		s.setId(newIdent);
 		s.setName(Config._IDENTIFIER);
-		s.setCreatorid(userid);
+		s.setCreatorid(getId());
 		if (!StringUtils.isBlank(password)) {
 			String hashed = Utils.bcrypt(password);
 			s.addProperty(Config._PASSWORD, hashed);
