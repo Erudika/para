@@ -55,8 +55,8 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private final CloseableHttpClient httpclient;
 	private final ObjectReader jreader;
-	private static final String PROFILE_URL = "https://www.googleapis.com/plus/v1/people/me/openIdConnect";
-	private static final String TOKEN_URL = "https://accounts.google.com/o/oauth2/token";
+	private static final String PROFILE_URL = "https://www.googleapis.com/oauth2/v3/userinfo"; // old: https://www.googleapis.com/plus/v1/people/me/openIdConnect
+	private static final String TOKEN_URL = "https://www.googleapis.com/oauth2/v4/token"; //old: https://accounts.google.com/o/oauth2/token
 	private static final String PAYLOAD = "code={0}&redirect_uri={1}&scope=&client_id={2}"
 			+ "&client_secret={3}&grant_type=authorization_code";
 	/**
@@ -150,6 +150,7 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 					String name = (String) profile.get("name");
 
 					user.setIdentifier(Config.GPLUS_PREFIX.concat(googleSubId));
+					user.setEmail(email);
 					user = User.readUserForIdentifier(user);
 					if (user == null) {
 						//user is new

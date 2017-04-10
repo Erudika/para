@@ -114,6 +114,7 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 			User u = new User();
 			u.setIdentifier(email);
 			u.setPassword(pass);
+			u.setEmail(email);
 
 			User user = User.readUserForIdentifier(u);
 			if (user == null) {

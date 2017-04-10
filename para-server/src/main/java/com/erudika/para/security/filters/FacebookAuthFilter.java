@@ -104,6 +104,11 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 					if (token != null && token.startsWith("access_token")) {
 						String accessToken = token.substring(token.indexOf("=") + 1, token.indexOf("&"));
 						userAuth = getOrCreateUser(appid, accessToken);
+					} else {
+						Map<String, Object> tokenObject = jreader.readValue(token);
+						if (tokenObject != null && tokenObject.containsKey("access_token")) {
+							userAuth = getOrCreateUser(appid, (String) tokenObject.get("access_token"));
+						}
 					}
 					EntityUtils.consumeQuietly(resp1.getEntity());
 				}
@@ -156,6 +161,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 					String name = (String) profile.get("name");
 
 					user.setIdentifier(Config.FB_PREFIX.concat(fbId));
+					user.setEmail(email);
 					user = User.readUserForIdentifier(user);
 					if (user == null) {
 						//user is new

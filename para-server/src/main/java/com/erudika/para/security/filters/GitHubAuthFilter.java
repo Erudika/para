@@ -25,6 +25,7 @@ import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.security.UserAuthentication;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
+import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -150,8 +151,12 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 					String pic = (String) profile.get("avatar_url");
 					String email = (String) profile.get("email");
 					String name = (String) profile.get("name");
+					if (StringUtils.isBlank(email)) {
+						email = fetchUserEmail(githubId, accessToken);
+					}
 
 					user.setIdentifier(Config.GITHUB_PREFIX + githubId);
+					user.setEmail(email);
 					user = User.readUserForIdentifier(user);
 					if (user == null) {
 						//user is new
@@ -200,5 +205,30 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 		}
 		return null;
+	}
+
+	private String fetchUserEmail(Integer githubId, String accessToken) throws IOException {
+		HttpGet emailsGet = new HttpGet(PROFILE_URL + "/emails");
+		emailsGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+		emailsGet.setHeader(HttpHeaders.ACCEPT, "application/json");
+		CloseableHttpResponse resp = httpclient.execute(emailsGet);
+		HttpEntity respEntity = resp.getEntity();
+		String ctype = resp.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
+
+		if (respEntity != null && Utils.isJsonType(ctype)) {
+			MappingIterator<Map<String, Object>> emails = jreader.readValues(respEntity.getContent());
+			if (emails != null) {
+				String email = null;
+				while (emails.hasNext()) {
+					Map<String, Object> next = emails.next();
+					email = (String) next.get("email");
+					if (next.containsKey("primary") && (Boolean) next.get("primary")) {
+						break;
+					}
+				}
+				return email;
+			}
+		}
+		return githubId + "@github.com";
 	}
 }

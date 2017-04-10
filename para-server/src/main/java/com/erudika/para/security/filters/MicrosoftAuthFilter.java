@@ -156,6 +156,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 					}
 
 					user.setIdentifier(Config.MICROSOFT_PREFIX + microsoftId);
+					user.setEmail(email);
 					user = User.readUserForIdentifier(user);
 					if (user == null) {
 						//user is new

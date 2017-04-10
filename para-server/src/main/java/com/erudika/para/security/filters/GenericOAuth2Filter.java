@@ -166,6 +166,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 					String name = (String) profile.get(nameParam);
 
 					user.setIdentifier(Config.OAUTH2_PREFIX.concat(oauthAccountId));
+					user.setEmail(email);
 					user = User.readUserForIdentifier(user);
 					if (user == null) {
 						//user is new

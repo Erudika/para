@@ -204,6 +204,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 					String email = (String) profile.get("email");
 
 					user.setIdentifier(Config.TWITTER_PREFIX + twitterId);
+					user.setEmail(email);
 					user = User.readUserForIdentifier(user);
 					if (user == null) {
 						//user is new
