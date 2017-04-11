@@ -311,7 +311,7 @@ public class User implements ParaObject {
 	 */
 	public void attachIdentifier(String identifier) {
 		if (this.exists()) {
-			createIdentifier(getId(), identifier);
+			createIdentifier(identifier, new UUID().toString());
 		}
 	}
 
@@ -462,10 +462,12 @@ public class User implements ParaObject {
 		// different identity providers.
 		if (user == null && !StringUtils.isBlank(u.getEmail())) {
 			List<User> users = CoreUtils.getInstance().getSearch().findTerms(u.getAppid(), u.getType(),
-					new HashMap<String, Object>(){{
-						put(Config._EMAIL, u.getEmail());
-						put(Config._APPID, u.getAppid());
-					}}, true, new Pager(1));
+					new HashMap<String, Object>() {
+						{
+							put(Config._EMAIL, u.getEmail());
+							put(Config._APPID, u.getAppid());
+						}
+					}, true, new Pager(1));
 			if (!users.isEmpty()) {
 				user = users.get(0);
 				password = new UUID().toString();
