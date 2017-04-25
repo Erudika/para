@@ -62,6 +62,9 @@ public class User implements ParaObject {
 	@Stored @NotBlank private String identifier;
 	@Stored @Locked @NotBlank private String groups;
 	@Stored private Boolean active;
+	@Stored private Boolean twoFA;
+	@Stored private String twoFAkey;
+	@Stored private String twoFAbackupKeyHash;
 	@Stored @NotBlank @Email private String email;
 	@Stored private String currency;
 	@Stored private String picture;
@@ -160,6 +163,56 @@ public class User implements ParaObject {
 	 */
 	public void setActive(Boolean active) {
 		this.active = active;
+	}
+
+	/**
+	 * @return true if 2FA is enabled
+	 */
+	public Boolean getTwoFA() {
+		if (twoFA == null) {
+			twoFA = false;
+		}
+		return twoFA;
+	}
+
+	/**
+	 * Sets 2FA enabled/disabled.
+	 * @param twoFA true if 2FA is enabled
+	 */
+	public void setTwoFA(Boolean twoFA) {
+		this.twoFA = twoFA;
+	}
+
+	/**
+	 * @return the 2FA secret key. Used for checking the TOTP code.
+	 */
+	@JsonIgnore
+	public String getTwoFAkey() {
+		return twoFAkey;
+	}
+
+	/**
+	 * Sets the 2FA secret key.
+	 * @param twoFAkey secret key
+	 */
+	public void setTwoFAkey(String twoFAkey) {
+		this.twoFAkey = twoFAkey;
+	}
+
+	/**
+	 * @return the hashed backup key (shown only once). Used for disabling 2FA.
+	 */
+	@JsonIgnore
+	public String getTwoFAbackupKeyHash() {
+		return twoFAbackupKeyHash;
+	}
+
+	/**
+	 * Sets the 2FA backup key hash.
+	 * @param twoFAbackupKeyHash bcrypt hash
+	 */
+	public void setTwoFAbackupKeyHash(String twoFAbackupKeyHash) {
+		this.twoFAbackupKeyHash = twoFAbackupKeyHash;
 	}
 
 	/**

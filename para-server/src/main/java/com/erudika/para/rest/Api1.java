@@ -394,7 +394,10 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
-	private Inflector<ContainerRequestContext, Response> meHandler() {
+	/**
+	 * @return response
+	 */
+	public static Inflector<ContainerRequestContext, Response> meHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				if (GET.equals(ctx.getMethod())) {
