@@ -89,7 +89,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = request.getParameter(Config._APPID);
 				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
-				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.FB_PREFIX, request);
+				String[] keys = SecurityUtils.getOAuthKeysForApp(appid, Config.FB_PREFIX);
 				CloseableHttpResponse resp1 = null;
 				String url = Utils.formatMessage(TOKEN_URL, authCode, redirectURI, keys[0], keys[1]);
 				try {

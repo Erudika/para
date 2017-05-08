@@ -60,7 +60,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 	private static final String TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
 	private static final String PAYLOAD = "code={0}&redirect_uri={1}"
 			+ "&scope=https%3A%2F%2Fgraph.microsoft.com%2Fuser.read&client_id={2}"
-			+ "&client_secret={3}&grant_type=authorization_code";
+			+ "&client_secret={3}&state={4}&grant_type=authorization_code";
 	/**
 	 * The default filter mapping.
 	 */
@@ -92,12 +92,14 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 		if (requestURI.endsWith(MICROSOFT_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
-				String appid = request.getParameter(Config._APPID);
-				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
-				String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.MICROSOFT_PREFIX, request);
+				// v2.0 endpoint doesn't like query parameters in redirect_uri
+				// so we use the "state" parameter to remember the appid
+				String appid = request.getParameter("state");
+				String redirectURI = request.getRequestURL().toString(); //+ (appid == null ? "" : "?appid=" + appid);
+				String[] keys = SecurityUtils.getOAuthKeysForApp(appid, Config.MICROSOFT_PREFIX);
 				String entity = Utils.formatMessage(PAYLOAD,
 						URLEncoder.encode(authCode, "UTF-8"),
-						URLEncoder.encode(redirectURI, "UTF-8"), keys[0], keys[1]);
+						URLEncoder.encode(redirectURI, "UTF-8"), keys[0], keys[1], appid);
 
 				HttpPost tokenPost = new HttpPost(TOKEN_URL);
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");

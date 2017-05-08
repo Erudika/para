@@ -17,10 +17,14 @@
  */
 package com.erudika.para.security;
 
+import com.erudika.para.Para;
+import com.erudika.para.core.App;
 import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
+import static com.erudika.para.security.filters.MicrosoftAuthFilter.MICROSOFT_ACTION;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
+import com.nimbusds.jwt.SignedJWT;
 import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -42,25 +46,41 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 	@Override
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 			Authentication authentication) throws IOException, ServletException {
+
 		User u = SecurityUtils.getAuthenticatedUser(authentication);
 		if (u != null && !StringUtils.equals(request.getRemoteAddr(), u.getLastIp())) {
 			u.setLastIp(request.getRemoteAddr());
 			u.update();
 		}
-		String customURI = (String) request.getAttribute(Config.AUTH_SIGNIN_SUCCESS_ATTR);
-		if (customURI == null && request.getParameter(Config._APPID) != null) {
+
+		// Special case for Microsoft Live account login: oauth/v2 endpoint doesn't allow
+		// query parameters in redirect_uri like ?redirect_uri=/microsoft_auth?appid=app
+		// Instead, we must use the "state" parameter to remember the appid of the app initiating the auth request.
+		String appidParam = request.getRequestURI().contains(MICROSOFT_ACTION) ? "state" : Config._APPID;
+		String appid = request.getParameter(appidParam);
+		if (!StringUtils.isBlank(appid)) {
 			// try to reload custom redirect URI from app
-			SecurityUtils.getCustomAuthSettings(request.getParameter(Config._APPID), null, request);
-			customURI = (String) request.getAttribute(Config.AUTH_SIGNIN_SUCCESS_ATTR);
-		}
-		if (!StringUtils.isBlank(customURI)) {
-			redirectStrategy.sendRedirect(request, response, customURI);
-		} else {
-			if (isRestRequest(request)) {
-				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NO_CONTENT, "Authentication success.");
-			} else {
-				super.onAuthenticationSuccess(request, response, authentication);
+			App app = Para.getDAO().read(App.id(appid));
+			if (app != null) {
+				String customURI = (String) app.getSetting("signin_success");
+				if (app.isRootApp() && StringUtils.isBlank(customURI)) {
+					customURI = Config.getConfigParam("security.signin_success", "/");
+				}
+				if (StringUtils.contains(customURI, "jwt=?")) {
+					SignedJWT newJWT = SecurityUtils.generateJWToken(u, app);
+					customURI = customURI.replace("jwt=?", "jwt=" + newJWT.serialize());
+				}
+				if (!StringUtils.isBlank(customURI)) {
+					redirectStrategy.sendRedirect(request, response, customURI);
+					return;
+				}
 			}
+		}
+
+		if (isRestRequest(request)) {
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_NO_CONTENT, "Authentication success.");
+		} else {
+			super.onAuthenticationSuccess(request, response, authentication);
 		}
 	}
 

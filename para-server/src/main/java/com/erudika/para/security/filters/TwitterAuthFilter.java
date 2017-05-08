@@ -95,8 +95,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 			String appid = request.getParameter(Config._APPID);
 			String denied = request.getParameter("denied");
 			String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
-			String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.TWITTER_PREFIX, request);
-
+			String[] keys = SecurityUtils.getOAuthKeysForApp(appid, Config.TWITTER_PREFIX);
 			if (denied != null) {
 				throw new BadCredentialsException("Cancelled.");
 			}
@@ -182,7 +181,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 		UserAuthentication userAuth = null;
 		if (accessToken != null && accessToken.contains(Config.SEPARATOR)) {
 			String[] tokens = accessToken.split(Config.SEPARATOR);
-			String[] keys = SecurityUtils.getCustomAuthSettings(appid, Config.TWITTER_PREFIX, null);
+			String[] keys = SecurityUtils.getOAuthKeysForApp(appid, Config.TWITTER_PREFIX);
 			User user = new User();
 			user.setAppid(appid);
 

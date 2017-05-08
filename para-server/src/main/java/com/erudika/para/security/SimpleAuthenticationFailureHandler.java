@@ -17,6 +17,8 @@
  */
 package com.erudika.para.security;
 
+import com.erudika.para.Para;
+import com.erudika.para.core.App;
 import com.erudika.para.rest.RestUtils;
 import com.erudika.para.utils.Config;
 import java.io.IOException;
@@ -41,20 +43,26 @@ public class SimpleAuthenticationFailureHandler extends SimpleUrlAuthenticationF
 	public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
 			AuthenticationException exception) throws IOException, ServletException {
 
-		String customURI = (String) request.getAttribute(Config.AUTH_SIGNIN_FAILURE_ATTR);
-		if (customURI == null && request.getParameter(Config._APPID) != null) {
+		String appid = request.getParameter(Config._APPID);
+		if (!StringUtils.isBlank(appid)) {
 			// try to reload custom redirect URI from app
-			SecurityUtils.getCustomAuthSettings(request.getParameter(Config._APPID), null, request);
-			customURI = (String) request.getAttribute(Config.AUTH_SIGNIN_FAILURE_ATTR);
-		}
-		if (!StringUtils.isBlank(customURI)) {
-			redirectStrategy.sendRedirect(request, response, customURI);
-		} else {
-			if (isRestRequest(request)) {
-				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, exception.getMessage());
-			} else {
-				super.onAuthenticationFailure(request, response, exception);
+			App app = Para.getDAO().read(App.id(appid));
+			if (app != null) {
+				String customURI = (String) app.getSetting("signin_failure");
+				if (app.isRootApp() && StringUtils.isBlank(customURI)) {
+					customURI = Config.getConfigParam("security.signin_failure", "/");
+				}
+				if (!StringUtils.isBlank(customURI)) {
+					redirectStrategy.sendRedirect(request, response, customURI);
+					return;
+				}
 			}
+		}
+
+		if (isRestRequest(request)) {
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, exception.getMessage());
+		} else {
+			super.onAuthenticationFailure(request, response, exception);
 		}
 	}
 
