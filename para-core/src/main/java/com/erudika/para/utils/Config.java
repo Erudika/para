@@ -98,11 +98,6 @@ public final class Config {
 	/** OAuth2 generic prefix - defaults to 'oa2:'. */
 	public static final String OAUTH2_PREFIX = "oa2" + SEPARATOR;
 
-	/**	{@value #AUTH_SIGNIN_SUCCESS_ATTR}. */
-	public static final String AUTH_SIGNIN_SUCCESS_ATTR = "AUTH_SIGNIN_SUCCESS_ATTRIBUTE";
-	/**	{@value #AUTH_SIGNIN_FAILURE_ATTR}. */
-	public static final String AUTH_SIGNIN_FAILURE_ATTR = "AUTH_SIGNIN_FAILURE_ATTRIBUTE";
-
 	//////////  INITIALIZATION PARAMETERS  //////////////
 	/**
 	 * Maximum results per page - limits the number of items to show in search results. Default is 30.
