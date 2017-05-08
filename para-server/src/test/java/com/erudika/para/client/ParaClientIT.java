@@ -840,19 +840,37 @@ public class ParaClientIT {
 		pc.addAppSetting("prop2", true);
 		pc.addAppSetting("prop3", "string");
 
-		assertEquals(3, pc.appSettings().size());
-		assertEquals(pc.appSettings(), pc.appSettings(null));
-		assertEquals(Collections.singletonMap("value", 1), pc.appSettings("prop1"));
-		assertEquals(Collections.singletonMap("value", true), pc.appSettings("prop2"));
-		assertEquals(Collections.singletonMap("value", "string"), pc.appSettings("prop3"));
+		settings = pc.appSettings();
+		assertEquals(3, settings.size());
+		assertEquals(settings, pc.appSettings(null));
+		assertEquals(1, settings.get("prop1"));
+		assertEquals(true, settings.get("prop2"));
+		assertEquals("string", settings.get("prop3"));
 
 		pc.removeAppSetting("prop3");
 		pc.removeAppSetting(" ");
 		pc.removeAppSetting(null);
-		assertTrue(pc.appSettings("prop3").isEmpty());
-		assertEquals(2, pc.appSettings().size());
+
+		settings = pc.appSettings();
+		assertFalse(settings.containsKey("prop3"));
+		assertEquals(2, settings.size());
 		pc.removeAppSetting("prop2");
 		pc.removeAppSetting("prop1");
+
+		pc.addAppSetting("propZ", 1);
+		Map<String, Object> newSettings = new HashMap<String, Object>();
+		newSettings.put("propX", "X");
+		newSettings.put("propY", "Y");
+		pc.setAppSettings(newSettings);
+		settings = pc.appSettings();
+		assertEquals(2, settings.size());
+		assertFalse(settings.containsKey("propZ"));
+		assertTrue(settings.containsKey("propX"));
+		assertTrue(settings.containsKey("propY"));
+		newSettings.clear();
+		pc.setAppSettings(newSettings);
+		settings = pc.appSettings();
+		assertTrue(settings.isEmpty());
 	}
 
 	@Test

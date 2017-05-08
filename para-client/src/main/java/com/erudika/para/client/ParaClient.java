@@ -1343,6 +1343,16 @@ public final class ParaClient {
 	}
 
 	/**
+	 * Overwrites all app-specific settings.
+	 * @param settings a key-value map of properties
+	 */
+	public void setAppSettings(Map<?, ?> settings) {
+		if (settings != null) {
+			invokePut("_settings", Entity.json(settings));
+		}
+	}
+
+	/**
 	 * Removes an app-specific setting.
 	 * @param key a key
 	 */

@@ -165,6 +165,7 @@ public final class Api1 extends ResourceConfig {
 		// app settings
 		Resource.Builder appSettingsRes = Resource.builder("_settings");
 		appSettingsRes.addMethod(GET).produces(JSON).handledBy(appSettingsHandler(null));
+		appSettingsRes.addMethod(PUT).produces(JSON).handledBy(appSettingsHandler(null));
 		appSettingsRes.addChildResource("{key}").addMethod(GET).produces(JSON).handledBy(appSettingsHandler(null));
 		appSettingsRes.addChildResource("{key}").addMethod(PUT).produces(JSON).handledBy(appSettingsHandler(null));
 		appSettingsRes.addChildResource("{key}").addMethod(DELETE).produces(JSON).handledBy(appSettingsHandler(null));
@@ -620,25 +621,27 @@ public final class Api1 extends ResourceConfig {
 				App app = (a != null) ? a : getPrincipalApp();
 				String key = pathParam("key", ctx);
 				if (app != null) {
-					if (StringUtils.isBlank(key)) {
-						return Response.ok(app.getSettings()).build();
-					} else {
-						if (PUT.equals(ctx.getMethod())) {
-							Response resp = getEntity(ctx.getEntityStream(), Map.class);
-							if (resp.getStatusInfo() == Response.Status.OK) {
-								Map<String, Object> setting = (Map<String, Object>) resp.getEntity();
-								if (setting.containsKey("value")) {
-									app.addSetting(key, setting.get("value"));
-									app.update();
-								}
-								return Response.ok().build();
+					if (PUT.equals(ctx.getMethod())) {
+						Response resp = getEntity(ctx.getEntityStream(), Map.class);
+						if (resp.getStatusInfo() == Response.Status.OK) {
+							Map<String, Object> setting = (Map<String, Object>) resp.getEntity();
+							if (!StringUtils.isBlank(key) && setting.containsKey("value")) {
+								app.addSetting(key, setting.get("value"));
 							} else {
-								return getStatusResponse(Response.Status.BAD_REQUEST);
+								app.setSettings(setting);
 							}
-						} else if (DELETE.equals(ctx.getMethod())) {
-							app.removeSetting(key);
 							app.update();
 							return Response.ok().build();
+						} else {
+							return getStatusResponse(Response.Status.BAD_REQUEST);
+						}
+					} else if (DELETE.equals(ctx.getMethod())) {
+						app.removeSetting(key);
+						app.update();
+						return Response.ok().build();
+					} else {
+						if (StringUtils.isBlank(key)) {
+							return Response.ok(app.getSettings()).build();
 						} else {
 							return Response.ok(Collections.singletonMap("value", app.getSetting(key))).build();
 						}
