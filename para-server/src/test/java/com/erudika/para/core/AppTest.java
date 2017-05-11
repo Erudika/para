@@ -18,6 +18,21 @@
 
 package com.erudika.para.core;
 
+import static com.erudika.para.core.App.ALLOW_ALL;
+import static com.erudika.para.core.App.AllowedMethods.ALL;
+import static com.erudika.para.core.App.AllowedMethods.DELETE;
+import static com.erudika.para.core.App.AllowedMethods.GET;
+import static com.erudika.para.core.App.AllowedMethods.GUEST;
+import static com.erudika.para.core.App.AllowedMethods.NONE;
+import static com.erudika.para.core.App.AllowedMethods.PATCH;
+import static com.erudika.para.core.App.AllowedMethods.POST;
+import static com.erudika.para.core.App.AllowedMethods.PUT;
+import static com.erudika.para.core.App.AllowedMethods.READ;
+import static com.erudika.para.core.App.AllowedMethods.READ_AND_WRITE;
+import static com.erudika.para.core.App.AllowedMethods.READ_ONLY;
+import static com.erudika.para.core.App.AllowedMethods.READ_WRITE;
+import static com.erudika.para.core.App.AllowedMethods.WRITE;
+import static com.erudika.para.core.App.AllowedMethods.WRITE_ONLY;
 import com.erudika.para.utils.Config;
 import static com.erudika.para.validation.Constraint.url;
 import java.io.IOException;
@@ -149,7 +164,7 @@ public class AppTest {
 	public void testGetAllResourcePermissions() {
 		App app = new App(Config.PARA);
 		assertTrue(app.getAllResourcePermissions().isEmpty());
-		app.grantResourcePermission("123", App.ALLOW_ALL, App.AllowedMethods.READ);
+		app.grantResourcePermission("123", ALLOW_ALL, READ);
 		assertTrue(app.getAllResourcePermissions().containsKey("123"));
 		assertTrue(app.getAllResourcePermissions(new String[]{null}).isEmpty());
 		assertFalse(app.getAllResourcePermissions("123").isEmpty());
@@ -162,59 +177,68 @@ public class AppTest {
 		App app = new App(Config.PARA);
 		assertFalse(app.isAllowedTo(null, null, null));
 		assertFalse(app.isAllowedTo("", " ", ""));
-		assertFalse(app.isAllowedTo(App.ALLOW_ALL, App.ALLOW_ALL, App.AllowedMethods.GET.toString()));
+		assertFalse(app.isAllowedTo(ALLOW_ALL, ALLOW_ALL, GET.toString()));
 
-		app.grantResourcePermission("123", App.ALLOW_ALL, App.AllowedMethods.READ);
-		assertFalse(app.isAllowedTo("123", App.ALLOW_ALL, App.AllowedMethods.POST.toString()));
-		assertTrue(app.isAllowedTo("123", "_test", App.AllowedMethods.GET.toString()));
-		assertTrue(app.isAllowedTo("123", "_test1", App.AllowedMethods.READ_ONLY.toString()));
+		app.grantResourcePermission("123", ALLOW_ALL, READ);
+		assertFalse(app.isAllowedTo("123", ALLOW_ALL, POST.toString()));
+		assertTrue(app.isAllowedTo("123", "_test", GET.toString()));
+		assertTrue(app.isAllowedTo("123", "_test1", READ_ONLY.toString()));
 
 		app.revokeAllResourcePermissions("123");
-		assertFalse(app.isAllowedTo("123", "_test", App.AllowedMethods.GET.toString()));
-		assertFalse(app.isAllowedTo("123", "_test1", App.AllowedMethods.READ_ONLY.toString()));
+		assertFalse(app.isAllowedTo("123", "_test", GET.toString()));
+		assertFalse(app.isAllowedTo("123", "_test1", READ_ONLY.toString()));
 	}
 
 	@Test
 	public void testGrantRevokeResourcePermission() {
 		App app = new App(Config.PARA);
-		assertFalse(app.isAllowedTo(App.ALLOW_ALL, App.ALLOW_ALL, App.AllowedMethods.GET.toString()));
+		assertFalse(app.isAllowedTo(ALLOW_ALL, ALLOW_ALL, GET.toString()));
 
-		app.grantResourcePermission(null, App.ALLOW_ALL, App.AllowedMethods.READ);
+		app.grantResourcePermission(null, ALLOW_ALL, READ);
 		assertTrue(app.getResourcePermissions().isEmpty());
-		app.grantResourcePermission("", App.ALLOW_ALL, App.AllowedMethods.READ);
+		app.grantResourcePermission("", ALLOW_ALL, READ);
 		assertTrue(app.getResourcePermissions().isEmpty());
-		app.grantResourcePermission("123", "", App.AllowedMethods.READ);
+		app.grantResourcePermission("123", "", READ);
 		assertTrue(app.getResourcePermissions().isEmpty());
-		app.grantResourcePermission("123", App.ALLOW_ALL, EnumSet.noneOf(App.AllowedMethods.class));
+		app.grantResourcePermission("123", ALLOW_ALL, EnumSet.noneOf(App.AllowedMethods.class));
 		assertTrue(app.getResourcePermissions().isEmpty());
 
-		app.grantResourcePermission("123", "res", App.AllowedMethods.NONE);
+		app.grantResourcePermission("123", "res", NONE);
 		assertFalse(app.getResourcePermissions().isEmpty());
 		assertFalse(app.isAllowedTo("123", "test", "GET"));
 
 		assertFalse(app.isAllowedTo("123", "test", "GET"));
-		app.grantResourcePermission("123", App.ALLOW_ALL, App.AllowedMethods.READ);
-		assertTrue(app.isAllowedTo("123", App.ALLOW_ALL, App.AllowedMethods.READ_ONLY.toString()));
+		app.grantResourcePermission("123", ALLOW_ALL, READ);
+		assertTrue(app.isAllowedTo("123", ALLOW_ALL, READ_ONLY.toString()));
+
+		app.grantResourcePermission("1235", ALLOW_ALL, EnumSet.of(READ_ONLY, PATCH));
+		assertTrue(app.isAllowedTo("1235", ALLOW_ALL, READ_ONLY.toString()));
+		assertFalse(app.isAllowedTo("1235", ALLOW_ALL, PATCH.toString()));
+		assertFalse(app.isAllowedTo("1235", ALLOW_ALL, DELETE.toString()));
+
+		app.grantResourcePermission("1236", ALLOW_ALL, EnumSet.of(READ_ONLY, WRITE_ONLY));
+		assertTrue(app.isAllowedTo("1236", ALLOW_ALL, ALLOW_ALL));
+
 		// explicitly denied above
 		assertFalse(app.isAllowedTo("123", "res", "gEt"));
 		assertTrue(app.isAllowedTo("123", "res1/res2", "gEt"));
-		assertFalse(app.isAllowedTo("1234", App.ALLOW_ALL, App.AllowedMethods.READ_ONLY.toString()));
+		assertFalse(app.isAllowedTo("1234", ALLOW_ALL, READ_ONLY.toString()));
 
 		app.revokeResourcePermission("123", "_test");
-		assertTrue(app.isAllowedTo("123", App.ALLOW_ALL, App.AllowedMethods.READ_ONLY.toString()));
-		app.revokeResourcePermission(App.ALLOW_ALL, App.ALLOW_ALL);
-		assertTrue(app.isAllowedTo("123", App.ALLOW_ALL, App.AllowedMethods.READ_ONLY.toString()));
-		assertTrue(app.isAllowedTo("123", App.ALLOW_ALL, "get"));
-		assertFalse(app.isAllowedTo("123", App.ALLOW_ALL, "bad_method"));
-		app.revokeResourcePermission("123", App.ALLOW_ALL);
-		assertFalse(app.isAllowedTo("123", App.ALLOW_ALL, App.AllowedMethods.READ_ONLY.toString()));
+		assertTrue(app.isAllowedTo("123", ALLOW_ALL, READ_ONLY.toString()));
+		app.revokeResourcePermission(ALLOW_ALL, ALLOW_ALL);
+		assertTrue(app.isAllowedTo("123", ALLOW_ALL, READ_ONLY.toString()));
+		assertTrue(app.isAllowedTo("123", ALLOW_ALL, "get"));
+		assertFalse(app.isAllowedTo("123", ALLOW_ALL, "bad_method"));
+		app.revokeResourcePermission("123", ALLOW_ALL);
+		assertFalse(app.isAllowedTo("123", ALLOW_ALL, READ_ONLY.toString()));
 
-		app.grantResourcePermission(App.ALLOW_ALL, "/0123/", App.AllowedMethods.READ);
-		assertTrue(app.isAllowedTo(App.ALLOW_ALL, "0123", "get"));
+		app.grantResourcePermission(ALLOW_ALL, "/0123/", READ);
+		assertTrue(app.isAllowedTo(ALLOW_ALL, "0123", "get"));
 
-		app.grantResourcePermission(App.ALLOW_ALL, "/4.5.6/", App.AllowedMethods.READ);
-		assertTrue(app.isAllowedTo(App.ALLOW_ALL, "456", "get"));
-		assertFalse(app.isAllowedTo("4.5.6", App.ALLOW_ALL, "get"));
+		app.grantResourcePermission(ALLOW_ALL, "/4.5.6/", READ);
+		assertTrue(app.isAllowedTo(ALLOW_ALL, "456", "get"));
+		assertFalse(app.isAllowedTo("4.5.6", ALLOW_ALL, "get"));
 	}
 
 	@Test
@@ -231,11 +255,11 @@ public class AppTest {
 				put("_users/admins", Arrays.asList("GET"));
 				put("_users/admins/321", Arrays.asList("PUT", "POST"));
 				// simple "allow all"
-				put("users", Arrays.asList(App.ALLOW_ALL));
+				put("users", Arrays.asList(ALLOW_ALL));
 			}});
-			put(App.ALLOW_ALL, new HashMap<String, List<String>>() {{
+			put(ALLOW_ALL, new HashMap<String, List<String>>() {{
 				// simple "allow all"
-				put("super/secret/resource", Arrays.asList(App.AllowedMethods.NONE.toString()));
+				put("super/secret/resource", Arrays.asList(NONE.toString()));
 			}});
 		}});
 
@@ -266,35 +290,35 @@ public class AppTest {
 		assertFalse(app.isAllowed("user2", "users/12345", "POST"));
 		assertTrue(app.isAllowed("user1", "users/12345", "ELSE"));
 		// deny all
-		assertFalse(app.isAllowed(App.ALLOW_ALL, "super/secret/resource", "GET"));
-		assertFalse(app.isAllowed(App.ALLOW_ALL, "super/secret/resource", "PUT"));
+		assertFalse(app.isAllowed(ALLOW_ALL, "super/secret/resource", "GET"));
+		assertFalse(app.isAllowed(ALLOW_ALL, "super/secret/resource", "PUT"));
 		assertFalse(app.isAllowed("user1", "super/secret/resource", "GET"));
 		assertFalse(app.isAllowed("user2", "super/secret/resource", "POST"));
-		assertFalse(app.isAllowed("user2", "super/secret/resource", App.AllowedMethods.NONE.toString()));
+		assertFalse(app.isAllowed("user2", "super/secret/resource", NONE.toString()));
 		// guest access
-		assertFalse(app.isAllowed(App.ALLOW_ALL, "users/12345", App.AllowedMethods.GUEST.toString()));
-		assertFalse(app.isAllowed(App.ALLOW_ALL, "guest/access", App.AllowedMethods.GUEST.toString()));
-		app.grantResourcePermission(App.ALLOW_ALL, "guest/access", App.AllowedMethods.READ, true);
-		assertTrue(app.isAllowed(App.ALLOW_ALL, "guest/access", "GET"));
-		assertTrue(app.isAllowed(App.ALLOW_ALL, "guest/access", App.AllowedMethods.GUEST.toString()));
+		assertFalse(app.isAllowed(ALLOW_ALL, "users/12345", GUEST.toString()));
+		assertFalse(app.isAllowed(ALLOW_ALL, "guest/access", GUEST.toString()));
+		app.grantResourcePermission(ALLOW_ALL, "guest/access", READ, true);
+		assertTrue(app.isAllowed(ALLOW_ALL, "guest/access", "GET"));
+		assertTrue(app.isAllowed(ALLOW_ALL, "guest/access", GUEST.toString()));
 
-		app.grantResourcePermission(App.ALLOW_ALL, "guest/test",
-				EnumSet.of(App.AllowedMethods.PUT, App.AllowedMethods.READ_WRITE), false);
-		assertFalse(app.isAllowed(App.ALLOW_ALL, "guest/test", App.AllowedMethods.GUEST.toString()));
+		app.grantResourcePermission(ALLOW_ALL, "guest/test",
+				EnumSet.of(PUT, READ_WRITE), false);
+		assertFalse(app.isAllowed(ALLOW_ALL, "guest/test", GUEST.toString()));
 
-		app.grantResourcePermission(App.ALLOW_ALL, "publicRes", App.AllowedMethods.ALL, true);
-		assertTrue(app.isAllowed(App.ALLOW_ALL, "publicRes/test", App.AllowedMethods.GUEST.toString()));
+		app.grantResourcePermission(ALLOW_ALL, "publicRes", ALL, true);
+		assertTrue(app.isAllowed(ALLOW_ALL, "publicRes/test", GUEST.toString()));
 
-		app.grantResourcePermission(App.ALLOW_ALL, "publicSubResource", App.AllowedMethods.READ_AND_WRITE, false);
-		assertFalse(app.isAllowed(App.ALLOW_ALL, "publicSubResource", App.AllowedMethods.GUEST.toString()));
-		assertFalse(app.isAllowed(App.ALLOW_ALL, "publicSubResource/test", App.AllowedMethods.GUEST.toString()));
-		app.grantResourcePermission(App.ALLOW_ALL, "publicSubResource/test", EnumSet.of(App.AllowedMethods.GUEST), false);
-		assertTrue(app.isAllowed(App.ALLOW_ALL, "publicSubResource/test", App.AllowedMethods.GUEST.toString()));
+		app.grantResourcePermission(ALLOW_ALL, "publicSubResource", READ_AND_WRITE, false);
+		assertFalse(app.isAllowed(ALLOW_ALL, "publicSubResource", GUEST.toString()));
+		assertFalse(app.isAllowed(ALLOW_ALL, "publicSubResource/test", GUEST.toString()));
+		app.grantResourcePermission(ALLOW_ALL, "publicSubResource/test", EnumSet.of(GUEST), false);
+		assertTrue(app.isAllowed(ALLOW_ALL, "publicSubResource/test", GUEST.toString()));
 		// this is not valid because subject can't be authenticated
-		app.grantResourcePermission("someUser1", "illegalPublic", EnumSet.of(App.AllowedMethods.GET,
-				App.AllowedMethods.GUEST), true);
-		assertFalse(app.isAllowed(App.ALLOW_ALL, "illegalPublic", App.AllowedMethods.GUEST.toString()));
-		assertFalse(app.isAllowed("someUser1", "illegalPublic", App.AllowedMethods.GUEST.toString()));
+		app.grantResourcePermission("someUser1", "illegalPublic", EnumSet.of(GET,
+				GUEST), true);
+		assertFalse(app.isAllowed(ALLOW_ALL, "illegalPublic", GUEST.toString()));
+		assertFalse(app.isAllowed("someUser1", "illegalPublic", GUEST.toString()));
 	}
 
 	@Test
@@ -310,35 +334,35 @@ public class AppTest {
 
 		assertFalse(app.isDeniedExplicitly(u.getId(), res2, "GET"));
 
-		app.grantResourcePermission(App.ALLOW_ALL, res1, App.AllowedMethods.WRITE);
+		app.grantResourcePermission(ALLOW_ALL, res1, WRITE);
 		assertTrue(app.isAllowedTo(u.getId(), res1, "POST"));
 		assertTrue(app.isAllowedTo(u2.getId(), res1, "POST"));
 
-		assertFalse(app.isDeniedExplicitly(u.getId(), App.ALLOW_ALL, "GET"));
-		assertFalse(app.isDeniedExplicitly(u2.getId(), App.ALLOW_ALL, "GET"));
-		assertFalse(app.isDeniedExplicitly(u.getId(), App.ALLOW_ALL, "POST"));
+		assertFalse(app.isDeniedExplicitly(u.getId(), ALLOW_ALL, "GET"));
+		assertFalse(app.isDeniedExplicitly(u2.getId(), ALLOW_ALL, "GET"));
+		assertFalse(app.isDeniedExplicitly(u.getId(), ALLOW_ALL, "POST"));
 		assertFalse(app.isDeniedExplicitly(u.getId(), res1, "POST"));
 		assertFalse(app.isDeniedExplicitly(u2.getId(), res1, "PUT"));
 
 		// explicit restrictions
-		app.grantResourcePermission(u2.getId(), res2, App.AllowedMethods.NONE);
+		app.grantResourcePermission(u2.getId(), res2, NONE);
 		assertFalse(app.isAllowedTo(u2.getId(), res2, "GET"));
 		assertTrue(app.isDeniedExplicitly(u2.getId(), res2, "GET"));
 		assertTrue(app.isDeniedExplicitly(u2.getId(), res2, "DELETE"));
-		assertFalse(app.isDeniedExplicitly(u2.getId(), App.ALLOW_ALL, "PUT"));
+		assertFalse(app.isDeniedExplicitly(u2.getId(), ALLOW_ALL, "PUT"));
 
 		// specific restrictions per "id" take precedence
-		app.grantResourcePermission(App.ALLOW_ALL, res2, App.AllowedMethods.READ);
+		app.grantResourcePermission(ALLOW_ALL, res2, READ);
 		assertFalse(app.isAllowedTo(u2.getId(), res2, "GET"));
 		assertTrue(app.isDeniedExplicitly(u2.getId(), res2, "GET"));
 
-		app.grantResourcePermission(App.ALLOW_ALL, App.ALLOW_ALL, App.AllowedMethods.READ);
+		app.grantResourcePermission(ALLOW_ALL, ALLOW_ALL, READ);
 		assertFalse(app.isDeniedExplicitly(u2.getId(), "this/is/test", "GET"));
 		assertTrue(app.isDeniedExplicitly(u2.getId(), res2, "GET"));
 
 		// wildcard restrictions
 		assertFalse(app2.isDeniedExplicitly(u.getId(), res2, "POST"));
-		app2.grantResourcePermission(App.ALLOW_ALL, res2, App.AllowedMethods.READ);
+		app2.grantResourcePermission(ALLOW_ALL, res2, READ);
 		assertTrue(app2.isDeniedExplicitly(u.getId(), res2, "POST"));
 		assertTrue(app2.isDeniedExplicitly(u2.getId(), res2, "PUT"));
 	}

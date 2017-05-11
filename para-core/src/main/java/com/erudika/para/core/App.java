@@ -24,9 +24,11 @@ import com.erudika.para.annotations.Stored;
 import static com.erudika.para.core.App.AllowedMethods.ALL;
 import static com.erudika.para.core.App.AllowedMethods.GET;
 import static com.erudika.para.core.App.AllowedMethods.GUEST;
+import static com.erudika.para.core.App.AllowedMethods.READ;
 import static com.erudika.para.core.App.AllowedMethods.READ_AND_WRITE;
 import static com.erudika.para.core.App.AllowedMethods.READ_ONLY;
 import static com.erudika.para.core.App.AllowedMethods.READ_WRITE;
+import static com.erudika.para.core.App.AllowedMethods.WRITE;
 import static com.erudika.para.core.App.AllowedMethods.WRITE_ONLY;
 import static com.erudika.para.core.App.AllowedMethods.fromString;
 import com.erudika.para.utils.Config;
@@ -581,12 +583,10 @@ public class App implements ParaObject, Serializable {
 			}
 			if (isAllowAllPermission(permission)) {
 				methods = EnumSet.copyOf(READ_AND_WRITE);
-			} else {
-				if (permission.contains(WRITE_ONLY)) {
-					methods = EnumSet.copyOf(READ_AND_WRITE);
-				} else if (permission.contains(READ_ONLY)) {
-					methods = EnumSet.copyOf(READ_AND_WRITE);
-				}
+			} else if (permission.contains(WRITE_ONLY)) {
+				methods = EnumSet.copyOf(WRITE);
+			} else if (permission.contains(READ_ONLY)) {
+				methods = EnumSet.copyOf(READ);
 			}
 			if (allowGuestAccess && ALLOW_ALL.equals(subjectid)) {
 				methods.add(GUEST);

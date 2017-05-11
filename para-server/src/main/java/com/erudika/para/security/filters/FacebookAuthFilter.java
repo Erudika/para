@@ -211,7 +211,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 				String token = EntityUtils.toString(resp1.getEntity(), Config.DEFAULT_ENCODING);
 				if (token != null) {
 					if (token.startsWith("access_token")) {
-						return token.substring(token.indexOf("=") + 1, token.indexOf("&"));
+						return token.substring(token.indexOf('=') + 1, token.indexOf('&'));
 					} else {
 						Map<String, Object> tokenObject = jreader.readValue(token);
 						if (tokenObject != null && tokenObject.containsKey("access_token")) {

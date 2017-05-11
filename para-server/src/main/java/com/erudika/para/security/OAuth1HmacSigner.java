@@ -131,7 +131,7 @@ public final class OAuth1HmacSigner {
 				|| (scheme.equals("https") && uri.getPort() == 443);
 		if (dropPort) {
 			// find the last : in the authority
-			int index = authority.lastIndexOf(":");
+			int index = authority.lastIndexOf(':');
 			if (index >= 0) {
 				authority = authority.substring(0, index);
 			}
@@ -217,7 +217,7 @@ public final class OAuth1HmacSigner {
 				pMap.put("oauth_signature_method", new String[]{"HMAC-SHA1"});
 			}
 			if (pMap.get("oauth_timestamp") == null) {
-				pMap.put("oauth_timestamp", new String[]{(System.currentTimeMillis() / 1000) + ""});
+				pMap.put("oauth_timestamp", new String[]{Long.toString(System.currentTimeMillis() / 1000)});
 			}
 			if (pMap.get("oauth_nonce") == null) {
 				String nonce = Utils.stripAndTrim(Utils.generateSecurityToken(32));

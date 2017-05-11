@@ -477,14 +477,6 @@ public final class CORSFilter implements Filter {
 
 		switch (corsRequestType) {
 			case SIMPLE:
-				request.setAttribute(
-						CORSFilter.HTTP_REQUEST_ATTRIBUTE_IS_CORS_REQUEST, true);
-				request.setAttribute(CORSFilter.HTTP_REQUEST_ATTRIBUTE_ORIGIN,
-						request.getHeader(CORSFilter.REQUEST_HEADER_ORIGIN));
-				request.setAttribute(
-						CORSFilter.HTTP_REQUEST_ATTRIBUTE_REQUEST_TYPE,
-						corsRequestType.name().toLowerCase());
-				break;
 			case ACTUAL:
 				request.setAttribute(
 						CORSFilter.HTTP_REQUEST_ATTRIBUTE_IS_CORS_REQUEST, true);

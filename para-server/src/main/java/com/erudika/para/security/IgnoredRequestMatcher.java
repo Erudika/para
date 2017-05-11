@@ -36,7 +36,7 @@ public final class IgnoredRequestMatcher implements RequestMatcher {
 	 * An instance of this class.
 	 */
 	public static final RequestMatcher INSTANCE = new IgnoredRequestMatcher();
-	private static OrRequestMatcher orMatcher;
+	private final OrRequestMatcher orMatcher;
 
 	private IgnoredRequestMatcher() {
 		ConfigList c = Config.getConfig().getList("security.ignored");

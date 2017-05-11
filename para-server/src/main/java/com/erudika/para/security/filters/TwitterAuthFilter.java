@@ -248,7 +248,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 	private static String getPicture(String pic) {
 		if (pic != null) {
 			pic = pic.replace("_normal", "");
-			if (pic.indexOf('?') > 0) {
+			if (pic.contains("?")) {
 				// user picture migth contain size parameters - remove them
 				return pic.substring(0, pic.indexOf('?'));
 			} else {

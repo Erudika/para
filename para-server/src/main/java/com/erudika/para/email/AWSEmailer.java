@@ -40,7 +40,7 @@ import org.apache.commons.lang3.StringUtils;
 @Singleton
 public class AWSEmailer implements Emailer {
 
-	private static AmazonSimpleEmailService sesclient;
+	private final AmazonSimpleEmailService sesclient;
 
 	/**
 	 * No-args constructor.

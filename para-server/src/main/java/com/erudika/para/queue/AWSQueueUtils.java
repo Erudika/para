@@ -178,7 +178,9 @@ public final class AWSQueueUtils {
 				for (int i = 0; i < messages.size(); i++) {
 					String message = messages.get(i);
 					if (!StringUtils.isBlank(message)) {
-						msgs.add(new SendMessageBatchRequestEntry().withMessageBody(message).withId(i + ""));
+						msgs.add(new SendMessageBatchRequestEntry().
+								withMessageBody(message).
+								withId(Integer.toString(i)));
 					}
 					if (++j >= MAX_MESSAGES || i == messages.size() - 1) {
 						if (!msgs.isEmpty()) {

@@ -47,22 +47,21 @@ import org.slf4j.LoggerFactory;
  */
 public class AzureIoTService implements IoTService {
 
+	private static final Logger logger = LoggerFactory.getLogger(AzureIoTService.class);
+
 	private static final int MAX_MESSAGES = Config.getConfigInt("azure.iot_max_messages", 10);
 	private static final int PARTITIONS_COUNT = Config.getConfigInt("azure.iot_partitions", 2);
-
 	private static final String SERVICE_HOSTNAME = Config.getConfigParam("azure.iot_hostname", "");
 	private static final String SERVICE_ACCESS_KEY = Config.getConfigParam("azure.iot_access_key", "");
 	private static final String SERVICE_CONN_STR = "HostName=" + SERVICE_HOSTNAME +
 			";SharedAccessKeyName=iothubowner;SharedAccessKey=" + SERVICE_ACCESS_KEY;
-
 	private static final String EVENTHUB_NAME = Config.getConfigParam("azure.iot_eventhub_name", "");
 	private static final String EVENTHUB_ENDPOINT = Config.getConfigParam("azure.iot_eventhub_endpoint", "");
 	private static final String EVENTHUB_CONN_STR = "Endpoint=" + EVENTHUB_ENDPOINT + ";EntityPath=" + EVENTHUB_NAME +
 			";SharedAccessKeyName=iothubowner;SharedAccessKey=" + SERVICE_ACCESS_KEY;
 
-	private static ServiceClient serviceClient = null;
-	private static RegistryManager registryManager = null;
-	private static final Logger logger = LoggerFactory.getLogger(AzureIoTService.class);
+	private ServiceClient serviceClient = null;
+	private RegistryManager registryManager = null;
 
 	/**
 	 * No-args constructor.
@@ -72,7 +71,7 @@ public class AzureIoTService implements IoTService {
 			if (!StringUtils.isBlank(EVENTHUB_ENDPOINT)) {
 				final ArrayList<EventHubClient> recievers = new ArrayList<EventHubClient>();
 				for (int i = 0; i < PARTITIONS_COUNT; i++) {
-					recievers.add(receiveEventsAsync(i + ""));
+					recievers.add(receiveEventsAsync(Integer.toString(i)));
 				}
 				Para.addDestroyListener(new DestroyListener() {
 					public void onDestroy() {
