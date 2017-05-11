@@ -18,6 +18,8 @@
 package com.erudika.para.security.filters;
 
 import com.eaio.uuid.UUID;
+import com.erudika.para.Para;
+import com.erudika.para.core.App;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.security.AuthenticatedUserDetails;
@@ -91,7 +93,8 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = request.getParameter(Config._APPID);
 				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
-				String[] keys = SecurityUtils.getOAuthKeysForApp(appid, Config.LINKEDIN_PREFIX);
+				App app = Para.getDAO().read(App.id(appid == null ? Config.APP_NAME_NS : appid));
+				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.LINKEDIN_PREFIX);
 				CloseableHttpResponse resp1 = null;
 				String url = Utils.formatMessage(TOKEN_URL, authCode, redirectURI, keys[0], keys[1]);
 				try {
@@ -104,7 +107,7 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 				if (resp1 != null && resp1.getEntity() != null) {
 					Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
 					if (token != null && token.containsKey("access_token")) {
-						userAuth = getOrCreateUser(appid, (String) token.get("access_token"));
+						userAuth = getOrCreateUser(app, (String) token.get("access_token"));
 					}
 					EntityUtils.consumeQuietly(resp1.getEntity());
 				}
@@ -123,17 +126,14 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	/**
 	 * Calls the LinkedIn API to get the user profile using a given access token.
-	 * @param appid app identifier of the parent app, use null for root app
+	 * @param app the app where the user will be created, use null for root app
 	 * @param accessToken access token
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException ex
 	 */
-	public UserAuthentication getOrCreateUser(String appid, String accessToken) throws IOException {
+	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
 		UserAuthentication userAuth = null;
 		if (accessToken != null) {
-			User user = new User();
-			user.setAppid(appid);
-
 			String ctype = null;
 			HttpEntity respEntity = null;
 			CloseableHttpResponse resp2 = null;
@@ -157,6 +157,8 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 					String lName = (String) profile.get("lastName");
 					String name = fName + " " + lName;
 
+					User user = new User();
+					user.setAppid(getAppid(app));
 					user.setIdentifier(Config.LINKEDIN_PREFIX.concat(linkedInID));
 					user.setEmail(email);
 					user = User.readUserForIdentifier(user);
@@ -164,7 +166,7 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 						//user is new
 						user = new User();
 						user.setActive(true);
-						user.setAppid(appid);
+						user.setAppid(getAppid(app));
 						user.setEmail(StringUtils.isBlank(email) ? linkedInID + "@linkedin.com" : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());
@@ -194,5 +196,9 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 		}
 		return userAuth;
+	}
+
+	private String getAppid(App app) {
+		return (app == null) ? null : app.getAppIdentifier();
 	}
 }

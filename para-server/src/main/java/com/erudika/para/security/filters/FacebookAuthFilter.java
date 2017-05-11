@@ -18,6 +18,8 @@
 package com.erudika.para.security.filters;
 
 import com.eaio.uuid.UUID;
+import com.erudika.para.Para;
+import com.erudika.para.core.App;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.security.AuthenticatedUserDetails;
@@ -89,28 +91,17 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = request.getParameter(Config._APPID);
 				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
-				String[] keys = SecurityUtils.getOAuthKeysForApp(appid, Config.FB_PREFIX);
-				CloseableHttpResponse resp1 = null;
+				App app = Para.getDAO().read(App.id(appid == null ? Config.APP_NAME_NS : appid));
+				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.FB_PREFIX);
 				String url = Utils.formatMessage(TOKEN_URL, authCode, redirectURI, keys[0], keys[1]);
 				try {
 					HttpGet tokenPost = new HttpGet(url);
-					resp1 = httpclient.execute(tokenPost);
+					String accessToken = parseAccessToken(httpclient.execute(tokenPost));
+					if (accessToken != null) {
+						userAuth = getOrCreateUser(app, accessToken);
+					}
 				} catch (Exception e) {
 					logger.warn("Facebook auth request failed: GET " + url, e);
-				}
-
-				if (resp1 != null && resp1.getEntity() != null) {
-					String token = EntityUtils.toString(resp1.getEntity(), Config.DEFAULT_ENCODING);
-					if (token != null && token.startsWith("access_token")) {
-						String accessToken = token.substring(token.indexOf("=") + 1, token.indexOf("&"));
-						userAuth = getOrCreateUser(appid, accessToken);
-					} else {
-						Map<String, Object> tokenObject = jreader.readValue(token);
-						if (tokenObject != null && tokenObject.containsKey("access_token")) {
-							userAuth = getOrCreateUser(appid, (String) tokenObject.get("access_token"));
-						}
-					}
-					EntityUtils.consumeQuietly(resp1.getEntity());
 				}
 			}
 		}
@@ -127,18 +118,15 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	/**
 	 * Calls the Facebook API to get the user profile using a given access token.
-	 * @param appid app identifier of the parent app, use null for root app
+	 * @param app the app where the user will be created, use null for root app
 	 * @param accessToken access token
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException ex
 	 */
 	@SuppressWarnings("unchecked")
-	public UserAuthentication getOrCreateUser(String appid, String accessToken) throws IOException {
+	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
 		UserAuthentication userAuth = null;
 		if (accessToken != null) {
-			User user = new User();
-			user.setAppid(appid);
-
 			String ctype = null;
 			HttpEntity respEntity = null;
 			CloseableHttpResponse resp2 = null;
@@ -160,6 +148,8 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 					String email = (String) profile.get("email");
 					String name = (String) profile.get("name");
 
+					User user = new User();
+					user.setAppid(getAppid(app));
 					user.setIdentifier(Config.FB_PREFIX.concat(fbId));
 					user.setEmail(email);
 					user = User.readUserForIdentifier(user);
@@ -167,7 +157,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 						//user is new
 						user = new User();
 						user.setActive(true);
-						user.setAppid(appid);
+						user.setAppid(getAppid(app));
 						user.setEmail(StringUtils.isBlank(email) ? fbId + "@facebook.com" : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());
@@ -212,5 +202,33 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 		}
 		return null;
+	}
+
+	private String parseAccessToken(CloseableHttpResponse resp1) {
+		if (resp1 != null && resp1.getEntity() != null) {
+			try {
+				// Facebook keep changing their API so we try to read the access_token by the old and new ways
+				String token = EntityUtils.toString(resp1.getEntity(), Config.DEFAULT_ENCODING);
+				if (token != null) {
+					if (token.startsWith("access_token")) {
+						return token.substring(token.indexOf("=") + 1, token.indexOf("&"));
+					} else {
+						Map<String, Object> tokenObject = jreader.readValue(token);
+						if (tokenObject != null && tokenObject.containsKey("access_token")) {
+							return (String) tokenObject.get("access_token");
+						}
+					}
+				}
+			} catch (Exception e) {
+				logger.error(null, e);
+			} finally {
+				EntityUtils.consumeQuietly(resp1.getEntity());
+			}
+		}
+		return null;
+	}
+
+	private String getAppid(App app) {
+		return (app == null) ? null : app.getAppIdentifier();
 	}
 }

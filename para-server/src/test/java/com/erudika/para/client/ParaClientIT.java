@@ -53,6 +53,7 @@ import org.junit.AfterClass;
 import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -109,7 +110,7 @@ public class ParaClientIT {
 		SecurityModule secMod = new SecurityModule();
 		FacebookAuthFilter fbaf = new FacebookAuthFilter("/");
 		fbaf = spy(fbaf);
-		when(fbaf.getOrCreateUser(anyString(), anyString())).thenReturn(ua);
+		when(fbaf.getOrCreateUser((App) any(), anyString())).thenReturn(ua);
 		secMod.setFacebookFilter(fbaf);
 		Para.initialize(Modules.override(ParaServer.getCoreModules()).with(secMod));
 		app.run();

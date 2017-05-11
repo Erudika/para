@@ -18,6 +18,8 @@
 package com.erudika.para.security.filters;
 
 import com.eaio.uuid.UUID;
+import com.erudika.para.Para;
+import com.erudika.para.core.App;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.security.AuthenticatedUserDetails;
@@ -95,7 +97,8 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 			String appid = request.getParameter(Config._APPID);
 			String denied = request.getParameter("denied");
 			String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
-			String[] keys = SecurityUtils.getOAuthKeysForApp(appid, Config.TWITTER_PREFIX);
+			App app = Para.getDAO().read(App.id(appid == null ? Config.APP_NAME_NS : appid));
+			String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.TWITTER_PREFIX);
 			if (denied != null) {
 				throw new BadCredentialsException("Cancelled.");
 			}
@@ -103,7 +106,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 			if (verifier == null && stepOne(response, redirectURI, keys)) {
 				return null;
 			} else {
-				userAuth = stepTwo(request, verifier, keys, appid);
+				userAuth = stepTwo(request, verifier, keys, app);
 			}
 		}
 
@@ -141,7 +144,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 		return false;
 	}
 
-	private UserAuthentication stepTwo(HttpServletRequest request, String verifier, String[] keys, String appid)
+	private UserAuthentication stepTwo(HttpServletRequest request, String verifier, String[] keys, App app)
 			throws ParseException, UnsupportedEncodingException, IOException {
 		String token = request.getParameter("oauth_token");
 		Map<String, String[]> params = new HashMap<String, String[]>();
@@ -165,25 +168,23 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 				}
 			}
 			EntityUtils.consumeQuietly(resp2.getEntity());
-			return getOrCreateUser(appid, oauthToken + Config.SEPARATOR + oauthSecret);
+			return getOrCreateUser(app, oauthToken + Config.SEPARATOR + oauthSecret);
 		}
 		return null;
 	}
 
 	/**
 	 * Calls the Twitter API to get the user profile using a given access token.
-	 * @param appid app identifier of the parent app, use null for root app
+	 * @param app the app where the user will be created, use null for root app
 	 * @param accessToken token in the format "oauth_token:oauth_secret"
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException ex
 	 */
-	public UserAuthentication getOrCreateUser(String appid, String accessToken) throws IOException {
+	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
 		UserAuthentication userAuth = null;
 		if (accessToken != null && accessToken.contains(Config.SEPARATOR)) {
 			String[] tokens = accessToken.split(Config.SEPARATOR);
-			String[] keys = SecurityUtils.getOAuthKeysForApp(appid, Config.TWITTER_PREFIX);
-			User user = new User();
-			user.setAppid(appid);
+			String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.TWITTER_PREFIX);
 
 			Map<String, String[]> params2 = new HashMap<String, String[]>();
 			HttpGet profileGet = new HttpGet(PROFILE_URL + "?include_email=true");
@@ -202,6 +203,8 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 					String name = (String) profile.get("name");
 					String email = (String) profile.get("email");
 
+					User user = new User();
+					user.setAppid(getAppid(app));
 					user.setIdentifier(Config.TWITTER_PREFIX + twitterId);
 					user.setEmail(email);
 					user = User.readUserForIdentifier(user);
@@ -209,7 +212,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 						//user is new
 						user = new User();
 						user.setActive(true);
-						user.setAppid(appid);
+						user.setAppid(getAppid(app));
 						user.setEmail(StringUtils.isBlank(email) ? alias + "@twitter.com" : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());
@@ -253,5 +256,9 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 		}
 		return null;
+	}
+
+	private String getAppid(App app) {
+		return (app == null) ? null : app.getAppIdentifier();
 	}
 }

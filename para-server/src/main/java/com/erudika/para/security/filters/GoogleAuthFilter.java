@@ -18,6 +18,8 @@
 package com.erudika.para.security.filters;
 
 import com.eaio.uuid.UUID;
+import com.erudika.para.Para;
+import com.erudika.para.core.App;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.security.AuthenticatedUserDetails;
@@ -92,7 +94,8 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = request.getParameter(Config._APPID);
 				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
-				String[] keys = SecurityUtils.getOAuthKeysForApp(appid, Config.GPLUS_PREFIX);
+				App app = Para.getDAO().read(App.id(appid == null ? Config.APP_NAME_NS : appid));
+				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.GPLUS_PREFIX);
 				String entity = Utils.formatMessage(PAYLOAD,
 						URLEncoder.encode(authCode, "UTF-8"),
 						URLEncoder.encode(redirectURI, "UTF-8"), keys[0], keys[1]);
@@ -105,7 +108,7 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 				if (resp1 != null && resp1.getEntity() != null) {
 					Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
 					if (token != null && token.containsKey("access_token")) {
-						userAuth = getOrCreateUser(appid, (String) token.get("access_token"));
+						userAuth = getOrCreateUser(app, (String) token.get("access_token"));
 					}
 					EntityUtils.consumeQuietly(resp1.getEntity());
 				}
@@ -124,16 +127,14 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	/**
 	 * Calls the Google+ API to get the user profile using a given access token.
-	 * @param appid app identifier of the parent app, use null for root app
+	 * @param app the app where the user will be created, use null for root app
 	 * @param accessToken access token
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException ex
 	 */
-	public UserAuthentication getOrCreateUser(String appid, String accessToken) throws IOException {
+	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
 		UserAuthentication userAuth = null;
 		if (accessToken != null) {
-			User user = new User();
-			user.setAppid(appid);
 			HttpGet profileGet = new HttpGet(PROFILE_URL);
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 			CloseableHttpResponse resp2 = httpclient.execute(profileGet);
@@ -149,6 +150,8 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 					String email = (String) profile.get("email");
 					String name = (String) profile.get("name");
 
+					User user = new User();
+					user.setAppid(getAppid(app));
 					user.setIdentifier(Config.GPLUS_PREFIX.concat(googleSubId));
 					user.setEmail(email);
 					user = User.readUserForIdentifier(user);
@@ -156,7 +159,7 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 						//user is new
 						user = new User();
 						user.setActive(true);
-						user.setAppid(appid);
+						user.setAppid(getAppid(app));
 						user.setEmail(StringUtils.isBlank(email) ? googleSubId + "@google.com" : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());
@@ -199,5 +202,9 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 		}
 		return null;
+	}
+
+	private String getAppid(App app) {
+		return (app == null) ? null : app.getAppIdentifier();
 	}
 }

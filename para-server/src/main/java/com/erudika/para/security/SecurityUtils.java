@@ -17,7 +17,6 @@
  */
 package com.erudika.para.security;
 
-import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
 import com.erudika.para.utils.Config;
@@ -189,27 +188,24 @@ public final class SecurityUtils {
 
 	/**
 	 * Return the OAuth app ID and secret key for a given app by reading the app settings, or the config file.
-	 * @param appid the app in which to look for these keys
+	 * @param app the app in which to look for these keys
 	 * @param prefix a service prefix: "fb" for facebook, "tw" for twitter etc. See {@link Config}
 	 * @return an array ["app_id", "secret_key"] or ["", ""]
 	 */
-	public static String[] getOAuthKeysForApp(String appid, String prefix) {
+	public static String[] getOAuthKeysForApp(App app, String prefix) {
 		prefix = StringUtils.removeEnd(prefix + "", Config.SEPARATOR);
 		String appIdKey = prefix + "_app_id";
 		String secretKey = prefix + "_secret";
 		String[] keys = new String[]{"", ""};
 
-		if (StringUtils.isBlank(appid) || App.isRoot(appid)) {
-			keys[0] = Config.getConfigParam(appIdKey, "");
-			keys[1] = Config.getConfigParam(secretKey, "");
-		} else {
-			App app = Para.getDAO().read(App.id(appid));
-			if (app != null) {
-				Map<String, Object> settings = app.getSettings();
-				if (settings.containsKey(appIdKey) && settings.containsKey(secretKey)) {
-					keys[0] = settings.get(appIdKey) + "";
-					keys[1] = settings.get(secretKey) + "";
-				}
+		if (app != null) {
+			Map<String, Object> settings = app.getSettings();
+			if (settings.containsKey(appIdKey) && settings.containsKey(secretKey)) {
+				keys[0] = settings.get(appIdKey) + "";
+				keys[1] = settings.get(secretKey) + "";
+			} else if (app.isRootApp()) {
+				keys[0] = Config.getConfigParam(appIdKey, "");
+				keys[1] = Config.getConfigParam(secretKey, "");
 			}
 		}
 		return keys;

@@ -77,7 +77,7 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 			if (!App.isRoot(appid)) {
 				App app = Para.getDAO().read(App.id(appid));
 				if (app != null) {
-					user.setAppid(app.getId());
+					user.setAppid(app.getAppIdentifier());
 				}
 			}
 			if (User.passwordMatches(user) && StringUtils.contains(user.getIdentifier(), "@")) {
@@ -99,11 +99,11 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 	/**
 	 * Authenticates or creates a {@link User} using an email and password.
 	 * Access token must be in the format: "email:full_name:password" or "email::password_hash"
-	 * @param appid app identifier of the parent app, use null for root app
+	 * @param app the app where the user will be created, use null for root app
 	 * @param accessToken token in the format "email:full_name:password" or "email::password_hash"
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 */
-	public UserAuthentication getOrCreateUser(String appid, String accessToken) {
+	public UserAuthentication getOrCreateUser(App app, String accessToken) {
 		UserAuthentication userAuth = null;
 		if (accessToken != null && accessToken.contains(Config.SEPARATOR)) {
 			String[] parts = accessToken.split(Config.SEPARATOR, 3);
@@ -111,24 +111,26 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 			String name = parts[1];
 			String pass = (parts.length > 2) ? parts[2] : "";
 
-			User u = new User();
-			u.setIdentifier(email);
-			u.setPassword(pass);
-			u.setEmail(email);
-
-			User user = User.readUserForIdentifier(u);
+			String appid = (app == null) ? null : app.getAppIdentifier();
+			User user = new User();
+			user.setAppid(appid);
+			user.setIdentifier(email);
+			user.setPassword(pass);
+			user.setEmail(email);
+			user = User.readUserForIdentifier(user);
 			if (user == null) {
-				u.setActive(Config.getConfigBoolean("security.allow_unverified_emails", false));
-				u.setAppid(appid);
-				u.setName(name);
-				u.setIdentifier(email);
-				u.setEmail(email);
-				u.setPassword(pass);
-				if (u.create() != null) {
+				user = new User();
+				user.setActive(Config.getConfigBoolean("security.allow_unverified_emails", false));
+				user.setAppid(appid);
+				user.setName(name);
+				user.setIdentifier(email);
+				user.setEmail(email);
+				user.setPassword(pass);
+				if (user.create() != null) {
 					// allow temporary first-time login without verifying email address
-					userAuth = new UserAuthentication(new AuthenticatedUserDetails(u));
+					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 				}
-			} else if (User.passwordMatches(u)) {
+			} else if (User.passwordMatches(user)) {
 				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 			}
 		}

@@ -141,7 +141,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			if (!App.isRoot(appid) || Config.getConfigBoolean("clients_can_access_root_app", false)) {
 				App app = Para.getDAO().read(App.id(appid));
 				if (app != null) {
-					UserAuthentication userAuth = getOrCreateUser(app.getAppIdentifier(), provider, token);
+					UserAuthentication userAuth = getOrCreateUser(app, provider, token);
 					User user = SecurityUtils.getAuthenticatedUser(userAuth);
 					if (user != null) {
 						// issue token
@@ -267,24 +267,24 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 		return null;
 	}
 
-	private UserAuthentication getOrCreateUser(String appid, String identityProvider, String accessToken)
+	private UserAuthentication getOrCreateUser(App app, String identityProvider, String accessToken)
 			throws IOException {
 		if ("facebook".equalsIgnoreCase(identityProvider)) {
-			return facebookAuth.getOrCreateUser(appid, accessToken);
+			return facebookAuth.getOrCreateUser(app, accessToken);
 		} else if ("google".equalsIgnoreCase(identityProvider)) {
-			return googleAuth.getOrCreateUser(appid, accessToken);
+			return googleAuth.getOrCreateUser(app, accessToken);
 		} else if ("github".equalsIgnoreCase(identityProvider)) {
-			return githubAuth.getOrCreateUser(appid, accessToken);
+			return githubAuth.getOrCreateUser(app, accessToken);
 		} else if ("linkedin".equalsIgnoreCase(identityProvider)) {
-			return linkedinAuth.getOrCreateUser(appid, accessToken);
+			return linkedinAuth.getOrCreateUser(app, accessToken);
 		} else if ("twitter".equalsIgnoreCase(identityProvider)) {
-			return twitterAuth.getOrCreateUser(appid, accessToken);
+			return twitterAuth.getOrCreateUser(app, accessToken);
 		} else if ("microsoft".equalsIgnoreCase(identityProvider)) {
-			return microsoftAuth.getOrCreateUser(appid, accessToken);
+			return microsoftAuth.getOrCreateUser(app, accessToken);
 		} else if ("oauth2".equalsIgnoreCase(identityProvider)) {
-			return oauth2Auth.getOrCreateUser(appid, accessToken);
+			return oauth2Auth.getOrCreateUser(app, accessToken);
 		} else if ("password".equalsIgnoreCase(identityProvider)) {
-			return passwordAuth.getOrCreateUser(appid, accessToken);
+			return passwordAuth.getOrCreateUser(app, accessToken);
 		}
 		return null;
 	}
