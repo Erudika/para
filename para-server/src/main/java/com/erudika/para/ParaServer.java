@@ -179,6 +179,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 					RequestLogImpl rli = new RequestLogImpl();
 					rli.setResource("/logback-access.xml");
 					rli.setQuiet(true);
+					rli.start();
 					reqLogs.setRequestLog(rli);
 					handlers.addHandler(reqLogs);
 					server.setHandler(handlers);
