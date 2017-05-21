@@ -19,9 +19,9 @@ package com.erudika.para.utils;
 
 import com.erudika.para.annotations.Email;
 import com.erudika.para.core.ParaObject;
-import com.github.rjeschke.txtmark.Configuration;
-import com.github.rjeschke.txtmark.Processor;
 import com.samskivert.mustache.Mustache;
+import com.vladsch.flexmark.html.HtmlRenderer;
+import com.vladsch.flexmark.parser.Parser;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
@@ -73,6 +73,8 @@ public final class Utils {
 	// maps lowercase simple names to class objects
 	private static final Pattern EMAIL_PATTERN = Pattern.compile(Email.EMAIL_PATTERN);
 	private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance();
+	private static final Parser MD_PARSER = Parser.builder().build();
+    private static final HtmlRenderer HTML_RENDERER = HtmlRenderer.builder().build();
 	private static HumanTime humantime;
 	private static Utils instance;
 
@@ -261,8 +263,10 @@ public final class Utils {
 	 * @return HTML
 	 */
 	public static String markdownToHtml(String markdownString) {
-		return StringUtils.isBlank(markdownString) ? "" :
-				Processor.process(markdownString, Configuration.DEFAULT_SAFE);
+		if (StringUtils.isBlank(markdownString)) {
+			return "";
+		}
+		return HTML_RENDERER.render(MD_PARSER.parse(markdownString));
 	}
 
 	/**

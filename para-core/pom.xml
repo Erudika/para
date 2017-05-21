@@ -175,9 +175,9 @@
 			<version>1.10.1</version>
 		</dependency>
 		<dependency>
-			<groupId>com.github.rjeschke</groupId>
-			<artifactId>txtmark</artifactId>
-			<version>0.13</version>
+			<groupId>com.vladsch.flexmark</groupId>
+			<artifactId>flexmark</artifactId>
+			<version>0.19.5</version>
 		</dependency>
 		<dependency>
 			<groupId>de.svenkubiak</groupId>
