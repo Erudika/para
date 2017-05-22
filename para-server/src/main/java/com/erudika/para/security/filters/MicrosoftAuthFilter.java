@@ -33,6 +33,8 @@ import java.net.URLEncoder;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -58,7 +60,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 	private final CloseableHttpClient httpclient;
 	private final ObjectReader jreader;
 	private static final String PROFILE_URL = "https://graph.microsoft.com/v1.0/me";
-	private static final String PHOTO_URL = "https://apis.live.net/v5.0/{0}/picture?type=large";
+	private static final String PHOTO_URL = "https://graph.microsoft.com/beta/me/photos/360x360/$value";
 	private static final String TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
 	private static final String PAYLOAD = "code={0}&redirect_uri={1}"
 			+ "&scope=https%3A%2F%2Fgraph.microsoft.com%2Fuser.read&client_id={2}"
@@ -171,15 +173,24 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 						user.setEmail(StringUtils.isBlank(email) ? microsoftId + "@windowslive.com" : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());
-						user.setPicture(getPicture(microsoftId));
+						user.setPicture(getPicture(accessToken));
 						user.setIdentifier(Config.MICROSOFT_PREFIX + microsoftId);
 						String id = user.create();
 						if (id == null) {
 							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 						}
 					} else {
+						String picture = getPicture(accessToken);
+						boolean update = false;
+						if (!StringUtils.equals(user.getPicture(), picture)) {
+							user.setPicture(picture);
+							update = true;
+						}
 						if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
 							user.setEmail(email);
+							update = true;
+						}
+						if (update) {
 							user.update();
 						}
 					}
@@ -191,11 +202,22 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 		return userAuth;
 	}
 
-	private String getPicture(String cid) {
-		if (cid != null) {
-			return Utils.formatMessage(PHOTO_URL, cid);
+	private String getPicture(String accessToken) throws IOException {
+		if (accessToken != null) {
+			HttpGet profileGet = new HttpGet(PHOTO_URL);
+			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+			profileGet.setHeader(HttpHeaders.ACCEPT, "application/json");
+			CloseableHttpResponse resp = httpclient.execute(profileGet);
+			HttpEntity respEntity = resp.getEntity();
+			if (respEntity != null && respEntity.getContentType().getValue().startsWith("image")) {
+				byte[] bytes = IOUtils.toByteArray(respEntity.getContent());
+				if (bytes != null && bytes.length > 0) {
+					byte[] bytes64 = Base64.encodeBase64(bytes);
+					return "data:" + respEntity.getContentType().getValue() + ";base64," + new String(bytes64);
+				}
+			}
 		}
-		return null;
+		return "https://js.live.net/static/img/DefaultUserPicture.png"; // default pic
 	}
 
 	private String getAppid(App app) {
