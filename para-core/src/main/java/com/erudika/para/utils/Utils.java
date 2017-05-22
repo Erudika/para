@@ -74,7 +74,7 @@ public final class Utils {
 	private static final Pattern EMAIL_PATTERN = Pattern.compile(Email.EMAIL_PATTERN);
 	private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance();
 	private static final Parser MD_PARSER = Parser.builder().build();
-    private static final HtmlRenderer HTML_RENDERER = HtmlRenderer.builder().build();
+	private static final HtmlRenderer HTML_RENDERER = HtmlRenderer.builder().build();
 	private static HumanTime humantime;
 	private static Utils instance;
 

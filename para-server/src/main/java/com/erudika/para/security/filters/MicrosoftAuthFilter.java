@@ -99,7 +99,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 				// v2.0 endpoint doesn't like query parameters in redirect_uri
 				// so we use the "state" parameter to remember the appid
 				String appid = request.getParameter("state");
-				String redirectURI = request.getRequestURL().toString(); //+ (appid == null ? "" : "?appid=" + appid);
+				String redirectURI = request.getRequestURL().toString();
 				App app = Para.getDAO().read(App.id(appid == null ? Config.APP_NAME_NS : appid));
 				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.MICROSOFT_PREFIX);
 				String entity = Utils.formatMessage(PAYLOAD,
@@ -154,11 +154,8 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 
 				if (profile != null && profile.containsKey("id")) {
 					String microsoftId = (String) profile.get("id");
-					String email = (String) profile.get("userPrincipalName");
+					String email = getEmail(profile);
 					String name = (String) profile.get("displayName");
-					if (StringUtils.isBlank(email) || !StringUtils.contains(email, "@")) {
-						email = (String) profile.get("mail");
-					}
 
 					User user = new User();
 					user.setAppid(getAppid(app));
@@ -218,6 +215,14 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 			}
 		}
 		return "https://js.live.net/static/img/DefaultUserPicture.png"; // default pic
+	}
+
+	private String getEmail(Map<String, Object> profile) {
+		String email = (String) profile.get("userPrincipalName");
+		if (StringUtils.isBlank(email) || !StringUtils.contains(email, "@")) {
+			email = (String) profile.get("mail");
+		}
+		return email;
 	}
 
 	private String getAppid(App app) {

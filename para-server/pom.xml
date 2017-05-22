@@ -94,12 +94,12 @@
 		<dependency>
 			<groupId>com.hazelcast</groupId>
 			<artifactId>hazelcast</artifactId>
-			<version>3.8</version>
+			<version>3.8.2</version>
 		</dependency>
 		<dependency>
 			<groupId>com.hazelcast</groupId>
 			<artifactId>hazelcast-cloud</artifactId>
-			<version>3.6.7</version>
+			<version>3.6.8</version>
 		</dependency>
 
 		<!-- AWS JAVA SDK -->
@@ -192,7 +192,7 @@
 		<dependency>
 			<groupId>org.elasticmq</groupId>
 			<artifactId>elasticmq-rest-sqs_2.11</artifactId>
-			<version>0.9.3</version>
+			<version>0.13.4</version>
 			<scope>test</scope>
 			<exclusions>
 				<exclusion>
@@ -226,7 +226,7 @@
 			<plugin>
 				<groupId>com.jcabi</groupId>
 				<artifactId>jcabi-dynamodb-maven-plugin</artifactId>
-				<version>0.8</version>
+				<version>0.9.1</version>
 				<executions>
 					<execution>
 						<id>dynamodb-integration-test</id>
@@ -246,7 +246,7 @@
 
 			<plugin>
 				<artifactId>maven-dependency-plugin</artifactId>
-				<version>2.10</version>
+				<version>3.0.1</version>
 				<executions>
 					<execution>
 						<id>unpack-dynamodb-local</id>
