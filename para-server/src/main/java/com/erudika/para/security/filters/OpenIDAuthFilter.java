@@ -19,12 +19,11 @@ package com.erudika.para.security.filters;
 
 import com.erudika.para.core.User;
 import com.erudika.para.security.AuthenticatedUserDetails;
+import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.security.UserAuthentication;
 import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.openid.OpenIDAuthenticationFilter;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -70,7 +69,7 @@ public class OpenIDAuthFilter extends OpenIDAuthenticationFilter {
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws IOException {
 		final String requestURI = request.getRequestURI();
-		Authentication userAuth = null;
+		UserAuthentication userAuth = null;
 		User user = null;
 
 		if (requestURI.endsWith(OPENID_ACTION)) {
@@ -87,11 +86,6 @@ public class OpenIDAuthFilter extends OpenIDAuthenticationFilter {
 			}
 		}
 
-		if (userAuth == null || user == null || user.getIdentifier() == null) {
-			throw new BadCredentialsException("Bad credentials.");
-		} else if (!user.getActive()) {
-			throw new LockedException("Account is locked.");
-		}
-		return userAuth;
+		return SecurityUtils.checkIfActive(userAuth, user, true);
 	}
 }

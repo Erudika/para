@@ -42,8 +42,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.springframework.security.authentication.AuthenticationServiceException;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
@@ -114,14 +112,7 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 		}
 
-		User user = SecurityUtils.getAuthenticatedUser(userAuth);
-
-		if (userAuth == null || user == null || user.getIdentifier() == null) {
-			throw new BadCredentialsException("Bad credentials.");
-		} else if (!user.getActive()) {
-			throw new LockedException("Account is locked.");
-		}
-		return userAuth;
+		return SecurityUtils.checkIfActive(userAuth, SecurityUtils.getAuthenticatedUser(userAuth), true);
 	}
 
 	/**
@@ -133,6 +124,7 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 */
 	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
 		UserAuthentication userAuth = null;
+		User user = new User();
 		if (accessToken != null) {
 			String ctype = null;
 			HttpEntity respEntity = null;
@@ -157,7 +149,6 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 					String lName = (String) profile.get("lastName");
 					String name = fName + " " + lName;
 
-					User user = new User();
 					user.setAppid(getAppid(app));
 					user.setIdentifier(Config.LINKEDIN_PREFIX.concat(linkedInID));
 					user.setEmail(email);
@@ -195,7 +186,7 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 				EntityUtils.consumeQuietly(respEntity);
 			}
 		}
-		return userAuth;
+		return SecurityUtils.checkIfActive(userAuth, user, false);
 	}
 
 	private String getAppid(App app) {

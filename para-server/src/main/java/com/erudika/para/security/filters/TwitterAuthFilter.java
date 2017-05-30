@@ -47,7 +47,6 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
@@ -110,14 +109,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 		}
 
-		User user = SecurityUtils.getAuthenticatedUser(userAuth);
-
-		if (userAuth == null || user == null || user.getIdentifier() == null) {
-			throw new BadCredentialsException("Bad credentials.");
-		} else if (!user.getActive()) {
-			throw new LockedException("Account is locked.");
-		}
-		return userAuth;
+		return SecurityUtils.checkIfActive(userAuth, SecurityUtils.getAuthenticatedUser(userAuth), true);
 	}
 
 	private boolean stepOne(HttpServletResponse response, String redirectURI, String[] keys)
@@ -182,6 +174,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 */
 	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
 		UserAuthentication userAuth = null;
+		User user = new User();
 		if (accessToken != null && accessToken.contains(Config.SEPARATOR)) {
 			String[] tokens = accessToken.split(Config.SEPARATOR);
 			String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.TWITTER_PREFIX);
@@ -203,7 +196,6 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 					String name = (String) profile.get("name");
 					String email = (String) profile.get("email");
 
-					User user = new User();
 					user.setAppid(getAppid(app));
 					user.setIdentifier(Config.TWITTER_PREFIX + twitterId);
 					user.setEmail(email);
@@ -242,7 +234,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 				EntityUtils.consumeQuietly(resp3.getEntity());
 			}
 		}
-		return userAuth;
+		return SecurityUtils.checkIfActive(userAuth, user, false);
 	}
 
 	private static String getPicture(String pic) {

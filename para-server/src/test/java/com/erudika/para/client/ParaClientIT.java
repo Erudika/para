@@ -956,6 +956,16 @@ public class ParaClientIT {
 		pc2.grantResourcePermission(App.ALLOW_ALL, utilsPath, AllowedMethods.READ, true);
 		assertTrue(guest.getTimestamp() > 0);
 
+		// test user should be able to login twice - first time user is created, second time password is checked
+		// we use a different email here because otherwise we'll read an existing user with a different password
+		String emailPassFail = "test2@user.com::123456";
+		String emailPassPass = "test3@user.com::123456";
+		assertNull(pc2.signIn("password", emailPassFail));
+		System.setProperty("para.security.allow_unverified_emails", "true");
+		assertNotNull(pc2.signIn("password", emailPassPass));
+		pc2.signOut();
+		assertNotNull(pc2.signIn("password", emailPassPass));
+
 		// test user should not be created twice if signed in with email and password
 //		User signedInWithEmail = pc2.signIn("password", "test@user.com::123456");
 //		assertNotNull(signedInWithEmail);

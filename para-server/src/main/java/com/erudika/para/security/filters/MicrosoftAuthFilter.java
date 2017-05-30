@@ -46,8 +46,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.springframework.security.authentication.AuthenticationServiceException;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
@@ -122,14 +120,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 			}
 		}
 
-		User user = SecurityUtils.getAuthenticatedUser(userAuth);
-
-		if (userAuth == null || user == null || user.getIdentifier() == null) {
-			throw new BadCredentialsException("Bad credentials.");
-		} else if (!user.getActive()) {
-			throw new LockedException("Account is locked.");
-		}
-		return userAuth;
+		return SecurityUtils.checkIfActive(userAuth, SecurityUtils.getAuthenticatedUser(userAuth), true);
 	}
 
 	/**
@@ -141,6 +132,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 	 */
 	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
 		UserAuthentication userAuth = null;
+		User user = new User();
 		if (accessToken != null) {
 			HttpGet profileGet = new HttpGet(PROFILE_URL);
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
@@ -157,7 +149,6 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 					String email = getEmail(profile);
 					String name = (String) profile.get("displayName");
 
-					User user = new User();
 					user.setAppid(getAppid(app));
 					user.setIdentifier(Config.MICROSOFT_PREFIX + microsoftId);
 					user.setEmail(email);
@@ -196,7 +187,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 				EntityUtils.consumeQuietly(respEntity);
 			}
 		}
-		return userAuth;
+		return SecurityUtils.checkIfActive(userAuth, user, false);
 	}
 
 	private String getPicture(String accessToken) throws IOException {

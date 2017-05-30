@@ -21,6 +21,7 @@ import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
 import com.erudika.para.security.AuthenticatedUserDetails;
+import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.security.UserAuthentication;
 import com.erudika.para.utils.Config;
 import java.io.IOException;
@@ -28,8 +29,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
@@ -67,7 +66,7 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws IOException, ServletException {
 		String requestURI = request.getRequestURI();
-		Authentication userAuth = null;
+		UserAuthentication userAuth = null;
 		User user = new User();
 
 		if (requestURI.endsWith(PASSWORD_ACTION)) {
@@ -86,13 +85,7 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 			}
 		}
-
-		if (userAuth == null || user == null || user.getIdentifier() == null) {
-			throw new BadCredentialsException("Bad credentials.");
-		} else if (!user.getActive()) {
-			throw new LockedException("Account is locked.");
-		}
-		return userAuth;
+		return SecurityUtils.checkIfActive(userAuth, user, true);
 	}
 
 
@@ -105,6 +98,7 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 */
 	public UserAuthentication getOrCreateUser(App app, String accessToken) {
 		UserAuthentication userAuth = null;
+		User user = new User();
 		if (accessToken != null && accessToken.contains(Config.SEPARATOR)) {
 			String[] parts = accessToken.split(Config.SEPARATOR, 3);
 			String email = parts[0];
@@ -112,12 +106,14 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 			String pass = (parts.length > 2) ? parts[2] : "";
 
 			String appid = (app == null) ? null : app.getAppIdentifier();
-			User user = new User();
-			user.setAppid(appid);
-			user.setIdentifier(email);
-			user.setPassword(pass);
-			user.setEmail(email);
-			user = User.readUserForIdentifier(user);
+			User u = new User();
+			u.setAppid(appid);
+			u.setIdentifier(email);
+			u.setPassword(pass);
+			u.setEmail(email);
+			// NOTE TO SELF:
+			// do not overwrite 'u' here - overwrites the password hash!
+			user = User.readUserForIdentifier(u);
 			if (user == null) {
 				user = new User();
 				user.setActive(Config.getConfigBoolean("security.allow_unverified_emails", false));
@@ -130,10 +126,10 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 					// allow temporary first-time login without verifying email address
 					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 				}
-			} else if (User.passwordMatches(user)) {
+			} else if (User.passwordMatches(u)) {
 				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 			}
 		}
-		return userAuth;
+		return SecurityUtils.checkIfActive(userAuth, user, false);
 	}
 }

@@ -37,6 +37,8 @@ import javax.servlet.http.HttpSession;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -209,5 +211,31 @@ public final class SecurityUtils {
 			}
 		}
 		return keys;
+	}
+
+	/**
+	 * Checks if account is active.
+	 * @param userAuth user authentication object
+	 * @param user user object
+	 * @param throwException throw or not
+	 * @return the authentication object if {@code user.active == true}
+	 */
+	public static UserAuthentication checkIfActive(UserAuthentication userAuth, User user, boolean throwException) {
+		if (userAuth == null || user == null || user.getIdentifier() == null) {
+			if (throwException) {
+				throw new BadCredentialsException("Bad credentials.");
+			} else {
+				logger.error("Bad credentials.");
+				return null;
+			}
+		} else if (!user.getActive()) {
+			if (throwException) {
+				throw new LockedException("Account " + user.getId() + " is locked.");
+			} else {
+				logger.error("Account {} is locked.", user.getId());
+				return null;
+			}
+		}
+		return userAuth;
 	}
 }

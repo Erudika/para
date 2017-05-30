@@ -67,9 +67,37 @@ See how **Para** [compares to other open source backend frameworks](https://erud
 ## Quick Start
 
 1. [Download the latest executable WAR](https://github.com/Erudika/para/releases)
-2. Execute it with `java -jar para-X.Y.Z.war`
+2. Execute it with `java -jar -Dconfig.file=./application.conf para-X.Y.Z.war`
 3. Call `curl localhost:8080/v1/_setup` to get the access and secret keys
 4. Open [Para Web Console](https://console.paraio.org) or integrate with one of the API clients below.
+
+Configuration properties belong in your `application.conf` file.
+Here's an example configuration for development purposes:
+```
+# the name of your app
+para.app_name = "My App"
+# or set it to 'production'
+para.env = "embedded"
+# allows clients to register any user with any email
+para.security.allow_unverified_emails = true
+# if hosting multiple apps on Para, set this to false
+para.clients_can_access_root_app = true
+# no need for caching in dev mode
+para.cache_enabled = false
+# change this to a random string
+para.app_secret_key = "b8db69a24a43f2ce134909f164a45263"
+# enable API request signature checking
+para.security.api_security = true
+```
+
+The quickest way to interact with Para is through the [command-line tool](https://github.com/Erudika/para-cli) (CLI):
+```
+$ npm install -g para-cli
+$ para-cli ping
+$ echo "{\"type\":\"todo\", \"name\": \"buy milk\"}" > todo.json
+$ para-cli create todo.json --id todo1 --encodeId false
+$ para read --id todo1
+```
 
 ### Building Para
 
