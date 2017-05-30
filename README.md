@@ -149,10 +149,12 @@ Use these `DAO` implementations to connect to different databases:
 ## Wishlist / Roadmap
 
 - `DAO` implementation for PostgreSQL.
-- Separate Elasticsearch from Para and create a new `para-search-elasticsearch` plugin
+- Separate Elasticsearch from Para and create a new `para-search-elasticsearch` plugin (support ES v6)
+- Implement `Search` with Lucene for local develoment/embedded mode
+- Make the API server more efficient with fibers (Quasar)
 - Server-side JavaScript support for implementing custom API resources
 - Integrations with Google App Engine, Heroku, DigitalOcean
-- GraphQL or ([JSON API](http://jsonapi.org/)) compatible API at `/v2`
+- GraphQL or ([JSON API](http://jsonapi.org/)) compatible API at `/v2` (not soon)
 
 ## Contributing
 
