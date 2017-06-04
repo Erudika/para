@@ -152,7 +152,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 						}
 					} else {
 						RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-								"Failed to authenticate user with " + provider);
+								"Failed to authenticate user with '" + provider + "'. Check if user is active.");
 						return false;
 					}
 				} else {
