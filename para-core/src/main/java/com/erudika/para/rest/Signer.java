@@ -32,15 +32,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
@@ -108,38 +103,6 @@ public final class Signer extends AWS4Signer {
 		resetDate();
 	}
 
-	/**
-	 * Validates the signature of the request.
-	 * @param incoming the incoming HTTP request containing a signature
-	 * @param secretKey the app's secret key
-	 * @return true if the signature is valid
-	 */
-	public boolean isValidSignature(HttpServletRequest incoming, String secretKey) {
-		if (incoming == null || StringUtils.isBlank(secretKey)) {
-			return false;
-		}
-		String auth = incoming.getHeader(HttpHeaders.AUTHORIZATION);
-		String givenSig = StringUtils.substringAfter(auth, "Signature=");
-		String sigHeaders = StringUtils.substringBetween(auth, "SignedHeaders=", ",");
-		String credential = StringUtils.substringBetween(auth, "Credential=", ",");
-		String accessKey = StringUtils.substringBefore(credential, "/");
-
-		if (StringUtils.isBlank(auth)) {
-			givenSig = incoming.getParameter("X-Amz-Signature");
-			sigHeaders = incoming.getParameter("X-Amz-SignedHeaders");
-			credential = incoming.getParameter("X-Amz-Credential");
-			accessKey = StringUtils.substringBefore(credential, "/");
-		}
-
-		Request<?> awsReq = buildAWSRequest(incoming, new HashSet<String>(Arrays.asList(sigHeaders.split(";"))));
-		sign(awsReq, accessKey, secretKey);
-
-		String auth2 = awsReq.getHeaders().get(HttpHeaders.AUTHORIZATION);
-		String recreatedSig = StringUtils.substringAfter(auth2, "Signature=");
-
-		return StringUtils.equals(givenSig, recreatedSig);
-	}
-
 	@Override
 	public void setRegionName(String regionName) {
 	}
@@ -191,37 +154,6 @@ public final class Signer extends AWS4Signer {
 			r.setContent(entity);
 		}
 		return r;
-	}
-
-	private Request<?> buildAWSRequest(HttpServletRequest req, Set<String> headersUsed) {
-		Map<String, String> headers = new HashMap<String, String>();
-		for (Enumeration<String> e = req.getHeaderNames(); e.hasMoreElements();) {
-			String head = e.nextElement().toLowerCase();
-			if (headersUsed.contains(head)) {
-				headers.put(head, req.getHeader(head));
-			}
-		}
-
-		Map<String, String> params = new HashMap<String, String>();
-		for (Map.Entry<String, String[]> param : req.getParameterMap().entrySet()) {
-			params.put(param.getKey(), param.getValue()[0]);
-		}
-
-		String path = req.getRequestURI();
-		String endpoint = StringUtils.removeEndIgnoreCase(req.getRequestURL().toString(), path);
-		String httpMethod = req.getMethod();
-		InputStream entity;
-		try {
-			entity = new BufferedInputStream(req.getInputStream());
-			if (entity.available() <= 0) {
-				entity = null;
-			}
-		} catch (IOException ex) {
-			logger.error(null, ex);
-			entity = null;
-		}
-
-		return buildAWSRequest(httpMethod, endpoint, path, headers, params, entity);
 	}
 
 	/**

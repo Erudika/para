@@ -15,7 +15,7 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.utils.filters;
+package com.erudika.para.utils;
 
 import java.util.Collection;
 import javax.servlet.ServletException;
@@ -121,7 +121,7 @@ public final class GZipResponseUtil {
 	 * Adds the Vary: Accept-Encoding header to the response if needed.
 	 * @param wrapper response
 	 */
-	protected static void addVaryAcceptEncoding(final GZipServletResponseWrapper wrapper) {
+	public static void addVaryAcceptEncoding(final GZipServletResponseWrapper wrapper) {
 		Collection<String> headers = wrapper.getHeaderNames();
 
 		String varyHeader = null;

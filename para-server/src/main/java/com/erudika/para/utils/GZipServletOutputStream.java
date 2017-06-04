@@ -15,7 +15,7 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.utils.filters;
+package com.erudika.para.utils;
 
 import javax.servlet.ServletOutputStream;
 import java.io.IOException;
@@ -27,7 +27,7 @@ import javax.servlet.WriteListener;
  * @version $Id: FilterServletOutputStream.java 744 2008-08-16 20:10:49Z gregluck $
  * @author <a href="mailto:gluck@thoughtworks.com">Greg Luck</a>
  */
-class GZipServletOutputStream extends ServletOutputStream {
+public class GZipServletOutputStream extends ServletOutputStream {
 
 	private final OutputStream stream;
 

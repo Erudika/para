@@ -17,6 +17,8 @@
  */
 package com.erudika.para.utils.filters;
 
+import com.erudika.para.utils.GZipResponseUtil;
+import com.erudika.para.utils.GZipServletResponseWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javax.servlet.http.HttpServletRequest;

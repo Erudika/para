@@ -23,6 +23,7 @@ import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
 import static com.erudika.para.security.filters.MicrosoftAuthFilter.MICROSOFT_ACTION;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.HttpUtils;
 import com.erudika.para.utils.Utils;
 import com.nimbusds.jwt.SignedJWT;
 import java.io.IOException;
@@ -86,10 +87,10 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
 	@Override
 	protected String determineTargetUrl(HttpServletRequest request, HttpServletResponse response) {
-		String cookie = Utils.getStateParam(Config.RETURNTO_COOKIE, request);
+		String cookie = HttpUtils.getStateParam(Config.RETURNTO_COOKIE, request);
 		if (cookie != null) {
 			cookie = Utils.base64dec(cookie);
-			Utils.removeStateParam(Config.RETURNTO_COOKIE, request, response);
+			HttpUtils.removeStateParam(Config.RETURNTO_COOKIE, request, response);
 			return cookie;
 		} else {
 			return super.determineTargetUrl(request, response);

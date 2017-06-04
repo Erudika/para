@@ -20,6 +20,7 @@ package com.erudika.para.security;
 import com.eaio.uuid.UUID;
 import com.erudika.para.cache.Cache;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.HttpUtils;
 import com.erudika.para.utils.Utils;
 import java.util.HashMap;
 import java.util.Map;
@@ -118,7 +119,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	}
 
 	private String getIdentifierFromCookie(HttpServletRequest request) {
-		String cookie = Utils.getStateParam(Config.AUTH_COOKIE, request);
+		String cookie = HttpUtils.getStateParam(Config.AUTH_COOKIE, request);
 		String ident = null;
 		if (cookie != null) {
 			String[] ctokens = Utils.base64dec(cookie).split(":");
@@ -128,7 +129,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	}
 
 	private String getTokenFromCookie(HttpServletRequest request) {
-		String tokenInCookie = Utils.getStateParam(cookieName, request);
+		String tokenInCookie = HttpUtils.getStateParam(cookieName, request);
 		if (!StringUtils.isBlank(tokenInCookie)) {
 			return tokenInCookie;
 		}

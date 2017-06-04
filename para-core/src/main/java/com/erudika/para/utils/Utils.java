@@ -48,9 +48,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.regex.Pattern;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
@@ -671,99 +668,8 @@ public final class Utils {
 	}
 
 	/////////////////////////////////////////////
-	//    	   COOKIE & STATE UTILS
+	//    	        MISC UTILS
 	/////////////////////////////////////////////
-
-	/**
-	 * Sets a cookie.
-	 * @param name the name
-	 * @param value the value
-	 * @param req HTTP request
-	 * @param res HTTP response
-	 */
-	public static void setStateParam(String name, String value, HttpServletRequest req,
-			HttpServletResponse res) {
-		setStateParam(name, value, req, res, false);
-	}
-
-	/**
-	 * Sets a cookie.
-	 * @param name the name
-	 * @param value the value
-	 * @param req HTTP request
-	 * @param res HTTP response
-	 * @param httpOnly HTTP only flag
-	 */
-	public static void setStateParam(String name, String value, HttpServletRequest req,
-			HttpServletResponse res, boolean httpOnly) {
-		setRawCookie(name, value, req, res, httpOnly, -1);
-	}
-
-	/**
-	 * Reads a cookie.
-	 * @param name the name
-	 * @param req HTTP request
-	 * @return the cookie value
-	 */
-	public static String getStateParam(String name, HttpServletRequest req) {
-		return getCookieValue(req, name);
-	}
-
-	/**
-	 * Deletes a cookie.
-	 * @param name the name
-	 * @param req HTTP request
-	 * @param res HTTP response
-	 */
-	public static void removeStateParam(String name, HttpServletRequest req,
-			HttpServletResponse res) {
-		setRawCookie(name, "", req, res, false, 0);
-	}
-
-	/**
-	 * Sets a cookie.
-	 * @param name the name
-	 * @param value the value
-	 * @param req HTTP request
-	 * @param res HTTP response
-	 * @param httpOnly HTTP only flag
-	 * @param maxAge max age
-	 */
-	public static void setRawCookie(String name, String value, HttpServletRequest req,
-			HttpServletResponse res, boolean httpOnly, int maxAge) {
-		if (StringUtils.isBlank(name) || value == null || req == null || res == null) {
-			return;
-		}
-		Cookie cookie = new Cookie(name, value);
-		cookie.setHttpOnly(httpOnly);
-		cookie.setMaxAge(maxAge < 0 ? Config.SESSION_TIMEOUT_SEC.intValue() : maxAge);
-		cookie.setPath("/");
-		cookie.setSecure(req.isSecure());
-		res.addCookie(cookie);
-	}
-
-	/**
-	 * Reads a cookie.
-	 * @param name the name
-	 * @param req HTTP request
-	 * @return the cookie value
-	 */
-	public static String getCookieValue(HttpServletRequest req, String name) {
-		if (StringUtils.isBlank(name) || req == null) {
-			return null;
-		}
-		Cookie[] cookies = req.getCookies();
-		if (cookies == null) {
-			return null;
-		}
-		//Otherwise, we have to do a linear scan for the cookie.
-		for (Cookie cookie : cookies) {
-			if (cookie.getName().equals(name)) {
-				return cookie.getValue();
-			}
-		}
-		return null;
-	}
 
 	/**
 	 * Same as {@link java.lang.System#getProperty(java.lang.String)}.
@@ -773,10 +679,6 @@ public final class Utils {
 	public static String getSystemProperty(String name) {
 		return StringUtils.isBlank(name) ? "" : System.getProperty(name);
 	}
-
-	/////////////////////////////////////////////
-	//    	        MISC UTILS
-	/////////////////////////////////////////////
 
 	/**
 	 * Returns the adjusted size of an image (doesn't do any resizing).
@@ -802,16 +704,6 @@ public final class Utils {
 			}
 		}
 		return size;
-	}
-
-	/**
-	 * Checks if a request comes from JavaScript.
-	 * @param request HTTP request
-	 * @return true if AJAX
-	 */
-	public static boolean isAjaxRequest(HttpServletRequest request) {
-		return "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With")) ||
-				"XMLHttpRequest".equalsIgnoreCase(request.getParameter("X-Requested-With"));
 	}
 
 	/**

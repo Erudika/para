@@ -180,7 +180,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		Object[] failures = doAppChecks(app, request);
 
 		if (failures == null) {
-			if (signer.isValidSignature(request, app.getSecret())) {
+			if (SecurityUtils.isValidSignature(request, app.getSecret())) {
 				SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
 				return true;
 			}

@@ -19,6 +19,7 @@ package com.erudika.para.security;
 
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
+import com.erudika.para.rest.Signer;
 import com.erudika.para.utils.Config;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -29,11 +30,20 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import javax.ws.rs.core.HttpHeaders;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +59,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 public final class SecurityUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
+	private static final Signer signer = new Signer();
 
 	private SecurityUtils() { }
 
@@ -237,5 +248,64 @@ public final class SecurityUtils {
 			}
 		}
 		return userAuth;
+	}
+
+	/**
+	 * Validates the signature of the request.
+	 * @param incoming the incoming HTTP request containing a signature
+	 * @param secretKey the app's secret key
+	 * @return true if the signature is valid
+	 */
+	public static boolean isValidSignature(HttpServletRequest incoming, String secretKey) {
+		if (incoming == null || StringUtils.isBlank(secretKey)) {
+			return false;
+		}
+		String auth = incoming.getHeader(HttpHeaders.AUTHORIZATION);
+		String givenSig = StringUtils.substringAfter(auth, "Signature=");
+		String sigHeaders = StringUtils.substringBetween(auth, "SignedHeaders=", ",");
+		String credential = StringUtils.substringBetween(auth, "Credential=", ",");
+		String accessKey = StringUtils.substringBefore(credential, "/");
+
+		if (StringUtils.isBlank(auth)) {
+			givenSig = incoming.getParameter("X-Amz-Signature");
+			sigHeaders = incoming.getParameter("X-Amz-SignedHeaders");
+			credential = incoming.getParameter("X-Amz-Credential");
+			accessKey = StringUtils.substringBefore(credential, "/");
+		}
+
+		Set<String> headersUsed = new HashSet<String>(Arrays.asList(sigHeaders.split(";")));
+		Map<String, String> headers = new HashMap<String, String>();
+		for (Enumeration<String> e = incoming.getHeaderNames(); e.hasMoreElements();) {
+			String head = e.nextElement().toLowerCase();
+			if (headersUsed.contains(head)) {
+				headers.put(head, incoming.getHeader(head));
+			}
+		}
+
+		Map<String, String> params = new HashMap<String, String>();
+		for (Map.Entry<String, String[]> param : incoming.getParameterMap().entrySet()) {
+			params.put(param.getKey(), param.getValue()[0]);
+		}
+
+		String path = incoming.getRequestURI();
+		String endpoint = StringUtils.removeEndIgnoreCase(incoming.getRequestURL().toString(), path);
+		String httpMethod = incoming.getMethod();
+		InputStream entity;
+		try {
+			entity = new BufferedInputStream(incoming.getInputStream());
+			if (entity.available() <= 0) {
+				entity = null;
+			}
+		} catch (IOException ex) {
+			logger.error(null, ex);
+			entity = null;
+		}
+
+		Map<String, String> sig = signer.sign(httpMethod, endpoint, path, headers, params, entity, accessKey, secretKey);
+
+		String auth2 = sig.get(HttpHeaders.AUTHORIZATION);
+		String recreatedSig = StringUtils.substringAfter(auth2, "Signature=");
+
+		return StringUtils.equals(givenSig, recreatedSig);
 	}
 }

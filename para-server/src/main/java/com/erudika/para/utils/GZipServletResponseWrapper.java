@@ -15,7 +15,7 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.utils.filters;
+package com.erudika.para.utils;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -33,13 +33,13 @@ import java.util.zip.GZIPOutputStream;
  * @author <a href="mailto:gluck@thoughtworks.com">Greg Luck</a>
  * @version $Id: GenericResponseWrapper.java 793 2008-10-07 07:28:03Z gregluck $
  */
-class GZipServletResponseWrapper extends HttpServletResponseWrapper {
+public class GZipServletResponseWrapper extends HttpServletResponseWrapper {
 
 	private GZipServletOutputStream gzipOutputStream = null;
 	private PrintWriter printWriter = null;
 	private boolean disableFlushBuffer = false;
 
-	GZipServletResponseWrapper(HttpServletResponse response, GZIPOutputStream gzout)
+	public GZipServletResponseWrapper(HttpServletResponse response, GZIPOutputStream gzout)
 			throws IOException {
 		super(response);
 		gzipOutputStream = new GZipServletOutputStream(gzout);

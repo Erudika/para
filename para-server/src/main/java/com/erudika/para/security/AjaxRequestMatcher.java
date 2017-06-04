@@ -17,6 +17,7 @@
  */
 package com.erudika.para.security;
 
+import com.erudika.para.utils.HttpUtils;
 import com.erudika.para.utils.Utils;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
@@ -38,7 +39,7 @@ public final class AjaxRequestMatcher implements RequestMatcher {
 	@Override
 	public boolean matches(HttpServletRequest request) {
 		// Determine if the request is AJAX or expects JSON response.
-		return Utils.isAjaxRequest(request) || Utils.isJsonType(request.getHeader(HttpHeaders.ACCEPT));
+		return HttpUtils.isAjaxRequest(request) || Utils.isJsonType(request.getHeader(HttpHeaders.ACCEPT));
 	}
 
 }
