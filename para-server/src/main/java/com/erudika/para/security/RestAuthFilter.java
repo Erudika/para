@@ -19,7 +19,6 @@ package com.erudika.para.security;
 
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
-import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
 import com.erudika.para.rest.Signer;
@@ -196,34 +195,12 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 			return false;
 		}
 		String resourcePath = RestUtils.extractResourcePath(request);
-		String method = request.getMethod();
-		String uid = (user == null) ? "" : user.getId();
-		boolean isAllowed = parentApp.isAllowedTo(uid, resourcePath, method);
-		if (parentApp.isDeniedExplicitly(uid, resourcePath, method)) {
-			return false;
+		if (resourcePath.matches("^_permissions/.+") && request.getMethod().equals(GET)) {
+			return true; // allow permission checks, i.e. pc.isAllowed(), to go through
 		}
-		return (isAllowed || canModify(user, resourcePath, method));
-	}
-
-	private boolean canModify(User user, String resourcePath, String method) {
-		if (user == null || resourcePath == null || method == null) {
-			return false;
-		}
-		ParaObject po = RestUtils.readResourcePath(user.getAppid(), resourcePath);
-		if (po == null) {
-			return false;
-		}
-		if (user.getId().equals(po.getId())) {
-			String path = resourcePath.startsWith("/") ? resourcePath : "/" + resourcePath;
-			String prefix = (po.getObjectURI().startsWith("/") ? po.getObjectURI() : "/" + po.getObjectURI()) + "/";
-			if (StringUtils.startsWithIgnoreCase(path, prefix) && !path.equals(prefix)) {
-				// implicit permissions: object can access children and its own subresources
-				return true;
-			}
-			// a user object can only read and update itself
-			return (method.equals(GET) || method.equals("PATCH") || method.equals(PUT));
-		}
-		return user.canModify(po);
+		// we allow empty user ids - this means that the request is unauthenticated
+		String subjectid = (user == null) ? "" : user.getId();
+		return parentApp.isAllowedTo(subjectid, resourcePath, request.getMethod());
 	}
 
 	private Object[] doAppChecks(App app, HttpServletRequest request) {

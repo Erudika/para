@@ -363,8 +363,10 @@ public class AppTest {
 		// wildcard restrictions
 		assertFalse(app2.isDeniedExplicitly(u.getId(), res2, "POST"));
 		app2.grantResourcePermission(ALLOW_ALL, res2, READ);
-		assertTrue(app2.isDeniedExplicitly(u.getId(), res2, "POST"));
-		assertTrue(app2.isDeniedExplicitly(u2.getId(), res2, "PUT"));
+		assertFalse(app2.isAllowedTo(u.getId(), res2, "POST"));
+		assertFalse(app2.isDeniedExplicitly(u.getId(), res2, "POST"));
+		assertFalse(app2.isAllowedTo(u2.getId(), res2, "PUT"));
+		assertFalse(app2.isDeniedExplicitly(u2.getId(), res2, "PUT"));
 	}
 
 }

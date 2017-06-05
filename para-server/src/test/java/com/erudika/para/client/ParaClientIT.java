@@ -22,6 +22,13 @@ import com.erudika.para.ParaServer;
 import com.erudika.para.core.Address;
 import com.erudika.para.core.App;
 import com.erudika.para.core.App.AllowedMethods;
+import static com.erudika.para.core.App.AllowedMethods.GET;
+import static com.erudika.para.core.App.AllowedMethods.PATCH;
+import static com.erudika.para.core.App.AllowedMethods.POST;
+import static com.erudika.para.core.App.AllowedMethods.PUT;
+import static com.erudika.para.core.App.AllowedMethods.READ;
+import static com.erudika.para.core.App.AllowedMethods.READ_AND_WRITE;
+import static com.erudika.para.core.App.AllowedMethods.WRITE;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
@@ -772,12 +779,12 @@ public class ParaClientIT {
 		assertTrue(pc.grantResourcePermission(null, dogsType, EnumSet.noneOf(AllowedMethods.class)).isEmpty());
 		assertTrue(pc.grantResourcePermission(" ", "", EnumSet.noneOf(AllowedMethods.class)).isEmpty());
 
-		pc.grantResourcePermission(u1.getId(), dogsType, AllowedMethods.READ);
+		pc.grantResourcePermission(u1.getId(), dogsType, READ);
 		permits = pc.resourcePermissions(u1.getId());
 		assertTrue(permits.containsKey(u1.getId()));
 		assertTrue(permits.get(u1.getId()).containsKey(dogsType));
-		assertTrue(pc.isAllowedTo(u1.getId(), dogsType, AllowedMethods.GET.toString()));
-		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, AllowedMethods.POST.toString()));
+		assertTrue(pc.isAllowedTo(u1.getId(), dogsType, GET.toString()));
+		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, POST.toString()));
 
 		permits = pc.resourcePermissions();
 		assertTrue(permits.containsKey(u1.getId()));
@@ -786,43 +793,43 @@ public class ParaClientIT {
 		pc.revokeResourcePermission(u1.getId(), dogsType);
 		permits = pc.resourcePermissions(u1.getId());
 		assertFalse(permits.get(u1.getId()).containsKey(dogsType));
-		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, AllowedMethods.GET.toString()));
-		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, AllowedMethods.POST.toString()));
+		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, GET.toString()));
+		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, POST.toString()));
 
-		pc.grantResourcePermission(u2.getId(), App.ALLOW_ALL, AllowedMethods.WRITE);
-		assertTrue(pc.isAllowedTo(u2.getId(), dogsType, AllowedMethods.PUT.toString()));
-		assertTrue(pc.isAllowedTo(u2.getId(), dogsType, AllowedMethods.PATCH.toString()));
+		pc.grantResourcePermission(u2.getId(), App.ALLOW_ALL, WRITE);
+		assertTrue(pc.isAllowedTo(u2.getId(), dogsType, PUT.toString()));
+		assertTrue(pc.isAllowedTo(u2.getId(), dogsType, PATCH.toString()));
 
 		pc.revokeAllResourcePermissions(u2.getId());
 		permits = pc.resourcePermissions();
-		assertFalse(pc.isAllowedTo(u2.getId(), dogsType, AllowedMethods.PUT.toString()));
+		assertFalse(pc.isAllowedTo(u2.getId(), dogsType, PUT.toString()));
 		assertFalse(permits.containsKey(u2.getId()));
 //		assertTrue(permits.get(u2.getId()).isEmpty());
 
-		pc.grantResourcePermission(u1.getId(), dogsType, AllowedMethods.WRITE);
-		pc.grantResourcePermission(App.ALLOW_ALL, catsType, AllowedMethods.WRITE);
-		pc.grantResourcePermission(App.ALLOW_ALL, App.ALLOW_ALL, AllowedMethods.READ);
+		pc.grantResourcePermission(u1.getId(), dogsType, WRITE);
+		pc.grantResourcePermission(App.ALLOW_ALL, catsType, WRITE);
+		pc.grantResourcePermission(App.ALLOW_ALL, App.ALLOW_ALL, READ);
 		// user-specific permissions are in effect
-		assertTrue(pc.isAllowedTo(u1.getId(), dogsType, AllowedMethods.PUT.toString()));
-		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, AllowedMethods.GET.toString()));
-		assertTrue(pc.isAllowedTo(u1.getId(), catsType, AllowedMethods.PUT.toString()));
-		assertTrue(pc.isAllowedTo(u1.getId(), catsType, AllowedMethods.GET.toString()));
+		assertTrue(pc.isAllowedTo(u1.getId(), dogsType, PUT.toString()));
+		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, GET.toString()));
+		assertTrue(pc.isAllowedTo(u1.getId(), catsType, PUT.toString()));
+		assertTrue(pc.isAllowedTo(u1.getId(), catsType, GET.toString()));
 
 		pc.revokeAllResourcePermissions(u1.getId());
 		// user-specific permissions not found so check wildcard
-		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, AllowedMethods.PUT.toString()));
-		assertTrue(pc.isAllowedTo(u1.getId(), dogsType, AllowedMethods.GET.toString()));
-		assertTrue(pc.isAllowedTo(u1.getId(), catsType, AllowedMethods.PUT.toString()));
-		assertTrue(pc.isAllowedTo(u1.getId(), catsType, AllowedMethods.GET.toString()));
+		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, PUT.toString()));
+		assertTrue(pc.isAllowedTo(u1.getId(), dogsType, GET.toString()));
+		assertTrue(pc.isAllowedTo(u1.getId(), catsType, PUT.toString()));
+		assertTrue(pc.isAllowedTo(u1.getId(), catsType, GET.toString()));
 
 		pc.revokeResourcePermission(App.ALLOW_ALL, catsType);
 		// resource-specific permissions not found so check wildcard
-		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, AllowedMethods.PUT.toString()));
-		assertFalse(pc.isAllowedTo(u1.getId(), catsType, AllowedMethods.PUT.toString()));
-		assertTrue(pc.isAllowedTo(u1.getId(), dogsType, AllowedMethods.GET.toString()));
-		assertTrue(pc.isAllowedTo(u1.getId(), catsType, AllowedMethods.GET.toString()));
-		assertTrue(pc.isAllowedTo(u2.getId(), dogsType, AllowedMethods.GET.toString()));
-		assertTrue(pc.isAllowedTo(u2.getId(), catsType, AllowedMethods.GET.toString()));
+		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, PUT.toString()));
+		assertFalse(pc.isAllowedTo(u1.getId(), catsType, PUT.toString()));
+		assertTrue(pc.isAllowedTo(u1.getId(), dogsType, GET.toString()));
+		assertTrue(pc.isAllowedTo(u1.getId(), catsType, GET.toString()));
+		assertTrue(pc.isAllowedTo(u2.getId(), dogsType, GET.toString()));
+		assertTrue(pc.isAllowedTo(u2.getId(), catsType, GET.toString()));
 
 		pc.revokeAllResourcePermissions(App.ALLOW_ALL);
 		pc.revokeAllResourcePermissions(u1.getId());
@@ -910,7 +917,7 @@ public class ParaClientIT {
 
 		// test with permissions - logout first to use app credentials (full access)
 		pc2.signOut();
-		pc2.grantResourcePermission(fbUser.getId(), App.ALLOW_ALL, AllowedMethods.READ_AND_WRITE);
+		pc2.grantResourcePermission(fbUser.getId(), App.ALLOW_ALL, READ_AND_WRITE);
 		signedIn = pc2.signIn("facebook", "test_token");
 		logger.info(pc2.getAccessToken());
 		Thread.sleep(800);
@@ -952,8 +959,8 @@ public class ParaClientIT {
 		ParaClient guest = new ParaClient(App.id(APP_NAME), null);
 		guest.setEndpoint(pc2.getEndpoint());
 		assertFalse(guest.getTimestamp() > 0);
-		assertFalse(guest.isAllowedTo(App.ALLOW_ALL, utilsPath, AllowedMethods.GET.toString()));
-		pc2.grantResourcePermission(App.ALLOW_ALL, utilsPath, AllowedMethods.READ, true);
+		assertFalse(guest.isAllowedTo(App.ALLOW_ALL, utilsPath, GET.toString()));
+		pc2.grantResourcePermission(App.ALLOW_ALL, utilsPath, READ, true);
 		assertTrue(guest.getTimestamp() > 0);
 
 		// test user should be able to login twice - first time user is created, second time password is checked
@@ -962,9 +969,30 @@ public class ParaClientIT {
 		String emailPassPass = "test3@user.com::123456";
 		assertNull(pc2.signIn("password", emailPassFail));
 		System.setProperty("para.security.allow_unverified_emails", "true");
-		assertNotNull(pc2.signIn("password", emailPassPass));
+		User newUser = pc2.signIn("password", emailPassPass);
+		assertNotNull(newUser);
 		pc2.signOut();
 		assertNotNull(pc2.signIn("password", emailPassPass));
+		pc2.signOut();
+
+		// test permissions with/without signed in user
+		assertTrue(pc2.isAllowedTo(newUser.getId(), newUser.getObjectURI(), GET.toString()));
+		assertNotNull(pc2.signIn("password", emailPassPass));
+		assertTrue(pc2.isAllowedTo(newUser.getId(), newUser.getObjectURI(), GET.toString()));
+		assertFalse(pc2.isAllowedTo(newUser.getId(), newUser.getObjectURI() + "x", GET.toString()));
+		assertNotNull(pc2.read(newUser.getId())); // can read self
+//		pc2.signOut();
+
+		// test implicit permissions - read/update/delete own children
+//		assertFalse(pc2.isAllowedTo(newUser.getId(), "todos", POST.toString())); // can't create yet
+//		pc2.grantResourcePermission(newUser.getId(), "todos", EnumSet.of(AllowedMethods.POST)); // can create TODOs
+//		pc2.signIn("password", emailPassPass);
+//		assertTrue(pc2.isAllowedTo(newUser.getId(), "todos", POST.toString()));
+
+
+
+		pc2.signOut();
+		pc.delete(newUser);
 
 		// test user should not be created twice if signed in with email and password
 //		User signedInWithEmail = pc2.signIn("password", "test@user.com::123456");

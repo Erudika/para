@@ -657,6 +657,9 @@ public class App implements ParaObject, Serializable {
 				// Default policy is "deny all". Returning true here would make it "allow all".
 				return false;
 			}
+			if (isDeniedExplicitly(subjectid, resourcePath, httpMethod)) {
+				return false;
+			}
 			if (getResourcePermissions().containsKey(subjectid) &&
 					getResourcePermissions().get(subjectid).containsKey(resourcePath)) {
 				// subject-specific permissions have precedence over wildcard permissions
@@ -679,10 +682,10 @@ public class App implements ParaObject, Serializable {
 			}
 			return true;
 		}
-		return false;
+		return isAllowedImplicitly(subjectid, resourcePath, httpMethod);
 	}
 
-	protected final boolean isAllowed(String subjectid, String resourcePath, String httpMethod) {
+	final boolean isAllowed(String subjectid, String resourcePath, String httpMethod) {
 		boolean allowed = false;
 		if (subjectid != null && httpMethod != null && getResourcePermissions().containsKey(subjectid)) {
 			httpMethod = httpMethod.toUpperCase();
@@ -693,8 +696,8 @@ public class App implements ParaObject, Serializable {
 			}
 			if (StringUtils.contains(resourcePath, '/')) {
 				// we assume that a full resource path is given like: 'users/something/123'
-				// so we check to see if 'users/something' is in the list of resources
-				// if there is only 'users' this will match, also 'users/someth' matches
+				// so we check to see if 'users/something' is in the list of resources.
+				// we don't want 'users/someth' to match, but only the exact full path
 				String fragment = resourcePath.substring(0, resourcePath.lastIndexOf('/'));
 				for (String resource : getResourcePermissions().get(subjectid).keySet()) {
 					if (StringUtils.startsWith(fragment, resource) && (
@@ -721,31 +724,39 @@ public class App implements ParaObject, Serializable {
 	 * @param httpMethod HTTP method name
 	 * @return true if access is explicitly denied
 	 */
-	public boolean isDeniedExplicitly(String subjectid, String resourcePath, String httpMethod) {
+	final boolean isDeniedExplicitly(String subjectid, String resourcePath, String httpMethod) {
 		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourcePath) ||
 				StringUtils.isBlank(httpMethod) || getResourcePermissions().isEmpty()) {
 			return false;
 		}
 		// urlDecode resource path
 		resourcePath = Utils.urlDecode(resourcePath);
-		String sid, path;
-
 		if (getResourcePermissions().containsKey(subjectid)) {
-			sid = subjectid;
-		} else if (getResourcePermissions().containsKey(ALLOW_ALL)) {
-			sid = ALLOW_ALL;
-		} else {
-			return false;
+			if (getResourcePermissions().get(subjectid).containsKey(resourcePath)) {
+				return !isAllowed(subjectid, resourcePath, httpMethod);
+			} else if (getResourcePermissions().get(subjectid).containsKey(ALLOW_ALL)) {
+				return !isAllowed(subjectid, ALLOW_ALL, httpMethod);
+			}
 		}
+		return false;
+	}
 
-		if (getResourcePermissions().get(sid).containsKey(resourcePath)) {
-			path = resourcePath;
-		} else if (getResourcePermissions().get(sid).containsKey(ALLOW_ALL)) {
-			path = ALLOW_ALL;
-		} else {
+	/**
+	 * Check if a request comes from a signed in user who try to read/update themselves.
+	 * @param subjectid subject id
+	 * @param resourcePath resource path or object type
+	 * @param httpMethod HTTP method name
+	 * @return true if request is GET, PATCH or PUT and the subject id matches the object id
+	 */
+	final boolean isAllowedImplicitly(String subjectid, String resourcePath, String httpMethod) {
+		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourcePath) || StringUtils.isBlank(httpMethod)) {
 			return false;
 		}
-		return !isAllowed(sid, path, httpMethod);
+		if (resourcePath.endsWith("/" + subjectid)) {
+			// implicit permissions: a user can read and update itself
+			return (httpMethod.equals("GET") || httpMethod.equals("PATCH"));
+		}
+		return false;
 	}
 
 	/**
