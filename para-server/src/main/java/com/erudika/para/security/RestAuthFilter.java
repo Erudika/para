@@ -194,6 +194,10 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		if (parentApp == null) {
 			return false;
 		}
+		// App admin should have unlimited access
+		if (user != null && user.isAdmin()) {
+			return Config.getConfigBoolean("admins_have_full_api_access", true);
+		}
 		String resourcePath = RestUtils.extractResourcePath(request);
 		if (resourcePath.matches("^_permissions/.+") && request.getMethod().equals(GET)) {
 			return true; // allow permission checks, i.e. pc.isAllowed(), to go through
