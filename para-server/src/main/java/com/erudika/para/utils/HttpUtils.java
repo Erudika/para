@@ -31,7 +31,7 @@ public final class HttpUtils {
 	/**
 	 * Default private constructor.
 	 */
-	private HttpUtils() {}
+	private HttpUtils() { }
 
 	/**
 	 * Checks if a request comes from JavaScript.

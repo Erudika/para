@@ -59,7 +59,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 public final class SecurityUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
-	private static final Signer signer = new Signer();
+	private static final Signer SIGNER = new Signer();
 
 	private SecurityUtils() { }
 
@@ -301,7 +301,7 @@ public final class SecurityUtils {
 			entity = null;
 		}
 
-		Map<String, String> sig = signer.sign(httpMethod, endpoint, path, headers, params, entity, accessKey, secretKey);
+		Map<String, String> sig = SIGNER.sign(httpMethod, endpoint, path, headers, params, entity, accessKey, secretKey);
 
 		String auth2 = sig.get(HttpHeaders.AUTHORIZATION);
 		String recreatedSig = StringUtils.substringAfter(auth2, "Signature=");

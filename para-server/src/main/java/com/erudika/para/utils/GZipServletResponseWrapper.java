@@ -39,12 +39,22 @@ public class GZipServletResponseWrapper extends HttpServletResponseWrapper {
 	private PrintWriter printWriter = null;
 	private boolean disableFlushBuffer = false;
 
+	/**
+	 * Default Constructor.
+	 * @param response response
+	 * @param gzout output stream
+	 * @throws IOException maybe
+	 */
 	public GZipServletResponseWrapper(HttpServletResponse response, GZIPOutputStream gzout)
 			throws IOException {
 		super(response);
 		gzipOutputStream = new GZipServletOutputStream(gzout);
 	}
 
+	/**
+	 * Closes the stream.
+	 * @throws IOException maybe
+	 */
 	public void close() throws IOException {
 
 		//PrintWriter.close does not throw exceptions. Thus, the call does not need
@@ -116,6 +126,7 @@ public class GZipServletResponseWrapper extends HttpServletResponseWrapper {
 
 	/**
 	 * Flushes all the streams for this response.
+	 * @throws IOException maybe
 	 */
 	public void flush() throws IOException {
 		if (printWriter != null) {
