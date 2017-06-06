@@ -312,14 +312,17 @@ public class User implements ParaObject {
 	@Override
 	public String create() {
 		if (StringUtils.isBlank(getIdentifier())) {
+			logger.warn("Failed to create user - identifier not set.");
 			return null;
 		}
 		if (!StringUtils.isBlank(getPassword()) && getPassword().length() < Config.MIN_PASS_LENGTH) {
+			logger.warn("Failed to create user - password too short.");
 			return null;
 		}
 
 		// admin detected
 		if (!Config.ADMIN_IDENT.isEmpty() && Config.ADMIN_IDENT.equals(getIdentifier())) {
+			logger.info("Creating new user '{}' ({}) with admin privileges.", getName(), getIdentifier());
 			setGroups(User.Groups.ADMINS.toString());
 		}
 
@@ -335,6 +338,8 @@ public class User implements ParaObject {
 
 		if (CoreUtils.getInstance().getDao().create(getAppid(), this) != null) {
 			createIdentifier(getIdentifier(), getPassword());
+		} else {
+			logger.warn("Failed to create user - dao.create() returned null.");
 		}
 
 		return getId();
