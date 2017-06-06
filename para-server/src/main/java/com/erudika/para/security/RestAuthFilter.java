@@ -195,6 +195,10 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		if (parentApp == null) {
 			return false;
 		}
+		// App admin should have unlimited access
+		if (isAppAdmin(user, parentApp)) {
+				return true;
+		}
 		String resourcePath = RestUtils.extractResourcePath(request);
 		String method = request.getMethod();
 		String uid = (user == null) ? "" : user.getId();
@@ -203,6 +207,22 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 			return false;
 		}
 		return (isAllowed || canModify(user, resourcePath, method));
+	}
+
+	private boolean isAppAdmin(User user, App parentApp) {
+		if (user == null || !user.isAdmin() || parentApp == null) {
+			return false;
+		}
+		while (true) {
+			if (StringUtils.equalsIgnoreCase(user.getAppid(), parentApp.getAppid())) {
+				return true;
+			}
+			if (parentApp.isRootApp()) {
+				break;
+			}
+			parentApp = Para.getDAO().read(App.id(parentApp.getAppid()));
+		}
+		return false;
 	}
 
 	private boolean canModify(User user, String resourcePath, String method) {
