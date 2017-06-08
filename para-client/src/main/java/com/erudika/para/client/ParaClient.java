@@ -744,8 +744,12 @@ public final class ParaClient {
 	private Map<String, Object> find(String queryType, MultivaluedMap<String, String> params) {
 		Map<String, Object> map = new HashMap<String, Object>();
 		if (params != null && !params.isEmpty()) {
-			String qType = StringUtils.isBlank(queryType) ? "" : "/".concat(queryType);
-			return getEntity(invokeGet("search".concat(qType), params), Map.class);
+			String qType = StringUtils.isBlank(queryType) ? "/default" : "/".concat(queryType);
+			if (StringUtils.isBlank(params.getFirst(Config._TYPE))) {
+				return getEntity(invokeGet("search" + qType, params), Map.class);
+			} else {
+				return getEntity(invokeGet(params.getFirst(Config._TYPE) + "/search" + qType, params), Map.class);
+			}
 		} else {
 			map.put("items", Collections.emptyList());
 			map.put("totalHits", 0);
