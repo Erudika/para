@@ -28,7 +28,8 @@ import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
-import com.erudika.para.validation.ValidationUtils;
+import static com.erudika.para.validation.ValidationUtils.isValidObject;
+import static com.erudika.para.validation.ValidationUtils.validateObject;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import java.io.ByteArrayOutputStream;
@@ -244,9 +245,71 @@ public final class RestUtils {
 	 */
 	private static boolean checkImplicitAppPermissions(App app, ParaObject object) {
 		if (app != null && object != null) {
-			return !app.getType().equals(object.getType()) || app.getId().equals(object.getId()) || app.isRootApp();
+			return isNotAnApp(object.getType()) || app.getId().equals(object.getId()) || app.isRootApp();
 		}
 		return false;
+	}
+
+	/**
+	 * @param type some type
+	 * @return true if type of object is not "app"
+	 */
+	private static boolean isNotAnApp(String type) {
+		return !StringUtils.equals(type, Utils.type(App.class));
+	}
+
+	/**
+	 * Check if a user can modify an object. If there's no user principal found, this returns true.
+	 * @param app app in context
+	 * @param object some object
+	 * @return true if user is the owner/creator of the object.
+	 */
+	private static boolean checkIfUserCanModifyObject(App app, ParaObject object) {
+		User user = SecurityUtils.getAuthenticatedUser();
+		if (user != null && app != null && object != null) {
+			if (permissionContainsOwnKeyword(app, user, object)) {
+				return user.canModify(object);
+			}
+		}
+		return true; // skip
+	}
+
+	/**
+	 * Check if the permissions map contains "OWN" keyword, which restricts access to objects to their creators.
+	 * @param app app in context
+	 * @param user user in context
+	 * @param object some object
+	 * @return true if app contains permission for this resource and it is marked with "OWN"
+	 */
+	private static boolean permissionContainsOwnKeyword(App app, User user, ParaObject object) {
+		if (app == null || user == null || object == null) {
+			return false;
+		}
+		String resourcePath1 = object.getType();
+		String resourcePath2 = object.getObjectURI().substring(1); // remove first '/'
+		String resourcePath3 = object.getPlural();
+		return  hasOwnKeyword(app, App.ALLOW_ALL, resourcePath1) ||
+				hasOwnKeyword(app, App.ALLOW_ALL, resourcePath2) ||
+				hasOwnKeyword(app, App.ALLOW_ALL, resourcePath3) ||
+				hasOwnKeyword(app, user.getId(), resourcePath1) ||
+				hasOwnKeyword(app, user.getId(), resourcePath2) ||
+				hasOwnKeyword(app, user.getId(), resourcePath3);
+	}
+
+	/**
+	 * @param app app in context
+	 * @param subjectid id of user
+	 * @param resourcePath path
+	 * @return true if app contains permission for this resource path and it is marked with "OWN"
+	 */
+	private static boolean hasOwnKeyword(App app, String subjectid, String resourcePath) {
+		if (app == null || subjectid == null || resourcePath == null) {
+			return false;
+		}
+		return app.getResourcePermissions().containsKey(subjectid) &&
+					app.getResourcePermissions().get(subjectid).containsKey(resourcePath) &&
+					app.getResourcePermissions().get(subjectid).get(resourcePath).
+							contains(App.AllowedMethods.OWN.toString());
 	}
 
 	/**
@@ -317,7 +380,8 @@ public final class RestUtils {
 	 */
 	public static Response getReadResponse(App app, ParaObject content) {
 		// app can't modify other apps except itself
-		if (app != null && content != null && checkImplicitAppPermissions(app, content)) {
+		if (app != null && content != null &&
+				checkImplicitAppPermissions(app, content) && checkIfUserCanModifyObject(app, content)) {
 			return Response.ok(content).build();
 		}
 		return getStatusResponse(Response.Status.NOT_FOUND);
@@ -339,14 +403,15 @@ public final class RestUtils {
 				newContent.put(Config._TYPE, type);
 			}
 			content = ParaObjectUtils.setAnnotatedFields(newContent);
-			if (app != null && content != null && !app.getType().equals(type)) {
+			if (app != null && content != null && isNotAnApp(type)) {
 				content.setAppid(app.getAppIdentifier());
+				setCreatorid(app, content);
 				int typesCount = app.getDatatypes().size();
 				app.addDatatypes(content);
 				// The reason why we do two validation passes is because we want to return
 				// the errors through the API and notify the end user.
 				// This is the primary validation pass (validates not only core POJOS but also user defined objects).
-				String[] errors = ValidationUtils.validateObject(app, content);
+				String[] errors = validateObject(app, content);
 				if (errors.length == 0) {
 					// Secondary validation pass called here. Object is validated again before being created
 					// See: IndexAndCacheAspect.java
@@ -384,20 +449,20 @@ public final class RestUtils {
 				newContent.put(Config._TYPE, type);
 			}
 			content = ParaObjectUtils.setAnnotatedFields(newContent);
-			if (app != null && content != null && !StringUtils.isBlank(id) && !app.getType().equals(type)) {
+			if (app != null && content != null && !StringUtils.isBlank(id) && isNotAnApp(type)) {
 				content.setType(type);
 				content.setAppid(app.getAppIdentifier());
 				content.setId(id);
+				setCreatorid(app, content);
 				int typesCount = app.getDatatypes().size();
 				app.addDatatypes(content);
 				// The reason why we do two validation passes is because we want to return
 				// the errors through the API and notify the end user.
 				// This is the primary validation pass (validates not only core POJOS but also user defined objects).
-				String[] errors = ValidationUtils.validateObject(app, content);
-				if (errors.length == 0) {
+				String[] errors = validateObject(app, content);
+				if (errors.length == 0 && checkIfUserCanModifyObject(app, content)) {
 					// Secondary validation pass called here. Object is validated again before being created
 					// See: IndexAndCacheAspect.java
-
 					CoreUtils.getInstance().overwrite(app.getAppIdentifier(), content);
 					// new type added so update app object
 					if (typesCount < app.getDatatypes().size()) {
@@ -437,8 +502,8 @@ public final class RestUtils {
 				// app can't modify other apps except itself
 				if (checkImplicitAppPermissions(app, object)) {
 					// This is the primary validation pass (validates not only core POJOS but also user defined objects).
-					errors = ValidationUtils.validateObject(app, object);
-					if (errors.length == 0) {
+					errors = validateObject(app, object);
+					if (errors.length == 0 && checkIfUserCanModifyObject(app, object)) {
 						// Secondary validation pass: object is validated again before being updated
 						object.update();
 						return Response.ok(object).build();
@@ -458,7 +523,7 @@ public final class RestUtils {
 	 */
 	public static Response getDeleteResponse(App app, ParaObject content) {
 		if (app != null && content != null && content.getId() != null && content.getAppid() != null) {
-			if (checkImplicitAppPermissions(app, content)) {
+			if (checkImplicitAppPermissions(app, content) && checkIfUserCanModifyObject(app, content)) {
 				content.setAppid(app.getAppIdentifier());
 				content.delete();
 				return Response.ok().build();
@@ -476,7 +541,13 @@ public final class RestUtils {
 	 */
 	public static Response getBatchReadResponse(App app, List<String> ids) {
 		if (app != null && ids != null && !ids.isEmpty()) {
-			return Response.ok(Para.getDAO().readAll(app.getAppIdentifier(), ids, true).values()).build();
+			ArrayList<ParaObject> results = new ArrayList<ParaObject>(ids.size());
+			for (ParaObject result : Para.getDAO().readAll(app.getAppIdentifier(), ids, true).values()) {
+				if (checkImplicitAppPermissions(app, result) && checkIfUserCanModifyObject(app, result)) {
+					results.add(result);
+				}
+			}
+			return Response.ok(results).build();
 		} else {
 			return getStatusResponse(Response.Status.BAD_REQUEST, "Missing ids.");
 		}
@@ -496,10 +567,11 @@ public final class RestUtils {
 				List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
 				for (Map<String, Object> object : items) {
 					// can't create multiple apps in batch
-					if (!app.getType().equals(object.get(Config._TYPE))) {
+					if (isNotAnApp((String) object.get(Config._TYPE))) {
 						ParaObject pobj = ParaObjectUtils.setAnnotatedFields(object);
-						if (pobj != null && ValidationUtils.isValidObject(pobj)) {
+						if (pobj != null && isValidObject(app, pobj)) {
 							pobj.setAppid(app.getAppIdentifier());
+							setCreatorid(app, pobj);
 							newObjects.add(pobj);
 						}
 					}
@@ -542,7 +614,7 @@ public final class RestUtils {
 					// updating apps in batch is not allowed
 					if (oldObject != null && checkImplicitAppPermissions(app, oldObject)) {
 						ParaObject updatedObject = ParaObjectUtils.setAnnotatedFields(oldObject, newProps, Locked.class);
-						if (ValidationUtils.isValidObject(app, updatedObject)) {
+						if (isValidObject(app, updatedObject) && checkIfUserCanModifyObject(app, updatedObject)) {
 							updatedObject.setAppid(app.getAppIdentifier());
 							updatedObjects.add(updatedObject);
 						}
@@ -569,7 +641,7 @@ public final class RestUtils {
 				for (ParaObject pobj : Para.getDAO().readAll(app.getAppIdentifier(), ids, false).values()) {
 					if (pobj != null && pobj.getId() != null && pobj.getType() != null) {
 						// deleting apps in batch is not allowed
-						if (!app.getType().equals(pobj.getType())) {
+						if (isNotAnApp(pobj.getType()) && checkIfUserCanModifyObject(app, pobj)) {
 							objects.add(pobj);
 						}
 					}
@@ -632,7 +704,7 @@ public final class RestUtils {
 						}
 					}
 				}
-				return Response.ok(getResponseObject(items, pager)).build();
+				return Response.ok(buildPageResponse(items, pager)).build();
 			}
 		} else {
 			return getStatusResponse(Response.Status.BAD_REQUEST, "Parameter 'type' is missing.");
@@ -696,7 +768,7 @@ public final class RestUtils {
 		}
 
 		if (params == null) {
-			return getResponseObject(Para.getSearch().findQuery(appid, type, query, pager), pager);
+			return buildPageResponse(Para.getSearch().findQuery(appid, type, query, pager), pager);
 		}
 
 		if ("id".equals(queryType)) {
@@ -725,7 +797,7 @@ public final class RestUtils {
 		} else {
 			items = Para.getSearch().findQuery(appid, type, query, pager);
 		}
-		return getResponseObject(items, pager);
+		return buildPageResponse(items, pager);
 	}
 
 	private static Pager getPagerFromParams(MultivaluedMap<String, String> params) {
@@ -808,12 +880,37 @@ public final class RestUtils {
 		return params != null && params.containsKey(name) ? params.getFirst(name) : defaultValue;
 	}
 
-	private static <P extends ParaObject> Map<String, Object> getResponseObject(List<P> items, Pager pager) {
+	private static <P extends ParaObject> Map<String, Object> buildPageResponse(List<P> items, Pager pager) {
+		App app = getPrincipalApp();
+		ArrayList<P> checkedItems = new ArrayList<P>(items.size());
+		for (P item : items) {
+			if (checkImplicitAppPermissions(app, item) && checkIfUserCanModifyObject(app, item)) {
+				checkedItems.add(item);
+			}
+		}
+		if (!items.isEmpty() && checkedItems.isEmpty()) {
+			pager.setCount(0);
+		}
 		Map<String, Object> result = new HashMap<String, Object>();
-		result.put("items", items);
+		result.put("items", checkedItems);
 		result.put("page", pager.getPage());
 		result.put("totalHits", pager.getCount());
 		return result;
+	}
+
+	private static void setCreatorid(App app, ParaObject content) {
+		if (content != null) {
+			User user = SecurityUtils.getAuthenticatedUser();
+			if (user != null) {
+				content.setCreatorid(user.getId());
+				if (!StringUtils.isBlank(content.getId()) && content.getCreatorid() != null &&
+						permissionContainsOwnKeyword(app, user, content) &&
+						!content.getId().startsWith(content.getCreatorid() + "_")) {
+					// prevents one user from overwriting another user's objects
+					content.setId(content.getCreatorid() + "_" + content.getId());
+				}
+			}
+		}
 	}
 
 	/////////////////////////////////////////////

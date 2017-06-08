@@ -23,11 +23,13 @@ import com.erudika.para.core.Address;
 import com.erudika.para.core.App;
 import com.erudika.para.core.App.AllowedMethods;
 import static com.erudika.para.core.App.AllowedMethods.GET;
+import static com.erudika.para.core.App.AllowedMethods.OWN;
 import static com.erudika.para.core.App.AllowedMethods.PATCH;
 import static com.erudika.para.core.App.AllowedMethods.POST;
 import static com.erudika.para.core.App.AllowedMethods.PUT;
 import static com.erudika.para.core.App.AllowedMethods.READ;
 import static com.erudika.para.core.App.AllowedMethods.READ_AND_WRITE;
+import static com.erudika.para.core.App.AllowedMethods.READ_WRITE;
 import static com.erudika.para.core.App.AllowedMethods.WRITE;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.ParaObject;
@@ -205,7 +207,8 @@ public class ParaClientIT {
 	public static void tearDownClass() {
 		System.setProperty("para.clients_can_access_root_app", "false");
 		Para.getDAO().delete(new App(APP_NAME_CHILD));
-		Para.getDAO().deleteAll(Arrays.asList(u, u1, u2, t, s1, s2, a1, a2));
+		Para.getDAO().delete(new App(APP_NAME));
+		Para.getDAO().deleteAll(Arrays.asList(u, u1, u2, t, s1, s2, a1, a2, fbUser));
 		Para.destroy();
 	}
 
@@ -962,15 +965,20 @@ public class ParaClientIT {
 		assertFalse(guest.isAllowedTo(App.ALLOW_ALL, utilsPath, GET.toString()));
 		pc2.grantResourcePermission(App.ALLOW_ALL, utilsPath, READ, true);
 		assertTrue(guest.getTimestamp() > 0);
+	}
 
-		// test user should be able to login twice - first time user is created, second time password is checked
-		// we use a different email here because otherwise we'll read an existing user with a different password
+	@Test
+	public void testOwnersPermissions() throws InterruptedException {
+		// test user should be able to login twice - first time the object is created, second time password is checked
 		String emailPassFail = "test2@user.com::123456";
 		String emailPassPass = "test3@user.com::123456";
-		assertNull(pc2.signIn("password", emailPassFail));
-		System.setProperty("para.security.allow_unverified_emails", "true");
+		String emailPassPass2 = "test4@user.com::123456";
+		assertNull(pc2.signIn("password", emailPassFail)); // unverified email - not allowed
+		System.setProperty("para.security.allow_unverified_emails", "true"); // allow it
 		User newUser = pc2.signIn("password", emailPassPass);
+		User newUser2 = pc2.signIn("password", emailPassPass2);
 		assertNotNull(newUser);
+		assertNotNull(newUser2);
 		pc2.signOut();
 		assertNotNull(pc2.signIn("password", emailPassPass));
 		pc2.signOut();
@@ -981,34 +989,51 @@ public class ParaClientIT {
 		assertTrue(pc2.isAllowedTo(newUser.getId(), newUser.getObjectURI(), GET.toString()));
 		assertFalse(pc2.isAllowedTo(newUser.getId(), newUser.getObjectURI() + "x", GET.toString()));
 		assertNotNull(pc2.read(newUser.getId())); // can read self
-//		pc2.signOut();
-
-		// test implicit permissions - read/update/delete own children
-//		assertFalse(pc2.isAllowedTo(newUser.getId(), "todos", POST.toString())); // can't create yet
-//		pc2.grantResourcePermission(newUser.getId(), "todos", EnumSet.of(AllowedMethods.POST)); // can create TODOs
-//		pc2.signIn("password", emailPassPass);
-//		assertTrue(pc2.isAllowedTo(newUser.getId(), "todos", POST.toString()));
-
-
-
 		pc2.signOut();
-		pc.delete(newUser);
 
-		// test user should not be created twice if signed in with email and password
-//		User signedInWithEmail = pc2.signIn("password", "test@user.com::123456");
-//		assertNotNull(signedInWithEmail);
-//		pc2.signOut();
-//		Thread.sleep(800);
-//		long existingUsers = pc2.getCount("user");
-//		pc2.signIn("password", "test@user.com::123456");
-//		pc2.signOut();
-//		long existingUsers2 = pc2.getCount("user");
-//		assertEquals(existingUsers2, existingUsers);
-//		User badPass = pc2.signIn("password", "test@user.com::1234567");
-//		assertNull(badPass);
-//		pc2.signOut();
-//		long existingUsers3 = pc2.getCount("user");
-//		assertEquals(existingUsers3, existingUsers2);
-//		fbUser.delete();
+		// test implicit user permissions - read/update/delete own object (children)
+		assertFalse(pc2.isAllowedTo(newUser.getId(), "todo", POST.toString())); // can't create yet
+		pc2.grantResourcePermission(newUser.getId(), "todo", EnumSet.of(READ_WRITE, OWN)); // can only manage own TODOs
+		pc2.grantResourcePermission(newUser.getId(), "todo/*", EnumSet.of(READ_WRITE, OWN)); // can only manage own TODOs
+		pc2.signIn("password", emailPassPass);
+		assertTrue(pc2.isAllowedTo(newUser.getId(), "todo", POST.toString()));
+		Sysprop todo = new Sysprop("todo_id");
+		todo.setType("todo");
+		// test if creatorid is set correctly
+		todo.setCreatorid("invalid_user_id"); // must be corrected by the server
+		todo.setName("[] buy milk");
+		todo = pc2.create(todo);
+		Thread.sleep(1000);
+		assertNotNull(todo);
+		assertFalse(todo.getId().equals("todo_id"));
+		assertNotNull(pc2.read(todo.getType(), todo.getId()));
+		assertEquals(1, pc2.findQuery("todo", "*").size()); // user only sees own TODO
+		assertEquals(newUser.getId(), todo.getCreatorid());
+		pc2.signOut();
+
+		// one user must not be able to overwrite another user's TODOs (custom ids)
+		pc2.grantResourcePermission(newUser2.getId(), "todo", EnumSet.of(READ_WRITE, OWN)); // can only manage own TODOs
+		pc2.grantResourcePermission(newUser2.getId(), "todo/*", EnumSet.of(READ_WRITE, OWN)); // can only manage own TODOs
+		pc2.signIn("password", emailPassPass2);
+		assertTrue(pc2.list("todo").isEmpty());
+		assertNull(pc2.read(todo.getId()));
+		Sysprop todo2 = new Sysprop("todo_id2");
+		todo2.setType("todo");
+		todo2.setName("[] buy eggs");
+		todo2 = pc2.create(todo2);
+		Thread.sleep(1000);
+		assertNotNull(todo2);
+		assertFalse(todo2.getId().equals("todo_id2"));
+		assertNotNull(pc2.read(todo2.getType(), todo2.getId()));
+		assertEquals(1, pc2.findQuery("todo", "*").size());
+		assertEquals(newUser2.getId(), todo2.getCreatorid());
+		pc2.signOut();
+		// app can see all TODOs
+		assertEquals(2, pc2.list("todo").size());
+
+		pc.delete(todo);
+		pc.delete(todo2);
+		pc.delete(newUser);
+		pc.delete(newUser2);
 	}
 }

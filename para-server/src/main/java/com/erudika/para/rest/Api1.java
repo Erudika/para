@@ -217,6 +217,7 @@ public final class Api1 extends ResourceConfig {
 		// list endpoints (both do the same thing)
 		core.addMethod(GET).produces(JSON).handledBy(handler);
 		core.addChildResource("search/{querytype}").addMethod(GET).produces(JSON).handledBy(handler);
+		core.addChildResource("search").addMethod(GET).produces(JSON).handledBy(handler);
 		// CRUD endpoints (non-batch)
 		core.addMethod(POST).produces(JSON).consumes(JSON).handledBy(handler);
 		core.addChildResource("{id}").addMethod(GET).produces(JSON).handledBy(handler);
@@ -286,7 +287,7 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				Map<String, String> info = new TreeMap<String, String>();
-				info.put("info", "Para - a backend for busy developers.");
+				info.put("info", "Para - the backend for busy developers.");
 				if (Config.getConfigBoolean("print_version", true)) {
 					info.put("version", StringUtils.replace(getVersion(), "-SNAPSHOT", ""));
 				}

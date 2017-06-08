@@ -24,6 +24,7 @@ import com.erudika.para.annotations.Stored;
 import static com.erudika.para.core.App.AllowedMethods.ALL;
 import static com.erudika.para.core.App.AllowedMethods.GET;
 import static com.erudika.para.core.App.AllowedMethods.GUEST;
+import static com.erudika.para.core.App.AllowedMethods.OWN;
 import static com.erudika.para.core.App.AllowedMethods.READ;
 import static com.erudika.para.core.App.AllowedMethods.READ_AND_WRITE;
 import static com.erudika.para.core.App.AllowedMethods.READ_ONLY;
@@ -570,7 +571,7 @@ public class App implements ParaObject, Serializable {
 		resourcePath = Utils.urlDecode(resourcePath);
 		resourcePath = StringUtils.removeEnd(resourcePath, "/");
 		resourcePath = StringUtils.removeStart(resourcePath, "/");
-		resourcePath = StringUtils.remove(resourcePath, ".");	// ElasticSearch 2.0+ restriction
+		resourcePath = StringUtils.remove(resourcePath, ".");	// Elasticsearch 2.0+ restriction
 		if (!StringUtils.isBlank(subjectid) && !StringUtils.isBlank(resourcePath) &&
 				permission != null && !permission.isEmpty()) {
 
@@ -590,6 +591,9 @@ public class App implements ParaObject, Serializable {
 			}
 			if (allowGuestAccess && ALLOW_ALL.equals(subjectid)) {
 				methods.add(GUEST);
+			}
+			if (permission.contains(OWN)) {
+				methods.add(OWN); // limits access to objects created by the user
 			}
 			List<String> perm = new ArrayList<String>(methods.size());
 			for (AllowedMethods allowedMethod : methods) {
@@ -690,6 +694,7 @@ public class App implements ParaObject, Serializable {
 		if (subjectid != null && httpMethod != null && getResourcePermissions().containsKey(subjectid)) {
 			httpMethod = httpMethod.toUpperCase();
 			String wildcard = ALLOW_ALL;
+			String exactPathToMatch = resourcePath;
 			if (fromString(httpMethod) == GUEST) {
 				// special case where we have wildcard permissions * but public access is not allowed
 				wildcard = httpMethod;
@@ -706,12 +711,18 @@ public class App implements ParaObject, Serializable {
 						allowed = true;
 						break;
 					}
+					// allow basic wildcard matching
+					if (StringUtils.endsWith(resource, "/*") &&
+							resourcePath.startsWith(resource.substring(0, resource.length() - 1))) {
+						exactPathToMatch = resource;
+						break;
+					}
 				}
 			}
-			if (!allowed && getResourcePermissions().get(subjectid).containsKey(resourcePath)) {
+			if (!allowed && getResourcePermissions().get(subjectid).containsKey(exactPathToMatch)) {
 				// check exact resource path as it is
-				allowed = (getResourcePermissions().get(subjectid).get(resourcePath).contains(httpMethod)
-						|| getResourcePermissions().get(subjectid).get(resourcePath).contains(wildcard));
+				allowed = (getResourcePermissions().get(subjectid).get(exactPathToMatch).contains(httpMethod)
+						|| getResourcePermissions().get(subjectid).get(exactPathToMatch).contains(wildcard));
 			}
 		}
 		return allowed;
@@ -753,8 +764,8 @@ public class App implements ParaObject, Serializable {
 			return false;
 		}
 		if (resourcePath.endsWith("/" + subjectid)) {
-			// implicit permissions: a user can read and update itself
-			return (httpMethod.equals("GET") || httpMethod.equals("PATCH"));
+			// implicit permissions: a user can read/update/delete itself
+			return (httpMethod.equals("GET") || httpMethod.equals("PATCH") || httpMethod.equals("DELETE"));
 		}
 		return false;
 	}
@@ -1134,6 +1145,10 @@ public class App implements ParaObject, Serializable {
 		 * Deny all requests (no access).
 		 */
 		EMPTY,
+		/**
+		 * Restrict access to objects with creatorid matching that of auth user.
+		 */
+		OWN,
 		/**
 		 * Allows all HTTP methods (full access).
 		 */

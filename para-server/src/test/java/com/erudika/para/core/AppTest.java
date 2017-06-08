@@ -24,6 +24,7 @@ import static com.erudika.para.core.App.AllowedMethods.DELETE;
 import static com.erudika.para.core.App.AllowedMethods.GET;
 import static com.erudika.para.core.App.AllowedMethods.GUEST;
 import static com.erudika.para.core.App.AllowedMethods.NONE;
+import static com.erudika.para.core.App.AllowedMethods.OWN;
 import static com.erudika.para.core.App.AllowedMethods.PATCH;
 import static com.erudika.para.core.App.AllowedMethods.POST;
 import static com.erudika.para.core.App.AllowedMethods.PUT;
@@ -235,10 +236,16 @@ public class AppTest {
 
 		app.grantResourcePermission(ALLOW_ALL, "/0123/", READ);
 		assertTrue(app.isAllowedTo(ALLOW_ALL, "0123", "get"));
-
+		// dots not allowed in resource path - causes Elasticsearch to fail
 		app.grantResourcePermission(ALLOW_ALL, "/4.5.6/", READ);
 		assertTrue(app.isAllowedTo(ALLOW_ALL, "456", "get"));
 		assertFalse(app.isAllowedTo("4.5.6", ALLOW_ALL, "get"));
+
+		// "OWN" permission should be added too
+		app.grantResourcePermission("123", "todo", EnumSet.of(READ_WRITE, OWN));
+		app.grantResourcePermission("123", "todo2", EnumSet.of(READ_ONLY, OWN));
+		assertTrue(app.getResourcePermissions().get("123").get("todo").contains(OWN.toString()));
+		assertTrue(app.getResourcePermissions().get("123").get("todo2").contains(OWN.toString()));
 	}
 
 	@Test
@@ -302,8 +309,7 @@ public class AppTest {
 		assertTrue(app.isAllowed(ALLOW_ALL, "guest/access", "GET"));
 		assertTrue(app.isAllowed(ALLOW_ALL, "guest/access", GUEST.toString()));
 
-		app.grantResourcePermission(ALLOW_ALL, "guest/test",
-				EnumSet.of(PUT, READ_WRITE), false);
+		app.grantResourcePermission(ALLOW_ALL, "guest/test", EnumSet.of(PUT, READ_WRITE), false);
 		assertFalse(app.isAllowed(ALLOW_ALL, "guest/test", GUEST.toString()));
 
 		app.grantResourcePermission(ALLOW_ALL, "publicRes", ALL, true);
@@ -315,10 +321,20 @@ public class AppTest {
 		app.grantResourcePermission(ALLOW_ALL, "publicSubResource/test", EnumSet.of(GUEST), false);
 		assertTrue(app.isAllowed(ALLOW_ALL, "publicSubResource/test", GUEST.toString()));
 		// this is not valid because subject can't be authenticated
-		app.grantResourcePermission("someUser1", "illegalPublic", EnumSet.of(GET,
-				GUEST), true);
+		app.grantResourcePermission("someUser1", "illegalPublic", EnumSet.of(GET, GUEST), true);
 		assertFalse(app.isAllowed(ALLOW_ALL, "illegalPublic", GUEST.toString()));
 		assertFalse(app.isAllowed("someUser1", "illegalPublic", GUEST.toString()));
+		// test wildcard permissions
+		app.grantResourcePermission(ALLOW_ALL, "/wildcard/*", READ);
+		assertFalse(app.isAllowedTo(ALLOW_ALL, "wildcard", "get"));
+		assertTrue(app.isAllowedTo(ALLOW_ALL, "wildcard/123", "get"));
+		assertTrue(app.isAllowedTo(ALLOW_ALL, "wildcard/123/456", "get"));
+		assertFalse(app.isAllowedTo(ALLOW_ALL, "wildcard/123/456", "POST"));
+
+		app.grantResourcePermission(ALLOW_ALL, "/notwildcard/test", READ);
+		assertFalse(app.isAllowedTo(ALLOW_ALL, "notwildcard", "get"));
+		assertFalse(app.isAllowedTo(ALLOW_ALL, "notwildcard/123", "get"));
+		assertTrue(app.isAllowedTo(ALLOW_ALL, "notwildcard/test", "get"));
 	}
 
 	@Test
