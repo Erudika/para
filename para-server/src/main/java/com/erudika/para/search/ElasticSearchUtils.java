@@ -74,6 +74,7 @@ public final class ElasticSearchUtils {
 			"      \"tag\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"id\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"key\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
+			"      \"name\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"type\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"tags\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"email\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
