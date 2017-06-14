@@ -108,11 +108,11 @@ public abstract class SearchTest {
 		a2.setCreatorid(t.getId());
 
 		s1 = new Sysprop("s1");
-		s1.setName("This is a little test sentence. Testing, one, two, three.");
+		s1.addProperty("text", "This is a little test sentence. Testing, one, two, three.");
 		s1.setTimestamp(Utils.timestamp());
 
 		s2 = new Sysprop("s2");
-		s2.setName("We are testing this thing. This sentence is a test. One, two.");
+		s2.addProperty("text", "We are testing this thing. This sentence is a test. One, two.");
 		s2.setTimestamp(Utils.timestamp());
 
 		Sysprop linked1 = new Sysprop("link1");
@@ -173,7 +173,7 @@ public abstract class SearchTest {
 	public void testFindPrefix() {
 		assertTrue(s.findPrefix(null, null, "").isEmpty());
 		assertTrue(s.findPrefix("", "null", "xx").isEmpty());
-		assertFalse(s.findPrefix(u.getType(), Config._NAME, "ann").isEmpty());
+		assertFalse(s.findPrefix(u.getType(), Config._NAME, "Ann").isEmpty());
 	}
 
 	@Test
@@ -181,8 +181,8 @@ public abstract class SearchTest {
 		assertTrue(s.findQuery(null, null).isEmpty());
 		assertFalse(s.findQuery("", "*").isEmpty()); // will find *
 		assertTrue(s.findQuery(u.getType(), "_type:user").size() >= 3);
-		assertFalse(s.findQuery(u.getType(), "ann").isEmpty());
 		assertFalse(s.findQuery(u.getType(), "Ann").isEmpty());
+		assertFalse(s.findQuery(u.getType(), "name:ann smith").isEmpty());
 		assertTrue(s.findQuery(null, "*").size() > 4);
 		// bad query syntax? - replace with *
 		assertFalse(s.findQuery(u.getType(), "AND").isEmpty());
@@ -209,7 +209,8 @@ public abstract class SearchTest {
 	public void testFindSimilar() {
 		assertTrue(s.findSimilar(t.getType(), "", null, null).isEmpty());
 		assertTrue(s.findSimilar(t.getType(), "", new String[0], "").isEmpty());
-		List<Sysprop> res = s.findSimilar(s1.getType(), s1.getId(), new String[]{Config._NAME}, s1.getName());
+		List<Sysprop> res = s.findSimilar(s1.getType(), s1.getId(),
+				new String[]{"properties.text"}, (String) s1.getProperty("text"));
 		assertFalse(res.isEmpty());
 		assertEquals(s2, res.get(0));
 	}
@@ -288,7 +289,7 @@ public abstract class SearchTest {
 		assertTrue(s.findWildcard(u.getType(), null, null).isEmpty());
 		assertTrue(s.findWildcard(u.getType(), "", "").isEmpty());
 		assertFalse(s.findWildcard(u.getType(), Config._EMAIL, "ann*").isEmpty());
-		assertFalse(s.findWildcard(u.getType(), Config._NAME, "an*").isEmpty());
+		assertFalse(s.findWildcard(u.getType(), Config._NAME, "An*").isEmpty());
 	}
 
 	@Test

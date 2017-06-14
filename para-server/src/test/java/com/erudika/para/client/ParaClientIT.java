@@ -191,11 +191,11 @@ public class ParaClientIT {
 		a2.setCreatorid(t.getId());
 
 		s1 = new Sysprop("s1");
-		s1.setName("This is a little test sentence. Testing, one, two, three.");
+		s1.addProperty("text", "This is a little test sentence. Testing, one, two, three.");
 		s1.setTimestamp(Utils.timestamp());
 
 		s2 = new Sysprop("s2");
-		s2.setName("We are testing this thing. This sentence is a test. One, two.");
+		s2.addProperty("text", "We are testing this thing. This sentence is a test. One, two.");
 		s2.setTimestamp(Utils.timestamp());
 
 		assertNotNull(fbUser.create());
@@ -505,7 +505,7 @@ public class ParaClientIT {
 
 		assertTrue(pc.findPrefix(null, null, "").isEmpty());
 		assertTrue(pc.findPrefix("", "null", "xx").isEmpty());
-		assertFalse(pc.findPrefix(u.getType(), Config._NAME, "ann").isEmpty());
+		assertFalse(pc.findPrefix(u.getType(), Config._NAME, "Ann").isEmpty());
 
 		assertFalse(pc.findQuery(null, null).isEmpty());
 		assertFalse(pc.findQuery("", "*").isEmpty());
@@ -522,7 +522,7 @@ public class ParaClientIT {
 
 		assertTrue(pc.findSimilar(t.getType(), "", null, null).isEmpty());
 		assertTrue(pc.findSimilar(t.getType(), "", new String[0], "").isEmpty());
-		res = pc.findSimilar(s1.getType(), s1.getId(), new String[]{Config._NAME}, s1.getName());
+		res = pc.findSimilar(s1.getType(), s1.getId(), new String[]{"properties.text"}, (String) s1.getProperty("text"));
 		assertFalse(res.isEmpty());
 		assertEquals(s2, res.get(0));
 
@@ -573,10 +573,14 @@ public class ParaClientIT {
 		assertTrue(pc.findTerms(u.getType(), Collections.singletonMap("", ""), true).isEmpty());
 		assertTrue(pc.findTerms(u.getType(), Collections.singletonMap("term", null), true).isEmpty());
 		assertTrue(pc.findTerms(u.getType(), Collections.singletonMap(Config._TYPE, u.getType()), true).size() >= 2);
+		assertTrue(pc.findTerms(u.getType(), Collections.singletonMap(Config._NAME, "Ann Smith"), true).size() >= 1);
+		// "name" field is not analyzed, see https://github.com/Erudika/para/issues/13
+		assertTrue(pc.findTerms(u.getType(), Collections.singletonMap(Config._NAME, "ann smith"), true).isEmpty());
+		assertFalse(pc.findQuery(u.getType(), Config._NAME + ":ann smith").isEmpty());
 
 		assertTrue(pc.findWildcard(u.getType(), null, null).isEmpty());
 		assertTrue(pc.findWildcard(u.getType(), "", "").isEmpty());
-		assertFalse(pc.findWildcard(u.getType(), Config._NAME, "an*").isEmpty());
+		assertFalse(pc.findWildcard(u.getType(), Config._NAME, "An*").isEmpty());
 
 		assertTrue(pc.getCount(null).intValue() > 4);
 		assertNotEquals(0, pc.getCount("").intValue());
