@@ -25,7 +25,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -198,8 +197,16 @@ public final class OAuth1HmacSigner {
 		TreeMap<String, SortedSet<String>> oauthParams = new TreeMap<String, SortedSet<String>>();
 		for (Entry<String, String[]> param : params.entrySet()) {
 			String key = param.getKey();
-			if (key.startsWith("oauth_") || key.startsWith("x_oauth_")) {
-				oauthParams.put(key, new TreeSet<String>(Arrays.asList(param.getValue())));
+			if ((key.startsWith("oauth_") || key.startsWith("x_oauth_")) && param.getValue() != null) {
+				TreeSet<String> set = new TreeSet<String>();
+				for (String val : param.getValue()) {
+					if (val != null) {
+						set.add(val);
+					}
+				}
+				if (!set.isEmpty()) {
+					oauthParams.put(key, set);
+				}
 			}
 		}
 		return oauthParams;
