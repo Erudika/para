@@ -17,16 +17,16 @@
  */
 package com.erudika.para.search;
 
+import com.erudika.para.Para;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.persistence.DAO;
 import static com.erudika.para.search.LuceneUtils.count;
-import static com.erudika.para.search.LuceneUtils.find;
 import static com.erudika.para.search.LuceneUtils.getTermsQuery;
 import static com.erudika.para.search.LuceneUtils.indexDocuments;
 import static com.erudika.para.search.LuceneUtils.paraObjectToDocument;
+import static com.erudika.para.search.LuceneUtils.searchGeoQuery;
 import static com.erudika.para.search.LuceneUtils.unindexDocuments;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
@@ -50,8 +50,10 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.spatial.geopoint.search.GeoPointDistanceQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static com.erudika.para.search.LuceneUtils.searchQuery;
 
 /**
  * An implementation of the {@link Search} interface using Lucene core.
@@ -67,7 +69,7 @@ public class LuceneSearch implements Search {
 	 * No-args constructor.
 	 */
 	public LuceneSearch() {
-//		this(Para.getDAO());
+		this(Para.getDAO());
 	}
 
 	/**
@@ -77,26 +79,6 @@ public class LuceneSearch implements Search {
 	@Inject
 	public LuceneSearch(DAO dao) {
 		this.dao = dao;
-	}
-	public static void main(String[] args) {
-//		Para.initialize(ParaServer.getCoreModules());
-
-		Sysprop s = new Sysprop("DAA");
-//		Para.getSearch().unindex(s);
-		s.addProperty("test", "prop");
-		s.addProperty("kur", new Sysprop[]{new Sysprop("akak")});
-		Search se = new LuceneSearch();
-		se.index("app", s);
-		logger.info("<<<<<<<<<<<<<<");
-		se.unindex("app", s);
-
-//		Para.getSearch().index(s);
-//		System.out.println("OK........");
-//		s = new Sysprop("DAA");
-//		s.setName("NEW NAME");
-//		Para.getSearch().index(s);
-//
-//		Para.destroy();
 	}
 
 	@Override
@@ -165,7 +147,7 @@ public class LuceneSearch implements Search {
 		if (StringUtils.isBlank(appid) || StringUtils.isBlank(id)) {
 			return null;
 		}
-		List<P> results = find(dao, appid, null, new TermQuery(new Term(Config._ID, id)), new Pager(1));
+		List<P> results = searchQuery(dao, appid, null, new TermQuery(new Term(Config._ID, id)), new Pager(1));
 		return results.isEmpty() ? null : results.get(0);
 	}
 
@@ -180,13 +162,20 @@ public class LuceneSearch implements Search {
 				fb.add(new TermQuery(new Term(Config._ID, id)), BooleanClause.Occur.SHOULD);
 			}
 		}
-		return find(dao, appid, null, fb.build(), new Pager(ids.size()));
+		return searchQuery(dao, appid, null, fb.build(), new Pager(ids.size()));
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> findNearby(String appid, String type, String query,
 			int radius, double lat, double lng, Pager... pager) {
-		return Collections.emptyList();
+		if (StringUtils.isBlank(type) || StringUtils.isBlank(appid)) {
+			return Collections.emptyList();
+		}
+		if (StringUtils.isBlank(query)) {
+			query = "*";
+		}
+		// searchQuery nearby Address objects (with radius in METERS)
+		return searchGeoQuery(dao, appid, type, new GeoPointDistanceQuery("latlng", lng, lat, radius * 1000), query, pager);
 	}
 
 	@Override
@@ -195,7 +184,7 @@ public class LuceneSearch implements Search {
 		if (StringUtils.isBlank(field) || StringUtils.isBlank(prefix)) {
 			return Collections.emptyList();
 		}
-		return find(dao, appid, type, field.concat(":").concat(prefix).concat("*"), pager);
+		return searchQuery(dao, appid, type, field.concat(":").concat(prefix).concat("*"), pager);
 	}
 
 	@Override
@@ -203,7 +192,7 @@ public class LuceneSearch implements Search {
 		if (StringUtils.isBlank(query)) {
 			return Collections.emptyList();
 		}
-		return find(dao, appid, type, query, pager);
+		return searchQuery(dao, appid, type, query, pager);
 	}
 
 	@Override
@@ -212,7 +201,7 @@ public class LuceneSearch implements Search {
 		if (StringUtils.isBlank(query) || StringUtils.isBlank(field)) {
 			return Collections.emptyList();
 		}
-		return find(dao, appid, type, field.concat(":").concat(query), pager);
+		return searchQuery(dao, appid, type, field.concat(":").concat(query), pager);
 	}
 
 	@Override
@@ -238,9 +227,9 @@ public class LuceneSearch implements Search {
 						add(new TermQuery(new Term(Config._ID, filterKey)), BooleanClause.Occur.MUST_NOT).
 						add(q, BooleanClause.Occur.FILTER).
 						build();
-			return find(dao, appid, type, query, pager);
+			return searchQuery(dao, appid, type, query, pager);
 		} else {
-			return find(dao, appid, type, q, pager);
+			return searchQuery(dao, appid, type, q, pager);
 		}
 	}
 
@@ -250,15 +239,12 @@ public class LuceneSearch implements Search {
 			return Collections.emptyList();
 		}
 		Builder query = new BooleanQuery.Builder();
-//						add(new TermQuery(new Term(Config._ID, filterKey)), BooleanClause.Occur.MUST_NOT).
-//						add(query, BooleanClause.Occur.FILTER).
-//						build();
 		//assuming clean & safe tags here
 		for (String tag : tags) {
 			query.add(new TermQuery(new Term(Config._TAGS, tag)), BooleanClause.Occur.MUST);
 		}
 		// The filter looks like this: ("tag1" OR "tag2" OR "tag3") AND "type"
-		return find(dao, appid, type, query.build(), pager);
+		return searchQuery(dao, appid, type, query.build(), pager);
 	}
 
 	@Override
@@ -267,7 +253,7 @@ public class LuceneSearch implements Search {
 			return Collections.emptyList();
 		}
 		Query query = new WildcardQuery(new Term("tag", keyword.concat("*")));
-		return find(dao, appid, Utils.type(Tag.class), query, pager);
+		return searchQuery(dao, appid, Utils.type(Tag.class), query, pager);
 	}
 
 	@Override
@@ -281,7 +267,7 @@ public class LuceneSearch implements Search {
 			termsList.add(new Term(field, term.toString()));
 		}
 		Query query = new TermsQuery(termsList);
-		return find(dao, appid, type, query, pager);
+		return searchQuery(dao, appid, type, query, pager);
 	}
 
 	@Override
@@ -295,7 +281,7 @@ public class LuceneSearch implements Search {
 		if (query == null) {
 			return Collections.emptyList();
 		} else {
-			return find(dao, appid, type, query, pager);
+			return searchQuery(dao, appid, type, query, pager);
 		}
 	}
 
@@ -305,7 +291,7 @@ public class LuceneSearch implements Search {
 		if (StringUtils.isBlank(field) || StringUtils.isBlank(wildcard)) {
 			return Collections.emptyList();
 		}
-		return find(dao, appid, type, field.concat(":").concat(wildcard), pager);
+		return searchQuery(dao, appid, type, field.concat(":").concat(wildcard), pager);
 	}
 
 	@Override

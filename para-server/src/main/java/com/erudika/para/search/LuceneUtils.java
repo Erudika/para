@@ -17,6 +17,7 @@
  */
 package com.erudika.para.search;
 
+import com.erudika.para.core.Address;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.persistence.DAO;
@@ -43,8 +44,37 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.ar.ArabicAnalyzer;
+import org.apache.lucene.analysis.bg.BulgarianAnalyzer;
+import org.apache.lucene.analysis.br.BrazilianAnalyzer;
+import org.apache.lucene.analysis.ca.CatalanAnalyzer;
+import org.apache.lucene.analysis.cz.CzechAnalyzer;
+import org.apache.lucene.analysis.da.DanishAnalyzer;
+import org.apache.lucene.analysis.de.GermanAnalyzer;
+import org.apache.lucene.analysis.el.GreekAnalyzer;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.es.SpanishAnalyzer;
+import org.apache.lucene.analysis.eu.BasqueAnalyzer;
+import org.apache.lucene.analysis.fa.PersianAnalyzer;
+import org.apache.lucene.analysis.fi.FinnishAnalyzer;
+import org.apache.lucene.analysis.fr.FrenchAnalyzer;
+import org.apache.lucene.analysis.gl.GalicianAnalyzer;
+import org.apache.lucene.analysis.hi.HindiAnalyzer;
+import org.apache.lucene.analysis.hu.HungarianAnalyzer;
+import org.apache.lucene.analysis.hy.ArmenianAnalyzer;
+import org.apache.lucene.analysis.id.IndonesianAnalyzer;
+import org.apache.lucene.analysis.it.ItalianAnalyzer;
+import org.apache.lucene.analysis.nl.DutchAnalyzer;
+import org.apache.lucene.analysis.no.NorwegianAnalyzer;
+import org.apache.lucene.analysis.pt.PortugueseAnalyzer;
+import org.apache.lucene.analysis.ro.RomanianAnalyzer;
+import org.apache.lucene.analysis.ru.RussianAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.sv.SwedishAnalyzer;
+import org.apache.lucene.analysis.tr.TurkishAnalyzer;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -60,6 +90,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BooleanQuery.Builder;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -69,9 +100,11 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.spatial.geopoint.document.GeoPointField;
+import org.apache.lucene.spatial.geopoint.search.GeoPointDistanceQuery;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
-import org.elasticsearch.index.mapper.core.StringFieldMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,23 +116,15 @@ public final class LuceneUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(LuceneUtils.class);
 	private static final String SOURCE_FIELD_NAME = "_source";
-	private static final String ID_FIELD_NAME = "_id"; // id field of the parent of a nested object (nstd)
 	private static final String NESTED_FIELD_NAME = "nstd";
-//	private static final FieldType INT_FIELD;
-//	private static final FieldType LONG_FIELD;
-//	private static final FieldType DOUBLE_FIELD;
-//	private static final FieldType SORTED_FIELD;
 	private static final FieldType SOURCE_FIELD;
 	private static final FieldType DEFAULT_FIELD;
 	private static final Set<String> NOT_ANALYZED_FIELDS;
+	private static final CharArraySet STOPWORDS;
+	private static final Analyzer ANALYZER;
 
 	static {
-//		SORTED_FIELD = new StringFieldMapper.StringFieldType();
-//		SORTED_FIELD.setTokenized(true);
-//		SORTED_FIELD.setStored(true);
-//		SORTED_FIELD.setDocValuesType(DocValuesType.SORTED);
-
-		SOURCE_FIELD = new StringFieldMapper.StringFieldType();
+		SOURCE_FIELD = new FieldType();
 		SOURCE_FIELD.setIndexOptions(IndexOptions.NONE);
 		SOURCE_FIELD.setStored(true);
 		SOURCE_FIELD.setTokenized(false);
@@ -115,21 +140,34 @@ public final class LuceneUtils {
 		DEFAULT_FIELD.setOmitNorms(false);
 		DEFAULT_FIELD.setDocValuesType(DocValuesType.NONE);
 
-//		INT_FIELD = new FieldType();
-//		INT_FIELD.setStored(true);
-//		INT_FIELD.setTokenized(false);
-//		INT_FIELD.setDocValuesType(DocValuesType.SORTED_NUMERIC);
-//		INT_FIELD.setNumericType(FieldType.NumericType.INT);
-//		LONG_FIELD = new FieldType();
-//		LONG_FIELD.setStored(true);
-//		LONG_FIELD.setTokenized(false);
-//		LONG_FIELD.setDocValuesType(DocValuesType.SORTED_NUMERIC);
-//		LONG_FIELD.setNumericType(FieldType.NumericType.LONG);
-//		DOUBLE_FIELD = new FieldType();
-//		DOUBLE_FIELD.setStored(true);
-//		DOUBLE_FIELD.setTokenized(false);
-//		DOUBLE_FIELD.setDocValuesType(DocValuesType.SORTED_NUMERIC);
-//		DOUBLE_FIELD.setNumericType(FieldType.NumericType.DOUBLE);
+		STOPWORDS = CharArraySet.copy(EnglishAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(ArabicAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(ArmenianAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(BasqueAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(BrazilianAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(BulgarianAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(CatalanAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(CzechAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(DanishAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(DutchAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(FinnishAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(FrenchAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(GalicianAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(GermanAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(GreekAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(HindiAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(HungarianAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(IndonesianAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(ItalianAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(NorwegianAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(PersianAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(PortugueseAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(RomanianAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(RussianAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(SpanishAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(SwedishAnalyzer.getDefaultStopSet());
+		STOPWORDS.addAll(TurkishAnalyzer.getDefaultStopSet());
+		ANALYZER = new StandardAnalyzer(STOPWORDS);
 
 		NOT_ANALYZED_FIELDS = new HashSet<String>() {
 			{
@@ -157,7 +195,12 @@ public final class LuceneUtils {
 
 	private LuceneUtils() { }
 
-	static void indexDocuments(String appid, List<Document> docs) {
+	/**
+	 * Indexes documents.
+	 * @param appid appid
+	 * @param docs a list of documents
+	 */
+	public static void indexDocuments(String appid, List<Document> docs) {
 		if (docs.isEmpty()) {
 			return;
 		}
@@ -183,7 +226,12 @@ public final class LuceneUtils {
 		}
 	}
 
-	static void unindexDocuments(String appid, List<String> ids) {
+	/**
+	 * Removes documents from Lucene index.
+	 * @param appid appid
+	 * @param ids a list of ids to remove
+	 */
+	public static void unindexDocuments(String appid, List<String> ids) {
 		if (ids.isEmpty()) {
 			return;
 		}
@@ -206,7 +254,12 @@ public final class LuceneUtils {
 		}
 	}
 
-	static void unindexDocuments(String appid, Query query) {
+	/**
+	 * Removes documents from Lucene index, matching a query.
+	 * @param appid appid
+	 * @param query queries which documents to remove
+	 */
+	public static void unindexDocuments(String appid, Query query) {
 		if (query == null) {
 			return;
 		}
@@ -223,7 +276,7 @@ public final class LuceneUtils {
 		}
 	}
 
-	static void addDocumentFields(JsonNode object, Document doc, String prefix) {
+	private static void addDocumentFields(JsonNode object, Document doc, String prefix) {
 		try {
 //			if (object.isValueNode()) {
 //				String value = object.asText("null");
@@ -236,7 +289,6 @@ public final class LuceneUtils {
 					String field = pre + entry.getKey();
 					JsonNode value = entry.getValue();
 					if (value != null) {
-	//					logger.info(">> {} {} {}", field, value, value.getNodeType());
 						switch (value.getNodeType()) {
 		//					case STRING:
 		//						doc.add(new StringField(field, value.textValue(), Field.Store.NO));
@@ -273,11 +325,7 @@ public final class LuceneUtils {
 											sb.append(",");
 										}
 										sb.append(val);
-//										if (NOT_ANALYZED_FIELDS.contains(field)) {
-											doc.add(new StringField(field, val, Field.Store.NO));
-//										} else {
-//											doc.add(new Field(field, value.asText("null"), DEFAULT_FIELD));
-//										}
+										doc.add(getField(field, val));
 									}
 								}
 								if (sb.length() > 0) {
@@ -288,12 +336,12 @@ public final class LuceneUtils {
 		//						doc.add(new StringField(field, "null", Field.Store.NO));
 		//						break;
 							default:
-								doc.add(new SortedDocValuesField(field, new BytesRef(value.asText("null"))));
-								if (NOT_ANALYZED_FIELDS.contains(field)) {
-									doc.add(new StringField(field, value.asText("null"), Field.Store.NO));
-								} else {
-									doc.add(new Field(field, value.asText("null"), DEFAULT_FIELD));
+								String val = value.asText("null");
+								Field f = getField(field, val);
+								if (!(f instanceof GeoPointField)) {
+									doc.add(new SortedDocValuesField(field, new BytesRef(val)));
 								}
+								doc.add(f);
 								break;
 						}
 					}
@@ -304,8 +352,29 @@ public final class LuceneUtils {
 		}
 	}
 
+	private static Field getField(String field, String value) {
+		if ("latlng".equals(field) && StringUtils.contains(value, ",")) {
+			String[] latlng = value.split(",", 2);
+			return new GeoPointField(field, NumberUtils.toDouble(latlng[1]),
+					NumberUtils.toDouble(latlng[0]), Field.Store.NO);
+		} else {
+			if (NOT_ANALYZED_FIELDS.contains(field)) {
+				return new StringField(field, value, Field.Store.NO);
+			} else {
+				return new Field(field, value, DEFAULT_FIELD);
+			}
+		}
+	}
+
+	/**
+	 * Converts a ParaObject to Lucene Document. Takes care of nested objects and indexes them separately.
+	 * Stores the original object data as JSON text inside the "_source" field.
+	 * @param appid an appid
+	 * @param data object data - keys and values
+	 * @return a {@link Document} object
+	 */
 	@SuppressWarnings("unchecked")
-	static Document paraObjectToDocument(String appid, Map<String, Object> data) {
+	public static Document paraObjectToDocument(String appid, Map<String, Object> data) {
 		Document doc = new Document();
 		JsonNode jsonDoc = null;
 		try {
@@ -321,7 +390,6 @@ public final class LuceneUtils {
 					jsonDoc = ParaObjectUtils.getJsonMapper().valueToTree(dataWithoutNestedField);
 					for (Map<String, Object> obj : ((List<Map<String, Object>>) nstd)) {
 						Map<String, Object> object = new HashMap<String, Object>(obj);
-						object.put(ID_FIELD_NAME, data.get(Config._ID));
 						object.put(Config._ID, Utils.getNewId());
 						// the nested object's type is forced to be equal to its parent, otherwise breaks queries
 						object.put(Config._TYPE, data.get(Config._TYPE));
@@ -344,7 +412,7 @@ public final class LuceneUtils {
 		return doc;
 	}
 
-	static void addSource(JsonNode jsonDoc, Document doc) {
+	private static void addSource(JsonNode jsonDoc, Document doc) {
 		try {
 			doc.add(new Field(LuceneUtils.SOURCE_FIELD_NAME,
 					ParaObjectUtils.getJsonWriterNoIdent().writeValueAsString(jsonDoc), SOURCE_FIELD));
@@ -353,83 +421,143 @@ public final class LuceneUtils {
 		}
 	}
 
-	static <P extends ParaObject> P documentToParaObject(Document doc) {
+	/**
+	 * Reads the JSON from "_source" field of a document and turns it into a ParaObject.
+	 * @param <P> type
+	 * @param doc Lucene document
+	 * @return a ParaObject or null if source is missing
+	 */
+	public static <P extends ParaObject> P documentToParaObject(Document doc) {
 		if (doc == null || StringUtils.isBlank(doc.get(SOURCE_FIELD_NAME))) {
 			return null;
 		}
 		return ParaObjectUtils.fromJSON(doc.get(SOURCE_FIELD_NAME));
-//
-//		Map<String, Object> data = new HashMap<String, Object>();
-//		for (IndexableField field : doc) {
-//			if (field.name().contains(".")) {
-//				Object nested = data.get(field.name());
-//
-//
-//			} else {
-//				Object array = data.get(field.name());
-//				if (array instanceof List) {
-//					((List) array).add(field.stringValue());
-//				} else if (array != null) {
-//					ArrayList<String> list = new ArrayList<String>();
-//					list.add((String) array);
-//					list.add(field.stringValue());
-//					data.put(field.name(), list);
-//				} else {
-//					data.put(field.name(), field.stringValue());
-//				}
-//			}
-//		}
-//		return data;
 	}
 
-//	static <P extends ParaObject> P findOne(String appid, String id) {
-//		if (StringUtils.isBlank(appid) || StringUtils.isBlank(id)) {
-//			return null;
-//		}
-//		try {
-////			Analyzer analyzer = new StandardAnalyzer();
-//			DirectoryReader ireader = getIndexReader(appid);
-//			if (ireader != null) {
-//				IndexSearcher isearcher = new IndexSearcher(ireader);
-//				// Parse a simple query that searches for "text":
-//	//			QueryParser parser = new QueryParser("id", analyzer);
-//	//			StandardQueryParser parser = new StandardQueryParser(analyzer);
-//				Query query = new TermQuery(new Term(Config._ID, id));
-//	//			Query query = parser.parse("id:DAA or name:sys", "id");
-//				ScoreDoc[] hits = isearcher.search(query, 1).scoreDocs;
-//				logger.info("FOUND {}", hits.length);
-//
-//				Document hit = null;
-//				if (hits.length > 0) {
-//					hit = isearcher.doc(hits[0].doc);
-//				}
-//				ireader.close();
-//				ireader.directory().close();
-//				if (hit != null) {
-//					return ParaObjectUtils.setAnnotatedFields(documentToParaObject(hit));
-//				}
-//			}
-//		} catch (Exception e) {
-//			logger.error(null, e);
-//		}
-//		return null;
-//	}
-
-	static String getDocumentIdField(Document doc) {
-		String id = doc.get(ID_FIELD_NAME);
-		if (StringUtils.isBlank(id)) {
-			return doc.get(Config._ID);
-		} else {
-			return id;
+	private static <P extends ParaObject> void readObjectFromIndex(Document hit, ArrayList<P> results,
+			Map<String, String> keysAndSources, Pager pager) {
+		P result = documentToParaObject(hit);
+		if (result != null) {
+			if (keysAndSources.containsKey(result.getId())) {
+				pager.setCount(pager.getCount() - 1); // substract duplicates due to nested objects (nstd)
+			} else {
+				results.add(result);
+			}
+			keysAndSources.put(result.getId(), hit.get(SOURCE_FIELD_NAME));
+			logger.debug("Search result from index: appid={}, id={}", result.getAppid(), result.getId());
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	static <P extends ParaObject> List<P> find(DAO dao, String appid, String type, String query, Pager... pager) {
+	/**
+	 * Geopoint distance query. Finds objects located near a center point.
+	 * @param <P> object type
+	 * @param dao {@link DAO}
+	 * @param appid appid
+	 * @param type object type to search for
+	 * @param query a geopoint query
+	 * @param queryString query string for filtering results
+	 * @param pager a {@link Pager}
+	 * @return a list of ParaObjects
+	 */
+	public static <P extends ParaObject> List<P> searchGeoQuery(DAO dao, String appid, String type,
+			GeoPointDistanceQuery query, String queryString, Pager... pager) {
+		if (StringUtils.isBlank(type) || StringUtils.isBlank(appid)) {
+			return Collections.emptyList();
+		}
+		if (StringUtils.isBlank(queryString)) {
+			queryString = "*";
+		}
+		try {
+			Pager page = getPager(pager);
+			DirectoryReader ireader = getIndexReader(appid);
+			if (ireader != null) {
+				Document[] hits1 = searchQueryRaw(ireader, appid, Utils.type(Address.class), query, page);
+
+				if (hits1.length == 0) {
+					return Collections.emptyList();
+				}
+
+				if (type.equals(Utils.type(Address.class))) {
+					return searchQuery(dao, appid, hits1, page);
+				}
+
+				// then searchQuery their parent objects
+				ArrayList<String> parentids = new ArrayList<String>(hits1.length);
+				for (Document doc : hits1) {
+					String pid = doc.get(Config._PARENTID);
+					if (!StringUtils.isBlank(pid)) {
+						parentids.add(pid);
+					}
+				}
+
+				Builder qb2 = new BooleanQuery.Builder();
+				qb2.add(qs(queryString, MultiFields.getIndexedFields(ireader)), BooleanClause.Occur.MUST);
+				for (String id : parentids) {
+					qb2.add(new TermQuery(new Term(Config._ID, id)), BooleanClause.Occur.SHOULD);
+				}
+				Document[] hits2 = searchQueryRaw(ireader, appid, type, qb2.build(), page);
+				ireader.close();
+				ireader.directory().close();
+				return searchQuery(dao, appid, hits2, page);
+			}
+		} catch (Exception e) {
+			logger.error(null, e);
+		}
+		return Collections.emptyList();
+	}
+
+	/**
+	 * Searches the Lucene index of a particular appid.
+	 * @param <P> type
+	 * @param dao {@link DAO}
+	 * @param appid appid
+	 * @param type type
+	 * @param query a query
+	 * @param pager a {@link Pager}
+	 * @return a list of ParaObjects
+	 */
+	public static <P extends ParaObject> List<P> searchQuery(DAO dao, String appid, String type, String query, Pager... pager) {
+		if (StringUtils.isBlank(appid)) {
+			return Collections.emptyList();
+		}
 		try {
 			DirectoryReader ireader = getIndexReader(appid);
 			if (ireader != null) {
-				return find(dao, appid, type, qs(query, MultiFields.getIndexedFields(ireader)), pager);
+				Pager page = getPager(pager);
+				List<P> docs = searchQuery(dao, appid, searchQueryRaw(ireader, appid, type,
+						qs(query, MultiFields.getIndexedFields(ireader)), page), page);
+				ireader.close();
+				ireader.directory().close();
+				return docs;
+			}
+		} catch (Exception e) {
+			logger.error(null, e);
+		}
+		return Collections.emptyList();
+	}
+
+	/**
+	 * Searches the Lucene index of a particular appid.
+	 * @param <P> type
+	 * @param dao {@link DAO}
+	 * @param appid appid
+	 * @param type type
+	 * @param query a query
+	 * @param pager a {@link Pager}
+	 * @return a list of ParaObjects
+	 */
+	public static <P extends ParaObject> List<P> searchQuery(DAO dao, String appid, String type, Query query, Pager... pager) {
+		if (StringUtils.isBlank(appid)) {
+			return Collections.emptyList();
+		}
+		try {
+			DirectoryReader ireader = getIndexReader(appid);
+			if (ireader != null) {
+				Pager page = getPager(pager);
+				List<P> docs = searchQuery(dao, appid, searchQueryRaw(ireader, appid, type, query, page), page);
+				ireader.close();
+				ireader.directory().close();
+				return docs;
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -438,80 +566,42 @@ public final class LuceneUtils {
 	}
 
 	@SuppressWarnings("unchecked")
-	static <P extends ParaObject> List<P> find(DAO dao, String appid, String type, Query query, Pager... pager) {
-		if (StringUtils.isBlank(appid) || query == null) {
+	private static <P extends ParaObject> List<P> searchQuery(DAO dao, String appid, Document[] hits, Pager pager) {
+		if (hits == null || hits.length == 0) {
 			return Collections.emptyList();
 		}
-		Pager page = getPager(pager);
-		ArrayList<P> results = new ArrayList<P>(page.getLimit());
-		LinkedHashMap<String, String> keysAndSources = new LinkedHashMap<String, String>(page.getLimit());
-		boolean readFromIndex = Config.getConfigBoolean("read_from_index", Config.ENVIRONMENT.equals("embedded"));
+		ArrayList<P> results = new ArrayList<P>(hits.length);
+		LinkedHashMap<String, String> keysAndSources = new LinkedHashMap<String, String>(hits.length);
 		try {
-			DirectoryReader ireader = getIndexReader(appid);
-			if (ireader != null) {
-				IndexSearcher isearcher = new IndexSearcher(ireader);
-
-				ScoreDoc[] hits1 = isearcher.search(query, page.getLimit()).scoreDocs;
-				logger.info("FOUND MANY BEFORE {}", hits1.length);
-
-				if (!StringUtils.isBlank(type)) {
-					query = new BooleanQuery.Builder().
-							add(query, BooleanClause.Occur.MUST).
-							add(new TermQuery(new Term(Config._TYPE, type)), BooleanClause.Occur.FILTER).
-							build();
+			boolean readFromIndex = Config.getConfigBoolean("read_from_index", Config.ENVIRONMENT.equals("embedded"));
+			for (Document hit : hits) {
+				if (readFromIndex) {
+					readObjectFromIndex(hit, results, keysAndSources, pager);
 				}
+			}
 
-				TopDocs res = isearcher.search(query, page.getLimit(),
-							new Sort(new SortField(page.getSortby(), SortField.Type.STRING, page.isDesc())));
-//				TopDocs res = isearcher.search(query, page.getLimit());
-				ScoreDoc[] hits = res.scoreDocs;
-				int totalHits = res.totalHits;
-				logger.info("FOUND MANY {}", hits.length);
-
-				for (ScoreDoc doc : hits) {
-					Document hit = isearcher.doc(doc.doc);
-					if (readFromIndex) {
-						P result = documentToParaObject(hit);
-						if (result != null) {
-							if (keysAndSources.containsKey(result.getId())) {
-								totalHits--; // substract duplicates due to nested objects (nstd)
-							} else {
-								results.add(result);
-							}
+			if (!readFromIndex && !keysAndSources.isEmpty()) {
+				ArrayList<String> nullz = new ArrayList<String>(results.size());
+				Map<String, P> fromDB = dao.readAll(appid, new ArrayList(keysAndSources.keySet()), true);
+				for (Map.Entry<String, String> entry : keysAndSources.entrySet()) {
+					String key = entry.getKey();
+					P pobj = fromDB.get(key);
+					if (pobj == null) {
+						pobj = ParaObjectUtils.fromJSON(entry.getValue());
+						// object is still in index but not in DB
+						if (pobj != null && appid.equals(pobj.getAppid()) && pobj.getStored()) {
+							nullz.add(key);
 						}
 					}
-					keysAndSources.put(getDocumentIdField(hit), hit.get(SOURCE_FIELD_NAME));
-					logger.debug("Search result: appid={}, {}->{}", appid, hit.get(Config._APPID), hit.get(Config._ID));
-				}
-
-				if (!readFromIndex && !keysAndSources.isEmpty()) {
-					ArrayList<String> nullz = new ArrayList<String>(results.size());
-					Map<String, P> fromDB = dao.readAll(appid, new ArrayList(keysAndSources.keySet()), true);
-					for (Map.Entry<String, String> entry : keysAndSources.entrySet()) {
-						String key = entry.getKey();
-						P pobj = fromDB.get(key);
-						if (pobj == null) {
-							pobj = ParaObjectUtils.fromJSON(entry.getValue());
-							// object is still in index but not in DB
-							if (pobj != null && appid.equals(pobj.getAppid()) && pobj.getStored()) {
-								nullz.add(key);
-							}
-						}
-						if (pobj != null) {
-							results.add(pobj);
-						}
-					}
-
-					if (!nullz.isEmpty()) {
-						logger.warn("Found {} objects that are indexed but not in the database: {}",
-								nullz.size(), nullz);
+					if (pobj != null) {
+						results.add(pobj);
 					}
 				}
 
-
-				page.setCount(totalHits);
-				ireader.close();
-				ireader.directory().close();
+				if (!nullz.isEmpty()) {
+					logger.warn("Found {} objects that are indexed but not in the database: {}",
+							nullz.size(), nullz);
+				}
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -519,7 +609,57 @@ public final class LuceneUtils {
 		return results;
 	}
 
-	static int count(String appid, Query query) {
+	private static Document[] searchQueryRaw(DirectoryReader ireader, String appid, String type, Query query, Pager pager) {
+		if (StringUtils.isBlank(appid) || ireader == null) {
+			return new Document[0];
+		}
+		if (query == null) {
+			query = new MatchAllDocsQuery();
+		}
+		if (pager == null) {
+			pager = new Pager();
+		}
+		try {
+			IndexSearcher isearcher = new IndexSearcher(ireader);
+			if (!StringUtils.isBlank(type)) {
+				query = new BooleanQuery.Builder().
+						add(query, BooleanClause.Occur.MUST).
+						add(new TermQuery(new Term(Config._TYPE, type)), BooleanClause.Occur.FILTER).
+						build();
+			}
+			int maxPerPage = pager.getLimit();
+			int pageNum = (int) pager.getPage();
+			int start = (pageNum < 1 || pageNum > Config.MAX_PAGES) ? 0 : (pageNum - 1) * maxPerPage;
+			Sort sort = new Sort(new SortField(pager.getSortby(), SortField.Type.STRING, pager.isDesc()));
+
+			TopFieldCollector collector = TopFieldCollector.create(sort, Config.DEFAULT_LIMIT, false, false, false);
+			isearcher.search(query, collector);
+
+			TopDocs topDocs = collector.topDocs(start, maxPerPage);
+			ScoreDoc[] hits = topDocs.scoreDocs;
+			pager.setCount(topDocs.totalHits);
+
+			Document[] docs = new Document[hits.length];
+			for (int i = 0; i < hits.length; i++) {
+				docs[i] = isearcher.doc(hits[i].doc);
+			}
+			logger.debug("Lucene query: {} Hits: {}, Total: {}", query.toString(), hits.length, topDocs.totalHits);
+			return docs;
+		} catch (Exception e) {
+			Throwable cause = e.getCause();
+			String msg = cause != null ? cause.getMessage() : e.getMessage();
+			logger.warn("No search results for type '{}' in app '{}': {}.", type, appid, msg);
+		}
+		return new Document[0];
+	}
+
+	/**
+	 * Counts the total number of documents for a given query.
+	 * @param appid appid
+	 * @param query a query
+	 * @return total docs found in index
+	 */
+	public static int count(String appid, Query query) {
 		if (StringUtils.isBlank(appid) || query == null) {
 			return 0;
 		}
@@ -538,8 +678,7 @@ public final class LuceneUtils {
 		return 0;
 	}
 
-	static DirectoryReader getIndexReader(String appid) {
-		// Directory directory = new RAMDirectory(); // Store the index in memory:
+	private static DirectoryReader getIndexReader(String appid) {
 		String dataDir = Config.getConfigParam("lucene.dir", Paths.get(".").toAbsolutePath().normalize().toString());
 		Path path = FileSystems.getDefault().getPath(dataDir, "data", getIndexName(appid));
 		try {
@@ -550,7 +689,7 @@ public final class LuceneUtils {
 		return null;
 	}
 
-	static IndexWriter getIndexWriter(String appid) {
+	private static IndexWriter getIndexWriter(String appid) {
 		// Directory directory = new RAMDirectory(); // Store the index in memory:
 		String dataDir = Config.getConfigParam("lucene.dir", Paths.get(".").toAbsolutePath().normalize().toString());
 		Path path = FileSystems.getDefault().getPath(dataDir, "data", getIndexName(appid));
@@ -609,9 +748,9 @@ public final class LuceneUtils {
 //						}
 					} else if ("<=".equals(matcher.group(1))) {
 //						if (val instanceof Long || val instanceof Integer) {
-//							bfb = NumericRangeQuery.newLongRange(key, null, (Long) val, true, false);
+//							bfb = NumericRangeQuery.newLongRange(key, null, (Long) val, false, true);
 //						} else {
-							bfb = TermRangeQuery.newStringRange(key, null, val.toString(), true, false);
+							bfb = TermRangeQuery.newStringRange(key, null, val.toString(), false, true);
 //						}
 					}
 				}
@@ -636,32 +775,32 @@ public final class LuceneUtils {
 	 * @return the query if valid, or '*' if invalid
 	 */
 	static Query qs(String query, Collection<String> fields) {
-		if (query != null) {
-			if (fields == null || fields.isEmpty()) {
-				fields = Collections.singletonList(Config._NAME);
-			}
-			MultiFieldQueryParser parser = new MultiFieldQueryParser(
-					fields.toArray(new String[0]), new StandardAnalyzer());
-//			StandardQueryParser parser = new StandardQueryParser();
-			parser.setAllowLeadingWildcard(false);
-			parser.setLowercaseExpandedTerms(true);
-//			parser.setAnalyzer(new StandardAnalyzer()); // TODO: add stopwords
-			query = query.trim();
-			if (query.length() > 1 && query.startsWith("*")) {
-				query = query.substring(1);
-			}
-			if (query.length() > 1 && query.contains(" *")) {
-				query = query.replaceAll("\\s\\*", " ").trim();
-			}
-			if (query.length() >= 2 && query.toLowerCase().endsWith("and") ||
-					query.toLowerCase().endsWith("or") || query.toLowerCase().endsWith("not")) {
-				query = query.substring(0, query.length() - (query.toLowerCase().endsWith("or") ? 2 : 3));
-			}
-			try {
-				Query q = parser.parse(query);
-				return q;
-			} catch (Exception ex) {}
+		if (fields == null || fields.isEmpty()) {
+			fields = Collections.singletonList(Config._NAME);
 		}
+		if (StringUtils.isBlank(query)) {
+			query = "*";
+		}
+		MultiFieldQueryParser parser = new MultiFieldQueryParser(
+				fields.toArray(new String[0]), new StandardAnalyzer());
+		parser.setAllowLeadingWildcard(false);
+		parser.setLowercaseExpandedTerms(true);
+		parser.setAnalyzer(ANALYZER);
+		query = query.trim();
+		if (query.length() > 1 && query.startsWith("*")) {
+			query = query.substring(1);
+		}
+		if (query.length() > 1 && query.contains(" *")) {
+			query = query.replaceAll("\\s\\*", " ").trim();
+		}
+		if (query.length() >= 2 && query.toLowerCase().endsWith("and") ||
+				query.toLowerCase().endsWith("or") || query.toLowerCase().endsWith("not")) {
+			query = query.substring(0, query.length() - (query.toLowerCase().endsWith("or") ? 2 : 3));
+		}
+		try {
+			Query q = parser.parse(query);
+			return q;
+		} catch (Exception ex) { }
 		return new MatchAllDocsQuery();
 	}
 

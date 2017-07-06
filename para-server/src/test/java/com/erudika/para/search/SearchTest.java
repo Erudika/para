@@ -178,9 +178,9 @@ public abstract class SearchTest {
 
 	@Test
 	public void testFindQuery() {
-		assertTrue(s.findQuery(null, null).isEmpty());
+	assertTrue(s.findQuery(null, null).isEmpty());
 		assertFalse(s.findQuery("", "*").isEmpty()); // will find *
-		assertTrue(s.findQuery(u.getType(), "_type:user").size() >= 3);
+		assertTrue(s.findQuery(u.getType(), "type:user").size() >= 3);
 		assertFalse(s.findQuery(u.getType(), "Ann").isEmpty());
 		assertFalse(s.findQuery(u.getType(), "name:ann smith").isEmpty());
 		assertTrue(s.findQuery(null, "*").size() > 4);
@@ -306,8 +306,10 @@ public abstract class SearchTest {
 		assertTrue(s.getCount(null, Collections.singletonMap(Config._TYPE, u.getType())).intValue() > 1);
 	}
 
-//	public void testGetCount() throws InterruptedException {
-//	}
+	@Test
+	public void testPaginationAndSorting() {
+		// TODO
+	}
 
 	@Test
 	public void testIndex() {
@@ -326,7 +328,7 @@ public abstract class SearchTest {
 		ap2.setSharingIndex(true);
 //		String routedAppid1 = ap1.getAppidWithRouting();
 //		String routedAppid2 = ap2.getAppidWithRouting();
-		ux.setId(u.getId()+"-APP1");
+		ux.setId(u.getId() + "-APP1");
 		ux.setAppid(appid1);
 		ux.setName("UserApp1");
 		s.index(appid1, ux);
@@ -334,7 +336,7 @@ public abstract class SearchTest {
 		assertNull(s.findById(ux.getId()));
 		assertNull(s.findById(appid2, ux.getId()));
 
-		Tag tx = new Tag(t.getId()+"-APP2");
+		Tag tx = new Tag(t.getId() + "-APP2");
 		tx.setName("TagApp2");
 		tx.setAppid(appid2);
 		s.index(appid2, tx);

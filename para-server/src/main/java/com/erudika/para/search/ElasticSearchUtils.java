@@ -31,7 +31,10 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.queryparser.flexible.standard.StandardQueryParser;
 import org.elasticsearch.action.admin.cluster.node.info.NodeInfo;
 import org.elasticsearch.action.admin.cluster.node.info.NodesInfoRequest;
 import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
@@ -47,7 +50,10 @@ import org.elasticsearch.cluster.metadata.AliasMetaData;
 import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.slf4j.Logger;
@@ -60,6 +66,7 @@ import org.slf4j.LoggerFactory;
 public final class ElasticSearchUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(ElasticSearchUtils.class);
+	private static final StandardQueryParser QUERY_PARSER = new StandardQueryParser();
 	private static Client searchClient;
 	private static Node searchNode;
 	/**
@@ -503,6 +510,90 @@ public final class ElasticSearchUtils {
 	public static boolean isClusterOK() {
 		return !getClient().admin().cluster().prepareClusterStats().execute().actionGet().
 				getStatus().equals(ClusterHealthStatus.RED);
+	}
+
+	/**
+	 * @return true if asynchronous indexing/unindexing is enabled.
+	 */
+	static boolean isAsyncEnabled() {
+		return Config.getConfigBoolean("es.async_enabled", false);
+	}
+
+	/**
+	 * Creates a term filter for a set of terms.
+	 * @param terms some terms
+	 * @param mustMatchAll if true all terms must match ('AND' operation)
+	 * @return the filter
+	 */
+	static QueryBuilder getTermsQuery(Map<String, ?> terms, boolean mustMatchAll) {
+		BoolQueryBuilder fb = QueryBuilders.boolQuery();
+		int addedTerms = 0;
+		boolean noop = true;
+		QueryBuilder bfb = null;
+
+		for (Map.Entry<String, ?> term : terms.entrySet()) {
+			Object val = term.getValue();
+			if (!StringUtils.isBlank(term.getKey()) && val != null) {
+				if (val instanceof String && StringUtils.isBlank((String) val)) {
+					continue;
+				}
+				Matcher matcher = Pattern.compile(".*(<|>|<=|>=)$").matcher(term.getKey().trim());
+				bfb = QueryBuilders.termQuery(term.getKey(), val);
+				if (matcher.matches()) {
+					String key = term.getKey().replaceAll("[<>=\\s]+$", "");
+					RangeQueryBuilder rfb = QueryBuilders.rangeQuery(key);
+					if (">".equals(matcher.group(1))) {
+						bfb = rfb.gt(val);
+					} else if ("<".equals(matcher.group(1))) {
+						bfb = rfb.lt(val);
+					} else if (">=".equals(matcher.group(1))) {
+						bfb = rfb.gte(val);
+					} else if ("<=".equals(matcher.group(1))) {
+						bfb = rfb.lte(val);
+					}
+				}
+				if (mustMatchAll) {
+					fb.must(bfb);
+				} else {
+					fb.should(bfb);
+				}
+				addedTerms++;
+				noop = false;
+			}
+		}
+		if (addedTerms == 1 && bfb != null) {
+			return bfb;
+		}
+		return noop ? null : fb;
+	}
+
+	/**
+	 * Tries to parse a query string in order to check if it is valid.
+	 * @param query a Lucene query string
+	 * @return the query if valid, or '*' if invalid
+	 */
+	static String qs(String query) {
+		if (query == null) {
+			query = "*";
+		}
+		query = query.trim();
+		if (query.length() > 1 && query.startsWith("*")) {
+			query = query.substring(1);
+		}
+		if (query.length() > 1 && query.contains(" *")) {
+			query = query.replaceAll("\\s\\*", " ").trim();
+		}
+		if (query.length() >= 2 && query.toLowerCase().endsWith("and") ||
+				query.toLowerCase().endsWith("or") || query.toLowerCase().endsWith("not")) {
+			query = query.substring(0, query.length() - (query.toLowerCase().endsWith("or") ? 2 : 3));
+		}
+		try {
+			QUERY_PARSER.setAllowLeadingWildcard(false);
+			QUERY_PARSER.parse(query, "");
+		} catch (Exception ex) {
+			query = "*";
+		}
+		return query.trim();
 	}
 
 	/**

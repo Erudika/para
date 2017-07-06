@@ -25,6 +25,9 @@ import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.Tag;
 import com.erudika.para.persistence.DAO;
 import static com.erudika.para.search.ElasticSearchUtils.getIndexName;
+import static com.erudika.para.search.ElasticSearchUtils.getTermsQuery;
+import static com.erudika.para.search.ElasticSearchUtils.isAsyncEnabled;
+import static com.erudika.para.search.ElasticSearchUtils.qs;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -34,12 +37,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.queryparser.flexible.standard.StandardQueryParser;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -61,7 +61,6 @@ import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.fetch.source.FetchSourceContext;
@@ -79,7 +78,6 @@ import org.slf4j.LoggerFactory;
 public class ElasticSearch implements Search {
 
 	private static final Logger logger = LoggerFactory.getLogger(ElasticSearch.class);
-	private final StandardQueryParser queryParserHelper = new StandardQueryParser();
 	private DAO dao;
 
 	static {
@@ -114,6 +112,7 @@ public class ElasticSearch implements Search {
 	}
 
 	@Override
+	@Deprecated
 	public void index(String appid, ParaObject po, long ttl) {
 		if (po == null || StringUtils.isBlank(appid)) {
 			return;
@@ -429,7 +428,7 @@ public class ElasticSearch implements Search {
 	}
 
 	/**
-	 * Processes the results of searcQueryRaw() and fetches the results from the data store (can be disabled).
+	 * Processes the results of searchQueryRaw() and fetches the results from the data store (can be disabled).
 	 * @param <P> type of object
 	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param hits the search results from a query
@@ -440,14 +439,15 @@ public class ElasticSearch implements Search {
 			return Collections.emptyList();
 		}
 		ArrayList<P> results = new ArrayList<P>(hits.getHits().length);
-		ArrayList<String> keys = new ArrayList<String>(hits.getHits().length);
+		LinkedList<String> keys = new LinkedList<String>();
 		boolean readFromIndex = Config.getConfigBoolean("read_from_index", Config.ENVIRONMENT.equals("embedded"));
 		try {
 			for (SearchHit hit : hits) {
-				keys.add(hit.getId());
 				if (readFromIndex) {
 					P pobj = ParaObjectUtils.setAnnotatedFields(hit.getSource());
 					results.add(pobj);
+				} else {
+					keys.add(hit.getId());
 				}
 				logger.debug("Search result: appid={}, {}->{}", appid, hit.getSource().get(Config._APPID), hit.getId());
 			}
@@ -618,90 +618,6 @@ public class ElasticSearch implements Search {
 			}
 		}
 		return count;
-	}
-
-	/**
-	 * @return true if asynchronous indexing/unindexing is enabled.
-	 */
-	private boolean isAsyncEnabled() {
-		return Config.getConfigBoolean("es.async_enabled", false);
-	}
-
-	/**
-	 * Creates a term filter for a set of terms.
-	 * @param terms some terms
-	 * @param mustMatchAll if true all terms must match ('AND' operation)
-	 * @return the filter
-	 */
-	private QueryBuilder getTermsQuery(Map<String, ?> terms, boolean mustMatchAll) {
-		BoolQueryBuilder fb = QueryBuilders.boolQuery();
-		int addedTerms = 0;
-		boolean noop = true;
-		QueryBuilder bfb = null;
-
-		for (Map.Entry<String, ?> term : terms.entrySet()) {
-			Object val = term.getValue();
-			if (!StringUtils.isBlank(term.getKey()) && val != null) {
-				if (val instanceof String && StringUtils.isBlank((String) val)) {
-					continue;
-				}
-				Matcher matcher = Pattern.compile(".*(<|>|<=|>=)$").matcher(term.getKey().trim());
-				bfb = QueryBuilders.termQuery(term.getKey(), val);
-				if (matcher.matches()) {
-					String key = term.getKey().replaceAll("[<>=\\s]+$", "");
-					RangeQueryBuilder rfb = QueryBuilders.rangeQuery(key);
-					if (">".equals(matcher.group(1))) {
-						bfb = rfb.gt(val);
-					} else if ("<".equals(matcher.group(1))) {
-						bfb = rfb.lt(val);
-					} else if (">=".equals(matcher.group(1))) {
-						bfb = rfb.gte(val);
-					} else if ("<=".equals(matcher.group(1))) {
-						bfb = rfb.lte(val);
-					}
-				}
-				if (mustMatchAll) {
-					fb.must(bfb);
-				} else {
-					fb.should(bfb);
-				}
-				addedTerms++;
-				noop = false;
-			}
-		}
-		if (addedTerms == 1 && bfb != null) {
-			return bfb;
-		}
-		return noop ? null : fb;
-	}
-
-	/**
-	 * Tries to parse a query string in order to check if it is valid.
-	 * @param query a Lucene query string
-	 * @return the query if valid, or '*' if invalid
-	 */
-	private String qs(String query) {
-		if (query == null) {
-			query = "*";
-		}
-		query = query.trim();
-		if (query.length() > 1 && query.startsWith("*")) {
-			query = query.substring(1);
-		}
-		if (query.length() > 1 && query.contains(" *")) {
-			query = query.replaceAll("\\s\\*", " ").trim();
-		}
-		if (query.length() >= 2 && query.toLowerCase().endsWith("and") ||
-				query.toLowerCase().endsWith("or") || query.toLowerCase().endsWith("not")) {
-			query = query.substring(0, query.length() - (query.toLowerCase().endsWith("or") ? 2 : 3));
-		}
-		try {
-			queryParserHelper.setAllowLeadingWildcard(false);
-			queryParserHelper.parse(query, "");
-		} catch (Exception ex) {
-			query = "*";
-		}
-		return query.trim();
 	}
 
 	//////////////////////////////////////////////////////////////
