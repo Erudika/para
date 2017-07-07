@@ -138,6 +138,9 @@ public class ElasticSearchIT extends SearchTest {
 		t1.setAppid(app1);
 		t2.setAppid(app2);
 		t3.setAppid(app1);
+		t1.setTimestamp(System.currentTimeMillis());
+		t2.setTimestamp(System.currentTimeMillis());
+		t3.setTimestamp(System.currentTimeMillis());
 
 		s.index(t1.getAppid(), t1);
 		s.index(t2.getAppid(), t2);

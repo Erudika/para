@@ -533,23 +533,24 @@ public final class ElasticSearchUtils {
 
 		for (Map.Entry<String, ?> term : terms.entrySet()) {
 			Object val = term.getValue();
-			if (!StringUtils.isBlank(term.getKey()) && val != null) {
-				if (val instanceof String && StringUtils.isBlank((String) val)) {
+			if (!StringUtils.isBlank(term.getKey()) && val != null && Utils.isBasicType(val.getClass())) {
+				String stringValue = val.toString();
+				if (StringUtils.isBlank(stringValue)) {
 					continue;
 				}
 				Matcher matcher = Pattern.compile(".*(<|>|<=|>=)$").matcher(term.getKey().trim());
-				bfb = QueryBuilders.termQuery(term.getKey(), val);
+				bfb = QueryBuilders.termQuery(term.getKey(), stringValue);
 				if (matcher.matches()) {
 					String key = term.getKey().replaceAll("[<>=\\s]+$", "");
 					RangeQueryBuilder rfb = QueryBuilders.rangeQuery(key);
 					if (">".equals(matcher.group(1))) {
-						bfb = rfb.gt(val);
+						bfb = rfb.gt(stringValue);
 					} else if ("<".equals(matcher.group(1))) {
-						bfb = rfb.lt(val);
+						bfb = rfb.lt(stringValue);
 					} else if (">=".equals(matcher.group(1))) {
-						bfb = rfb.gte(val);
+						bfb = rfb.gte(stringValue);
 					} else if ("<=".equals(matcher.group(1))) {
-						bfb = rfb.lte(val);
+						bfb = rfb.lte(stringValue);
 					}
 				}
 				if (mustMatchAll) {
