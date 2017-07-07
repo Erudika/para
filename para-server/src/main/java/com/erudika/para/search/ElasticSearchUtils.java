@@ -87,11 +87,11 @@ public final class ElasticSearchUtils {
 			"      \"email\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"appid\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"groups\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
-			"      \"updated\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
+			"      \"updated\": {\"type\": \"date\", \"format\" : \"yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||yyyy/MM/dd||yyyyMMdd||yyyy||epoch_millis||epoch_second\"},\n" +
 			"      \"password\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"parentid\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"creatorid\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
-			"      \"timestamp\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
+			"      \"timestamp\": {\"type\": \"date\", \"format\" : \"yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||yyyy/MM/dd||yyyyMMdd||yyyy||epoch_millis||epoch_second\"},\n" +
 			"      \"identifier\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"token\": {\"type\": \"string\", \"index\": \"not_analyzed\"}\n" +
 			"    }\n" +
