@@ -308,7 +308,32 @@ public abstract class SearchTest {
 
 	@Test
 	public void testPaginationAndSorting() {
-		// TODO
+		Pager pager = new Pager(2);
+		List<User> page1 = s.findQuery(u.getType(), "type:user", pager);
+		pager.setPage(2);
+		List<User> page2 = s.findQuery(u.getType(), "type:user", pager);
+		pager.setPage(3);
+		List<User> page3 = s.findQuery(u.getType(), "type:user", pager);
+
+		assertEquals(2, page1.size());
+		assertEquals(1, page2.size());
+		assertEquals(0, page3.size());
+		assertTrue(s.findQuery(u.getType(), "type:user", new Pager(3, 2)).isEmpty());
+
+		pager.setPage(0);
+		pager.setLimit(3);
+		pager.setSortby(Config._ID);
+		pager.setDesc(false);
+		List<User> sortedById = s.findQuery(u.getType(), "type:user", pager);
+		assertEquals(u.getId(), sortedById.get(0).getId());
+		assertEquals(u1.getId(), sortedById.get(1).getId());
+		assertEquals(u2.getId(), sortedById.get(2).getId());
+
+		pager.setDesc(true);
+		List<User> sortedByIdReversed = s.findQuery(u.getType(), "type:user", pager);
+		assertEquals(u2.getId(), sortedByIdReversed.get(0).getId());
+		assertEquals(u1.getId(), sortedByIdReversed.get(1).getId());
+		assertEquals(u.getId(), sortedByIdReversed.get(2).getId());
 	}
 
 	@Test
@@ -335,6 +360,7 @@ public abstract class SearchTest {
 		assertNotNull(s.findById(appid1, ux.getId()));
 		assertNull(s.findById(ux.getId()));
 		assertNull(s.findById(appid2, ux.getId()));
+		s.unindex(ux);
 
 		Tag tx = new Tag(t.getId() + "-APP2");
 		tx.setName("TagApp2");
