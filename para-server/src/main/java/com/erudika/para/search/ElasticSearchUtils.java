@@ -69,6 +69,8 @@ public final class ElasticSearchUtils {
 	private static final StandardQueryParser QUERY_PARSER = new StandardQueryParser();
 	private static Client searchClient;
 	private static Node searchNode;
+	private static final String DATE_FORMAT = "epoch_millis||epoch_second||yyyy-MM-dd HH:mm:ss||"
+			+ "yyyy-MM-dd||yyyy/MM/dd||yyyyMMdd||yyyy";
 	/**
 	 * A list of default mappings that are defined upon index creation.
 	 */
@@ -78,22 +80,23 @@ public final class ElasticSearchUtils {
 			"    \"properties\": {\n" +
 			"      \"nstd\": {\"type\": \"nested\"},\n" +
 			"      \"latlng\": {\"type\": \"geo_point\"},\n" +
+			"      \"updated\": {\"type\": \"date\", \"format\" : \"" + DATE_FORMAT + "\"},\n" +
+			"      \"timestamp\": {\"type\": \"date\", \"format\" : \"" + DATE_FORMAT + "\"},\n" +
+
 			"      \"tag\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"id\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"key\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"name\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"type\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"tags\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
+			"      \"token\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"email\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"appid\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"groups\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
-			"      \"updated\": {\"type\": \"date\", \"format\" : \"yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||yyyy/MM/dd||yyyyMMdd||yyyy||epoch_millis||epoch_second\"},\n" +
 			"      \"password\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"parentid\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
 			"      \"creatorid\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
-			"      \"timestamp\": {\"type\": \"date\", \"format\" : \"yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||yyyy/MM/dd||yyyyMMdd||yyyy||epoch_millis||epoch_second\"},\n" +
-			"      \"identifier\": {\"type\": \"string\", \"index\": \"not_analyzed\"},\n" +
-			"      \"token\": {\"type\": \"string\", \"index\": \"not_analyzed\"}\n" +
+			"      \"identifier\": {\"type\": \"string\", \"index\": \"not_analyzed\"}\n" +
 			"    }\n" +
 			"  }\n" +
 			"}";
