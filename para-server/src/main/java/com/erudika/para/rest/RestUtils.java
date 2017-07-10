@@ -259,6 +259,15 @@ public final class RestUtils {
 	}
 
 	/**
+	 * @param type some type
+	 */
+	private static void warnIfUserTypeDetected(String type) {
+		if (Utils.type(User.class).equals(type)) {
+			logger.warn("Users should be created through /v1/jwt_auth or through an authentication filter.");
+		}
+	}
+
+	/**
 	 * Check if a user can modify an object. If there's no user principal found, this returns true.
 	 * @param app app in context
 	 * @param object some object
@@ -404,6 +413,7 @@ public final class RestUtils {
 			}
 			content = ParaObjectUtils.setAnnotatedFields(newContent);
 			if (app != null && content != null && isNotAnApp(type)) {
+				warnIfUserTypeDetected(type);
 				content.setAppid(app.getAppIdentifier());
 				setCreatorid(app, content);
 				int typesCount = app.getDatatypes().size();
@@ -450,6 +460,7 @@ public final class RestUtils {
 			}
 			content = ParaObjectUtils.setAnnotatedFields(newContent);
 			if (app != null && content != null && !StringUtils.isBlank(id) && isNotAnApp(type)) {
+				warnIfUserTypeDetected(type);
 				content.setType(type);
 				content.setAppid(app.getAppIdentifier());
 				content.setId(id);
@@ -567,7 +578,9 @@ public final class RestUtils {
 				List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
 				for (Map<String, Object> object : items) {
 					// can't create multiple apps in batch
-					if (isNotAnApp((String) object.get(Config._TYPE))) {
+					String type = (String) object.get(Config._TYPE);
+					if (isNotAnApp(type)) {
+						warnIfUserTypeDetected(type);
 						ParaObject pobj = ParaObjectUtils.setAnnotatedFields(object);
 						if (pobj != null && isValidObject(app, pobj)) {
 							pobj.setAppid(app.getAppIdentifier());
