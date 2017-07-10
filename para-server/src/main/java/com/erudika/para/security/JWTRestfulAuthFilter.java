@@ -225,16 +225,17 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	private void succesHandler(HttpServletResponse response, User user, final SignedJWT token) {
 		if (user != null && token != null) {
 			Map<String, Object> result = new HashMap<String, Object>();
-			result.put("user", user);
-			result.put("jwt", new HashMap<String, Object>() { {
-					try {
-						put("access_token", token.serialize());
-						put("refresh", token.getJWTClaimsSet().getLongClaim("refresh"));
-						put("expires", token.getJWTClaimsSet().getExpirationTime().getTime());
-					} catch (ParseException ex) {
-						logger.info("Unable to parse JWT.", ex);
-					}
-			} });
+			try {
+				HashMap<String, Object> jwt = new HashMap<String, Object>();
+				jwt.put("access_token", token.serialize());
+				jwt.put("refresh", token.getJWTClaimsSet().getLongClaim("refresh"));
+				jwt.put("expires", token.getJWTClaimsSet().getExpirationTime().getTime());
+				result.put("jwt", jwt);
+				result.put("user", user);
+			} catch (ParseException ex) {
+				logger.info("Unable to parse JWT.", ex);
+				RestUtils.returnStatusResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Bad token.");
+			}
 			RestUtils.returnObjectResponse(response, result);
 		} else {
 			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Null token.");

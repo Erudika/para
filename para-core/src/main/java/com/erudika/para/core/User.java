@@ -713,7 +713,7 @@ public class User implements ParaObject {
 		if (s != null && s.hasProperty(key)) {
 			String storedToken = (String) s.getProperty(key);
 			// tokens expire afer a reasonably short period ~ 30 mins
-			long timeout = Config.PASSRESET_TIMEOUT_SEC * 1000;
+			long timeout = (long) Config.PASSRESET_TIMEOUT_SEC * 1000L;
 			if (StringUtils.equals(storedToken, token) && (s.getUpdated() + timeout) > Utils.timestamp()) {
 				return true;
 			}

@@ -169,28 +169,25 @@ public final class LuceneUtils {
 		STOPWORDS.addAll(TurkishAnalyzer.getDefaultStopSet());
 		ANALYZER = new StandardAnalyzer(STOPWORDS);
 
-		NOT_ANALYZED_FIELDS = new HashSet<String>() {
-			{
-				add("nstd");
-				add("latlng");
-				add("tag");
-				add("id");
-				add("key");
-//				add("name");
-				add("type");
-				add("tags");
-				add("email");
-				add("appid");
-				add("groups");
-				add("updated");
-				add("password");
-				add("parentid");
-				add("creatorid");
-				add("timestamp");
-				add("identifier");
-				add("token");
-			}
-		};
+		NOT_ANALYZED_FIELDS = new HashSet<String>();
+		NOT_ANALYZED_FIELDS.add("nstd");
+		NOT_ANALYZED_FIELDS.add("latlng");
+		NOT_ANALYZED_FIELDS.add("tag");
+		NOT_ANALYZED_FIELDS.add("id");
+		NOT_ANALYZED_FIELDS.add("key");
+//		NOT_ANALYZED_FIELDS.add("name");
+		NOT_ANALYZED_FIELDS.add("type");
+		NOT_ANALYZED_FIELDS.add("tags");
+		NOT_ANALYZED_FIELDS.add("email");
+		NOT_ANALYZED_FIELDS.add("appid");
+		NOT_ANALYZED_FIELDS.add("groups");
+		NOT_ANALYZED_FIELDS.add("updated");
+		NOT_ANALYZED_FIELDS.add("password");
+		NOT_ANALYZED_FIELDS.add("parentid");
+		NOT_ANALYZED_FIELDS.add("creatorid");
+		NOT_ANALYZED_FIELDS.add("timestamp");
+		NOT_ANALYZED_FIELDS.add("identifier");
+		NOT_ANALYZED_FIELDS.add("token");
 	}
 
 	private LuceneUtils() { }
@@ -204,8 +201,9 @@ public final class LuceneUtils {
 		if (docs.isEmpty()) {
 			return;
 		}
+		IndexWriter iwriter = null;
 		try {
-			IndexWriter iwriter = getIndexWriter(appid);
+			iwriter = getIndexWriter(appid);
 			if (iwriter != null) {
 				// Optional: for better indexing performance, if you
 				// are indexing many documents, increase the RAM
@@ -218,11 +216,11 @@ public final class LuceneUtils {
 					}
 				}
 				iwriter.commit();
-				iwriter.close();
-				iwriter.getDirectory().close();
 			}
 		} catch (Exception ex) {
 			logger.error(null, ex);
+		} finally {
+			closeIndexWriter(iwriter);
 		}
 	}
 
@@ -235,8 +233,9 @@ public final class LuceneUtils {
 		if (ids.isEmpty()) {
 			return;
 		}
+		IndexWriter iwriter = null;
 		try {
-			IndexWriter iwriter = getIndexWriter(appid);
+			iwriter = getIndexWriter(appid);
 			if (iwriter != null) {
 				ArrayList<Term> keys = new ArrayList<Term>();
 				for (String id : ids) {
@@ -246,11 +245,11 @@ public final class LuceneUtils {
 				}
 				iwriter.deleteDocuments(keys.toArray(new Term[0]));
 				iwriter.commit();
-				iwriter.close();
-				iwriter.getDirectory().close();
 			}
 		} catch (Exception ex) {
 			logger.error(null, ex);
+		} finally {
+			closeIndexWriter(iwriter);
 		}
 	}
 
@@ -263,89 +262,58 @@ public final class LuceneUtils {
 		if (query == null) {
 			return;
 		}
+		IndexWriter iwriter = null;
 		try {
-			IndexWriter iwriter = getIndexWriter(appid);
+			iwriter = getIndexWriter(appid);
 			if (iwriter != null) {
 				iwriter.deleteDocuments(query);
 				iwriter.commit();
-				iwriter.close();
-				iwriter.getDirectory().close();
 			}
 		} catch (Exception ex) {
 			logger.error(null, ex);
+		} finally {
+			closeIndexWriter(iwriter);
 		}
 	}
 
 	private static void addDocumentFields(JsonNode object, Document doc, String prefix) {
 		try {
-//			if (object.isValueNode()) {
-//				String value = object.asText("null");
-//				doc.add(new SortedDocValuesField(prefix, new BytesRef(value)));
-//				doc.add(new StringField(prefix, value, Field.Store.NO));
-//			} else {
-				for (Iterator<Map.Entry<String, JsonNode>> iterator = object.fields(); iterator.hasNext();) {
-					Map.Entry<String, JsonNode> entry = iterator.next();
-					String pre = (StringUtils.isBlank(prefix) ? "" : prefix + ".");
-					String field = pre + entry.getKey();
-					JsonNode value = entry.getValue();
-					if (value != null) {
-						switch (value.getNodeType()) {
-		//					case STRING:
-		//						doc.add(new StringField(field, value.textValue(), Field.Store.NO));
-		//						break;
-		//					case BOOLEAN:
-		//						doc.add(new StringField(field, Boolean.toString(value.booleanValue()), Field.Store.NO));
-		//						break;
-		//					case NUMBER:
-		//						switch (value.numberType()) {
-		//							case LONG:
-		//								doc.add(new LongField(field, value.longValue(), LONG_FIELD));
-		//								break;
-		//							case INT:
-		//								doc.add(new IntField(field, value.intValue(), INT_FIELD));
-		//								break;
-		//							case BIG_DECIMAL:
-		//							case BIG_INTEGER:
-		//							case FLOAT:
-		//							case DOUBLE:
-		//								doc.add(new DoubleField(field, value.doubleValue(), DOUBLE_FIELD));
-		//
-		//						}
-		//						break;
-							case OBJECT:
-								addDocumentFields(value, doc, pre + field);
-								break;
-							case ARRAY:
-								StringBuilder sb = new StringBuilder();
-								for (Iterator<JsonNode> iterator1 = value.elements(); iterator1.hasNext();) {
-//									addDocumentFields(iterator1.next(), doc, field);
-									String val = iterator1.next().asText();
-									if (!StringUtils.isBlank(val)) {
-										if (sb.length() > 0) {
-											sb.append(",");
-										}
-										sb.append(val);
-										doc.add(getField(field, val));
+			for (Iterator<Map.Entry<String, JsonNode>> iterator = object.fields(); iterator.hasNext();) {
+				Map.Entry<String, JsonNode> entry = iterator.next();
+				String pre = (StringUtils.isBlank(prefix) ? "" : prefix + ".");
+				String field = pre + entry.getKey();
+				JsonNode value = entry.getValue();
+				if (value != null) {
+					switch (value.getNodeType()) {
+						case OBJECT:
+							addDocumentFields(value, doc, pre + field);
+							break;
+						case ARRAY:
+							StringBuilder sb = new StringBuilder();
+							for (Iterator<JsonNode> iterator1 = value.elements(); iterator1.hasNext();) {
+								String val = iterator1.next().asText();
+								if (!StringUtils.isBlank(val)) {
+									if (sb.length() > 0) {
+										sb.append(",");
 									}
+									sb.append(val);
+									doc.add(getField(field, val));
 								}
-								if (sb.length() > 0) {
-									doc.add(new SortedDocValuesField(field, new BytesRef(sb.toString())));
-								}
-								break;
-		//					case NULL:
-		//						doc.add(new StringField(field, "null", Field.Store.NO));
-		//						break;
-							default:
-								String val = value.asText("null");
-								Field f = getField(field, val);
-								if (!(f instanceof GeoPointField)) {
-									doc.add(new SortedDocValuesField(field, new BytesRef(val)));
-								}
-								doc.add(f);
-								break;
-						}
+							}
+							if (sb.length() > 0) {
+								doc.add(new SortedDocValuesField(field, new BytesRef(sb.toString())));
+							}
+							break;
+						default:
+							String val = value.asText("null");
+							Field f = getField(field, val);
+							if (!(f instanceof GeoPointField)) {
+								doc.add(new SortedDocValuesField(field, new BytesRef(val)));
+							}
+							doc.add(f);
+							break;
 					}
-//				}
+				}
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -467,9 +435,10 @@ public final class LuceneUtils {
 		if (StringUtils.isBlank(queryString)) {
 			queryString = "*";
 		}
+		DirectoryReader ireader = null;
 		try {
 			Pager page = getPager(pager);
-			DirectoryReader ireader = getIndexReader(appid);
+			ireader = getIndexReader(appid);
 			if (ireader != null) {
 				Document[] hits1 = searchQueryRaw(ireader, appid, Utils.type(Address.class), query, page);
 
@@ -496,12 +465,12 @@ public final class LuceneUtils {
 					qb2.add(new TermQuery(new Term(Config._ID, id)), BooleanClause.Occur.SHOULD);
 				}
 				Document[] hits2 = searchQueryRaw(ireader, appid, type, qb2.build(), page);
-				ireader.close();
-				ireader.directory().close();
 				return searchQuery(dao, appid, hits2, page);
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
+		} finally {
+			closeIndexReader(ireader);
 		}
 		return Collections.emptyList();
 	}
@@ -520,18 +489,19 @@ public final class LuceneUtils {
 		if (StringUtils.isBlank(appid)) {
 			return Collections.emptyList();
 		}
+		DirectoryReader ireader = null;
 		try {
-			DirectoryReader ireader = getIndexReader(appid);
+			ireader = getIndexReader(appid);
 			if (ireader != null) {
 				Pager page = getPager(pager);
 				List<P> docs = searchQuery(dao, appid, searchQueryRaw(ireader, appid, type,
 						qs(query, MultiFields.getIndexedFields(ireader)), page), page);
-				ireader.close();
-				ireader.directory().close();
 				return docs;
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
+		} finally {
+			closeIndexReader(ireader);
 		}
 		return Collections.emptyList();
 	}
@@ -550,17 +520,18 @@ public final class LuceneUtils {
 		if (StringUtils.isBlank(appid)) {
 			return Collections.emptyList();
 		}
+		DirectoryReader ireader = null;
 		try {
-			DirectoryReader ireader = getIndexReader(appid);
+			ireader = getIndexReader(appid);
 			if (ireader != null) {
 				Pager page = getPager(pager);
 				List<P> docs = searchQuery(dao, appid, searchQueryRaw(ireader, appid, type, query, page), page);
-				ireader.close();
-				ireader.directory().close();
 				return docs;
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
+		} finally {
+			closeIndexReader(ireader);
 		}
 		return Collections.emptyList();
 	}
@@ -663,17 +634,17 @@ public final class LuceneUtils {
 		if (StringUtils.isBlank(appid) || query == null) {
 			return 0;
 		}
+		DirectoryReader ireader = null;
 		try {
-			DirectoryReader ireader = getIndexReader(appid);
+			ireader = getIndexReader(appid);
 			if (ireader != null) {
 				IndexSearcher isearcher = new IndexSearcher(ireader);
-				int count = isearcher.count(query);
-				ireader.close();
-				ireader.directory().close();
-				return count;
+				return isearcher.count(query);
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
+		} finally {
+			closeIndexReader(ireader);
 		}
 		return 0;
 	}
@@ -704,6 +675,32 @@ public final class LuceneUtils {
 		return null;
 	}
 
+	private static void closeIndexReader(DirectoryReader ireader) {
+		try {
+			if (ireader != null) {
+				ireader.close();
+				if (ireader.directory() != null) {
+					ireader.directory().close();
+				}
+			}
+		} catch (Exception e) {
+			logger.error(null, e);
+		}
+	}
+
+	private static void closeIndexWriter(IndexWriter iwriter) {
+		try {
+			if (iwriter != null) {
+				iwriter.close();
+				if (iwriter.getDirectory() != null) {
+					iwriter.getDirectory().close();
+				}
+			}
+		} catch (Exception e) {
+			logger.error(null, e);
+		}
+	}
+
 	/**
 	 * Creates a term filter for a set of terms.
 	 * @param terms some terms
@@ -719,39 +716,19 @@ public final class LuceneUtils {
 		for (Map.Entry<String, ?> term : terms.entrySet()) {
 			Object val = term.getValue();
 			if (!StringUtils.isBlank(term.getKey()) && val != null) {
-//				if (val instanceof String && StringUtils.isBlank((String) val)) {
-//					continue;
-//				}
 				Matcher matcher = Pattern.compile(".*(<|>|<=|>=)$").matcher(term.getKey().trim());
 				bfb = new TermQuery(new Term(term.getKey(), val.toString()));
 				if (matcher.matches() && val instanceof Number) {
 					String key = term.getKey().replaceAll("[<>=\\s]+$", "");
-//					RangeQueryBuilder rfb = QueryBuilders.rangeQuery(key);
 
 					if (">".equals(matcher.group(1))) {
-//						if (val instanceof Long || val instanceof Integer) {
-//							bfb = NumericRangeQuery.newLongRange(key, (Long) val, null, false, false);
-//						} else {
-							bfb = TermRangeQuery.newStringRange(key, val.toString(), null, false, false);
-//						}
+						bfb = TermRangeQuery.newStringRange(key, val.toString(), null, false, false);
 					} else if ("<".equals(matcher.group(1))) {
-//						if (val instanceof Long || val instanceof Integer) {
-//							bfb = NumericRangeQuery.newLongRange(key, null, (Long) val, false, false);
-//						} else {
-							bfb = TermRangeQuery.newStringRange(key, null, val.toString(), false, false);
-//						}
+						bfb = TermRangeQuery.newStringRange(key, null, val.toString(), false, false);
 					} else if (">=".equals(matcher.group(1))) {
-//						if (val instanceof Long || val instanceof Integer) {
-//							bfb = NumericRangeQuery.newLongRange(key, (Long) val, null, true, false);
-//						} else {
-							bfb = TermRangeQuery.newStringRange(key, val.toString(), null, true, false);
-//						}
+						bfb = TermRangeQuery.newStringRange(key, val.toString(), null, true, false);
 					} else if ("<=".equals(matcher.group(1))) {
-//						if (val instanceof Long || val instanceof Integer) {
-//							bfb = NumericRangeQuery.newLongRange(key, null, (Long) val, false, true);
-//						} else {
-							bfb = TermRangeQuery.newStringRange(key, null, val.toString(), false, true);
-//						}
+						bfb = TermRangeQuery.newStringRange(key, null, val.toString(), false, true);
 					}
 				}
 				if (mustMatchAll) {

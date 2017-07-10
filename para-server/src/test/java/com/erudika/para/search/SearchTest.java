@@ -360,7 +360,7 @@ public abstract class SearchTest {
 		assertNotNull(s.findById(appid1, ux.getId()));
 		assertNull(s.findById(ux.getId()));
 		assertNull(s.findById(appid2, ux.getId()));
-		s.unindex(ux);
+		s.unindex(appid1, ux);
 
 		Tag tx = new Tag(t.getId() + "-APP2");
 		tx.setName("TagApp2");
@@ -369,6 +369,7 @@ public abstract class SearchTest {
 		assertNotNull(s.findById(appid2, tx.getId()));
 		assertNull(s.findById(tx.getId()));
 		assertNull(s.findById(appid1, tx.getId()));
+		s.unindex(appid2, tx);
 	}
 
 	@Test

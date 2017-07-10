@@ -127,7 +127,7 @@ public class SecurityModule extends AbstractModule {
 		if (rememberMeServices == null) {
 			rememberMeServices = new SimpleRememberMeServices(Config.APP_SECRET_KEY, new SimpleUserService());
 			rememberMeServices.setAlwaysRemember(true);
-			rememberMeServices.setTokenValiditySeconds(Config.SESSION_TIMEOUT_SEC.intValue());
+			rememberMeServices.setTokenValiditySeconds(Config.SESSION_TIMEOUT_SEC);
 			rememberMeServices.setCookieName(Config.AUTH_COOKIE);
 			rememberMeServices.setParameter(Config.AUTH_COOKIE.concat("-remember-me"));
 

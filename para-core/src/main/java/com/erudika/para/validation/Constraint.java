@@ -179,11 +179,9 @@ public abstract class Constraint {
 		if (name == null) {
 			return null;
 		}
-		return new LinkedHashMap<String, Object>() {
-			{
-				put("message", "messages." + name);
-			}
-		};
+		Map<String, Object> payload = new LinkedHashMap<String, Object>();
+		payload.put("message", "messages." + name);
+		return payload;
 	}
 
 	/**
@@ -195,12 +193,10 @@ public abstract class Constraint {
 		if (min == null) {
 			return null;
 		}
-		return new LinkedHashMap<String, Object>() {
-			{
-				put("value", min);
-				put("message", "messages." + VALIDATORS.get(Min.class));
-			}
-		};
+		Map<String, Object> payload = new LinkedHashMap<String, Object>();
+		payload.put("value", min);
+		payload.put("message", "messages." + VALIDATORS.get(Min.class));
+		return payload;
 	}
 
 	/**
@@ -212,12 +208,10 @@ public abstract class Constraint {
 		if (max == null) {
 			return null;
 		}
-		return new LinkedHashMap<String, Object>() {
-			{
-				put("value", max);
-				put("message", "messages." + VALIDATORS.get(Max.class));
-			}
-		};
+		Map<String, Object> payload = new LinkedHashMap<String, Object>();
+		payload.put("value", max);
+		payload.put("message", "messages." + VALIDATORS.get(Max.class));
+		return payload;
 	}
 
 	/**
@@ -230,13 +224,11 @@ public abstract class Constraint {
 		if (min == null || max == null) {
 			return null;
 		}
-		return new LinkedHashMap<String, Object>() {
-			{
-				put("min", min);
-				put("max", max);
-				put("message", "messages." + VALIDATORS.get(Size.class));
-			}
-		};
+		Map<String, Object> payload = new LinkedHashMap<String, Object>();
+		payload.put("min", min);
+		payload.put("max", max);
+		payload.put("message", "messages." + VALIDATORS.get(Size.class));
+		return payload;
 	}
 
 	/**
@@ -249,13 +241,11 @@ public abstract class Constraint {
 		if (i == null || f == null) {
 			return null;
 		}
-		return new LinkedHashMap<String, Object>() {
-			{
-				put("integer", i);
-				put("fraction", f);
-				put("message", "messages." + VALIDATORS.get(Digits.class));
-			}
-		};
+		Map<String, Object> payload = new LinkedHashMap<String, Object>();
+		payload.put("integer", i);
+		payload.put("fraction", f);
+		payload.put("message", "messages." + VALIDATORS.get(Digits.class));
+		return payload;
 	}
 
 	/**
@@ -267,12 +257,10 @@ public abstract class Constraint {
 		if (regex == null) {
 			return null;
 		}
-		return new LinkedHashMap<String, Object>() {
-			{
-				put("value", regex);
-				put("message", "messages." + VALIDATORS.get(Pattern.class));
-			}
-		};
+		Map<String, Object> payload = new LinkedHashMap<String, Object>();
+		payload.put("value", regex);
+		payload.put("message", "messages." + VALIDATORS.get(Pattern.class));
+		return payload;
 	}
 
 	/**

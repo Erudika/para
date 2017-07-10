@@ -280,7 +280,7 @@ public final class CORSFilter implements Filter {
 		// If the list of exposed headers is not empty add one or more
 		// Access-Control-Expose-Headers headers, with as values the header
 		// field names given in the list of exposed headers.
-		if ((exposedHeaders != null) && (exposedHeaders.size() > 0)) {
+		if ((exposedHeaders != null) && (!exposedHeaders.isEmpty())) {
 			String exposedHeadersString = join(exposedHeaders, ",");
 			response.addHeader(
 					CORSFilter.RESPONSE_HEADER_ACCESS_CONTROL_EXPOSE_HEADERS,

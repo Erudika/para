@@ -108,7 +108,7 @@ public final class HttpUtils {
 		}
 		Cookie cookie = new Cookie(name, value);
 		cookie.setHttpOnly(httpOnly);
-		cookie.setMaxAge(maxAge < 0 ? Config.SESSION_TIMEOUT_SEC.intValue() : maxAge);
+		cookie.setMaxAge(maxAge < 0 ? Config.SESSION_TIMEOUT_SEC : maxAge);
 		cookie.setPath("/");
 		cookie.setSecure(req.isSecure());
 		res.addCookie(cookie);

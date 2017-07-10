@@ -302,7 +302,7 @@ public class App implements ParaObject, Serializable {
 	 */
 	public Long getTokenValiditySec() {
 		if (tokenValiditySec == null || tokenValiditySec <= 0) {
-			tokenValiditySec = Config.JWT_EXPIRES_AFTER_SEC;
+			tokenValiditySec = (long) Config.JWT_EXPIRES_AFTER_SEC;
 		}
 		return tokenValiditySec;
 	}
@@ -576,18 +576,11 @@ public class App implements ParaObject, Serializable {
 				permission != null && !permission.isEmpty()) {
 
 			allowGuestAccess = permission.remove(GUEST) || allowGuestAccess;
-			EnumSet<AllowedMethods> methods = EnumSet.copyOf(permission);
+			EnumSet<AllowedMethods> methods = getAllowedMethodsSet(permission);
 			if (!getResourcePermissions().containsKey(subjectid)) {
 				Map<String, List<String>> perm = new HashMap<String, List<String>>();
 				perm.put(resourcePath, new ArrayList<String>(permission.size()));
 				getResourcePermissions().put(subjectid, perm);
-			}
-			if (isAllowAllPermission(permission)) {
-				methods = EnumSet.copyOf(READ_AND_WRITE);
-			} else if (permission.contains(WRITE_ONLY)) {
-				methods = EnumSet.copyOf(WRITE);
-			} else if (permission.contains(READ_ONLY)) {
-				methods = EnumSet.copyOf(READ);
 			}
 			if (allowGuestAccess && ALLOW_ALL.equals(subjectid)) {
 				methods.add(GUEST);
@@ -603,6 +596,21 @@ public class App implements ParaObject, Serializable {
 			return true;
 		}
 		return false;
+	}
+
+	private EnumSet<AllowedMethods> getAllowedMethodsSet(EnumSet<AllowedMethods> permission) {
+		if (permission == null) {
+			return EnumSet.copyOf(AllowedMethods.NONE);
+		}
+		EnumSet<AllowedMethods> methods = EnumSet.copyOf(permission);
+		if (isAllowAllPermission(permission)) {
+			methods = EnumSet.copyOf(READ_AND_WRITE);
+		} else if (permission.contains(WRITE_ONLY)) {
+			methods = EnumSet.copyOf(WRITE);
+		} else if (permission.contains(READ_ONLY)) {
+			methods = EnumSet.copyOf(READ);
+		}
+		return methods;
 	}
 
 	private boolean isAllowAllPermission(EnumSet<AllowedMethods> permission) {
@@ -691,7 +699,8 @@ public class App implements ParaObject, Serializable {
 
 	final boolean isAllowed(String subjectid, String resourcePath, String httpMethod) {
 		boolean allowed = false;
-		if (subjectid != null && httpMethod != null && getResourcePermissions().containsKey(subjectid)) {
+		if (subjectid != null && resourcePath != null && httpMethod != null &&
+				getResourcePermissions().containsKey(subjectid)) {
 			httpMethod = httpMethod.toUpperCase();
 			String wildcard = ALLOW_ALL;
 			String exactPathToMatch = resourcePath;
@@ -705,9 +714,8 @@ public class App implements ParaObject, Serializable {
 				// we don't want 'users/someth' to match, but only the exact full path
 				String fragment = resourcePath.substring(0, resourcePath.lastIndexOf('/'));
 				for (String resource : getResourcePermissions().get(subjectid).keySet()) {
-					if (StringUtils.startsWith(fragment, resource) && (
-						getResourcePermissions().get(subjectid).get(resource).contains(httpMethod) ||
-						getResourcePermissions().get(subjectid).get(resource).contains(wildcard))) {
+					if (StringUtils.startsWith(fragment, resource) &&
+							pathMatches(subjectid, resource, httpMethod, wildcard)) {
 						allowed = true;
 						break;
 					}
@@ -721,11 +729,16 @@ public class App implements ParaObject, Serializable {
 			}
 			if (!allowed && getResourcePermissions().get(subjectid).containsKey(exactPathToMatch)) {
 				// check exact resource path as it is
-				allowed = (getResourcePermissions().get(subjectid).get(exactPathToMatch).contains(httpMethod)
-						|| getResourcePermissions().get(subjectid).get(exactPathToMatch).contains(wildcard));
+				allowed = pathMatches(subjectid, exactPathToMatch, httpMethod, wildcard);
 			}
 		}
 		return allowed;
+	}
+
+
+	private boolean pathMatches(String subjectid, String path, String httpMethod, String wildcard) {
+		return (getResourcePermissions().get(subjectid).get(path).contains(httpMethod)
+						|| getResourcePermissions().get(subjectid).get(path).contains(wildcard));
 	}
 
 	/**

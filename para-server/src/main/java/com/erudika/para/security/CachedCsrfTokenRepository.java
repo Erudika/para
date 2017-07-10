@@ -82,7 +82,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 			if (token == null) {
 				token = generateToken(null);
 				if (Config.isCacheEnabled()) {
-					cache.put(Config.APP_NAME_NS, key, token, Config.SESSION_TIMEOUT_SEC);
+					cache.put(Config.APP_NAME_NS, key, token, (long) Config.SESSION_TIMEOUT_SEC);
 				} else {
 					localCache.put(key, new Object[]{token, System.currentTimeMillis()});
 				}
@@ -139,7 +139,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	private void storeTokenAsCookie(CsrfToken token, HttpServletRequest request, HttpServletResponse response) {
 		if (isValidButNotInCookie(token, request)) {
 			Cookie c = new Cookie(cookieName, token.getToken());
-			c.setMaxAge(Config.SESSION_TIMEOUT_SEC.intValue());
+			c.setMaxAge(Config.SESSION_TIMEOUT_SEC);
 			// don't enable HttpOnly - javascript can't access the cookie if enabled
 			c.setHttpOnly(false);
 			c.setSecure("https".equalsIgnoreCase(request.getScheme()));

@@ -238,31 +238,31 @@ public final class Config {
 	/**
 	 * Expiration of signed API request, in seconds. Default: 15 minutes
 	 */
-	public static final Long REQUEST_EXPIRES_AFTER_SEC = NumberUtils.toLong(getConfigParam("request_expires_after", ""), 15 * 60);
+	public static final int REQUEST_EXPIRES_AFTER_SEC = NumberUtils.toInt(getConfigParam("request_expires_after", ""), 15 * 60);
 	/**
 	 * JWT (access token) expiration in seconds. Default: 1 week
 	 */
-	public static final Long JWT_EXPIRES_AFTER_SEC = NumberUtils.toLong(getConfigParam("jwt_expires_after", ""), 7 * 24 * 60 * 60);
+	public static final int JWT_EXPIRES_AFTER_SEC = NumberUtils.toInt(getConfigParam("jwt_expires_after", ""), 7 * 24 * 60 * 60);
 	/**
 	 * JWT refresh interval - tokens will be auto-refreshed at this interval of time. Default: 1 hour
 	 */
-	public static final Long JWT_REFRESH_INTERVAL_SEC = NumberUtils.toLong(getConfigParam("jwt_refresh_interval", ""), 60 * 60);
+	public static final int JWT_REFRESH_INTERVAL_SEC = NumberUtils.toInt(getConfigParam("jwt_refresh_interval", ""), 60 * 60);
 	/**
 	 * Session timeout in seconds. Default: 24 hours
 	 */
-	public static final Long SESSION_TIMEOUT_SEC = NumberUtils.toLong(getConfigParam("session_timeout", ""), 24 * 60 * 60);
+	public static final int SESSION_TIMEOUT_SEC = NumberUtils.toInt(getConfigParam("session_timeout", ""), 24 * 60 * 60);
 	/**
 	 * Votes expire after X seconds. Default: 30 days
 	 */
-	public static final Long VOTE_EXPIRES_AFTER_SEC = NumberUtils.toLong(getConfigParam("vote_expires_after", ""), 30 * 24 * 60 * 60);
+	public static final int VOTE_EXPIRES_AFTER_SEC = NumberUtils.toInt(getConfigParam("vote_expires_after", ""), 30 * 24 * 60 * 60);
 	/**
 	 * A vote can be changed within X seconds of casting. Default: 30 seconds
 	 */
-	public static final Long VOTE_LOCKED_AFTER_SEC = NumberUtils.toLong(getConfigParam("vote_locked_after", ""), 30);
+	public static final int VOTE_LOCKED_AFTER_SEC = NumberUtils.toInt(getConfigParam("vote_locked_after", ""), 30);
 	/**
 	 * Password reset window in seconds. Default: 30 minutes
 	 */
-	public static final Long PASSRESET_TIMEOUT_SEC = NumberUtils.toLong(getConfigParam("pass_reset_timeout", ""), 30 * 60);
+	public static final int PASSRESET_TIMEOUT_SEC = NumberUtils.toInt(getConfigParam("pass_reset_timeout", ""), 30 * 60);
 	/**
 	 * Enable the RESTful API. Default: true
 	 */
