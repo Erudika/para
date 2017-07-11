@@ -77,7 +77,7 @@ public class Vote implements ParaObject {
 		timestamp = Utils.timestamp();
 		setName(getType());
 		this.value = value != null ? value.toString() : null;
-		this.expiresAfter = Config.VOTE_EXPIRES_AFTER_SEC;
+		this.expiresAfter = (long) Config.VOTE_EXPIRES_AFTER_SEC;
 	}
 
 	@Override
@@ -143,7 +143,7 @@ public class Vote implements ParaObject {
 	 */
 	public Long getExpiresAfter() {
 		if (expiresAfter == null) {
-			expiresAfter = Config.VOTE_EXPIRES_AFTER_SEC;
+			expiresAfter = (long) Config.VOTE_EXPIRES_AFTER_SEC;
 		}
 		return expiresAfter;
 	}

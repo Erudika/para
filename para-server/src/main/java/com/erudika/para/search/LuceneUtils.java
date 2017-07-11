@@ -792,7 +792,7 @@ public final class LuceneUtils {
 	 * @return the correct index name
 	 */
 	static String getIndexName(String appid) {
-		return appid + "-lucene-" + Config.ENVIRONMENT;
+		return appid + "-lucene";
 	}
 
 }
