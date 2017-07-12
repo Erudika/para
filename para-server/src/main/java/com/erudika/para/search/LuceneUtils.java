@@ -46,6 +46,7 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.ar.ArabicAnalyzer;
 import org.apache.lucene.analysis.bg.BulgarianAnalyzer;
 import org.apache.lucene.analysis.br.BrazilianAnalyzer;
@@ -74,12 +75,11 @@ import org.apache.lucene.analysis.ru.RussianAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.sv.SwedishAnalyzer;
 import org.apache.lucene.analysis.tr.TurkishAnalyzer;
-import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
@@ -101,8 +101,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.spatial.geopoint.document.GeoPointField;
-import org.apache.lucene.spatial.geopoint.search.GeoPointDistanceQuery;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.slf4j.Logger;
@@ -117,17 +115,29 @@ public final class LuceneUtils {
 	private static final Logger logger = LoggerFactory.getLogger(LuceneUtils.class);
 	private static final String SOURCE_FIELD_NAME = "_source";
 	private static final String NESTED_FIELD_NAME = "nstd";
+	private static final FieldType ID_FIELD;
 	private static final FieldType SOURCE_FIELD;
 	private static final FieldType DEFAULT_FIELD;
+	private static final FieldType DEFAULT_NOT_ANALYZED_FIELD;
 	private static final Set<String> NOT_ANALYZED_FIELDS;
 	private static final CharArraySet STOPWORDS;
-	private static final Analyzer ANALYZER;
+	private static final String[] IGNORED_FIELDS;
+
+	/**
+	 * Default analyzer.
+	 */
+	protected static final Analyzer ANALYZER;
 
 	static {
 		SOURCE_FIELD = new FieldType();
 		SOURCE_FIELD.setIndexOptions(IndexOptions.NONE);
 		SOURCE_FIELD.setStored(true);
 		SOURCE_FIELD.setTokenized(false);
+
+		ID_FIELD = new FieldType();
+		ID_FIELD.setStored(true);
+		ID_FIELD.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+		ID_FIELD.setTokenized(false);
 
 		DEFAULT_FIELD = new FieldType();
 		DEFAULT_FIELD.setStored(false);
@@ -139,6 +149,17 @@ public final class LuceneUtils {
 		DEFAULT_FIELD.setStoreTermVectors(true);
 		DEFAULT_FIELD.setOmitNorms(false);
 		DEFAULT_FIELD.setDocValuesType(DocValuesType.NONE);
+
+		DEFAULT_NOT_ANALYZED_FIELD = new FieldType();
+		DEFAULT_NOT_ANALYZED_FIELD.setStored(false);
+		DEFAULT_NOT_ANALYZED_FIELD.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+		DEFAULT_NOT_ANALYZED_FIELD.setTokenized(false);
+		DEFAULT_NOT_ANALYZED_FIELD.setStoreTermVectorPayloads(true);
+		DEFAULT_NOT_ANALYZED_FIELD.setStoreTermVectorPositions(true);
+		DEFAULT_NOT_ANALYZED_FIELD.setStoreTermVectorOffsets(true);
+		DEFAULT_NOT_ANALYZED_FIELD.setStoreTermVectors(true);
+		DEFAULT_NOT_ANALYZED_FIELD.setOmitNorms(false);
+		DEFAULT_NOT_ANALYZED_FIELD.setDocValuesType(DocValuesType.NONE);
 
 		STOPWORDS = CharArraySet.copy(EnglishAnalyzer.getDefaultStopSet());
 		STOPWORDS.addAll(ArabicAnalyzer.getDefaultStopSet());
@@ -175,7 +196,7 @@ public final class LuceneUtils {
 		NOT_ANALYZED_FIELDS.add("tag");
 		NOT_ANALYZED_FIELDS.add("id");
 		NOT_ANALYZED_FIELDS.add("key");
-//		NOT_ANALYZED_FIELDS.add("name");
+		NOT_ANALYZED_FIELDS.add("name");
 		NOT_ANALYZED_FIELDS.add("type");
 		NOT_ANALYZED_FIELDS.add("tags");
 		NOT_ANALYZED_FIELDS.add("email");
@@ -188,6 +209,9 @@ public final class LuceneUtils {
 		NOT_ANALYZED_FIELDS.add("timestamp");
 		NOT_ANALYZED_FIELDS.add("identifier");
 		NOT_ANALYZED_FIELDS.add("token");
+
+		// these fields are not indexed
+		IGNORED_FIELDS = new String[]{"validationConstraints", "resourcePermissions"};
 	}
 
 	private LuceneUtils() { }
@@ -205,11 +229,6 @@ public final class LuceneUtils {
 		try {
 			iwriter = getIndexWriter(appid);
 			if (iwriter != null) {
-				// Optional: for better indexing performance, if you
-				// are indexing many documents, increase the RAM
-				// buffer.  But if you do this, increase the max heap
-				// size to the JVM (eg add -Xmx512m or -Xmx1g):
-				// iwc.setRAMBufferSizeMB(256.0);
 				for (Document doc : docs) {
 					if (doc.get(Config._ID) != null) {
 						iwriter.updateDocument(new Term(Config._ID, doc.get(Config._ID)), doc);
@@ -283,6 +302,9 @@ public final class LuceneUtils {
 				String pre = (StringUtils.isBlank(prefix) ? "" : prefix + ".");
 				String field = pre + entry.getKey();
 				JsonNode value = entry.getValue();
+				if (StringUtils.equalsAny(field, IGNORED_FIELDS)) {
+					continue;
+				}
 				if (value != null) {
 					switch (value.getNodeType()) {
 						case OBJECT:
@@ -307,7 +329,7 @@ public final class LuceneUtils {
 						default:
 							String val = value.asText("null");
 							Field f = getField(field, val);
-							if (!(f instanceof GeoPointField)) {
+							if (!(f instanceof LatLonPoint)) {
 								doc.add(new SortedDocValuesField(field, new BytesRef(val)));
 							}
 							doc.add(f);
@@ -323,11 +345,12 @@ public final class LuceneUtils {
 	private static Field getField(String field, String value) {
 		if ("latlng".equals(field) && StringUtils.contains(value, ",")) {
 			String[] latlng = value.split(",", 2);
-			return new GeoPointField(field, NumberUtils.toDouble(latlng[1]),
-					NumberUtils.toDouble(latlng[0]), Field.Store.NO);
+			return new LatLonPoint(field, NumberUtils.toDouble(latlng[0]), NumberUtils.toDouble(latlng[1]));
+		} else if (Config._ID.equals(field)) {
+			return new Field(field, value, ID_FIELD);
 		} else {
 			if (NOT_ANALYZED_FIELDS.contains(field)) {
-				return new StringField(field, value, Field.Store.NO);
+				return new Field(field, value, DEFAULT_NOT_ANALYZED_FIELD);
 			} else {
 				return new Field(field, value, DEFAULT_FIELD);
 			}
@@ -343,13 +366,16 @@ public final class LuceneUtils {
 	 */
 	@SuppressWarnings("unchecked")
 	public static Document paraObjectToDocument(String appid, Map<String, Object> data) {
+		if (data == null) {
+			throw new IllegalArgumentException("Null data");
+		}
 		Document doc = new Document();
 		JsonNode jsonDoc = null;
 		try {
 			// Process nested fields first
 			// Nested objects are stored as independent documents in Lucene.
 			// They are not shown in search results.
-			if (data != null && data.containsKey(NESTED_FIELD_NAME)) {
+			if (data.containsKey(NESTED_FIELD_NAME)) {
 				Object nstd = data.get(NESTED_FIELD_NAME);
 				if (nstd instanceof List) {
 					LinkedList<Document> docs = new LinkedList<Document>();
@@ -411,7 +437,6 @@ public final class LuceneUtils {
 			} else {
 				results.add(result);
 			}
-			keysAndSources.put(result.getId(), hit.get(SOURCE_FIELD_NAME));
 			logger.debug("Search result from index: appid={}, id={}", result.getAppid(), result.getId());
 		}
 	}
@@ -428,7 +453,7 @@ public final class LuceneUtils {
 	 * @return a list of ParaObjects
 	 */
 	public static <P extends ParaObject> List<P> searchGeoQuery(DAO dao, String appid, String type,
-			GeoPointDistanceQuery query, String queryString, Pager... pager) {
+			Query query, String queryString, Pager... pager) {
 		if (StringUtils.isBlank(type) || StringUtils.isBlank(appid)) {
 			return Collections.emptyList();
 		}
@@ -544,11 +569,12 @@ public final class LuceneUtils {
 		ArrayList<P> results = new ArrayList<P>(hits.length);
 		LinkedHashMap<String, String> keysAndSources = new LinkedHashMap<String, String>(hits.length);
 		try {
-			boolean readFromIndex = Config.getConfigBoolean("read_from_index", Config.ENVIRONMENT.equals("embedded"));
+			boolean readFromIndex = Config.getConfigBoolean("read_from_index", false);
 			for (Document hit : hits) {
 				if (readFromIndex) {
 					readObjectFromIndex(hit, results, keysAndSources, pager);
 				}
+				keysAndSources.put(hit.get(Config._ID), hit.get(SOURCE_FIELD_NAME));
 			}
 
 			if (!readFromIndex && !keysAndSources.isEmpty()) {
@@ -758,11 +784,9 @@ public final class LuceneUtils {
 		if (StringUtils.isBlank(query)) {
 			query = "*";
 		}
-		MultiFieldQueryParser parser = new MultiFieldQueryParser(
-				fields.toArray(new String[0]), new StandardAnalyzer());
+		MultiFieldQueryParser parser = new MultiFieldQueryParser(fields.toArray(new String[0]), new StandardAnalyzer());
 		parser.setAllowLeadingWildcard(false);
-		parser.setLowercaseExpandedTerms(true);
-		parser.setAnalyzer(ANALYZER);
+		parser.setLowercaseExpandedTerms(false);
 		query = query.trim();
 		if (query.length() > 1 && query.startsWith("*")) {
 			query = query.substring(1);
@@ -770,14 +794,18 @@ public final class LuceneUtils {
 		if (query.length() > 1 && query.contains(" *")) {
 			query = query.replaceAll("\\s\\*", " ").trim();
 		}
-		if (query.length() >= 2 && query.toLowerCase().endsWith("and") ||
-				query.toLowerCase().endsWith("or") || query.toLowerCase().endsWith("not")) {
-			query = query.substring(0, query.length() - (query.toLowerCase().endsWith("or") ? 2 : 3));
+		if (query.length() >= 2 && query.toLowerCase().endsWith(" and") ||
+				query.toLowerCase().endsWith(" or") || query.toLowerCase().endsWith(" not")) {
+			query = query.substring(0, query.length() - 3).trim();
 		}
-		try {
-			Query q = parser.parse(query);
-			return q;
-		} catch (Exception ex) { }
+		if (!StringUtils.isBlank(query) && !"*".equals(query)) {
+			try {
+				Query q = parser.parse(query);
+				return q;
+			} catch (Exception ex) {
+				logger.warn("Failed to parse query string '{}'.", query);
+			}
+		}
 		return new MatchAllDocsQuery();
 	}
 

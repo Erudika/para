@@ -38,10 +38,8 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.queries.mlt.MoreLikeThisQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -50,10 +48,13 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.spatial.geopoint.search.GeoPointDistanceQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.erudika.para.search.LuceneUtils.searchQuery;
+import static org.apache.lucene.document.LatLonPoint.newDistanceQuery;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.TermInSetQuery;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * An implementation of the {@link Search} interface using Lucene core.
@@ -175,7 +176,7 @@ public class LuceneSearch implements Search {
 			query = "*";
 		}
 		// searchQuery nearby Address objects (with radius in METERS)
-		return searchGeoQuery(dao, appid, type, new GeoPointDistanceQuery("latlng", lng, lat, radius * 1000), query, pager);
+		return searchGeoQuery(dao, appid, type, newDistanceQuery("latlng", lat, lng, radius * 1000), query, pager);
 	}
 
 	@Override
@@ -184,7 +185,8 @@ public class LuceneSearch implements Search {
 		if (StringUtils.isBlank(field) || StringUtils.isBlank(prefix)) {
 			return Collections.emptyList();
 		}
-		return searchQuery(dao, appid, type, field.concat(":").concat(prefix).concat("*"), pager);
+		Query query = new PrefixQuery(new Term(field, prefix));
+		return searchQuery(dao, appid, type, query, pager);
 	}
 
 	@Override
@@ -213,11 +215,11 @@ public class LuceneSearch implements Search {
 		Query query;
 		MoreLikeThisQuery q;
 		if (fields == null || fields.length == 0) {
-			q = new MoreLikeThisQuery(liketext, new String[0], new StandardAnalyzer(), null);
+			q = new MoreLikeThisQuery(liketext, new String[]{Config._NAME}, LuceneUtils.ANALYZER, Config._NAME);
 			q.setMinDocFreq(1);
 			q.setMinTermFrequency(1);
 		} else {
-			q = new MoreLikeThisQuery(liketext, fields, new StandardAnalyzer(), null);
+			q = new MoreLikeThisQuery(liketext, fields, LuceneUtils.ANALYZER, fields[0]);
 			q.setMinDocFreq(1);
 			q.setMinTermFrequency(1);
 		}
@@ -262,11 +264,11 @@ public class LuceneSearch implements Search {
 		if (StringUtils.isBlank(field) || terms == null) {
 			return Collections.emptyList();
 		}
-		ArrayList<Term> termsList = new ArrayList<Term>();
+		ArrayList<BytesRef> termsList = new ArrayList<BytesRef>();
 		for (Object term : terms) {
-			termsList.add(new Term(field, term.toString()));
+			termsList.add(new BytesRef(term.toString()));
 		}
-		Query query = new TermsQuery(termsList);
+		Query query = new TermInSetQuery(field, termsList);
 		return searchQuery(dao, appid, type, query, pager);
 	}
 
@@ -291,7 +293,8 @@ public class LuceneSearch implements Search {
 		if (StringUtils.isBlank(field) || StringUtils.isBlank(wildcard)) {
 			return Collections.emptyList();
 		}
-		return searchQuery(dao, appid, type, field.concat(":").concat(wildcard), pager);
+		Query query = new WildcardQuery(new Term(field, wildcard));
+		return searchQuery(dao, appid, type, query, pager);
 	}
 
 	@Override

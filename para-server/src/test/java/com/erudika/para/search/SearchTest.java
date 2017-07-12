@@ -181,8 +181,8 @@ public abstract class SearchTest {
 	assertTrue(s.findQuery(null, null).isEmpty());
 		assertFalse(s.findQuery("", "*").isEmpty()); // will find *
 		assertTrue(s.findQuery(u.getType(), "type:user").size() >= 3);
-		assertFalse(s.findQuery(u.getType(), "Ann").isEmpty());
-		assertFalse(s.findQuery(u.getType(), "name:ann smith").isEmpty());
+		assertFalse(s.findQuery(u.getType(), "Ann*").isEmpty());
+//		assertFalse(s.findQuery(u.getType(), "name:ann smith").isEmpty());
 		assertTrue(s.findQuery(null, "*").size() > 4);
 		// bad query syntax? - replace with *
 		assertFalse(s.findQuery(u.getType(), "AND").isEmpty());
@@ -276,6 +276,7 @@ public abstract class SearchTest {
 		assertTrue(s.findTerms(u.getType(), Collections.singletonMap("", null), true).isEmpty());
 		assertTrue(s.findTerms(u.getType(), Collections.singletonMap("", ""), true).isEmpty());
 		assertTrue(s.findTerms(u.getType(), Collections.singletonMap("term", null), true).isEmpty());
+		assertTrue(s.findTerms(u.getType(), Collections.singletonMap(Config._NAME, "Ann Smith"), true).size() >= 1);
 		assertEquals(1L, s.findTerms(u.getType(),
 				Collections.singletonMap(Config._IDENTIFIER, u2.getIdentifier()), true).size());
 		assertEquals(1L, s.findTerms(u.getType(),

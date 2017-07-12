@@ -41,6 +41,7 @@ public class LuceneSearchIT extends SearchTest {
 		System.setProperty("para.env", "embedded");
 		System.setProperty("para.app_name", "para-test");
 		System.setProperty("para.cluster_name", "para-test");
+		System.setProperty("para.read_from_index", "true");
 		System.setProperty("para.es.shards", "2");
 		s = new LuceneSearch(mock(DAO.class));
 		SearchTest.init();
