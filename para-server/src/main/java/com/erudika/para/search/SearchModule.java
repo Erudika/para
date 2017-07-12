@@ -32,10 +32,10 @@ public class SearchModule extends AbstractModule {
 	protected void configure() {
 		String selectedSearch = Config.getConfigParam("search", "");
 		if (StringUtils.isBlank(selectedSearch)) {
-			bind(Search.class).to(ElasticSearch.class).asEagerSingleton();
+			bind(Search.class).to(LuceneSearch.class).asEagerSingleton();
 		} else {
-			if ("elasticsearch".equalsIgnoreCase(selectedSearch)) {
-				bind(Search.class).to(ElasticSearch.class).asEagerSingleton();
+			if ("lucene".equalsIgnoreCase(selectedSearch)) {
+				bind(Search.class).to(LuceneSearch.class).asEagerSingleton();
 			} else {
 				Search searchPlugin = loadExternalSearch(selectedSearch);
 				if (searchPlugin != null) {

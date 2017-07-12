@@ -27,10 +27,8 @@ import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
-import com.erudika.para.search.ElasticSearch;
-import com.erudika.para.search.ElasticSearchUtils;
+import com.erudika.para.search.LuceneSearch;
 import com.erudika.para.search.Search;
-import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -69,11 +67,11 @@ public class AspectsIT {
 			public void configure(Binder binder) {
 				binder.bind(DAO.class).to(MockDAO.class).asEagerSingleton();
 				binder.bind(Cache.class).to(MockCache.class).asEagerSingleton();
-				binder.bind(Search.class).to(ElasticSearch.class).asEagerSingleton();
+				binder.bind(Search.class).to(LuceneSearch.class).asEagerSingleton();
 			}
 		}));
 
-		ElasticSearchUtils.createIndex(Config.APP_NAME_NS);
+//		ElasticSearchUtils.createIndex(Config.APP_NAME_NS);
 
 		s0 = new Sysprop("s111");
 		s0.setName("John Doe");

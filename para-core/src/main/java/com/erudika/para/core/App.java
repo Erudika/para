@@ -33,6 +33,7 @@ import static com.erudika.para.core.App.AllowedMethods.WRITE;
 import static com.erudika.para.core.App.AllowedMethods.WRITE_ONLY;
 import static com.erudika.para.core.App.AllowedMethods.fromString;
 import com.erudika.para.utils.Config;
+import static com.erudika.para.utils.Config.PARA;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import com.erudika.para.validation.Constraint;
@@ -425,7 +426,7 @@ public class App implements ParaObject, Serializable {
 	 * @return true if root
 	 */
 	public static boolean isRoot(String appid) {
-		return StringUtils.equals(App.id(Config.APP_NAME_NS), id(appid));
+		return StringUtils.equals(App.id(Utils.noSpaces(Config.getConfigParam("app_name", PARA), "-")), id(appid));
 	}
 
 	/**

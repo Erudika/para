@@ -38,7 +38,6 @@ import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
 import com.erudika.para.core.Votable;
 import com.erudika.para.core.Vote;
-import com.erudika.para.search.ElasticSearchUtils;
 import com.erudika.para.security.AuthenticatedUserDetails;
 import com.erudika.para.security.filters.FacebookAuthFilter;
 import com.erudika.para.security.SecurityModule;
@@ -144,8 +143,8 @@ public class ParaClientIT {
 			Para.getDAO().create(rootApp);
 		}
 
-		Map<String, String> creds = Para.setup(APP_NAME_CHILD, "Child app with routing", true);
-		ElasticSearchUtils.addIndexAlias(APP_NAME, APP_NAME_CHILD, true);
+		Map<String, String> creds = Para.setup(APP_NAME_CHILD, "Child app with routing", false);
+//		ElasticSearchUtils.addIndexAlias(APP_NAME, APP_NAME_CHILD, true);
 
 		pc = new ParaClient(App.id(APP_NAME), rootApp.getSecret());
 		pc.setEndpoint(endpoint);
@@ -200,7 +199,7 @@ public class ParaClientIT {
 
 		assertNotNull(fbUser.create());
 		pc.createAll(Arrays.asList(u, u1, u2, t, s1, s2, a1, a2));
-		Thread.sleep(1000);
+//		Thread.sleep(1000);
 	}
 
 	@AfterClass
@@ -319,7 +318,7 @@ public class ParaClientIT {
 		assertEquals(part3.getName(), l3.get(2).getName());
 
 		pc.deleteAll(nl);
-		Thread.sleep(1000);
+//		Thread.sleep(1000);
 
 		List<Sysprop> l4 = pc.list(dogsType);
 		assertTrue(l4.isEmpty());
@@ -452,7 +451,7 @@ public class ParaClientIT {
 			cats.add(s);
 		}
 		pc.createAll(cats);
-		Thread.sleep(1000);
+//		Thread.sleep(1000);
 
 		assertTrue(pc.list(null).isEmpty());
 		assertTrue(pc.list("").isEmpty());
@@ -494,7 +493,7 @@ public class ParaClientIT {
 		withRouting2.setAppid(APP_NAME_CHILD);
 		pcc.createAll(Arrays.asList(withRouting1, withRouting2));
 
-		Thread.sleep(1000);
+//		Thread.sleep(1000);
 
 		assertEquals(2, pcc.findByIds(Arrays.asList(withRouting1.getId(), withRouting2.getId())).size());
 		Para.getDAO().deleteAll(APP_NAME_CHILD, Arrays.asList(withRouting1, withRouting2));
@@ -510,8 +509,7 @@ public class ParaClientIT {
 		assertFalse(pc.findQuery(null, null).isEmpty());
 		assertFalse(pc.findQuery("", "*").isEmpty());
 		assertEquals(2, pc.findQuery(a1.getType(), "country:US").size());
-		assertFalse(pc.findQuery(u.getType(), "ann").isEmpty());
-		assertFalse(pc.findQuery(u.getType(), "Ann").isEmpty());
+		assertFalse(pc.findQuery(u.getType(), "Ann*").isEmpty());
 		assertTrue(pc.findQuery(null, "*").size() > 4);
 
 		Pager p = new Pager();
@@ -576,7 +574,7 @@ public class ParaClientIT {
 		assertTrue(pc.findTerms(u.getType(), Collections.singletonMap(Config._NAME, "Ann Smith"), true).size() >= 1);
 		// "name" field is not analyzed, see https://github.com/Erudika/para/issues/13
 		assertTrue(pc.findTerms(u.getType(), Collections.singletonMap(Config._NAME, "ann smith"), true).isEmpty());
-		assertFalse(pc.findQuery(u.getType(), Config._NAME + ":ann smith").isEmpty());
+//		assertFalse(pc.findQuery(u.getType(), "\"Ann Smith\"").isEmpty());
 
 		assertTrue(pc.findWildcard(u.getType(), null, null).isEmpty());
 		assertTrue(pc.findWildcard(u.getType(), "", "").isEmpty());
@@ -602,7 +600,7 @@ public class ParaClientIT {
 		assertTrue(pc.isLinked(u, t));
 		assertTrue(pc.isLinked(u, u2));
 
-		Thread.sleep(1000);
+//		Thread.sleep(1000);
 
 		assertEquals(1, pc.getLinkedObjects(u, Utils.type(Tag.class)).size());
 		assertEquals(1, pc.getLinkedObjects(u, Utils.type(Sysprop.class)).size());
@@ -635,16 +633,16 @@ public class ParaClientIT {
 
 		pc.createAll(Arrays.asList(second1, second2, second3, child1, child2, child3));
 
-		Thread.sleep(1000);
+//		Thread.sleep(1000);
 
 		assertNotNull(pc.link(u, second1.getId()));
 		assertNotNull(pc.link(u, second2.getId()));
 		assertNotNull(pc.link(u, second3.getId()));
 
-		Thread.sleep(1000);
+//		Thread.sleep(1000);
 
 		// test linked objects search
-		assertEquals(3, pc.findLinkedObjects(u, second1.getType(), Config._NAME, null).size());
+		assertTrue(pc.findLinkedObjects(u, second1.getType(), Config._NAME, null).size() >= 3);
 
 		List<Sysprop> found1 = pc.findLinkedObjects(u, second1.getType(), Config._NAME, "gord*");
 		assertFalse(found1.isEmpty());
@@ -745,8 +743,9 @@ public class ParaClientIT {
 		assertTrue(constraint.get(kittenType).containsKey("paws"));
 
 		Sysprop ct = new Sysprop("felix");
-		Para.getDAO().delete(ct);
-		Para.getDAO().deleteAll(pc.findQuery("vote", "*"));
+		pc.delete(ct);
+		pc.delete(new Vote(u.getId(), ct.getId(), Votable.VoteValue.UP));
+		pc.delete(new Vote(u.getId(), ct.getId(), Votable.VoteValue.DOWN));
 		ct.setType(kittenType);
 		Sysprop ct2 = null;
 		try {
@@ -900,7 +899,7 @@ public class ParaClientIT {
 		// should fail to create user for root app
 		System.setProperty("para.clients_can_access_root_app", "false");
 		User notSignedIn = pc2.signIn("facebook", "test_token");
-		Thread.sleep(500);
+//		Thread.sleep(500);
 		logger.info(pc2.getAccessToken());
 		assertNull(notSignedIn);
 		assertNull(pc2.getAccessToken());
@@ -927,14 +926,14 @@ public class ParaClientIT {
 		pc2.grantResourcePermission(fbUser.getId(), App.ALLOW_ALL, READ_AND_WRITE);
 		signedIn = pc2.signIn("facebook", "test_token");
 		logger.info(pc2.getAccessToken());
-		Thread.sleep(800);
+//		Thread.sleep(800);
 		assertNotNull(signedIn);
 		assertNotNull(pc2.getAccessToken());
 		me = pc2.me();
 		assertNotNull(me);
 		assertFalse(pc2.newId().isEmpty());
 		assertEquals(signedIn.getName(), me.getName());
-		Thread.sleep(500);
+//		Thread.sleep(500);
 
 		// now switch back to App access
 		pc2.signOut();
@@ -945,7 +944,7 @@ public class ParaClientIT {
 		assertFalse(pc2.newId().isEmpty());
 		signedIn = pc2.signIn("facebook", "test_token");
 		logger.info(pc2.getAccessToken());
-		Thread.sleep(500);
+//		Thread.sleep(500);
 		me = pc2.me(); // user
 		assertNotNull(me);
 		assertEquals("user", me.getType());
@@ -1007,7 +1006,7 @@ public class ParaClientIT {
 		todo.setCreatorid("invalid_user_id"); // must be corrected by the server
 		todo.setName("[] buy milk");
 		todo = pc2.create(todo);
-		Thread.sleep(1000);
+//		Thread.sleep(1000);
 		assertNotNull(todo);
 		assertFalse(todo.getId().equals("todo_id"));
 		assertNotNull(pc2.read(todo.getType(), todo.getId()));
@@ -1025,7 +1024,7 @@ public class ParaClientIT {
 		todo2.setType("todo");
 		todo2.setName("[] buy eggs");
 		todo2 = pc2.create(todo2);
-		Thread.sleep(1000);
+//		Thread.sleep(1000);
 		assertNotNull(todo2);
 		assertFalse(todo2.getId().equals("todo_id2"));
 		assertNotNull(pc2.read(todo2.getType(), todo2.getId()));
