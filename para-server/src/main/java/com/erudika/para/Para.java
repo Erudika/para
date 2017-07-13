@@ -142,17 +142,17 @@ public final class Para {
 	 */
 	public static void destroy() {
 		try {
-			if (injector != null) {
-				logger.info("--- Para.destroy() ---");
-				for (DestroyListener destroyListener : DESTROY_LISTENERS) {
-					if (destroyListener != null) {
+			logger.info("--- Para.destroy() ---");
+			for (DestroyListener destroyListener : DESTROY_LISTENERS) {
+				if (destroyListener != null) {
+					if (injector != null) {
 						injectInto(destroyListener);
-						destroyListener.onDestroy();
-						logger.debug("Executed {}.onDestroy().", destroyListener.getClass().getName());
 					}
+					destroyListener.onDestroy();
+					logger.debug("Executed {}.onDestroy().", destroyListener.getClass().getName());
 				}
-				injector = null;
 			}
+			injector = null;
 			if (!EXECUTOR.isShutdown()) {
 				EXECUTOR.shutdown();
 				EXECUTOR.awaitTermination(60, TimeUnit.SECONDS);
