@@ -44,12 +44,7 @@
 		<!-- JERSEY -->
 		<dependency>
 			<groupId>org.glassfish.jersey.core</groupId>
-			<artifactId>jersey-server</artifactId>
-			<version>${jerseyVer}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.glassfish.jersey.containers</groupId>
-			<artifactId>jersey-container-servlet</artifactId>
+			<artifactId>jersey-client</artifactId>
 			<version>${jerseyVer}</version>
 		</dependency>
 
