@@ -20,7 +20,6 @@ package com.erudika.para.rest;
 import static com.erudika.para.Para.getCustomResourceHandlers;
 import static com.erudika.para.Para.getDAO;
 import static com.erudika.para.Para.getVersion;
-import static com.erudika.para.Para.setup;
 import com.erudika.para.core.App;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.ParaObject;
@@ -70,6 +69,8 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static com.erudika.para.Para.newApp;
+import static com.erudika.para.Para.setup;
 
 /**
  * This is the main REST API configuration class which defines all endpoints for all resources
@@ -100,7 +101,7 @@ public final class Api1 extends ResourceConfig {
 			return;
 		}
 
-		setApplicationName(Config.APP_NAME_NS);
+		setApplicationName(Config.getRootAppIdentifier());
 		register(GenericExceptionMapper.class);
 		register(new JacksonJsonProvider(ParaObjectUtils.getJsonMapper()));
 		register(FieldFilter.class);
@@ -118,7 +119,7 @@ public final class Api1 extends ResourceConfig {
 		searchRes.addMethod(GET).produces(JSON).handledBy(searchHandler(null, null));
 		registerResources(searchRes.build());
 
-		// first time setup
+		// first time newApp
 		Resource.Builder setupRes = Resource.builder("_setup");
 		setupRes.addMethod(GET).produces(JSON).handledBy(setupHandler());
 		setupRes.addChildResource("{appid}").addMethod(GET).produces(JSON).handledBy(setupHandler());
@@ -688,8 +689,9 @@ public final class Api1 extends ResourceConfig {
 				if (!StringUtils.isBlank(appid)) {
 					App app = SecurityUtils.getAuthenticatedApp();
 					if (app != null && app.isRootApp()) {
-						boolean shared = "true".equals(queryParam("shared", ctx));
-						return Response.ok(setup(appid, queryParam("name", ctx), shared)).build();
+						boolean sharedIndex = "true".equals(queryParam("sharedIndex", ctx));
+						boolean sharedTable = "true".equals(queryParam("sharedTable", ctx));
+						return Response.ok(newApp(appid, queryParam("name", ctx), sharedIndex, sharedTable)).build();
 					} else {
 						return getStatusResponse(Response.Status.FORBIDDEN,
 								"Only root app can create and initialize other apps.");

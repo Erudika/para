@@ -35,6 +35,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -78,9 +79,9 @@ public final class Para {
 	}
 
 	private static final Logger logger = LoggerFactory.getLogger(Para.class);
-	private static final List<DestroyListener> DESTROY_LISTENERS = new ArrayList<DestroyListener>();
-	private static final List<InitializeListener> INIT_LISTENERS = new ArrayList<InitializeListener>();
-	private static final List<IOListener> IO_LISTENERS = new ArrayList<IOListener>();
+	private static final List<DestroyListener> DESTROY_LISTENERS = new LinkedList<DestroyListener>();
+	private static final List<InitializeListener> INIT_LISTENERS = new LinkedList<InitializeListener>();
+	private static final List<IOListener> IO_LISTENERS = new LinkedList<IOListener>();
 	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(Config.EXECUTOR_THREADS);
 	private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(Config.EXECUTOR_THREADS);
 	private static Injector injector;
@@ -375,17 +376,18 @@ public final class Para {
 	 * @return credentials for the root app
 	 */
 	public static Map<String, String> setup() {
-		return setup(Config.APP_NAME_NS, Config.APP_NAME, false);
+		return newApp(Config.getRootAppIdentifier(), Config.APP_NAME, false, false);
 	}
 
 	/**
 	 * Creates a new application and returns the credentials for it.
 	 * @param appid the app identifier
 	 * @param name the full name of the app
-	 * @param shared false if the app should have its own index
+	 * @param sharedTable false if the app should have its own table
+	 * @param sharedIndex false if the app should have its own index
 	 * @return credentials for the root app
 	 */
-	public static Map<String, String> setup(String appid, String name, boolean shared) {
+	public static Map<String, String> newApp(String appid, String name, boolean sharedTable, boolean sharedIndex) {
 		Map<String, String> creds = new TreeMap<String, String>();
 		creds.put("message", "All set!");
 		if (StringUtils.isBlank(appid)) {
@@ -394,11 +396,12 @@ public final class Para {
 		App app = new App(appid);
 		if (!app.exists()) {
 			app.setName(name);
-			app.setSharingIndex(shared);
+			app.setSharingTable(sharedTable);
+			app.setSharingIndex(sharedIndex);
 			app.setActive(true);
 			app.create();
 			logger.info("Created new {}app '{}'. Make sure to create a table and index for it.",
-					shared ? "'shared' " : "", app.getAppIdentifier());
+					sharedIndex ? "'shared' " : "", app.getAppIdentifier());
 			creds.putAll(app.getCredentials());
 			creds.put("message", "Save the secret key - it is shown only once!");
 		}
