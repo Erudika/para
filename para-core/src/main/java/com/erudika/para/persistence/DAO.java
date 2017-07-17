@@ -38,20 +38,20 @@ public interface DAO {
 	 * Persists an object to the data store.
 	 * @param <P> the type of object
 	 * @param appid name of the {@link com.erudika.para.core.App}
-	 * @param so the domain object
+	 * @param object the domain object
 	 * @return the object's id or null if not created.
 	 */
 	@Indexed(action = Indexed.Action.ADD)
 	@Cached(action = Cached.Action.PUT)
-	<P extends ParaObject> String create(String appid, P so);
+	<P extends ParaObject> String create(String appid, P object);
 
 	/**
 	 * Persists an object to the data store.
 	 * @param <P> the type of object
-	 * @param so the domain object
+	 * @param object the domain object
 	 * @return the object's id or null if not created.
 	 */
-	<P extends ParaObject> String create(P so);
+	<P extends ParaObject> String create(P object);
 
 	/**
 	 * Retrieves an object from the data store.
@@ -75,35 +75,35 @@ public interface DAO {
 	 * Updates an object permanently.
 	 * @param <P> the type of object
 	 * @param appid name of the {@link com.erudika.para.core.App}
-	 * @param so the domain object
+	 * @param object the domain object
 	 */
 	@Indexed(action = Indexed.Action.ADD)
 	@Cached(action = Cached.Action.PUT)
-	<P extends ParaObject> void update(String appid, P so);
+	<P extends ParaObject> void update(String appid, P object);
 
 	/**
 	 * Updates an object permanently.
 	 * @param <P> the type of object
-	 * @param so the domain object
+	 * @param object the domain object
 	 */
-	<P extends ParaObject> void update(P so);
+	<P extends ParaObject> void update(P object);
 
 	/**
 	 * Deletes an object permanently.
 	 * @param <P> the type of object
 	 * @param appid name of the {@link com.erudika.para.core.App}
-	 * @param so the domain object
+	 * @param object the domain object
 	 */
 	@Indexed(action = Indexed.Action.REMOVE)
 	@Cached(action = Cached.Action.DELETE)
-	<P extends ParaObject> void delete(String appid, P so);
+	<P extends ParaObject> void delete(String appid, P object);
 
 	/**
 	 * Deletes an object permanently.
 	 * @param <P> the type of object
-	 * @param so the domain object
+	 * @param object the domain object
 	 */
-	<P extends ParaObject> void delete(P so);
+	<P extends ParaObject> void delete(P object);
 
 	/////////////////////////////////////////////
 	//				READ ALL FUNCTIONS

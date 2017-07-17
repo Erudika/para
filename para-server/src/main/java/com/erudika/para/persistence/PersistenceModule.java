@@ -33,13 +33,13 @@ public class PersistenceModule extends AbstractModule {
 		String selectedDAO = Config.getConfigParam("dao", "");
 		if (StringUtils.isBlank(selectedDAO)) {
 			if ("embedded".equals(Config.ENVIRONMENT)) {
-				bind(DAO.class).to(IndexBasedDAO.class).asEagerSingleton();
+				bind(DAO.class).to(H2DAO.class).asEagerSingleton();
 			} else {
 				bind(DAO.class).to(AWSDynamoDAO.class).asEagerSingleton();
 			}
 		} else {
-			if ("elasticsearch".equalsIgnoreCase(selectedDAO)) {
-				bind(DAO.class).to(IndexBasedDAO.class).asEagerSingleton();
+			if ("h2".equalsIgnoreCase(selectedDAO)) {
+				bind(DAO.class).to(H2DAO.class).asEagerSingleton();
 			} else if ("dynamodb".equalsIgnoreCase(selectedDAO)) {
 				bind(DAO.class).to(AWSDynamoDAO.class).asEagerSingleton();
 			} else {

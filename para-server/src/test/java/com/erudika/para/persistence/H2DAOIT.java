@@ -22,25 +22,29 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
- * DynamoDB integration test.
+ *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class MapDBDAOIT extends DAOTest {
+public class H2DAOIT extends DAOTest {
 
-	public MapDBDAOIT() {
-		super(new MapDBDAO());
+	public H2DAOIT() {
+		super(new H2DAO());
 	}
 
 	@BeforeClass
 	public static void setUpClass() throws InterruptedException {
+		H2Utils.createTable(Config.APP_NAME_NS);
+		H2Utils.createTable(appid1);
+		H2Utils.createTable(appid2);
+		H2Utils.createTable(appid3);
 	}
 
 	@AfterClass
 	public static void tearDownClass() {
-		MapDBDAO.getDBFileForAppid(Config.APP_NAME_NS).delete();
-		MapDBDAO.getDBFileForAppid(appid1).delete();
-		MapDBDAO.getDBFileForAppid(appid2).delete();
-		MapDBDAO.getDBFileForAppid(appid3).delete();
+		H2Utils.deleteTable(Config.APP_NAME_NS);
+		H2Utils.deleteTable(appid1);
+		H2Utils.deleteTable(appid2);
+		H2Utils.deleteTable(appid3);
 	}
 
 }
