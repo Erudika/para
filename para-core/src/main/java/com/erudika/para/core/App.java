@@ -17,6 +17,8 @@
  */
 package com.erudika.para.core;
 
+import com.erudika.para.AppCreatedListener;
+import com.erudika.para.AppDeletedListener;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.annotations.Locked;
@@ -33,7 +35,6 @@ import static com.erudika.para.core.App.AllowedMethods.WRITE;
 import static com.erudika.para.core.App.AllowedMethods.WRITE_ONLY;
 import static com.erudika.para.core.App.AllowedMethods.fromString;
 import com.erudika.para.utils.Config;
-import static com.erudika.para.utils.Config.PARA;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import com.erudika.para.validation.Constraint;
@@ -46,6 +47,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -83,6 +85,8 @@ public class App implements ParaObject, Serializable {
 
 	private static final long serialVersionUID = 1L;
 	private static final String PREFIX = Utils.type(App.class).concat(Config.SEPARATOR);
+	private static final List<AppCreatedListener> CREATE_LISTENERS = new LinkedList<AppCreatedListener>();
+	private static final List<AppDeletedListener> DELETE_LISTENERS = new LinkedList<AppDeletedListener>();
 	private static final Logger logger = LoggerFactory.getLogger(App.class);
 
 	@Stored @Locked @NotBlank private String id;
@@ -418,7 +422,7 @@ public class App implements ParaObject, Serializable {
 	 */
 	@JsonIgnore
 	public boolean isRootApp() {
-		return StringUtils.equals(App.id(Config.APP_NAME_NS), getId());
+		return StringUtils.equals(id(Config.getRootAppIdentifier()), getId());
 	}
 	/**
 	 * Return true if the app is the root app (the first one created).
@@ -426,7 +430,7 @@ public class App implements ParaObject, Serializable {
 	 * @return true if root
 	 */
 	public static boolean isRoot(String appid) {
-		return StringUtils.equals(App.id(Utils.noSpaces(Config.getConfigParam("app_name", PARA), "-")), id(appid));
+		return StringUtils.equals(id(Config.getRootAppIdentifier()), id(appid));
 	}
 
 	/**
@@ -857,19 +861,46 @@ public class App implements ParaObject, Serializable {
 		}
 	}
 
+	/**
+	 * Registers a new create listener.
+	 * @param listener the listener
+	 */
+	public static void addAppCreatedListener(AppCreatedListener listener) {
+		if (listener != null) {
+			CREATE_LISTENERS.add(listener);
+		}
+	}
+
+	/**
+	 * Registers a new delete listener.
+	 * @param listener the listener
+	 */
+	public static void addAppDeletedListener(AppDeletedListener listener) {
+		if (listener != null) {
+			DELETE_LISTENERS.add(listener);
+		}
+	}
+
 	@Override
 	public String create() {
 		if (getId() != null && this.exists()) {
 			return null;
 		}
-		if (!Config.APP_NAME_NS.equals(getAppid())) {
+		if (!isRoot(getAppid())) {
 			// third level apps not allowed
 			return null;
 		}
 		if (StringUtils.isBlank(secret)) {
 			resetSecret();
 		}
-		return CoreUtils.getInstance().getDao().create(getAppid(), this);
+		String appId = CoreUtils.getInstance().getDao().create(getAppid(), this);
+		if (!isRootApp()) {
+			for (AppCreatedListener listener : CREATE_LISTENERS) {
+				listener.onAppCreated(this);
+				logger.debug("Executed {}.onAppCreated().", listener.getClass().getName());
+			}
+		}
+		return appId;
 	}
 
 	@Override
@@ -878,6 +909,10 @@ public class App implements ParaObject, Serializable {
 		if (!isRootApp()) {
 			CoreUtils.getInstance().getDao().delete(getAppid(), this);
 			logger.info("App '{}' deleted.", getId());
+			for (AppDeletedListener listener : DELETE_LISTENERS) {
+				listener.onAppDeleted(this);
+				logger.debug("Executed {}.onAppDeleted().", listener.getClass().getName());
+			}
 		}
 	}
 
@@ -901,7 +936,7 @@ public class App implements ParaObject, Serializable {
 
 	@Override
 	public String getAppid() {
-		appid = (appid == null) ? Config.APP_NAME_NS : appid;
+		appid = (appid == null) ? Config.getRootAppIdentifier() : appid;
 		return appid;
 	}
 
