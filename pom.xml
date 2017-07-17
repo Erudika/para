@@ -78,11 +78,11 @@
 		<skipITs>${skipTests}</skipITs>
 		<skipUTs>${skipTests}</skipUTs>
 		<deployPluginVer>2.8.2</deployPluginVer>
-		<slf4jVer>1.7.24</slf4jVer>
+		<slf4jVer>1.7.25</slf4jVer>
 		<logbackVer>1.1.11</logbackVer>
-		<awsJdkVer>1.11.150</awsJdkVer>
+		<awsJdkVer>1.11.160</awsJdkVer>
 		<jerseyVer>2.25.1</jerseyVer>
-		<springBootVer>1.5.3.RELEASE</springBootVer>
+		<springBootVer>1.5.4.RELEASE</springBootVer>
 		<luceneVer>6.6.0</luceneVer>
 	</properties>
 
@@ -208,7 +208,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-source-plugin</artifactId>
-						<version>2.4</version>
+						<version>3.0.1</version>
 						<executions>
 							<execution>
 								<id>attach-sources</id>

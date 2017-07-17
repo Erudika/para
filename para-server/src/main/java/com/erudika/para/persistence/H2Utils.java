@@ -39,6 +39,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
@@ -275,12 +276,13 @@ public final class H2Utils {
 		}
 		Connection conn = getConnection();
 		try {
-			Map<String, P> results = new HashMap<String, P>();
+			Map<String, P> results = new LinkedHashMap<String, P>();
 			String table = getTableNameForAppid(appid);
 			PreparedStatement p = conn.prepareStatement("SELECT json FROM " + table + " WHERE " + Config._ID +
 					" IN (" + StringUtils.repeat("?", ",", ids.size()) + ")");
 			for (int i = 0; i < ids.size(); i++) {
 				p.setString(i + 1, ids.get(i));
+				results.put(ids.get(i), null);
 			}
 			ResultSet res = p.executeQuery();
 			while (res.next()) {

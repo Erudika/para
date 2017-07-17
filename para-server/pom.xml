@@ -12,7 +12,7 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>4.2.2.RELEASE</springSecVer>
+		<springSecVer>4.2.3.RELEASE</springSecVer>
 	</properties>
 
 	<dependencies>
@@ -106,18 +106,11 @@
 			<version>${luceneVer}</version>
 		</dependency>
 
-		<!-- ELASTICSEARCH -->
-		<dependency>
-			<groupId>org.elasticsearch.client</groupId>
-			<artifactId>rest</artifactId>
-			<version>5.5.0</version>
-		</dependency>
-
 		<!-- HAZELCAST -->
 		<dependency>
 			<groupId>com.hazelcast</groupId>
 			<artifactId>hazelcast</artifactId>
-			<version>3.8.2</version>
+			<version>3.8.3</version>
 		</dependency>
 		<dependency>
 			<groupId>com.hazelcast</groupId>
@@ -227,7 +220,7 @@
 		<dependency>
 			<groupId>org.elasticmq</groupId>
 			<artifactId>elasticmq-rest-sqs_2.11</artifactId>
-			<version>0.13.4</version>
+			<version>0.13.8</version>
 			<scope>test</scope>
 			<exclusions>
 				<exclusion>
