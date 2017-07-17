@@ -17,7 +17,6 @@
  */
 package com.erudika.para.persistence;
 
-import com.erudika.para.utils.Config;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -33,7 +32,7 @@ public class H2DAOIT extends DAOTest {
 
 	@BeforeClass
 	public static void setUpClass() throws InterruptedException {
-		H2Utils.createTable(Config.getRootAppIdentifier());
+//		H2Utils.createTable(Config.getRootAppIdentifier());
 		H2Utils.createTable(appid1);
 		H2Utils.createTable(appid2);
 		H2Utils.createTable(appid3);
@@ -41,10 +40,11 @@ public class H2DAOIT extends DAOTest {
 
 	@AfterClass
 	public static void tearDownClass() {
-		H2Utils.deleteTable(Config.getRootAppIdentifier());
+//		H2Utils.deleteTable(Config.getRootAppIdentifier());
 		H2Utils.deleteTable(appid1);
 		H2Utils.deleteTable(appid2);
 		H2Utils.deleteTable(appid3);
+		H2Utils.shutdownClient();
 	}
 
 }
