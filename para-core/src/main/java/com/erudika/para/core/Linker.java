@@ -259,7 +259,7 @@ public final class Linker implements ParaObject, Serializable {
 
 	@Override
 	public String getAppid() {
-		appid = (appid == null) ? Config.APP_NAME_NS : appid;
+		appid = (appid == null) ? Config.getRootAppIdentifier() : appid;
 		return appid;
 	}
 

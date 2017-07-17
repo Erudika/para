@@ -193,10 +193,10 @@ public final class RestUtils {
 		if (app != null) {
 			return app;
 		} else if (user != null) {
-			return Para.getDAO().read(Config.APP_NAME_NS, App.id(user.getAppid()));
+			return Para.getDAO().read(Config.getRootAppIdentifier(), App.id(user.getAppid()));
 		}
-		logger.info("Unauthenticated request - returning root App: {}", Config.APP_NAME_NS);
-		return Para.getDAO().read(Config.APP_NAME_NS, App.id(Config.APP_NAME_NS));
+		logger.info("Unauthenticated request - returning root App: {}", Config.getRootAppIdentifier());
+		return Para.getDAO().read(Config.getRootAppIdentifier(), App.id(Config.getRootAppIdentifier()));
 	}
 
 	/**
@@ -263,7 +263,7 @@ public final class RestUtils {
 	 */
 	private static void warnIfUserTypeDetected(String type) {
 		if (Utils.type(User.class).equals(type)) {
-			logger.warn("Users should be created through /v1/jwt_auth or through an authentication filter.");
+			logger.warn("Users should be created through /jwt_auth or through an authentication filter.");
 		}
 	}
 

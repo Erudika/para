@@ -208,17 +208,13 @@ public final class Config {
 	 */
 	public static final String APP_NAME = getConfigParam("app_name", PARA);
 	/**
-	 * The name of the default application without any spaces.
-	 */
-	public static final String APP_NAME_NS = Utils.noSpaces(APP_NAME, "-");
-	/**
 	 * The name of the authentication cookie.
 	 */
-	public static final String AUTH_COOKIE = getConfigParam("auth_cookie", APP_NAME_NS.concat("-auth"));
+	public static final String AUTH_COOKIE = getConfigParam("auth_cookie", PARA.concat("-auth"));
 	/**
 	 * The name of the "return to" cookie.
 	 */
-	public static final String RETURNTO_COOKIE = getConfigParam("returnto_cookie", APP_NAME_NS.concat("-returnto"));
+	public static final String RETURNTO_COOKIE = getConfigParam("returnto_cookie", PARA.concat("-returnto"));
 	/**
 	 * The email address for support.
 	 */
@@ -230,7 +226,7 @@ public final class Config {
 	/**
 	 * The default queue name which will be polled for incoming JSON messages.
 	 */
-	public static final String DEFAULT_QUEUE_NAME = getConfigParam("default_queue_name", Config.APP_NAME_NS + "-default");
+	public static final String DEFAULT_QUEUE_NAME = getConfigParam("default_queue_name", PARA + "-default");
 	/**
 	 * The package path (e.g. org.company.app.core) where all domain objects are defined.
 	 */
@@ -393,5 +389,12 @@ public final class Config {
 	 */
 	public static boolean isSearchEnabled() {
 		return getConfigBoolean("search_enabled", true);
+	}
+
+	/**
+	 * @return The name of the default application without any spaces.
+	 */
+	public static String getRootAppIdentifier() {
+		return Utils.noSpaces(Config.getConfigParam("app_name", PARA), "-");
 	}
 }

@@ -330,102 +330,102 @@ public class LuceneSearch implements Search {
 
 	@Override
 	public void index(ParaObject so) {
-		index(Config.APP_NAME_NS, so);
+		index(Config.getRootAppIdentifier(), so);
 	}
 
 	@Override
 	public void unindex(ParaObject so) {
-		unindex(Config.APP_NAME_NS, so);
+		unindex(Config.getRootAppIdentifier(), so);
 	}
 
 	@Override
 	public <P extends ParaObject> void indexAll(List<P> objects) {
-		indexAll(Config.APP_NAME_NS, objects);
+		indexAll(Config.getRootAppIdentifier(), objects);
 	}
 
 	@Override
 	public <P extends ParaObject> void unindexAll(List<P> objects) {
-		unindexAll(Config.APP_NAME_NS, objects);
+		unindexAll(Config.getRootAppIdentifier(), objects);
 	}
 
 	@Override
 	public void unindexAll(Map<String, ?> terms, boolean matchAll) {
-		unindexAll(Config.APP_NAME_NS, terms, matchAll);
+		unindexAll(Config.getRootAppIdentifier(), terms, matchAll);
 	}
 
 	@Override
 	public <P extends ParaObject> P findById(String id) {
-		return findById(Config.APP_NAME_NS, id);
+		return findById(Config.getRootAppIdentifier(), id);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> findByIds(List<String> ids) {
-		return findByIds(Config.APP_NAME_NS, ids);
+		return findByIds(Config.getRootAppIdentifier(), ids);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> findNearby(String type,
 			String query, int radius, double lat, double lng, Pager... pager) {
-		return findNearby(Config.APP_NAME_NS, type, query, radius, lat, lng, pager);
+		return findNearby(Config.getRootAppIdentifier(), type, query, radius, lat, lng, pager);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> findPrefix(String type, String field, String prefix, Pager... pager) {
-		return findPrefix(Config.APP_NAME_NS, type, field, prefix, pager);
+		return findPrefix(Config.getRootAppIdentifier(), type, field, prefix, pager);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> findQuery(String type, String query, Pager... pager) {
-		return findQuery(Config.APP_NAME_NS, type, query, pager);
+		return findQuery(Config.getRootAppIdentifier(), type, query, pager);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> findNestedQuery(String type, String field, String query, Pager... pager) {
-		return findNestedQuery(Config.APP_NAME_NS, type, field, query, pager);
+		return findNestedQuery(Config.getRootAppIdentifier(), type, field, query, pager);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> findSimilar(String type, String filterKey, String[] fields,
 			String liketext, Pager... pager) {
-		return findSimilar(Config.APP_NAME_NS, type, filterKey, fields, liketext, pager);
+		return findSimilar(Config.getRootAppIdentifier(), type, filterKey, fields, liketext, pager);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> findTagged(String type, String[] tags, Pager... pager) {
-		return findTagged(Config.APP_NAME_NS, type, tags, pager);
+		return findTagged(Config.getRootAppIdentifier(), type, tags, pager);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> findTags(String keyword, Pager... pager) {
-		return findTags(Config.APP_NAME_NS, keyword, pager);
+		return findTags(Config.getRootAppIdentifier(), keyword, pager);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> findTermInList(String type, String field,
 			List<?> terms, Pager... pager) {
-		return findTermInList(Config.APP_NAME_NS, type, field, terms, pager);
+		return findTermInList(Config.getRootAppIdentifier(), type, field, terms, pager);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> findTerms(String type, Map<String, ?> terms,
 			boolean mustMatchBoth, Pager... pager) {
-		return findTerms(Config.APP_NAME_NS, type, terms, mustMatchBoth, pager);
+		return findTerms(Config.getRootAppIdentifier(), type, terms, mustMatchBoth, pager);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> findWildcard(String type, String field, String wildcard,
 			Pager... pager) {
-		return findWildcard(Config.APP_NAME_NS, type, field, wildcard, pager);
+		return findWildcard(Config.getRootAppIdentifier(), type, field, wildcard, pager);
 	}
 
 	@Override
 	public Long getCount(String type) {
-		return getCount(Config.APP_NAME_NS, type);
+		return getCount(Config.getRootAppIdentifier(), type);
 	}
 
 	@Override
 	public Long getCount(String type, Map<String, ?> terms) {
-		return getCount(Config.APP_NAME_NS, type, terms);
+		return getCount(Config.getRootAppIdentifier(), type, terms);
 	}
 
 }

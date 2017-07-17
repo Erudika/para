@@ -47,7 +47,7 @@ public class AWSDynamoDAOIT extends DAOTest {
 	@BeforeClass
 	public static void setUpClass() throws InterruptedException {
 		System.setProperty("para.prepend_shared_appids_with_space", "true");
-		AWSDynamoUtils.createTable(Config.APP_NAME_NS);
+		AWSDynamoUtils.createTable(Config.getRootAppIdentifier());
 		AWSDynamoUtils.createTable(appid1);
 		AWSDynamoUtils.createTable(appid2);
 		AWSDynamoUtils.createTable(appid3);
@@ -56,7 +56,7 @@ public class AWSDynamoDAOIT extends DAOTest {
 
 	@AfterClass
 	public static void tearDownClass() {
-		AWSDynamoUtils.deleteTable(Config.APP_NAME_NS);
+		AWSDynamoUtils.deleteTable(Config.getRootAppIdentifier());
 		AWSDynamoUtils.deleteTable(appid1);
 		AWSDynamoUtils.deleteTable(appid2);
 		AWSDynamoUtils.deleteTable(appid3);

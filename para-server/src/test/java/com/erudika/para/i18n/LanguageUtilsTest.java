@@ -105,16 +105,16 @@ public class LanguageUtilsTest {
 
 	@Test
 	public void testGetDefaultLanguage() {
-		assertTrue(!lu.getDefaultLanguage(Config.APP_NAME_NS).isEmpty());
+		assertTrue(!lu.getDefaultLanguage(Config.getRootAppIdentifier()).isEmpty());
 	}
 
 	@Test
 	public void testSetDefaultLanguage() {
 		lu.setDefaultLanguage(null);
-		assertNotNull(lu.getDefaultLanguage(Config.APP_NAME_NS));
-		assertFalse(lu.getDefaultLanguage(Config.APP_NAME_NS).isEmpty());
+		assertNotNull(lu.getDefaultLanguage(Config.getRootAppIdentifier()));
+		assertFalse(lu.getDefaultLanguage(Config.getRootAppIdentifier()).isEmpty());
 		lu.setDefaultLanguage(es);
-		assertEquals(es.get("hello"), lu.getDefaultLanguage(Config.APP_NAME_NS).get("hello"));
+		assertEquals(es.get("hello"), lu.getDefaultLanguage(Config.getRootAppIdentifier()).get("hello"));
 	}
 
 	@Test

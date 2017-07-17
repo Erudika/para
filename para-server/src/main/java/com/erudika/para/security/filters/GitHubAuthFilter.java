@@ -93,7 +93,7 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = request.getParameter(Config._APPID);
 				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
-				App app = Para.getDAO().read(App.id(appid == null ? Config.APP_NAME_NS : appid));
+				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
 				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.GITHUB_PREFIX);
 				String entity = Utils.formatMessage(PAYLOAD,
 						URLEncoder.encode(authCode, "UTF-8"),

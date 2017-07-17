@@ -214,42 +214,42 @@ public class HazelcastCache implements Cache {
 
 	@Override
 	public boolean contains(String id) {
-		return contains(Config.APP_NAME_NS, id);
+		return contains(Config.getRootAppIdentifier(), id);
 	}
 
 	@Override
 	public <T> void put(String id, T object) {
-		put(Config.APP_NAME_NS, id, object);
+		put(Config.getRootAppIdentifier(), id, object);
 	}
 
 	@Override
 	public <T> void putAll(Map<String, T> objects) {
-		putAll(Config.APP_NAME_NS, objects);
+		putAll(Config.getRootAppIdentifier(), objects);
 	}
 
 	@Override
 	public <T> T get(String id) {
-		return get(Config.APP_NAME_NS, id);
+		return get(Config.getRootAppIdentifier(), id);
 	}
 
 	@Override
 	public <T> Map<String, T> getAll(List<String> ids) {
-		return getAll(Config.APP_NAME_NS, ids);
+		return getAll(Config.getRootAppIdentifier(), ids);
 	}
 
 	@Override
 	public void remove(String id) {
-		remove(Config.APP_NAME_NS, id);
+		remove(Config.getRootAppIdentifier(), id);
 	}
 
 	@Override
 	public void removeAll() {
-		removeAll(Config.APP_NAME_NS);
+		removeAll(Config.getRootAppIdentifier());
 	}
 
 	@Override
 	public void removeAll(List<String> ids) {
-		removeAll(Config.APP_NAME_NS, ids);
+		removeAll(Config.getRootAppIdentifier(), ids);
 	}
 
 }

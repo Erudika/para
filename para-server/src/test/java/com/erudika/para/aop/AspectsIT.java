@@ -71,7 +71,7 @@ public class AspectsIT {
 			}
 		}));
 
-//		ElasticSearchUtils.createIndex(Config.APP_NAME_NS);
+//		ElasticSearchUtils.createIndex(Config.getRootAppIdentifier());
 
 		s0 = new Sysprop("s111");
 		s0.setName("John Doe");

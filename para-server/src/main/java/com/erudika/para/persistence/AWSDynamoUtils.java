@@ -58,6 +58,7 @@ import com.amazonaws.services.dynamodbv2.model.UpdateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.erudika.para.DestroyListener;
 import com.erudika.para.Para;
+import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.utils.Config;
@@ -110,8 +111,8 @@ public final class AWSDynamoUtils {
 					withEndpointConfiguration(new EndpointConfiguration(LOCAL_ENDPOINT, "")).build();
 		}
 
-		if (!existsTable(Config.APP_NAME_NS)) {
-			createTable(Config.APP_NAME_NS);
+		if (!existsTable(Config.getRootAppIdentifier())) {
+			createTable(Config.getRootAppIdentifier());
 		}
 
 		ddb = new DynamoDB(ddbClient);
@@ -334,7 +335,7 @@ public final class AWSDynamoUtils {
 				// app is sharing a table with other apps
 				appIdentifier = SHARED_TABLE;
 			}
-			return (appIdentifier.equals(Config.APP_NAME_NS) || appIdentifier.startsWith(Config.PARA.concat("-"))) ?
+			return (App.isRoot(appIdentifier) || appIdentifier.startsWith(Config.PARA.concat("-"))) ?
 					appIdentifier : Config.PARA + "-" + appIdentifier;
 		}
 	}

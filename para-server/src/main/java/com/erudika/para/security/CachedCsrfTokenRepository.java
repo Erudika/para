@@ -82,7 +82,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 			if (token == null) {
 				token = generateToken(null);
 				if (Config.isCacheEnabled()) {
-					cache.put(Config.APP_NAME_NS, key, token, (long) Config.SESSION_TIMEOUT_SEC);
+					cache.put(Config.getRootAppIdentifier(), key, token, (long) Config.SESSION_TIMEOUT_SEC);
 				} else {
 					localCache.put(key, new Object[]{token, System.currentTimeMillis()});
 				}
@@ -102,7 +102,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 		if (ident != null) {
 			String key = ident.concat(parameterName);
 			if (Config.isCacheEnabled()) {
-				token = cache.get(Config.APP_NAME_NS, key);
+				token = cache.get(Config.getRootAppIdentifier(), key);
 			} else {
 				Object[] arr = localCache.get(key);
 				if (arr != null && arr.length == 2) {

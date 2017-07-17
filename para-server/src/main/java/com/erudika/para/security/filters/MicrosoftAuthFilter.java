@@ -98,7 +98,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 				// so we use the "state" parameter to remember the appid
 				String appid = request.getParameter("state");
 				String redirectURI = request.getRequestURL().toString();
-				App app = Para.getDAO().read(App.id(appid == null ? Config.APP_NAME_NS : appid));
+				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
 				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.MICROSOFT_PREFIX);
 				String entity = Utils.formatMessage(PAYLOAD,
 						URLEncoder.encode(authCode, "UTF-8"),

@@ -143,7 +143,7 @@ public class ParaClientIT {
 			Para.getDAO().create(rootApp);
 		}
 
-		Map<String, String> creds = Para.setup(APP_NAME_CHILD, "Child app with routing", false);
+		Map<String, String> creds = Para.newApp(APP_NAME_CHILD, "Child app with routing", false, false);
 //		ElasticSearchUtils.addIndexAlias(APP_NAME, APP_NAME_CHILD, true);
 
 		pc = new ParaClient(App.id(APP_NAME), rootApp.getSecret());
