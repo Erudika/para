@@ -121,47 +121,47 @@ public class H2DAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> String create(P object) {
-		return create(Config.APP_NAME_NS, object);
+		return create(Config.getRootAppIdentifier(), object);
 	}
 
 	@Override
 	public <P extends ParaObject> P read(String key) {
-		return read(Config.APP_NAME_NS, key);
+		return read(Config.getRootAppIdentifier(), key);
 	}
 
 	@Override
 	public <P extends ParaObject> void update(P object) {
-		update(Config.APP_NAME_NS, object);
+		update(Config.getRootAppIdentifier(), object);
 	}
 
 	@Override
 	public <P extends ParaObject> void delete(P object) {
-		delete(Config.APP_NAME_NS, object);
+		delete(Config.getRootAppIdentifier(), object);
 	}
 
 	@Override
 	public <P extends ParaObject> void createAll(List<P> objects) {
-		createAll(Config.APP_NAME_NS, objects);
+		createAll(Config.getRootAppIdentifier(), objects);
 	}
 
 	@Override
 	public <P extends ParaObject> Map<String, P> readAll(List<String> keys, boolean getAllColumns) {
-		return readAll(Config.APP_NAME_NS, keys, getAllColumns);
+		return readAll(Config.getRootAppIdentifier(), keys, getAllColumns);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> readPage(Pager pager) {
-		return readPage(Config.APP_NAME_NS, pager);
+		return readPage(Config.getRootAppIdentifier(), pager);
 	}
 
 	@Override
 	public <P extends ParaObject> void updateAll(List<P> objects) {
-		updateAll(Config.APP_NAME_NS, objects);
+		updateAll(Config.getRootAppIdentifier(), objects);
 	}
 
 	@Override
 	public <P extends ParaObject> void deleteAll(List<P> objects) {
-		deleteAll(Config.APP_NAME_NS, objects);
+		deleteAll(Config.getRootAppIdentifier(), objects);
 	}
 
 }

@@ -17,9 +17,12 @@
  */
 package com.erudika.para.persistence;
 
+import com.erudika.para.AppCreatedListener;
+import com.erudika.para.AppDeletedListener;
 import com.erudika.para.DestroyListener;
 import com.erudika.para.Para;
 import com.erudika.para.annotations.Locked;
+import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.utils.Config;
@@ -55,19 +58,37 @@ public final class H2Utils {
 	private static JdbcConnectionPool pool;
 	private static Server server;
 
+	static {
+		// set up automatic table creation and deletion
+		App.addAppCreatedListener(new AppCreatedListener() {
+			public void onAppCreated(App app) {
+				if (app != null) {
+					createTable(app.getAppIdentifier());
+				}
+			}
+		});
+		App.addAppDeletedListener(new AppDeletedListener() {
+			public void onAppDeleted(App app) {
+				if (app != null) {
+					deleteTable(app.getAppIdentifier());
+				}
+			}
+		});
+	}
+
 	private H2Utils() { }
 
 	/**
 	 * Returns a connection to H2.
 	 * @return a connection instance
 	 */
-	public static Connection getConnection() {
+	static Connection getConnection() {
 		try {
 			org.h2.Driver.load();
 
 			String dir = Config.getConfigParam("db.dir", "./data");
-			String url = "jdbc:h2:" + dir + File.separator + Config.APP_NAME_NS;
-			String user = Config.getConfigParam("db.user", Config.APP_NAME_NS);
+			String url = "jdbc:h2:" + dir + File.separator + Config.getRootAppIdentifier();
+			String user = Config.getConfigParam("db.user", Config.getRootAppIdentifier());
 			String pass = Config.getConfigParam("db.password", "secret");
 
 			String serverParams = Config.getConfigParam("db.tcpServer", "-baseDir " + dir);
@@ -78,6 +99,11 @@ public final class H2Utils {
 				if (pool == null) {
 					pool = JdbcConnectionPool.create(url, user, pass);
 				}
+
+				if (!existsTable(Config.getRootAppIdentifier())) {
+					createTable(Config.getRootAppIdentifier());
+				}
+
 				Para.addDestroyListener(new DestroyListener() {
 					public void onDestroy() {
 						shutdownClient();
@@ -113,6 +139,8 @@ public final class H2Utils {
 						logger.warn("Failed to close connection to DB server: ", e.getMessage());
 					}
 				}
+				pool.dispose();
+				pool = null;
 			}
 		}
 		if (server != null) {
@@ -228,8 +256,9 @@ public final class H2Utils {
 		if (StringUtils.isBlank(appIdentifier)) {
 			return null;
 		} else {
-			return (appIdentifier.equals(Config.APP_NAME_NS) || appIdentifier.startsWith(Config.PARA.concat("_"))) ?
-					appIdentifier : Config.PARA + "_" + appIdentifier;
+			return ((App.isRoot(appIdentifier) ||
+					appIdentifier.startsWith(Config.PARA.concat("-"))) ?
+					appIdentifier : Config.PARA + "-" + appIdentifier).replaceAll("-", "_"); // SQLs don't like "-"
 		}
 	}
 

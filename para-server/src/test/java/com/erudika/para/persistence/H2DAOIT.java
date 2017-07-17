@@ -33,7 +33,7 @@ public class H2DAOIT extends DAOTest {
 
 	@BeforeClass
 	public static void setUpClass() throws InterruptedException {
-		H2Utils.createTable(Config.APP_NAME_NS);
+		H2Utils.createTable(Config.getRootAppIdentifier());
 		H2Utils.createTable(appid1);
 		H2Utils.createTable(appid2);
 		H2Utils.createTable(appid3);
@@ -41,7 +41,7 @@ public class H2DAOIT extends DAOTest {
 
 	@AfterClass
 	public static void tearDownClass() {
-		H2Utils.deleteTable(Config.APP_NAME_NS);
+		H2Utils.deleteTable(Config.getRootAppIdentifier());
 		H2Utils.deleteTable(appid1);
 		H2Utils.deleteTable(appid2);
 		H2Utils.deleteTable(appid3);
