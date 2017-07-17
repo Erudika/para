@@ -182,4 +182,10 @@ public class Pager {
 	public void setPage(long page) {
 		this.page = page;
 	}
+
+	@Override
+	public String toString() {
+		return "Pager{" + "page=" + page + ", count=" + count + ", sortby=" + sortby + ", desc=" + desc +
+				", limit=" + limit + ", name=" + name + ", lastKey=" + lastKey + '}';
+	}
 }
