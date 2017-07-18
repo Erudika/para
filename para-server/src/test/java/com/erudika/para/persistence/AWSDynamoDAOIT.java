@@ -40,6 +40,8 @@ import org.junit.Test;
  */
 public class AWSDynamoDAOIT extends DAOTest {
 
+	private static final String ROOT_APP_NAME = "para-test";
+
 	public AWSDynamoDAOIT() {
 		super(new AWSDynamoDAO());
 	}
@@ -47,6 +49,7 @@ public class AWSDynamoDAOIT extends DAOTest {
 	@BeforeClass
 	public static void setUpClass() throws InterruptedException {
 		System.setProperty("para.prepend_shared_appids_with_space", "true");
+		System.setProperty("para.app_name", ROOT_APP_NAME);
 		AWSDynamoUtils.createTable(Config.getRootAppIdentifier());
 		AWSDynamoUtils.createTable(appid1);
 		AWSDynamoUtils.createTable(appid2);

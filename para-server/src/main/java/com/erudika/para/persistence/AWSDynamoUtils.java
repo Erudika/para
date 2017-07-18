@@ -183,10 +183,12 @@ public final class AWSDynamoUtils {
 			return false;
 		}
 		try {
-			getClient().createTable(new CreateTableRequest().withTableName(getTableNameForAppid(appid)).
+			String table = getTableNameForAppid(appid);
+			getClient().createTable(new CreateTableRequest().withTableName(table).
 					withKeySchema(new KeySchemaElement(Config._KEY, KeyType.HASH)).
 					withAttributeDefinitions(new AttributeDefinition(Config._KEY, ScalarAttributeType.S)).
 					withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
+			logger.info("Created DynamoDB table '{}'.", table);
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;
@@ -230,7 +232,9 @@ public final class AWSDynamoUtils {
 			return false;
 		}
 		try {
-			getClient().deleteTable(new DeleteTableRequest().withTableName(getTableNameForAppid(appid)));
+			String table = getTableNameForAppid(appid);
+			getClient().deleteTable(new DeleteTableRequest().withTableName(table));
+			logger.info("Deleted DynamoDB table '{}'.", table);
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;

@@ -85,15 +85,13 @@ public final class H2Utils {
 	 */
 	static Connection getConnection() {
 		try {
-			org.h2.Driver.load();
-
-			String dir = Config.getConfigParam("db.dir", "./data");
-			String url = "jdbc:h2:" + dir + File.separator + Config.getRootAppIdentifier();
-			String user = Config.getConfigParam("db.user", Config.getRootAppIdentifier());
-			String pass = Config.getConfigParam("db.password", "secret");
-
-			String serverParams = Config.getConfigParam("db.tcpServer", "-baseDir " + dir);
-			if (server == null && !StringUtils.isBlank(serverParams)) {
+			if (server == null) {
+				org.h2.Driver.load();
+				String dir = Config.getConfigParam("db.dir", "./data");
+				String url = "jdbc:h2:" + dir + File.separator + Config.getRootAppIdentifier();
+				String user = Config.getConfigParam("db.user", Config.getRootAppIdentifier());
+				String pass = Config.getConfigParam("db.password", "secret");
+				String serverParams = Config.getConfigParam("db.tcpServer", "-baseDir " + dir);
 				String[] params = StringUtils.split(serverParams, ' ');
 				server = Server.createTcpServer(params);
 				server.start();
@@ -204,6 +202,7 @@ public final class H2Utils {
 					Config._TIMESTAMP, Config._UPDATED);
 			s.execute(sql);
 			s.close();
+			logger.info("Created H2 table '{}'.", table);
 			return true;
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -234,6 +233,7 @@ public final class H2Utils {
 			Statement s = conn.createStatement();
 			s.execute("DROP TABLE IF EXISTS " + table);
 			s.close();
+			logger.info("Deleted H2 table '{}'.", table);
 		} catch (Exception e) {
 			logger.error(null, e);
 		} finally {

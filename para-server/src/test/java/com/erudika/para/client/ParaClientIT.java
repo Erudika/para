@@ -140,7 +140,7 @@ public class ParaClientIT {
 			rootApp.create();
 		} else {
 			rootApp.resetSecret();
-			Para.getDAO().create(rootApp);
+			rootApp.create();
 		}
 
 		Map<String, String> creds = Para.newApp(APP_NAME_CHILD, "Child app with routing", false, false);
