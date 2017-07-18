@@ -17,6 +17,13 @@
 			<artifactId>para-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+
+		<!-- JERSEY -->
+		<dependency>
+			<groupId>org.glassfish.jersey.core</groupId>
+			<artifactId>jersey-client</artifactId>
+			<version>${jerseyVer}</version>
+		</dependency>
 	</dependencies>
 
 	<build>

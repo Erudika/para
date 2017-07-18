@@ -24,7 +24,7 @@ See how **Para** [compares to other open source backend frameworks](https://erud
 
 - RESTful JSON API secured with Amazon's Signature 4 algorithm
 - Database-agnostic, designed for scalable data stores (DynamoDB, Cassandra, MongoDB, etc.)
-- Full-text search (Elasticsearch by default)
+- Full-text search (Lucene by default, Elasticsearch plugin)
 - Distributed object cache (Hazelcast by default)
 - Multi-tenancy support - each app has its own table, index and cache
 - IoT support and integration with AWS and Azure
@@ -164,9 +164,24 @@ Use these client libraries to quickly integrate Para into your project:
 
 Use these `DAO` implementations to connect to different databases:
 
-- **DynamoDB**: `AWSDynamoDAO` (part of the `para-server` package)
+- **H2**: `H2DAO` **default** (included in `para-server`)
+- **DynamoDB**: `AWSDynamoDAO` (included in `para-server`)
 - **MongoDB**: [para-dao-mongodb](https://github.com/Erudika/para-dao-mongodb)
 - **Cassandra**: [para-dao-cassandra](https://github.com/Erudika/para-dao-cassandra)
+
+## Search engine integrations
+
+The `Search` interface is implemented by:
+
+- **Lucene**: `LuceneSearch` **default** (included in `para-server`)
+- **Elasticsearch**: [para-search-elasticsearch](https://github.com/erudika/para-search-elasticsearch)
+
+## Cache integrations
+
+The `Cache` interface is implemented by:
+
+- **Hazelcast**: `HazelcastCache` **default** (included in `para-server`)
+- **In-memory**: objects can be cached on the JVM heap
 
 ## Projects using Para
 
@@ -178,8 +193,7 @@ Use these `DAO` implementations to connect to different databases:
 ## Wishlist / Roadmap
 
 - `DAO` implementation for PostgreSQL.
-- Separate Elasticsearch from Para and create a new `para-search-elasticsearch` plugin (support ES v6)
-- Implement `Search` with Lucene for local develoment/embedded mode
+- MongoDB implementation of `Search`
 - Make the API server more efficient with fibers (Quasar)
 - Server-side JavaScript support for implementing custom API resources
 - Integrations with Google App Engine, Heroku, DigitalOcean

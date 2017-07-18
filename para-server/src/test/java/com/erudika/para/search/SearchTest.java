@@ -340,7 +340,7 @@ public abstract class SearchTest {
 	@Test
 	public void testIndex() {
 		s.index(null);
-		User ux = new User("test-xxx");
+		Sysprop ux = new Sysprop("test-xxx");
 		s.index(ux);
 		assertNotNull(s.findById(ux.getId()));
 		assertNotNull(s.findById(u.getId()));

@@ -13,7 +13,7 @@
 
 	<properties>
 		<jacksonVer>2.8.7</jacksonVer>
-		<springVer>4.3.7.RELEASE</springVer>
+		<springVer>4.3.9.RELEASE</springVer>
 	</properties>
 
 	<dependencies>
@@ -22,6 +22,12 @@
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk-core</artifactId>
 			<version>${awsJdkVer}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<!-- SPRING -->
@@ -29,6 +35,12 @@
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-core</artifactId>
 			<version>${springVer}</version>
+		 <exclusions>
+		  <exclusion>
+		   <groupId>commons-logging</groupId>
+		   <artifactId>commons-logging</artifactId>
+		  </exclusion>
+		 </exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
@@ -41,11 +53,17 @@
 			<version>${springVer}</version>
 		</dependency>
 
-		<!-- JERSEY -->
+		<!--	 INJECT & JAX-RS -->
 		<dependency>
-			<groupId>org.glassfish.jersey.core</groupId>
-			<artifactId>jersey-client</artifactId>
-			<version>${jerseyVer}</version>
+			<groupId>javax.ws.rs</groupId>
+			<artifactId>javax.ws.rs-api</artifactId>
+			<version>2.1-m09</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>javax.inject</groupId>
+			<artifactId>javax.inject</artifactId>
+			<version>1</version>
 		</dependency>
 
 		<!-- JACKSON -->
@@ -96,11 +114,11 @@
 			<artifactId>slf4j-api</artifactId>
 			<version>${slf4jVer}</version>
 		</dependency>
-		<dependency>
+<!--		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>jcl-over-slf4j</artifactId>
 			<version>${slf4jVer}</version>
-		</dependency>
+		</dependency>-->
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>jul-to-slf4j</artifactId>
@@ -126,17 +144,18 @@
 			<artifactId>logback-access</artifactId>
 			<version>${logbackVer}</version>
 		</dependency>
-		<dependency>
-			<artifactId>commons-logging</artifactId>
-			<groupId>commons-logging</groupId>
-			<version>1.2</version>
-		</dependency>
 
 		<!-- OTHER -->
 		<dependency>
 			<groupId>commons-beanutils</groupId>
 			<artifactId>commons-beanutils</artifactId>
 			<version>1.9.3</version>
+		 <exclusions>
+		  <exclusion>
+		   <groupId>commons-logging</groupId>
+		   <artifactId>commons-logging</artifactId>
+		  </exclusion>
+		 </exclusions>
 		</dependency>
 		<dependency>
 			<groupId>com.typesafe</groupId>
@@ -148,6 +167,12 @@
 			<groupId>org.hibernate</groupId>
 			<artifactId>hibernate-validator</artifactId>
 			<version>5.4.1.Final</version>
+		 <exclusions>
+		  <exclusion>
+		   <groupId>org.jboss.logging</groupId>
+		   <artifactId>jboss-logging</artifactId>
+		  </exclusion>
+		 </exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>

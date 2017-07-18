@@ -409,6 +409,8 @@ public final class ParaObjectUtils {
 	 */
 	private static class CoreClassScanner extends ClassPathScanningCandidateComponentProvider {
 
+		private static final Logger logger = LoggerFactory.getLogger(CoreClassScanner.class);
+
 		CoreClassScanner() {
 			super(false);
 			addIncludeFilter(new AssignableTypeFilter(ParaObject.class));
