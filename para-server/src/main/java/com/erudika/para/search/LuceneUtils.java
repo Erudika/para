@@ -441,6 +441,37 @@ public final class LuceneUtils {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
+	private static <P extends ParaObject> List<P> readResultsFromDatabase(DAO dao, String appid,
+			Map<String, String> keysAndSources) {
+		if (keysAndSources == null || keysAndSources.isEmpty()) {
+			return Collections.emptyList();
+		}
+		ArrayList<P> results = new ArrayList<P>(keysAndSources.size());
+		ArrayList<String> nullz = new ArrayList<String>(results.size());
+		Map<String, P> fromDB = dao.readAll(appid, new ArrayList<String>(keysAndSources.keySet()), true);
+		for (Map.Entry<String, String> entry : keysAndSources.entrySet()) {
+			String key = entry.getKey();
+			P pobj = fromDB.get(key);
+			if (pobj == null) {
+				pobj = ParaObjectUtils.fromJSON(entry.getValue());
+				// object is still in index but not in DB
+				if (pobj != null && appid.equals(pobj.getAppid()) && pobj.getStored()) {
+					nullz.add(key);
+				}
+			}
+			if (pobj != null) {
+				results.add(pobj);
+			}
+		}
+
+		if (!nullz.isEmpty()) {
+			logger.warn("Found {} objects that are indexed but not in the database: {}",
+					nullz.size(), nullz);
+		}
+		return results;
+	}
+
 	/**
 	 * Geopoint distance query. Finds objects located near a center point.
 	 * @param <P> object type
@@ -574,31 +605,12 @@ public final class LuceneUtils {
 				if (readFromIndex) {
 					readObjectFromIndex(hit, results, keysAndSources, pager);
 				}
-				keysAndSources.put(hit.get(Config._ID), hit.get(SOURCE_FIELD_NAME));
+				if (hit != null && hit.get(Config._ID) != null) {
+					keysAndSources.put(hit.get(Config._ID), hit.get(SOURCE_FIELD_NAME));
+				}
 			}
-
-			if (!readFromIndex && !keysAndSources.isEmpty()) {
-				ArrayList<String> nullz = new ArrayList<String>(results.size());
-				Map<String, P> fromDB = dao.readAll(appid, new ArrayList(keysAndSources.keySet()), true);
-				for (Map.Entry<String, String> entry : keysAndSources.entrySet()) {
-					String key = entry.getKey();
-					P pobj = fromDB.get(key);
-					if (pobj == null) {
-						pobj = ParaObjectUtils.fromJSON(entry.getValue());
-						// object is still in index but not in DB
-						if (pobj != null && appid.equals(pobj.getAppid()) && pobj.getStored()) {
-							nullz.add(key);
-						}
-					}
-					if (pobj != null) {
-						results.add(pobj);
-					}
-				}
-
-				if (!nullz.isEmpty()) {
-					logger.warn("Found {} objects that are indexed but not in the database: {}",
-							nullz.size(), nullz);
-				}
+			if (!readFromIndex) {
+				return readResultsFromDatabase(dao, appid, keysAndSources);
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -640,7 +652,7 @@ public final class LuceneUtils {
 			for (int i = 0; i < hits.length; i++) {
 				docs[i] = isearcher.doc(hits[i].doc);
 			}
-			logger.debug("Lucene query: {} Hits: {}, Total: {}", query.toString(), hits.length, topDocs.totalHits);
+			logger.debug("Lucene query: {} Hits: {}, Total: {}", query, hits.length, topDocs.totalHits);
 			return docs;
 		} catch (Exception e) {
 			Throwable cause = e.getCause();

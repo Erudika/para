@@ -48,8 +48,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import static com.erudika.para.search.LuceneUtils.searchQuery;
 import static org.apache.lucene.document.LatLonPoint.newDistanceQuery;
 import org.apache.lucene.search.PrefixQuery;
@@ -63,7 +61,6 @@ import org.apache.lucene.util.BytesRef;
 @Singleton
 public class LuceneSearch implements Search {
 
-	private static final Logger logger = LoggerFactory.getLogger(LuceneSearch.class);
 	private DAO dao;
 
 	/**
@@ -89,12 +86,6 @@ public class LuceneSearch implements Search {
 		}
 		Map<String, Object> data = ParaObjectUtils.getAnnotatedFields(po, null, false);
 		indexDocuments(appid, Collections.singletonList(paraObjectToDocument(appid, data)));
-	}
-
-	@Override
-	@Deprecated
-	public void index(String appid, ParaObject po, long ttl) {
-		index(appid, po);
 	}
 
 	@Override
@@ -172,11 +163,9 @@ public class LuceneSearch implements Search {
 		if (StringUtils.isBlank(type) || StringUtils.isBlank(appid)) {
 			return Collections.emptyList();
 		}
-		if (StringUtils.isBlank(query)) {
-			query = "*";
-		}
+		String q = StringUtils.isBlank(query) ? "*" : query;
 		// searchQuery nearby Address objects (with radius in METERS)
-		return searchGeoQuery(dao, appid, type, newDistanceQuery("latlng", lat, lng, radius * 1000), query, pager);
+		return searchGeoQuery(dao, appid, type, newDistanceQuery("latlng", lat, lng, radius * 1000.0), q, pager);
 	}
 
 	@Override

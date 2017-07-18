@@ -83,21 +83,18 @@ public final class H2Utils {
 	 * Returns a connection to H2.
 	 * @return a connection instance
 	 */
-	static Connection getConnection() {
+	static Connection getConnection() throws SQLException {
+		String dir = Config.getConfigParam("db.dir", "./data");
+		String url = "jdbc:h2:" + dir + File.separator + Config.getRootAppIdentifier();
+		String user = Config.getConfigParam("db.user", Config.getRootAppIdentifier());
+		String pass = Config.getConfigParam("db.password", "secret");
 		try {
 			if (server == null) {
 				org.h2.Driver.load();
-				String dir = Config.getConfigParam("db.dir", "./data");
-				String url = "jdbc:h2:" + dir + File.separator + Config.getRootAppIdentifier();
-				String user = Config.getConfigParam("db.user", Config.getRootAppIdentifier());
-				String pass = Config.getConfigParam("db.password", "secret");
 				String serverParams = Config.getConfigParam("db.tcpServer", "-baseDir " + dir);
 				String[] params = StringUtils.split(serverParams, ' ');
 				server = Server.createTcpServer(params);
 				server.start();
-				if (pool == null) {
-					pool = JdbcConnectionPool.create(url, user, pass);
-				}
 
 				if (!existsTable(Config.getRootAppIdentifier())) {
 					createTable(Config.getRootAppIdentifier());
@@ -109,11 +106,13 @@ public final class H2Utils {
 					}
 				});
 			}
-			return pool.getConnection();
 		} catch (Exception e) {
 			logger.error("Failed to start DB server. {}", e.getMessage());
 		}
-		return null;
+		if (pool == null) {
+			pool = JdbcConnectionPool.create(url, user, pass);
+		}
+		return pool.getConnection();
 	}
 
 	/**
@@ -123,21 +122,16 @@ public final class H2Utils {
 	protected static void shutdownClient() {
 		if (pool != null) {
 			Connection conn = null;
+			Statement stat = null;
 			try {
 				conn = pool.getConnection();
-				Statement stat = conn.createStatement();
+				stat = conn.createStatement();
 				stat.execute("SHUTDOWN");
-				stat.close();
 			} catch (Exception e) {
 				logger.warn("Failed to shutdown DB server: {}", e.getMessage());
 			} finally {
-				if (conn != null) {
-					try {
-						conn.close();
-					} catch (Exception e) {
-						logger.warn("Failed to close connection to DB server: ", e.getMessage());
-					}
-				}
+				closeConnection(conn);
+				closeStatement(stat);
 				pool.dispose();
 				pool = null;
 			}
@@ -158,27 +152,25 @@ public final class H2Utils {
 		if (StringUtils.isBlank(appid)) {
 			return false;
 		}
-		Connection conn = getConnection();
+		Connection conn = null;
+		PreparedStatement p = null;
+		ResultSet res = null;
 		try {
-			PreparedStatement p = conn.prepareStatement(
+			conn = getConnection();
+			p = conn.prepareStatement(
 					"SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ?");
 			p.setString(1, getTableNameForAppid(appid));
-			ResultSet res = p.executeQuery();
+			res = p.executeQuery();
 			if (res.next()) {
 				String name = res.getString(1);
-				p.close();
 				return name != null;
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
 		} finally {
-			if (conn != null) {
-				try {
-					conn.close();
-				} catch (SQLException ex) {
-					logger.error(null, ex);
-				}
-			}
+			closeConnection(conn);
+			closeStatement(p);
+			closeResultSet(res);
 		}
 		return false;
 	}
@@ -192,28 +184,24 @@ public final class H2Utils {
 		if (StringUtils.isBlank(appid) || StringUtils.containsWhitespace(appid) || existsTable(appid)) {
 			return false;
 		}
-		Connection conn = getConnection();
+		Connection conn = null;
+		Statement s = null;
 		try {
+			conn = getConnection();
 			String table = getTableNameForAppid(appid);
-			Statement s = conn.createStatement();
+			s = conn.createStatement();
 			String sql = Utils.formatMessage("CREATE TABLE IF NOT EXISTS {0} ({1} NVARCHAR PRIMARY KEY,{2} NVARCHAR,"
 					+ "{3} NVARCHAR,{4} NVARCHAR,{5} NVARCHAR,{6} TIMESTAMP,{7} TIMESTAMP,json NVARCHAR)",
 					table, Config._ID, Config._TYPE, Config._NAME, Config._PARENTID, Config._CREATORID,
 					Config._TIMESTAMP, Config._UPDATED);
 			s.execute(sql);
-			s.close();
 			logger.info("Created H2 table '{}'.", table);
 			return true;
 		} catch (Exception e) {
 			logger.error(null, e);
 		} finally {
-			if (conn != null) {
-				try {
-					conn.close();
-				} catch (SQLException ex) {
-					logger.error(null, ex);
-				}
-			}
+			closeConnection(conn);
+			closeStatement(s);
 		}
 		return false;
 	}
@@ -227,23 +215,19 @@ public final class H2Utils {
 		if (StringUtils.isBlank(appid)) {
 			return false;
 		}
-		Connection conn = getConnection();
+		Connection conn = null;
+		Statement s = null;
 		try {
+			conn = getConnection();
 			String table = getTableNameForAppid(appid);
-			Statement s = conn.createStatement();
+			s = conn.createStatement();
 			s.execute("DROP TABLE IF EXISTS " + table);
-			s.close();
 			logger.info("Deleted H2 table '{}'.", table);
 		} catch (Exception e) {
 			logger.error(null, e);
 		} finally {
-			if (conn != null) {
-				try {
-					conn.close();
-				} catch (SQLException ex) {
-					logger.error(null, ex);
-				}
-			}
+			closeConnection(conn);
+			closeStatement(s);
 		}
 		return true;
 	}
@@ -274,35 +258,33 @@ public final class H2Utils {
 		if (StringUtils.isBlank(appid) || ids == null || ids.isEmpty()) {
 			return Collections.emptyMap();
 		}
-		Connection conn = getConnection();
+		Connection conn = null;
+		PreparedStatement p = null;
+		ResultSet res = null;
 		try {
+			conn = getConnection();
 			Map<String, P> results = new LinkedHashMap<String, P>();
 			String table = getTableNameForAppid(appid);
-			PreparedStatement p = conn.prepareStatement("SELECT json FROM " + table + " WHERE " + Config._ID +
+			p = conn.prepareStatement("SELECT json FROM " + table + " WHERE " + Config._ID +
 					" IN (" + StringUtils.repeat("?", ",", ids.size()) + ")");
 			for (int i = 0; i < ids.size(); i++) {
 				p.setString(i + 1, ids.get(i));
 				results.put(ids.get(i), null);
 			}
-			ResultSet res = p.executeQuery();
+			res = p.executeQuery();
 			while (res.next()) {
 				P obj = ParaObjectUtils.fromJSON(res.getString(1));
 				if (obj != null) {
 					results.put(obj.getId(), obj);
 				}
 			}
-			p.close();
 			return results;
 		} catch (Exception e) {
 			logger.error(null, e);
 		} finally {
-			if (conn != null) {
-				try {
-					conn.close();
-				} catch (SQLException ex) {
-					logger.error(null, ex);
-				}
-			}
+			closeConnection(conn);
+			closeStatement(p);
+			closeResultSet(res);
 		}
 		return Collections.emptyMap();
 	}
@@ -317,10 +299,12 @@ public final class H2Utils {
 		if (StringUtils.isBlank(appid) || objects == null || objects.isEmpty()) {
 			return;
 		}
-		Connection conn = getConnection();
+		Connection conn = null;
+		PreparedStatement p = null;
 		try {
+			conn = getConnection();
 			String table = getTableNameForAppid(appid);
-			PreparedStatement p = conn.prepareStatement("MERGE INTO " + table +	" VALUES (?,?,?,?,?,?,?,?)");
+			p = conn.prepareStatement("MERGE INTO " + table +	" VALUES (?,?,?,?,?,?,?,?)");
 
 			for (P object : objects) {
 				if (StringUtils.isBlank(object.getId())) {
@@ -347,17 +331,11 @@ public final class H2Utils {
 				p.addBatch();
 			}
 			p.executeBatch();
-			p.close();
 		} catch (Exception e) {
 			logger.error(null, e);
 		} finally {
-			if (conn != null) {
-				try {
-					conn.close();
-				} catch (SQLException ex) {
-					logger.error(null, ex);
-				}
-			}
+			closeConnection(conn);
+			closeStatement(p);
 		}
 	}
 
@@ -371,8 +349,10 @@ public final class H2Utils {
 		if (StringUtils.isBlank(appid) || objects == null || objects.isEmpty()) {
 			return;
 		}
-		Connection conn = getConnection();
+		Connection conn = null;
+		PreparedStatement p = null;
 		try {
+			conn = getConnection();
 			String table = getTableNameForAppid(appid);
 			Map<String, P> objectsMap = new HashMap<String, P>(objects.size());
 			for (P object : objects) {
@@ -387,7 +367,7 @@ public final class H2Utils {
 					+ "WHERE {7} = ?", table, Config._TYPE, Config._NAME, Config._PARENTID, Config._CREATORID,
 					Config._TIMESTAMP, Config._UPDATED, Config._ID);
 
-			PreparedStatement p = conn.prepareStatement(sql);
+			p = conn.prepareStatement(sql);
 
 			for (P existingObject : existingObjects.values()) {
 				if (existingObject != null) {
@@ -412,17 +392,11 @@ public final class H2Utils {
 				}
 			}
 			p.executeBatch();
-			p.close();
 		} catch (Exception e) {
 			logger.error(null, e);
 		} finally {
-			if (conn != null) {
-				try {
-					conn.close();
-				} catch (SQLException ex) {
-					logger.error(null, ex);
-				}
-			}
+			closeConnection(conn);
+			closeStatement(p);
 		}
 	}
 
@@ -436,26 +410,22 @@ public final class H2Utils {
 		if (StringUtils.isBlank(appid) || objects == null || objects.isEmpty()) {
 			return;
 		}
-		Connection conn = getConnection();
+		Connection conn = null;
+		PreparedStatement p = null;
 		try {
+			conn = getConnection();
 			String table = getTableNameForAppid(appid);
-			PreparedStatement p = conn.prepareStatement("DELETE FROM " + table + " WHERE " + Config._ID +
+			p = conn.prepareStatement("DELETE FROM " + table + " WHERE " + Config._ID +
 					" IN (" + StringUtils.repeat("?", ",", objects.size()) + ")");
 			for (int i = 0; i < objects.size(); i++) {
 				p.setString(i + 1, objects.get(i).getId());
 			}
 			p.execute();
-			p.close();
 		} catch (Exception e) {
 			logger.error(null, e);
 		} finally {
-			if (conn != null) {
-				try {
-					conn.close();
-				} catch (SQLException ex) {
-					logger.error(null, ex);
-				}
-			}
+			closeConnection(conn);
+			closeStatement(p);
 		}
 	}
 
@@ -473,14 +443,19 @@ public final class H2Utils {
 		if (pager == null) {
 			pager = new Pager();
 		}
-		Connection conn = getConnection();
+		Connection conn = null;
+		PreparedStatement p = null;
+		ResultSet res = null;
 		try {
+			conn = getConnection();
 			List<P> results = new ArrayList<P>(pager.getLimit());
 			String table = getTableNameForAppid(appid);
 			int start = pager.getPage() <= 1 ? 0 : (int) (pager.getPage() - 1) * pager.getLimit();
-			PreparedStatement p = conn.prepareStatement("SELECT ROWNUM(), json FROM (SELECT json FROM " + table +
-					") WHERE ROWNUM() > " + start + " LIMIT " + pager.getLimit());
-			ResultSet res = p.executeQuery();
+			p = conn.prepareStatement("SELECT ROWNUM(), json FROM (SELECT json FROM " + table + ")" +
+					"WHERE ROWNUM() > ? LIMIT ?");
+			p.setInt(1, start);
+			p.setInt(2, pager.getLimit());
+			res = p.executeQuery();
 			int i = 0;
 			while (res.next()) {
 				P obj = ParaObjectUtils.fromJSON(res.getString(2));
@@ -496,20 +471,44 @@ public final class H2Utils {
 			} else {
 				pager.setPage(pager.getPage() + 1);
 			}
-			p.close();
 			return results;
 		} catch (Exception e) {
 			logger.error(null, e);
 		} finally {
-			if (conn != null) {
-				try {
-					conn.close();
-				} catch (SQLException ex) {
-					logger.error(null, ex);
-				}
-			}
+			closeConnection(conn);
+			closeStatement(p);
+			closeResultSet(res);
 		}
 		return Collections.emptyList();
 	}
 
+	private static void closeResultSet(ResultSet res) {
+		if (res != null) {
+			try {
+				res.close();
+			} catch (Exception e) {
+				logger.warn("Failed to close result set: ", e.getMessage());
+			}
+		}
+	}
+
+	private static void closeStatement(Statement stat) {
+		if (stat != null) {
+			try {
+				stat.close();
+			} catch (Exception e) {
+				logger.warn("Failed to close statement: ", e.getMessage());
+			}
+		}
+	}
+
+	private static void closeConnection(Connection conn) {
+		if (conn != null) {
+			try {
+				conn.close();
+			} catch (Exception e) {
+				logger.warn("Failed to close connection to DB server: ", e.getMessage());
+			}
+		}
+	}
 }

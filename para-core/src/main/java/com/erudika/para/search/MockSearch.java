@@ -41,12 +41,6 @@ public class MockSearch implements Search {
 	}
 
 	@Override
-	@Deprecated
-	public void index(String appid, ParaObject po, long ttl) {
-		throw new UnsupportedOperationException("Not implemented.");
-	}
-
-	@Override
 	public void unindex(ParaObject po) {
 		throw new UnsupportedOperationException("Not implemented.");
 	}

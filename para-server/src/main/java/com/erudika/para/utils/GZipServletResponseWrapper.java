@@ -71,7 +71,7 @@ public class GZipServletResponseWrapper extends HttpServletResponseWrapper {
 	/**
 	 * Flush OutputStream or PrintWriter.
 	 *
-	 * @throws IOException
+	 * @throws IOException ex
 	 */
 	@Override
 	public void flushBuffer() throws IOException {

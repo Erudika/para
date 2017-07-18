@@ -58,6 +58,7 @@ public abstract class Constraint {
 
 	private String name;
 	private Map<String, Object> payload;
+	private static final String MSG_PREFIX = "messages.";
 
 	private static final Map<Class<?>, String> VALIDATORS = new HashMap<Class<?>, String>() {
 		private static final long serialVersionUID = 1L;
@@ -180,7 +181,7 @@ public abstract class Constraint {
 			return null;
 		}
 		Map<String, Object> payload = new LinkedHashMap<String, Object>();
-		payload.put("message", "messages." + name);
+		payload.put("message", MSG_PREFIX + name);
 		return payload;
 	}
 
@@ -195,7 +196,7 @@ public abstract class Constraint {
 		}
 		Map<String, Object> payload = new LinkedHashMap<String, Object>();
 		payload.put("value", min);
-		payload.put("message", "messages." + VALIDATORS.get(Min.class));
+		payload.put("message", MSG_PREFIX + VALIDATORS.get(Min.class));
 		return payload;
 	}
 
@@ -210,7 +211,7 @@ public abstract class Constraint {
 		}
 		Map<String, Object> payload = new LinkedHashMap<String, Object>();
 		payload.put("value", max);
-		payload.put("message", "messages." + VALIDATORS.get(Max.class));
+		payload.put("message", MSG_PREFIX + VALIDATORS.get(Max.class));
 		return payload;
 	}
 
@@ -227,7 +228,7 @@ public abstract class Constraint {
 		Map<String, Object> payload = new LinkedHashMap<String, Object>();
 		payload.put("min", min);
 		payload.put("max", max);
-		payload.put("message", "messages." + VALIDATORS.get(Size.class));
+		payload.put("message", MSG_PREFIX + VALIDATORS.get(Size.class));
 		return payload;
 	}
 
@@ -244,7 +245,7 @@ public abstract class Constraint {
 		Map<String, Object> payload = new LinkedHashMap<String, Object>();
 		payload.put("integer", i);
 		payload.put("fraction", f);
-		payload.put("message", "messages." + VALIDATORS.get(Digits.class));
+		payload.put("message", MSG_PREFIX + VALIDATORS.get(Digits.class));
 		return payload;
 	}
 
@@ -259,7 +260,7 @@ public abstract class Constraint {
 		}
 		Map<String, Object> payload = new LinkedHashMap<String, Object>();
 		payload.put("value", regex);
-		payload.put("message", "messages." + VALIDATORS.get(Pattern.class));
+		payload.put("message", MSG_PREFIX + VALIDATORS.get(Pattern.class));
 		return payload;
 	}
 

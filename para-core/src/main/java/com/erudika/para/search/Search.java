@@ -46,17 +46,6 @@ public interface Search {
 	void index(String appid, ParaObject po);
 
 	/**
-	 * Indexes an object. Only fields marked with {@link com.erudika.para.annotations.Stored} are indexed.
-	 * Automatically removes the object from the index after TTL milliseconds.
-	 * @deprecated TTL is no longer supported by Elasticsearch
-	 * @param appid name of the {@link com.erudika.para.core.App}
-	 * @param po the domain object
-	 * @param ttl time to live in milliseconds before the object is removed from the index.
-	 */
-	@Deprecated
-	void index(String appid, ParaObject po, long ttl);
-
-	/**
 	 * Removes an object from the index.
 	 * @param po the domain object
 	 */
