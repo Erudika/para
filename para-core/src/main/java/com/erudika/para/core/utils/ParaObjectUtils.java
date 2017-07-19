@@ -226,8 +226,17 @@ public final class ParaObjectUtils {
 				if (field.isAnnotationPresent(Stored.class) && dontSkip) {
 					String name = field.getName();
 					Object value = PropertyUtils.getProperty(pojo, name);
-					if (!Utils.isBasicType(field.getType()) && flattenNestedObjectsToString) {
-						value = getJsonWriterNoIdent().writeValueAsString(value);
+					if (!Utils.isBasicType(field.getType())) {
+						if (flattenNestedObjectsToString) {
+							value = getJsonWriterNoIdent().writeValueAsString(value);
+						}
+						if (value instanceof Map) {
+							for (Map.Entry<String, Object> entry : ((Map<String, Object>) value).entrySet()) {
+								if (!Utils.isBasicType(entry.getValue().getClass())) {
+									entry.setValue(getJsonWriterNoIdent().writeValueAsString(entry.getValue()));
+								}
+							}
+						}
 					}
 					map.put(name, value);
 				}
@@ -284,9 +293,18 @@ public final class ParaObjectUtils {
 						value = PropertyUtils.getProperty(pojo, name);
 					}
 					// handle complex JSON objects deserialized to Maps, Arrays, etc.
-					if (!Utils.isBasicType(field.getType()) && value instanceof String) {
-						// in this case the object is a flattened JSON string coming from the DB
-						value = getJsonReader(field.getType()).readValue(value.toString());
+					if (!Utils.isBasicType(field.getType())) {
+						if (value instanceof String) {
+							// in this case the object is a flattened JSON string coming from the DB
+							value = getJsonReader(field.getType()).readValue(value.toString());
+						}
+						if (value instanceof Map) {
+							for (Map.Entry<String, Object> entry : ((Map<String, Object>) value).entrySet()) {
+								if (entry.getValue() instanceof String && ((String) entry.getValue()).contains("[")) {
+									entry.setValue(getJsonReader(List.class).readValue(entry.getValue().toString()));
+								}
+							}
+						}
 					}
 					field.setAccessible(true);
 					BeanUtils.setProperty(pojo, name, value);
