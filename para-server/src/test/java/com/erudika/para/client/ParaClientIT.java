@@ -973,10 +973,16 @@ public class ParaClientIT {
 	@Test
 	public void testOwnersPermissions() throws InterruptedException {
 		// test user should be able to login twice - first time the object is created, second time password is checked
-		String emailPassFail = "test2@user.com::123456";
+		String emailInactive = "test2@user.com";
+		String emailPassFail = emailInactive + "::123456";
 		String emailPassPass = "test3@user.com::123456";
 		String emailPassPass2 = "test4@user.com::123456";
-		assertNull(pc2.signIn("password", emailPassFail)); // unverified email - not allowed
+		assertNull(pc2.signIn("password", emailPassFail)); // unverified email - user is created but not active
+		List<User> failed = pc2.findTerms(fbUser.getType(), Collections.singletonMap(Config._EMAIL, emailInactive), true);
+		assertFalse(failed.isEmpty());
+		assertEquals(emailInactive, failed.get(0).getEmail());
+		pc2.delete(failed.get(0));
+
 		System.setProperty("para.security.allow_unverified_emails", "true"); // allow it
 		User newUser = pc2.signIn("password", emailPassPass);
 		User newUser2 = pc2.signIn("password", emailPassPass2);
