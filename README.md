@@ -100,15 +100,41 @@ $ para-cli read --id todo1
 $ para-cli search "type:todo"
 ```
 
+### Email configuration
+
+Para can either use the JavaMail API or AWS SES to send emails. This is used for email verification, password recovery
+and notifications. Set `support_email` to be the email address used by the system. An example config for JavaMail:
+
+```
+para.emailer = "javamail"
+para.support_email = "support@example.com"
+para.mail.host = "smtp.example.com"
+para.mail.port = 587
+para.mail.username = "user@example.com"
+para.mail.password = "password"
+para.mail.tls = true
+para.mail.ssl = false
+```
+An example email template is located in `src/main/resources/emails/notify.html`.
+Set `para.emailer = "aws"` to use the AWS Simple Email Service and comment out the `para.mail.*`
+properties as they are ignored. Also set `para.aws_access_key` and `para.aws_secret_key`.
+
 ### Building Para
 
-Para can be compiled with JDK 6 and up, but we recommend running it on JDK 8+.
+Para can be compiled with JDK 6 and up, but using JDK 8+ is recommended.
 
 To compile it you'll need Maven. Once you have it, just clone and build:
 
 ```sh
 $ git clone https://github.com/erudika/para.git && cd para
 $ mvn install -DskipTests=true
+```
+To generate the executable "uber-war" run `$ mvn package` and it will be in `./para-war/target/para-x.y.z-SNAPSHOT.war`.
+Two WAR files will be generated in total - the fat one is a bit bigger in size.
+
+To run a local instance of Para for development, use:
+```sh
+$ mvn spring-boot:run
 ```
 
 ### Standalone server

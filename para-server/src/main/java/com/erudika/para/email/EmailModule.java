@@ -27,10 +27,13 @@ import com.google.inject.AbstractModule;
 public class EmailModule extends AbstractModule {
 
 	protected void configure() {
-		if ("embedded".equals(Config.ENVIRONMENT)) {
-			bind(Emailer.class).to(NoopEmailer.class);
-		} else {
+		String selectedEmailer = Config.getConfigParam("emailer", "");
+		if ("aws".equals(selectedEmailer)) {
 			bind(Emailer.class).to(AWSEmailer.class);
+		} else if ("javamail".equals(selectedEmailer)) {
+			bind(Emailer.class).to(JavaMailEmailer.class);
+		} else {
+			bind(Emailer.class).to(NoopEmailer.class);
 		}
 	}
 
