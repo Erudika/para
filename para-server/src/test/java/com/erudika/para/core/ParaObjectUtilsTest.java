@@ -20,14 +20,29 @@ package com.erudika.para.core;
 import static com.erudika.para.core.utils.ParaObjectUtils.*;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.erudika.para.core.utils.ParaObjectUtils;
+import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Utils;
 
 /**
  * TODO!
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class ParaObjectUtilsTest {
+
+	private static final Logger logger = LoggerFactory.getLogger(ParaObjectUtilsTest.class);
 
 	public ParaObjectUtilsTest() {
 	}
@@ -38,6 +53,47 @@ public class ParaObjectUtilsTest {
 
 	@AfterClass
 	public static void tearDownClass() {
+	}
+	
+	@Test
+	public void testGetAnnotatedFields() throws IOException{
+		
+		boolean flattenNestedObjectsToString = Config.getConfigBoolean("flatten_nested_object_to_string", true);
+        
+		List<String> list = new ArrayList<String>();
+		list.add("list1");
+		list.add("list2");
+		
+        Sysprop po = new Sysprop();
+        po.getProperties().put(Config._ID, "111111");
+        po.getProperties().put(Config._NAME, "222222");
+        po.getProperties().put(Config._TAGS, list);
+        
+        Map<String, Object> data = ParaObjectUtils.getAnnotatedFields(po, flattenNestedObjectsToString);
+        logger.info("map string: {}", ParaObjectUtils.getJsonWriter().writeValueAsString(data));
+        po = ParaObjectUtils.setAnnotatedFields(data);
+        logger.info("string object: {}", po);
+	}
+	
+	@Test
+	public void testSetAnnotatedFields(){
+		Map<String, Object> map = new HashMap<String, Object>();
+		
+		long timestamp = 1390052381000L;
+		map.put(Config._ID, "123");
+		map.put(Config._TYPE, Utils.type(User.class));
+		map.put(Config._NAME, "test");
+		map.put(Config._TAGS, "[\"111111\",\"222222\"]");	// flattened JSON string
+		map.put(Config._TIMESTAMP, Long.toString(timestamp));
+
+		User obj = ParaObjectUtils.setAnnotatedFields(map);
+		logger.info("para map user: {}", obj);
+
+		User obj2 = new User("234");
+		obj2.setActive(true);
+		obj2 = ParaObjectUtils.setAnnotatedFields(obj2, map, null);
+		logger.info("para user: {}", obj2);
+		
 	}
 
 	@Test
