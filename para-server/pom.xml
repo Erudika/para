@@ -13,6 +13,7 @@
 
 	<properties>
 		<springSecVer>4.2.3.RELEASE</springSecVer>
+		<springLdapVer>2.3.1.RELEASE</springLdapVer>
 	</properties>
 
 	<dependencies>
@@ -22,7 +23,7 @@
 			<version>${project.version}</version>
 		</dependency>
 
-		<!-- SPRING -->
+		<!-- SPRING SECURITY -->
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-core</artifactId>
@@ -49,7 +50,7 @@
 			<artifactId>spring-security-config</artifactId>
 			<version>${springSecVer}</version>
 		</dependency>
-
+		<!-- SPRING BOOT -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter</artifactId>
@@ -80,6 +81,22 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-mail</artifactId>
 			<version>${springBootVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-ldap</artifactId>
+			<version>${springSecVer}</version>
+		</dependency>
+		<!-- SPRING LDAP -->
+		<dependency>
+			<groupId>org.springframework.ldap</groupId>
+			<artifactId>spring-ldap-core</artifactId>
+			<version>${springLdapVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.unboundid</groupId>
+			<artifactId>unboundid-ldapsdk</artifactId>
+			<version>4.0.0</version>
 		</dependency>
 
 		<!-- H2 DB -->
@@ -258,6 +275,24 @@
 			<version>${jerseyVer}</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.ldap</groupId>
+			<artifactId>spring-ldap-test</artifactId>
+			<version>${springLdapVer}</version>
+			<scope>test</scope>
+		</dependency>
+<!--		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<version>${springBootVer}</version>
+			<scope>test</scope>
+		</dependency>-->
+<!--		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<version>${springSecVer}</version>
+			<scope>test</scope>
+		</dependency>-->
 	</dependencies>
 
 	<build>

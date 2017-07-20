@@ -28,6 +28,7 @@ import com.erudika.para.security.filters.GenericOAuth2Filter;
 import com.erudika.para.security.filters.FacebookAuthFilter;
 import com.erudika.para.Para;
 import com.erudika.para.rest.Signer;
+import com.erudika.para.security.filters.LdapAuthFilter;
 import com.erudika.para.utils.Config;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigObject;
@@ -46,6 +47,10 @@ import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.ldap.authentication.AbstractLdapAuthenticationProvider;
+import org.springframework.security.ldap.authentication.LdapAuthenticationProvider;
+import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider;
+import org.springframework.security.ldap.userdetails.InetOrgPersonContextMapper;
 import org.springframework.security.openid.OpenIDAuthenticationProvider;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
@@ -75,6 +80,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	private final GitHubAuthFilter githubFilter;
 	private final MicrosoftAuthFilter microsoftFilter;
 	private final GenericOAuth2Filter oauth2Filter;
+	private final LdapAuthFilter ldapFilter;
 	private final JWTRestfulAuthFilter jwtFilter;
 
 	/**
@@ -92,6 +98,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		githubFilter = Para.getInstance(GitHubAuthFilter.class);
 		microsoftFilter = Para.getInstance(MicrosoftAuthFilter.class);
 		oauth2Filter = Para.getInstance(GenericOAuth2Filter.class);
+		ldapFilter = Para.getInstance(LdapAuthFilter.class);
 		jwtFilter = Para.getInstance(JWTRestfulAuthFilter.class);
 	}
 
@@ -112,6 +119,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 		JWTAuthenticationProvider jwtProvider = new JWTAuthenticationProvider();
 		auth.authenticationProvider(jwtProvider);
+
+		AbstractLdapAuthenticationProvider ldapProvider = getLdapAuthenticationProvider();
+		auth.authenticationProvider(ldapProvider);
 	}
 
 	/**
@@ -213,6 +223,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 			http.addFilterAfter(oauth2Filter, BasicAuthenticationFilter.class);
 		}
 
+		if (ldapFilter != null) {
+			ldapFilter.setAuthenticationManager(authenticationManager());
+			http.addFilterAfter(ldapFilter, BasicAuthenticationFilter.class);
+		}
+
 		if (enableRestFilter) {
 			if (jwtFilter != null) {
 				jwtFilter.setAuthenticationManager(authenticationManager());
@@ -259,6 +274,19 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 				}
 			}
 		}
+	}
+
+	private AbstractLdapAuthenticationProvider getLdapAuthenticationProvider() {
+		String domain = Config.getConfigParam("security.ldap.active_directory_domain", ""); // set this to enable AD
+		String server = Config.getConfigParam("security.ldap.server_url", "ldap://localhost:8389/");
+		AbstractLdapAuthenticationProvider ldapProvider;
+		if (domain.isEmpty()) {
+			ldapProvider = new LdapAuthenticationProvider(new SimpleLdapAuthenticator());
+		} else {
+			ldapProvider = new ActiveDirectoryLdapAuthenticationProvider(domain, server);
+		}
+		ldapProvider.setUserDetailsContextMapper(new InetOrgPersonContextMapper());
+		return ldapProvider;
 	}
 
 }

@@ -79,6 +79,9 @@ public final class Config {
 		init(null);
 	}
 
+	/**
+	 * USER IDENTIFIER PREFIXES
+	 */
 	/** {@value #DEFAULT_LIMIT}. */
 	public static final int	DEFAULT_LIMIT = 10000;
 	/** String separator - default is colon ':'. */
@@ -97,6 +100,8 @@ public final class Config {
 	public static final String MICROSOFT_PREFIX = "ms" + SEPARATOR;
 	/** OAuth2 generic prefix - defaults to 'oa2:'. */
 	public static final String OAUTH2_PREFIX = "oa2" + SEPARATOR;
+	/** LDAP prefix - defaults to 'ldap:'. */
+	public static final String LDAP_PREFIX = "ldap" + SEPARATOR;
 
 	//////////  INITIALIZATION PARAMETERS  //////////////
 	/**

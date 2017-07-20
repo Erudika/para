@@ -27,6 +27,7 @@ import com.erudika.para.security.filters.LinkedInAuthFilter;
 import com.erudika.para.security.filters.GenericOAuth2Filter;
 import com.erudika.para.security.filters.FacebookAuthFilter;
 import com.erudika.para.cache.Cache;
+import com.erudika.para.security.filters.LdapAuthFilter;
 import com.erudika.para.utils.Config;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -54,6 +55,7 @@ public class SecurityModule extends AbstractModule {
 	private GitHubAuthFilter githubFilter;
 	private MicrosoftAuthFilter microsoftFilter;
 	private GenericOAuth2Filter oauth2Filter;
+	private LdapAuthFilter ldapFilter;
 	private JWTRestfulAuthFilter jwtFilter;
 
 	protected void configure() {
@@ -338,6 +340,27 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * @return filter
+	 */
+	@Provides
+	public LdapAuthFilter getLdapAuthFilter() {
+		if (ldapFilter == null) {
+			ldapFilter = new LdapAuthFilter("/" + LdapAuthFilter.LDAP_ACTION);
+			ldapFilter.setAuthenticationSuccessHandler(getSuccessHandler());
+			ldapFilter.setAuthenticationFailureHandler(getFailureHandler());
+			ldapFilter.setRememberMeServices(getRemembeMeServices());
+		}
+		return ldapFilter;
+	}
+
+	/**
+	 * @param ldapFilter filter
+	 */
+	public void setLdapAuthFilter(LdapAuthFilter ldapFilter) {
+		this.ldapFilter = ldapFilter;
+	}
+
+	/**
 	 * @param fbAuth filter
 	 * @param gpAuth filter
 	 * @param ghAuth filter
@@ -345,13 +368,14 @@ public class SecurityModule extends AbstractModule {
 	 * @param twAuth filter
 	 * @param msAuth filter
 	 * @param oAuth2 filter
+	 * @param ldAuth filter
 	 * @param pwAuth filter
 	 * @return filter
 	 */
 	@Provides
 	public JWTRestfulAuthFilter getJWTAuthFilter(FacebookAuthFilter fbAuth, GoogleAuthFilter gpAuth,
 			GitHubAuthFilter ghAuth, LinkedInAuthFilter liAuth, TwitterAuthFilter twAuth,
-			MicrosoftAuthFilter msAuth, GenericOAuth2Filter oAuth2, PasswordAuthFilter pwAuth) {
+			MicrosoftAuthFilter msAuth, GenericOAuth2Filter oAuth2, LdapAuthFilter ldAuth, PasswordAuthFilter pwAuth) {
 		if (jwtFilter == null) {
 			jwtFilter = new JWTRestfulAuthFilter("/" + JWTRestfulAuthFilter.JWT_ACTION);
 			jwtFilter.setFacebookAuth(fbAuth);
@@ -361,6 +385,7 @@ public class SecurityModule extends AbstractModule {
 			jwtFilter.setTwitterAuth(twAuth);
 			jwtFilter.setMicrosoftAuth(msAuth);
 			jwtFilter.setGenericOAuth2Auth(oAuth2);
+			jwtFilter.setLdapAuth(ldAuth);
 			jwtFilter.setPasswordAuth(pwAuth);
 		}
 		return jwtFilter;
