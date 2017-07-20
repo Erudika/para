@@ -159,7 +159,7 @@ public final class H2Utils {
 			conn = getConnection();
 			p = conn.prepareStatement(
 					"SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ?");
-			p.setString(1, getTableNameForAppid(appid));
+			p.setString(1, getTableNameForAppid(appid).toUpperCase());
 			res = p.executeQuery();
 			if (res.next()) {
 				String name = res.getString(1);

@@ -67,9 +67,10 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 			throws IOException, ServletException {
 		String requestURI = request.getRequestURI();
 		UserAuthentication userAuth = null;
-		User user = new User();
+		User user = null;
 
 		if (requestURI.endsWith(PASSWORD_ACTION)) {
+			user = new User();
 			user.setIdentifier(request.getParameter(EMAIL));
 			user.setPassword(request.getParameter(PASSWORD));
 			String appid = request.getParameter(Config._APPID);
