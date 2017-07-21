@@ -28,7 +28,8 @@ See how **Para** [compares to other open source backend frameworks](https://erud
 - Distributed object cache (Hazelcast by default)
 - Multi-tenancy support - each app has its own table, index and cache
 - IoT support and integration with AWS and Azure
-- Flexible security based on Spring Security (Social login, JWT support, CSRF protection, etc.)
+- Flexible security based on Spring Security (LDAP, social login, CSRF protection, etc.)
+- Stateless client authentication with JSON Web Tokens (JWT)
 - Simple but effective resource permissions for client access control
 - Robust constraint validation mechanism based on JSR-303 and Hibernate Validator
 - Per-object control of persistence, index and cache operations
@@ -163,7 +164,16 @@ Here's the Maven snippet to include in your `pom.xml`:
 <dependency>
   <groupId>com.erudika</groupId>
   <artifactId>para-server</artifactId>
-  <version>1.24.4</version>
+  <version>{see_green_version_badge_above}</version>
+</dependency>
+```
+
+For building lightweight client-only applications connecting to Para, include only the client module:
+```xml
+<dependency>
+  <groupId>com.erudika</groupId>
+  <artifactId>para-client</artifactId>
+  <version>{see_green_version_badge_above}</version>
 </dependency>
 ```
 
