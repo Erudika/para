@@ -189,10 +189,16 @@ public final class RestUtils {
 	 */
 	public static App getPrincipalApp() {
 		App app = SecurityUtils.getAuthenticatedApp();
-		User user = SecurityUtils.getAuthenticatedUser();
 		if (app != null) {
 			return app;
-		} else if (user != null) {
+		}
+		// avoid reading app from DB if it's found in the security context
+		app = SecurityUtils.getAppFromJWTAuthentication();
+		if (app != null) {
+			return app;
+		}
+		User user = SecurityUtils.getAuthenticatedUser();
+		if (user != null) {
 			return Para.getDAO().read(Config.getRootAppIdentifier(), App.id(user.getAppid()));
 		}
 		logger.info("Unauthenticated request - returning root App: {}", Config.getRootAppIdentifier());

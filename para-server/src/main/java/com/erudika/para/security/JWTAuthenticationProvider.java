@@ -45,8 +45,8 @@ public class JWTAuthenticationProvider implements AuthenticationProvider {
 			App app = jwtToken.getApp();
 			if (app != null) {
 				boolean isUser = user != null;
+				// "super token" support, i.e. when a JWT is signed with app's secret key
 				String secret = jwtToken.getApp().getSecret() + (isUser ? user.getTokenSecret() : "");
-
 				if (SecurityUtils.isValidJWToken(secret, jwtToken.getJwt())) {
 					return isUser ? jwtToken : new AppAuthentication(app);
 				} else {

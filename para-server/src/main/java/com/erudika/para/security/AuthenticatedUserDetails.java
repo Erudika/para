@@ -78,7 +78,7 @@ public class AuthenticatedUserDetails implements UserDetails {
 
 	/**
 	 * The username. Same as {@link User#getIdentifier()}
-	 * @return {@link User#getIdentifier()}
+	 * @return {@link User#getIdentifier()} if user.appid == root appid, or "appid/user.identifier" if child app,
 	 * @see User#getIdentifier()
 	 */
 	@JsonIgnore

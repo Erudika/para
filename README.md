@@ -101,24 +101,12 @@ $ para-cli read --id todo1
 $ para-cli search "type:todo"
 ```
 
-### Email configuration
+## Hosting
 
-Para can either use the JavaMail API or AWS SES to send emails. This is used for email verification, password recovery
-and notifications. Set `support_email` to be the email address used by the system. An example config for JavaMail:
-
-```
-para.emailer = "javamail"
-para.support_email = "support@example.com"
-para.mail.host = "smtp.example.com"
-para.mail.port = 587
-para.mail.username = "user@example.com"
-para.mail.password = "password"
-para.mail.tls = true
-para.mail.ssl = false
-```
-An example email template is located in `src/main/resources/emails/notify.html`.
-Set `para.emailer = "aws"` to use the AWS Simple Email Service and comment out the `para.mail.*`
-properties as they are ignored. Also set `para.aws_access_key` and `para.aws_secret_key`.
+We offer **hosting and premium support** at [paraio.com](https://paraio.com) where you can try Para online with a
+free developer account. Browse and manage your users and objects, do backups and edit permissions with a few clicks in
+the web console. By upgrading to a premium account you will be able to scale you projects up and down in seconds and
+manage multiple apps.
 
 ### Building Para
 
@@ -251,13 +239,6 @@ mvn validate
 ```
 
 For more information see [CONTRIBUTING.md](https://github.com/Erudika/para/blob/master/CONTRIBUTING.md)
-
-## Hosting
-
-We offer **hosting and premium support** at [paraio.com](https://paraio.com) where you can try Para online with a
-free developer account. Browse and manage your users and objects, do backups and edit permissions with a few clicks in
-the web console. By upgrading to a premium account you will be able to scale you projects up and down in seconds and
-manage multiple apps.
 
 ## License
 [Apache 2.0](LICENSE)

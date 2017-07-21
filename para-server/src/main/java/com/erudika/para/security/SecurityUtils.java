@@ -100,6 +100,20 @@ public final class SecurityUtils {
 	}
 
 	/**
+	 * @return returns the current app associated with the authenticated user
+	 */
+	public static App getAppFromJWTAuthentication() {
+		App app = null;
+		if (SecurityContextHolder.getContext().getAuthentication() != null) {
+			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+			if (auth instanceof JWTAuthentication) {
+				app = ((JWTAuthentication) auth).getApp();
+			}
+		}
+		return app;
+	}
+
+	/**
 	 * Clears the session. Deletes cookies and clears the security context.
 	 * @param req HTTP request
 	 */
