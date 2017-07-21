@@ -178,6 +178,19 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		http.logout().logoutUrl(signoutPath).logoutSuccessUrl(signoutSuccessPath);
 		http.rememberMe().rememberMeServices(rememberMeServices);
 
+		registerAuthFilters(http);
+
+		if (enableRestFilter) {
+			if (jwtFilter != null) {
+				jwtFilter.setAuthenticationManager(authenticationManager());
+				http.addFilterBefore(jwtFilter, RememberMeAuthenticationFilter.class);
+			}
+			RestAuthFilter restFilter = new RestAuthFilter(new Signer());
+			http.addFilterAfter(restFilter, JWTRestfulAuthFilter.class);
+		}
+	}
+
+	private void registerAuthFilters(HttpSecurity http) throws Exception {
 		if (passwordFilter != null) {
 			passwordFilter.setAuthenticationManager(authenticationManager());
 			http.addFilterAfter(passwordFilter, BasicAuthenticationFilter.class);
@@ -226,15 +239,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		if (ldapFilter != null) {
 			ldapFilter.setAuthenticationManager(authenticationManager());
 			http.addFilterAfter(ldapFilter, BasicAuthenticationFilter.class);
-		}
-
-		if (enableRestFilter) {
-			if (jwtFilter != null) {
-				jwtFilter.setAuthenticationManager(authenticationManager());
-				http.addFilterBefore(jwtFilter, RememberMeAuthenticationFilter.class);
-			}
-			RestAuthFilter restFilter = new RestAuthFilter(new Signer());
-			http.addFilterAfter(restFilter, JWTRestfulAuthFilter.class);
 		}
 	}
 

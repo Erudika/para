@@ -51,6 +51,9 @@ public final class SimpleLdapAuthenticator implements LdapAuthenticator {
 	private final BindAuthenticator b;
 	private final LdapContextSource contextSource;
 
+	/**
+	 * Default constructor.
+	 */
 	public SimpleLdapAuthenticator() {
 		contextSource = getDefaultContextSource();
 		LdapUserSearch userSearch = new FilterBasedLdapUserSearch(USER_SEARCH_BASE, USER_SEARCH_FILTER, contextSource);
@@ -75,11 +78,7 @@ public final class SimpleLdapAuthenticator implements LdapAuthenticator {
 		}
 	}
 
-	public LdapContextSource getLdapContextSource() {
-		return contextSource;
-	}
-
-	public static LdapContextSource getDefaultContextSource() {
+	private LdapContextSource getDefaultContextSource() {
 		DefaultSpringSecurityContextSource ldapContextSource =
 				new DefaultSpringSecurityContextSource(Arrays.asList(SERVER_URL), BASE_DN);
 		ldapContextSource.setAuthenticationSource(new SpringSecurityAuthenticationSource());

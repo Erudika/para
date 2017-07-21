@@ -239,7 +239,7 @@ public final class H2Utils {
 	 */
 	public static String getTableNameForAppid(String appIdentifier) {
 		if (StringUtils.isBlank(appIdentifier)) {
-			return null;
+			return "";
 		} else {
 			return ((App.isRoot(appIdentifier) ||
 					appIdentifier.startsWith(Config.PARA.concat("-"))) ?

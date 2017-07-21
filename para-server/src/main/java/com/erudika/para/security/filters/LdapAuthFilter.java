@@ -44,7 +44,7 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
  */
 public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 
-	private static final Logger logger = LoggerFactory.getLogger(LdapAuthFilter.class);
+	private static final Logger LOG = LoggerFactory.getLogger(LdapAuthFilter.class);
 
 	private static final String PASSWORD = Config.getConfigParam("security.ldap.password_param", "password");
 	private static final String USERNAME = Config.getConfigParam("security.ldap.username_param", "username");
@@ -80,6 +80,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (requestURI.endsWith(LDAP_ACTION) && !StringUtils.isBlank(username) && !StringUtils.isBlank(password)) {
 			try	{
 				Authentication auth = new UsernamePasswordAuthenticationToken(username, password);
+				// set authentication in context to avoid warning message from SpringSecurityAuthenticationSource
 				SecurityContextHolder.getContext().setAuthentication(auth);
 				Authentication ldapAuth = getAuthenticationManager().authenticate(auth);
 				if (ldapAuth != null) {
@@ -89,7 +90,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 					userAuth = getOrCreateUser(app, ldapAuth);
 				}
 			} catch (Exception ex) {
-				logger.info("Failed to authenticate '{}' with LDAP server: {}", username, ex.getMessage());
+				LOG.info("Failed to authenticate '{}' with LDAP server: {}", username, ex.getMessage());
 			}
 		}
 
@@ -110,7 +111,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 			String name = StringUtils.join(profile.getCn(), ", ");
 
 			if (StringUtils.isBlank(email)) {
-				logger.warn("Failed to create LDAP user '{}' with blank email.", ldapAccountId);
+				LOG.warn("Failed to create LDAP user '{}' with blank email.", ldapAccountId);
 				return null;
 			}
 
@@ -162,6 +163,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 			String password = parts[1];
 			try {
 				Authentication auth = new UsernamePasswordAuthenticationToken(username, password);
+				// set authentication in context to avoid warning message from SpringSecurityAuthenticationSource
 				SecurityContextHolder.getContext().setAuthentication(auth);
 				Authentication ldapAuth = getAuthenticationManager().authenticate(auth);
 				if (ldapAuth != null) {
@@ -169,7 +171,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 					userAuth = getOrCreateUser(app, ldapAuth);
 				}
 			} catch (Exception ex) {
-				logger.info("Failed to authenticate '{}' with LDAP server: {}", username, ex.getMessage());
+				LOG.info("Failed to authenticate '{}' with LDAP server: {}", username, ex.getMessage());
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);

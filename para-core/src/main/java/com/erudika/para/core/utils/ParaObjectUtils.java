@@ -409,7 +409,7 @@ public final class ParaObjectUtils {
 	 */
 	private static class CoreClassScanner extends ClassPathScanningCandidateComponentProvider {
 
-		private static final Logger logger = LoggerFactory.getLogger(CoreClassScanner.class);
+		private static final Logger LOG = LoggerFactory.getLogger(CoreClassScanner.class);
 
 		CoreClassScanner() {
 			super(false);
@@ -426,7 +426,7 @@ public final class ParaObjectUtils {
 									Thread.currentThread().getContextClassLoader());
 					classes.add(cls);
 				} catch (Exception ex) {
-					logger.error(null, ex);
+					LOG.error(null, ex);
 				}
 			}
 			return classes;
