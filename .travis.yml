@@ -8,7 +8,6 @@ script:
   - mvn clean install sonar:sonar
 addons:
   sonarcloud:
-    organization: "erudika"
     token:
       secure: "o7cgrKj7ihwRlYw3QZOQgO9CYw/1e54zLwvi3jIXwN2ex7dPUSNwpr6t5xBNXb3InQJgnibqFT7Kzqv5kzj1ZMBS9fRK1/6yrNAWc04wNCYPO4D+JbYGgNHbUCllUfce0J03Ee3+yKdQCp9k2lbFJlM4cVnaRuPUk88fK+DqWn4="
 cache:
