@@ -17,6 +17,9 @@
  */
 package com.erudika.para.persistence;
 
+import com.erudika.para.AppCreatedListener;
+import com.erudika.para.AppDeletedListener;
+import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
@@ -37,6 +40,27 @@ import org.slf4j.LoggerFactory;
 public class H2DAO implements DAO {
 
 	private static final Logger logger = LoggerFactory.getLogger(H2DAO.class);
+
+	/**
+	 * Default constructor.
+	 */
+	public H2DAO() {
+		// set up automatic table creation and deletion
+		App.addAppCreatedListener(new AppCreatedListener() {
+			public void onAppCreated(App app) {
+				if (app != null) {
+					H2Utils.createTable(app.getAppIdentifier());
+				}
+			}
+		});
+		App.addAppDeletedListener(new AppDeletedListener() {
+			public void onAppDeleted(App app) {
+				if (app != null) {
+					H2Utils.deleteTable(app.getAppIdentifier());
+				}
+			}
+		});
+	}
 
 	@Override
 	public <P extends ParaObject> String create(String appid, P object) {

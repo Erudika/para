@@ -17,8 +17,6 @@
  */
 package com.erudika.para.persistence;
 
-import com.erudika.para.AppCreatedListener;
-import com.erudika.para.AppDeletedListener;
 import com.erudika.para.DestroyListener;
 import com.erudika.para.Para;
 import com.erudika.para.annotations.Locked;
@@ -58,24 +56,6 @@ public final class H2Utils {
 
 	private static JdbcConnectionPool pool;
 	private static Server server;
-
-	static {
-		// set up automatic table creation and deletion
-		App.addAppCreatedListener(new AppCreatedListener() {
-			public void onAppCreated(App app) {
-				if (app != null) {
-					createTable(app.getAppIdentifier());
-				}
-			}
-		});
-		App.addAppDeletedListener(new AppDeletedListener() {
-			public void onAppDeleted(App app) {
-				if (app != null) {
-					deleteTable(app.getAppIdentifier());
-				}
-			}
-		});
-	}
 
 	private H2Utils() { }
 

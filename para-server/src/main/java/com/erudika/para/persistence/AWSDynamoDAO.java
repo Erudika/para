@@ -31,6 +31,10 @@ import com.amazonaws.services.dynamodbv2.model.PutItemRequest;
 import com.amazonaws.services.dynamodbv2.model.PutRequest;
 import com.amazonaws.services.dynamodbv2.model.UpdateItemRequest;
 import com.amazonaws.services.dynamodbv2.model.WriteRequest;
+import com.erudika.para.AppCreatedListener;
+import com.erudika.para.AppDeletedListener;
+import com.erudika.para.Para;
+import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import static com.erudika.para.persistence.AWSDynamoUtils.batchGet;
 import static com.erudika.para.persistence.AWSDynamoUtils.batchWrite;
@@ -75,7 +79,34 @@ public class AWSDynamoDAO implements DAO {
 	/**
 	 * No-args constructor.
 	 */
-	public AWSDynamoDAO() { }
+	public AWSDynamoDAO() {
+		// set up automatic table creation and deletion
+		App.addAppCreatedListener(new AppCreatedListener() {
+			public void onAppCreated(App app) {
+				if (app != null && !app.isSharingTable()) {
+					AWSDynamoUtils.createTable(app.getAppIdentifier(), 1, 1);
+				}
+			}
+		});
+		App.addAppDeletedListener(new AppDeletedListener() {
+			public void onAppDeleted(App app) {
+				if (app != null && !app.isSharingTable()) {
+					if (app.isSharingTable()) {
+						final String appid = app.getAppIdentifier();
+						Para.asyncExecute(new Runnable() {
+							public void run() {
+								logger.info("Async deleteAllFromSharedTable({}) started.", appid);
+								AWSDynamoUtils.deleteAllFromSharedTable(appid);
+								logger.info("Finished deleteAllFromSharedTable({}).", appid);
+							}
+						});
+					} else {
+						AWSDynamoUtils.deleteTable(app.getAppIdentifier());
+					}
+				}
+			}
+		});
+	}
 
 	AmazonDynamoDB client() {
 		return AWSDynamoUtils.getClient();
