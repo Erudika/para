@@ -47,10 +47,6 @@ import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.ldap.authentication.AbstractLdapAuthenticationProvider;
-import org.springframework.security.ldap.authentication.LdapAuthenticationProvider;
-import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider;
-import org.springframework.security.ldap.userdetails.InetOrgPersonContextMapper;
 import org.springframework.security.openid.OpenIDAuthenticationProvider;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
@@ -120,7 +116,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		JWTAuthenticationProvider jwtProvider = new JWTAuthenticationProvider();
 		auth.authenticationProvider(jwtProvider);
 
-		AbstractLdapAuthenticationProvider ldapProvider = getLdapAuthenticationProvider();
+		LDAPAuthenticationProvider ldapProvider = new LDAPAuthenticationProvider();
 		auth.authenticationProvider(ldapProvider);
 	}
 
@@ -279,18 +275,4 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 			}
 		}
 	}
-
-	private AbstractLdapAuthenticationProvider getLdapAuthenticationProvider() {
-		String domain = Config.getConfigParam("security.ldap.active_directory_domain", ""); // set this to enable AD
-		String server = Config.getConfigParam("security.ldap.server_url", "ldap://localhost:8389/");
-		AbstractLdapAuthenticationProvider ldapProvider;
-		if (domain.isEmpty()) {
-			ldapProvider = new LdapAuthenticationProvider(new SimpleLdapAuthenticator());
-		} else {
-			ldapProvider = new ActiveDirectoryLdapAuthenticationProvider(domain, server);
-		}
-		ldapProvider.setUserDetailsContextMapper(new InetOrgPersonContextMapper());
-		return ldapProvider;
-	}
-
 }

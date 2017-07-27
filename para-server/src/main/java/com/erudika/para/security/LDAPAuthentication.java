@@ -18,52 +18,34 @@
 package com.erudika.para.security;
 
 import com.erudika.para.core.App;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
+import java.util.Map;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
 /**
- * Represents a user authentication with JWT.
+ * Represents a user authentication with LDAP.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class JWTAuthentication extends UserAuthentication {
+public class LDAPAuthentication extends UsernamePasswordAuthenticationToken {
 
 	private static final long serialVersionUID = 1L;
 
 	private App app;
-	private SignedJWT jwt;
-	private JWTClaimsSet claims;
 
 	/**
 	 * Default constructor.
 	 * @param principal a user object
 	 */
-	public JWTAuthentication(AuthenticatedUserDetails principal) {
-		super(principal);
-	}
-
-	/**
-	 * @param jwt token
-	 * @return this
-	 */
-	public JWTAuthentication withJWT(SignedJWT jwt) {
-		this.jwt = jwt;
-		return this;
+	public LDAPAuthentication(Object principal, Object credentials) {
+		super(principal, credentials);
 	}
 
 	/**
 	 * @param app {@link App}
 	 * @return this
 	 */
-	public JWTAuthentication withApp(App app) {
+	public LDAPAuthentication withApp(App app) {
 		this.app = app;
 		return this;
-	}
-
-	/**
-	 * @return the JWT token
-	 */
-	public SignedJWT getJwt() {
-		return jwt;
 	}
 
 	/**
@@ -73,10 +55,8 @@ public class JWTAuthentication extends UserAuthentication {
 		return app;
 	}
 
-	/**
-	 * @return claims set
-	 */
-	public JWTClaimsSet getClaims() {
-		return claims;
+	public Map<String, String> getLdapSettings() {
+		return SecurityUtils.getLdapSettingsForApp(app);
 	}
+
 }

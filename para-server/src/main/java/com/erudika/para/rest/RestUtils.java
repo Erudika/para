@@ -197,12 +197,16 @@ public final class RestUtils {
 		if (app != null) {
 			return app;
 		}
+		app = SecurityUtils.getAppFromLdapAuthentication();
+		if (app != null) {
+			return app;
+		}
 		User user = SecurityUtils.getAuthenticatedUser();
 		if (user != null) {
 			return Para.getDAO().read(Config.getRootAppIdentifier(), App.id(user.getAppid()));
 		}
-		logger.info("Unauthenticated request - returning root App: {}", Config.getRootAppIdentifier());
-		return Para.getDAO().read(Config.getRootAppIdentifier(), App.id(Config.getRootAppIdentifier()));
+		logger.warn("Unauthenticated request - app not found in security context.");
+		return null;
 	}
 
 	/**

@@ -22,6 +22,7 @@ import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
 import com.erudika.para.security.AuthenticatedUserDetails;
+import com.erudika.para.security.LDAPAuthentication;
 import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.security.UserAuthentication;
 import com.erudika.para.utils.Config;
@@ -31,9 +32,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationServiceException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.ldap.userdetails.InetOrgPerson;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
@@ -76,17 +78,18 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 		UserAuthentication userAuth = null;
 		String username = request.getParameter(USERNAME);
 		String password = request.getParameter(PASSWORD);
+		String appid = request.getParameter(Config._APPID);
 
 		if (requestURI.endsWith(LDAP_ACTION) && !StringUtils.isBlank(username) && !StringUtils.isBlank(password)) {
 			try	{
-				Authentication auth = new UsernamePasswordAuthenticationToken(username, password);
+				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
+				Authentication auth = new LDAPAuthentication(username, password).withApp(app);
 				// set authentication in context to avoid warning message from SpringSecurityAuthenticationSource
-				SecurityContextHolder.getContext().setAuthentication(auth);
+				SecurityContextHolder.getContext().setAuthentication(new AnonymousAuthenticationToken("key",
+						"anonymous", AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
 				Authentication ldapAuth = getAuthenticationManager().authenticate(auth);
 				if (ldapAuth != null) {
 					//success!
-					String appid = request.getParameter(Config._APPID);
-					App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
 					userAuth = getOrCreateUser(app, ldapAuth);
 				}
 			} catch (Exception ex) {
@@ -156,15 +159,16 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 */
 	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
 		UserAuthentication userAuth = null;
-		User user = new User();
 		if (accessToken != null && accessToken.contains(Config.SEPARATOR)) {
 			String[] parts = accessToken.split(Config.SEPARATOR, 2);
 			String username = parts[0];
 			String password = parts[1];
 			try {
-				Authentication auth = new UsernamePasswordAuthenticationToken(username, password);
+				Authentication auth = new LDAPAuthentication(username, password).withApp(app);
+
 				// set authentication in context to avoid warning message from SpringSecurityAuthenticationSource
-				SecurityContextHolder.getContext().setAuthentication(auth);
+				SecurityContextHolder.getContext().setAuthentication(new AnonymousAuthenticationToken("key",
+						"anonymous", AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
 				Authentication ldapAuth = getAuthenticationManager().authenticate(auth);
 				if (ldapAuth != null) {
 					//success!
@@ -174,7 +178,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 				LOG.info("Failed to authenticate '{}' with LDAP server: {}", username, ex.getMessage());
 			}
 		}
-		return SecurityUtils.checkIfActive(userAuth, user, false);
+		return SecurityUtils.checkIfActive(userAuth, SecurityUtils.getAuthenticatedUser(userAuth), false);
 	}
 
 	private String getAppid(App app) {

@@ -17,9 +17,11 @@
  */
 package com.erudika.para.security;
 
+import com.erudika.para.core.App;
 import com.unboundid.ldap.listener.InMemoryDirectoryServer;
 import com.unboundid.ldap.listener.InMemoryDirectoryServerConfig;
 import com.unboundid.ldap.listener.InMemoryListenerConfig;
+import java.util.Map;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -38,16 +40,14 @@ import org.springframework.security.core.Authentication;
  */
 public class LdapAuthTest {
 
-	private static SimpleLdapAuthenticator authenticator;
+	private static LDAPAuthenticator bindAuthenticator;
+	private static LDAPAuthenticator passComparingAuthenticator;
 	private static InMemoryDirectoryServer server;
 	private static Authentication bob  = new UsernamePasswordAuthenticationToken("bob", "bobspassword");
 	private static Authentication ben  = new UsernamePasswordAuthenticationToken("ben", "benspassword");
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-
-
-		
 		InMemoryDirectoryServerConfig config = new InMemoryDirectoryServerConfig("dc=springframework,dc=org");
 		config.setListenerConfigs(InMemoryListenerConfig.createLDAPConfig("LDAP", 8389));
 		config.addAdditionalBindCredentials("uid=admin,ou=system", "secret");
@@ -55,7 +55,10 @@ public class LdapAuthTest {
 		server.startListening();
 
 		LdapTestUtils.loadLdif(server, new ClassPathResource("test-server.ldif"));
-		authenticator = new SimpleLdapAuthenticator();
+		Map<String, String> defaultSettings = SecurityUtils.getLdapSettingsForApp(new App("test"));
+		bindAuthenticator = new LDAPAuthenticator(defaultSettings);
+		defaultSettings.put("security.ldap.compare_passwords", "true");
+		passComparingAuthenticator = new LDAPAuthenticator(defaultSettings);
 	}
 
 	@AfterClass
@@ -65,24 +68,24 @@ public class LdapAuthTest {
 
 	@Test
 	public void testAuthenticationWithCorrectPasswordSucceeds() {
-		DirContextAdapter user1 = (DirContextAdapter) authenticator.authenticate(ben);
+		DirContextAdapter user1 = (DirContextAdapter) passComparingAuthenticator.authenticate(ben);
 		System.out.println(user1.getDn());
 		assertEquals("ben", user1.getStringAttribute("uid"));
-		DirContextAdapter user2 = (DirContextAdapter) authenticator.authenticate(bob);
+		DirContextAdapter user2 = (DirContextAdapter) bindAuthenticator.authenticate(bob);
 		assertEquals("bob", user2.getStringAttribute("uid"));
 	}
 
 	@Test
 	public void testAuthenticationWithInvalidUserNameFails() {
 		try {
-			authenticator.authenticate(new UsernamePasswordAuthenticationToken("nonexistentsuser", "password"));
+			bindAuthenticator.authenticate(new UsernamePasswordAuthenticationToken("nonexistentsuser", "password"));
 			fail("Shouldn't be able to bind with invalid username");
 		} catch (Exception expected) { }
 	}
 
 	@Test
 	public void testAuthenticationWithUserSearch() throws Exception {
-		DirContextOperations result = authenticator.
+		DirContextOperations result = bindAuthenticator.
 				authenticate(new UsernamePasswordAuthenticationToken("mouse, jerry", "jerryspassword"));
 		assertEquals("Mouse, Jerry", result.getStringAttribute("cn"));
 	}

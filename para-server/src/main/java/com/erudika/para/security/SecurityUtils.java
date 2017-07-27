@@ -114,6 +114,20 @@ public final class SecurityUtils {
 	}
 
 	/**
+	 * @return returns the current app associated with the authenticated user
+	 */
+	public static App getAppFromLdapAuthentication() {
+		App app = null;
+		if (SecurityContextHolder.getContext().getAuthentication() != null) {
+			Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+			if (auth instanceof LDAPAuthentication) {
+				app = ((LDAPAuthentication) auth).getApp();
+			}
+		}
+		return app;
+	}
+
+	/**
 	 * Clears the session. Deletes cookies and clears the security context.
 	 * @param req HTTP request
 	 */
@@ -236,6 +250,36 @@ public final class SecurityUtils {
 			}
 		}
 		return keys;
+	}
+
+	/**
+	 * Returns a map of LDAP configuration properties for a given app,  read from app.settings or config file.
+	 * @param app the app in which to look for these keys
+	 * @return a map of keys and values
+	 */
+	public static Map<String, String> getLdapSettingsForApp(App app) {
+		Map<String, String> ldapSettings = new HashMap<String, String>();
+		if (app != null) {
+			ldapSettings.put("security.ldap.server_url", "ldap://localhost:8389/");
+			ldapSettings.put("security.ldap.active_directory_domain", "");
+			ldapSettings.put("security.ldap.base_dn", "dc=springframework,dc=org");
+			ldapSettings.put("security.ldap.bind_dn", "");
+			ldapSettings.put("security.ldap.bind_pass", "");
+			ldapSettings.put("security.ldap.user_search_base", "");
+			ldapSettings.put("security.ldap.user_search_filter", "(cn={0})");
+			ldapSettings.put("security.ldap.user_dn_pattern", "uid={0},ou=people");
+			ldapSettings.put("security.ldap.password_attribute", "userPassword");
+			//ldapSettings.put("security.ldap.compare_passwords", "false"); //don't remove comment
+			Map<String, Object> settings = app.getSettings();
+			for (String key : ldapSettings.keySet()) {
+				if (settings.containsKey(key)) {
+					ldapSettings.put(key, settings.get(key) + "");
+				} else if (app.isRootApp()) {
+					ldapSettings.put(key, Config.getConfigParam(key, ldapSettings.get(key)));
+				}
+			}
+		}
+		return ldapSettings;
 	}
 
 	/**
