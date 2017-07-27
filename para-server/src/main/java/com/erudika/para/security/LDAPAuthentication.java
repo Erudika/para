@@ -33,7 +33,8 @@ public class LDAPAuthentication extends UsernamePasswordAuthenticationToken {
 
 	/**
 	 * Default constructor.
-	 * @param principal a user object
+	 * @param principal an LDAP uid
+	 * @param credentials password
 	 */
 	public LDAPAuthentication(Object principal, Object credentials) {
 		super(principal, credentials);
@@ -55,6 +56,9 @@ public class LDAPAuthentication extends UsernamePasswordAuthenticationToken {
 		return app;
 	}
 
+	/**
+	 * @return LDAP settings map
+	 */
 	public Map<String, String> getLdapSettings() {
 		return SecurityUtils.getLdapSettingsForApp(app);
 	}

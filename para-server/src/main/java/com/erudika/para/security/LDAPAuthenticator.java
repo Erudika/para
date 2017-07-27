@@ -45,6 +45,7 @@ public final class LDAPAuthenticator implements LdapAuthenticator {
 
 	/**
 	 * Default constructor.
+	 * @param ldapSettings LDAP config map for an app
 	 */
 	public LDAPAuthenticator(Map<String, String> ldapSettings) {
 		if (ldapSettings != null && ldapSettings.containsKey("security.ldap.server_url")) {

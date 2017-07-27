@@ -271,11 +271,11 @@ public final class SecurityUtils {
 			ldapSettings.put("security.ldap.password_attribute", "userPassword");
 			//ldapSettings.put("security.ldap.compare_passwords", "false"); //don't remove comment
 			Map<String, Object> settings = app.getSettings();
-			for (String key : ldapSettings.keySet()) {
-				if (settings.containsKey(key)) {
-					ldapSettings.put(key, settings.get(key) + "");
+			for (Map.Entry<String, String> entry : ldapSettings.entrySet()) {
+				if (settings.containsKey(entry.getKey())) {
+					entry.setValue(settings.get(entry.getKey()) + "");
 				} else if (app.isRootApp()) {
-					ldapSettings.put(key, Config.getConfigParam(key, ldapSettings.get(key)));
+					entry.setValue(Config.getConfigParam(entry.getKey(), entry.getValue()));
 				}
 			}
 		}

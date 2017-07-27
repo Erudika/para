@@ -100,7 +100,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 		return SecurityUtils.checkIfActive(userAuth, SecurityUtils.getAuthenticatedUser(userAuth), true);
 	}
 
-	private UserAuthentication getOrCreateUser(App app, Authentication ldapAuth) throws IOException {
+	private UserAuthentication getOrCreateUser(App app, Authentication ldapAuth) {
 		if (ldapAuth == null) {
 			return null;
 		}
