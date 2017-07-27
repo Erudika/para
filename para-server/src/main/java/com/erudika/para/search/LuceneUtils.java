@@ -17,6 +17,8 @@
  */
 package com.erudika.para.search;
 
+import com.erudika.para.DestroyListener;
+import com.erudika.para.Para;
 import com.erudika.para.core.Address;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
@@ -122,6 +124,8 @@ public final class LuceneUtils {
 	private static final Set<String> NOT_ANALYZED_FIELDS;
 	private static final CharArraySet STOPWORDS;
 	private static final String[] IGNORED_FIELDS;
+
+	private static IndexWriter indexWriter;
 
 	/**
 	 * Default analyzer.
@@ -238,8 +242,6 @@ public final class LuceneUtils {
 			}
 		} catch (Exception ex) {
 			logger.error(null, ex);
-		} finally {
-			closeIndexWriter(iwriter);
 		}
 	}
 
@@ -267,8 +269,6 @@ public final class LuceneUtils {
 			}
 		} catch (Exception ex) {
 			logger.error(null, ex);
-		} finally {
-			closeIndexWriter(iwriter);
 		}
 	}
 
@@ -290,8 +290,6 @@ public final class LuceneUtils {
 			}
 		} catch (Exception ex) {
 			logger.error(null, ex);
-		} finally {
-			closeIndexWriter(iwriter);
 		}
 	}
 
@@ -699,18 +697,24 @@ public final class LuceneUtils {
 	}
 
 	private static IndexWriter getIndexWriter(String appid) {
-		// Directory directory = new RAMDirectory(); // Store the index in memory:
-		String dataDir = Config.getConfigParam("lucene.dir", Paths.get(".").toAbsolutePath().normalize().toString());
-		Path path = FileSystems.getDefault().getPath(dataDir, "data", getIndexName(appid));
-		try {
-			Analyzer analyzer = new StandardAnalyzer();
-			IndexWriterConfig config = new IndexWriterConfig(analyzer);
-			config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-			return new IndexWriter(FSDirectory.open(path), config);
-		} catch (IOException ex) {
-			logger.warn("Index '{}' does not exist.", getIndexName(appid));
+		if (indexWriter == null) {
+			String dataDir = Config.getConfigParam("lucene.dir", Paths.get(".").toAbsolutePath().normalize().toString());
+			Path path = FileSystems.getDefault().getPath(dataDir, "data", getIndexName(appid));
+			try {
+				Analyzer analyzer = new StandardAnalyzer();
+				IndexWriterConfig config = new IndexWriterConfig(analyzer);
+				config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+				indexWriter = new IndexWriter(FSDirectory.open(path), config);
+			} catch (IOException ex) {
+				logger.warn("Index '{}' does not exist.", getIndexName(appid));
+			}
+			Para.addDestroyListener(new DestroyListener() {
+				public void onDestroy() {
+					closeIndexWriter(indexWriter);
+				}
+			});
 		}
-		return null;
+		return indexWriter;
 	}
 
 	private static void closeIndexReader(DirectoryReader ireader) {

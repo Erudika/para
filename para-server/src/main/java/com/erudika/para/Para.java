@@ -401,7 +401,7 @@ public final class Para {
 			app.setActive(true);
 			app.create();
 			logger.info("Created new app '{}', sharingTable = {}, sharingIndex = {}.",
-					sharedTable, sharedIndex, app.getAppIdentifier());
+					app.getAppIdentifier(), sharedTable, sharedIndex);
 			creds.putAll(app.getCredentials());
 			creds.put("message", "Save the secret key - it is shown only once!");
 		}
