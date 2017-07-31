@@ -43,6 +43,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
@@ -125,7 +126,7 @@ public final class LuceneUtils {
 	private static final CharArraySet STOPWORDS;
 	private static final String[] IGNORED_FIELDS;
 
-	private static IndexWriter indexWriter;
+	private static final Map<String, IndexWriter> WRITERS = new ConcurrentHashMap<String, IndexWriter>();
 
 	/**
 	 * Default analyzer.
@@ -686,35 +687,38 @@ public final class LuceneUtils {
 	}
 
 	private static DirectoryReader getIndexReader(String appid) {
-		String dataDir = Config.getConfigParam("lucene.dir", Paths.get(".").toAbsolutePath().normalize().toString());
-		Path path = FileSystems.getDefault().getPath(dataDir, "data", getIndexName(appid));
 		try {
-			return DirectoryReader.open(FSDirectory.open(path));
+			String dataDir = Config.getConfigParam("lucene.dir", Paths.get(".").toAbsolutePath().normalize().toString());
+			Path path = FileSystems.getDefault().getPath(dataDir, "data", getIndexName(appid));
+			FSDirectory indexDir = FSDirectory.open(path);
+			if (DirectoryReader.indexExists(indexDir)) {
+				return DirectoryReader.open(indexDir);
+			}
 		} catch (IOException ex) {
-			logger.warn("Index '{}' does not exist.", getIndexName(appid));
+			logger.warn("Couldn't get IndexReader - '{}' does not exist: {}", getIndexName(appid), ex.getMessage());
 		}
 		return null;
 	}
 
 	private static IndexWriter getIndexWriter(String appid) {
-		if (indexWriter == null) {
-			String dataDir = Config.getConfigParam("lucene.dir", Paths.get(".").toAbsolutePath().normalize().toString());
-			Path path = FileSystems.getDefault().getPath(dataDir, "data", getIndexName(appid));
+		if (!WRITERS.containsKey(appid)) {
 			try {
+				String dataDir = Config.getConfigParam("lucene.dir", Paths.get(".").toAbsolutePath().normalize().toString());
+				Path path = FileSystems.getDefault().getPath(dataDir, "data", getIndexName(appid));
 				Analyzer analyzer = new StandardAnalyzer();
 				IndexWriterConfig config = new IndexWriterConfig(analyzer);
 				config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-				indexWriter = new IndexWriter(FSDirectory.open(path), config);
+				WRITERS.put(appid, new IndexWriter(FSDirectory.open(path), config));
 			} catch (IOException ex) {
-				logger.warn("Index '{}' does not exist.", getIndexName(appid));
+				logger.warn("Couldn't get IndexWriter - '{}' does not exist: {}", getIndexName(appid), ex.getMessage());
 			}
 			Para.addDestroyListener(new DestroyListener() {
 				public void onDestroy() {
-					closeIndexWriter(indexWriter);
+					closeIndexWriters();
 				}
 			});
 		}
-		return indexWriter;
+		return WRITERS.get(appid);
 	}
 
 	private static void closeIndexReader(DirectoryReader ireader) {
@@ -730,14 +734,18 @@ public final class LuceneUtils {
 		}
 	}
 
-	private static void closeIndexWriter(IndexWriter iwriter) {
+	private static void closeIndexWriters() {
 		try {
-			if (iwriter != null) {
-				iwriter.close();
-				if (iwriter.getDirectory() != null) {
-					iwriter.getDirectory().close();
+			for (IndexWriter indexWriter : WRITERS.values()) {
+				if (indexWriter != null) {
+					indexWriter.commit();
+					indexWriter.close();
+					if (indexWriter.getDirectory() != null) {
+						indexWriter.getDirectory().close();
+					}
 				}
 			}
+			WRITERS.clear();
 		} catch (Exception e) {
 			logger.error(null, e);
 		}
