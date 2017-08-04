@@ -31,7 +31,7 @@ import java.util.Map;
 public interface DAO {
 
 	/////////////////////////////////////////////
-	//				CORE FUNCTIONS
+	//				CRUD METHODS
 	/////////////////////////////////////////////
 
 	/**
@@ -106,7 +106,7 @@ public interface DAO {
 	<P extends ParaObject> void delete(P object);
 
 	/////////////////////////////////////////////
-	//				READ ALL FUNCTIONS
+	//           BATCH CRUD METHODS
 	/////////////////////////////////////////////
 
 	/**
