@@ -105,9 +105,6 @@ public interface DAO {
 	 */
 	<P extends ParaObject> void delete(P object);
 
-	/////////////////////////////////////////////
-	//				READ ALL FUNCTIONS
-	/////////////////////////////////////////////
 
 	/**
 	 * Saves multiple objects to the data store.
@@ -125,6 +122,11 @@ public interface DAO {
 	 * @param objects the list of objects to save
 	 */
 	<P extends ParaObject> void createAll(List<P> objects);
+
+
+	/////////////////////////////////////////////
+	//				READ ALL FUNCTIONS
+	/////////////////////////////////////////////
 
 	/**
 	 * Retrieves multiple objects from the data store.
