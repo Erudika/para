@@ -40,7 +40,8 @@ public class PersistenceModule extends AbstractModule {
 		} else {
 			if ("h2".equalsIgnoreCase(selectedDAO)) {
 				bind(DAO.class).to(H2DAO.class).asEagerSingleton();
-			} else if ("dynamodb".equalsIgnoreCase(selectedDAO)) {
+			} else if ("dynamodb".equalsIgnoreCase(selectedDAO) ||
+					AWSDynamoDAO.class.getSimpleName().equalsIgnoreCase(selectedDAO)) {
 				bind(DAO.class).to(AWSDynamoDAO.class).asEagerSingleton();
 			} else {
 				DAO daoPlugin = loadExternalDAO(selectedDAO);
