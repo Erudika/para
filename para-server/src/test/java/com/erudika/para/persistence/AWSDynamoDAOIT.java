@@ -250,4 +250,22 @@ public class AWSDynamoDAOIT extends DAOTest {
 		assertEquals(1, dao().readPage(app4.getAppIdentifier(), null).size());
 	}
 
+	@Test
+	public void testReadAllPartial() {
+		Sysprop s1 = new Sysprop("read-partially1");
+		Sysprop s2 = new Sysprop("read-partially2");
+		s1.setType("custom");
+		s2.setType("custom");
+
+		dao().create(ROOT_APP_NAME, s1);
+		dao().create(ROOT_APP_NAME, s2);
+
+		Map<String, Sysprop> res = dao().readAll(ROOT_APP_NAME, Arrays.asList(s1.getId(), s2.getId()), false);
+		assertFalse(res.isEmpty());
+		assertNotNull(res.get(s1.getId()));
+		assertNotNull(res.get(s2.getId()));
+		assertEquals(s1.getType(), res.get(s1.getId()).getType());
+		assertEquals(s1.getType(), res.get(s2.getId()).getType());
+		dao().deleteAll(ROOT_APP_NAME, Arrays.asList(s1, s2));
+	}
 }

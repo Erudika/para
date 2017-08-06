@@ -90,7 +90,7 @@ public class AWSDynamoDAO implements DAO {
 		});
 		App.addAppDeletedListener(new AppDeletedListener() {
 			public void onAppDeleted(App app) {
-				if (app != null && !app.isSharingTable()) {
+				if (app != null) {
 					if (app.isSharingTable()) {
 						final String appid = app.getAppIdentifier();
 						Para.asyncExecute(new Runnable() {
@@ -307,7 +307,7 @@ public class AWSDynamoDAO implements DAO {
 
 				KeysAndAttributes kna = new KeysAndAttributes().withKeys(keyz);
 				if (!getAllColumns) {
-					kna.setAttributesToGet(Arrays.asList(Config._KEY, Config._TYPE));
+					kna.setAttributesToGet(Arrays.asList(Config._ID, Config._KEY, Config._TYPE));
 				}
 
 				batchGet(Collections.singletonMap(tableName, kna), results);

@@ -661,7 +661,7 @@ public final class RestUtils {
 		LinkedList<ParaObject> objects = new LinkedList<ParaObject>();
 		if (ids != null && !ids.isEmpty()) {
 			if (ids.size() <= Config.MAX_ITEMS_PER_PAGE) {
-				for (ParaObject pobj : Para.getDAO().readAll(app.getAppIdentifier(), ids, false).values()) {
+				for (ParaObject pobj : Para.getDAO().readAll(app.getAppIdentifier(), ids, true).values()) {
 					if (pobj != null && pobj.getId() != null && pobj.getType() != null) {
 						// deleting apps in batch is not allowed
 						if (isNotAnApp(pobj.getType()) && checkIfUserCanModifyObject(app, pobj)) {
