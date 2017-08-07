@@ -5,7 +5,9 @@ jdk:
   - oraclejdk8
 script:
   - jdk_switcher use oraclejdk8
-  - mvn clean install sonar:sonar
+  - mvn clean package
+after_success:
+  - mvn sonar:sonar
 addons:
   sonarcloud:
     token:
