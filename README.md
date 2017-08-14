@@ -74,7 +74,7 @@ See how **Para** [compares to other open source backend frameworks](https://erud
 
 Configuration properties belong in your `application.conf` file.
 Here's an example configuration for development purposes:
-```
+```ini
 # the name of your app
 para.app_name = "My App"
 # or set it to 'production'
@@ -110,7 +110,7 @@ manage multiple apps.
 
 ### Building Para
 
-Para can be compiled with JDK 6 and up, but using JDK 8+ is recommended.
+Para can be compiled with JDK 8:
 
 To compile it you'll need Maven. Once you have it, just clone and build:
 
