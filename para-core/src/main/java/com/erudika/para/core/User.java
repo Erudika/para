@@ -319,6 +319,10 @@ public class User implements ParaObject {
 			logger.warn("Failed to create user - password too short.");
 			return null;
 		}
+		if (readUserForIdentifier(this) != null) {
+			logger.warn("Failed to create user - user with identifier '{}' already exists.", getIdentifier());
+			return null;
+		}
 
 		// admin detected
 		if (!Config.ADMIN_IDENT.isEmpty() && Config.ADMIN_IDENT.equals(getIdentifier())) {
