@@ -136,7 +136,6 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 				if (profile != null && profile.containsKey("id")) {
 					String fbId = (String) profile.get("id");
-					Map<String, Object> pic = (Map<String, Object>) profile.get("picture");
 					String email = (String) profile.get("email");
 					String name = (String) profile.get("name");
 
@@ -152,14 +151,14 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 						user.setEmail(StringUtils.isBlank(email) ? fbId + "@facebook.com" : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 						user.setPassword(new UUID().toString());
-						user.setPicture(getPicture(fbId, pic));
+						user.setPicture(getPicture(fbId));
 						user.setIdentifier(Config.FB_PREFIX.concat(fbId));
 						String id = user.create();
 						if (id == null) {
 							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 						}
 					} else {
-						String picture = getPicture(fbId, pic);
+						String picture = getPicture(fbId);
 						boolean update = false;
 						if (!StringUtils.equals(user.getPicture(), picture)) {
 							user.setPicture(picture);
@@ -182,15 +181,9 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static String getPicture(String fbId, Map<String, Object> pic) {
-		if (pic != null) {
-			Map<String, Object> data = (Map<String, Object>) pic.get("data");
-			// try to get the direct url to the profile pic
-			if (data != null && data.containsKey("url")) {
-				return (String) data.get("url");
-			} else {
-				return "http://graph.facebook.com/" + fbId + "/picture?width=400&height=400&type=square";
-			}
+	private static String getPicture(String fbId) {
+		if (fbId != null) {
+			return "https://graph.facebook.com/" + fbId + "/picture?width=700&height=700&type=square";
 		}
 		return null;
 	}
