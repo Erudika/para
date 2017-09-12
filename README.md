@@ -123,7 +123,7 @@ Two WAR files will be generated in total - the fat one is a bit bigger in size.
 
 To run a local instance of Para for development, use:
 ```sh
-$ mvn spring-boot:run
+$ mvn -Dconfig.file=./application.conf spring-boot:run
 ```
 
 ### Standalone server
