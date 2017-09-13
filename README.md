@@ -205,22 +205,20 @@ The `Search` interface is implemented by:
 The `Cache` interface is implemented by:
 
 - **Hazelcast**: `HazelcastCache` **default** (included in `para-server`)
-- **In-memory**: objects can be cached on the JVM heap
+- **In-memory**: objects can be cached in the JVM heap
 
 ## Projects using Para
 
 - [Scoold](https://scoold.com) - an open source StackOverflow clone
 - [ParaIO.com](https://paraio.com) - managed Para hosting
 - [Erudika.com](https://erudika.com/blog) - the search bar on our blog uses Para
-- [Angular2 primer](https://github.com/albogdano/angular2-para) - a sample Angular2 project
+- [Angular2 demo app](https://github.com/albogdano/angular2-para) - a sample Angular2 project
 
 ## Wishlist / Roadmap
 
 - `DAO` implementation for PostgreSQL.
 - MongoDB implementation of `Search`
 - Make the API server more efficient with fibers (Quasar)
-- Server-side JavaScript support for implementing custom API resources
-- Integrations with Google App Engine, Heroku, DigitalOcean
 - GraphQL or ([JSON API](http://jsonapi.org/)) compatible API at `/v2` (not soon)
 
 ## Contributing
