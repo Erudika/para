@@ -245,8 +245,8 @@ public final class H2Utils {
 			conn = getConnection();
 			Map<String, P> results = new LinkedHashMap<String, P>();
 			String table = getTableNameForAppid(appid);
-			p = conn.prepareStatement("SELECT json FROM " + table + " WHERE " + Config._ID +
-					" IN (" + StringUtils.repeat("?", ",", ids.size()) + ")");
+			p = conn.prepareStatement(Utils.formatMessage("SELECT json FROM {0} WHERE {1} IN ({2})",
+					table, Config._ID, StringUtils.repeat("?", ",", ids.size())));
 			for (int i = 0; i < ids.size(); i++) {
 				p.setString(i + 1, ids.get(i));
 				results.put(ids.get(i), null);
@@ -395,8 +395,8 @@ public final class H2Utils {
 		try {
 			conn = getConnection();
 			String table = getTableNameForAppid(appid);
-			p = conn.prepareStatement("DELETE FROM " + table + " WHERE " + Config._ID +
-					" IN (" + StringUtils.repeat("?", ",", objects.size()) + ")");
+			p = conn.prepareStatement(Utils.formatMessage("DELETE FROM {0} WHERE {1} IN ({2})",
+					table, Config._ID, StringUtils.repeat("?", ",", objects.size())));
 			for (int i = 0; i < objects.size(); i++) {
 				p.setString(i + 1, objects.get(i).getId());
 			}
