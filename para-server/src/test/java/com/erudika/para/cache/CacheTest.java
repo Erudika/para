@@ -89,7 +89,7 @@ public abstract class CacheTest {
 
 	@Test
 	public void testPutAllRemoveAll() {
-		Map<String, String> map = new HashMap<String, String>();
+		Map<String, String> map = new HashMap<>();
 		map.put("123", "test");
 		map.put("123", "test1");
 		map.put("1234", "test");
@@ -106,7 +106,7 @@ public abstract class CacheTest {
 		assertTrue(c.contains("123"));
 		assertEquals("test1", c.get("123"));
 
-		c.removeAll(new ArrayList<String>(map.keySet()));
+		c.removeAll(new ArrayList<>(map.keySet()));
 		assertFalse(c.contains("1"));
 		assertFalse(c.contains("2"));
 		assertFalse(c.contains("1234"));
@@ -125,7 +125,7 @@ public abstract class CacheTest {
 	@Test
 	public void testGetAll() {
 		c.put("123", "123");
-		ArrayList<String> list = new ArrayList<String>();
+		ArrayList<String> list = new ArrayList<>();
 		list.add("123");
 		list.add("456");
 		list.add("null");

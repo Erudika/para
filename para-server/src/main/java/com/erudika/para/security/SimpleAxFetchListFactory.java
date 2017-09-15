@@ -35,7 +35,7 @@ public class SimpleAxFetchListFactory implements AxFetchListFactory {
 	 * @return a list of attributes
 	 */
 	public List<OpenIDAttribute> createAttributeList(String identifier) {
-		List<OpenIDAttribute> list = new LinkedList<OpenIDAttribute>();
+		List<OpenIDAttribute> list = new LinkedList<>();
 		if (identifier != null && identifier.matches("https://www.google.com/.*")) {
 			OpenIDAttribute email = new OpenIDAttribute("email", "http://axschema.org/contact/email");
 			OpenIDAttribute first = new OpenIDAttribute("firstname", "http://axschema.org/namePerson/first");

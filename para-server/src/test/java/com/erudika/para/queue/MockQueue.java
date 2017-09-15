@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class MockQueue implements Queue {
 
-	private ConcurrentLinkedQueue<String> q = new ConcurrentLinkedQueue<String>();
+	private ConcurrentLinkedQueue<String> q = new ConcurrentLinkedQueue<>();
 
 	private String name;
 

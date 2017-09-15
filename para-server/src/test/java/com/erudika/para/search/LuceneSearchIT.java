@@ -55,10 +55,10 @@ public class LuceneSearchIT extends SearchTest {
 	@Test
 	public void testRangeQuery() {
 		// many terms
-		Map<String, Object> terms1 = new HashMap<String, Object>();
+		Map<String, Object> terms1 = new HashMap<>();
 		terms1.put(Config._TIMESTAMP + " <", 1111111111L);
 
-		Map<String, Object> terms2 = new HashMap<String, Object>();
+		Map<String, Object> terms2 = new HashMap<>();
 		terms2.put(Config._TIMESTAMP + "<=", u.getTimestamp());
 
 		List<ParaObject> res1 = s.findTerms(u.getType(), terms1, true);

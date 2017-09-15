@@ -47,9 +47,9 @@ import javax.servlet.http.Part;
 @SuppressWarnings("unchecked")
 public class MockHttpServletRequest implements HttpServletRequest {
 
-    private Map<String, Object> attributes = new HashMap<String, Object>();
+    private Map<String, Object> attributes = new HashMap<>();
     private Map<String, List<String>> headers =
-            new HashMap<String, List<String>>();
+            new HashMap<>();
     private String method;
     private String contentType;
 
@@ -216,13 +216,13 @@ public class MockHttpServletRequest implements HttpServletRequest {
     public String getHeader(String name) {
         List<String> list = headers.get(name);
         if (list != null) {
-            return CORSFilter.join(new HashSet<String>(list), ",");
+            return CORSFilter.join(new HashSet<>(list), ",");
         }
         return null;
     }
 
     public void setHeader(String name, String value) {
-        List<String> values = new ArrayList<String>();
+        List<String> values = new ArrayList<>();
         values.add(value);
         headers.put(name, values);
     }

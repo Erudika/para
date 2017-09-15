@@ -116,10 +116,10 @@ public final class CORSFilter implements Filter {
 	 * No-args constructor.
 	 */
 	public CORSFilter() {
-		this.allowedOrigins = new HashSet<String>();
-		this.allowedHttpMethods = new HashSet<String>();
-		this.allowedHttpHeaders = new HashSet<String>();
-		this.exposedHeaders = new HashSet<String>();
+		this.allowedOrigins = new HashSet<>();
+		this.allowedHttpMethods = new HashSet<>();
+		this.allowedHttpHeaders = new HashSet<>();
+		this.exposedHeaders = new HashSet<>();
 	}
 
 	// --------------------------------------------------------- Public methods
@@ -334,7 +334,7 @@ public final class CORSFilter implements Filter {
 		// Section 6.2.4
 		String accessControlRequestHeadersHeader
 				= request.getHeader(CORSFilter.REQUEST_HEADER_ACCESS_CONTROL_REQUEST_HEADERS);
-		List<String> accessControlRequestHeaders = new LinkedList<String>();
+		List<String> accessControlRequestHeaders = new LinkedList<>();
 		if (StringUtils.isNotBlank(accessControlRequestHeadersHeader)) {
 			String[] headers = accessControlRequestHeadersHeader.trim().split(",");
 			for (String header : headers) {
@@ -666,7 +666,7 @@ public final class CORSFilter implements Filter {
 		if (allowedHttpHeaders != null) {
 			Set<String> setAllowedHttpHeaders
 					= parseStringToSet(allowedHttpHeaders);
-			Set<String> lowerCaseHeaders = new HashSet<String>();
+			Set<String> lowerCaseHeaders = new HashSet<>();
 			for (String header : setAllowedHttpHeaders) {
 				String lowerCase = header.toLowerCase();
 				lowerCaseHeaders.add(lowerCase);
@@ -725,7 +725,7 @@ public final class CORSFilter implements Filter {
 			splits = new String[]{};
 		}
 
-		Set<String> set = new HashSet<String>();
+		Set<String> set = new HashSet<>();
 		if (splits.length > 0) {
 			for (String split : splits) {
 				set.add(split.trim());

@@ -81,7 +81,7 @@ public class Thing extends Sysprop {
 	@JsonIgnore
 	public Map<String, Object> getDeviceMetadata() {
 		if (deviceMetadata == null) {
-			deviceMetadata = new LinkedHashMap<String, Object>(20);
+			deviceMetadata = new LinkedHashMap<>(20);
 		}
 		return deviceMetadata;
 	}
@@ -100,7 +100,7 @@ public class Thing extends Sysprop {
 	 */
 	public Map<String, Object> getDeviceState() {
 		if (deviceState == null) {
-			deviceState = new HashMap<String, Object>();
+			deviceState = new HashMap<>();
 		}
 		return deviceState;
 	}

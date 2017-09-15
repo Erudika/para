@@ -240,9 +240,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 	private void parseProtectedResources(HttpSecurity http, ConfigObject protectedResources) throws Exception {
 		for (ConfigValue cv : protectedResources.values()) {
-			LinkedList<String> patterns = new LinkedList<String>();
-			LinkedList<String> roles = new LinkedList<String>();
-			HashSet<HttpMethod> methods = new HashSet<HttpMethod>();
+			LinkedList<String> patterns = new LinkedList<>();
+			LinkedList<String> roles = new LinkedList<>();
+			HashSet<HttpMethod> methods = new HashSet<>();
 
 			for (ConfigValue configValue : (ConfigList) cv) {
 				try {

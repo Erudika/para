@@ -290,7 +290,7 @@ public final class ParaClient {
 	}
 
 	private MultivaluedMap<String, String> pagerToParams(Pager... pager) {
-		MultivaluedMap<String, String> map = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> map = new MultivaluedHashMap<>();
 		if (pager != null && pager.length > 0) {
 			Pager p = pager[0];
 			if (p != null) {
@@ -309,7 +309,7 @@ public final class ParaClient {
 	private <P extends ParaObject> List<P> getItemsFromList(List<?> result) {
 		if (result != null && !result.isEmpty()) {
 			// this isn't very efficient but there's no way to know what type of objects we're reading
-			ArrayList<P> objects = new ArrayList<P>(result.size());
+			ArrayList<P> objects = new ArrayList<>(result.size());
 			for (Object map : result) {
 				P p = ParaObjectUtils.setAnnotatedFields((Map<String, Object>) map);
 				if (p != null) {
@@ -431,7 +431,7 @@ public final class ParaClient {
 		if (keys == null || keys.isEmpty()) {
 			return Collections.emptyList();
 		}
-		MultivaluedMap<String, String> ids = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> ids = new MultivaluedHashMap<>();
 		ids.put("ids", keys);
 		return getItemsFromList((List<?>) getEntity(invokeGet("_batch", ids), List.class));
 	}
@@ -457,7 +457,7 @@ public final class ParaClient {
 		if (keys == null || keys.isEmpty()) {
 			return;
 		}
-		MultivaluedMap<String, String> ids = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> ids = new MultivaluedHashMap<>();
 		ids.put("ids", keys);
 		invokeDelete("_batch", ids);
 	}
@@ -489,7 +489,7 @@ public final class ParaClient {
 	 * @return the object if found or null
 	 */
 	public <P extends ParaObject> P findById(String id) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle(Config._ID, id);
 		List<P> list = getItems(find("id", params));
 		return list.isEmpty() ? null : list.get(0);
@@ -502,7 +502,7 @@ public final class ParaClient {
 	 * @return a list of object found
 	 */
 	public <P extends ParaObject> List<P> findByIds(List<String> ids) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.put("ids", ids);
 		return getItems(find("ids", params));
 	}
@@ -520,7 +520,7 @@ public final class ParaClient {
 	 */
 	public <P extends ParaObject> List<P> findNearby(String type, String query, int radius, double lat, double lng,
 			Pager... pager) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("latlng", lat + "," + lng);
 		params.putSingle("radius", Integer.toString(radius));
 		params.putSingle("q", query);
@@ -539,7 +539,7 @@ public final class ParaClient {
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findPrefix(String type, String field, String prefix, Pager... pager) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("field", field);
 		params.putSingle("prefix", prefix);
 		params.putSingle(Config._TYPE, type);
@@ -556,7 +556,7 @@ public final class ParaClient {
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findQuery(String type, String query, Pager... pager) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("q", query);
 		params.putSingle(Config._TYPE, type);
 		params.putAll(pagerToParams(pager));
@@ -573,7 +573,7 @@ public final class ParaClient {
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findNestedQuery(String type, String field, String query, Pager... pager) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("q", query);
 		params.putSingle("field", field);
 		params.putSingle(Config._TYPE, type);
@@ -593,7 +593,7 @@ public final class ParaClient {
 	 */
 	public <P extends ParaObject> List<P> findSimilar(String type, String filterKey, String[] fields, String liketext,
 			Pager... pager) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.put("fields", fields == null ? null : Arrays.asList(fields));
 		params.putSingle("filterid", filterKey);
 		params.putSingle("like", liketext);
@@ -611,7 +611,7 @@ public final class ParaClient {
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findTagged(String type, String[] tags, Pager... pager) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.put("tags", tags == null ? null : Arrays.asList(tags));
 		params.putSingle(Config._TYPE, type);
 		params.putAll(pagerToParams(pager));
@@ -641,7 +641,7 @@ public final class ParaClient {
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findTermInList(String type, String field, List<String> terms, Pager... pager) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("field", field);
 		params.put("terms", terms);
 		params.putSingle(Config._TYPE, type);
@@ -663,9 +663,9 @@ public final class ParaClient {
 		if (terms == null) {
 			return Collections.emptyList();
 		}
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("matchall", Boolean.toString(matchAll));
-		LinkedList<String> list = new LinkedList<String>();
+		LinkedList<String> list = new LinkedList<>();
 		for (Map.Entry<String, ? extends Object> term : terms.entrySet()) {
 			String key = term.getKey();
 			Object value = term.getValue();
@@ -691,7 +691,7 @@ public final class ParaClient {
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findWildcard(String type, String field, String wildcard, Pager... pager) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("field", field);
 		params.putSingle("q", wildcard);
 		params.putSingle(Config._TYPE, type);
@@ -705,7 +705,7 @@ public final class ParaClient {
 	 * @return the number of results found
 	 */
 	public Long getCount(String type) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle(Config._TYPE, type);
 		Pager pager = new Pager();
 		getItems(find("count", params), pager);
@@ -722,8 +722,8 @@ public final class ParaClient {
 		if (terms == null) {
 			return 0L;
 		}
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
-		LinkedList<String> list = new LinkedList<String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
+		LinkedList<String> list = new LinkedList<>();
 		for (Map.Entry<String, ? extends Object> term : terms.entrySet()) {
 			String key = term.getKey();
 			Object value = term.getValue();
@@ -742,7 +742,7 @@ public final class ParaClient {
 	}
 
 	private Map<String, Object> find(String queryType, MultivaluedMap<String, String> params) {
-		Map<String, Object> map = new HashMap<String, Object>();
+		Map<String, Object> map = new HashMap<>();
 		if (params != null && !params.isEmpty()) {
 			String qType = StringUtils.isBlank(queryType) ? "/default" : "/".concat(queryType);
 			if (StringUtils.isBlank(params.getFirst(Config._TYPE))) {
@@ -772,7 +772,7 @@ public final class ParaClient {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return 0L;
 		}
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("count", "true");
 		Pager pager = new Pager();
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
@@ -813,7 +813,7 @@ public final class ParaClient {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return Collections.emptyList();
 		}
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("field", field);
 		params.putSingle("q", (query == null) ? "*" : query);
 		params.putAll(pagerToParams(pager));
@@ -906,7 +906,7 @@ public final class ParaClient {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return 0L;
 		}
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("count", "true");
 		params.putSingle("childrenonly", "true");
 		Pager pager = new Pager();
@@ -928,7 +928,7 @@ public final class ParaClient {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return Collections.emptyList();
 		}
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("childrenonly", "true");
 		params.putAll(pagerToParams(pager));
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
@@ -951,7 +951,7 @@ public final class ParaClient {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return Collections.emptyList();
 		}
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("childrenonly", "true");
 		params.putSingle("field", field);
 		params.putSingle("term", term);
@@ -975,7 +975,7 @@ public final class ParaClient {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return Collections.emptyList();
 		}
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("childrenonly", "true");
 		params.putSingle("q", (query == null) ? "*" : query);
 		params.putAll(pagerToParams(pager));
@@ -992,7 +992,7 @@ public final class ParaClient {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return;
 		}
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("childrenonly", "true");
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
 		invokeDelete(url, params);
@@ -1027,7 +1027,7 @@ public final class ParaClient {
 	 * @return a formatted date
 	 */
 	public String formatDate(String format, Locale loc) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("format", format);
 		params.putSingle("locale", loc == null ? null : loc.toString());
 		return getEntity(invokeGet("utils/formatdate", params), String.class);
@@ -1040,7 +1040,7 @@ public final class ParaClient {
 	 * @return a string with dashes
 	 */
 	public String noSpaces(String str, String replaceWith) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("string", str);
 		params.putSingle("replacement", replaceWith);
 		return getEntity(invokeGet("utils/nospaces", params), String.class);
@@ -1052,7 +1052,7 @@ public final class ParaClient {
 	 * @return a clean string
 	 */
 	public String stripAndTrim(String str) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("string", str);
 		return getEntity(invokeGet("utils/nosymbols", params), String.class);
 	}
@@ -1063,7 +1063,7 @@ public final class ParaClient {
 	 * @return HTML
 	 */
 	public String markdownToHtml(String markdownString) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("md", markdownString);
 		return getEntity(invokeGet("utils/md2html", params), String.class);
 	}
@@ -1074,7 +1074,7 @@ public final class ParaClient {
 	 * @return a string like "5m", "1h"
 	 */
 	public String approximately(long delta) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<String, String>();
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("delta", Long.toString(delta));
 		return getEntity(invokeGet("utils/timeago", params), String.class);
 	}
@@ -1388,7 +1388,7 @@ public final class ParaClient {
 	@SuppressWarnings("unchecked")
 	public User signIn(String provider, String providerToken, boolean rememberJWT) {
 		if (!StringUtils.isBlank(provider) && !StringUtils.isBlank(providerToken)) {
-			Map<String, String> credentials = new HashMap<String, String>();
+			Map<String, String> credentials = new HashMap<>();
 			credentials.put(Config._APPID, accessKey);
 			credentials.put("provider", provider);
 			credentials.put("token", providerToken);

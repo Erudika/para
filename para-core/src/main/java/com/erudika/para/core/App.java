@@ -203,7 +203,7 @@ public class App implements ParaObject, Serializable {
 	@JsonIgnore
 	public Map<String, Object> getSettings() {
 		if (settings == null) {
-			settings = new HashMap<String, Object>();
+			settings = new HashMap<>();
 		}
 		return settings;
 	}
@@ -222,7 +222,7 @@ public class App implements ParaObject, Serializable {
 	 */
 	public Map<String, Map<String, Map<String, Map<String, ?>>>> getValidationConstraints() {
 		if (validationConstraints == null) {
-			validationConstraints = new HashMap<String, Map<String, Map<String, Map<String, ?>>>>();
+			validationConstraints = new HashMap<>();
 		}
 		return validationConstraints;
 	}
@@ -241,7 +241,7 @@ public class App implements ParaObject, Serializable {
 	 */
 	public Map<String, Map<String, List<String>>> getResourcePermissions() {
 		if (resourcePermissions == null) {
-			resourcePermissions = new HashMap<String, Map<String, List<String>>>();
+			resourcePermissions = new HashMap<>();
 		}
 		return resourcePermissions;
 	}
@@ -440,13 +440,13 @@ public class App implements ParaObject, Serializable {
 	 */
 	public Map<String, Map<String, Map<String, Map<String, ?>>>> getAllValidationConstraints(String... types) {
 		Map<String, Map<String, Map<String, Map<String, ?>>>> allConstr =
-				new HashMap<String, Map<String, Map<String, Map<String, ?>>>>();
+				new HashMap<>();
 		if (types == null || types.length == 0) {
 			types = ParaObjectUtils.getAllTypes(this).values().toArray(new String[0]);
 		}
 		try {
 			for (String aType : types) {
-				Map<String, Map<String, Map<String, ?>>> vc = new HashMap<String, Map<String, Map<String, ?>>>();
+				Map<String, Map<String, Map<String, ?>>> vc = new HashMap<>();
 				// add all core constraints first
 				if (ValidationUtils.getCoreValidationConstraints().containsKey(aType)) {
 					vc.putAll(ValidationUtils.getCoreValidationConstraints().get(aType));
@@ -482,11 +482,11 @@ public class App implements ParaObject, Serializable {
 			if (fieldMap != null) {
 				consMap = fieldMap.get(field);
 				if (consMap == null) {
-					consMap = new HashMap<String, Map<String, ?>>();
+					consMap = new HashMap<>();
 				}
 			} else {
-				fieldMap = new HashMap<String, Map<String, Map<String, ?>>>();
-				consMap = new HashMap<String, Map<String, ?>>();
+				fieldMap = new HashMap<>();
+				consMap = new HashMap<>();
 			}
 			consMap.put(c.getName(), c.getPayload());
 			fieldMap.put(field, consMap);
@@ -528,7 +528,7 @@ public class App implements ParaObject, Serializable {
 	 * @return a map of all resource permissions per subject
 	 */
 	public Map<String, Map<String, List<String>>> getAllResourcePermissions(String... subjectids) {
-		Map<String, Map<String, List<String>>> allPermits = new HashMap<String, Map<String, List<String>>>();
+		Map<String, Map<String, List<String>>> allPermits = new HashMap<>();
 		if (subjectids == null || subjectids.length == 0) {
 			return getResourcePermissions();
 		}
@@ -538,7 +538,7 @@ public class App implements ParaObject, Serializable {
 					if (getResourcePermissions().containsKey(subjectid)) {
 						allPermits.put(subjectid, getResourcePermissions().get(subjectid));
 					} else {
-						allPermits.put(subjectid, new HashMap<String, List<String>>(0));
+						allPermits.put(subjectid, new HashMap<>(0));
 					}
 					if (getResourcePermissions().containsKey(ALLOW_ALL)) {
 						allPermits.put(ALLOW_ALL, getResourcePermissions().get(ALLOW_ALL));
@@ -583,8 +583,8 @@ public class App implements ParaObject, Serializable {
 			allowGuestAccess = permission.remove(GUEST) || allowGuestAccess;
 			EnumSet<AllowedMethods> methods = getAllowedMethodsSet(permission);
 			if (!getResourcePermissions().containsKey(subjectid)) {
-				Map<String, List<String>> perm = new HashMap<String, List<String>>();
-				perm.put(resourcePath, new ArrayList<String>(permission.size()));
+				Map<String, List<String>> perm = new HashMap<>();
+				perm.put(resourcePath, new ArrayList<>(permission.size()));
 				getResourcePermissions().put(subjectid, perm);
 			}
 			if (allowGuestAccess && ALLOW_ALL.equals(subjectid)) {
@@ -593,7 +593,7 @@ public class App implements ParaObject, Serializable {
 			if (permission.contains(OWN)) {
 				methods.add(OWN); // limits access to objects created by the user
 			}
-			List<String> perm = new ArrayList<String>(methods.size());
+			List<String> perm = new ArrayList<>(methods.size());
 			for (AllowedMethods allowedMethod : methods) {
 				perm.add(allowedMethod.toString());
 			}

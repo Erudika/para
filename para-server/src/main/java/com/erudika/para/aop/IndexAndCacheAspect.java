@@ -228,7 +228,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	private Object addToIndexBatchOperation(String appid, Object[] args, MethodInvocation mi)
 			throws Throwable {
 		List<ParaObject> addUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
-		List<ParaObject> indexUs = new LinkedList<ParaObject>();
+		List<ParaObject> indexUs = new LinkedList<>();
 		List<ParaObject> removedObjects = AOPUtils.removeNotStoredNotIndexed(addUs, indexUs);
 		Object result = mi.proceed();
 		search.indexAll(appid, indexUs);
@@ -315,7 +315,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	private void addToCacheBatchOperation(String appid, Object[] args) {
 		List<ParaObject> putUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
 		if (putUs != null && !putUs.isEmpty()) {
-			Map<String, ParaObject> map1 = new LinkedHashMap<String, ParaObject>(putUs.size());
+			Map<String, ParaObject> map1 = new LinkedHashMap<>(putUs.size());
 			for (ParaObject obj : putUs) {
 				if (obj != null && obj.getCached()) {
 					map1.put(obj.getId(), obj);
@@ -331,7 +331,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	private void removeFromCacheBatchOperation(String appid, Object[] args) {
 		List<ParaObject> deleteUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
 		if (deleteUs != null && !deleteUs.isEmpty()) {
-			List<String> list = new ArrayList<String>(deleteUs.size());
+			List<String> list = new ArrayList<>(deleteUs.size());
 			for (ParaObject paraObject : deleteUs) {
 				list.add(paraObject.getId());
 			}

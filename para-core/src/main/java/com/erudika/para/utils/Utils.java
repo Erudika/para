@@ -532,12 +532,12 @@ public final class Utils {
 		// Go through the array backwards, so we do the largest first
 		for (int i = abbrev.length - 1; i >= 0 && !done; i--) {
 			// Convert array index to "1000", "1000000", etc
-			int size = (int) Math.pow(10, (i + 1) * 3);
+			int size = (int) Math.pow(10, (double) (i + 1) * 3);
 			// If the number is bigger or equal do the abbreviation
 			if (size <= number.intValue()) {
 				// Here, we multiply by decPlaces, round, and then divide by decPlaces.
 				// This gives us nice rounding to a particular decimal place.
-				number = Math.round(number.intValue() * decPlaces / size) / decPlaces;
+				number = Math.round(number.intValue() * decPlaces / (float) size) / decPlaces;
 				// Add the letter for the abbreviation
 				abbrevn = number + abbrev[i];
 				// We are done... stop
@@ -769,7 +769,7 @@ public final class Utils {
 	 * @return a list of fields including those of the parent classes excluding the Object class.
 	 */
 	public static List<Field> getAllDeclaredFields(Class<? extends ParaObject> clazz) {
-		LinkedList<Field> fields = new LinkedList<Field>();
+		LinkedList<Field> fields = new LinkedList<>();
 		if (clazz == null) {
 			return fields;
 		}

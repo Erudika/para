@@ -66,7 +66,7 @@ public final class OAuth1HmacSigner {
 			String apiKey, String apiSecret, String oauthToken, String tokenSecret) {
 		try {
 			if (httpMethod != null && url != null && !url.trim().isEmpty() && params != null && apiSecret != null) {
-				Map<String, String[]> paramMap = new TreeMap<String, String[]>(params);
+				Map<String, String[]> paramMap = new TreeMap<>(params);
 				String keyString = percentEncode(apiSecret) + "&" + percentEncode(tokenSecret);
 				byte[] keyBytes = keyString.getBytes(Config.DEFAULT_ENCODING);
 
@@ -94,7 +94,7 @@ public final class OAuth1HmacSigner {
 				}
 
 				Map<String, SortedSet<String>> oauthParams = getOAuthParameters(paramMap);
-				TreeSet<String> set = new TreeSet<String>();
+				TreeSet<String> set = new TreeSet<>();
 				set.add(percentEncode(sig));
 				oauthParams.put("oauth_signature", set);
 
@@ -148,7 +148,7 @@ public final class OAuth1HmacSigner {
 			return "";
 		}
 
-		List<ComparableParameter> paramz = new ArrayList<ComparableParameter>(params.size());
+		List<ComparableParameter> paramz = new ArrayList<>(params.size());
 		for (Map.Entry<String, String[]> param : params.entrySet()) {
 			if (!"oauth_signature".equals(param.getKey()) || "realm".equals(param.getKey())) {
 				for (String val : param.getValue()) {
@@ -194,11 +194,11 @@ public final class OAuth1HmacSigner {
 	}
 
 	private static Map<String, SortedSet<String>> getOAuthParameters(Map<String, String[]> params) {
-		TreeMap<String, SortedSet<String>> oauthParams = new TreeMap<String, SortedSet<String>>();
+		TreeMap<String, SortedSet<String>> oauthParams = new TreeMap<>();
 		for (Entry<String, String[]> param : params.entrySet()) {
 			String key = param.getKey();
 			if ((key.startsWith("oauth_") || key.startsWith("x_oauth_")) && param.getValue() != null) {
-				TreeSet<String> set = new TreeSet<String>();
+				TreeSet<String> set = new TreeSet<>();
 				for (String val : param.getValue()) {
 					if (val != null) {
 						set.add(val);

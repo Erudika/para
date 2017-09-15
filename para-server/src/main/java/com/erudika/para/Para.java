@@ -323,7 +323,7 @@ public final class Para {
 	public static List<CustomResourceHandler> getCustomResourceHandlers() {
 		ServiceLoader<CustomResourceHandler> loader = ServiceLoader.
 				load(CustomResourceHandler.class, Para.getParaClassLoader());
-		List<CustomResourceHandler> externalResources = new ArrayList<CustomResourceHandler>();
+		List<CustomResourceHandler> externalResources = new ArrayList<>();
 		for (CustomResourceHandler handler : loader) {
 			if (handler != null) {
 				injectInto(handler);
@@ -335,7 +335,7 @@ public final class Para {
 
 	private static List<Module> getExternalModules() {
 		ServiceLoader<Module> moduleLoader = ServiceLoader.load(Module.class, Para.getParaClassLoader());
-		List<Module> externalModules = new ArrayList<Module>();
+		List<Module> externalModules = new ArrayList<>();
 		for (Module module : moduleLoader) {
 			externalModules.add(module);
 		}
@@ -351,7 +351,7 @@ public final class Para {
 		if (paraClassLoader == null) {
 			try {
 				ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
-				List<URL> jars = new ArrayList<URL>();
+				List<URL> jars = new ArrayList<>();
 				File lib = new File(Config.getConfigParam("plugin_folder", "lib/"));
 				if (lib.exists() && lib.isDirectory()) {
 					for (File file : FileUtils.listFiles(lib, new String[]{"jar"}, false)) {
@@ -388,7 +388,7 @@ public final class Para {
 	 * @return credentials for the root app
 	 */
 	public static Map<String, String> newApp(String appid, String name, boolean sharedTable, boolean sharedIndex) {
-		Map<String, String> creds = new TreeMap<String, String>();
+		Map<String, String> creds = new TreeMap<>();
 		creds.put("message", "All set!");
 		if (StringUtils.isBlank(appid)) {
 			return creds;

@@ -219,7 +219,7 @@ public final class Signer extends AWS4Signer {
 		boolean isJWT = StringUtils.startsWithIgnoreCase(secretKey, "Bearer");
 
 		WebTarget target = apiClient.target(endpointURL).path(reqPath);
-		Map<String, String> signedHeaders = new HashMap<String, String>();
+		Map<String, String> signedHeaders = new HashMap<>();
 		if (!isJWT) {
 			signedHeaders = signRequest(accessKey, secretKey, httpMethod, endpointURL, reqPath,
 					headers, params, jsonEntity);
@@ -290,7 +290,7 @@ public final class Signer extends AWS4Signer {
 		if (StringUtils.isBlank(secretKey)) {
 			logger.debug("Anonymous request: {} {}", httpMethod, reqPath);
 			if (headers == null) {
-				headers = new HashMap<String, String>();
+				headers = new HashMap<>();
 			}
 			headers.put(HttpHeaders.AUTHORIZATION, "Anonymous " + accessKey);
 			return headers;
@@ -301,7 +301,7 @@ public final class Signer extends AWS4Signer {
 		}
 
 		InputStream in = null;
-		Map<String, String> sigParams = new HashMap<String, String>();
+		Map<String, String> sigParams = new HashMap<>();
 
 		if (params != null) {
 			for (Map.Entry<String, List<String>> param : params.entrySet()) {

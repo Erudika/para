@@ -115,7 +115,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 	private boolean stepOne(HttpServletResponse response, String redirectURI, String[] keys)
 			throws ParseException, IOException {
 		String callback = Utils.urlEncode(redirectURI);
-		Map<String, String[]> params = new HashMap<String, String[]>();
+		Map<String, String[]> params = new HashMap<>();
 		params.put("oauth_callback", new String[]{callback});
 		HttpPost tokenPost = new HttpPost(FLOW_URL1);
 		tokenPost.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("POST", FLOW_URL1,
@@ -139,7 +139,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 	private UserAuthentication stepTwo(HttpServletRequest request, String verifier, String[] keys, App app)
 			throws ParseException, UnsupportedEncodingException, IOException {
 		String token = request.getParameter("oauth_token");
-		Map<String, String[]> params = new HashMap<String, String[]>();
+		Map<String, String[]> params = new HashMap<>();
 		params.put("oauth_verifier", new String[]{verifier});
 		HttpPost tokenPost = new HttpPost(FLOW_URL3);
 		tokenPost.setEntity(new StringEntity("oauth_verifier=" + verifier));
@@ -179,7 +179,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 			String[] tokens = accessToken.split(Config.SEPARATOR);
 			String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.TWITTER_PREFIX);
 
-			Map<String, String[]> params2 = new HashMap<String, String[]>();
+			Map<String, String[]> params2 = new HashMap<>();
 			HttpGet profileGet = new HttpGet(PROFILE_URL + "?include_email=true");
 			params2.put("include_email", new String[]{"true"});
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("GET", PROFILE_URL,

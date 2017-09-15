@@ -53,15 +53,15 @@ public class AOPUtilsTest {
 		Tag tag2 = new Tag("tag2");
 		Tag tag3 = new Tag("tag3");
 
-		List<ParaObject> list1 = new ArrayList<ParaObject>();
+		List<ParaObject> list1 = new ArrayList<>();
 		list1.add(tag1);
 		list1.add(tag2);
 		list1.add(tag3);
-		List<ParaObject> list2 = new ArrayList<ParaObject>();
+		List<ParaObject> list2 = new ArrayList<>();
 		list2.add(new Tag("tagzz1"));
 		list2.add(new Tag("tagzz2"));
 		list2.add(new Tag("tagzz3"));
-		List<String> badList = new ArrayList<String>();
+		List<String> badList = new ArrayList<>();
 		badList.add("XXXtagXXX");
 
 		assertSame(tag, getArgOfParaObject(new Object[]{tag, "string"}));
@@ -101,8 +101,8 @@ public class AOPUtilsTest {
 		assertNull(search.findById(tag2.getId()));
 		assertNull(search.findById(tag3.getId()));
 
-		ArrayList<ParaObject> list3 = new ArrayList<ParaObject>();
-		ArrayList<ParaObject> indexUs = new ArrayList<ParaObject>();
+		ArrayList<ParaObject> list3 = new ArrayList<>();
+		ArrayList<ParaObject> indexUs = new ArrayList<>();
 		tag.setIndexed(false);
 		tag.setStored(false);
 		list3.add(tag);

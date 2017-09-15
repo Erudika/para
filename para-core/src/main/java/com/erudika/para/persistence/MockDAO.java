@@ -111,7 +111,7 @@ public class MockDAO implements DAO {
 		if (keys == null || StringUtils.isBlank(appid)) {
 			return Collections.emptyMap();
 		}
-		Map<String, P> results = new LinkedHashMap<String, P>(keys.size());
+		Map<String, P> results = new LinkedHashMap<>(keys.size());
 		for (String key : keys) {
 			if (getMap(appid).containsKey(key)) {
 				results.put(key, (P) read(appid, key));
@@ -124,7 +124,7 @@ public class MockDAO implements DAO {
 	@Override
 	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> readPage(String appid, Pager pager) {
-		List<P> results = new LinkedList<P>();
+		List<P> results = new LinkedList<>();
 		if (StringUtils.isBlank(appid)) {
 			return results;
 		}
@@ -180,7 +180,7 @@ public class MockDAO implements DAO {
 
 	private Map<String, ParaObject> getMap(String appid) {
 		if (!MAPS.containsKey(appid)) {
-			MAPS.put(appid, new ConcurrentHashMap<String, ParaObject>());
+			MAPS.put(appid, new ConcurrentHashMap<>());
 		}
 		return MAPS.get(appid);
 	}

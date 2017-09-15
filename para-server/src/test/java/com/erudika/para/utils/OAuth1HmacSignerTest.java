@@ -54,7 +54,7 @@ public class OAuth1HmacSignerTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void testSign() {
-		Map<String, String[]> params1 = new TreeMap<String, String[]>();
+		Map<String, String[]> params1 = new TreeMap<>();
 		params1.put("oauth_callback", new String[] {Utils.urlEncode("http://localhost/sign-in-with-twitter/")});
 		params1.put("oauth_nonce", new String[] {"ea9ec8429b68d6b77cd5600adbbb0456"});
 		params1.put("oauth_timestamp", new String[] {"1318467427"});
@@ -69,7 +69,7 @@ public class OAuth1HmacSignerTest {
 //		params2.put("c2", new String[] {""});
 //		params2.put("a2", new String[] {"r b"});
 
-		Map<String, String[]> params3 = new TreeMap<String, String[]>();
+		Map<String, String[]> params3 = new TreeMap<>();
 		params3.put("oauth_nonce", new String[] {"kllo9940pd9333jh"});
 		params3.put("oauth_timestamp", new String[] {"1191242096"});
 		params3.put("file", new String[] {"vacation.jpg"});

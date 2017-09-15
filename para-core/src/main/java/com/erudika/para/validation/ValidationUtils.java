@@ -118,7 +118,7 @@ public final class ValidationUtils {
 		if (content == null) {
 			return new String[]{"Object cannot be null."};
 		}
-		LinkedList<String> list = new LinkedList<String>();
+		LinkedList<String> list = new LinkedList<>();
 		try {
 			for (ConstraintViolation<ParaObject> constraintViolation : getValidator().validate(content)) {
 				String prop = "'".concat(constraintViolation.getPropertyPath().toString()).concat("'");
@@ -147,7 +147,7 @@ public final class ValidationUtils {
 			if (!app.getValidationConstraints().isEmpty() && isCustomType) {
 				Map<String, Map<String, Map<String, ?>>> fieldsMap = app.getValidationConstraints().get(type);
 				if (fieldsMap != null && !fieldsMap.isEmpty()) {
-					LinkedList<String> errors = new LinkedList<String>();
+					LinkedList<String> errors = new LinkedList<>();
 					for (Map.Entry<String, Map<String, Map<String, ?>>> e : fieldsMap.entrySet()) {
 						String field = e.getKey();
 						Object actualValue = ((Sysprop) content).getProperty(field);
@@ -242,7 +242,7 @@ public final class ValidationUtils {
 				for (Field field : fieldlist) {
 					Annotation[] annos = field.getAnnotations();
 					if (annos.length > 1) {
-						Map<String, Map<String, ?>> constrMap = new HashMap<String, Map<String, ?>>();
+						Map<String, Map<String, ?>> constrMap = new HashMap<>();
 						for (Annotation anno : annos) {
 							if (isValidConstraintType(anno.annotationType())) {
 								Constraint c = fromAnnotation(anno);
@@ -253,7 +253,7 @@ public final class ValidationUtils {
 						}
 						if (!constrMap.isEmpty()) {
 							if (!CORE_CONSTRAINTS.containsKey(type)) {
-								CORE_CONSTRAINTS.put(type, new HashMap<String, Map<String, Map<String, ?>>>());
+								CORE_CONSTRAINTS.put(type, new HashMap<>());
 							}
 							CORE_CONSTRAINTS.get(type).put(field.getName(), constrMap);
 						}

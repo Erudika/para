@@ -258,7 +258,7 @@ public final class SecurityUtils {
 	 * @return a map of keys and values
 	 */
 	public static Map<String, String> getLdapSettingsForApp(App app) {
-		Map<String, String> ldapSettings = new HashMap<String, String>();
+		Map<String, String> ldapSettings = new HashMap<>();
 		if (app != null) {
 			ldapSettings.put("security.ldap.server_url", "ldap://localhost:8389/");
 			ldapSettings.put("security.ldap.active_directory_domain", "");
@@ -331,8 +331,8 @@ public final class SecurityUtils {
 			accessKey = StringUtils.substringBefore(credential, "/");
 		}
 
-		Set<String> headersUsed = new HashSet<String>(Arrays.asList(sigHeaders.split(";")));
-		Map<String, String> headers = new HashMap<String, String>();
+		Set<String> headersUsed = new HashSet<>(Arrays.asList(sigHeaders.split(";")));
+		Map<String, String> headers = new HashMap<>();
 		for (Enumeration<String> e = incoming.getHeaderNames(); e.hasMoreElements();) {
 			String head = e.nextElement().toLowerCase();
 			if (headersUsed.contains(head)) {
@@ -340,7 +340,7 @@ public final class SecurityUtils {
 			}
 		}
 
-		Map<String, String> params = new HashMap<String, String>();
+		Map<String, String> params = new HashMap<>();
 		for (Map.Entry<String, String[]> param : incoming.getParameterMap().entrySet()) {
 			params.put(param.getKey(), param.getValue()[0]);
 		}

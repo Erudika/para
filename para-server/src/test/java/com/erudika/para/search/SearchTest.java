@@ -154,7 +154,7 @@ public abstract class SearchTest {
 	@Test
 	public void testFindByIds() {
 		assertTrue(s.findByIds(null).isEmpty());
-		assertTrue(s.findByIds(new ArrayList<String>(0)).isEmpty());
+		assertTrue(s.findByIds(new ArrayList<>(0)).isEmpty());
 		List<?> list = s.findByIds(Arrays.asList(new String[]{u.getId(), t.getId()}));
 		assertFalse(list.isEmpty());
 		assertEquals(2, list.size());
@@ -255,15 +255,15 @@ public abstract class SearchTest {
 	@Test
 	public void testFindTerms() {
 		// many terms
-		Map<String, Object> terms = new HashMap<String, Object>();
+		Map<String, Object> terms = new HashMap<>();
 //		terms.put(Config._TYPE, u.getType());
 		terms.put(Config._ID, u.getId());
 
-		Map<String, Object> terms1 = new HashMap<String, Object>();
+		Map<String, Object> terms1 = new HashMap<>();
 		terms1.put(Config._TYPE, null);
 		terms1.put(Config._ID, "");
 
-		Map<String, Object> terms2 = new HashMap<String, Object>();
+		Map<String, Object> terms2 = new HashMap<>();
 		terms2.put(" ", "bad");
 		terms2.put("", "");
 
@@ -387,7 +387,7 @@ public abstract class SearchTest {
 		Tag tt1 = new Tag("test-all1");
 		Tag tt2 = new Tag("test-all2");
 		Tag tt3 = new Tag("test-all3");
-		List<Tag> tags = new ArrayList<Tag>();
+		List<Tag> tags = new ArrayList<>();
 		tags.add(tt1);
 		tags.add(tt2);
 		tags.add(tt3);
@@ -419,7 +419,7 @@ public abstract class SearchTest {
 
 		Thread.sleep(1000);
 
-		Map<String, Object> terms = new HashMap<String, Object>();
+		Map<String, Object> terms = new HashMap<>();
 		terms.put(Config._NAME, "xx");
 		terms.put(Config._TIMESTAMP, 123L);
 

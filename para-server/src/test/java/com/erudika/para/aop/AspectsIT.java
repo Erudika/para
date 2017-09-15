@@ -135,7 +135,7 @@ public class AspectsIT {
 		assertNull(s.findById(uB.getId()));
 		assertNull(c.get(uB.getId()));
 
-		ArrayList<Sysprop> list = new ArrayList<Sysprop>();
+		ArrayList<Sysprop> list = new ArrayList<>();
 		list.add(s0);
 		list.add(s1);
 		list.add(s2);
@@ -225,7 +225,7 @@ public class AspectsIT {
 		Sysprop o11 = new Sysprop("obj11");
 		Sysprop o12 = new Sysprop("obj12");
 		Para.getDAO().create(t1);
-		Para.getDAO().createAll(new LinkedList<Sysprop>(Arrays.asList(o11, o12)));
+		Para.getDAO().createAll(new LinkedList<>(Arrays.asList(o11, o12)));
 
 		assertNotNull(Para.getDAO().read(t1.getId()));
 		assertNotNull(Para.getDAO().read(o11.getId()));
@@ -259,7 +259,7 @@ public class AspectsIT {
 		o21.setStored(false);
 		o22.setStored(false);
 		Para.getDAO().create(t2);
-		Para.getDAO().createAll(new LinkedList<Sysprop>(Arrays.asList(o21, o22)));
+		Para.getDAO().createAll(new LinkedList<>(Arrays.asList(o21, o22)));
 
 		System.setProperty("para.cache_enabled", "false");
 		assertNull(Para.getDAO().read(t2.getId()));
@@ -294,7 +294,7 @@ public class AspectsIT {
 		o32.setStored(false);
 		o32.setIndexed(false);
 		Para.getDAO().create(t3);
-		Para.getDAO().createAll(new LinkedList<Sysprop>(Arrays.asList(o31, o32)));
+		Para.getDAO().createAll(new LinkedList<>(Arrays.asList(o31, o32)));
 
 		System.setProperty("para.cache_enabled", "false");
 		assertNull(Para.getDAO().read(t3.getId()));
@@ -326,7 +326,7 @@ public class AspectsIT {
 		o41.setCached(false);
 		o42.setCached(false);
 		Para.getDAO().create(t4);
-		Para.getDAO().createAll(new LinkedList<Sysprop>(Arrays.asList(o41, o42)));
+		Para.getDAO().createAll(new LinkedList<>(Arrays.asList(o41, o42)));
 
 		System.setProperty("para.cache_enabled", "false");
 		assertNotNull(Para.getDAO().read(t4.getId()));
@@ -361,7 +361,7 @@ public class AspectsIT {
 		o52.setIndexed(false);
 		o52.setCached(false);
 		Para.getDAO().create(t5);
-		Para.getDAO().createAll(new LinkedList<Sysprop>(Arrays.asList(o51, o52)));
+		Para.getDAO().createAll(new LinkedList<>(Arrays.asList(o51, o52)));
 
 		System.setProperty("para.cache_enabled", "false");
 		assertNotNull(Para.getDAO().read(t5.getId()));
@@ -398,7 +398,7 @@ public class AspectsIT {
 		o62.setStored(false);
 		o62.setCached(false);
 		Para.getDAO().create(t6);
-		Para.getDAO().createAll(new LinkedList<Sysprop>(Arrays.asList(o61, o62)));
+		Para.getDAO().createAll(new LinkedList<>(Arrays.asList(o61, o62)));
 		Thread.sleep(1000);
 
 		System.setProperty("para.cache_enabled", "false");

@@ -109,7 +109,7 @@ public class HazelcastCache implements Cache {
 	@Override
 	public <T> void putAll(String appid, Map<String, T> objects) {
 		if (objects != null && !objects.isEmpty() && !StringUtils.isBlank(appid)) {
-			Map<String, T> cleanMap = new LinkedHashMap<String, T>(objects.size());
+			Map<String, T> cleanMap = new LinkedHashMap<>(objects.size());
 			for (Entry<String, T> entry : objects.entrySet()) {
 				if (!StringUtils.isBlank(entry.getKey()) && entry.getValue() != null) {
 					cleanMap.put(entry.getKey(), entry.getValue());
@@ -145,11 +145,11 @@ public class HazelcastCache implements Cache {
 		if (ids == null || StringUtils.isBlank(appid)) {
 			return Collections.emptyMap();
 		}
-		Map<String, T> result = new LinkedHashMap<String, T>(ids.size(), 0.75f, true);
+		Map<String, T> result = new LinkedHashMap<>(ids.size(), 0.75f, true);
 		ids.remove(null);
 		try {
 			IMap<String, T> imap = client().getMap(appid);
-			Map<String, T> res = imap.getAll(new TreeSet<String>(ids));
+			Map<String, T> res = imap.getAll(new TreeSet<>(ids));
 			for (String id : ids) {
 				if (res.containsKey(id)) {
 					result.put(id, res.get(id));

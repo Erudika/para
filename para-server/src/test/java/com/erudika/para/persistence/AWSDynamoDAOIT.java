@@ -220,7 +220,7 @@ public class AWSDynamoDAOIT extends DAOTest {
 		app3.setSharingTable(true);
 		app4.setSharingTable(true);
 
-		ArrayList<Sysprop> list = new ArrayList<Sysprop>();
+		ArrayList<Sysprop> list = new ArrayList<>();
 		for (int i = 0; i < 22; i++) {
 			Sysprop s = new Sysprop("id_" + i);
 			s.addProperty("prop" + i, i);

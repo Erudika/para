@@ -562,7 +562,7 @@ public final class RestUtils {
 	 */
 	public static Response getBatchReadResponse(App app, List<String> ids) {
 		if (app != null && ids != null && !ids.isEmpty()) {
-			ArrayList<ParaObject> results = new ArrayList<ParaObject>(ids.size());
+			ArrayList<ParaObject> results = new ArrayList<>(ids.size());
 			for (ParaObject result : Para.getDAO().readAll(app.getAppIdentifier(), ids, true).values()) {
 				if (checkImplicitAppPermissions(app, result) && checkIfUserCanModifyObject(app, result)) {
 					results.add(result);
@@ -582,7 +582,7 @@ public final class RestUtils {
 	 */
 	public static Response getBatchCreateResponse(final App app, InputStream is) {
 		if (app != null) {
-			final LinkedList<ParaObject> newObjects = new LinkedList<ParaObject>();
+			final LinkedList<ParaObject> newObjects = new LinkedList<>();
 			Response entityRes = getEntity(is, List.class);
 			if (entityRes.getStatusInfo() == Response.Status.OK) {
 				List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
@@ -630,7 +630,7 @@ public final class RestUtils {
 	public static Response getBatchUpdateResponse(App app, Map<String, ParaObject> oldObjects,
 			List<Map<String, Object>> newProperties) {
 		if (app != null && oldObjects != null && newProperties != null) {
-			LinkedList<ParaObject> updatedObjects = new LinkedList<ParaObject>();
+			LinkedList<ParaObject> updatedObjects = new LinkedList<>();
 			for (Map<String, Object> newProps : newProperties) {
 				if (newProps != null && newProps.containsKey(Config._ID)) {
 					ParaObject oldObject = oldObjects.get((String) newProps.get(Config._ID));
@@ -658,7 +658,7 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getBatchDeleteResponse(App app, List<String> ids) {
-		LinkedList<ParaObject> objects = new LinkedList<ParaObject>();
+		LinkedList<ParaObject> objects = new LinkedList<>();
 		if (ids != null && !ids.isEmpty()) {
 			if (ids.size() <= Config.MAX_ITEMS_PER_PAGE) {
 				for (ParaObject pobj : Para.getDAO().readAll(app.getAppIdentifier(), ids, true).values()) {
@@ -701,7 +701,7 @@ public final class RestUtils {
 			if (id2 != null) {
 				return Response.ok(pobj.isLinked(type2, id2), MediaType.TEXT_PLAIN_TYPE).build();
 			} else {
-				List<ParaObject> items = new ArrayList<ParaObject>();
+				List<ParaObject> items = new ArrayList<>();
 				if (childrenOnly) {
 					if (params.containsKey("count")) {
 						pager.setCount(pobj.countChildren(type2));
@@ -843,7 +843,7 @@ public final class RestUtils {
 		String matchAll = paramOrDefault(params, "matchall", "true");
 		List<String> termsList = params.get("terms");
 		if (termsList != null) {
-			Map<String, String> terms = new HashMap<String, String>(termsList.size());
+			Map<String, String> terms = new HashMap<>(termsList.size());
 			for (String termTuple : termsList) {
 				if (!StringUtils.isBlank(termTuple) && termTuple.contains(Config.SEPARATOR)) {
 					String[] split = termTuple.split(Config.SEPARATOR, 2);
@@ -905,7 +905,7 @@ public final class RestUtils {
 
 	private static <P extends ParaObject> Map<String, Object> buildPageResponse(List<P> items, Pager pager) {
 		App app = getPrincipalApp();
-		ArrayList<P> checkedItems = new ArrayList<P>(items.size());
+		ArrayList<P> checkedItems = new ArrayList<>(items.size());
 		for (P item : items) {
 			if (checkImplicitAppPermissions(app, item) && checkIfUserCanModifyObject(app, item)) {
 				checkedItems.add(item);
@@ -914,7 +914,7 @@ public final class RestUtils {
 		if (!items.isEmpty() && checkedItems.isEmpty()) {
 			pager.setCount(0);
 		}
-		Map<String, Object> result = new HashMap<String, Object>();
+		Map<String, Object> result = new HashMap<>();
 		result.put("items", checkedItems);
 		result.put("page", pager.getPage());
 		result.put("totalHits", pager.getCount());

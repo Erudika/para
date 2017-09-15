@@ -301,7 +301,7 @@ public final class Config {
 				config = conf.withFallback(config);
 			}
 
-			configMap = new HashMap<String, String>();
+			configMap = new HashMap<>();
 			for (Map.Entry<String, ConfigValue> con : config.entrySet()) {
 				if (con.getValue().valueType() != ConfigValueType.LIST) {
 					configMap.put(con.getKey(), config.getString(con.getKey()));

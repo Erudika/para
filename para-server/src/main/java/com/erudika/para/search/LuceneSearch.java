@@ -101,7 +101,7 @@ public class LuceneSearch implements Search {
 		if (StringUtils.isBlank(appid) || objects == null || objects.isEmpty()) {
 			return;
 		}
-		ArrayList<Document> docs = new ArrayList<Document>(objects.size());
+		ArrayList<Document> docs = new ArrayList<>(objects.size());
 		for (P po : objects) {
 			Map<String, Object> data = ParaObjectUtils.getAnnotatedFields(po, null, false);
 			if (!data.isEmpty()) {
@@ -116,7 +116,7 @@ public class LuceneSearch implements Search {
 		if (StringUtils.isBlank(appid) || objects == null || objects.isEmpty()) {
 			return;
 		}
-		ArrayList<String> ids = new ArrayList<String>();
+		ArrayList<String> ids = new ArrayList<>();
 		for (P po : objects) {
 			if (po != null) {
 				ids.add(po.getId());
@@ -253,7 +253,7 @@ public class LuceneSearch implements Search {
 		if (StringUtils.isBlank(field) || terms == null) {
 			return Collections.emptyList();
 		}
-		ArrayList<BytesRef> termsList = new ArrayList<BytesRef>();
+		ArrayList<BytesRef> termsList = new ArrayList<>();
 		for (Object term : terms) {
 			termsList.add(new BytesRef(term.toString()));
 		}

@@ -69,7 +69,7 @@ public class AzureIoTService implements IoTService {
 	public AzureIoTService() {
 		if (!StringUtils.isBlank(SERVICE_ACCESS_KEY)) {
 			if (!StringUtils.isBlank(EVENTHUB_ENDPOINT)) {
-				final ArrayList<EventHubClient> recievers = new ArrayList<EventHubClient>();
+				final ArrayList<EventHubClient> recievers = new ArrayList<>();
 				for (int i = 0; i < PARTITIONS_COUNT; i++) {
 					recievers.add(receiveEventsAsync(Integer.toString(i)));
 				}

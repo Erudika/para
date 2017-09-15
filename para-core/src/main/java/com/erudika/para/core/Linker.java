@@ -210,7 +210,7 @@ public final class Linker implements ParaObject, Serializable {
 	 */
 	public List<Map<String, Object>> getNstd() {
 		if (nstd == null) {
-			nstd = new ArrayList<Map<String, Object>>();
+			nstd = new ArrayList<>();
 		}
 		return nstd;
 	}

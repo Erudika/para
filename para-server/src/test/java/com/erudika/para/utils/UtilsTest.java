@@ -103,8 +103,8 @@ public class UtilsTest {
 	@Test
 	public void testCompileMustache() {
 		assertNotNull(compileMustache(null, ""));
-		assertNotNull(compileMustache(new HashMap<String, Object>(), "test"));
-		Map<String, Object> map = new HashMap<String, Object>();
+		assertNotNull(compileMustache(new HashMap<>(), "test"));
+		Map<String, Object> map = new HashMap<>();
 		map.put("test", "string");
 		assertEquals("<html>string</html>", compileMustache(map, "<html>{{test}}</html>"));
 	}
@@ -119,7 +119,7 @@ public class UtilsTest {
 	@Test
 	public void testArrayJoin() {
 		assertNotNull(arrayJoin(null, null));
-		assertNotNull(arrayJoin(new ArrayList<String>(), null));
+		assertNotNull(arrayJoin(new ArrayList<>(), null));
 		assertEquals("one,two,three", arrayJoin(Arrays.asList("one","two","three"), ","));
 		assertEquals("onetwothree", arrayJoin(Arrays.asList("one","two","three"), ""));
 	}
@@ -316,9 +316,9 @@ public class UtilsTest {
 	@SuppressWarnings("unchecked")
 	public void testSetAnnotatedFields() {
 		assertNull(setAnnotatedFields(null));
-		assertNull(setAnnotatedFields(new HashMap<String, Object>()));
+		assertNull(setAnnotatedFields(new HashMap<>()));
 
-		Map<String, Object> map = new HashMap<String, Object>();
+		Map<String, Object> map = new HashMap<>();
 		long timestamp = 1390052381000L;
 		map.put(Config._ID, "123");
 		map.put(Config._TYPE, Utils.type(User.class));
@@ -345,7 +345,7 @@ public class UtilsTest {
 		assertEquals(true, obj2.getActive());
 
 		// complex nested objects coming from Jackson
-		Map<String, Object> map1 = new HashMap<String, Object>();
+		Map<String, Object> map1 = new HashMap<>();
 		Map<String, Object> props = new HashMap<String, Object>(){{
 			put("testprop1", "test");
 			put("testprop2", true);
@@ -422,7 +422,7 @@ public class UtilsTest {
 
 	@Test
 	public void testGetCoreClassesMap() {
-		Set<Class<? extends ParaObject>> set = new HashSet<Class<? extends ParaObject>>();
+		Set<Class<? extends ParaObject>> set = new HashSet<>();
 		set.addAll(getCoreClassesMap().values());
 		assertFalse(set.isEmpty());
 		assertTrue(set.contains(Tag.class));

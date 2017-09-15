@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 public class MockCache implements Cache {
 
 	private static final Logger logger = LoggerFactory.getLogger(MockCache.class);
-	private Map<String, Map<String, Object>> maps = new ConcurrentHashMap<String, Map<String, Object>>();
+	private Map<String, Map<String, Object>> maps = new ConcurrentHashMap<>();
 
 	@Override
 	public boolean contains(String appid, String id) {
@@ -72,7 +72,7 @@ public class MockCache implements Cache {
 	@Override
 	public <T> void putAll(String appid, Map<String, T> objects) {
 		if (objects != null && !objects.isEmpty() && !StringUtils.isBlank(appid)) {
-			Map<String, T> cleanMap = new LinkedHashMap<String, T>(objects.size());
+			Map<String, T> cleanMap = new LinkedHashMap<>(objects.size());
 			for (Map.Entry<String, T> entry : objects.entrySet()) {
 				if (!StringUtils.isBlank(entry.getKey()) && entry.getValue() != null) {
 					cleanMap.put(entry.getKey(), entry.getValue());
@@ -102,7 +102,7 @@ public class MockCache implements Cache {
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T> Map<String, T> getAll(String appid, List<String> ids) {
-		Map<String, T> map1 = new LinkedHashMap<String, T>();
+		Map<String, T> map1 = new LinkedHashMap<>();
 		if (ids == null || StringUtils.isBlank(appid)) {
 			return map1;
 		}
@@ -158,7 +158,7 @@ public class MockCache implements Cache {
 
 	private Map<String, Object> getMap(String appid) {
 		if (!maps.containsKey(appid)) {
-			maps.put(appid, new  HashMap<String, Object>());
+			maps.put(appid, new  HashMap<>());
 		}
 		return maps.get(appid);
 	}

@@ -50,7 +50,7 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 
 	private static final Logger logger = LoggerFactory.getLogger(OXRCurrencyConverter.class);
 	private static final String FXRATES_KEY = "fxrates";
-	private static final long REFRESH_AFTER = 24 * 60 * 60 * 1000; // 24 hours in ms
+	private static final long REFRESH_AFTER = (long) 24 * 60 * 60 * 1000; // 24 hours in ms
 	private static final String SERVICE_URL = "http://openexchangerates.org/api/latest.json?app_id=".
 			concat(Config.getConfigParam("openx_api_key", ""));
 

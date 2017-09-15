@@ -122,7 +122,7 @@ public abstract class Constraint {
 	 */
 	public Map<String, Object> getPayload() {
 		if (payload == null) {
-			payload = new LinkedHashMap<String, Object>();
+			payload = new LinkedHashMap<>();
 		}
 		return payload;
 	}
@@ -180,7 +180,7 @@ public abstract class Constraint {
 		if (name == null) {
 			return null;
 		}
-		Map<String, Object> payload = new LinkedHashMap<String, Object>();
+		Map<String, Object> payload = new LinkedHashMap<>();
 		payload.put("message", MSG_PREFIX + name);
 		return payload;
 	}
@@ -194,7 +194,7 @@ public abstract class Constraint {
 		if (min == null) {
 			return null;
 		}
-		Map<String, Object> payload = new LinkedHashMap<String, Object>();
+		Map<String, Object> payload = new LinkedHashMap<>();
 		payload.put("value", min);
 		payload.put("message", MSG_PREFIX + VALIDATORS.get(Min.class));
 		return payload;
@@ -209,7 +209,7 @@ public abstract class Constraint {
 		if (max == null) {
 			return null;
 		}
-		Map<String, Object> payload = new LinkedHashMap<String, Object>();
+		Map<String, Object> payload = new LinkedHashMap<>();
 		payload.put("value", max);
 		payload.put("message", MSG_PREFIX + VALIDATORS.get(Max.class));
 		return payload;
@@ -225,7 +225,7 @@ public abstract class Constraint {
 		if (min == null || max == null) {
 			return null;
 		}
-		Map<String, Object> payload = new LinkedHashMap<String, Object>();
+		Map<String, Object> payload = new LinkedHashMap<>();
 		payload.put("min", min);
 		payload.put("max", max);
 		payload.put("message", MSG_PREFIX + VALIDATORS.get(Size.class));
@@ -242,7 +242,7 @@ public abstract class Constraint {
 		if (i == null || f == null) {
 			return null;
 		}
-		Map<String, Object> payload = new LinkedHashMap<String, Object>();
+		Map<String, Object> payload = new LinkedHashMap<>();
 		payload.put("integer", i);
 		payload.put("fraction", f);
 		payload.put("message", MSG_PREFIX + VALIDATORS.get(Digits.class));
@@ -258,7 +258,7 @@ public abstract class Constraint {
 		if (regex == null) {
 			return null;
 		}
-		Map<String, Object> payload = new LinkedHashMap<String, Object>();
+		Map<String, Object> payload = new LinkedHashMap<>();
 		payload.put("value", regex);
 		payload.put("message", MSG_PREFIX + VALIDATORS.get(Pattern.class));
 		return payload;

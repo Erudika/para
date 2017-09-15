@@ -116,7 +116,7 @@ public class RestUtilsTest {
 				getInputStream(t)).getStatus());
 		assertNotNull(CoreUtils.getInstance().getDao().read(t.getId()));
 
-		Map<String, Object> map = new HashMap<String, Object>();
+		Map<String, Object> map = new HashMap<>();
 		assertEquals(Status.NOT_FOUND.getStatusCode(), getUpdateResponse(rootApp, null, null).getStatus());
 		assertEquals(Status.OK.getStatusCode(), getUpdateResponse(rootApp, t, getInputStream(map)).getStatus());
 		assertNotNull(CoreUtils.getInstance().getDao().read(t.getId()));

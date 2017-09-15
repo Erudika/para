@@ -183,7 +183,7 @@ public class AWSDynamoDAO implements DAO {
 		if (StringUtils.isBlank(key) || StringUtils.isBlank(appid) || row == null || row.isEmpty()) {
 			return;
 		}
-		Map<String, AttributeValueUpdate> rou = new HashMap<String, AttributeValueUpdate>();
+		Map<String, AttributeValueUpdate> rou = new HashMap<>();
 		try {
 			for (Entry<String, AttributeValue> attr : row.entrySet()) {
 				rou.put(attr.getKey(), new AttributeValueUpdate(attr.getValue(), AttributeAction.PUT));
@@ -237,7 +237,7 @@ public class AWSDynamoDAO implements DAO {
 			return;
 		}
 
-		List<WriteRequest> reqs = new ArrayList<WriteRequest>(objects.size());
+		List<WriteRequest> reqs = new ArrayList<>(objects.size());
 		int batchSteps = 1;
 		if ((objects.size() > MAX_ITEMS_PER_WRITE)) {
 			batchSteps = (objects.size() / MAX_ITEMS_PER_WRITE) +
@@ -274,17 +274,17 @@ public class AWSDynamoDAO implements DAO {
 	@Override
 	public <P extends ParaObject> Map<String, P> readAll(String appid, List<String> keys, boolean getAllColumns) {
 		if (keys == null || keys.isEmpty() || StringUtils.isBlank(appid)) {
-			return new LinkedHashMap<String, P>();
+			return new LinkedHashMap<>();
 		}
 
 		// DynamoDB doesn't allow duplicate keys in batch requests
-		Set<String> keySet = new TreeSet<String>(keys);
+		Set<String> keySet = new TreeSet<>(keys);
 		if (keySet.size() < keys.size() && !keySet.isEmpty()) {
 			logger.debug("Duplicate keys found - readAll({})", keys);
 		}
 
-		Map<String, P> results = new LinkedHashMap<String, P>(keySet.size(), 0.75f, true);
-		ArrayList<Map<String, AttributeValue>> keyz = new ArrayList<Map<String, AttributeValue>>(MAX_KEYS_PER_READ);
+		Map<String, P> results = new LinkedHashMap<>(keySet.size(), 0.75f, true);
+		ArrayList<Map<String, AttributeValue>> keyz = new ArrayList<>(MAX_KEYS_PER_READ);
 
 		try {
 			int batchSteps = 1;
@@ -329,7 +329,7 @@ public class AWSDynamoDAO implements DAO {
 		if (pager == null) {
 			pager = new Pager();
 		}
-		List<P> results = new LinkedList<P>();
+		List<P> results = new LinkedList<>();
 		try {
 			if (isSharedAppid(appid)) {
 				results = readPageFromSharedTable(appid, pager);
@@ -362,7 +362,7 @@ public class AWSDynamoDAO implements DAO {
 			return;
 		}
 
-		List<WriteRequest> reqs = new ArrayList<WriteRequest>(objects.size());
+		List<WriteRequest> reqs = new ArrayList<>(objects.size());
 		for (ParaObject object : objects) {
 			if (object != null) {
 				reqs.add(new WriteRequest().withDeleteRequest(new DeleteRequest().

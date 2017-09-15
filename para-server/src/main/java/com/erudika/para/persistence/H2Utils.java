@@ -243,7 +243,7 @@ public final class H2Utils {
 		ResultSet res = null;
 		try {
 			conn = getConnection();
-			Map<String, P> results = new LinkedHashMap<String, P>();
+			Map<String, P> results = new LinkedHashMap<>();
 			String table = getTableNameForAppid(appid);
 			p = conn.prepareStatement(Utils.formatMessage("SELECT json FROM {0} WHERE {1} IN ({2})",
 					table, Config._ID, StringUtils.repeat("?", ",", ids.size())));
@@ -334,7 +334,7 @@ public final class H2Utils {
 		try {
 			conn = getConnection();
 			String table = getTableNameForAppid(appid);
-			Map<String, P> objectsMap = new HashMap<String, P>(objects.size());
+			Map<String, P> objectsMap = new HashMap<>(objects.size());
 			for (P object : objects) {
 				if (object != null && !StringUtils.isBlank(object.getId())) {
 					object.setUpdated(Utils.timestamp());
@@ -342,7 +342,7 @@ public final class H2Utils {
 				}
 			}
 
-			Map<String, P> existingObjects = readRows(appid, new ArrayList<String>(objectsMap.keySet()));
+			Map<String, P> existingObjects = readRows(appid, new ArrayList<>(objectsMap.keySet()));
 			String sql = Utils.formatMessage("UPDATE {0} SET {1}=?,{2}=?,{3}=?,{4}=?,{5}=?,{6}=?,json=? "
 					+ "WHERE {7} = ?", table, Config._TYPE, Config._NAME, Config._PARENTID, Config._CREATORID,
 					Config._TIMESTAMP, Config._UPDATED, Config._ID);
@@ -428,7 +428,7 @@ public final class H2Utils {
 		ResultSet res = null;
 		try {
 			conn = getConnection();
-			List<P> results = new ArrayList<P>(pager.getLimit());
+			List<P> results = new ArrayList<>(pager.getLimit());
 			String table = getTableNameForAppid(appid);
 			int start = pager.getPage() <= 1 ? 0 : (int) (pager.getPage() - 1) * pager.getLimit();
 			p = conn.prepareStatement("SELECT ROWNUM(), json FROM (SELECT json FROM " + table + ")" +

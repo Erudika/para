@@ -153,7 +153,7 @@ public final class AWSQueueUtils {
 	 * @return a list or queue URLs
 	 */
 	public static List<String> listQueues() {
-		List<String> list = new ArrayList<String>();
+		List<String> list = new ArrayList<>();
 		try {
 			list = getClient().listQueues().getQueueUrls();
 		} catch (AmazonServiceException ase) {
@@ -174,7 +174,7 @@ public final class AWSQueueUtils {
 			// only allow strings - ie JSON
 			try {
 				int	j = 0;
-				List<SendMessageBatchRequestEntry> msgs = new ArrayList<SendMessageBatchRequestEntry>(MAX_MESSAGES);
+				List<SendMessageBatchRequestEntry> msgs = new ArrayList<>(MAX_MESSAGES);
 				for (int i = 0; i < messages.size(); i++) {
 					String message = messages.get(i);
 					if (!StringUtils.isBlank(message)) {
@@ -205,7 +205,7 @@ public final class AWSQueueUtils {
 	 * @return a list of messages
 	 */
 	public static List<String> pullMessages(String queueURL, int numberOfMessages) {
-		List<String> messages = new ArrayList<String>();
+		List<String> messages = new ArrayList<>();
 		if (!StringUtils.isBlank(queueURL)) {
 			try {
 				int batchSteps = 1;
@@ -219,7 +219,7 @@ public final class AWSQueueUtils {
 					List<Message> list = getClient().receiveMessage(new ReceiveMessageRequest(queueURL).
 							withMaxNumberOfMessages(maxForBatch).withWaitTimeSeconds(POLLING_INTERVAL)).getMessages();
 					if (list != null && !list.isEmpty()) {
-						List<DeleteMessageBatchRequestEntry> del = new ArrayList<DeleteMessageBatchRequestEntry>();
+						List<DeleteMessageBatchRequestEntry> del = new ArrayList<>();
 						for (Message msg : list) {
 							messages.add(msg.getBody());
 							del.add(new DeleteMessageBatchRequestEntry(msg.getMessageId(), msg.getReceiptHandle()));
@@ -279,9 +279,9 @@ public final class AWSQueueUtils {
 
 		@SuppressWarnings("unchecked")
 		public void run() {
-			ArrayList<ParaObject> createList = new ArrayList<ParaObject>();
-			ArrayList<ParaObject> updateList = new ArrayList<ParaObject>();
-			ArrayList<ParaObject> deleteList = new ArrayList<ParaObject>();
+			ArrayList<ParaObject> createList = new ArrayList<>();
+			ArrayList<ParaObject> updateList = new ArrayList<>();
+			ArrayList<ParaObject> deleteList = new ArrayList<>();
 
 			while (true) {
 				logger.debug("Waiting {}s for messages...", POLLING_INTERVAL);
@@ -312,7 +312,7 @@ public final class AWSQueueUtils {
 						if (SLEEP > 0 && idleCount >= 3) {
 							try {
 								logger.debug("Queue {} is empty. Sleeping for {}s...", queueURL, SLEEP);
-								Thread.sleep(SLEEP * 1000);
+								Thread.sleep((long) SLEEP * 1000);
 							} catch (InterruptedException e) {
 								logger.warn("SQS river interrupted: ", e);
 								Thread.currentThread().interrupt();

@@ -145,7 +145,7 @@ public final class ParaObjectUtils {
 	 * @return a map of plural - singular form of type names
 	 */
 	public static Map<String, String> getAllTypes(App app) {
-		Map<String, String> map = new HashMap<String, String>(getCoreTypes());
+		Map<String, String> map = new HashMap<>(getCoreTypes());
 		if (app != null) {
 			map.putAll(app.getDatatypes());
 		}
@@ -214,7 +214,7 @@ public final class ParaObjectUtils {
 	 */
 	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P pojo,
 			Class<? extends Annotation> filter, boolean flattenNestedObjectsToString) {
-		HashMap<String, Object> map = new HashMap<String, Object>();
+		HashMap<String, Object> map = new HashMap<>();
 		if (pojo == null) {
 			return map;
 		}
@@ -273,7 +273,7 @@ public final class ParaObjectUtils {
 				pojo = (P) toClass((String) data.get(Config._TYPE)).getConstructor().newInstance();
 			}
 			List<Field> fields = getAllDeclaredFields(pojo.getClass());
-			Map<String, Object> props = new HashMap<String, Object>(data);
+			Map<String, Object> props = new HashMap<>(data);
 			for (Field field : fields) {
 				boolean dontSkip = ((filter == null) ? true : !field.isAnnotationPresent(filter));
 				String name = field.getName();
@@ -418,7 +418,7 @@ public final class ParaObjectUtils {
 
 		public final Set<Class<? extends ParaObject>> getComponentClasses(String basePackage) {
 			basePackage = (basePackage == null) ? "" : basePackage;
-			Set<Class<? extends ParaObject>> classes = new HashSet<Class<? extends ParaObject>>();
+			Set<Class<? extends ParaObject>> classes = new HashSet<>();
 			for (BeanDefinition candidate : findCandidateComponents(basePackage)) {
 				try {
 					Class<? extends ParaObject> cls = (Class<? extends ParaObject>)

@@ -47,7 +47,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	private String parameterName = "_csrf";
 	private final String headerName = "X-CSRF-TOKEN";
 	private final String cookieName = Config.getConfigParam("security.csrf_cookie", "para-csrf-token");
-	private final Map<String, Object[]> localCache = new HashMap<String, Object[]>();
+	private final Map<String, Object[]> localCache = new HashMap<>();
 
 	private Cache cache;
 

@@ -113,7 +113,7 @@ public class LanguageUtils {
 			Sysprop s = dao.read(appid, keyPrefix.concat(langCode));
 			if (s != null && !s.getProperties().isEmpty()) {
 				Map<String, Object> loaded = s.getProperties();
-				lang = new TreeMap<String, String>();
+				lang = new TreeMap<>();
 				for (Map.Entry<String, Object> entry : loaded.entrySet()) {
 					lang.put(entry.getKey(), String.valueOf(entry.getValue()));
 				}
@@ -223,7 +223,7 @@ public class LanguageUtils {
 	 * @return a list of translations
 	 */
 	public List<Translation> readAllTranslationsForKey(String appid, String locale, String key, Pager pager) {
-		Map<String, Object> terms = new HashMap<String, Object>(2);
+		Map<String, Object> terms = new HashMap<>(2);
 		terms.put("thekey", key);
 		terms.put("locale", locale);
 		return search.findTerms(appid, Utils.type(Translation.class), terms, true, pager);
@@ -236,7 +236,7 @@ public class LanguageUtils {
 	 * @return a set of keys for approved translations
 	 */
 	public Set<String> getApprovedTransKeys(String appid, String langCode) {
-		HashSet<String> approvedTransKeys = new HashSet<String>();
+		HashSet<String> approvedTransKeys = new HashSet<>();
 		if (StringUtils.isBlank(langCode)) {
 			return approvedTransKeys;
 		}
@@ -259,7 +259,7 @@ public class LanguageUtils {
 			return Collections.emptyMap();
 		}
 		Sysprop progress = dao.read(appid, progressKey);
-		Map<String, Integer> progressMap = new HashMap<String, Integer>(ALL_LOCALES.size());
+		Map<String, Integer> progressMap = new HashMap<>(ALL_LOCALES.size());
 		boolean isMissing = progress == null;
 		if (isMissing) {
 			progress = new Sysprop(progressKey);
@@ -375,7 +375,7 @@ public class LanguageUtils {
 	}
 
 	private Map<String, String> readLanguageFromFile(String appid, String langCode) {
-		Map<String, String> langmap = new TreeMap<String, String>();
+		Map<String, String> langmap = new TreeMap<>();
 		if (langCode == null || langCode.length() != 2) {
 			return langmap;
 		}

@@ -78,7 +78,7 @@ public class ParaObjectTest {
 		assertTrue(u.isLinked(t));
 		assertTrue(u.isLinked(u3));
 
-		ArrayList<ParaObject> list = new ArrayList<ParaObject>();
+		ArrayList<ParaObject> list = new ArrayList<>();
 		list.add(l1);
 		list.add(l2);
 
@@ -120,13 +120,13 @@ public class ParaObjectTest {
 	@Test
 	public void testAddRemoveTags() {
 		User u1 = new User("111");
-		List<String> someTags = new ArrayList<String>();
+		List<String> someTags = new ArrayList<>();
 		someTags.add("one");
 		someTags.add("two");
 		someTags.add("");
 		someTags.add(" ");
 		someTags.add(null);
-		List<String> cleanTags = new ArrayList<String>();
+		List<String> cleanTags = new ArrayList<>();
 		cleanTags.add("one");
 		cleanTags.add("two");
 		u1.setTags(CoreUtils.getInstance().addTags(u1.getTags(), someTags.toArray(new String[]{})));

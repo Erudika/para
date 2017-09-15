@@ -128,7 +128,7 @@ public class UserTest {
 		u.create();
 
 		String secIdent = "t:1";
-		ArrayList<ParaObject> list = new ArrayList<ParaObject>();
+		ArrayList<ParaObject> list = new ArrayList<>();
 		list.add(new Sysprop(u.getIdentifier()));
 		list.add(new Sysprop(secIdent));
 

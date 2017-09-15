@@ -308,7 +308,7 @@ public abstract class DAOTest {
 
 	@Test
 	public void testReadPage() throws InterruptedException {
-		ArrayList<Sysprop> list = new ArrayList<Sysprop>();
+		ArrayList<Sysprop> list = new ArrayList<>();
 		for (int i = 0; i < 22; i++) {
 			Sysprop s = new Sysprop("id_" + i);
 			s.addProperty("prop" + i, i);

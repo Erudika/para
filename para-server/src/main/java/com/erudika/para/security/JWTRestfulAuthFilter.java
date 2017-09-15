@@ -226,9 +226,9 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 
 	private void succesHandler(HttpServletResponse response, User user, final SignedJWT token) {
 		if (user != null && token != null) {
-			Map<String, Object> result = new HashMap<String, Object>();
+			Map<String, Object> result = new HashMap<>();
 			try {
-				HashMap<String, Object> jwt = new HashMap<String, Object>();
+				HashMap<String, Object> jwt = new HashMap<>();
 				jwt.put("access_token", token.serialize());
 				jwt.put("refresh", token.getJWTClaimsSet().getLongClaim("refresh"));
 				jwt.put("expires", token.getJWTClaimsSet().getExpirationTime().getTime());

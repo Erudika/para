@@ -287,7 +287,7 @@ public final class Api1 extends ResourceConfig {
 	private Inflector<ContainerRequestContext, Response> introHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				Map<String, String> info = new TreeMap<String, String>();
+				Map<String, String> info = new TreeMap<>();
 				info.put("info", "Para - the backend for busy developers.");
 				if (Config.getConfigBoolean("print_version", true)) {
 					info.put("version", StringUtils.replace(getVersion(), "-SNAPSHOT", ""));
@@ -559,7 +559,7 @@ public final class Api1 extends ResourceConfig {
 					Response resp = getEntity(ctx.getEntityStream(), List.class);
 					if (resp.getStatusInfo() == Response.Status.OK) {
 						List<String> permission = (List<String>) resp.getEntity();
-						Set<App.AllowedMethods> set = new HashSet<App.AllowedMethods>(permission.size());
+						Set<App.AllowedMethods> set = new HashSet<>(permission.size());
 						for (String perm : permission) {
 							if (!StringUtils.isBlank(perm)) {
 								App.AllowedMethods method = App.AllowedMethods.fromString(perm);
@@ -824,7 +824,7 @@ public final class Api1 extends ResourceConfig {
 				Response entityRes = getEntity(ctx.getEntityStream(), List.class);
 				if (entityRes.getStatusInfo() == Response.Status.OK) {
 					List<Map<String, Object>> newProps = (List<Map<String, Object>>) entityRes.getEntity();
-					ArrayList<String> ids = new ArrayList<String>(newProps.size());
+					ArrayList<String> ids = new ArrayList<>(newProps.size());
 					for (Map<String, Object> props : newProps) {
 						ids.add((String) props.get(Config._ID));
 					}

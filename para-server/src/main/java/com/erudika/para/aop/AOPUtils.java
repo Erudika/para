@@ -75,7 +75,7 @@ public final class AOPUtils {
 
 	protected static List<ParaObject> removeNotStoredNotIndexed(List<ParaObject> addUs, List<ParaObject> indexUs) {
 		if (addUs != null) {
-			List<ParaObject> removed = new LinkedList<ParaObject>();
+			List<ParaObject> removed = new LinkedList<>();
 			for (Iterator<ParaObject> it = addUs.iterator(); it.hasNext();) {
 				ParaObject obj = it.next();
 				if (obj != null) {

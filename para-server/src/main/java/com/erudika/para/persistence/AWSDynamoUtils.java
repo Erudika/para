@@ -312,7 +312,7 @@ public final class AWSDynamoUtils {
 	public static List<String> listAllTables() {
 		int items = 100;
 		ListTablesResult ltr = getClient().listTables(items);
-		List<String> tables = new LinkedList<String>();
+		List<String> tables = new LinkedList<>();
 		String lastKey;
 		do {
 			tables.addAll(ltr.getTableNames());
@@ -370,7 +370,7 @@ public final class AWSDynamoUtils {
 	 * @return a row representation of the given object.
 	 */
 	protected static <P extends ParaObject> Map<String, AttributeValue> toRow(P so, Class<? extends Annotation> filter) {
-		HashMap<String, AttributeValue> row = new HashMap<String, AttributeValue>();
+		HashMap<String, AttributeValue> row = new HashMap<>();
 		if (so == null) {
 			return row;
 		}
@@ -393,7 +393,7 @@ public final class AWSDynamoUtils {
 		if (row == null || row.isEmpty()) {
 			return null;
 		}
-		Map<String, Object> props = new HashMap<String, Object>();
+		Map<String, Object> props = new HashMap<>();
 		for (Map.Entry<String, AttributeValue> col : row.entrySet()) {
 			props.put(col.getKey(), col.getValue().getS());
 		}
@@ -483,7 +483,7 @@ public final class AWSDynamoUtils {
 		}
 
 		ScanResult result = getClient().scan(scanRequest);
-		LinkedList<P> results = new LinkedList<P>();
+		LinkedList<P> results = new LinkedList<>();
 		for (Map<String, AttributeValue> item : result.getItems()) {
 			P obj = fromRow(item);
 			if (obj != null) {
@@ -509,7 +509,7 @@ public final class AWSDynamoUtils {
 	 * @return the id of the last object on the page, or null.
 	 */
 	public static <P extends ParaObject> List<P> readPageFromSharedTable(String appid, Pager pager) {
-		LinkedList<P> results = new LinkedList<P>();
+		LinkedList<P> results = new LinkedList<>();
 		if (StringUtils.isBlank(appid)) {
 			return results;
 		}
@@ -554,7 +554,7 @@ public final class AWSDynamoUtils {
 			return;
 		}
 		Pager pager = new Pager(50);
-		List<WriteRequest> allDeletes = new LinkedList<WriteRequest>();
+		List<WriteRequest> allDeletes = new LinkedList<>();
 		Page<Item, QueryOutcome> items;
 		// read all phase
 		do {
@@ -577,7 +577,7 @@ public final class AWSDynamoUtils {
 		// delete all phase
 		final int maxItems = 20;
 		int batchSteps = (allDeletes.size() > maxItems) ? (allDeletes.size() / maxItems) + 1 : 1;
-		List<WriteRequest> reqs = new LinkedList<WriteRequest>();
+		List<WriteRequest> reqs = new LinkedList<>();
 		Iterator<WriteRequest> it = allDeletes.iterator();
 		String tableName = getTableNameForAppid(appid);
 		for (int i = 0; i < batchSteps; i++) {

@@ -35,7 +35,7 @@ public abstract class EmailerTest {
 	@Test
 	public void testSendEmail() {
 		assertFalse(e.sendEmail(null, null, null));
-		assertFalse(e.sendEmail(new ArrayList<String>(), null, "asd"));
+		assertFalse(e.sendEmail(new ArrayList<>(), null, "asd"));
 		assertFalse(e.sendEmail(Collections.singletonList("test@test.com"), null, ""));
 		assertTrue(e.sendEmail(Collections.singletonList("test@test.com"), null, "asd"));
 	}

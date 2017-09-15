@@ -195,7 +195,7 @@ public final class LuceneUtils {
 		STOPWORDS.addAll(TurkishAnalyzer.getDefaultStopSet());
 		ANALYZER = new StandardAnalyzer(STOPWORDS);
 
-		NOT_ANALYZED_FIELDS = new HashSet<String>();
+		NOT_ANALYZED_FIELDS = new HashSet<>();
 		NOT_ANALYZED_FIELDS.add("nstd");
 		NOT_ANALYZED_FIELDS.add("latlng");
 		NOT_ANALYZED_FIELDS.add("tag");
@@ -259,7 +259,7 @@ public final class LuceneUtils {
 		try {
 			iwriter = getIndexWriter(appid);
 			if (iwriter != null) {
-				ArrayList<Term> keys = new ArrayList<Term>();
+				ArrayList<Term> keys = new ArrayList<>();
 				for (String id : ids) {
 					if (id != null) {
 						keys.add(new Term(Config._ID, id));
@@ -377,12 +377,12 @@ public final class LuceneUtils {
 			if (data.containsKey(NESTED_FIELD_NAME)) {
 				Object nstd = data.get(NESTED_FIELD_NAME);
 				if (nstd instanceof List) {
-					LinkedList<Document> docs = new LinkedList<Document>();
-					Map<String, Object> dataWithoutNestedField = new HashMap<String, Object>(data);
+					LinkedList<Document> docs = new LinkedList<>();
+					Map<String, Object> dataWithoutNestedField = new HashMap<>(data);
 					dataWithoutNestedField.remove(NESTED_FIELD_NAME);
 					jsonDoc = ParaObjectUtils.getJsonMapper().valueToTree(dataWithoutNestedField);
 					for (Map<String, Object> obj : ((List<Map<String, Object>>) nstd)) {
-						Map<String, Object> object = new HashMap<String, Object>(obj);
+						Map<String, Object> object = new HashMap<>(obj);
 						object.put(Config._ID, Utils.getNewId());
 						// the nested object's type is forced to be equal to its parent, otherwise breaks queries
 						object.put(Config._TYPE, data.get(Config._TYPE));
@@ -446,9 +446,9 @@ public final class LuceneUtils {
 		if (keysAndSources == null || keysAndSources.isEmpty()) {
 			return Collections.emptyList();
 		}
-		ArrayList<P> results = new ArrayList<P>(keysAndSources.size());
-		ArrayList<String> nullz = new ArrayList<String>(results.size());
-		Map<String, P> fromDB = dao.readAll(appid, new ArrayList<String>(keysAndSources.keySet()), true);
+		ArrayList<P> results = new ArrayList<>(keysAndSources.size());
+		ArrayList<String> nullz = new ArrayList<>(results.size());
+		Map<String, P> fromDB = dao.readAll(appid, new ArrayList<>(keysAndSources.keySet()), true);
 		for (Map.Entry<String, String> entry : keysAndSources.entrySet()) {
 			String key = entry.getKey();
 			P pobj = fromDB.get(key);
@@ -506,7 +506,7 @@ public final class LuceneUtils {
 				}
 
 				// then searchQuery their parent objects
-				ArrayList<String> parentids = new ArrayList<String>(hits1.length);
+				ArrayList<String> parentids = new ArrayList<>(hits1.length);
 				for (Document doc : hits1) {
 					String pid = doc.get(Config._PARENTID);
 					if (!StringUtils.isBlank(pid)) {
@@ -596,8 +596,8 @@ public final class LuceneUtils {
 		if (hits == null || hits.length == 0) {
 			return Collections.emptyList();
 		}
-		ArrayList<P> results = new ArrayList<P>(hits.length);
-		LinkedHashMap<String, String> keysAndSources = new LinkedHashMap<String, String>(hits.length);
+		ArrayList<P> results = new ArrayList<>(hits.length);
+		LinkedHashMap<String, String> keysAndSources = new LinkedHashMap<>(hits.length);
 		try {
 			boolean readFromIndex = Config.getConfigBoolean("read_from_index", false);
 			for (Document hit : hits) {

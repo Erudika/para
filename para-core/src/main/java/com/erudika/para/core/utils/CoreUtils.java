@@ -169,9 +169,9 @@ public enum CoreUtils implements InitializeListener {
 			if (tag != null && tag.length > 0) {
 				Set<String> tagz;
 				if (objectTags == null || objectTags.isEmpty()) {
-					tagz = new HashSet<String>();
+					tagz = new HashSet<>();
 				} else {
-					tagz = new HashSet<String>(objectTags);
+					tagz = new HashSet<>(objectTags);
 				}
 				for (String t : tag) {
 					if (!StringUtils.isBlank(t)) {
@@ -180,7 +180,7 @@ public enum CoreUtils implements InitializeListener {
 				}
 				tagz.remove(null);
 				tagz.remove("");
-				return new ArrayList<String>(tagz);
+				return new ArrayList<>(tagz);
 			}
 			return objectTags;
 		}
@@ -188,9 +188,9 @@ public enum CoreUtils implements InitializeListener {
 		@Override
 		public List<String> removeTags(List<String> objectTags, String... tag) {
 			if (objectTags != null && tag != null && tag.length > 0) {
-				Set<String> tagz = new HashSet<String>(objectTags);
+				Set<String> tagz = new HashSet<>(objectTags);
 				tagz.removeAll(Arrays.asList(tag));
-				return new ArrayList<String>(tagz);
+				return new ArrayList<>(tagz);
 			}
 			return objectTags;
 		}
@@ -219,7 +219,7 @@ public enum CoreUtils implements InitializeListener {
 
 		@Override
 		public void unlinkAll(ParaObject obj) {
-			Map<String, Object> terms = new HashMap<String, Object>();
+			Map<String, Object> terms = new HashMap<>();
 			// delete all links where id1 == id OR id2 == id
 			terms.put("id1", obj.getId());
 			terms.put("id2", obj.getId());
@@ -234,7 +234,7 @@ public enum CoreUtils implements InitializeListener {
 			}
 			Linker link = new Linker(obj.getType(), type2, null, null);
 			String idField = link.getIdFieldNameFor(obj.getType());
-			Map<String, Object> terms = new HashMap<String, Object>();
+			Map<String, Object> terms = new HashMap<>();
 			terms.put(Config._NAME, link.getName());
 			terms.put(idField, obj.getId());
 			return getSearch().findTerms(obj.getAppid(), link.getType(), terms, true, pager);
@@ -263,7 +263,7 @@ public enum CoreUtils implements InitializeListener {
 			}
 			Linker link = new Linker(obj.getType(), type2, null, null);
 			String idField = link.getIdFieldNameFor(obj.getType());
-			Map<String, Object> terms = new HashMap<String, Object>();
+			Map<String, Object> terms = new HashMap<>();
 			terms.put(Config._NAME, link.getName());
 			terms.put(idField, obj.getId());
 			return getSearch().getCount(obj.getAppid(), link.getType(), terms);
@@ -282,7 +282,7 @@ public enum CoreUtils implements InitializeListener {
 		@Override
 		public <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, String field, String term,
 				Pager... pager) {
-			Map<String, Object> terms = new HashMap<String, Object>();
+			Map<String, Object> terms = new HashMap<>();
 			if (!StringUtils.isBlank(field) && !StringUtils.isBlank(term)) {
 				terms.put(field, term);
 			}
@@ -311,11 +311,11 @@ public enum CoreUtils implements InitializeListener {
 		@Override
 		public <P extends ParaObject> List<P> getLinkedObjects(ParaObject obj, String type2, Pager... pager) {
 			List<Linker> links = getLinks(obj, type2, pager);
-			LinkedList<String> keys = new LinkedList<String>();
+			LinkedList<String> keys = new LinkedList<>();
 			for (Linker link : links) {
 				keys.add(link.isFirst(type2) ? link.getId1() : link.getId2());
 			}
-			return new ArrayList<P>((Collection<? extends P>) getDao().readAll(obj.getAppid(), keys, true).values());
+			return new ArrayList<>((Collection<? extends P>) getDao().readAll(obj.getAppid(), keys, true).values());
 		}
 
 		@SuppressWarnings("unchecked")
@@ -326,7 +326,7 @@ public enum CoreUtils implements InitializeListener {
 				query = "*";
 			}
 			List<Linker> links = getSearch().findNestedQuery(obj.getAppid(), Utils.type(Linker.class), field, query, pager);
-			LinkedList<String> keys = new LinkedList<String>();
+			LinkedList<String> keys = new LinkedList<>();
 			for (Linker link : links) {
 				// ignore the part of the link that is equal to the given object
 				// e.g. (NOT id:$obj.getId()) AND $query
@@ -336,7 +336,7 @@ public enum CoreUtils implements InitializeListener {
 					keys.add(link.getId1());
 				}
 			}
-			return new ArrayList<P>((Collection<? extends P>) getDao().readAll(obj.getAppid(), keys, true).values());
+			return new ArrayList<>((Collection<? extends P>) getDao().readAll(obj.getAppid(), keys, true).values());
 		}
 
 		@Override

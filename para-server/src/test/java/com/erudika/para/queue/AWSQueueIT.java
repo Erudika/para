@@ -58,7 +58,7 @@ public class AWSQueueIT extends QueueTest {
 	public void testBatchSend() {
 		AWSQueue qu = new AWSQueue("testq2");
 		int n = 15;
-		List<String> list = new ArrayList<String>();
+		List<String> list = new ArrayList<>();
 		for (int i = 1; i <= n; i++) {
 			list.add("{\"test" + i + "\": " + i + "23 }");
 		}

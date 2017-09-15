@@ -40,7 +40,7 @@ public final class IgnoredRequestMatcher implements RequestMatcher {
 
 	private IgnoredRequestMatcher() {
 		ConfigList c = Config.getConfig().getList("security.ignored");
-		List<RequestMatcher> list = new ArrayList<RequestMatcher>(c.size());
+		List<RequestMatcher> list = new ArrayList<>(c.size());
 		for (ConfigValue configValue : c) {
 			list.add(new AntPathRequestMatcher((String) configValue.unwrapped()));
 		}

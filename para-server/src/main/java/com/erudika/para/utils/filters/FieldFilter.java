@@ -55,7 +55,7 @@ public class FieldFilter implements ContainerResponseFilter {
 		try {
 			if (responseContext.getEntity() != null && !StringUtils.isBlank(request.getParameter("select"))) {
 				String[] sarr = StringUtils.split(request.getParameter("select"), ",");
-				List<String> fields = sarr == null ? new ArrayList<String>(0) : Arrays.asList(sarr);
+				List<String> fields = sarr == null ? new ArrayList<>(0) : Arrays.asList(sarr);
 				Object entity = responseContext.getEntity();
 				Object newEntity = null;
 				if (entity instanceof ParaObject) {
@@ -86,7 +86,7 @@ public class FieldFilter implements ContainerResponseFilter {
 	}
 
 	private Map<String, Object> getFilteredProperties(Object object, List<String> fields) {
-		Map<String, Object> newItem = new HashMap<String, Object>();
+		Map<String, Object> newItem = new HashMap<>();
 		for (String f : fields) {
 			String field = StringUtils.trimToEmpty(f);
 			newItem.put(field, getProperty(object, field));

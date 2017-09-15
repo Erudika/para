@@ -266,7 +266,7 @@ public class ParaClientIT {
 
 	@Test
 	public void testBatchCRUD() throws InterruptedException {
-		ArrayList<Sysprop> dogs = new ArrayList<Sysprop>();
+		ArrayList<Sysprop> dogs = new ArrayList<>();
 		for (int i = 0; i < 3; i++) {
 			Sysprop s = new Sysprop();
 			s.setType(dogsType);
@@ -280,7 +280,7 @@ public class ParaClientIT {
 		assertNotNull(l1.get(0).getId());
 
 		assertTrue(pc.readAll(null).isEmpty());
-		ArrayList<String> nl = new ArrayList<String>(3);
+		ArrayList<String> nl = new ArrayList<>(3);
 		assertTrue(pc.readAll(nl).isEmpty());
 		nl.add(l1.get(0).getId());
 		nl.add(l1.get(1).getId());
@@ -328,7 +328,7 @@ public class ParaClientIT {
 
 	@Test
 	public void testBatchCRUDForChildApp() throws InterruptedException {
-		ArrayList<Sysprop> articles = new ArrayList<Sysprop>();
+		ArrayList<Sysprop> articles = new ArrayList<>();
 		for (int i = 0; i < 3; i++) {
 			Sysprop s = new Sysprop();
 			s.setType("article");
@@ -444,7 +444,7 @@ public class ParaClientIT {
 
 	@Test
 	public void testList() throws InterruptedException {
-		ArrayList<ParaObject> cats = new ArrayList<ParaObject>();
+		ArrayList<ParaObject> cats = new ArrayList<>();
 		for (int i = 0; i < 3; i++) {
 			Sysprop s = new Sysprop(catsType + i);
 			s.setType(catsType);
@@ -465,7 +465,7 @@ public class ParaClientIT {
 		assertFalse(list2.isEmpty());
 		assertEquals(2, list2.size());
 
-		ArrayList<String> nl = new ArrayList<String>(3);
+		ArrayList<String> nl = new ArrayList<>(3);
 		nl.add(cats.get(0).getId());
 		nl.add(cats.get(1).getId());
 		nl.add(cats.get(2).getId());
@@ -549,15 +549,15 @@ public class ParaClientIT {
 				Arrays.asList(u.getId(), u1.getId(), u2.getId(), "xxx", "yyy")).size());
 
 		// many terms
-		Map<String, Object> terms = new HashMap<String, Object>();
+		Map<String, Object> terms = new HashMap<>();
 //		terms.put(Config._TYPE, u.getType());
 		terms.put(Config._ID, u.getId());
 
-		Map<String, Object> terms1 = new HashMap<String, Object>();
+		Map<String, Object> terms1 = new HashMap<>();
 		terms1.put(Config._TYPE, null);
 		terms1.put(Config._ID, " ");
 
-		Map<String, Object> terms2 = new HashMap<String, Object>();
+		Map<String, Object> terms2 = new HashMap<>();
 		terms2.put(" ", "bad");
 		terms2.put("", "");
 
@@ -872,7 +872,7 @@ public class ParaClientIT {
 		pc.removeAppSetting("prop1");
 
 		pc.addAppSetting("propZ", 1);
-		Map<String, Object> newSettings = new HashMap<String, Object>();
+		Map<String, Object> newSettings = new HashMap<>();
 		newSettings.put("propX", "X");
 		newSettings.put("propY", "Y");
 		pc.setAppSettings(newSettings);
