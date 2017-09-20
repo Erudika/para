@@ -205,7 +205,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 				}
 			}
 		}
-		return "https://js.live.net/static/img/DefaultUserPicture.png"; // default pic
+		return null;
 	}
 
 	private String getEmail(Map<String, Object> profile) {
