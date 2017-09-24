@@ -219,7 +219,7 @@ The `Cache` interface is implemented by:
 - `DAO` implementation for PostgreSQL.
 - MongoDB implementation of `Search`
 - Make the API server more efficient with fibers (Quasar)
-- GraphQL or ([JSON API](http://jsonapi.org/)) compatible API at `/v2` (not soon)
+- OpenAPI 3+ compatible API at `/v2` (not soon)
 
 ## Contributing
 
