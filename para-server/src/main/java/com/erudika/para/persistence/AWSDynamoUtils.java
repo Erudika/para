@@ -207,17 +207,15 @@ public final class AWSDynamoUtils {
 		if (StringUtils.isBlank(appid) || StringUtils.containsWhitespace(appid)) {
 			return false;
 		}
+		String table = getTableNameForAppid(appid);
 		try {
-			Map<String, Object> dbStats = getTableStatus(appid);
-			String status = (String) dbStats.get("status");
 			// AWS throws an exception if the new read/write capacity values are the same as the current ones
-			if (!dbStats.isEmpty() && "ACTIVE".equalsIgnoreCase(status)) {
-				getClient().updateTable(new UpdateTableRequest().withTableName(getTableNameForAppid(appid)).
-						withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
-				return true;
-			}
+			getClient().updateTable(new UpdateTableRequest().withTableName(table).
+					withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
+			return true;
 		} catch (Exception e) {
-			logger.error(null, e);
+			logger.error("Could not update table '{}' - table is not active or no change to capacity: {}",
+					table, e.getMessage());
 		}
 		return false;
 	}
