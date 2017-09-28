@@ -7,26 +7,25 @@
 [![Join the chat at https://gitter.im/Erudika/para](https://badges.gitter.im/Erudika/para.svg)](https://gitter.im/Erudika/para?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 
-**Para** was designed as a simple and modular backend framework for object persistence and retrieval.
-It helps you build applications faster by taking care of the backend. It works on three levels -
-objects are stored in a NoSQL data store or any old relational database, then automatically indexed
-by a search engine and finally, cached.
+**Para** is a simple and modular backend framework for object persistence and retrieval.
+It helps you build and prototype applications faster by taking care of backend operations.
+It can be a part of your JVM-based application or it can be deployed a standalone, multitenant API server with
+multiple applications and clients connecting to it.
 
 The name "pára" means "steam" in Bulgarian. And just like steam is used to power stuff, you can use
 Para to power your mobile or web application backend.
 
-**Para** can be used as a direct dependency to your JVM-based application or as a standalone API server with
-multiple applications and clients connecting to it.
-
 See how **Para** [compares to other open source backend frameworks](https://erudika.com/blog/2015/10/21/backend-frameworks-usergrid-loopback-para-baasbox-deployd-telepat/).
+
+**This project is fully funded and supported by [Erudika](https://erudika.com) - an independent, bootstrapped company.**
 
 ### Features
 
-- RESTful JSON API secured with Amazon's Signature 4 algorithm
+- RESTful JSON API secured with Amazon's Signature V4 algorithm
 - Database-agnostic, designed for scalable data stores (DynamoDB, Cassandra, MongoDB, etc.)
-- Full-text search (Lucene by default, Elasticsearch plugin)
-- Distributed object cache (Hazelcast by default)
-- Multi-tenancy support - each app has its own table, index and cache
+- Full-text search (Lucene, Elasticsearch)
+- Distributed object cache (Hazelcast)
+- Multitenancy - each app has its own table, index and cache
 - IoT support and integration with AWS and Azure
 - Flexible security based on Spring Security (LDAP, social login, CSRF protection, etc.)
 - Stateless client authentication with JSON Web Tokens (JWT)
@@ -65,6 +64,13 @@ See how **Para** [compares to other open source backend frameworks](https://erud
 
 ### [Read the Docs](https://paraio.org/docs)
 
+## Hosting
+
+We offer **hosting and premium support** at [paraio.com](https://paraio.com) where you can try Para online with a
+free developer account. Browse and manage your users and objects, do backups and edit permissions with a few clicks in
+the web console. By upgrading to a premium account you will be able to scale you projects up and down in seconds and
+manage multiple apps.
+
 ## Quick Start
 
 1. [Download the latest executable WAR](https://github.com/Erudika/para/releases)
@@ -100,13 +106,6 @@ $ para-cli create todo.json --id todo1 --encodeId false
 $ para-cli read --id todo1
 $ para-cli search "type:todo"
 ```
-
-## Hosting
-
-We offer **hosting and premium support** at [paraio.com](https://paraio.com) where you can try Para online with a
-free developer account. Browse and manage your users and objects, do backups and edit permissions with a few clicks in
-the web console. By upgrading to a premium account you will be able to scale you projects up and down in seconds and
-manage multiple apps.
 
 ### Building Para
 
