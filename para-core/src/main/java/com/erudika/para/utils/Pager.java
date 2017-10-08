@@ -140,6 +140,10 @@ public class Pager {
 	 * @return the max number of results in one page
 	 */
 	public int getLimit() {
+		limit = Math.abs(limit);
+		if (limit > Config.MAX_PAGE_LIMIT) {
+			limit = Config.MAX_PAGE_LIMIT;
+		}
 		return limit;
 	}
 
@@ -172,6 +176,10 @@ public class Pager {
 	 * @return the page number
 	 */
 	public long getPage() {
+		page = Math.abs(page);
+		if (page > Config.MAX_PAGES) {
+			page = Config.MAX_PAGES;
+		}
 		return page;
 	}
 

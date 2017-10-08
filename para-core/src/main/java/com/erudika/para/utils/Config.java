@@ -109,9 +109,13 @@ public final class Config {
 	 */
 	public static final int MAX_ITEMS_PER_PAGE = getConfigInt("max_items_per_page", 30);
 	/**
-	 * Pagination limit - default is 10 000.
+	 * Pagination limit - highest page number, default is 1000.
 	 */
 	public static final int MAX_PAGES = getConfigInt("max_pages", 1000);
+	/**
+	 * Pagination limit - maximum number of results per page, default is 1000.
+	 */
+	public static final int MAX_PAGE_LIMIT = getConfigInt("max_page_limit", 256);
 	/**
 	 * Maximum image size (longest edge) - default is 1024 (pixels).
 	 */
