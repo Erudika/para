@@ -19,7 +19,6 @@ package com.erudika.para.core;
 
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.ParaObjectUtils;
-import com.eaio.uuid.UUID;
 import com.erudika.para.annotations.Email;
 import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
@@ -373,7 +372,7 @@ public class User implements ParaObject {
 	 */
 	public void attachIdentifier(String identifier) {
 		if (this.exists()) {
-			createIdentifier(identifier, new UUID().toString());
+			createIdentifier(identifier, Utils.generateSecurityToken());
 		}
 	}
 
@@ -532,7 +531,7 @@ public class User implements ParaObject {
 					}, true, new Pager(1));
 			if (!users.isEmpty()) {
 				user = users.get(0);
-				password = new UUID().toString();
+				password = Utils.generateSecurityToken();
 				user.createIdentifier(u.getIdentifier(), password);
 			}
 		}
@@ -665,7 +664,7 @@ public class User implements ParaObject {
 		}
 		Sysprop s = CoreUtils.getInstance().getDao().read(getAppid(), identifier);
 		if (s != null) {
-			String token = Utils.base64encURL(new UUID().toString().getBytes());
+			String token = Utils.base64encURL(Utils.generateSecurityToken().getBytes());
 			s.addProperty(Config._EMAIL_TOKEN, token);
 			CoreUtils.getInstance().getDao().update(getAppid(), s);
 			return token;

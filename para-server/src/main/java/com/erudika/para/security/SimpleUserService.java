@@ -17,8 +17,8 @@
  */
 package com.erudika.para.security;
 
-import com.eaio.uuid.UUID;
 import com.erudika.para.core.User;
+import com.erudika.para.utils.Utils;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -109,7 +109,7 @@ public class SimpleUserService implements UserDetailsService,
 			user.setActive(true);
 			user.setEmail(email);
 			user.setName(fullName);
-			user.setPassword(new UUID().toString());
+			user.setPassword(Utils.generateSecurityToken());
 			user.setIdentifier(token.getIdentityUrl());
 			String id = user.create();
 			if (id == null) {

@@ -17,7 +17,6 @@
  */
 package com.erudika.para.security.filters;
 
-import com.eaio.uuid.UUID;
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.utils.ParaObjectUtils;
@@ -207,7 +206,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 						user.setAppid(getAppid(app));
 						user.setEmail(StringUtils.isBlank(email) ? alias + "@twitter.com" : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
-						user.setPassword(new UUID().toString());
+						user.setPassword(Utils.generateSecurityToken());
 						user.setPicture(getPicture(pic));
 						user.setIdentifier(Config.TWITTER_PREFIX + twitterId);
 						String id = user.create();

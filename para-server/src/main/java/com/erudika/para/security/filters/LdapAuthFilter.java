@@ -17,7 +17,6 @@
  */
 package com.erudika.para.security.filters;
 
-import com.eaio.uuid.UUID;
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
@@ -26,6 +25,7 @@ import com.erudika.para.security.LDAPAuthentication;
 import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.security.UserAuthentication;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Utils;
 import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -129,7 +129,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 				user.setAppid(getAppid(app));
 				user.setEmail(StringUtils.isBlank(email) ? ldapAccountId + "@ldap.com" : email);
 				user.setName(StringUtils.isBlank(name) ? "No Name" : name);
-				user.setPassword(new UUID().toString());
+				user.setPassword(Utils.generateSecurityToken());
 				user.setIdentifier(Config.LDAP_PREFIX.concat(ldapAccountId));
 				String id = user.create();
 				if (id == null) {

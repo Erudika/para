@@ -17,7 +17,6 @@
  */
 package com.erudika.para.security.filters;
 
-import com.eaio.uuid.UUID;
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.utils.ParaObjectUtils;
@@ -160,7 +159,7 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 						user.setAppid(getAppid(app));
 						user.setEmail(StringUtils.isBlank(email) ? linkedInID + "@linkedin.com" : email);
 						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
-						user.setPassword(new UUID().toString());
+						user.setPassword(Utils.generateSecurityToken());
 						user.setPicture(pic);
 						user.setIdentifier(Config.LINKEDIN_PREFIX.concat(linkedInID));
 						String id = user.create();

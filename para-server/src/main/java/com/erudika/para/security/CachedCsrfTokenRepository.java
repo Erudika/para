@@ -17,7 +17,6 @@
  */
 package com.erudika.para.security;
 
-import com.eaio.uuid.UUID;
 import com.erudika.para.cache.Cache;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.HttpUtils;
@@ -159,7 +158,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	 * @return a new token
 	 */
 	public CsrfToken generateToken(HttpServletRequest request) {
-		return new DefaultCsrfToken(headerName, parameterName, new UUID().toString());
+		return new DefaultCsrfToken(headerName, parameterName, Utils.generateSecurityToken());
 	}
 
 	/**
