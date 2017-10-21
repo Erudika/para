@@ -295,7 +295,8 @@ public enum CoreUtils implements InitializeListener {
 			if (StringUtils.isBlank(query)) {
 				query = "*";
 			}
-			query = Config._PARENTID + ":" + obj.getId() + " AND " + query;
+			String suffix = "*".equals(query.trim()) ? "" : " AND " + query;
+			query = Config._PARENTID + ":" + obj.getId() + suffix;
 			return getSearch().findQuery(obj.getAppid(), type2, query, pager);
 		}
 

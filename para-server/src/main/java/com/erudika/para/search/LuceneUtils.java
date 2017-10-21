@@ -815,13 +815,6 @@ public final class LuceneUtils {
 		if (query.length() > 1 && query.startsWith("*")) {
 			query = query.substring(1);
 		}
-		if (query.length() > 1 && query.contains(" *")) {
-			query = query.replaceAll("\\s\\*", " ").trim();
-		}
-		if (query.length() >= 2 && query.toLowerCase().endsWith(" and") ||
-				query.toLowerCase().endsWith(" or") || query.toLowerCase().endsWith(" not")) {
-			query = query.substring(0, query.length() - 3).trim();
-		}
 		if (!StringUtils.isBlank(query) && !"*".equals(query)) {
 			try {
 				Query q = parser.parse(query);
