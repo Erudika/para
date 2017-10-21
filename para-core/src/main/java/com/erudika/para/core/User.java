@@ -522,13 +522,11 @@ public class User implements ParaObject {
 		// This prevents users with identical emails to have separate accounts by signing in through
 		// different identity providers.
 		if (user == null && !StringUtils.isBlank(u.getEmail())) {
-			List<User> users = CoreUtils.getInstance().getSearch().findTerms(u.getAppid(), u.getType(),
-					new HashMap<String, Object>() {
-						{
-							put(Config._EMAIL, u.getEmail());
-							put(Config._APPID, u.getAppid());
-						}
-					}, true, new Pager(1));
+			HashMap<String, Object> terms = new HashMap<>(2);
+			terms.put(Config._EMAIL, u.getEmail());
+			terms.put(Config._APPID, u.getAppid());
+			List<User> users = CoreUtils.getInstance().getSearch().
+					findTerms(u.getAppid(), u.getType(), terms, true, new Pager(1));
 			if (!users.isEmpty()) {
 				user = users.get(0);
 				password = Utils.generateSecurityToken();

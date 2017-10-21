@@ -69,15 +69,15 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 
 	/**
 	 * Saves a CSRF token in cache.
-	 * @param token the token
+	 * @param t (ignored)
 	 * @param request HTTP request
 	 * @param response HTTP response
 	 */
-	public void saveToken(CsrfToken token, HttpServletRequest request, HttpServletResponse response) {
+	public void saveToken(CsrfToken t, HttpServletRequest request, HttpServletResponse response) {
 		String ident = getIdentifierFromCookie(request);
 		if (ident != null) {
 			String key = ident.concat(parameterName);
-			token = loadToken(request);
+			CsrfToken token = loadToken(request);
 			if (token == null) {
 				token = generateToken(null);
 				if (Config.isCacheEnabled()) {

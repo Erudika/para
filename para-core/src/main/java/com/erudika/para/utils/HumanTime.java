@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.slf4j.LoggerFactory;
 
@@ -156,6 +157,9 @@ public final class HumanTime implements Externalizable, Comparable<HumanTime> {
 					 * @see java.util.Iterator#next()
 					 */
 					public Character next() {
+						if (!hasNext()) {
+							throw new NoSuchElementException();
+						}
 						return s.charAt(p++);
 					}
 

@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -206,6 +207,24 @@ public class Thing extends Sysprop {
 			}
 		}
 		return null;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!super.equals(obj)) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		return Objects.equals(this.serviceBroker, ((Thing) obj).getServiceBroker());
+	}
+
+	@Override
+	public int hashCode() {
+		int hash = super.hashCode();
+		hash = 89 * hash + Objects.hashCode(this.serviceBroker);
+		return hash;
 	}
 
 }

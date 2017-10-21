@@ -286,17 +286,14 @@ public final class AWSDynamoUtils {
 		}
 		try {
 			final TableDescription td = getClient().describeTable(getTableNameForAppid(appid)).getTable();
-			return new HashMap<String, Object>() {
-				{
-					put("id", appid);
-					put("status", td.getTableStatus());
-					put("created", td.getCreationDateTime().getTime());
-					put("sizeBytes", td.getTableSizeBytes());
-					put("itemCount", td.getItemCount());
-					put("readCapacityUnits", td.getProvisionedThroughput().getReadCapacityUnits());
-					put("writeCapacityUnits", td.getProvisionedThroughput().getWriteCapacityUnits());
-				}
-			};
+			HashMap<String, Object> dbStatus = new HashMap<>();
+			dbStatus.put("id", appid);
+			dbStatus.put("status", td.getTableStatus());
+			dbStatus.put("created", td.getCreationDateTime().getTime());
+			dbStatus.put("sizeBytes", td.getTableSizeBytes());
+			dbStatus.put("itemCount", td.getItemCount());
+			dbStatus.put("readCapacityUnits", td.getProvisionedThroughput().getReadCapacityUnits());
+			dbStatus.put("writeCapacityUnits", td.getProvisionedThroughput().getWriteCapacityUnits());
 		} catch (Exception e) {
 			logger.error(null, e);
 		}

@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -261,6 +262,39 @@ public final class OAuth1HmacSigner {
 
 		public int compareTo(ComparableParameter that) {
 			return this.encodedKey.compareTo(that.encodedKey);
+		}
+
+		@Override
+		public int hashCode() {
+			int hash = 3;
+			hash = 19 * hash + Objects.hashCode(this.value);
+			hash = 19 * hash + Objects.hashCode(this.key);
+			hash = 19 * hash + Objects.hashCode(this.encodedKey);
+			return hash;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
+				return false;
+			}
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			final ComparableParameter other = (ComparableParameter) obj;
+			if (!Objects.equals(this.value, other.value)) {
+				return false;
+			}
+			if (!Objects.equals(this.key, other.key)) {
+				return false;
+			}
+			if (!Objects.equals(this.encodedKey, other.encodedKey)) {
+				return false;
+			}
+			return true;
 		}
 
 		@Override
