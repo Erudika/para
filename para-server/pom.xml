@@ -13,7 +13,7 @@
 
 	<properties>
 		<springSecVer>4.2.3.RELEASE</springSecVer>
-		<springLdapVer>2.3.1.RELEASE</springLdapVer>
+		<springLdapVer>2.3.2.RELEASE</springLdapVer>
 	</properties>
 
 	<dependencies>
@@ -96,7 +96,7 @@
 		<dependency>
 			<groupId>com.unboundid</groupId>
 			<artifactId>unboundid-ldapsdk</artifactId>
-			<version>4.0.0</version>
+			<version>4.0.1</version>
 		</dependency>
 
 		<!-- H2 DB -->
@@ -151,6 +151,12 @@
 			<artifactId>jersey-container-servlet</artifactId>
 			<version>${jerseyVer}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.glassfish.jersey.inject</groupId>
+			<artifactId>jersey-hk2</artifactId>
+			<version>${jerseyVer}</version>
+		</dependency>
+
 
 		<!-- AWS JAVA SDK -->
 		<dependency>
