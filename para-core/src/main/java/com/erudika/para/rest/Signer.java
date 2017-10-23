@@ -27,7 +27,6 @@ import com.amazonaws.util.SdkHttpUtils;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.utils.Config;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -314,7 +313,7 @@ public final class Signer extends AWS4Signer {
 		}
 
 		if (jsonEntity != null && jsonEntity.length > 0) {
-			in = new BufferedInputStream(new ByteArrayInputStream(jsonEntity));
+			in = new ByteArrayInputStream(jsonEntity);
 		}
 
 		return sign(httpMethod, endpointURL, reqPath, headers, sigParams, in, accessKey, secretKey);
