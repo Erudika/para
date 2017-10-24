@@ -287,6 +287,12 @@
 			<version>${springLdapVer}</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>com.vmlens</groupId>
+			<artifactId>concurrent-junit</artifactId>
+			<version>1.0.0</version>
+			<scope>test</scope>
+		</dependency>
 <!--		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>

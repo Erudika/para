@@ -794,7 +794,7 @@ public final class Utils {
 	 * Distributed id generator. Relies on node/worker ids and datacenter ids to prevent collisions.
 	 * @return a long unique ID string of digits
 	 */
-	public static String getNewId() {
+	public static synchronized String getNewId() {
 		// unique across JVMs as long as each has a different workerID
 		// based on Twitter's Snowflake algorithm
 		long timestamp = timestamp();
