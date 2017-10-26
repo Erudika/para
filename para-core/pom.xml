@@ -12,8 +12,8 @@
 	<name>para-core</name>
 
 	<properties>
-		<jacksonVer>2.8.7</jacksonVer>
-		<springVer>4.3.9.RELEASE</springVer>
+		<jacksonVer>2.9.2</jacksonVer>
+		<springVer>4.3.12.RELEASE</springVer>
 	</properties>
 
 	<dependencies>
@@ -57,7 +57,7 @@
 		<dependency>
 			<groupId>javax.ws.rs</groupId>
 			<artifactId>javax.ws.rs-api</artifactId>
-			<version>2.1-m09</version>
+			<version>2.1</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>

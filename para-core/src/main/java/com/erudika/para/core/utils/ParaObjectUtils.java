@@ -73,7 +73,6 @@ public final class ParaObjectUtils {
 		JSON_MAPPER.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
 		JSON_MAPPER.enable(SerializationFeature.INDENT_OUTPUT);
 		JSON_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-		JSON_MAPPER.disable(SerializationFeature.WRITE_NULL_MAP_VALUES);
 		JSON_READER = JSON_MAPPER.reader();
 		JSON_WRITER = JSON_MAPPER.writer();
 	}

@@ -226,7 +226,7 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>4.34.1</version>
+			<version>5.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.microsoft.azure.iothub-java-client</groupId>
@@ -261,6 +261,10 @@
 					<groupId>org.joda</groupId>
 					<artifactId>joda-convert</artifactId>
 				</exclusion>
+			 <exclusion>
+			  <groupId>joda-time</groupId>
+			  <artifactId>joda-time</artifactId>
+			 </exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
