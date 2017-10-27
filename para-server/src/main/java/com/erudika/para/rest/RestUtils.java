@@ -825,13 +825,10 @@ public final class RestUtils {
 
 	private static Pager getPagerFromParams(MultivaluedMap<String, String> params) {
 		Pager pager = new Pager();
-		boolean isPaginationLimited = Config.getConfigBoolean("limited_pagination", true);
-		long page = NumberUtils.toLong(paramOrDefault(params, "page", ""), 0);
-		int limit = NumberUtils.toInt(paramOrDefault(params, "limit", ""), pager.getLimit());
-		pager.setPage(isPaginationLimited && page > 1000 ? 1000 : page);
+		pager.setPage(NumberUtils.toLong(paramOrDefault(params, "page", ""), 0));
+		pager.setLimit(NumberUtils.toInt(paramOrDefault(params, "limit", ""), pager.getLimit()));
 		pager.setSortby(paramOrDefault(params, "sort", pager.getSortby()));
 		pager.setDesc(Boolean.parseBoolean(paramOrDefault(params, "desc", "true")));
-		pager.setLimit(isPaginationLimited && limit > (3 * Config.MAX_ITEMS_PER_PAGE) ? limit / 3 : limit);
 		return pager;
 	}
 
