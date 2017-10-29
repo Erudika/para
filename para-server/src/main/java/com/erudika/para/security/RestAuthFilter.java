@@ -155,7 +155,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		return false;
 	}
 
-	private boolean appAuthRequestHandler(String appid, BufferedRequestWrapper request, HttpServletResponse response) {
+	private boolean appAuthRequestHandler(String appid, HttpServletRequest request, HttpServletResponse response) {
 		String date = RestUtils.extractDate(request);
 		Date d = Signer.parseAWSDate(date);
 		boolean requestExpired = (d != null) && (System.currentTimeMillis()
