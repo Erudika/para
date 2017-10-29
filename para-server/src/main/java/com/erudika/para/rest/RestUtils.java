@@ -823,15 +823,6 @@ public final class RestUtils {
 		return buildPageResponse(items, pager);
 	}
 
-	private static Pager getPagerFromParams(MultivaluedMap<String, String> params) {
-		Pager pager = new Pager();
-		pager.setPage(NumberUtils.toLong(paramOrDefault(params, "page", ""), 0));
-		pager.setLimit(NumberUtils.toInt(paramOrDefault(params, "limit", ""), pager.getLimit()));
-		pager.setSortby(paramOrDefault(params, "sort", pager.getSortby()));
-		pager.setDesc(Boolean.parseBoolean(paramOrDefault(params, "desc", "true")));
-		return pager;
-	}
-
 	private static <P extends ParaObject> List<P> findTermsQuery(MultivaluedMap<String, String> params,
 			Pager pager, String appid, String type) {
 		if (params == null) {
@@ -936,6 +927,26 @@ public final class RestUtils {
 	/////////////////////////////////////////////
 	//			MISC RESPONSE HANDLERS
 	/////////////////////////////////////////////
+
+	/**
+	 * Returns a {@link Pager} instance populated from request parameters.
+	 * @param params query params map
+	 * @return a Pager
+	 */
+	public static Pager getPagerFromParams(MultivaluedMap<String, String> params) {
+		Pager pager = new Pager();
+		pager.setPage(NumberUtils.toLong(paramOrDefault(params, "page", ""), 0));
+		if (pager.getPage() > Config.MAX_PAGES) {
+			pager.setPage(Config.MAX_PAGES);
+		}
+		pager.setLimit(NumberUtils.toInt(paramOrDefault(params, "limit", ""), pager.getLimit()));
+		if (pager.getLimit() > Config.MAX_PAGE_LIMIT) {
+			pager.setLimit(Config.MAX_PAGE_LIMIT);
+		}
+		pager.setSortby(paramOrDefault(params, "sort", pager.getSortby()));
+		pager.setDesc(Boolean.parseBoolean(paramOrDefault(params, "desc", "true")));
+		return pager;
+	}
 
 	/**
 	 * A generic JSON response handler.

@@ -375,12 +375,7 @@ public final class Api1 extends ResourceConfig {
 				pobj.setId(id);
 				pobj = getDAO().read(app.getAppIdentifier(), pobj.getId());
 
-				Pager pager = new Pager();
-				pager.setPage(NumberUtils.toLong(params.getFirst("page"), 0));
-				pager.setSortby(params.getFirst("sort"));
-				pager.setDesc(Boolean.parseBoolean(params.containsKey("desc") ? params.getFirst("desc") : "true"));
-				pager.setLimit(NumberUtils.toInt(params.getFirst("limit"), pager.getLimit()));
-
+				Pager pager = RestUtils.getPagerFromParams(params);
 				String childrenOnly = params.getFirst("childrenonly");
 
 				if (pobj != null) {

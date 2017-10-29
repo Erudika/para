@@ -113,7 +113,7 @@ public final class Config {
 	 */
 	public static final int MAX_PAGES = getConfigInt("max_pages", 1000);
 	/**
-	 * Pagination limit - maximum number of results per page, default is 1000.
+	 * Pagination limit - maximum number of results per page, default is 256.
 	 */
 	public static final int MAX_PAGE_LIMIT = getConfigInt("max_page_limit", 256);
 	/**
