@@ -22,24 +22,20 @@ import com.erudika.para.core.App;
 import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
 import com.erudika.para.rest.Signer;
+import com.erudika.para.utils.BufferedRequestWrapper;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Date;
 import javax.servlet.FilterChain;
-import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
+import static javax.ws.rs.HttpMethod.PATCH;
 import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
 import org.apache.commons.lang3.StringUtils;
@@ -54,15 +50,10 @@ import org.springframework.web.filter.GenericFilterBean;
  */
 public class RestAuthFilter extends GenericFilterBean implements InitializingBean {
 
-	private final Signer signer;
-
 	/**
 	 * Default constructor.
-	 * @param signer a request signer instance for request signature verification
 	 */
-	public RestAuthFilter(Signer signer) {
-		this.signer = signer;
-	}
+	public RestAuthFilter() { }
 
 	/**
 	 * Authenticates an application.
@@ -222,87 +213,12 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		return null;
 	}
 
-	/**
-	 * HttpServletRequest wrapper.
-	 */
-	private class BufferedRequestWrapper extends HttpServletRequestWrapper {
-
-		private ByteArrayInputStream bais;
-		private ByteArrayOutputStream baos;
-		private BufferedServletInputStream bsis;
-		private byte[] buffer;
-
-		BufferedRequestWrapper(HttpServletRequest req) throws IOException {
-			super(req);
-			InputStream is = req.getInputStream();
-			baos = new ByteArrayOutputStream();
-			byte[] buf = new byte[1024];
-			int length;
-			while ((length = is.read(buf)) > 0) {
-				baos.write(buf, 0, length);
-			}
-			buffer = baos.toByteArray();
-		}
-
-		@Override
-		public ServletInputStream getInputStream() {
-			try {
-				bais = new ByteArrayInputStream(buffer);
-				bsis = new BufferedServletInputStream(bais);
-			} catch (Exception ex) {
-				logger.error(ex);
-			}
-			return bsis;
-		}
-
-	}
-
-	/**
-	 * Servlet Input Stream.
-	 */
-	private class BufferedServletInputStream extends ServletInputStream {
-		private ByteArrayInputStream bais;
-
-		BufferedServletInputStream(ByteArrayInputStream bais) {
-			this.bais = bais;
-		}
-
-		@Override
-		public int available() {
-			return bais.available();
-		}
-
-		@Override
-		public int read() {
-			return bais.read();
-		}
-
-		@Override
-		public int read(byte[] buf, int off, int len) {
-			return bais.read(buf, off, len);
-		}
-
-		@Override
-		public boolean isFinished() {
-			return bais.available() <= 0;
-		}
-
-		@Override
-		public boolean isReady() {
-			return !isFinished();
-		}
-
-		@Override
-		public void setReadListener(ReadListener rl) {
-		}
-	}
-
 	private boolean isWriteRequest(HttpServletRequest req) {
 		return req != null &&
 				(POST.equals(req.getMethod()) ||
 				PUT.equals(req.getMethod()) ||
 				DELETE.equals(req.getMethod()) ||
-				"PATCH".equals(req.getMethod()));
+				PATCH.equals(req.getMethod()));
 	}
 
 }

@@ -27,7 +27,6 @@ import com.erudika.para.security.filters.LinkedInAuthFilter;
 import com.erudika.para.security.filters.GenericOAuth2Filter;
 import com.erudika.para.security.filters.FacebookAuthFilter;
 import com.erudika.para.Para;
-import com.erudika.para.rest.Signer;
 import com.erudika.para.security.filters.LdapAuthFilter;
 import com.erudika.para.utils.Config;
 import com.typesafe.config.ConfigList;
@@ -181,7 +180,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 				jwtFilter.setAuthenticationManager(authenticationManager());
 				http.addFilterBefore(jwtFilter, RememberMeAuthenticationFilter.class);
 			}
-			RestAuthFilter restFilter = new RestAuthFilter(new Signer());
+			RestAuthFilter restFilter = new RestAuthFilter();
 			http.addFilterAfter(restFilter, JWTRestfulAuthFilter.class);
 		}
 	}

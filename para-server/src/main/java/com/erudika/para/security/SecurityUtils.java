@@ -20,6 +20,7 @@ package com.erudika.para.security;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
 import com.erudika.para.rest.Signer;
+import com.erudika.para.utils.BufferedRequestWrapper;
 import com.erudika.para.utils.Config;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -30,7 +31,6 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
@@ -59,7 +59,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 public final class SecurityUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
-	private static final Signer SIGNER = new Signer();
 
 	private SecurityUtils() { }
 
@@ -350,7 +349,7 @@ public final class SecurityUtils {
 		String httpMethod = incoming.getMethod();
 		InputStream entity;
 		try {
-			entity = new BufferedInputStream(incoming.getInputStream());
+			entity = new BufferedRequestWrapper(incoming).getInputStream();
 			if (entity.available() <= 0) {
 				entity = null;
 			}
@@ -359,7 +358,8 @@ public final class SecurityUtils {
 			entity = null;
 		}
 
-		Map<String, String> sig = SIGNER.sign(httpMethod, endpoint, path, headers, params, entity, accessKey, secretKey);
+		Signer signer = new Signer();
+		Map<String, String> sig = signer.sign(httpMethod, endpoint, path, headers, params, entity, accessKey, secretKey);
 
 		String auth2 = sig.get(HttpHeaders.AUTHORIZATION);
 		String recreatedSig = StringUtils.substringAfter(auth2, "Signature=");

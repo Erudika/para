@@ -75,7 +75,6 @@ public final class ParaClient {
 	private Long tokenKeyExpires;
 	private Long tokenKeyNextRefresh;
 	private Client apiClient;
-	private final Signer signer = new Signer();
 
 	/**
 	 * Default constructor.
@@ -261,32 +260,46 @@ public final class ParaClient {
 
 	private Response invokeGet(String resourcePath, MultivaluedMap<String, String> params) {
 		logger.debug("GET {}, params: {}", getFullPath(resourcePath), params);
-		return signer.invokeSignedRequest(getApiClient(), accessKey, key(!JWT_PATH.equals(resourcePath)), GET,
+		return invokeSignedRequest(getApiClient(), accessKey, key(!JWT_PATH.equals(resourcePath)), GET,
 				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
 	}
 
 	private Response invokePost(String resourcePath, Entity<?> entity) {
 		logger.debug("POST {}, entity: {}", getFullPath(resourcePath), entity);
-		return signer.invokeSignedRequest(getApiClient(), accessKey, key(true), POST,
+		return invokeSignedRequest(getApiClient(), accessKey, key(true), POST,
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
 	private Response invokePut(String resourcePath, Entity<?> entity) {
 		logger.debug("PUT {}, entity: {}", getFullPath(resourcePath), entity);
-		return signer.invokeSignedRequest(getApiClient(), accessKey, key(true), PUT,
+		return invokeSignedRequest(getApiClient(), accessKey, key(true), PUT,
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
 	private Response invokePatch(String resourcePath, Entity<?> entity) {
 		logger.debug("PATCH {}, entity: {}", getFullPath(resourcePath), entity);
-		return signer.invokeSignedRequest(getApiClient(), accessKey, key(true), "PATCH",
+		return invokeSignedRequest(getApiClient(), accessKey, key(true), "PATCH",
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
 	private Response invokeDelete(String resourcePath, MultivaluedMap<String, String> params) {
 		logger.debug("DELETE {}, params: {}", getFullPath(resourcePath), params);
-		return signer.invokeSignedRequest(getApiClient(), accessKey, key(true), DELETE,
+		return invokeSignedRequest(getApiClient(), accessKey, key(true), DELETE,
 				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
+	}
+
+	private Response invokeSignedRequest(Client apiClient, String accessKey, String secretKey,
+			String method, String apiURL, String path,
+			Map<String, String> headers, MultivaluedMap<String, String> params, Entity<?> body) {
+		Signer signer = new Signer();
+		return signer.invokeSignedRequest(apiClient, accessKey, secretKey, method, apiURL, path, headers, params, body);
+	}
+
+	private Response invokeSignedRequest(Client apiClient, String accessKey, String secretKey,
+			String method, String apiURL, String path,
+			Map<String, String> headers, MultivaluedMap<String, String> params, byte[] body) {
+		Signer signer = new Signer();
+		return signer.invokeSignedRequest(apiClient, accessKey, secretKey, method, apiURL, path, headers, params, body);
 	}
 
 	private MultivaluedMap<String, String> pagerToParams(Pager... pager) {
@@ -1124,7 +1137,7 @@ public final class ParaClient {
 	public <P extends ParaObject> P me(String accessToken) {
 		if (!StringUtils.isBlank(accessToken)) {
 			String auth = accessToken.startsWith("Bearer") ? accessToken : "Bearer " + accessToken;
-			Response res = signer.invokeSignedRequest(getApiClient(), accessKey, auth, GET,
+			Response res = invokeSignedRequest(getApiClient(), accessKey, auth, GET,
 					getEndpoint(), getFullPath("_me"), null, null, new byte[0]);
 			Map<String, Object> data = getEntity(res, Map.class);
 			return ParaObjectUtils.setAnnotatedFields(data);
