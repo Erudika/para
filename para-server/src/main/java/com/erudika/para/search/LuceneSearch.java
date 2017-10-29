@@ -17,7 +17,9 @@
  */
 package com.erudika.para.search;
 
+import com.erudika.para.AppDeletedListener;
 import com.erudika.para.Para;
+import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.utils.ParaObjectUtils;
@@ -77,6 +79,15 @@ public class LuceneSearch implements Search {
 	@Inject
 	public LuceneSearch(DAO dao) {
 		this.dao = dao;
+		// NOTE: index creation is automatic - we don't have to add a new AppCreatedListener here
+		// set up automatic index deletion
+		App.addAppDeletedListener(new AppDeletedListener() {
+			public void onAppDeleted(App app) {
+				if (app != null) {
+					LuceneUtils.deleteIndex(app.getAppIdentifier());
+				}
+			}
+		});
 	}
 
 	@Override
