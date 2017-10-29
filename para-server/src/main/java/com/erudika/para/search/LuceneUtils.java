@@ -294,6 +294,23 @@ public final class LuceneUtils {
 		}
 	}
 
+	/**
+	 * Deletes the entire index.
+	 * @param appid appid
+	 */
+	public static void deleteIndex(String appid) {
+		IndexWriter iwriter = null;
+		try {
+			iwriter = getIndexWriter(appid);
+			if (iwriter != null) {
+				iwriter.deleteAll();
+				iwriter.commit();
+			}
+		} catch (Exception ex) {
+			logger.error(null, ex);
+		}
+	}
+
 	private static void addDocumentFields(JsonNode object, Document doc, String prefix) {
 		try {
 			for (Iterator<Map.Entry<String, JsonNode>> iterator = object.fields(); iterator.hasNext();) {
@@ -701,22 +718,25 @@ public final class LuceneUtils {
 	}
 
 	private static IndexWriter getIndexWriter(String appid) {
-		if (!WRITERS.containsKey(appid)) {
-			try {
-				String dataDir = Config.getConfigParam("lucene.dir", Paths.get(".").toAbsolutePath().normalize().toString());
-				Path path = FileSystems.getDefault().getPath(dataDir, "data", getIndexName(appid));
-				Analyzer analyzer = new StandardAnalyzer();
-				IndexWriterConfig config = new IndexWriterConfig(analyzer);
-				config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-				WRITERS.put(appid, new IndexWriter(FSDirectory.open(path), config));
-			} catch (IOException ex) {
-				logger.warn("Couldn't get IndexWriter - '{}' does not exist: {}", getIndexName(appid), ex.getMessage());
-			}
-			Para.addDestroyListener(new DestroyListener() {
-				public void onDestroy() {
-					closeIndexWriters();
+		synchronized (WRITERS) {
+			if (!WRITERS.containsKey(appid)) {
+				try {
+					String luceneDir = Paths.get(".").toAbsolutePath().normalize().toString();
+					String dataDir = Config.getConfigParam("lucene.dir", luceneDir);
+					Path path = FileSystems.getDefault().getPath(dataDir, "data", getIndexName(appid));
+					Analyzer analyzer = new StandardAnalyzer();
+					IndexWriterConfig config = new IndexWriterConfig(analyzer);
+					config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+					WRITERS.put(appid, new IndexWriter(FSDirectory.open(path), config));
+				} catch (IOException ex) {
+					logger.warn("Couldn't get IndexWriter - '{}' does not exist: {}", getIndexName(appid), ex.getMessage());
 				}
-			});
+				Para.addDestroyListener(new DestroyListener() {
+					public void onDestroy() {
+						closeIndexWriters();
+					}
+				});
+			}
 		}
 		return WRITERS.get(appid);
 	}
