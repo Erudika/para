@@ -310,6 +310,9 @@ public final class ParaClient {
 				map.put("page", Collections.singletonList(Long.toString(p.getPage())));
 				map.put("desc", Collections.singletonList(Boolean.toString(p.isDesc())));
 				map.put("limit", Collections.singletonList(Integer.toString(p.getLimit())));
+				if (p.getLastKey() != null) {
+					map.put("lastKey", Collections.singletonList(p.getLastKey()));
+				}
 				if (p.getSortby() != null) {
 					map.put("sort", Collections.singletonList(p.getSortby()));
 				}
@@ -336,8 +339,13 @@ public final class ParaClient {
 
 	private <P extends ParaObject> List<P> getItems(Map<String, Object> result, Pager... pager) {
 		if (result != null && !result.isEmpty() && result.containsKey("items")) {
-			if (pager != null && pager.length > 0 && pager[0] != null && result.containsKey("totalHits")) {
-				pager[0].setCount(((Integer) result.get("totalHits")).longValue());
+			if (pager != null && pager.length > 0 && pager[0] != null) {
+				if (result.containsKey("totalHits")) {
+					pager[0].setCount(((Integer) result.get("totalHits")).longValue());
+				}
+				if (result.containsKey("lastKey")) {
+					pager[0].setLastKey((String) result.get("lastKey"));
+				}
 			}
 			return getItemsFromList((List<?>) result.get("items"));
 		}

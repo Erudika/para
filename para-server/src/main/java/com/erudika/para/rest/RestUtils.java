@@ -906,6 +906,9 @@ public final class RestUtils {
 		result.put("items", checkedItems);
 		result.put("page", pager.getPage());
 		result.put("totalHits", pager.getCount());
+		if (!StringUtils.isBlank(pager.getLastKey())) {
+			result.put("lastKey", pager.getLastKey());
+		}
 		return result;
 	}
 
@@ -945,6 +948,7 @@ public final class RestUtils {
 		}
 		pager.setSortby(paramOrDefault(params, "sort", pager.getSortby()));
 		pager.setDesc(Boolean.parseBoolean(paramOrDefault(params, "desc", "true")));
+		pager.setLastKey(paramOrDefault(params, "lastKey", null));
 		return pager;
 	}
 
