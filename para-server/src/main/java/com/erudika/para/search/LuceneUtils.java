@@ -83,6 +83,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
@@ -94,12 +95,16 @@ import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanQuery.Builder;
+import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import static org.apache.lucene.search.SortField.Type.LONG;
+import static org.apache.lucene.search.SortField.Type.STRING;
+import org.apache.lucene.search.SortedNumericSortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
@@ -117,8 +122,10 @@ public final class LuceneUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(LuceneUtils.class);
 	private static final String SOURCE_FIELD_NAME = "_source";
+	private static final String DOC_ID_FIELD_NAME = "_docid";
 	private static final String NESTED_FIELD_NAME = "nstd";
 	private static final FieldType ID_FIELD;
+	private static final FieldType DOC_ID_FIELD;
 	private static final FieldType SOURCE_FIELD;
 	private static final FieldType DEFAULT_FIELD;
 	private static final FieldType DEFAULT_NOT_ANALYZED_FIELD;
@@ -143,6 +150,11 @@ public final class LuceneUtils {
 		ID_FIELD.setStored(true);
 		ID_FIELD.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
 		ID_FIELD.setTokenized(false);
+
+		DOC_ID_FIELD = new FieldType();
+		DOC_ID_FIELD.setStored(true);
+		DOC_ID_FIELD.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+		DOC_ID_FIELD.setTokenized(false);
 
 		DEFAULT_FIELD = new FieldType();
 		DEFAULT_FIELD.setStored(false);
@@ -426,6 +438,10 @@ public final class LuceneUtils {
 		try {
 			doc.add(new Field(LuceneUtils.SOURCE_FIELD_NAME,
 					ParaObjectUtils.getJsonWriterNoIdent().writeValueAsString(jsonDoc), SOURCE_FIELD));
+			// add special DOC ID field, used in "search after
+			String docId = Utils.getNewId();
+			doc.add(new SortedNumericDocValuesField(DOC_ID_FIELD_NAME, NumberUtils.toLong(docId)));
+			doc.add(new Field(DOC_ID_FIELD_NAME, docId, DOC_ID_FIELD));
 		} catch (JsonProcessingException ex) {
 			logger.error(null, ex);
 		}
@@ -513,6 +529,7 @@ public final class LuceneUtils {
 			ireader = getIndexReader(appid);
 			if (ireader != null) {
 				Document[] hits1 = searchQueryRaw(ireader, appid, Utils.type(Address.class), query, page);
+				page.setLastKey(null); // will cause problems if not cleared
 
 				if (hits1.length == 0) {
 					return Collections.emptyList();
@@ -525,9 +542,9 @@ public final class LuceneUtils {
 				// then searchQuery their parent objects
 				ArrayList<String> parentids = new ArrayList<>(hits1.length);
 				for (Document doc : hits1) {
-					String pid = doc.get(Config._PARENTID);
-					if (!StringUtils.isBlank(pid)) {
-						parentids.add(pid);
+					Address address = documentToParaObject(doc);
+					if (address != null && !StringUtils.isBlank(address.getParentid())) {
+						parentids.add(address.getParentid());
 					}
 				}
 
@@ -654,19 +671,36 @@ public final class LuceneUtils {
 			}
 			int maxPerPage = pager.getLimit();
 			int pageNum = (int) pager.getPage();
-			int start = (pageNum < 1 || pageNum > Config.MAX_PAGES) ? 0 : (pageNum - 1) * maxPerPage;
-			Sort sort = new Sort(new SortField(pager.getSortby(), SortField.Type.STRING, pager.isDesc()));
+			TopDocs topDocs;
 
-			TopFieldCollector collector = TopFieldCollector.create(sort, Config.DEFAULT_LIMIT, false, false, false);
-			isearcher.search(query, collector);
+			if (pageNum <= 1 && !StringUtils.isBlank(pager.getLastKey())) {
+				// Read the last Document from index to get its docId which is required by "searchAfter".
+				// We can't get it from lastKey beacuse it contains the id of the last ParaObject on the page.
+				Integer lastDocId = getLastDocId(isearcher, pager.getLastKey());
+				if (lastDocId != null) {
+					topDocs = isearcher.searchAfter(new FieldDoc(lastDocId, 1,
+							new Object[]{NumberUtils.toLong(pager.getLastKey())}), query, maxPerPage,
+							new Sort(new SortedNumericSortField(DOC_ID_FIELD_NAME, LONG)));
+				} else {
+					topDocs = new TopDocs(0, new ScoreDoc[0], 0);
+				}
+			} else {
+				int start = (pageNum < 1 || pageNum > Config.MAX_PAGES) ? 0 : (pageNum - 1) * maxPerPage;
+				Sort sort = new Sort(getSortField(pager));
+				TopFieldCollector collector = TopFieldCollector.create(sort, Config.DEFAULT_LIMIT, false, false, false);
+				isearcher.search(query, collector);
+				topDocs = collector.topDocs(start, maxPerPage);
+			}
 
-			TopDocs topDocs = collector.topDocs(start, maxPerPage);
 			ScoreDoc[] hits = topDocs.scoreDocs;
 			pager.setCount(topDocs.totalHits);
 
 			Document[] docs = new Document[hits.length];
 			for (int i = 0; i < hits.length; i++) {
 				docs[i] = isearcher.doc(hits[i].doc);
+			}
+			if (hits.length > 0) {
+				pager.setLastKey(docs[hits.length - 1].get(DOC_ID_FIELD_NAME));
 			}
 			logger.debug("Lucene query: {} Hits: {}, Total: {}", query, hits.length, topDocs.totalHits);
 			return docs;
@@ -676,6 +710,24 @@ public final class LuceneUtils {
 			logger.warn("No search results for type '{}' in app '{}': {}.", type, appid, msg);
 		}
 		return new Document[0];
+	}
+
+	private static Integer getLastDocId(IndexSearcher isearcher, String lastKey) throws IOException {
+		Query lastDoc = new TermQuery(new Term(DOC_ID_FIELD_NAME, lastKey));
+		TopDocs docs = isearcher.search(lastDoc, 1);
+		ScoreDoc[] hits = docs.scoreDocs;
+		if (hits.length > 0) {
+			return hits[0].doc;
+		}
+		return null;
+	}
+
+	private static SortField getSortField(Pager pager) {
+		if (DOC_ID_FIELD_NAME.equals(pager.getSortby())) {
+			return new SortedNumericSortField(DOC_ID_FIELD_NAME, LONG, pager.isDesc());
+		} else {
+			return new SortField(pager.getSortby(), STRING, pager.isDesc());
+		}
 	}
 
 	/**

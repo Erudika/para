@@ -20,6 +20,7 @@ package com.erudika.para.search;
 import com.erudika.para.core.Address;
 import com.erudika.para.core.App;
 import com.erudika.para.core.Linker;
+import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
@@ -321,17 +322,21 @@ public abstract class SearchTest {
 		assertEquals(0, page3.size());
 		assertTrue(s.findQuery(u.getType(), "type:user", new Pager(3, 2)).isEmpty());
 
-		pager.setPage(0);
-		pager.setLimit(3);
-		pager.setSortby(Config._ID);
-		pager.setDesc(false);
-		List<User> sortedById = s.findQuery(u.getType(), "type:user", pager);
+		Pager pager2 = new Pager(3);
+		pager2.setPage(0);
+		pager2.setLimit(3);
+		pager2.setSortby(Config._ID);
+		pager2.setDesc(false);
+		List<User> sortedById = s.findQuery(u.getType(), "type:user", pager2);
+		assertFalse(sortedById.isEmpty());
 		assertEquals(u.getId(), sortedById.get(0).getId());
 		assertEquals(u1.getId(), sortedById.get(1).getId());
 		assertEquals(u2.getId(), sortedById.get(2).getId());
 
-		pager.setDesc(true);
-		List<User> sortedByIdReversed = s.findQuery(u.getType(), "type:user", pager);
+		Pager pager3 = new Pager(3);
+		pager3.setSortby(Config._ID);
+		pager3.setDesc(true);
+		List<User> sortedByIdReversed = s.findQuery(u.getType(), "type:user", pager3);
 		assertEquals(u2.getId(), sortedByIdReversed.get(0).getId());
 		assertEquals(u1.getId(), sortedByIdReversed.get(1).getId());
 		assertEquals(u.getId(), sortedByIdReversed.get(2).getId());
@@ -429,6 +434,33 @@ public abstract class SearchTest {
 		assertNull(s.findById(sp1.getId()));
 		assertNull(s.findById(sp2.getId()));
 		assertNotNull(s.findById(sp3.getId()));
+	}
+
+	@Test
+	public void testSearchAfter() throws InterruptedException {
+		ArrayList<Sysprop> list = new ArrayList<>();
+		for (int i = 0; i < 22; i++) {
+			Sysprop obj = new Sysprop("id_" + i);
+			obj.addProperty("prop" + i, i);
+			list.add(obj);
+		}
+		String appid3 = "testapp3";
+		s.indexAll(appid3, list);
+
+		Pager p = new Pager(10);
+		List<ParaObject> page1 = s.findQuery(appid3, null, "*", p);
+		assertEquals(10, page1.size()); // page 1
+
+		List<ParaObject> page2 = s.findQuery(appid3, null, "*", p);
+		assertEquals(10, page2.size()); // page 2
+
+		List<ParaObject> page3 = s.findQuery(appid3, null, "*", p);
+		assertEquals(2, page3.size());  // page 3
+
+		List<ParaObject> page4 = s.findQuery(appid3, null, "*", p);
+		assertTrue(page4.isEmpty());  // end
+		assertEquals(22, p.getCount());
+		s.unindexAll(appid3, list);
 	}
 
 }
