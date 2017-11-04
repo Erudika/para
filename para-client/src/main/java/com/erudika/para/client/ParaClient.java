@@ -226,8 +226,15 @@ public final class ParaClient {
 		return secretKey;
 	}
 
+	/**
+	 * Deserializes a {@link Response} object to POJO of some type.
+	 * @param <T> type
+	 * @param res response
+	 * @param type the type to convert to
+	 * @return a POJO
+	 */
 	@SuppressWarnings("unchecked")
-	private <T> T getEntity(Response res, Class<?> type) {
+	public <T> T getEntity(Response res, Class<?> type) {
 		if (res != null) {
 			if (res.getStatus() == Response.Status.OK.getStatusCode()
 					|| res.getStatus() == Response.Status.CREATED.getStatusCode()
@@ -246,7 +253,11 @@ public final class ParaClient {
 		return null;
 	}
 
-	private String getFullPath(String resourcePath) {
+	/**
+	 * @param resourcePath API subpath
+	 * @return the full resource path, e.g. "/v1/path"
+	 */
+	protected String getFullPath(String resourcePath) {
 		if (StringUtils.startsWith(resourcePath, JWT_PATH)) {
 			return resourcePath;
 		}
@@ -258,51 +269,51 @@ public final class ParaClient {
 		return getApiPath() + resourcePath;
 	}
 
-	private Response invokeGet(String resourcePath, MultivaluedMap<String, String> params) {
+	public Response invokeGet(String resourcePath, MultivaluedMap<String, String> params) {
 		logger.debug("GET {}, params: {}", getFullPath(resourcePath), params);
 		return invokeSignedRequest(getApiClient(), accessKey, key(!JWT_PATH.equals(resourcePath)), GET,
 				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
 	}
 
-	private Response invokePost(String resourcePath, Entity<?> entity) {
+	public Response invokePost(String resourcePath, Entity<?> entity) {
 		logger.debug("POST {}, entity: {}", getFullPath(resourcePath), entity);
 		return invokeSignedRequest(getApiClient(), accessKey, key(true), POST,
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
-	private Response invokePut(String resourcePath, Entity<?> entity) {
+	public Response invokePut(String resourcePath, Entity<?> entity) {
 		logger.debug("PUT {}, entity: {}", getFullPath(resourcePath), entity);
 		return invokeSignedRequest(getApiClient(), accessKey, key(true), PUT,
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
-	private Response invokePatch(String resourcePath, Entity<?> entity) {
+	public Response invokePatch(String resourcePath, Entity<?> entity) {
 		logger.debug("PATCH {}, entity: {}", getFullPath(resourcePath), entity);
 		return invokeSignedRequest(getApiClient(), accessKey, key(true), "PATCH",
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
-	private Response invokeDelete(String resourcePath, MultivaluedMap<String, String> params) {
+	public Response invokeDelete(String resourcePath, MultivaluedMap<String, String> params) {
 		logger.debug("DELETE {}, params: {}", getFullPath(resourcePath), params);
 		return invokeSignedRequest(getApiClient(), accessKey, key(true), DELETE,
 				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
 	}
 
-	private Response invokeSignedRequest(Client apiClient, String accessKey, String secretKey,
+	protected Response invokeSignedRequest(Client apiClient, String accessKey, String secretKey,
 			String method, String apiURL, String path,
 			Map<String, String> headers, MultivaluedMap<String, String> params, Entity<?> body) {
 		Signer signer = new Signer();
 		return signer.invokeSignedRequest(apiClient, accessKey, secretKey, method, apiURL, path, headers, params, body);
 	}
 
-	private Response invokeSignedRequest(Client apiClient, String accessKey, String secretKey,
+	protected Response invokeSignedRequest(Client apiClient, String accessKey, String secretKey,
 			String method, String apiURL, String path,
 			Map<String, String> headers, MultivaluedMap<String, String> params, byte[] body) {
 		Signer signer = new Signer();
 		return signer.invokeSignedRequest(apiClient, accessKey, secretKey, method, apiURL, path, headers, params, body);
 	}
 
-	private MultivaluedMap<String, String> pagerToParams(Pager... pager) {
+	public MultivaluedMap<String, String> pagerToParams(Pager... pager) {
 		MultivaluedMap<String, String> map = new MultivaluedHashMap<>();
 		if (pager != null && pager.length > 0) {
 			Pager p = pager[0];
@@ -322,7 +333,7 @@ public final class ParaClient {
 	}
 
 	@SuppressWarnings("unchecked")
-	private <P extends ParaObject> List<P> getItemsFromList(List<?> result) {
+	public <P extends ParaObject> List<P> getItemsFromList(List<?> result) {
 		if (result != null && !result.isEmpty()) {
 			// this isn't very efficient but there's no way to know what type of objects we're reading
 			ArrayList<P> objects = new ArrayList<>(result.size());
@@ -337,7 +348,7 @@ public final class ParaClient {
 		return Collections.emptyList();
 	}
 
-	private <P extends ParaObject> List<P> getItems(Map<String, Object> result, Pager... pager) {
+	public <P extends ParaObject> List<P> getItems(Map<String, Object> result, Pager... pager) {
 		if (result != null && !result.isEmpty() && result.containsKey("items")) {
 			if (pager != null && pager.length > 0 && pager[0] != null) {
 				if (result.containsKey("totalHits")) {
