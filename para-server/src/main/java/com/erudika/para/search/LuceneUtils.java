@@ -680,7 +680,7 @@ public final class LuceneUtils {
 				if (lastDocId != null) {
 					topDocs = isearcher.searchAfter(new FieldDoc(lastDocId, 1,
 							new Object[]{NumberUtils.toLong(pager.getLastKey())}), query, maxPerPage,
-							new Sort(new SortedNumericSortField(DOC_ID_FIELD_NAME, LONG)));
+							new Sort(new SortedNumericSortField(DOC_ID_FIELD_NAME, LONG, pager.isDesc())));
 				} else {
 					topDocs = new TopDocs(0, new ScoreDoc[0], 0);
 				}
