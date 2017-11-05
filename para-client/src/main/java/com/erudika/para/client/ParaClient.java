@@ -269,30 +269,60 @@ public final class ParaClient {
 		return getApiPath() + resourcePath;
 	}
 
+	/**
+	 * Invoke a GET request to the Para API.
+	 * @param resourcePath the subpath after '/v1/', should not start with '/'
+	 * @param params query parameters
+	 * @return a {@link Response} object
+	 */
 	public Response invokeGet(String resourcePath, MultivaluedMap<String, String> params) {
 		logger.debug("GET {}, params: {}", getFullPath(resourcePath), params);
 		return invokeSignedRequest(getApiClient(), accessKey, key(!JWT_PATH.equals(resourcePath)), GET,
 				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
 	}
 
+	/**
+	 * Invoke a POST request to the Para API.
+	 * @param resourcePath the subpath after '/v1/', should not start with '/'
+	 * @param entity request body
+	 * @return a {@link Response} object
+	 */
 	public Response invokePost(String resourcePath, Entity<?> entity) {
 		logger.debug("POST {}, entity: {}", getFullPath(resourcePath), entity);
 		return invokeSignedRequest(getApiClient(), accessKey, key(true), POST,
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
+	/**
+	 * Invoke a PUT request to the Para API.
+	 * @param resourcePath the subpath after '/v1/', should not start with '/'
+	 * @param entity request body
+	 * @return a {@link Response} object
+	 */
 	public Response invokePut(String resourcePath, Entity<?> entity) {
 		logger.debug("PUT {}, entity: {}", getFullPath(resourcePath), entity);
 		return invokeSignedRequest(getApiClient(), accessKey, key(true), PUT,
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
+	/**
+	 * Invoke a PATCH request to the Para API.
+	 * @param resourcePath the subpath after '/v1/', should not start with '/'
+	 * @param entity request body
+	 * @return a {@link Response} object
+	 */
 	public Response invokePatch(String resourcePath, Entity<?> entity) {
 		logger.debug("PATCH {}, entity: {}", getFullPath(resourcePath), entity);
 		return invokeSignedRequest(getApiClient(), accessKey, key(true), "PATCH",
 				getEndpoint(), getFullPath(resourcePath), null, null, entity);
 	}
 
+	/**
+	 * Invoke a DELETE request to the Para API.
+	 * @param resourcePath the subpath after '/v1/', should not start with '/'
+	 * @param params query parameters
+	 * @return a {@link Response} object
+	 */
 	public Response invokeDelete(String resourcePath, MultivaluedMap<String, String> params) {
 		logger.debug("DELETE {}, params: {}", getFullPath(resourcePath), params);
 		return invokeSignedRequest(getApiClient(), accessKey, key(true), DELETE,
@@ -313,6 +343,11 @@ public final class ParaClient {
 		return signer.invokeSignedRequest(apiClient, accessKey, secretKey, method, apiURL, path, headers, params, body);
 	}
 
+	/**
+	 * Converts a {@link Pager} object to query parameters.
+	 * @param pager a Pager
+	 * @return list of query parameters
+	 */
 	public MultivaluedMap<String, String> pagerToParams(Pager... pager) {
 		MultivaluedMap<String, String> map = new MultivaluedHashMap<>();
 		if (pager != null && pager.length > 0) {
@@ -332,6 +367,12 @@ public final class ParaClient {
 		return map;
 	}
 
+	/**
+	 * Deserializes ParaObjects from a JSON array (the "items:[]" field in search results).
+	 * @param <P> type
+	 * @param result a list of deserialized maps
+	 * @return a list of ParaObjects
+	 */
 	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> getItemsFromList(List<?> result) {
 		if (result != null && !result.isEmpty()) {
@@ -348,8 +389,16 @@ public final class ParaClient {
 		return Collections.emptyList();
 	}
 
-	public <P extends ParaObject> List<P> getItems(Map<String, Object> result, Pager... pager) {
-		if (result != null && !result.isEmpty() && result.containsKey("items")) {
+	/**
+	 * Converts a list of Maps to a List of ParaObjects, at a given path within the JSON tree structure.
+	 * @param <P> type
+	 * @param at the path (field) where the array of objects is located
+	 * @param result the response body for an API request
+	 * @param pager a {@link Pager} object
+	 * @return a list of ParaObjects
+	 */
+	public <P extends ParaObject> List<P> getItems(String at, Map<String, Object> result, Pager... pager) {
+		if (result != null && !result.isEmpty() && !StringUtils.isBlank(at) && result.containsKey(at)) {
 			if (pager != null && pager.length > 0 && pager[0] != null) {
 				if (result.containsKey("totalHits")) {
 					pager[0].setCount(((Integer) result.get("totalHits")).longValue());
@@ -358,9 +407,13 @@ public final class ParaClient {
 					pager[0].setLastKey((String) result.get("lastKey"));
 				}
 			}
-			return getItemsFromList((List<?>) result.get("items"));
+			return getItemsFromList((List<?>) result.get(at));
 		}
 		return Collections.emptyList();
+	}
+
+	private <P extends ParaObject> List<P> getItems(Map<String, Object> result, Pager... pager) {
+		return getItems("items", result, pager);
 	}
 
 	/////////////////////////////////////////////
