@@ -24,7 +24,7 @@ See how **Para** [compares to other open source backend frameworks](https://erud
 - RESTful JSON API secured with Amazon's Signature V4 algorithm
 - Database-agnostic, designed for scalable data stores (DynamoDB, Cassandra, MongoDB, etc.)
 - Full-text search (Lucene, Elasticsearch)
-- Distributed object cache (Hazelcast)
+- Distributed and local object cache (Hazelcast, Caffeine)
 - Multitenancy - each app has its own table, index and cache
 - IoT support and integration with AWS and Azure
 - Flexible security based on Spring Security (LDAP, social login, CSRF protection, etc.)
@@ -203,8 +203,8 @@ The `Search` interface is implemented by:
 
 The `Cache` interface is implemented by:
 
-- **Hazelcast**: `HazelcastCache` **default** (included in `para-server`)
-- **In-memory**: objects can be cached in the JVM heap
+- **Caffeine**: **default** objects are cached locally
+- **Hazelcast**: [para-cache-hazelcast](https://github.com/Erudika/para-cache-hazelcast) (distributed)
 
 ## Projects using Para
 
@@ -215,9 +215,10 @@ The `Cache` interface is implemented by:
 
 ## Wishlist / Roadmap
 
+- Elasticsearch v6 compatibility and support for AWS ES
 - `DAO` implementation for PostgreSQL.
-- MongoDB implementation of `Search`
-- Make the API server more efficient with fibers (Quasar)
+- `Search` implementation for MongoDB
+- Make the API server more efficient with fibers (Quasar?)
 - OpenAPI 3+ compatible API at `/v2` (not soon)
 
 ## Contributing

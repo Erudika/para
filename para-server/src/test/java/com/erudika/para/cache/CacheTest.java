@@ -111,6 +111,21 @@ public abstract class CacheTest {
 		assertFalse(c.contains("2"));
 		assertFalse(c.contains("1234"));
 		assertFalse(c.contains("123"));
+
+		// test multiapp support
+		c.putAll(testApp1, map);
+		c.putAll(testApp2, map);
+		assertTrue(c.contains(testApp1, "123"));
+		assertTrue(c.contains(testApp2, "123"));
+		assertEquals("test1", c.get(testApp1, "123"));
+		assertEquals("test1", c.get(testApp2, "123"));
+		c.removeAll(testApp1);
+		assertFalse(c.contains(testApp1, "1"));
+		assertFalse(c.contains(testApp1, "2"));
+		assertFalse(c.contains(testApp1, "1234"));
+		assertFalse(c.contains(testApp1, "123"));
+		assertTrue(c.contains(testApp2, "123"));
+		assertEquals("test1", c.get(testApp2, "123"));
 	}
 
 	@Test

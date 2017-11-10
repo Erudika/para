@@ -33,13 +33,13 @@ public class PersistenceModule extends AbstractModule {
 		String selectedDAO = Config.getConfigParam("dao", "");
 		if (StringUtils.isBlank(selectedDAO)) {
 			if ("embedded".equals(Config.ENVIRONMENT)) {
-				bind(DAO.class).to(H2DAO.class).asEagerSingleton();
+				bindToDefault();
 			} else {
 				bind(DAO.class).to(AWSDynamoDAO.class).asEagerSingleton();
 			}
 		} else {
 			if ("h2".equalsIgnoreCase(selectedDAO)) {
-				bind(DAO.class).to(H2DAO.class).asEagerSingleton();
+				bindToDefault();
 			} else if ("dynamodb".equalsIgnoreCase(selectedDAO) ||
 					AWSDynamoDAO.class.getSimpleName().equalsIgnoreCase(selectedDAO)) {
 				bind(DAO.class).to(AWSDynamoDAO.class).asEagerSingleton();
@@ -50,10 +50,14 @@ public class PersistenceModule extends AbstractModule {
 					bind(DAO.class).to(daoPlugin.getClass()).asEagerSingleton();
 				} else {
 					// in-memory DAO - default fallback
-					bind(DAO.class).to(MockDAO.class).asEagerSingleton();
+					bindToDefault();
 				}
 			}
 		}
+	}
+
+	void bindToDefault() {
+		bind(DAO.class).to(H2DAO.class).asEagerSingleton();
 	}
 
 	/**

@@ -31,21 +31,21 @@ public class CacheModule extends AbstractModule {
 
 	protected void configure() {
 		String selectedCache = Config.getConfigParam("cache", "");
-		if (StringUtils.isBlank(selectedCache)) {
-			bind(Cache.class).to(HazelcastCache.class);
+		if (StringUtils.isBlank(selectedCache) || "inmemory".equalsIgnoreCase(selectedCache)) {
+			bindToDefault();
 		} else {
-			if ("hazelcast".equalsIgnoreCase(selectedCache)) {
-				bind(Cache.class).to(HazelcastCache.class);
+			Cache cachePlugin = loadExternalCache(selectedCache);
+			if (cachePlugin != null) {
+				bind(Cache.class).to(cachePlugin.getClass()).asEagerSingleton();
 			} else {
-				Cache cachePlugin = loadExternalCache(selectedCache);
-				if (cachePlugin != null) {
-					bind(Cache.class).to(cachePlugin.getClass()).asEagerSingleton();
-				} else {
-					// default fallback
-					bind(Cache.class).to(MockCache.class).asEagerSingleton();
-				}
+				// default fallback
+				bindToDefault();
 			}
 		}
+	}
+
+	void bindToDefault() {
+		bind(Cache.class).to(CaffeineCache.class).asEagerSingleton();
 	}
 
 	/**

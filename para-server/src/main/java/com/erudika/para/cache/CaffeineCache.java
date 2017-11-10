@@ -18,14 +18,13 @@
 package com.erudika.para.cache;
 
 import com.erudika.para.utils.Config;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.erudika.para.utils.Utils;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeSet;
+import java.util.LinkedHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
@@ -33,32 +32,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Hazelcast implementation of the {@link Cache} interface.
- * Each application uses a separate distributed map.
- *
+ * Default implementation of the {@link Cache} interface using Caffeine.
+ * Multitenancy is achieved by caching objects from each app using composite keys: {@code prefix_objectId}.
  * @author Alex Bogdanovski [alex@erudika.com]
- * @see Cache
- * @see HazelcastUtils
  */
 @Singleton
-public class HazelcastCache implements Cache {
+public class CaffeineCache implements Cache {
 
-	private static final Logger logger = LoggerFactory.getLogger(HazelcastCache.class);
+	private static final Logger logger = LoggerFactory.getLogger(CaffeineCache.class);
+	private static final Map<String, String> KEY_PREFIXES = new ConcurrentHashMap<>();
 
-	static {
-		if (Config.isCacheEnabled()) {
-			HazelcastUtils.getClient();
-		}
-	}
+	private final com.github.benmanes.caffeine.cache.Cache<String, Object> cache;
 
 	/**
-	 * No-args constructor.
+	 * Default constructor.
 	 */
-	public HazelcastCache() {
-	}
-
-	HazelcastInstance client() {
-		return HazelcastUtils.getClient();
+	public CaffeineCache() {
+		cache = Caffeine.newBuilder()
+			.maximumSize(Config.getConfigInt("caffeine.cache_size", 10000))
+			.expireAfterWrite(Config.getConfigInt("caffeine.evict_after_minutes", 10), TimeUnit.MINUTES)
+			.build();
 	}
 
 	@Override
@@ -66,43 +59,30 @@ public class HazelcastCache implements Cache {
 		if (StringUtils.isBlank(id) || StringUtils.isBlank(appid)) {
 			return false;
 		}
-		try {
-			return client().getMap(appid).containsKey(id);
-		} catch (Exception e) {
-			logger.error(null, e);
-			return false;
-		}
+		boolean exists = get(appid, id) != null;
+		logger.debug("Cache.contains({}) {}", id, exists);
+		return exists;
 	}
 
 	@Override
 	public <T> void put(String appid, String id, T object) {
 		if (!StringUtils.isBlank(id) && object != null && !StringUtils.isBlank(appid)) {
+			cache.put(key(appid, id), object);
 			logger.debug("Cache.put() {} {}", appid, id);
-			try {
-				if (isAsyncEnabled()) {
-					client().getMap(appid).putAsync(id, object);
-				} else {
-					client().getMap(appid).put(id, object);
-				}
-			} catch (Exception e) {
-				logger.error(null, e);
-			}
 		}
 	}
 
 	@Override
 	public <T> void put(String appid, String id, T object, Long ttlSeconds) {
+		if (ttlSeconds == null || ttlSeconds <= 0L) {
+			put(appid, id, object);
+			return;
+		}
 		if (!StringUtils.isBlank(id) && object != null && !StringUtils.isBlank(appid)) {
+			String key = key(appid, id);
+			cache.put(key, object);
+			cache.put(key + ":ttl", Utils.timestamp() + ttlSeconds * 1000);
 			logger.debug("Cache.put() {} {} ttl {}", appid, id, ttlSeconds);
-			try {
-				if (isAsyncEnabled()) {
-					client().getMap(appid).putAsync(id, object, ttlSeconds, TimeUnit.SECONDS);
-				} else {
-					client().getMap(appid).put(id, object, ttlSeconds, TimeUnit.SECONDS);
-				}
-			} catch (Exception e) {
-				logger.error(null, e);
-			}
 		}
 	}
 
@@ -110,104 +90,89 @@ public class HazelcastCache implements Cache {
 	public <T> void putAll(String appid, Map<String, T> objects) {
 		if (objects != null && !objects.isEmpty() && !StringUtils.isBlank(appid)) {
 			Map<String, T> cleanMap = new LinkedHashMap<>(objects.size());
-			for (Entry<String, T> entry : objects.entrySet()) {
+			for (Map.Entry<String, T> entry : objects.entrySet()) {
 				if (!StringUtils.isBlank(entry.getKey()) && entry.getValue() != null) {
-					cleanMap.put(entry.getKey(), entry.getValue());
+					cleanMap.put(key(appid, entry.getKey()), entry.getValue());
 				}
 			}
-			try {
-				logger.debug("Cache.putAll() {} {}", appid, objects.size());
-				client().getMap(appid).putAll(cleanMap);
-			} catch (Exception e) {
-				logger.error(null, e);
-			}
+			cache.putAll(cleanMap);
+			logger.debug("Cache.putAll() {} {}", appid, objects.size());
 		}
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <T> T get(String appid, String id) {
 		if (StringUtils.isBlank(id) || StringUtils.isBlank(appid)) {
 			return null;
 		}
-		try {
-			Map<String, T> map = client().getMap(appid);
-			T obj = map.get(id);
-			logger.debug("Cache.get() {} {}", appid, (obj == null) ? null : id);
-			return obj;
-		} catch (Exception e) {
-			logger.error(null, e);
+		String key = key(appid, id);
+		if (isExpired((Long) cache.getIfPresent(key + ":ttl"))) {
+			remove(appid, key);
+			remove(appid, key + ":ttl");
+			logger.debug("Cache.get() {} {}", appid, null);
 			return null;
+		} else {
+			logger.debug("Cache.get() {} {}", appid, id);
+			return (T) cache.getIfPresent(key);
 		}
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <T> Map<String, T> getAll(String appid, List<String> ids) {
 		if (ids == null || StringUtils.isBlank(appid)) {
 			return Collections.emptyMap();
 		}
-		Map<String, T> result = new LinkedHashMap<>(ids.size(), 0.75f, true);
+		Map<String, T> map1 = new LinkedHashMap<>(ids.size());
 		ids.remove(null);
-		try {
-			IMap<String, T> imap = client().getMap(appid);
-			Map<String, T> res = imap.getAll(new TreeSet<>(ids));
-			for (String id : ids) {
-				if (res.containsKey(id)) {
-					result.put(id, res.get(id));
-				}
+		for (String id : ids) {
+			T t = get(appid, id);
+			if (t != null) {
+				map1.put(id, t);
 			}
-			logger.debug("Cache.getAll() {} {}", appid, ids.size());
-		} catch (Exception e) {
-			logger.error(null, e);
 		}
-		return result;
+		logger.debug("Cache.getAll() {} {}", appid, ids.size());
+		return map1;
 	}
 
 	@Override
 	public void remove(String appid, String id) {
 		if (!StringUtils.isBlank(id) && !StringUtils.isBlank(appid)) {
-			try {
-				logger.debug("Cache.remove() {} {}", appid, id);
-				client().getMap(appid).delete(id);
-			} catch (Exception e) {
-				logger.error(null, e);
-			}
+			logger.debug("Cache.remove() {} {}", appid, id);
+			cache.invalidate(key(appid, id));
 		}
 	}
 
 	@Override
 	public void removeAll(String appid) {
 		if (!StringUtils.isBlank(appid)) {
-			try {
-				logger.debug("Cache.removeAll() {}", appid);
-				client().getMap(appid).clear();
-			} catch (Exception e) {
-				logger.error(null, e);
-			}
+			logger.debug("Cache.removeAll() {}", appid);
+			KEY_PREFIXES.remove(appid);
 		}
 	}
 
 	@Override
 	public void removeAll(String appid, List<String> ids) {
 		if (ids != null && !StringUtils.isBlank(appid)) {
-			try {
-				IMap<?, ?> map = client().getMap(appid);
-				for (String id : ids) {
-					if (!StringUtils.isBlank(id)) {
-						map.delete(id);
-					}
+			for (String id : ids) {
+				if (!StringUtils.isBlank(id)) {
+					remove(appid, id);
 				}
-				logger.debug("Cache.removeAll() {} {}", appid, ids.size());
-			} catch (Exception e) {
-				logger.error(null, e);
 			}
+			logger.debug("Cache.removeAll() {} {}", appid, ids.size());
 		}
 	}
 
-	/**
-	 * @return true if asynchronous caching is enabled.
-	 */
-	private boolean isAsyncEnabled() {
-		return Config.getConfigBoolean("hc.async_enabled", false);
+	private boolean isExpired(Long ttl) {
+		if (ttl == null) {
+			return false;
+		}
+		return Utils.timestamp() > ttl;
+	}
+
+	private String key(String appid, String id) {
+		return KEY_PREFIXES.computeIfAbsent(appid, (k) -> Utils.getNewId()) + "_" + id;
 	}
 
 	////////////////////////////////////////////////////

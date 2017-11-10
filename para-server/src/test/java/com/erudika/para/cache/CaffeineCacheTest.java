@@ -17,21 +17,14 @@
  */
 package com.erudika.para.cache;
 
-import org.junit.AfterClass;
-
 /**
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class HazelcastCacheIT extends CacheTest {
+public class CaffeineCacheTest extends CacheTest {
 
-	public HazelcastCacheIT() {
-		super(new HazelcastCache());
-	}
-
-	@AfterClass
-	public static void tearDownClass() {
-		HazelcastUtils.shutdownClient();
+	public CaffeineCacheTest() {
+		super(new CaffeineCache());
 	}
 
 }

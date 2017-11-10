@@ -31,21 +31,21 @@ public class SearchModule extends AbstractModule {
 
 	protected void configure() {
 		String selectedSearch = Config.getConfigParam("search", "");
-		if (StringUtils.isBlank(selectedSearch)) {
-			bind(Search.class).to(LuceneSearch.class).asEagerSingleton();
+		if (StringUtils.isBlank(selectedSearch) || "lucene".equalsIgnoreCase(selectedSearch)) {
+			bindToDefault();
 		} else {
-			if ("lucene".equalsIgnoreCase(selectedSearch)) {
-				bind(Search.class).to(LuceneSearch.class).asEagerSingleton();
+			Search searchPlugin = loadExternalSearch(selectedSearch);
+			if (searchPlugin != null) {
+				bind(Search.class).to(searchPlugin.getClass()).asEagerSingleton();
 			} else {
-				Search searchPlugin = loadExternalSearch(selectedSearch);
-				if (searchPlugin != null) {
-					bind(Search.class).to(searchPlugin.getClass()).asEagerSingleton();
-				} else {
-					// default fallback - not implemented!
-					bind(Search.class).to(MockSearch.class).asEagerSingleton();
-				}
+				// default fallback - not implemented!
+				bindToDefault();
 			}
 		}
+	}
+
+	void bindToDefault() {
+		bind(Search.class).to(LuceneSearch.class).asEagerSingleton();
 	}
 
 	/**

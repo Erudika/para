@@ -62,6 +62,10 @@ public class MockCache implements Cache {
 
 	@Override
 	public <T> void put(String appid, String id, T object, Long ttlSeconds) {
+		if (ttlSeconds == null || ttlSeconds <= 0L) {
+			put(appid, id, object);
+			return;
+		}
 		if (!StringUtils.isBlank(id) && object != null && !StringUtils.isBlank(appid)) {
 			getMap(appid).put(id, object);
 			getMap(appid).put(id + ":ttl", Utils.timestamp() + ttlSeconds * 1000);
