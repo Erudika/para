@@ -294,6 +294,7 @@ public final class AWSDynamoUtils {
 			dbStatus.put("itemCount", td.getItemCount());
 			dbStatus.put("readCapacityUnits", td.getProvisionedThroughput().getReadCapacityUnits());
 			dbStatus.put("writeCapacityUnits", td.getProvisionedThroughput().getWriteCapacityUnits());
+			return dbStatus;
 		} catch (Exception e) {
 			logger.error(null, e);
 		}
