@@ -179,11 +179,11 @@ public abstract class SearchTest {
 
 	@Test
 	public void testFindQuery() {
-	assertTrue(s.findQuery(null, null).isEmpty());
+		assertTrue(s.findQuery(null, null).isEmpty());
 		assertFalse(s.findQuery("", "*").isEmpty()); // will find *
 		assertTrue(s.findQuery(u.getType(), "type:user").size() >= 3);
 		assertFalse(s.findQuery(u.getType(), "Ann*").isEmpty());
-//		assertFalse(s.findQuery(u.getType(), "name:ann smith").isEmpty());
+//		assertFalse(s.findQuery(u.getType(), "name:(Ann Smith)").isEmpty());
 		assertTrue(s.findQuery(null, "*").size() > 4);
 		// bad query syntax? - replace with *
 		assertFalse(s.findQuery(u.getType(), "AND").isEmpty());
