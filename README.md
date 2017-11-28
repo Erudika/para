@@ -73,34 +73,40 @@ manage multiple apps.
 
 ## Quick Start
 
-1. [Download the latest executable WAR](https://github.com/Erudika/para/releases)
-2. Execute it with `java -jar -Dconfig.file=./application.conf para-X.Y.Z.war`
-3. Call `curl localhost:8080/v1/_setup` to get the access and secret keys
-4. Open [Para Web Console](https://console.paraio.org) or integrate with one of the API clients below.
-
-Configuration properties belong in your `application.conf` file.
-Here's an example configuration for development purposes:
+Create a configuration file `application.conf` file in the same directory as the Para package.
+Here's an example default configuration:
 ```ini
 # the name of your app
-para.app_name = "My App"
+para.app_name = "Para"
 # or set it to 'production'
 para.env = "embedded"
 # if true, users can be created without verifying their emails
 para.security.allow_unverified_emails = false
 # if hosting multiple apps on Para, set this to false
 para.clients_can_access_root_app = true
-# no need for caching in dev mode
-para.cache_enabled = false
+# if false caching is disabled
+para.cache_enabled = true
 # change this to a random string
 para.app_secret_key = "b8db69a24a43f2ce134909f164a45263"
 # enable API request signature checking
 para.security.api_security = true
 ```
 
+1. [Download the latest executable WAR](https://github.com/Erudika/para/releases)
+2. Execute it with `java -jar -Dconfig.file=./application.conf para-*.war`
+3. Call `curl localhost:8080/v1/_setup` to get the access and secret keys for the root app (required)
+4. Install `para-cli` tool for easy access `npm install -g para-cli` (optional)
+5. Create a new "child" app for regular use (optional):
+```
+$ para-cli new-app "scoold" --name "My App" --endpoint "http://localhost:8080" --accessKey "app:para" --secretKey "{secret key for root app}"
+```
+6. Open [Para Web Console](https://console.paraio.org) or integrate with one of the API clients below.
+
+
 The quickest way to interact with Para is through the [command-line tool](https://github.com/Erudika/para-cli) (CLI):
 ```
 $ npm install -g para-cli
-$ para-cli ping
+$ para-cli ping --accessKey "app:myapp" --secretKey "secret_key" --endpoint "http://localhost:8080"
 $ echo "{\"type\":\"todo\", \"name\": \"buy milk\"}" > todo.json
 $ para-cli create todo.json --id todo1 --encodeId false
 $ para-cli read --id todo1
