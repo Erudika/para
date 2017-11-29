@@ -323,6 +323,50 @@ public final class LuceneUtils {
 		}
 	}
 
+	/**
+	 * Rebuilds an index. Reads objects from the data store and indexes them. Works on one DB table and index only.
+	 *
+	 * @param dao DAO for connecting to the DB - the primary data source
+	 * @param appid the index name (alias)
+	 * @param pager a Pager instance
+	 * @return true if successful, false if index doesn't exist or failed.
+	 */
+	public static boolean rebuildIndex(DAO dao, String appid, Pager... pager) {
+		if (StringUtils.isBlank(appid) || dao == null) {
+			return false;
+		}
+		try {
+			String indexName = appid.trim();
+			logger.info("Deleting '{}' index before rebuilding it...", indexName);
+			deleteIndex(indexName);
+			logger.debug("rebuildIndex(): {}", indexName);
+			int count = 0;
+			Pager p = getPager(pager);
+			p.setLimit(100);
+
+			List<ParaObject> list;
+			do {
+				list = dao.readPage(appid, p); // use appid!
+				ArrayList<Document> docs = new ArrayList<Document>(list.size());
+				logger.debug("rebuildIndex(): Read {} objects from table {}.", list.size(), indexName);
+				for (ParaObject obj : list) {
+					if (obj != null) {
+						// put objects from DB into the newly created index
+						Map<String, Object> data = ParaObjectUtils.getAnnotatedFields(obj, null, false);
+						docs.add(paraObjectToDocument(indexName, data));
+						count++;
+					}
+				}
+				indexDocuments(indexName, docs);
+			} while (!list.isEmpty());
+			logger.info("rebuildIndex(): Done. {} objects reindexed.", count);
+		} catch (Exception e) {
+			logger.warn(null, e);
+			return false;
+		}
+		return true;
+	}
+
 	private static void addDocumentFields(JsonNode object, Document doc, String prefix) {
 		try {
 			for (Iterator<Map.Entry<String, JsonNode>> iterator = object.fields(); iterator.hasNext();) {
