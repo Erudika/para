@@ -83,7 +83,7 @@
 		<awsJdkVer>1.11.213</awsJdkVer>
 		<jerseyVer>2.26</jerseyVer>
 		<springBootVer>1.5.8.RELEASE</springBootVer>
-		<luceneVer>6.6.1</luceneVer>
+		<luceneVer>7.1.0</luceneVer>
 	</properties>
 
 	<dependencies>

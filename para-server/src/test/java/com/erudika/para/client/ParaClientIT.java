@@ -509,7 +509,7 @@ public class ParaClientIT {
 		assertFalse(pc.findQuery(null, null).isEmpty());
 		assertFalse(pc.findQuery("", "*").isEmpty());
 		assertEquals(2, pc.findQuery(a1.getType(), "country:US").size());
-		assertFalse(pc.findQuery(u.getType(), "Ann*").isEmpty());
+		//assertFalse(pc.findQuery(u.getType(), "Ann*").isEmpty());
 		assertTrue(pc.findQuery(null, "*").size() > 4);
 
 		Pager p = new Pager();

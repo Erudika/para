@@ -926,7 +926,7 @@ public final class LuceneUtils {
 		}
 		MultiFieldQueryParser parser = new MultiFieldQueryParser(fields.toArray(new String[0]), new StandardAnalyzer());
 		parser.setAllowLeadingWildcard(false);
-		parser.setLowercaseExpandedTerms(false);
+		//parser.setLowercaseExpandedTerms(false); // DEPRECATED in Lucene 7.x
 		query = query.trim();
 		if (query.length() > 1 && query.startsWith("*")) {
 			query = query.substring(1);
