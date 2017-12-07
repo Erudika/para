@@ -98,7 +98,9 @@ para.security.api_security = true
 4. Install `para-cli` tool for easy access `npm install -g para-cli` (optional)
 5. Create a new "child" app for regular use (optional):
 ```
-$ para-cli new-app "scoold" --name "My App" --endpoint "http://localhost:8080" --accessKey "app:para" --secretKey "{secret key for root app}"
+# run setup and set endpoint to either 'http://localhost:8080' or 'https://paraio.com'
+$ para-cli setup
+$ para-cli new-app "scoold" --name "My App"
 ```
 6. Open [Para Web Console](https://console.paraio.org) or integrate with one of the API clients below.
 
@@ -106,7 +108,8 @@ $ para-cli new-app "scoold" --name "My App" --endpoint "http://localhost:8080" -
 The quickest way to interact with Para is through the [command-line tool](https://github.com/Erudika/para-cli) (CLI):
 ```
 $ npm install -g para-cli
-$ para-cli ping --accessKey "app:myapp" --secretKey "secret_key" --endpoint "http://localhost:8080"
+$ para-cli setup
+$ para-cli ping
 $ echo "{\"type\":\"todo\", \"name\": \"buy milk\"}" > todo.json
 $ para-cli create todo.json --id todo1 --encodeId false
 $ para-cli read --id todo1
