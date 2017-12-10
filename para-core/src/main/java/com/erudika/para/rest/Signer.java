@@ -68,6 +68,7 @@ public final class Signer extends AWS4Signer {
 	public Signer() {
 		super(false);
 		super.setServiceName(Config.PARA);
+		super.setRegionName("us-east-1");
 	}
 
 	/**
@@ -102,26 +103,13 @@ public final class Signer extends AWS4Signer {
 		resetDate();
 	}
 
-	@Override
-	public void setRegionName(String regionName) {
-	}
-
-	/**
-	 * The region name.
-	 * @return {@link Config#AWS_REGION}
-	 */
-	@Override
-	public String getRegionName() {
-		return Config.AWS_REGION;
-	}
-
 	private void resetDate() {
 		overriddenDate = null;
 	}
 
 	private Request<?> buildAWSRequest(String httpMethod, String endpoint, String resourcePath,
 			Map<String, String> headers, Map<String, String> params, InputStream entity) {
-		Request<?> r = new DefaultRequest<AmazonWebServiceRequest>(Config.PARA);
+		Request<AmazonWebServiceRequest> r = new DefaultRequest<>(Config.PARA);
 
 		if (!StringUtils.isBlank(httpMethod)) {
 			r.setHttpMethod(HttpMethodName.valueOf(httpMethod));
