@@ -19,12 +19,17 @@ package com.erudika.para.metrics;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
+import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.Timer;
+import com.erudika.para.rest.CustomResourceHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
+import java.util.concurrent.TimeUnit;
 
 /**
- * A centralized utility for creating and managing all application performance metrics.
+ * A centralized utility for managing and retrieving all Para performance metrics.
  * @author Jeremy Wiesner [jswiesner@gmail.com]
  */
 public final class MetricsUtils {
@@ -33,21 +38,37 @@ public final class MetricsUtils {
 
 	private MetricsUtils() { }
 
+	static {
+		// setup metrics reporting
+		MetricRegistry systemRegistry = SharedMetricRegistries.setDefault(SYSTEM_METRICS_NAME);
+		Logger metricsLogger = LoggerFactory.getLogger("paraMetrics");
+		Slf4jReporter.forRegistry(systemRegistry).outputTo(metricsLogger).build().start(1, TimeUnit.MINUTES);
+	}
+
 	/**
 	 * Instantiate timing of a particular class and method for a specific application.
 	 * @param appid the application that invoked the request
 	 * @param clazz the Class to be timed
-	 * @param methodName the name of the method to be timed
-	 * @return a closeable context that spans the timed method
+	 * @param names one or more unique names to identify the timer - usually a method name
+	 * @return a closeable context that encapsulates the timed method
 	 */
-	public static MetricsUtils.Context time(String appid, Class clazz, String methodName) {
-		Timer systemTimer = getTimer(SYSTEM_METRICS_NAME, clazz, methodName);
-		Timer appTimer = getTimer(appid, clazz, methodName);
+	public static MetricsUtils.Context time(String appid, Class clazz, String... names) {
+		String className = getClassName(clazz);
+		Timer systemTimer = getTimer(SYSTEM_METRICS_NAME, className, names);
+		Timer appTimer = appid == null || appid.isEmpty() ? null : getTimer(appid, className, names);
 		return new MetricsUtils.Context(systemTimer, appTimer);
 	}
 
-	private static Timer getTimer(String registryName, Class clazz, String methodName) {
-		return SharedMetricRegistries.getOrCreate(registryName).timer(MetricRegistry.name(clazz, methodName));
+	private static String getClassName(Class clazz) {
+		if (clazz.isAssignableFrom(CustomResourceHandler.class)) {
+			return clazz.getName();
+		} else {
+			return clazz.getSimpleName();
+		}
+	}
+
+	private static Timer getTimer(String registryName, String className, String... names) {
+		return SharedMetricRegistries.getOrCreate(registryName).timer(MetricRegistry.name(className, names));
 	}
 
 	/**
@@ -60,13 +81,15 @@ public final class MetricsUtils {
 
 		private Context(Timer systemTimer, Timer appTimer) {
 			this.systemContext = systemTimer.time();
-			this.appContext = appTimer.time();
+			this.appContext = appTimer == null ? null : appTimer.time();
 		}
 
 		@Override
 		public void close() {
 			systemContext.stop();
-			appContext.stop();
+			if (appContext != null) {
+				appContext.stop();
+			}
 		}
 	}
 }

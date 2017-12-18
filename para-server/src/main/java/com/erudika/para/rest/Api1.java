@@ -40,6 +40,8 @@ import static com.erudika.para.rest.RestUtils.getUpdateResponse;
 import static com.erudika.para.rest.RestUtils.pathParam;
 import static com.erudika.para.rest.RestUtils.queryParam;
 import static com.erudika.para.rest.RestUtils.queryParams;
+
+import com.erudika.para.metrics.MetricsUtils;
 import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.HumanTime;
@@ -182,30 +184,40 @@ public final class Api1 extends ResourceConfig {
 			Resource.Builder custom = Resource.builder(handler.getRelativePath());
 			custom.addMethod(GET).produces(JSON).handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
-					return handler.handleGet(ctx);
+					try (final MetricsUtils.Context context = MetricsUtils.time("appid", handler.getClass(), "handleGet")) {
+						return handler.handleGet(ctx);
+					}
 				}
 			});
 			custom.addMethod(POST).produces(JSON).consumes(JSON).
 					handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
-					return handler.handlePost(ctx);
+					try (final MetricsUtils.Context context = MetricsUtils.time("appid", handler.getClass(), "handlePost")) {
+						return handler.handlePost(ctx);
+					}
 				}
 			});
 			custom.addMethod(PATCH).produces(JSON).consumes(JSON).
 					handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
-					return handler.handlePatch(ctx);
+					try (final MetricsUtils.Context context = MetricsUtils.time("appid", handler.getClass(), "handlePatch")) {
+						return handler.handlePatch(ctx);
+					}
 				}
 			});
 			custom.addMethod(PUT).produces(JSON).consumes(JSON).
 					handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
-					return handler.handlePut(ctx);
+					try (final MetricsUtils.Context context = MetricsUtils.time("appid", handler.getClass(), "handlePut")) {
+						return handler.handlePut(ctx);
+					}
 				}
 			});
 			custom.addMethod(DELETE).produces(JSON).handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
-					return handler.handleDelete(ctx);
+					try (final MetricsUtils.Context context = MetricsUtils.time("appid", handler.getClass(), "handleDelete")) {
+						return handler.handleDelete(ctx);
+					}
 				}
 			});
 			registerResources(custom.build());

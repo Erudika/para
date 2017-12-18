@@ -23,6 +23,7 @@ import com.erudika.para.annotations.Cached;
 import com.erudika.para.annotations.Indexed;
 import com.erudika.para.cache.Cache;
 import com.erudika.para.core.ParaObject;
+import com.erudika.para.metrics.MetricsUtils;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
@@ -95,33 +96,34 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	 * @throws Throwable error
 	 */
 	public Object invoke(MethodInvocation mi) throws Throwable {
-		if (!Modifier.isPublic(mi.getMethod().getModifiers())) {
-			return mi.proceed();
-		}
-		Method m = mi.getMethod();
+		Method method = mi.getMethod();
+		Object[] args = mi.getArguments();
+		String appid = AOPUtils.getFirstArgOfString(args);
+
 		Method superMethod = null;
 		Indexed indexedAnno = null;
 		Cached cachedAnno = null;
 
 		try {
-			superMethod = DAO.class.getMethod(m.getName(), m.getParameterTypes());
+			superMethod = DAO.class.getMethod(method.getName(), method.getParameterTypes());
 			indexedAnno = Config.isSearchEnabled() ? superMethod.getAnnotation(Indexed.class) : null;
 			cachedAnno = Config.isCacheEnabled() ? superMethod.getAnnotation(Cached.class) : null;
 		} catch (Exception e) {
 			logger.error(null, e);
 		}
 
-		Object[] args = mi.getArguments();
-		String appid = AOPUtils.getFirstArgOfString(args);
-		List<IOListener> ioListeners = Para.getIOListeners();
+		if (!Modifier.isPublic(mi.getMethod().getModifiers())) {
+			return invokeDAO(appid, method, mi);
+		}
 
+		List<IOListener> ioListeners = Para.getIOListeners();
 		for (IOListener ioListener : ioListeners) {
 			ioListener.onPreInvoke(superMethod, args);
 			logger.debug("Executed {}.onPreInvoke().", ioListener.getClass().getName());
 		}
 
-		Object result = handleIndexing(indexedAnno, appid, args, mi);
-		Object cachingResult = handleCaching(cachedAnno, appid, args, mi);
+		Object result = handleIndexing(indexedAnno, appid, method, args, mi);
+		Object cachingResult = handleCaching(cachedAnno, appid, method, args, mi);
 
 		// we have a read operation without any result but we get back objects from cache
 		if (result == null && cachingResult != null) {
@@ -130,7 +132,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 
 		// both searching and caching are disabled - pass it through
 		if (indexedAnno == null && cachedAnno == null) {
-			result = mi.proceed();
+			result = invokeDAO(appid, method, mi);
 		}
 
 		for (IOListener ioListener : ioListeners) {
@@ -141,22 +143,28 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		return result;
 	}
 
-	private Object handleIndexing(Indexed indexedAnno, String appid, Object[] args, MethodInvocation mi)
+	private Object invokeDAO(String appid, Method daoMethod, MethodInvocation mi) throws Throwable {
+		try (final MetricsUtils.Context context = MetricsUtils.time(appid, daoMethod.getDeclaringClass(), daoMethod.getName())) {
+			return mi.proceed();
+		}
+	}
+
+	private Object handleIndexing(Indexed indexedAnno, String appid, Method daoMethod, Object[] args, MethodInvocation mi)
 			throws Throwable {
 		Object result = null;
 		if (indexedAnno != null) {
 			switch (indexedAnno.action()) {
 				case ADD:
-					result = addToIndexOperation(appid, args, mi);
+					result = addToIndexOperation(appid, daoMethod, args, mi);
 					break;
 				case REMOVE:
-					result = removeFromIndexOperation(appid, args, mi);
+					result = removeFromIndexOperation(appid, daoMethod, args, mi);
 					break;
 				case ADD_ALL:
-					result = addToIndexBatchOperation(appid, args, mi);
+					result = addToIndexBatchOperation(appid, daoMethod, args, mi);
 					break;
 				case REMOVE_ALL:
-					result = removeFromIndexBatchOperation(appid, args, mi);
+					result = removeFromIndexBatchOperation(appid, daoMethod, args, mi);
 					break;
 				default:
 					break;
@@ -165,13 +173,13 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		return result;
 	}
 
-	private Object handleCaching(Cached cachedAnno, String appid, Object[] args, MethodInvocation mi)
+	private Object handleCaching(Cached cachedAnno, String appid, Method daoMethod, Object[] args, MethodInvocation mi)
 			throws Throwable {
 		Object result = null;
 		if (cachedAnno != null) {
 			switch (cachedAnno.action()) {
 				case GET:
-					result = readFromCacheOperation(appid, args, mi);
+					result = readFromCacheOperation(appid, daoMethod, args, mi);
 					break;
 				case PUT:
 					addToCacheOperation(appid, args);
@@ -180,7 +188,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 					removeFromCacheOperation(appid, args);
 					break;
 				case GET_ALL:
-					result = readFromCacheBatchOperation(appid, args, mi);
+					result = readFromCacheBatchOperation(appid, daoMethod, args, mi);
 					break;
 				case PUT_ALL:
 					addToCacheBatchOperation(appid, args);
@@ -195,18 +203,20 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		return result;
 	}
 
-	private Object addToIndexOperation(String appid, Object[] args, MethodInvocation mi) throws Throwable {
+	private Object addToIndexOperation(String appid, Method daoMethod, Object[] args, MethodInvocation mi) throws Throwable {
 		ParaObject addMe = AOPUtils.getArgOfParaObject(args);
 		String[] errors = ValidationUtils.validateObject(addMe);
 		Object result = null;
 		if (addMe != null && errors.length == 0) {
 			AOPUtils.checkAndFixType(addMe);
 			if (addMe.getStored()) {
-				result = mi.proceed();
+				result = invokeDAO(appid, daoMethod, mi);
 			}
 			if (addMe.getIndexed()) {
-				search.index(appid, addMe);
-				logger.debug("{}: Indexed {}->{}", getClass().getSimpleName(), appid, addMe.getId());
+				try (final MetricsUtils.Context context = MetricsUtils.time(appid, search.getClass(), "index")) {
+					search.index(appid, addMe);
+					logger.debug("{}: Indexed {}->{}", getClass().getSimpleName(), appid, addMe.getId());
+				}
 			}
 		} else {
 			logger.warn("{}: Invalid object {}->{} errors: [{}]. Changes weren't persisted.",
@@ -215,23 +225,27 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		return result;
 	}
 
-	private Object removeFromIndexOperation(String appid, Object[] args, MethodInvocation mi) throws Throwable {
-		Object result = mi.proceed(); // delete from DB even if "isStored = false"
+	private Object removeFromIndexOperation(String appid, Method daoMethod, Object[] args, MethodInvocation mi) throws Throwable {
+		Object result = invokeDAO(appid, daoMethod, mi); // delete from DB even if "isStored = false"
 		ParaObject removeMe = AOPUtils.getArgOfParaObject(args);
 		AOPUtils.checkAndFixType(removeMe);
-		search.unindex(appid, removeMe); // remove from index even if "isIndexed = false"
-		logger.debug("{}: Unindexed {}->{}", getClass().getSimpleName(), appid,
-				(removeMe == null) ? null : removeMe.getId());
+		try (final MetricsUtils.Context context = MetricsUtils.time(appid, search.getClass(), "unindex")) {
+			search.unindex(appid, removeMe); // remove from index even if "isIndexed = false"
+			logger.debug("{}: Unindexed {}->{}", getClass().getSimpleName(), appid,
+					(removeMe == null) ? null : removeMe.getId());
+		}
 		return result;
 	}
 
-	private Object addToIndexBatchOperation(String appid, Object[] args, MethodInvocation mi)
+	private Object addToIndexBatchOperation(String appid, Method daoMethod, Object[] args, MethodInvocation mi)
 			throws Throwable {
 		List<ParaObject> addUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
 		List<ParaObject> indexUs = new LinkedList<>();
 		List<ParaObject> removedObjects = AOPUtils.removeNotStoredNotIndexed(addUs, indexUs);
-		Object result = mi.proceed();
-		search.indexAll(appid, indexUs);
+		Object result = invokeDAO(appid, daoMethod, mi);
+		try (final MetricsUtils.Context context = MetricsUtils.time(appid, search.getClass(), "indexAll")) {
+			search.indexAll(appid, indexUs);
+		}
 		// restore removed objects - needed if we have to cache them later
 		// do not remove this line - breaks tests
 		if (addUs != null) {
@@ -241,25 +255,31 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		return result;
 	}
 
-	private Object removeFromIndexBatchOperation(String appid, Object[] args, MethodInvocation mi) throws Throwable {
+	private Object removeFromIndexBatchOperation(String appid, Method daoMethod, Object[] args, MethodInvocation mi) throws Throwable {
 		List<ParaObject> removeUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
-		Object result = mi.proceed(); // delete from DB even if "isStored = false"
-		search.unindexAll(appid, removeUs); // remove from index even if "isIndexed = false"
+		Object result = invokeDAO(appid, daoMethod, mi); // delete from DB even if "isStored = false"
+		try (final MetricsUtils.Context context = MetricsUtils.time(appid, search.getClass(), "unindexAll")) {
+			search.unindexAll(appid, removeUs); // remove from index even if "isIndexed = false"
+		}
 		logger.debug("{}: Unindexed all {}->{}", getClass().getSimpleName(),
 				appid, (removeUs == null) ? null : removeUs.size());
 		return result;
 	}
 
-	private Object readFromCacheOperation(String appid, Object[] args, MethodInvocation mi) throws Throwable {
+	private Object readFromCacheOperation(String appid, Method daoMethod, Object[] args, MethodInvocation mi) throws Throwable {
 		Object result = null;
 		String getMeId = (args != null && args.length > 1) ? (String) args[1] : null;
 		if (cache.contains(appid, getMeId)) {
-			result = cache.get(appid, getMeId);
+			try (final MetricsUtils.Context context = MetricsUtils.time(appid, cache.getClass(), "get")) {
+				result = cache.get(appid, getMeId);
+			}
 			logger.debug("{}: Cache hit: {}->{}", getClass().getSimpleName(), appid, getMeId);
 		} else if (getMeId != null) {
-			result = mi.proceed();
+			result = invokeDAO(appid, daoMethod, mi);
 			if (result != null && ((ParaObject) result).getCached()) {
-				cache.put(appid, getMeId, result);
+				try (final MetricsUtils.Context context = MetricsUtils.time(appid, cache.getClass(), "put")) {
+					cache.put(appid, getMeId, result);
+				}
 				logger.debug("{}: Cache miss: {}->{}", getClass().getSimpleName(), appid, getMeId);
 			}
 		}
@@ -269,7 +289,9 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	private void addToCacheOperation(String appid, Object[] args) {
 		ParaObject putMe = AOPUtils.getArgOfParaObject(args);
 		if (putMe != null && putMe.getCached()) {
-			cache.put(appid, putMe.getId(), putMe);
+			try (final MetricsUtils.Context context = MetricsUtils.time(appid, cache.getClass(), "put")) {
+				cache.put(appid, putMe.getId(), putMe);
+			}
 			logger.debug("{}: Cache put: {}->{}", getClass().getSimpleName(), appid, putMe.getId());
 		}
 	}
@@ -277,28 +299,35 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	private void removeFromCacheOperation(String appid, Object[] args) {
 		ParaObject deleteMe = AOPUtils.getArgOfParaObject(args);
 		if (deleteMe != null) { // clear from cache even if "isCached = false"
-			cache.remove(appid, deleteMe.getId());
+			try (final MetricsUtils.Context context = MetricsUtils.time(appid, cache.getClass(), "remove")) {
+				cache.remove(appid, deleteMe.getId());
+			}
 			logger.debug("{}: Cache delete: {}->{}", getClass().getSimpleName(), appid, deleteMe.getId());
 		}
 	}
 
-	private Object readFromCacheBatchOperation(String appid, Object[] args, MethodInvocation mi) throws Throwable {
+	private Object readFromCacheBatchOperation(String appid, Method daoMethod, Object[] args, MethodInvocation mi) throws Throwable {
 		Object result = Collections.emptyMap();
 		List<String> getUs = AOPUtils.getArgOfListOfType(args, String.class);
 		if (getUs != null) {
-			Map<String, ParaObject> cached = cache.getAll(appid, getUs);
+			Map<String, ParaObject> cached;
+			try (final MetricsUtils.Context context = MetricsUtils.time(appid, cache.getClass(), "getAll")) {
+				cached = cache.getAll(appid, getUs);
+			}
 			logger.debug("{}: Cache getAll(): {}->{}", getClass().getSimpleName(), appid, getUs);
 			// hit the database if even a single object is missing from cache, then cache it
 			if (cached.size() < getUs.size()) {
 				logger.debug("{}: Cache getAll() will read from DB: {}", getClass().getSimpleName(), appid);
-				result = mi.proceed();
+				result = invokeDAO(appid, daoMethod, mi);
 				if (result != null) {
 					for (String id : getUs) {
 						logger.debug("{}: Cache getAll() got from DB: {}", getClass().getSimpleName(), id);
 						if (!cached.containsKey(id)) {
 							ParaObject obj = ((Map<String, ParaObject>) result).get(id);
 							if (obj != null && obj.getCached()) {
-								cache.put(appid, obj.getId(), obj);
+								try (final MetricsUtils.Context context = MetricsUtils.time(appid, cache.getClass(), "put")) {
+									cache.put(appid, obj.getId(), obj);
+								}
 								logger.debug("{}: Cache miss on readAll: {}->{}", getClass().getSimpleName(), appid, id);
 							}
 						}
@@ -322,7 +351,9 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 				}
 			}
 			if (!map1.isEmpty()) {
-				cache.putAll(appid, map1);
+				try (final MetricsUtils.Context context = MetricsUtils.time(appid, cache.getClass(), "putAll")) {
+					cache.putAll(appid, map1);
+				}
 			}
 			logger.debug("{}: Cache put page: {}->{}", getClass().getSimpleName(), appid, map1.keySet());
 		}
@@ -336,7 +367,9 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 				list.add(paraObject.getId());
 			}
 			// clear from cache even if "isCached = false"
-			cache.removeAll(appid, list);
+			try (final MetricsUtils.Context context = MetricsUtils.time(appid, cache.getClass(), "removeAll")) {
+				cache.removeAll(appid, list);
+			}
 			logger.debug("{}: Cache delete page: {}->{}", getClass().getSimpleName(), appid, list);
 		}
 	}

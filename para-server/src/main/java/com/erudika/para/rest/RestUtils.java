@@ -24,6 +24,7 @@ import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
+import com.erudika.para.metrics.MetricsUtils;
 import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
@@ -398,12 +399,14 @@ public final class RestUtils {
 	 * @return status code 200 or 404
 	 */
 	public static Response getReadResponse(App app, ParaObject content) {
-		// app can't modify other apps except itself
-		if (app != null && content != null &&
-				checkImplicitAppPermissions(app, content) && checkIfUserCanModifyObject(app, content)) {
-			return Response.ok(content).build();
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "read")) {
+			// app can't modify other apps except itself
+			if (app != null && content != null &&
+					checkImplicitAppPermissions(app, content) && checkIfUserCanModifyObject(app, content)) {
+				return Response.ok(content).build();
+			}
+			return getStatusResponse(Response.Status.NOT_FOUND);
 		}
-		return getStatusResponse(Response.Status.NOT_FOUND);
 	}
 
 	/**
@@ -414,42 +417,44 @@ public final class RestUtils {
 	 * @return a status code 201 or 400
 	 */
 	public static Response getCreateResponse(App app, String type, InputStream is) {
-		ParaObject content;
-		Response entityRes = getEntity(is, Map.class);
-		if (entityRes.getStatusInfo() == Response.Status.OK) {
-			Map<String, Object> newContent = (Map<String, Object>) entityRes.getEntity();
-			if (!StringUtils.isBlank(type)) {
-				newContent.put(Config._TYPE, type);
-			}
-			content = ParaObjectUtils.setAnnotatedFields(newContent);
-			if (app != null && content != null && isNotAnApp(type)) {
-				warnIfUserTypeDetected(type);
-				content.setAppid(app.getAppIdentifier());
-				setCreatorid(app, content);
-				int typesCount = app.getDatatypes().size();
-				app.addDatatypes(content);
-				// The reason why we do two validation passes is because we want to return
-				// the errors through the API and notify the end user.
-				// This is the primary validation pass (validates not only core POJOS but also user defined objects).
-				String[] errors = validateObject(app, content);
-				if (errors.length == 0) {
-					// Secondary validation pass called here. Object is validated again before being created
-					// See: IndexAndCacheAspect.java
-					String id = content.create();
-					if (id != null) {
-						// new type added so update app object
-						if (typesCount < app.getDatatypes().size()) {
-							app.update();
-						}
-						return Response.created(URI.create(Utils.urlEncode(content.getObjectURI()))).
-								entity(content).build();
-					}
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "create")) {
+			ParaObject content;
+			Response entityRes = getEntity(is, Map.class);
+			if (entityRes.getStatusInfo() == Response.Status.OK) {
+				Map<String, Object> newContent = (Map<String, Object>) entityRes.getEntity();
+				if (!StringUtils.isBlank(type)) {
+					newContent.put(Config._TYPE, type);
 				}
-				return getStatusResponse(Response.Status.BAD_REQUEST, errors);
+				content = ParaObjectUtils.setAnnotatedFields(newContent);
+				if (app != null && content != null && isNotAnApp(type)) {
+					warnIfUserTypeDetected(type);
+					content.setAppid(app.getAppIdentifier());
+					setCreatorid(app, content);
+					int typesCount = app.getDatatypes().size();
+					app.addDatatypes(content);
+					// The reason why we do two validation passes is because we want to return
+					// the errors through the API and notify the end user.
+					// This is the primary validation pass (validates not only core POJOS but also user defined objects).
+					String[] errors = validateObject(app, content);
+					if (errors.length == 0) {
+						// Secondary validation pass called here. Object is validated again before being created
+						// See: IndexAndCacheAspect.java
+						String id = content.create();
+						if (id != null) {
+							// new type added so update app object
+							if (typesCount < app.getDatatypes().size()) {
+								app.update();
+							}
+							return Response.created(URI.create(Utils.urlEncode(content.getObjectURI()))).
+									entity(content).build();
+						}
+					}
+					return getStatusResponse(Response.Status.BAD_REQUEST, errors);
+				}
+				return getStatusResponse(Response.Status.BAD_REQUEST, "Failed to create object.");
 			}
-			return getStatusResponse(Response.Status.BAD_REQUEST, "Failed to create object.");
+			return entityRes;
 		}
-		return entityRes;
 	}
 
 	/**
@@ -461,41 +466,43 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getOverwriteResponse(App app, String id, String type, InputStream is) {
-		ParaObject content;
-		Response entityRes = getEntity(is, Map.class);
-		if (entityRes.getStatusInfo() == Response.Status.OK) {
-			Map<String, Object> newContent = (Map<String, Object>) entityRes.getEntity();
-			if (!StringUtils.isBlank(type)) {
-				newContent.put(Config._TYPE, type);
-			}
-			content = ParaObjectUtils.setAnnotatedFields(newContent);
-			if (app != null && content != null && !StringUtils.isBlank(id) && isNotAnApp(type)) {
-				warnIfUserTypeDetected(type);
-				content.setType(type);
-				content.setAppid(app.getAppIdentifier());
-				content.setId(id);
-				setCreatorid(app, content);
-				int typesCount = app.getDatatypes().size();
-				app.addDatatypes(content);
-				// The reason why we do two validation passes is because we want to return
-				// the errors through the API and notify the end user.
-				// This is the primary validation pass (validates not only core POJOS but also user defined objects).
-				String[] errors = validateObject(app, content);
-				if (errors.length == 0 && checkIfUserCanModifyObject(app, content)) {
-					// Secondary validation pass called here. Object is validated again before being created
-					// See: IndexAndCacheAspect.java
-					CoreUtils.getInstance().overwrite(app.getAppIdentifier(), content);
-					// new type added so update app object
-					if (typesCount < app.getDatatypes().size()) {
-						app.update();
-					}
-					return Response.ok(content).build();
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "overwrite")) {
+			ParaObject content;
+			Response entityRes = getEntity(is, Map.class);
+			if (entityRes.getStatusInfo() == Response.Status.OK) {
+				Map<String, Object> newContent = (Map<String, Object>) entityRes.getEntity();
+				if (!StringUtils.isBlank(type)) {
+					newContent.put(Config._TYPE, type);
 				}
-				return getStatusResponse(Response.Status.BAD_REQUEST, errors);
+				content = ParaObjectUtils.setAnnotatedFields(newContent);
+				if (app != null && content != null && !StringUtils.isBlank(id) && isNotAnApp(type)) {
+					warnIfUserTypeDetected(type);
+					content.setType(type);
+					content.setAppid(app.getAppIdentifier());
+					content.setId(id);
+					setCreatorid(app, content);
+					int typesCount = app.getDatatypes().size();
+					app.addDatatypes(content);
+					// The reason why we do two validation passes is because we want to return
+					// the errors through the API and notify the end user.
+					// This is the primary validation pass (validates not only core POJOS but also user defined objects).
+					String[] errors = validateObject(app, content);
+					if (errors.length == 0 && checkIfUserCanModifyObject(app, content)) {
+						// Secondary validation pass called here. Object is validated again before being created
+						// See: IndexAndCacheAspect.java
+						CoreUtils.getInstance().overwrite(app.getAppIdentifier(), content);
+						// new type added so update app object
+						if (typesCount < app.getDatatypes().size()) {
+							app.update();
+						}
+						return Response.ok(content).build();
+					}
+					return getStatusResponse(Response.Status.BAD_REQUEST, errors);
+				}
+				return getStatusResponse(Response.Status.BAD_REQUEST, "Failed to overwrite object.");
 			}
-			return getStatusResponse(Response.Status.BAD_REQUEST, "Failed to overwrite object.");
+			return entityRes;
 		}
-		return entityRes;
 	}
 
 	/**
@@ -506,34 +513,36 @@ public final class RestUtils {
 	 * @return a status code 200 or 400 or 404
 	 */
 	public static Response getUpdateResponse(App app, ParaObject object, InputStream is) {
-		if (app != null && object != null) {
-			Map<String, Object> newContent;
-			Response entityRes = getEntity(is, Map.class);
-			String[] errors = {};
-			if (entityRes.getStatusInfo() == Response.Status.OK) {
-				newContent = (Map<String, Object>) entityRes.getEntity();
-			} else {
-				return entityRes;
-			}
-			object.setAppid(app.getAppIdentifier());
-			if (newContent.containsKey("_voteup") || newContent.containsKey("_votedown")) {
-				return getVotingResponse(object, newContent);
-			} else {
-				ParaObjectUtils.setAnnotatedFields(object, newContent, Locked.class);
-				// app can't modify other apps except itself
-				if (checkImplicitAppPermissions(app, object)) {
-					// This is the primary validation pass (validates not only core POJOS but also user defined objects).
-					errors = validateObject(app, object);
-					if (errors.length == 0 && checkIfUserCanModifyObject(app, object)) {
-						// Secondary validation pass: object is validated again before being updated
-						object.update();
-						return Response.ok(object).build();
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "update")) {
+			if (app != null && object != null) {
+				Map<String, Object> newContent;
+				Response entityRes = getEntity(is, Map.class);
+				String[] errors = {};
+				if (entityRes.getStatusInfo() == Response.Status.OK) {
+					newContent = (Map<String, Object>) entityRes.getEntity();
+				} else {
+					return entityRes;
+				}
+				object.setAppid(app.getAppIdentifier());
+				if (newContent.containsKey("_voteup") || newContent.containsKey("_votedown")) {
+					return getVotingResponse(object, newContent);
+				} else {
+					ParaObjectUtils.setAnnotatedFields(object, newContent, Locked.class);
+					// app can't modify other apps except itself
+					if (checkImplicitAppPermissions(app, object)) {
+						// This is the primary validation pass (validates not only core POJOS but also user defined objects).
+						errors = validateObject(app, object);
+						if (errors.length == 0 && checkIfUserCanModifyObject(app, object)) {
+							// Secondary validation pass: object is validated again before being updated
+							object.update();
+							return Response.ok(object).build();
+						}
 					}
 				}
+				return getStatusResponse(Response.Status.BAD_REQUEST, errors);
 			}
-			return getStatusResponse(Response.Status.BAD_REQUEST, errors);
+			return getStatusResponse(Response.Status.NOT_FOUND);
 		}
-		return getStatusResponse(Response.Status.NOT_FOUND);
 	}
 
 	/**
@@ -543,15 +552,17 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getDeleteResponse(App app, ParaObject content) {
-		if (app != null && content != null && content.getId() != null && content.getAppid() != null) {
-			if (checkImplicitAppPermissions(app, content) && checkIfUserCanModifyObject(app, content)) {
-				content.setAppid(app.getAppIdentifier());
-				content.delete();
-				return Response.ok().build();
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "delete")) {
+			if (app != null && content != null && content.getId() != null && content.getAppid() != null) {
+				if (checkImplicitAppPermissions(app, content) && checkIfUserCanModifyObject(app, content)) {
+					content.setAppid(app.getAppIdentifier());
+					content.delete();
+					return Response.ok().build();
+				}
+				return getStatusResponse(Response.Status.BAD_REQUEST);
 			}
-			return getStatusResponse(Response.Status.BAD_REQUEST);
+			return getStatusResponse(Response.Status.NOT_FOUND);
 		}
-		return getStatusResponse(Response.Status.NOT_FOUND);
 	}
 
 	/**
@@ -561,16 +572,18 @@ public final class RestUtils {
 	 * @return status code 200 or 400
 	 */
 	public static Response getBatchReadResponse(App app, List<String> ids) {
-		if (app != null && ids != null && !ids.isEmpty()) {
-			ArrayList<ParaObject> results = new ArrayList<>(ids.size());
-			for (ParaObject result : Para.getDAO().readAll(app.getAppIdentifier(), ids, true).values()) {
-				if (checkImplicitAppPermissions(app, result) && checkIfUserCanModifyObject(app, result)) {
-					results.add(result);
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "batch", "read")) {
+			if (app != null && ids != null && !ids.isEmpty()) {
+				ArrayList<ParaObject> results = new ArrayList<>(ids.size());
+				for (ParaObject result : Para.getDAO().readAll(app.getAppIdentifier(), ids, true).values()) {
+					if (checkImplicitAppPermissions(app, result) && checkIfUserCanModifyObject(app, result)) {
+						results.add(result);
+					}
 				}
+				return Response.ok(results).build();
+			} else {
+				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing ids.");
 			}
-			return Response.ok(results).build();
-		} else {
-			return getStatusResponse(Response.Status.BAD_REQUEST, "Missing ids.");
 		}
 	}
 
@@ -581,42 +594,44 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getBatchCreateResponse(final App app, InputStream is) {
-		if (app != null) {
-			final LinkedList<ParaObject> newObjects = new LinkedList<>();
-			Response entityRes = getEntity(is, List.class);
-			if (entityRes.getStatusInfo() == Response.Status.OK) {
-				List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
-				for (Map<String, Object> object : items) {
-					// can't create multiple apps in batch
-					String type = (String) object.get(Config._TYPE);
-					if (isNotAnApp(type)) {
-						warnIfUserTypeDetected(type);
-						ParaObject pobj = ParaObjectUtils.setAnnotatedFields(object);
-						if (pobj != null && isValidObject(app, pobj)) {
-							pobj.setAppid(app.getAppIdentifier());
-							setCreatorid(app, pobj);
-							newObjects.add(pobj);
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "batch", "create")) {
+			if (app != null) {
+				final LinkedList<ParaObject> newObjects = new LinkedList<>();
+				Response entityRes = getEntity(is, List.class);
+				if (entityRes.getStatusInfo() == Response.Status.OK) {
+					List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
+					for (Map<String, Object> object : items) {
+						// can't create multiple apps in batch
+						String type = (String) object.get(Config._TYPE);
+						if (isNotAnApp(type)) {
+							warnIfUserTypeDetected(type);
+							ParaObject pobj = ParaObjectUtils.setAnnotatedFields(object);
+							if (pobj != null && isValidObject(app, pobj)) {
+								pobj.setAppid(app.getAppIdentifier());
+								setCreatorid(app, pobj);
+								newObjects.add(pobj);
+							}
 						}
 					}
+
+					Para.getDAO().createAll(app.getAppIdentifier(), newObjects);
+
+					Para.asyncExecute(new Runnable() {
+						public void run() {
+							int typesCount = app.getDatatypes().size();
+							app.addDatatypes(newObjects.toArray(new ParaObject[0]));
+							if (typesCount < app.getDatatypes().size()) {
+								app.update();
+							}
+						}
+					});
+				} else {
+					return entityRes;
 				}
-
-				Para.getDAO().createAll(app.getAppIdentifier(), newObjects);
-
-				Para.asyncExecute(new Runnable() {
-					public void run() {
-						int typesCount = app.getDatatypes().size();
-						app.addDatatypes(newObjects.toArray(new ParaObject[0]));
-						if (typesCount < app.getDatatypes().size()) {
-							app.update();
-						}
-					}
-				});
+				return Response.ok(newObjects).build();
 			} else {
-				return entityRes;
+				return getStatusResponse(Response.Status.BAD_REQUEST);
 			}
-			return Response.ok(newObjects).build();
-		} else {
-			return getStatusResponse(Response.Status.BAD_REQUEST);
 		}
 	}
 
@@ -629,25 +644,27 @@ public final class RestUtils {
 	 */
 	public static Response getBatchUpdateResponse(App app, Map<String, ParaObject> oldObjects,
 			List<Map<String, Object>> newProperties) {
-		if (app != null && oldObjects != null && newProperties != null) {
-			LinkedList<ParaObject> updatedObjects = new LinkedList<>();
-			for (Map<String, Object> newProps : newProperties) {
-				if (newProps != null && newProps.containsKey(Config._ID)) {
-					ParaObject oldObject = oldObjects.get((String) newProps.get(Config._ID));
-					// updating apps in batch is not allowed
-					if (oldObject != null && checkImplicitAppPermissions(app, oldObject)) {
-						ParaObject updatedObject = ParaObjectUtils.setAnnotatedFields(oldObject, newProps, Locked.class);
-						if (isValidObject(app, updatedObject) && checkIfUserCanModifyObject(app, updatedObject)) {
-							updatedObject.setAppid(app.getAppIdentifier());
-							updatedObjects.add(updatedObject);
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "batch", "update")) {
+			if (app != null && oldObjects != null && newProperties != null) {
+				LinkedList<ParaObject> updatedObjects = new LinkedList<>();
+				for (Map<String, Object> newProps : newProperties) {
+					if (newProps != null && newProps.containsKey(Config._ID)) {
+						ParaObject oldObject = oldObjects.get((String) newProps.get(Config._ID));
+						// updating apps in batch is not allowed
+						if (oldObject != null && checkImplicitAppPermissions(app, oldObject)) {
+							ParaObject updatedObject = ParaObjectUtils.setAnnotatedFields(oldObject, newProps, Locked.class);
+							if (isValidObject(app, updatedObject) && checkIfUserCanModifyObject(app, updatedObject)) {
+								updatedObject.setAppid(app.getAppIdentifier());
+								updatedObjects.add(updatedObject);
+							}
 						}
 					}
 				}
+				Para.getDAO().updateAll(app.getAppIdentifier(), updatedObjects);
+				return Response.ok(updatedObjects).build();
+			} else {
+				return getStatusResponse(Response.Status.BAD_REQUEST);
 			}
-			Para.getDAO().updateAll(app.getAppIdentifier(), updatedObjects);
-			return Response.ok(updatedObjects).build();
-		} else {
-			return getStatusResponse(Response.Status.BAD_REQUEST);
 		}
 	}
 
@@ -658,26 +675,28 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getBatchDeleteResponse(App app, List<String> ids) {
-		LinkedList<ParaObject> objects = new LinkedList<>();
-		if (ids != null && !ids.isEmpty()) {
-			if (ids.size() <= Config.MAX_ITEMS_PER_PAGE) {
-				for (ParaObject pobj : Para.getDAO().readAll(app.getAppIdentifier(), ids, true).values()) {
-					if (pobj != null && pobj.getId() != null && pobj.getType() != null) {
-						// deleting apps in batch is not allowed
-						if (isNotAnApp(pobj.getType()) && checkIfUserCanModifyObject(app, pobj)) {
-							objects.add(pobj);
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "batch", "delete")) {
+			LinkedList<ParaObject> objects = new LinkedList<>();
+			if (ids != null && !ids.isEmpty()) {
+				if (ids.size() <= Config.MAX_ITEMS_PER_PAGE) {
+					for (ParaObject pobj : Para.getDAO().readAll(app.getAppIdentifier(), ids, true).values()) {
+						if (pobj != null && pobj.getId() != null && pobj.getType() != null) {
+							// deleting apps in batch is not allowed
+							if (isNotAnApp(pobj.getType()) && checkIfUserCanModifyObject(app, pobj)) {
+								objects.add(pobj);
+							}
 						}
 					}
+					Para.getDAO().deleteAll(app.getAppIdentifier(), objects);
+				} else {
+					return getStatusResponse(Response.Status.BAD_REQUEST,
+							"Limit reached. Maximum number of items to delete is " + Config.MAX_ITEMS_PER_PAGE);
 				}
-				Para.getDAO().deleteAll(app.getAppIdentifier(), objects);
 			} else {
-				return getStatusResponse(Response.Status.BAD_REQUEST,
-						"Limit reached. Maximum number of items to delete is " + Config.MAX_ITEMS_PER_PAGE);
+				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing ids.");
 			}
-		} else {
-			return getStatusResponse(Response.Status.BAD_REQUEST, "Missing ids.");
+			return Response.ok().build();
 		}
-		return Response.ok().build();
 	}
 
 	/////////////////////////////////////////////
@@ -696,41 +715,43 @@ public final class RestUtils {
 	 */
 	public static Response readLinksHandler(ParaObject pobj, String id2, String type2,
 			MultivaluedMap<String, String> params, Pager pager, boolean childrenOnly) {
-		String query = params.getFirst("q");
-		if (type2 != null) {
-			if (id2 != null) {
-				return Response.ok(pobj.isLinked(type2, id2), MediaType.TEXT_PLAIN_TYPE).build();
-			} else {
-				List<ParaObject> items = new ArrayList<>();
-				if (childrenOnly) {
-					if (params.containsKey("count")) {
-						pager.setCount(pobj.countChildren(type2));
+		try (final MetricsUtils.Context context = MetricsUtils.time(null, RestUtils.class, "links", "read")) {
+			String query = params.getFirst("q");
+			if (type2 != null) {
+				if (id2 != null) {
+					return Response.ok(pobj.isLinked(type2, id2), MediaType.TEXT_PLAIN_TYPE).build();
+				} else {
+					List<ParaObject> items = new ArrayList<>();
+					if (childrenOnly) {
+						if (params.containsKey("count")) {
+							pager.setCount(pobj.countChildren(type2));
+						} else {
+							if (params.containsKey("field") && params.containsKey("term")) {
+								items = pobj.getChildren(type2, params.getFirst("field"), params.getFirst("term"), pager);
+							} else {
+								if (StringUtils.isBlank(query)) {
+									items = pobj.getChildren(type2, pager);
+								} else {
+									items = pobj.findChildren(type2, query, pager);
+								}
+							}
+						}
 					} else {
-						if (params.containsKey("field") && params.containsKey("term")) {
-							items = pobj.getChildren(type2, params.getFirst("field"), params.getFirst("term"), pager);
+						if (params.containsKey("count")) {
+							pager.setCount(pobj.countLinks(type2));
 						} else {
 							if (StringUtils.isBlank(query)) {
-								items = pobj.getChildren(type2, pager);
+								items = pobj.getLinkedObjects(type2, pager);
 							} else {
-								items = pobj.findChildren(type2, query, pager);
+								items = pobj.findLinkedObjects(type2, params.getFirst("field"), query, pager);
 							}
 						}
 					}
-				} else {
-					if (params.containsKey("count")) {
-						pager.setCount(pobj.countLinks(type2));
-					} else {
-						if (StringUtils.isBlank(query)) {
-							items = pobj.getLinkedObjects(type2, pager);
-						} else {
-							items = pobj.findLinkedObjects(type2, params.getFirst("field"), query, pager);
-						}
-					}
+					return Response.ok(buildPageResponse(items, pager)).build();
 				}
-				return Response.ok(buildPageResponse(items, pager)).build();
+			} else {
+				return getStatusResponse(Response.Status.BAD_REQUEST, "Parameter 'type' is missing.");
 			}
-		} else {
-			return getStatusResponse(Response.Status.BAD_REQUEST, "Parameter 'type' is missing.");
 		}
 	}
 
@@ -743,16 +764,18 @@ public final class RestUtils {
 	 * @return a Response
 	 */
 	public static Response deleteLinksHandler(ParaObject pobj, String id2, String type2, boolean childrenOnly) {
-		if (type2 == null && id2 == null) {
-			pobj.unlinkAll();
-		} else if (type2 != null) {
-			if (id2 != null) {
-				pobj.unlink(type2, id2);
-			} else if (childrenOnly) {
-				pobj.deleteChildren(type2);
+		try (final MetricsUtils.Context context = MetricsUtils.time(null, RestUtils.class, "links", "delete")) {
+			if (type2 == null && id2 == null) {
+				pobj.unlinkAll();
+			} else if (type2 != null) {
+				if (id2 != null) {
+					pobj.unlink(type2, id2);
+				} else if (childrenOnly) {
+					pobj.deleteChildren(type2);
+				}
 			}
+			return Response.ok().build();
 		}
-		return Response.ok().build();
 	}
 
 	/**
@@ -762,15 +785,17 @@ public final class RestUtils {
 	 * @return a Response
 	 */
 	public static Response createLinksHandler(ParaObject pobj, String id2) {
-		if (id2 != null && pobj != null) {
-			String linkid = pobj.link(id2);
-			if (linkid == null) {
-				return getStatusResponse(Response.Status.BAD_REQUEST, "Failed to create link.");
+		try (final MetricsUtils.Context context = MetricsUtils.time(null, RestUtils.class, "links", "create")) {
+			if (id2 != null && pobj != null) {
+				String linkid = pobj.link(id2);
+				if (linkid == null) {
+					return getStatusResponse(Response.Status.BAD_REQUEST, "Failed to create link.");
+				} else {
+					return Response.ok(linkid, MediaType.TEXT_PLAIN_TYPE).build();
+				}
 			} else {
-				return Response.ok(linkid, MediaType.TEXT_PLAIN_TYPE).build();
+				return getStatusResponse(Response.Status.BAD_REQUEST, "Parameters 'type' and 'id' are missing.");
 			}
-		} else {
-			return getStatusResponse(Response.Status.BAD_REQUEST, "Parameters 'type' and 'id' are missing.");
 		}
 	}
 
@@ -790,37 +815,39 @@ public final class RestUtils {
 			type = typeOverride;
 		}
 
-		if (params == null) {
-			return buildPageResponse(Para.getSearch().findQuery(appid, type, query, pager), pager);
-		}
+		try (final MetricsUtils.Context context = MetricsUtils.time(appid, RestUtils.class, "search", queryType)) {
+			if (params == null) {
+				return buildPageResponse(Para.getSearch().findQuery(appid, type, query, pager), pager);
+			}
 
-		if ("id".equals(queryType)) {
-			items = findByIdQuery(params, appid, pager);
-		} else if ("ids".equals(queryType)) {
-			items = Para.getSearch().findByIds(appid, params.get("ids"));
-			pager.setCount(items.size());
-		} else if ("nested".equals(queryType)) {
-			items = Para.getSearch().findNestedQuery(appid, type, params.getFirst("field"), query, pager);
-		} else if ("nearby".equals(queryType)) {
-			items = findNearbyQuery(params, appid, type, query, pager);
-		} else if ("prefix".equals(queryType)) {
-			items = Para.getSearch().findPrefix(appid, type, params.getFirst("field"), params.getFirst("prefix"), pager);
-		} else if ("similar".equals(queryType)) {
-			items = findSimilarQuery(params, appid, type, pager);
-		} else if ("tagged".equals(queryType)) {
-			items = findTaggedQuery(params, appid, type, pager);
-		} else if ("in".equals(queryType)) {
-			items = Para.getSearch().findTermInList(appid, type, params.getFirst("field"), params.get("terms"), pager);
-		} else if ("terms".equals(queryType)) {
-			items = findTermsQuery(params, pager, appid, type);
-		} else if ("wildcard".equals(queryType)) {
-			items = Para.getSearch().findWildcard(appid, type, params.getFirst("field"), query, pager);
-		} else if ("count".equals(queryType)) {
-			pager.setCount(Para.getSearch().getCount(appid, type));
-		} else {
-			items = Para.getSearch().findQuery(appid, type, query, pager);
+			if ("id".equals(queryType)) {
+				items = findByIdQuery(params, appid, pager);
+			} else if ("ids".equals(queryType)) {
+				items = Para.getSearch().findByIds(appid, params.get("ids"));
+				pager.setCount(items.size());
+			} else if ("nested".equals(queryType)) {
+				items = Para.getSearch().findNestedQuery(appid, type, params.getFirst("field"), query, pager);
+			} else if ("nearby".equals(queryType)) {
+				items = findNearbyQuery(params, appid, type, query, pager);
+			} else if ("prefix".equals(queryType)) {
+				items = Para.getSearch().findPrefix(appid, type, params.getFirst("field"), params.getFirst("prefix"), pager);
+			} else if ("similar".equals(queryType)) {
+				items = findSimilarQuery(params, appid, type, pager);
+			} else if ("tagged".equals(queryType)) {
+				items = findTaggedQuery(params, appid, type, pager);
+			} else if ("in".equals(queryType)) {
+				items = Para.getSearch().findTermInList(appid, type, params.getFirst("field"), params.get("terms"), pager);
+			} else if ("terms".equals(queryType)) {
+				items = findTermsQuery(params, pager, appid, type);
+			} else if ("wildcard".equals(queryType)) {
+				items = Para.getSearch().findWildcard(appid, type, params.getFirst("field"), query, pager);
+			} else if ("count".equals(queryType)) {
+				pager.setCount(Para.getSearch().getCount(appid, type));
+			} else {
+				items = Para.getSearch().findQuery(appid, type, query, pager);
+			}
+			return buildPageResponse(items, pager);
 		}
-		return buildPageResponse(items, pager);
 	}
 
 	private static <P extends ParaObject> List<P> findTermsQuery(MultivaluedMap<String, String> params,
