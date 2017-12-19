@@ -24,6 +24,7 @@ import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.email.EmailModule;
 import com.erudika.para.i18n.I18nModule;
 import com.erudika.para.iot.IoTModule;
+import com.erudika.para.metrics.MetricsUtils;
 import com.erudika.para.persistence.PersistenceModule;
 import com.erudika.para.queue.QueueModule;
 import com.erudika.para.rest.Api1;
@@ -249,6 +250,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		application.web(true);
 		application.bannerMode(Banner.Mode.OFF);
 		Para.addInitListener(CoreUtils.getInstance());
+		Para.addInitListener(MetricsUtils.getInstance());
 		Para.initialize(getCoreModules());
 		// Ensure error pages are registered
 		application.sources(ErrorFilter.class);
@@ -283,6 +285,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		app.setWebEnvironment(true);
 		app.setBannerMode(Banner.Mode.OFF);
 		Para.addInitListener(CoreUtils.getInstance());
+		Para.addInitListener(MetricsUtils.getInstance());
 		Para.initialize(getCoreModules());
 		app.run(args);
 	}

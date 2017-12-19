@@ -15,4 +15,5 @@ nb-configuration.xml
 /target/
 **/target/
 **/data/
-
+*.iml
+.idea

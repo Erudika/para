@@ -126,7 +126,7 @@ public final class Para {
 						logger.debug("Executed {}.onInitialize().", initListener.getClass().getName());
 					}
 				}
-				// this enables the "River" feature - polls the deault queue for objects and imports them into Para
+				// this enables the "River" feature - polls the default queue for objects and imports them into Para
 				if (Config.getConfigBoolean("queue_link_enabled", false)) {
 					injector.getInstance(Queue.class).startPolling();
 				}
