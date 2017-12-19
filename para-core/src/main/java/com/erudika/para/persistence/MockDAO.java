@@ -48,18 +48,7 @@ public class MockDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> String create(String appid, P so) {
-		if (so == null) {
-			return null;
-		}
-		if (StringUtils.isBlank(so.getId())) {
-			so.setId(Utils.getNewId());
-		}
-		if (so.getTimestamp() == null) {
-			so.setTimestamp(Utils.timestamp());
-		}
-		so.setAppid(appid);
-		getMap(appid).put(so.getId(), ParaObjectUtils.setAnnotatedFields(ParaObjectUtils.toObject(so.getType()),
-				ParaObjectUtils.getAnnotatedFields(so), null));
+		createObject(appid, so);
 		logger.debug("DAO.create() {}", so.getId());
 		return so.getId();
 	}
@@ -77,21 +66,14 @@ public class MockDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> void update(String appid, P so) {
-		if (so != null && !StringUtils.isBlank(appid)) {
-			so.setUpdated(Utils.timestamp());
-			ParaObject soUpdated = getMap(appid).get(so.getId());
-			getMap(appid).put(so.getId(), ParaObjectUtils.setAnnotatedFields(soUpdated,
-					ParaObjectUtils.getAnnotatedFields(so), Locked.class));
-			logger.debug("DAO.update() {}", so.getId());
-		}
+		updateObject(appid, so);
+		logger.debug("DAO.update() {}", so.getId());
 	}
 
 	@Override
 	public <P extends ParaObject> void delete(String appid, P so) {
-		if (so != null && !StringUtils.isBlank(appid)) {
-			getMap(appid).remove(so.getId());
-			logger.debug("DAO.delete() {}", so.getId());
-		}
+		deleteObject(appid, so);
+		logger.debug("DAO.delete() {}", so.getId());
 	}
 
 	@Override
@@ -100,7 +82,7 @@ public class MockDAO implements DAO {
 			return;
 		}
 		for (P p : objects) {
-			create(appid, p);
+			createObject(appid, p);
 		}
 		logger.debug("DAO.createAll() {}", objects.size());
 	}
@@ -159,7 +141,7 @@ public class MockDAO implements DAO {
 		if (!StringUtils.isBlank(appid) && objects != null) {
 			for (P obj : objects) {
 				if (obj != null) {
-					update(appid, obj);
+					updateObject(appid, obj);
 				}
 			}
 			logger.debug("DAO.updateAll() {}", objects.size());
@@ -171,10 +153,40 @@ public class MockDAO implements DAO {
 		if (!StringUtils.isBlank(appid) && objects != null) {
 			for (P obj : objects) {
 				if (obj != null && getMap(appid).containsKey(obj.getId())) {
-					delete(appid, obj);
+					deleteObject(appid, obj);
 				}
 			}
 			logger.debug("DAO.deleteAll() {}", objects.size());
+		}
+	}
+
+	private <P extends ParaObject> void createObject(String appid, P so) {
+		if (so == null) {
+			return;
+		}
+		if (StringUtils.isBlank(so.getId())) {
+			so.setId(Utils.getNewId());
+		}
+		if (so.getTimestamp() == null) {
+			so.setTimestamp(Utils.timestamp());
+		}
+		so.setAppid(appid);
+		getMap(appid).put(so.getId(), ParaObjectUtils.setAnnotatedFields(ParaObjectUtils.toObject(so.getType()),
+				ParaObjectUtils.getAnnotatedFields(so), null));
+	}
+
+	private <P extends ParaObject> void updateObject(String appid, P so) {
+		if (so != null && !StringUtils.isBlank(appid)) {
+			so.setUpdated(Utils.timestamp());
+			ParaObject soUpdated = getMap(appid).get(so.getId());
+			getMap(appid).put(so.getId(), ParaObjectUtils.setAnnotatedFields(soUpdated,
+					ParaObjectUtils.getAnnotatedFields(so), Locked.class));
+		}
+	}
+
+	private <P extends ParaObject> void deleteObject(String appid, P so) {
+		if (so != null && !StringUtils.isBlank(appid)) {
+			getMap(appid).remove(so.getId());
 		}
 	}
 

@@ -350,7 +350,10 @@ public class AWSDynamoDAO implements DAO {
 		// 2. readAll() first, then call writeAll() with updated objects (2 ops)
 		if (objects != null) {
 			for (P object : objects) {
-				update(appid, object);
+				if (object != null && object.getId() != null) {
+					object.setUpdated(Utils.timestamp());
+					updateRow(object.getId(), appid, toRow(object, Locked.class));
+				}
 			}
 		}
 		logger.debug("DAO.updateAll() {}", (objects == null) ? 0 : objects.size());

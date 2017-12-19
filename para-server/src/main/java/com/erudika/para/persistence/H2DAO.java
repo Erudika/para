@@ -67,7 +67,7 @@ public class H2DAO implements DAO {
 		if (object == null) {
 			return null;
 		}
-		createAll(appid, Collections.singletonList(object));
+		H2Utils.createRows(appid, Collections.singletonList(object));
 		logger.debug("DAO.create() {}", object.getId());
 		return object.getId();
 	}
@@ -78,7 +78,8 @@ public class H2DAO implements DAO {
 		if (key == null || StringUtils.isBlank(appid)) {
 			return null;
 		}
-		P object = (P) readAll(appid, Collections.singletonList(key), true).get(key);
+		Map<String, P> results = H2Utils.readRows(appid, Collections.singletonList(key));
+		P object = results.get(key);
 		logger.debug("DAO.read() {} -> {}", key, object);
 		return object;
 	}
@@ -86,7 +87,7 @@ public class H2DAO implements DAO {
 	@Override
 	public <P extends ParaObject> void update(String appid, P object) {
 		if (object != null && !StringUtils.isBlank(appid)) {
-			updateAll(appid, Collections.singletonList(object));
+			H2Utils.updateRows(appid, Collections.singletonList(object));
 			logger.debug("DAO.update() {}", object.getId());
 		}
 	}
@@ -94,7 +95,7 @@ public class H2DAO implements DAO {
 	@Override
 	public <P extends ParaObject> void delete(String appid, P object) {
 		if (object != null && !StringUtils.isBlank(appid)) {
-			deleteAll(appid, Collections.singletonList(object));
+			H2Utils.deleteRows(appid, Collections.singletonList(object));
 			logger.debug("DAO.delete() {}", object.getId());
 		}
 	}

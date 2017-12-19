@@ -105,12 +105,12 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		Cached cachedAnno = null;
 
 		try {
-			detectNestedInvocations(m);
 			superMethod = DAO.class.getMethod(m.getName(), m.getParameterTypes());
 			indexedAnno = Config.isSearchEnabled() ? superMethod.getAnnotation(Indexed.class) : null;
 			cachedAnno = Config.isCacheEnabled() ? superMethod.getAnnotation(Cached.class) : null;
+			detectNestedInvocations(m);
 		} catch (Exception e) {
-			logger.error(null, e);
+			logger.error("Error in AOP layer!", e);
 		}
 
 		Object[] args = mi.getArguments();
@@ -353,7 +353,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		for (StackTraceElement stackTraceElement : stackTraceElements) {
 			if (daoMethod.getDeclaringClass().getName().equals(stackTraceElement.getClassName()) &&
 					!daoMethod.getName().equals(stackTraceElement.getMethodName())) {
-				String error = Utils.formatMessage("Method {0}.{1}() invoked from another method in the same "
+				String error = Utils.formatMessage("Method {0}.{1}() was invoked from another method in the same "
 						+ "class - {2}.{3}(). DAO implementations should avoid this as it causes objects to be "
 						+ "indexed and cached twice per request.",
 						daoMethod.getDeclaringClass().getSimpleName(), daoMethod.getName(),
