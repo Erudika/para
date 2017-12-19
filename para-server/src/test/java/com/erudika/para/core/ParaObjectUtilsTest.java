@@ -20,6 +20,8 @@ package com.erudika.para.core;
 import static com.erudika.para.core.utils.ParaObjectUtils.*;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -63,6 +65,22 @@ public class ParaObjectUtilsTest {
 	@Test
 	public void testGetCoreTypes() {
 		assertEquals("user", getCoreTypes().get("users"));
+	}
+
+	@Test
+	public void testGetAppidFromAuthHeader() {
+		assertNotNull(getAppidFromAuthHeader(null));
+		assertNotNull(getAppidFromAuthHeader(""));
+		assertTrue(getAppidFromAuthHeader(null).isEmpty());
+		assertTrue(getAppidFromAuthHeader("").isEmpty());
+		assertEquals("para", getAppidFromAuthHeader("Anonymous app:para"));
+		assertEquals("para", getAppidFromAuthHeader("AWS4-HMAC-SHA256 "
+				+ "Credential=app:para/20171218/us-east-1/para/aws4_request, "
+				+ "SignedHeaders=content-type;host;x-amz-date, "
+				+ "Signature=1ad38af911ecb712ca8f4eab0d4afc29cc301a4dbd398bb929bd47a67d1900a6"));
+		assertEquals("para", getAppidFromAuthHeader("Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+				+ "eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFwcCBQYXJhIiwiYXBwaWQiOiJwYXJhIn0."
+				+ "GmghGts8Hwod2zl4e0ZV8kEqY0Ey-7N4rJV9g-KYqeI"));
 	}
 
 	@Test

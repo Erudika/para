@@ -27,6 +27,7 @@ import com.erudika.para.metrics.MetricsUtils;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Utils;
 import com.erudika.para.validation.ValidationUtils;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -96,7 +97,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	 * @throws Throwable error
 	 */
 	public Object invoke(MethodInvocation mi) throws Throwable {
-		Method method = mi.getMethod();
+		Method m = mi.getMethod();
 		Object[] args = mi.getArguments();
 		String appid = AOPUtils.getFirstArgOfString(args);
 
@@ -105,7 +106,8 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		Cached cachedAnno = null;
 
 		try {
-			superMethod = DAO.class.getMethod(method.getName(), method.getParameterTypes());
+			detectNestedInvocations(m);
+			superMethod = DAO.class.getMethod(m.getName(), m.getParameterTypes());
 			indexedAnno = Config.isSearchEnabled() ? superMethod.getAnnotation(Indexed.class) : null;
 			cachedAnno = Config.isCacheEnabled() ? superMethod.getAnnotation(Cached.class) : null;
 		} catch (Exception e) {
@@ -113,7 +115,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		}
 
 		if (!Modifier.isPublic(mi.getMethod().getModifiers())) {
-			return invokeDAO(appid, method, mi);
+			return invokeDAO(appid, m, mi);
 		}
 
 		List<IOListener> ioListeners = Para.getIOListeners();
@@ -122,8 +124,8 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 			logger.debug("Executed {}.onPreInvoke().", ioListener.getClass().getName());
 		}
 
-		Object result = handleIndexing(indexedAnno, appid, method, args, mi);
-		Object cachingResult = handleCaching(cachedAnno, appid, method, args, mi);
+		Object result = handleIndexing(indexedAnno, appid, m, args, mi);
+		Object cachingResult = handleCaching(cachedAnno, appid, m, args, mi);
 
 		// we have a read operation without any result but we get back objects from cache
 		if (result == null && cachingResult != null) {
@@ -132,7 +134,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 
 		// both searching and caching are disabled - pass it through
 		if (indexedAnno == null && cachedAnno == null) {
-			result = invokeDAO(appid, method, mi);
+			result = invokeDAO(appid, m, mi);
 		}
 
 		for (IOListener ioListener : ioListeners) {
@@ -374,4 +376,23 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		}
 	}
 
+	/**
+	 * Try and detect if a DAO method is called from another public DAO method, annotated with {@link Indexed} or
+	 * {@link Cached}. It causes that method to be intercepted twice and objects will be indexed/cached twice.
+	 * @param mi method invocation
+	 */
+	private void detectNestedInvocations(Method daoMethod) {
+		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+		for (StackTraceElement stackTraceElement : stackTraceElements) {
+			if (daoMethod.getDeclaringClass().getName().equals(stackTraceElement.getClassName()) &&
+					!daoMethod.getName().equals(stackTraceElement.getMethodName())) {
+				String error = Utils.formatMessage("Method {0}.{1}() invoked from another method in the same "
+						+ "class - {2}.{3}(). DAO implementations should avoid this as it causes objects to be "
+						+ "indexed and cached twice per request.",
+						daoMethod.getDeclaringClass().getSimpleName(), daoMethod.getName(),
+						stackTraceElement.getClassName(), stackTraceElement.getMethodName());
+				throw new RuntimeException(error);
+			}
+		}
+	}
 }

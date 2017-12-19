@@ -152,6 +152,41 @@ public final class ParaObjectUtils {
 	}
 
 	/**
+	 * Returns the app identifier by parsing the Authorization.
+	 * @param authorization Authorization header
+	 * @return appid
+	 */
+	public static String getAppidFromAuthHeader(String authorization) {
+		if (StringUtils.isBlank(authorization)) {
+			return "";
+		}
+		String appid = "";
+		// JWT token
+		if (StringUtils.startsWith(authorization, "Bearer")) {
+			try {
+				String[] parts = StringUtils.split(authorization, '.');
+				if (parts.length > 1) {
+					Map<String, Object> jwt = ParaObjectUtils.getJsonReader(Map.class).
+							readValue(Utils.base64dec(parts[1]));
+					if (jwt != null && jwt.containsKey(Config._APPID)) {
+						appid = (String) jwt.get(Config._APPID);
+					}
+				}
+			} catch (Exception e) { }
+		} else if (StringUtils.startsWith(authorization, "Anonymous")) {
+			// Anonymous request - no signature or JWT
+			appid = StringUtils.substringAfter(authorization, "Anonymous").trim();
+		} else {
+			// Amazon Signature v4
+			appid = StringUtils.substringBetween(authorization, "=", "/");
+		}
+		if (StringUtils.isBlank(appid)) {
+			return "";
+		}
+		return App.id(appid).substring(4);
+	}
+
+	/**
 	 * Checks if the type of an object matches its real Class name.
 	 *
 	 * @param so an object
