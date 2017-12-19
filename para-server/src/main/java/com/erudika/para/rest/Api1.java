@@ -20,6 +20,7 @@ package com.erudika.para.rest;
 import static com.erudika.para.Para.getCustomResourceHandlers;
 import static com.erudika.para.Para.getDAO;
 import static com.erudika.para.Para.getVersion;
+
 import com.erudika.para.core.App;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.ParaObject;
@@ -49,6 +50,7 @@ import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import com.erudika.para.utils.filters.FieldFilter;
 import com.erudika.para.validation.Constraint;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -61,6 +63,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -174,6 +177,12 @@ public final class Api1 extends ResourceConfig {
 		appSettingsRes.addChildResource("{key}").addMethod(DELETE).produces(JSON).handledBy(appSettingsHandler(null));
 		registerResources(appSettingsRes.build());
 
+		// metrics
+		Resource.Builder appSettingsMetrics = Resource.builder("_metrics");
+		appSettingsMetrics.addMethod(GET).produces(JSON).handledBy(metricsHandler(null, false));
+		appSettingsMetrics.addChildResource("system").addMethod(GET).produces(JSON).handledBy(metricsHandler(null, true));
+		registerResources(appSettingsMetrics.build());
+
 		// util functions API
 		Resource.Builder utilsRes = Resource.builder("utils/{method}");
 		utilsRes.addMethod(GET).produces(JSON).handledBy(utilsHandler());
@@ -184,7 +193,8 @@ public final class Api1 extends ResourceConfig {
 			Resource.Builder custom = Resource.builder(handler.getRelativePath());
 			custom.addMethod(GET).produces(JSON).handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
-					try (final MetricsUtils.Context context = MetricsUtils.time("appid", handler.getClass(), "handleGet")) {
+					String appid = ParaObjectUtils.getAppidFromAuthHeader(ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
+					try (final MetricsUtils.Context context = MetricsUtils.time(appid, handler.getClass(), "handleGet")) {
 						return handler.handleGet(ctx);
 					}
 				}
@@ -192,7 +202,8 @@ public final class Api1 extends ResourceConfig {
 			custom.addMethod(POST).produces(JSON).consumes(JSON).
 					handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
-					try (final MetricsUtils.Context context = MetricsUtils.time("appid", handler.getClass(), "handlePost")) {
+					String appid = ParaObjectUtils.getAppidFromAuthHeader(ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
+					try (final MetricsUtils.Context context = MetricsUtils.time(appid, handler.getClass(), "handlePost")) {
 						return handler.handlePost(ctx);
 					}
 				}
@@ -200,7 +211,8 @@ public final class Api1 extends ResourceConfig {
 			custom.addMethod(PATCH).produces(JSON).consumes(JSON).
 					handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
-					try (final MetricsUtils.Context context = MetricsUtils.time("appid", handler.getClass(), "handlePatch")) {
+					String appid = ParaObjectUtils.getAppidFromAuthHeader(ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
+					try (final MetricsUtils.Context context = MetricsUtils.time(appid, handler.getClass(), "handlePatch")) {
 						return handler.handlePatch(ctx);
 					}
 				}
@@ -208,14 +220,16 @@ public final class Api1 extends ResourceConfig {
 			custom.addMethod(PUT).produces(JSON).consumes(JSON).
 					handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
-					try (final MetricsUtils.Context context = MetricsUtils.time("appid", handler.getClass(), "handlePut")) {
+					String appid = ParaObjectUtils.getAppidFromAuthHeader(ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
+					try (final MetricsUtils.Context context = MetricsUtils.time(appid, handler.getClass(), "handlePut")) {
 						return handler.handlePut(ctx);
 					}
 				}
 			});
 			custom.addMethod(DELETE).produces(JSON).handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
-					try (final MetricsUtils.Context context = MetricsUtils.time("appid", handler.getClass(), "handleDelete")) {
+					String appid = ParaObjectUtils.getAppidFromAuthHeader(ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
+					try (final MetricsUtils.Context context = MetricsUtils.time(appid, handler.getClass(), "handleDelete")) {
 						return handler.handleDelete(ctx);
 					}
 				}
@@ -661,6 +675,36 @@ public final class Api1 extends ResourceConfig {
 		};
 	}
 
+	/**
+	 * @param a {@link App}
+	 * @param systemMetrics boolean option to retrieve the system-wide metrics, which only the root app can do
+	 * @return response
+	 */
+	@SuppressWarnings("unchecked")
+	public static Inflector<ContainerRequestContext, Response> metricsHandler(final App a, boolean systemMetrics) {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				App app = (a != null) ? a : getPrincipalApp();
+				if (app == null || (systemMetrics && !app.isRootApp())) {
+					return getStatusResponse(Response.Status.FORBIDDEN, "Not allowed.");
+				}
+				boolean prettyPrint = pathParam("pretty", ctx) != null;
+				try {
+					String metricsData;
+					if (systemMetrics) {
+						metricsData = MetricsUtils.getMetricsData(null, prettyPrint);
+					} else {
+						metricsData = MetricsUtils.getMetricsData(app.getAppIdentifier(), prettyPrint);
+					}
+					return Response.ok(metricsData).build();
+				} catch (JsonProcessingException e) {
+					logger.error(null, e);
+					return getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
+				}
+			}
+		};
+	}
+
 	private Inflector<ContainerRequestContext, Response> listTypesHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
@@ -867,6 +911,9 @@ public final class Api1 extends ResourceConfig {
 				App app1 = (app == null) ? getPrincipalApp() : app;
 				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
 				String queryType = pathParam("querytype", ctx);
+				if (StringUtils.isBlank(queryType)) {
+					queryType = "default";
+				}
 				return Response.ok(RestUtils.buildQueryAndSearch(app1, queryType, params, type)).build();
 			}
 		};

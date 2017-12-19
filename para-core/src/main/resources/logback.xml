@@ -28,9 +28,9 @@
 	<appender name="METRICSAPPENDER" class="ch.qos.logback.core.rolling.RollingFileAppender">
 		<file>para-metrics.log</file>
 		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-			<fileNamePattern>para-metrics-%d{yyyy-MM}.log.zip</fileNamePattern>
-			<maxHistory>12</maxHistory>
-			<totalSizeCap>3GB</totalSizeCap>
+			<fileNamePattern>para-metrics-%d{yyyy-MM-dd}.log.zip</fileNamePattern>
+			<maxHistory>7</maxHistory>
+			<totalSizeCap>1GB</totalSizeCap>
 		</rollingPolicy>
 		<encoder>
 			<pattern>%-26(%d [%-5level]) %logger{35} - %msg%n</pattern>

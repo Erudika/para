@@ -399,7 +399,7 @@ public final class RestUtils {
 	 * @return status code 200 or 404
 	 */
 	public static Response getReadResponse(App app, ParaObject content) {
-		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "read")) {
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "crud", "read")) {
 			// app can't modify other apps except itself
 			if (app != null && content != null &&
 					checkImplicitAppPermissions(app, content) && checkIfUserCanModifyObject(app, content)) {
@@ -417,7 +417,7 @@ public final class RestUtils {
 	 * @return a status code 201 or 400
 	 */
 	public static Response getCreateResponse(App app, String type, InputStream is) {
-		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "create")) {
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "crud", "create")) {
 			ParaObject content;
 			Response entityRes = getEntity(is, Map.class);
 			if (entityRes.getStatusInfo() == Response.Status.OK) {
@@ -466,7 +466,7 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getOverwriteResponse(App app, String id, String type, InputStream is) {
-		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "overwrite")) {
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "crud", "overwrite")) {
 			ParaObject content;
 			Response entityRes = getEntity(is, Map.class);
 			if (entityRes.getStatusInfo() == Response.Status.OK) {
@@ -513,7 +513,7 @@ public final class RestUtils {
 	 * @return a status code 200 or 400 or 404
 	 */
 	public static Response getUpdateResponse(App app, ParaObject object, InputStream is) {
-		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "update")) {
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "crud", "update")) {
 			if (app != null && object != null) {
 				Map<String, Object> newContent;
 				Response entityRes = getEntity(is, Map.class);
@@ -552,7 +552,7 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getDeleteResponse(App app, ParaObject content) {
-		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "delete")) {
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "crud", "delete")) {
 			if (app != null && content != null && content.getId() != null && content.getAppid() != null) {
 				if (checkImplicitAppPermissions(app, content) && checkIfUserCanModifyObject(app, content)) {
 					content.setAppid(app.getAppIdentifier());
@@ -814,7 +814,6 @@ public final class RestUtils {
 		if (!StringUtils.isBlank(typeOverride) && !"search".equals(typeOverride)) {
 			type = typeOverride;
 		}
-
 		try (final MetricsUtils.Context context = MetricsUtils.time(appid, RestUtils.class, "search", queryType)) {
 			if (params == null) {
 				return buildPageResponse(Para.getSearch().findQuery(appid, type, query, pager), pager);
