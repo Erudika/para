@@ -56,7 +56,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 	public RestAuthFilter() { }
 
 	/**
-	 * Authenticates an application.
+	 * Authenticates an application or user or guest.
 	 * @param req a request
 	 * @param res a response
 	 * @param chain filter chain
@@ -71,19 +71,22 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		// - second read - used as request payload
 		BufferedRequestWrapper request = new BufferedRequestWrapper((HttpServletRequest) req);
 		HttpServletResponse response = (HttpServletResponse) res;
-
-		// users are allowed to GET '/_me' - used on the client-side for checking authentication
-		String appid = RestUtils.extractAccessKey(request);
-		boolean isApp = !StringUtils.isBlank(appid);
-		boolean isGuest = RestUtils.isAnonymousRequest(request);
 		boolean proceed = true;
+		try {
+			// users are allowed to GET '/_me' - used on the client-side for checking authentication
+			String appid = RestUtils.extractAccessKey(request);
+			boolean isApp = !StringUtils.isBlank(appid);
+			boolean isGuest = RestUtils.isAnonymousRequest(request);
 
-		if (isGuest && RestRequestMatcher.INSTANCE.matches(request)) {
-			proceed = guestAuthRequestHandler(appid, (HttpServletRequest) req, response);
-		} else if (!isApp && RestRequestMatcher.INSTANCE.matches(request)) {
-			proceed = userAuthRequestHandler((HttpServletRequest) req, response);
-		} else if (isApp && RestRequestMatcher.INSTANCE_STRICT.matches(request)) {
-			proceed = appAuthRequestHandler(appid, request, response);
+			if (isGuest && RestRequestMatcher.INSTANCE.matches(request)) {
+				proceed = guestAuthRequestHandler(appid, (HttpServletRequest) req, response);
+			} else if (!isApp && RestRequestMatcher.INSTANCE.matches(request)) {
+				proceed = userAuthRequestHandler((HttpServletRequest) req, response);
+			} else if (isApp && RestRequestMatcher.INSTANCE_STRICT.matches(request)) {
+				proceed = appAuthRequestHandler(appid, request, response);
+			}
+		} catch (Exception e) {
+			logger.error("Failed to authorize request.", e);
 		}
 
 		if (proceed) {
