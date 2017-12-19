@@ -48,6 +48,9 @@ public class MockDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> String create(String appid, P so) {
+		if (so == null) {
+			return null;
+		}
 		createObject(appid, so);
 		logger.debug("DAO.create() {}", so.getId());
 		return so.getId();
@@ -67,13 +70,11 @@ public class MockDAO implements DAO {
 	@Override
 	public <P extends ParaObject> void update(String appid, P so) {
 		updateObject(appid, so);
-		logger.debug("DAO.update() {}", so.getId());
 	}
 
 	@Override
 	public <P extends ParaObject> void delete(String appid, P so) {
 		deleteObject(appid, so);
-		logger.debug("DAO.delete() {}", so.getId());
 	}
 
 	@Override
@@ -181,12 +182,14 @@ public class MockDAO implements DAO {
 			ParaObject soUpdated = getMap(appid).get(so.getId());
 			getMap(appid).put(so.getId(), ParaObjectUtils.setAnnotatedFields(soUpdated,
 					ParaObjectUtils.getAnnotatedFields(so), Locked.class));
+			logger.debug("DAO.update() {}", so.getId());
 		}
 	}
 
 	private <P extends ParaObject> void deleteObject(String appid, P so) {
 		if (so != null && !StringUtils.isBlank(appid)) {
 			getMap(appid).remove(so.getId());
+			logger.debug("DAO.delete() {}", so.getId());
 		}
 	}
 

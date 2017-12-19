@@ -349,16 +349,18 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	 * @param mi method invocation
 	 */
 	private void detectNestedInvocations(Method daoMethod) {
-		StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
-		for (StackTraceElement stackTraceElement : stackTraceElements) {
-			if (daoMethod.getDeclaringClass().getName().equals(stackTraceElement.getClassName()) &&
-					!daoMethod.getName().equals(stackTraceElement.getMethodName())) {
-				String error = Utils.formatMessage("Method {0}.{1}() was invoked from another method in the same "
-						+ "class - {2}.{3}(). DAO implementations should avoid this as it causes objects to be "
-						+ "indexed and cached twice per request.",
-						daoMethod.getDeclaringClass().getSimpleName(), daoMethod.getName(),
-						stackTraceElement.getClassName(), stackTraceElement.getMethodName());
-				throw new RuntimeException(error);
+		if (!daoMethod.getName().startsWith("read")) {
+			StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+			for (StackTraceElement stackTraceElement : stackTraceElements) {
+				if (daoMethod.getDeclaringClass().getName().equals(stackTraceElement.getClassName()) &&
+						!daoMethod.getName().equals(stackTraceElement.getMethodName())) {
+					throw new RuntimeException(Utils.
+							formatMessage("Method {0}.{1}() was invoked from another method in the same "
+							+ "class - {2}.{3}(). DAO implementations should avoid this as it causes objects to be "
+							+ "indexed and cached twice per request.",
+							daoMethod.getDeclaringClass().getSimpleName(), daoMethod.getName(),
+							stackTraceElement.getClassName(), stackTraceElement.getMethodName()));
+				}
 			}
 		}
 	}
