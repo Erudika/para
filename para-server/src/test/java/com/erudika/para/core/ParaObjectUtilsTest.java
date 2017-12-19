@@ -81,6 +81,25 @@ public class ParaObjectUtilsTest {
 		assertEquals("para", getAppidFromAuthHeader("Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
 				+ "eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFwcCBQYXJhIiwiYXBwaWQiOiJwYXJhIn0."
 				+ "GmghGts8Hwod2zl4e0ZV8kEqY0Ey-7N4rJV9g-KYqeI"));
+
+
+		String jwtGood1 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBpZCI6ImFwcDpteWFwcCJ9."
+				+ "M4uitKDuclLuZzadxNzL_3fjeShKBxPdncsNKkA-rfY";
+		String jwtGood2 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBpZCI6Im15YXBwIn0."
+				+ "rChFKBeaKvlV9p_dkMveh1v85YT144IHilaeMpuVhx8";
+		String jwtBad1 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
+		String jwtBad2 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzIjoibXlhcHAifQ."
+				+ "0nqax4hqUIRGhtmPIhLbUgCrnKJFC1q3eIeRkgQX8F0";
+		String signature = "AWS4-HMAC-SHA256 Credential=app:myapp/20171103/us-east-1/para/aws4_request, "
+				+ "SignedHeaders=content-type;host;x-amz-date, Signature=d60fd1be560d3ed14ff383061772055";
+
+		assertEquals("", getAppidFromAuthHeader(null));
+		assertEquals("", getAppidFromAuthHeader(" "));
+		assertEquals("", getAppidFromAuthHeader("Bearer " + jwtBad1));
+		assertEquals("", getAppidFromAuthHeader("Bearer " + jwtBad2));
+		assertEquals("myapp", getAppidFromAuthHeader("Bearer " + jwtGood1));
+		assertEquals("myapp", getAppidFromAuthHeader("Bearer " + jwtGood2));
+		assertEquals("myapp", getAppidFromAuthHeader(signature));
 	}
 
 	@Test
