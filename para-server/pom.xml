@@ -187,6 +187,13 @@
 			<version>3.0</version>
 		</dependency>
 
+		<!-- METRICS -->
+		<dependency>
+			<groupId>io.dropwizard.metrics</groupId>
+			<artifactId>metrics-core</artifactId>
+			<version>3.2.5</version>
+		</dependency>
+
 		<!-- OTHER -->
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
