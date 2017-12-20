@@ -17,6 +17,7 @@
  */
 package com.erudika.para.metrics;
 
+import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Slf4jReporter;
@@ -57,7 +58,7 @@ public enum MetricsUtils implements InitializeListener {
 
 		@Override
 		public void onInitialize() {
-			if (!Config.getConfigBoolean("metrics.enabled", true)) {
+			if (!Config.getConfigBoolean("metrics_enabled", true)) {
 				return;
 			}
 			// setup metrics log file reporting
@@ -232,6 +233,10 @@ public enum MetricsUtils implements InitializeListener {
 			registry.timer(MetricRegistry.name(resourceHandlerClassName, "handlePatch"));
 			registry.timer(MetricRegistry.name(resourceHandlerClassName, "handlePut"));
 			registry.timer(MetricRegistry.name(resourceHandlerClassName, "handleDelete"));
+		}
+
+		if (Config.getConfigBoolean("metrics.jmx_enabled", false)) {
+			JmxReporter.forRegistry(registry).inDomain(registryName).build().start();
 		}
 	}
 
