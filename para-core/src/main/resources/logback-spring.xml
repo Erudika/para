@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender" level="warn">
 		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
 			<pattern>%-20(%d{yyyy-MM-dd HH:mm:ss} %highlight([%-5level])) %msg%n</pattern>
 		</encoder>
@@ -13,7 +13,7 @@
 	</appender>
 
 	<appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
-		<file>para.log</file>
+		<file>${LOG_PATH:-.}/para.log</file>
 		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
 			<!-- rollover monthly -->
 			<fileNamePattern>para-%d{yyyy-MM}.log.zip</fileNamePattern>
@@ -26,7 +26,7 @@
 	</appender>
 
 	<appender name="METRICSAPPENDER" class="ch.qos.logback.core.rolling.RollingFileAppender">
-		<file>para-metrics.log</file>
+		<file>${LOG_PATH:-.}/para-metrics.log</file>
 		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
 			<fileNamePattern>para-metrics-%d{yyyy-MM-dd}.log.zip</fileNamePattern>
 			<maxHistory>7</maxHistory>
