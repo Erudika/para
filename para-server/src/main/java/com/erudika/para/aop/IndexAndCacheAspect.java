@@ -97,7 +97,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	 * @throws Throwable error
 	 */
 	public Object invoke(MethodInvocation mi) throws Throwable {
-		Method m = mi.getMethod();
+		Method daoMethod = mi.getMethod();
 		Object[] args = mi.getArguments();
 		String appid = AOPUtils.getFirstArgOfString(args);
 
@@ -106,16 +106,16 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		Cached cachedAnno = null;
 
 		try {
-			superMethod = DAO.class.getMethod(m.getName(), m.getParameterTypes());
+			superMethod = DAO.class.getMethod(daoMethod.getName(), daoMethod.getParameterTypes());
 			indexedAnno = Config.isSearchEnabled() ? superMethod.getAnnotation(Indexed.class) : null;
 			cachedAnno = Config.isCacheEnabled() ? superMethod.getAnnotation(Cached.class) : null;
-			detectNestedInvocations(m);
+			detectNestedInvocations(daoMethod);
 		} catch (Exception e) {
 			logger.error("Error in AOP layer!", e);
 		}
 
 		if (!Modifier.isPublic(mi.getMethod().getModifiers())) {
-			return invokeDAO(appid, m, mi);
+			return invokeDAO(appid, daoMethod, mi);
 		}
 
 		List<IOListener> ioListeners = Para.getIOListeners();
@@ -124,8 +124,8 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 			logger.debug("Executed {}.onPreInvoke().", ioListener.getClass().getName());
 		}
 
-		Object result = handleIndexing(indexedAnno, appid, m, args, mi);
-		Object cachingResult = handleCaching(cachedAnno, appid, m, args, mi);
+		Object result = handleIndexing(indexedAnno, appid, daoMethod, args, mi);
+		Object cachingResult = handleCaching(cachedAnno, appid, daoMethod, args, mi);
 
 		// we have a read operation without any result but we get back objects from cache
 		if (result == null && cachingResult != null) {
@@ -134,7 +134,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 
 		// both searching and caching are disabled - pass it through
 		if (indexedAnno == null && cachedAnno == null) {
-			result = invokeDAO(appid, m, mi);
+			result = invokeDAO(appid, daoMethod, mi);
 		}
 
 		for (IOListener ioListener : ioListeners) {
