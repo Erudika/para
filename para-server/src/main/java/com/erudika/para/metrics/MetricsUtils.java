@@ -37,11 +37,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.erudika.para.Para.getCustomResourceHandlers;
+import com.erudika.para.utils.Pager;
+import java.util.LinkedList;
 
 /**
  * A centralized utility for managing and retrieving all Para performance metrics.
@@ -56,30 +57,36 @@ public enum MetricsUtils implements InitializeListener {
 
 		@Override
 		public void onInitialize() {
+			if (!Config.getConfigBoolean("metrics.enabled", true)) {
+				return;
+			}
 			// setup metrics log file reporting
 			MetricRegistry systemRegistry = SharedMetricRegistries.setDefault(SYSTEM_METRICS_NAME);
 			Logger metricsLogger = LoggerFactory.getLogger("paraMetrics");
 			int loggingRate = Config.getConfigInt("metrics.logging_rate", 60);
 			if (loggingRate > 0) {
-				Slf4jReporter.forRegistry(systemRegistry).outputTo(metricsLogger).build().start(loggingRate, TimeUnit.SECONDS);
+				Slf4jReporter.forRegistry(systemRegistry).outputTo(metricsLogger).build().
+						start(loggingRate, TimeUnit.SECONDS);
 			}
 
 			// initialize metrics for the system and all existing applications
 			MetricsUtils.initializeMetrics(SYSTEM_METRICS_NAME);
-			List<App> apps = new ArrayList<>();
-			if (Config.getRootAppIdentifier() != null) {
-				App rootApp = Para.getDAO().read(App.id(Config.getRootAppIdentifier()));
-				if (rootApp != null) {
-					apps.add(rootApp);
-				}
-			}
-			List<App> nonRootApps = CoreUtils.getInstance().getSearch().findQuery(Utils.type(App.class), "*");
-			if (nonRootApps != null) {
-				apps.addAll(nonRootApps);
-			}
-			logger.info("Found {} existing application(s){}", apps.size(), apps.isEmpty() ? "." : ":");
+
+			// find all app objects even if there are more than 10000 apps in the system
+			// apps will be added in chronological order, root app first, followed by child apps
+			Pager pager = new Pager(1, "_docid", false, Config.DEFAULT_LIMIT);
+			List<App> apps = new LinkedList<>();
+			List<App> appsPage;
+			do {
+				appsPage = Para.getSearch().findQuery(Utils.type(App.class), "*", pager);
+				apps.addAll(appsPage);
+				logger.debug("Found a page of {} apps.", appsPage.size());
+			} while (!appsPage.isEmpty());
+
+			logger.info("Found root app '{}' and {} existing child app(s){}", Config.getRootAppIdentifier(),
+					apps.size() - 1, apps.isEmpty() || !logger.isDebugEnabled() ? "." : ":");
 			for (App app : apps) {
-				logger.info("   {}{}", app.getAppIdentifier(), app.isRootApp() ? " (root app)" : "");
+				logger.debug("   {}{}", app.getAppIdentifier(), app.isRootApp() ? " (root app)" : "");
 				MetricsUtils.initializeMetrics(app.getAppIdentifier());
 			}
 
