@@ -179,8 +179,8 @@ public final class Api1 extends ResourceConfig {
 
 		// metrics
 		Resource.Builder appSettingsMetrics = Resource.builder("_metrics");
-		appSettingsMetrics.addMethod(GET).produces(JSON).handledBy(metricsHandler(null, false));
-		appSettingsMetrics.addChildResource("system").addMethod(GET).produces(JSON).handledBy(metricsHandler(null, true));
+		appSettingsMetrics.addMethod(GET).produces(JSON).handledBy(metricsHandler(null));
+		appSettingsMetrics.addChildResource("{appid}").addMethod(GET).produces(JSON).handledBy(metricsHandler(null));
 		registerResources(appSettingsMetrics.build());
 
 		// util functions API
@@ -677,22 +677,25 @@ public final class Api1 extends ResourceConfig {
 
 	/**
 	 * @param a {@link App}
-	 * @param systemMetrics boolean option to retrieve the system-wide metrics, which only the root app can do
 	 * @return response
 	 */
 	@SuppressWarnings("unchecked")
-	public static Inflector<ContainerRequestContext, Response> metricsHandler(final App a, boolean systemMetrics) {
+	public static Inflector<ContainerRequestContext, Response> metricsHandler(final App a) {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : getPrincipalApp();
+				String appid = pathParam(Config._APPID, ctx);
+				boolean prettyPrint = pathParam("pretty", ctx) != null;
+				boolean systemMetrics = StringUtils.equals(appid, MetricsUtils.SYSTEM_METRICS_NAME);
 				if (app == null || (systemMetrics && !app.isRootApp())) {
 					return getStatusResponse(Response.Status.FORBIDDEN, "Not allowed.");
 				}
-				boolean prettyPrint = pathParam("pretty", ctx) != null;
 				try {
 					String metricsData;
-					if (systemMetrics) {
+					if (systemMetrics && app.isRootApp()) {
 						metricsData = MetricsUtils.getMetricsData(null, prettyPrint);
+					} else if (app.isRootApp() && !StringUtils.isBlank(appid)) {
+						metricsData = MetricsUtils.getMetricsData(appid, prettyPrint);
 					} else {
 						metricsData = MetricsUtils.getMetricsData(app.getAppIdentifier(), prettyPrint);
 					}

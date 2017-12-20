@@ -103,8 +103,12 @@ public enum MetricsUtils implements InitializeListener {
 	};
 
 	private static final Logger logger = LoggerFactory.getLogger(MetricsUtils.class);
-	private static final String SYSTEM_METRICS_NAME = "_system";
 	private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+
+	/**
+	 * The name of the default system registry.
+	 */
+	public static final String SYSTEM_METRICS_NAME = "_system";
 
 	/**
 	 * Provides access to the singleton instance methods.
