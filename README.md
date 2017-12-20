@@ -32,6 +32,7 @@ See how **Para** [compares to other open source backend frameworks](https://erud
 - Simple but effective resource permissions for client access control
 - Robust constraint validation mechanism based on JSR-303 and Hibernate Validator
 - Per-object control of persistence, index and cache operations
+- Full metrics for monitoring and diagnostics (Dropwizard)
 - Modular design powered by Google Guice and support for plugins
 - I18n utilities for translating language packs and working with currencies
 - Standalone executable WAR with embedded Jetty
