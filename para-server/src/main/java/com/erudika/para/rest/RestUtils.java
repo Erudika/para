@@ -399,7 +399,8 @@ public final class RestUtils {
 	 * @return status code 200 or 404
 	 */
 	public static Response getReadResponse(App app, ParaObject content) {
-		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "crud", "read")) {
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(),
+				RestUtils.class, "crud", "read")) {
 			// app can't modify other apps except itself
 			if (app != null && content != null &&
 					checkImplicitAppPermissions(app, content) && checkIfUserCanModifyObject(app, content)) {
@@ -417,7 +418,8 @@ public final class RestUtils {
 	 * @return a status code 201 or 400
 	 */
 	public static Response getCreateResponse(App app, String type, InputStream is) {
-		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "crud", "create")) {
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(),
+				RestUtils.class, "crud", "create")) {
 			ParaObject content;
 			Response entityRes = getEntity(is, Map.class);
 			if (entityRes.getStatusInfo() == Response.Status.OK) {
@@ -466,7 +468,8 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getOverwriteResponse(App app, String id, String type, InputStream is) {
-		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "crud", "overwrite")) {
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(),
+				RestUtils.class, "crud", "overwrite")) {
 			ParaObject content;
 			Response entityRes = getEntity(is, Map.class);
 			if (entityRes.getStatusInfo() == Response.Status.OK) {
@@ -513,7 +516,8 @@ public final class RestUtils {
 	 * @return a status code 200 or 400 or 404
 	 */
 	public static Response getUpdateResponse(App app, ParaObject object, InputStream is) {
-		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "crud", "update")) {
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(),
+				RestUtils.class, "crud", "update")) {
 			if (app != null && object != null) {
 				Map<String, Object> newContent;
 				Response entityRes = getEntity(is, Map.class);
@@ -552,7 +556,8 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getDeleteResponse(App app, ParaObject content) {
-		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "crud", "delete")) {
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(),
+				RestUtils.class, "crud", "delete")) {
 			if (app != null && content != null && content.getId() != null && content.getAppid() != null) {
 				if (checkImplicitAppPermissions(app, content) && checkIfUserCanModifyObject(app, content)) {
 					content.setAppid(app.getAppIdentifier());
@@ -572,7 +577,8 @@ public final class RestUtils {
 	 * @return status code 200 or 400
 	 */
 	public static Response getBatchReadResponse(App app, List<String> ids) {
-		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "batch", "read")) {
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(),
+				RestUtils.class, "batch", "read")) {
 			if (app != null && ids != null && !ids.isEmpty()) {
 				ArrayList<ParaObject> results = new ArrayList<>(ids.size());
 				for (ParaObject result : Para.getDAO().readAll(app.getAppIdentifier(), ids, true).values()) {
@@ -594,7 +600,8 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getBatchCreateResponse(final App app, InputStream is) {
-		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "batch", "create")) {
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(),
+				RestUtils.class, "batch", "create")) {
 			if (app != null) {
 				final LinkedList<ParaObject> newObjects = new LinkedList<>();
 				Response entityRes = getEntity(is, List.class);
@@ -644,7 +651,8 @@ public final class RestUtils {
 	 */
 	public static Response getBatchUpdateResponse(App app, Map<String, ParaObject> oldObjects,
 			List<Map<String, Object>> newProperties) {
-		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "batch", "update")) {
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(),
+				RestUtils.class, "batch", "update")) {
 			if (app != null && oldObjects != null && newProperties != null) {
 				LinkedList<ParaObject> updatedObjects = new LinkedList<>();
 				for (Map<String, Object> newProps : newProperties) {
@@ -675,9 +683,10 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getBatchDeleteResponse(App app, List<String> ids) {
-		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(), RestUtils.class, "batch", "delete")) {
+		try (final MetricsUtils.Context context = MetricsUtils.time(app == null ? null : app.getAppid(),
+				RestUtils.class, "batch", "delete")) {
 			LinkedList<ParaObject> objects = new LinkedList<>();
-			if (ids != null && !ids.isEmpty()) {
+			if (app != null && ids != null && !ids.isEmpty()) {
 				if (ids.size() <= Config.MAX_ITEMS_PER_PAGE) {
 					for (ParaObject pobj : Para.getDAO().readAll(app.getAppIdentifier(), ids, true).values()) {
 						if (pobj != null && pobj.getId() != null && pobj.getType() != null) {
