@@ -340,26 +340,34 @@ public final class LuceneUtils {
 			logger.info("Deleting '{}' index before rebuilding it...", indexName);
 			deleteIndex(indexName);
 			logger.debug("rebuildIndex(): {}", indexName);
-			int count = 0;
 			Pager p = getPager(pager);
-			p.setLimit(100);
+			int batchSize = Config.getConfigInt("reindex_batch_size", p.getLimit());
+			long reindexedCount = 0;
 
 			List<ParaObject> list;
+			List<Document> docs = new LinkedList<Document>();
 			do {
 				list = dao.readPage(appid, p); // use appid!
-				ArrayList<Document> docs = new ArrayList<Document>(list.size());
 				logger.debug("rebuildIndex(): Read {} objects from table {}.", list.size(), indexName);
 				for (ParaObject obj : list) {
 					if (obj != null) {
 						// put objects from DB into the newly created index
 						Map<String, Object> data = ParaObjectUtils.getAnnotatedFields(obj, null, false);
 						docs.add(paraObjectToDocument(indexName, data));
-						count++;
+						reindexedCount++;
+						if (docs.size() >= batchSize) {
+							indexDocuments(indexName, docs);
+							docs.clear();
+						}
 					}
 				}
-				indexDocuments(indexName, docs);
 			} while (!list.isEmpty());
-			logger.info("rebuildIndex(): Done. {} objects reindexed.", count);
+
+			// anything left after loop? index that too
+			if (!docs.isEmpty()) {
+				indexDocuments(indexName, docs);
+			}
+			logger.info("rebuildIndex(): Done. {} objects reindexed.", reindexedCount);
 		} catch (Exception e) {
 			logger.warn(null, e);
 			return false;
