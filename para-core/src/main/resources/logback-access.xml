@@ -2,7 +2,7 @@
 <configuration>
 
 	<appender name="ACCESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${LOG_PATH:-.}/para-access.log</file>
+    <file>${para.logs_dir:-.}/para-access.log</file>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
 			<!-- rollover monthly -->
       <fileNamePattern>access.%d{yyyy-MM}.%i.log.zip</fileNamePattern>
