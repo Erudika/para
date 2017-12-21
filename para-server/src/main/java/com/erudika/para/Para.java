@@ -19,6 +19,8 @@ package com.erudika.para;
 
 import com.erudika.para.cache.Cache;
 import com.erudika.para.core.App;
+import com.erudika.para.core.utils.CoreUtils;
+import com.erudika.para.metrics.MetricsUtils;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.queue.Queue;
 import com.erudika.para.rest.CustomResourceHandler;
@@ -118,6 +120,9 @@ public final class Para {
 				} else {
 					injector = Guice.createInjector(stage, coreModules);
 				}
+
+				addInitListener(CoreUtils.getInstance());
+				addInitListener(MetricsUtils.getInstance());
 
 				for (InitializeListener initListener : INIT_LISTENERS) {
 					if (initListener != null) {
