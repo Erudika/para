@@ -26,6 +26,7 @@ import com.erudika.para.queue.Queue;
 import com.erudika.para.rest.CustomResourceHandler;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.HealthUtils;
 import com.erudika.para.utils.VersionInfo;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -122,6 +123,7 @@ public final class Para {
 				}
 
 				addInitListener(CoreUtils.getInstance());
+				addInitListener(HealthUtils.getInstance());
 				addInitListener(MetricsUtils.getInstance());
 
 				for (InitializeListener initListener : INIT_LISTENERS) {
@@ -132,7 +134,7 @@ public final class Para {
 					}
 				}
 				// this enables the "River" feature - polls the default queue for objects and imports them into Para
-				if (Config.getConfigBoolean("queue_link_enabled", false)) {
+				if (Config.getConfigBoolean("queue_link_enabled", false) && HealthUtils.getInstance().isHealthy()) {
 					injector.getInstance(Queue.class).startPolling();
 				}
 
@@ -404,11 +406,19 @@ public final class Para {
 			app.setSharingTable(sharedTable);
 			app.setSharingIndex(sharedIndex);
 			app.setActive(true);
-			app.create();
-			logger.info("Created new app '{}', sharingTable = {}, sharingIndex = {}.",
-					app.getAppIdentifier(), sharedTable, sharedIndex);
-			creds.putAll(app.getCredentials());
-			creds.put("message", "Save the secret key - it is shown only once!");
+			String id = app.create();
+			if (id != null) {
+				logger.info("Created {} app '{}', sharingTable = {}, sharingIndex = {}.",
+						app.isRootApp() ? "root" : "new", app.getAppIdentifier(), sharedTable, sharedIndex);
+				creds.putAll(app.getCredentials());
+				creds.put("message", "Save the secret key - it is shown only once!");
+				if (app.isRootApp()) {
+					HealthUtils.getInstance().performHealthCheck();
+				}
+			} else {
+				logger.error("Failed to create app '{}'!", appid);
+				creds.put("message", "Error - app was not created.");
+			}
 		}
 		return creds;
 	}
