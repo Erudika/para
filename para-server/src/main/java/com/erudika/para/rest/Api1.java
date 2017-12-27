@@ -45,6 +45,7 @@ import static com.erudika.para.rest.RestUtils.queryParams;
 import com.erudika.para.metrics.MetricsUtils;
 import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.HealthUtils;
 import com.erudika.para.utils.HumanTime;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -182,6 +183,11 @@ public final class Api1 extends ResourceConfig {
 		appSettingsMetrics.addMethod(GET).produces(JSON).handledBy(metricsHandler(null));
 		appSettingsMetrics.addChildResource("{appid}").addMethod(GET).produces(JSON).handledBy(metricsHandler(null));
 		registerResources(appSettingsMetrics.build());
+
+		// health check
+		Resource.Builder healthCheckRes = Resource.builder("_health");
+		healthCheckRes.addMethod(GET).produces(JSON).handledBy(healthCheckHandler());
+		registerResources(healthCheckRes.build());
 
 		// util functions API
 		Resource.Builder utilsRes = Resource.builder("utils/{method}");
@@ -703,6 +709,18 @@ public final class Api1 extends ResourceConfig {
 				} catch (JsonProcessingException e) {
 					logger.error(null, e);
 					return getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
+				}
+			}
+		};
+	}
+
+	private static Inflector<ContainerRequestContext, Response> healthCheckHandler() {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				if (HealthUtils.isHealthy()) {
+					return Response.ok("healthy").build();
+				} else {
+					return getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, "unhealthy");
 				}
 			}
 		};
