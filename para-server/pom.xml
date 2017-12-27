@@ -193,6 +193,11 @@
 			<artifactId>metrics-core</artifactId>
 			<version>3.2.5</version>
 		</dependency>
+		<dependency>
+			<groupId>io.dropwizard</groupId>
+			<artifactId>dropwizard-metrics-graphite</artifactId>
+			<version>1.2.2</version>
+		</dependency>
 
 		<!-- OTHER -->
 		<dependency>
