@@ -185,10 +185,6 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 	}
 
 	private boolean hasPermission(App parentApp, User user, HttpServletRequest request) {
-		String resourcePath = RestUtils.extractResourcePath(request);
-		if ("_health".equals(resourcePath) && request.getMethod().equals(GET)) {
-			return true; // allow health checks by anyone without restrictions
-		}
 		if (parentApp == null) {
 			return false;
 		}
@@ -196,6 +192,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		if (user != null && user.isAdmin()) {
 			return Config.getConfigBoolean("admins_have_full_api_access", true);
 		}
+		String resourcePath = RestUtils.extractResourcePath(request);
 		if (resourcePath.matches("^_permissions/.+") && request.getMethod().equals(GET)) {
 			return true; // allow permission checks, i.e. pc.isAllowed(), to go through
 		}
