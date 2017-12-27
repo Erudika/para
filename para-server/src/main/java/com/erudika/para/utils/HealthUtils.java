@@ -3,6 +3,8 @@ package com.erudika.para.utils;
 import com.erudika.para.InitializeListener;
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
@@ -23,7 +25,7 @@ public enum HealthUtils implements InitializeListener, Runnable {
 		private boolean healthy = false;
 		private boolean wasHealthy = false;
 		private ScheduledFuture<?> scheduledHealthCheck;
-		private final String[] failedServices = new String[3];
+		private final List<String> failedServices = new ArrayList<>(3);
 		private final int HEALTH_CHECK_INTERVAL_SECONDS = Config.getConfigInt("health.check_interval", 60);
 
 		@Override
@@ -36,33 +38,32 @@ public enum HealthUtils implements InitializeListener, Runnable {
 			String rootAppId = App.id(Config.getRootAppIdentifier());
 			if (!StringUtils.isBlank(rootAppId)) {
 				healthy = true;
+				failedServices.clear();
 				// read the root app from the DAO
 				if (Para.getDAO() != null && Para.getDAO().read(rootAppId) == null) {
 					healthy = false;
-					failedServices[0] = "DAO";
+					failedServices.add("DAO");
 				}
 				// read the root app from the search, if enabled
-				if (healthy && Config.isSearchEnabled() && Para.getSearch().findById(rootAppId) == null) {
+				if (Config.isSearchEnabled() && Para.getSearch().findById(rootAppId) == null) {
 					healthy = false;
-					failedServices[1] = "Search";
+					failedServices.add("Search");
 				}
 				// read the root app from the cache, if enabled
-				if (healthy && Config.isCacheEnabled() && !Para.getCache().contains(rootAppId)) {
+				if (Config.isCacheEnabled() && !Para.getCache().contains(rootAppId)) {
 					healthy = false;
-					failedServices[2] = "Cache";
+					failedServices.add("Cache");
 				}
 			}
 			if (wasHealthy && !healthy) {
 				logger.error("Server is no longer healthy! Health check failed for services: " +
 						StringUtils.join(failedServices, ", "));
+				Para.getCache().remove(rootAppId); // remove root app from cache so we hit the on DB next check
 			}
 			if (!wasHealthy && healthy) {
 				logger.info("Server is healthy.");
 			}
 			wasHealthy = healthy;
-			failedServices[0] = null;
-			failedServices[1] = null;
-			failedServices[2] = null;
 		}
 
 		@Override
