@@ -717,8 +717,8 @@ public final class Api1 extends ResourceConfig {
 	private static Inflector<ContainerRequestContext, Response> healthCheckHandler() {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
-				if (HealthUtils.isHealthy()) {
-					return Response.ok("healthy").build();
+				if (HealthUtils.getInstance().isHealthy()) {
+					return Response.ok(Collections.singletonMap("message", "healthy")).build();
 				} else {
 					return getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, "unhealthy");
 				}
