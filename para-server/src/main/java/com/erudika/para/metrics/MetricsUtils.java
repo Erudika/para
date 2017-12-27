@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.erudika.para.Para.getCustomResourceHandlers;
+import com.erudika.para.utils.HealthUtils;
 import com.erudika.para.utils.Pager;
 import java.util.LinkedList;
 
@@ -84,8 +85,10 @@ public enum MetricsUtils implements InitializeListener {
 				logger.debug("Found a page of {} apps.", appsPage.size());
 			} while (!appsPage.isEmpty());
 
-			logger.info("Found root app '{}' and {} existing child app(s){}", Config.getRootAppIdentifier(),
-					apps.size() - 1, apps.isEmpty() || !logger.isDebugEnabled() ? "." : ":");
+			if (HealthUtils.getInstance().isHealthy()) {
+				logger.info("Found root app '{}' and {} existing child app(s){}", Config.getRootAppIdentifier(),
+						apps.size() - 1, apps.isEmpty() || !logger.isDebugEnabled() ? "." : ":");
+			}
 			for (App app : apps) {
 				logger.debug("   {}{}", app.getAppIdentifier(), app.isRootApp() ? " (root app)" : "");
 				MetricsUtils.initializeMetrics(app.getAppIdentifier());
