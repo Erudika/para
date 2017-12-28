@@ -39,6 +39,10 @@ public enum HealthUtils implements InitializeListener, Runnable {
 			if (!StringUtils.isBlank(rootAppId)) {
 				healthy = true;
 				failedServices.clear();
+				// last check was bad, remove root app from cache so we can hit the DB
+				if (!wasHealthy) {
+					Para.getCache().remove(rootAppId);
+				}
 				// read the root app from the DAO
 				if (Para.getDAO() != null && Para.getDAO().read(rootAppId) == null) {
 					healthy = false;
@@ -58,7 +62,6 @@ public enum HealthUtils implements InitializeListener, Runnable {
 			if (wasHealthy && !healthy) {
 				logger.error("Server is no longer healthy! Health check failed for services: " +
 						StringUtils.join(failedServices, ", "));
-				Para.getCache().remove(rootAppId); // remove root app from cache so we hit the on DB next check
 			}
 			if (!wasHealthy && healthy) {
 				logger.info("Server is healthy.");
