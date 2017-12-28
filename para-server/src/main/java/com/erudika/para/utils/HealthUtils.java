@@ -26,7 +26,7 @@ public enum HealthUtils implements InitializeListener, Runnable {
 		private boolean wasHealthy = false;
 		private ScheduledFuture<?> scheduledHealthCheck;
 		private final List<String> failedServices = new ArrayList<>(3);
-		private final int HEALTH_CHECK_INTERVAL_SECONDS = Config.getConfigInt("health.check_interval", 60);
+		private final int healthCheckInterval = Config.getConfigInt("health.check_interval", 60);
 
 		@Override
 		public boolean isHealthy() {
@@ -74,7 +74,7 @@ public enum HealthUtils implements InitializeListener, Runnable {
 			}
 			if (Config.getConfigBoolean("health_check_enabled", true) && scheduledHealthCheck == null) {
 				scheduledHealthCheck = Para.getScheduledExecutorService().
-						scheduleAtFixedRate(this, 30, HEALTH_CHECK_INTERVAL_SECONDS, TimeUnit.SECONDS);
+						scheduleAtFixedRate(this, 30, healthCheckInterval, TimeUnit.SECONDS);
 			}
 		}
 

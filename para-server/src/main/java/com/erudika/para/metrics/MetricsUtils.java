@@ -22,6 +22,8 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.Timer;
+import com.codahale.metrics.graphite.Graphite;
+import com.codahale.metrics.graphite.GraphiteReporter;
 import com.erudika.para.AppCreatedListener;
 import com.erudika.para.InitializeListener;
 import com.erudika.para.Para;
@@ -31,9 +33,7 @@ import com.erudika.para.rest.CustomResourceHandler;
 import com.erudika.para.rest.RestUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,6 +73,15 @@ public enum MetricsUtils implements InitializeListener {
 
 			// initialize metrics for the system and all existing applications
 			MetricsUtils.initializeMetrics(SYSTEM_METRICS_NAME);
+
+			// setup graphite reporting for the system metrics
+			int graphitePeriod = Config.getConfigInt("metrics.graphite.period", 0);
+			if (graphitePeriod > 0) {
+				String host = Config.getConfigParam("metrics.graphite.host", "localhost");
+				int port = Config.getConfigInt("metrics.graphite.port", 2003);
+				String prefix = Config.getConfigParam("metrics.graphite.prefix", null);
+				MetricsUtils.createGraphiteReporter(SYSTEM_METRICS_NAME, host, port, prefix, graphitePeriod);
+			}
 
 			// find all app objects even if there are more than 10000 apps in the system
 			// apps will be added in chronological order, root app first, followed by child apps
@@ -248,31 +257,6 @@ public enum MetricsUtils implements InitializeListener {
 	}
 
 	/**
-	 * Get metrics data in the form of a JSON string for the entire system or a specific app.
-	 * @param appid the application to get metrics data for. If null, return system metrics.
-	 * @param prettyPrint option to format the JSON string with pretty formatting
-	 * @return a JSON string containing metrics data
-	 * @throws JsonProcessingException if MetricRegistry cannot be parsed into a JSON object
-	 */
-	public static String getMetricsData(String appid, boolean prettyPrint) throws JsonProcessingException {
-		MetricRegistry registry;
-		if (appid == null) {
-			registry = SharedMetricRegistries.getDefault();
-		} else {
-			registry = SharedMetricRegistries.getOrCreate(appid);
-		}
-		return getMetricsWriter(prettyPrint).writeValueAsString(registry);
-	}
-
-	private static ObjectWriter getMetricsWriter(boolean prettyPrint) {
-		if (prettyPrint) {
-			return JSON_MAPPER.writerWithDefaultPrettyPrinter();
-		} else {
-			return JSON_MAPPER.writer();
-		}
-	}
-
-	/**
 	 * An auto-closeable class that manages timers for both the overall system as well as specific application.
 	 */
 	public static final class Context implements Closeable {
@@ -292,5 +276,22 @@ public enum MetricsUtils implements InitializeListener {
 				appContext.stop();
 			}
 		}
+	}
+
+	/**
+	 * Publish a specific registry to Graphite.
+	 * @param registry the name of the registry. Either the system default name or an appid.
+	 * @param host the host URL of the Graphite server.
+	 * @param port the port number of the Graphite server.
+	 * @param prefix an optional prefix to apply to the reported metrics.
+	 * @param period the period, in seconds, specifying how often to report metrics to the Graphite server.
+	 */
+	private static void createGraphiteReporter(String registry, String host, int port, String prefix, int period) {
+		Graphite graphite = new Graphite(host, port);
+		GraphiteReporter reporter = GraphiteReporter.forRegistry(SharedMetricRegistries.getOrCreate(registry))
+				.prefixedWith(prefix)
+				.build(graphite);
+		reporter.start(period, TimeUnit.SECONDS);
+		logger.info("Created Graphite reporter for registry \"{}\", pushing to {{}:{}}", registry, host, port);
 	}
 }

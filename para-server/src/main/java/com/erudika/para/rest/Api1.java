@@ -51,7 +51,6 @@ import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import com.erudika.para.utils.filters.FieldFilter;
 import com.erudika.para.validation.Constraint;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -177,12 +176,6 @@ public final class Api1 extends ResourceConfig {
 		appSettingsRes.addChildResource("{key}").addMethod(PUT).produces(JSON).handledBy(appSettingsHandler(null));
 		appSettingsRes.addChildResource("{key}").addMethod(DELETE).produces(JSON).handledBy(appSettingsHandler(null));
 		registerResources(appSettingsRes.build());
-
-		// metrics
-		Resource.Builder appSettingsMetrics = Resource.builder("_metrics");
-		appSettingsMetrics.addMethod(GET).produces(JSON).handledBy(metricsHandler(null));
-		appSettingsMetrics.addChildResource("{appid}").addMethod(GET).produces(JSON).handledBy(metricsHandler(null));
-		registerResources(appSettingsMetrics.build());
 
 		// health check
 		Resource.Builder healthCheckRes = Resource.builder("_health");
@@ -677,39 +670,6 @@ public final class Api1 extends ResourceConfig {
 					}
 				}
 				return getStatusResponse(Response.Status.FORBIDDEN, "Not allowed.");
-			}
-		};
-	}
-
-	/**
-	 * @param a {@link App}
-	 * @return response
-	 */
-	@SuppressWarnings("unchecked")
-	public static Inflector<ContainerRequestContext, Response> metricsHandler(final App a) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				String appid = pathParam(Config._APPID, ctx);
-				boolean prettyPrint = pathParam("pretty", ctx) != null;
-				boolean systemMetrics = StringUtils.equals(appid, MetricsUtils.SYSTEM_METRICS_NAME);
-				if (app == null || (systemMetrics && !app.isRootApp())) {
-					return getStatusResponse(Response.Status.FORBIDDEN, "Not allowed.");
-				}
-				try {
-					String metricsData;
-					if (systemMetrics && app.isRootApp()) {
-						metricsData = MetricsUtils.getMetricsData(null, prettyPrint);
-					} else if (app.isRootApp() && !StringUtils.isBlank(appid)) {
-						metricsData = MetricsUtils.getMetricsData(appid, prettyPrint);
-					} else {
-						metricsData = MetricsUtils.getMetricsData(app.getAppIdentifier(), prettyPrint);
-					}
-					return Response.ok(metricsData).build();
-				} catch (JsonProcessingException e) {
-					logger.error(null, e);
-					return getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
-				}
 			}
 		};
 	}
