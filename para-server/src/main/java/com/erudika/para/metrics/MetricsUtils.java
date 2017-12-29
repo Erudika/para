@@ -79,8 +79,8 @@ public enum MetricsUtils implements InitializeListener {
 			if (graphitePeriod > 0) {
 				String host = Config.getConfigParam("metrics.graphite.host", "localhost");
 				int port = Config.getConfigInt("metrics.graphite.port", 2003);
-				String prefix = Config.getConfigParam("metrics.graphite.prefix", null);
-				MetricsUtils.createGraphiteReporter(SYSTEM_METRICS_NAME, host, port, prefix, graphitePeriod);
+				String prefixSystem = Config.getConfigParam("metrics.graphite.prefix_system", null);
+				MetricsUtils.createGraphiteReporter(SYSTEM_METRICS_NAME, host, port, prefixSystem, graphitePeriod);
 			}
 
 			// find all app objects even if there are more than 10000 apps in the system
