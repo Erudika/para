@@ -51,6 +51,22 @@ public final class RegistryUtils {
 	}
 
 	/**
+	 * Remove a specific value from a registry.
+	 * @param registryName the name of the registry.
+	 * @param key the unique key corresponding to the value to remove (typically an appid).
+	 */
+	public static void removeValue(String registryName, String key) {
+		Sysprop registryObject = readRegistryObject(registryName);
+		if (registryObject == null || StringUtils.isBlank(key)) {
+			return;
+		}
+		if (registryObject.hasProperty(key)) {
+			registryObject.removeProperty(key);
+			CoreUtils.getInstance().getDao().create(REGISTRY_APP_ID, registryObject);
+		}
+	}
+
+	/**
 	 * Retrieve an entire registry.
 	 * @param registryName the name of the registry.
 	 * @return the map of all registry values, null if no registry is found by the specified name.

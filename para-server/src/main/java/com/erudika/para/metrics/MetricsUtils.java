@@ -25,6 +25,8 @@ import com.codahale.metrics.Timer;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.erudika.para.AppCreatedListener;
+import com.erudika.para.AppSettingAddedListener;
+import com.erudika.para.AppSettingRemovedListener;
 import com.erudika.para.InitializeListener;
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
@@ -32,30 +34,38 @@ import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.rest.CustomResourceHandler;
 import com.erudika.para.rest.RestUtils;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.HealthUtils;
+import com.erudika.para.utils.RegistryUtils;
+import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
+import java.io.Serializable;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Objects;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static com.erudika.para.Para.getCustomResourceHandlers;
-import com.erudika.para.utils.HealthUtils;
-import com.erudika.para.utils.Pager;
-import java.util.LinkedList;
 
 /**
  * A centralized utility for managing and retrieving all Para performance metrics.
  * @author Jeremy Wiesner [jswiesner@gmail.com]
  */
-public enum MetricsUtils implements InitializeListener {
+public enum MetricsUtils implements InitializeListener, Runnable {
 
 	/**
 	 * Singleton.
 	 */
 	INSTANCE {
+
+		private ScheduledFuture<?> scheduledRegistryCheck;
 
 		@Override
 		public void onInitialize() {
@@ -75,12 +85,12 @@ public enum MetricsUtils implements InitializeListener {
 			MetricsUtils.initializeMetrics(SYSTEM_METRICS_NAME);
 
 			// setup graphite reporting for the system metrics
-			int graphitePeriod = Config.getConfigInt("metrics.graphite.period", 0);
-			if (graphitePeriod > 0) {
+			if (GRAPHITE_PERIOD > 0) {
 				String host = Config.getConfigParam("metrics.graphite.host", "localhost");
 				int port = Config.getConfigInt("metrics.graphite.port", 2003);
 				String prefixSystem = Config.getConfigParam("metrics.graphite.prefix_system", null);
-				MetricsUtils.createGraphiteReporter(SYSTEM_METRICS_NAME, host, port, prefixSystem, graphitePeriod);
+				GraphiteSettings settings = new GraphiteSettings(host, port);
+				MetricsUtils.createGraphiteReporter(SYSTEM_METRICS_NAME, settings, prefixSystem);
 			}
 
 			// find all app objects even if there are more than 10000 apps in the system
@@ -103,6 +113,12 @@ public enum MetricsUtils implements InitializeListener {
 				MetricsUtils.initializeMetrics(app.getAppIdentifier());
 			}
 
+			// schedule the regular check on metrics settings registries to establish app-specific reporting
+			if (scheduledRegistryCheck == null) {
+				scheduledRegistryCheck = Para.getScheduledExecutorService().
+						scheduleAtFixedRate(this, 0, 1, TimeUnit.MINUTES);
+			}
+
 			// setup initialization for all new apps
 			App.addAppCreatedListener(new AppCreatedListener() {
 				public void onAppCreated(App app) {
@@ -111,16 +127,103 @@ public enum MetricsUtils implements InitializeListener {
 					}
 				}
 			});
+
+			// setup listeners for push metrics settings
+			App.addAppSettingAddedListener(new AppSettingAddedListener() {
+				@Override
+				public void onSettingAdded(App app, String settingKey, Object settingValue) {
+					if (app != null) {
+						MetricsUtils.addAppSetting(app, settingKey, settingValue);
+					}
+				}
+			});
+			App.addAppSettingRemovedListener(new AppSettingRemovedListener() {
+				@Override
+				public void onSettingRemoved(App app, String settingKey) {
+					if (app != null) {
+						MetricsUtils.removeAppSetting(app, settingKey);
+					}
+				}
+			});
+		}
+
+		@Override
+		public void run() {
+			MetricsUtils.syncAppMetricsReporters();
 		}
 	};
 
 	private static final Logger logger = LoggerFactory.getLogger(MetricsUtils.class);
-	private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+	private static final String INSTANCE_ID = Config.getConfigParam("instance_id", null);
+
+	private static final Map<String, GraphiteReporter> GRAPHITE_REPORTERS = new HashMap<>();
+	private static final Map<String, GraphiteSettings> GRAPHITE_SETTINGS = new HashMap<>();
+	private static final String GRAPHITE_APP_PREFIX_TEMPLATE = Config.getConfigParam("metrics.graphite.prefix_system", null);
+	private static final int GRAPHITE_PERIOD = Config.getConfigInt("metrics.graphite.period", 0);
 
 	/**
-	 * The name of the default system registry.
+	 * The name of the default system @{link MetricRegistry}.
 	 */
 	public static final String SYSTEM_METRICS_NAME = "_system";
+
+	/**
+	 * The name of the registry holding app-specific settings for reporting metrics to Graphite.
+	 */
+	public static final String GRAPHITE_REGISTRY_NAME = "GraphiteReporter";
+
+	/**
+	 * The name of the app settings object that contains the info to push an app's metrics to Graphite.
+	 */
+	public static final String GRAPHITE_APP_SETTINGS_NAME = "metricsGraphiteReporter";
+
+	/**
+	 * An auto-closeable class that manages timers for both the overall system as well as specific application.
+	 */
+	public static final class Context implements Closeable {
+
+		private final Timer.Context systemContext;
+		private final Timer.Context appContext;
+
+		private Context(Timer systemTimer, Timer appTimer) {
+			this.systemContext = systemTimer.time();
+			this.appContext = appTimer == null ? null : appTimer.time();
+		}
+
+		@Override
+		public void close() {
+			systemContext.stop();
+			if (appContext != null) {
+				appContext.stop();
+			}
+		}
+	}
+
+	/**
+	 * A utility class for holding the settings for connecting to a Graphite server.
+	 */
+	private static final class GraphiteSettings implements Serializable {
+		private String host;
+		private int port;
+
+		GraphiteSettings(String host, int port) {
+			this.host = host;
+			this.port = port;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == null || this.getClass() != obj.getClass()) {
+				return false;
+			}
+			return Objects.equals(this.host, ((GraphiteSettings) obj).host) &&
+					Objects.equals(this.port, ((GraphiteSettings) obj).port);
+		}
+
+		@Override
+		public int hashCode() {
+			return 67 * Objects.hashCode(this.port) + Objects.hashCode(this.host);
+		}
+	}
 
 	/**
 	 * Provides access to the singleton instance methods.
@@ -257,41 +360,106 @@ public enum MetricsUtils implements InitializeListener {
 	}
 
 	/**
-	 * An auto-closeable class that manages timers for both the overall system as well as specific application.
+	 * Publish an app's @{link MetricRegistry} to Graphite.
+	 * @param appid the name of the app.
+	 * @param settings settings specifying the host URL and port of the Graphite server.
 	 */
-	public static final class Context implements Closeable {
-
-		private final Timer.Context systemContext;
-		private final Timer.Context appContext;
-
-		private Context(Timer systemTimer, Timer appTimer) {
-			this.systemContext = systemTimer.time();
-			this.appContext = appTimer == null ? null : appTimer.time();
+	private static void createAppGraphiteReporter(String appid, GraphiteSettings settings) {
+		HashMap<String, Object> prefixContext = new HashMap<>();
+		prefixContext.put("APP_ID", appid);
+		if (INSTANCE_ID != null) {
+			prefixContext.put("INSTANCE_ID", INSTANCE_ID);
 		}
+		String appPrefix = Utils.compileMustache(prefixContext, GRAPHITE_APP_PREFIX_TEMPLATE);
+		createGraphiteReporter(appid, settings, appPrefix);
+	}
 
-		@Override
-		public void close() {
-			systemContext.stop();
-			if (appContext != null) {
-				appContext.stop();
+	/**
+	 * Publish a specific @{link MetricRegistry} to Graphite.
+	 * @param registryName the name of the registry. Either the system default name or an appid.
+	 * @param settings settings specifying the host URL and port of the Graphite server.
+	 * @param prefix an optional prefix to apply to the reported metrics.
+	 */
+	private static void createGraphiteReporter(String registryName, GraphiteSettings settings, String prefix) {
+		Graphite graphite = new Graphite(settings.host, settings.port);
+		GraphiteReporter reporter = GraphiteReporter.forRegistry(SharedMetricRegistries.getOrCreate(registryName))
+				.prefixedWith(prefix)
+				.build(graphite);
+		reporter.start(GRAPHITE_PERIOD, TimeUnit.SECONDS);
+		GRAPHITE_REPORTERS.put(registryName, reporter);
+		GRAPHITE_SETTINGS.put(registryName, settings);
+		logger.info("Created Graphite reporter for registry \"{}\", pushing to {{}:{}}", registryName, settings.host,
+				settings.port);
+	}
+
+	/**
+	 * A listener method to process new settings registered on applications (including the root app).
+	 * @param app the application the setting was added to.
+	 * @param key the name of the setting
+	 * @param value the value of the setting
+	 */
+	public static void addAppSetting(App app, String key, Object value) {
+		if (GRAPHITE_APP_SETTINGS_NAME.equals(key)) {
+			// validate the graphite reporter settings and, if valid, save them to the registry
+			if (Map.class.isAssignableFrom(value.getClass())) {
+				Map graphiteSettings = (Map) value;
+				if (graphiteSettings.containsKey("host") && graphiteSettings.containsKey("port")) {
+					String host = (String) graphiteSettings.get("host");
+					Integer port = (Integer) graphiteSettings.get("port");
+					if (!StringUtils.isBlank(host) && port != null && port.intValue() > 0) {
+						GraphiteSettings settings = new GraphiteSettings(host, port);
+						RegistryUtils.putValue(GRAPHITE_REGISTRY_NAME, app.getAppIdentifier(), settings);
+					}
+				}
 			}
 		}
 	}
 
 	/**
-	 * Publish a specific registry to Graphite.
-	 * @param registry the name of the registry. Either the system default name or an appid.
-	 * @param host the host URL of the Graphite server.
-	 * @param port the port number of the Graphite server.
-	 * @param prefix an optional prefix to apply to the reported metrics.
-	 * @param period the period, in seconds, specifying how often to report metrics to the Graphite server.
+	 * A listener method to process removed settings for an application (including the root app).
+	 * @param app the application the setting was removed from.
+	 * @param key the name of the setting
 	 */
-	private static void createGraphiteReporter(String registry, String host, int port, String prefix, int period) {
-		Graphite graphite = new Graphite(host, port);
-		GraphiteReporter reporter = GraphiteReporter.forRegistry(SharedMetricRegistries.getOrCreate(registry))
-				.prefixedWith(prefix)
-				.build(graphite);
-		reporter.start(period, TimeUnit.SECONDS);
-		logger.info("Created Graphite reporter for registry \"{}\", pushing to {{}:{}}", registry, host, port);
+	public static void removeAppSetting(App app, String key) {
+		if (GRAPHITE_APP_SETTINGS_NAME.equals(key)) {
+			RegistryUtils.removeValue(GRAPHITE_REGISTRY_NAME, app.getAppIdentifier());
+		}
+	}
+
+	/**
+	 * A scheduled check of metrics setting registries to detect changes and apply them.
+	 */
+	private static void syncAppMetricsReporters() {
+		// check for app-specific graphite push settings
+		Map<String, Object> graphiteRegistry = RegistryUtils.getRegistry(GRAPHITE_REGISTRY_NAME);
+		if (graphiteRegistry != null && GRAPHITE_PERIOD > 0) {
+			// iterate the registry values
+			int numNewReporters = 0;
+			for (Map.Entry<String, Object> iter : graphiteRegistry.entrySet()) {
+				String appid = iter.getKey();
+				GraphiteSettings settings = (GraphiteSettings) iter.getValue();
+				// close an existing reporter
+				if (GRAPHITE_REPORTERS.containsKey(appid)) {
+					if (!settings.equals(GRAPHITE_SETTINGS.get(appid))) {
+						// the new settings aren't the same, stop the existing reporter and replace it with a new one
+						GRAPHITE_REPORTERS.get(appid).stop();
+						GRAPHITE_REPORTERS.remove(appid);
+						createAppGraphiteReporter(appid, settings);
+					}
+				} else {
+					// no existing reporter for this app, create it
+					numNewReporters++;
+					createAppGraphiteReporter(appid, settings);
+				}
+			}
+			if (graphiteRegistry.size() < (GRAPHITE_REPORTERS.size() - numNewReporters)) {
+				// at least one of the graphite reporters was disabled by an app, so we need to remove it
+				for (Map.Entry<String, GraphiteReporter> iter : GRAPHITE_REPORTERS.entrySet()) {
+					if (!graphiteRegistry.containsKey(iter.getKey())) {
+						iter.getValue().stop();
+					}
+				}
+			}
+		}
 	}
 }
