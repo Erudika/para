@@ -38,6 +38,7 @@ import com.erudika.para.utils.HealthUtils;
 import com.erudika.para.utils.RegistryUtils;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
+import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -465,6 +466,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 						// the new settings aren't the same, stop the existing reporter and replace it with a new one
 						GRAPHITE_REPORTERS.get(appid).stop();
 						GRAPHITE_REPORTERS.remove(appid);
+						GRAPHITE_SETTINGS.remove(appid);
 						createAppGraphiteReporter(appid, settings);
 					}
 				} else {
@@ -475,10 +477,16 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 			}
 			if (graphiteRegistry.size() < (GRAPHITE_REPORTERS.size() - numNewReporters)) {
 				// at least one of the graphite reporters was disabled by an app, so we need to remove it
+				List<Map.Entry<String, GraphiteReporter>> appsToRemove = Lists.newArrayList();
 				for (Map.Entry<String, GraphiteReporter> iter : GRAPHITE_REPORTERS.entrySet()) {
 					if (!graphiteRegistry.containsKey(iter.getKey())) {
-						iter.getValue().stop();
+						appsToRemove.add(iter);
 					}
+				}
+				for (Map.Entry<String, GraphiteReporter> iter : appsToRemove) {
+					iter.getValue().stop();
+					GRAPHITE_REPORTERS.remove(iter.getKey());
+					GRAPHITE_SETTINGS.remove(iter.getKey());
 				}
 			}
 		}
