@@ -31,9 +31,12 @@ public final class RegistryUtils {
 		Sysprop registryObject = readRegistryObject(registryName);
 		if (registryObject == null) {
 			registryObject = new Sysprop(getRegistryID(registryName));
+			registryObject.addProperty(key, value);
+			CoreUtils.getInstance().getDao().create(REGISTRY_APP_ID, registryObject);
+		} else {
+			registryObject.addProperty(key, value);
+			CoreUtils.getInstance().getDao().update(REGISTRY_APP_ID, registryObject);
 		}
-		registryObject.addProperty(key, value);
-		CoreUtils.getInstance().getDao().create(REGISTRY_APP_ID, registryObject);
 	}
 
 	/**
@@ -62,7 +65,7 @@ public final class RegistryUtils {
 		}
 		if (registryObject.hasProperty(key)) {
 			registryObject.removeProperty(key);
-			CoreUtils.getInstance().getDao().create(REGISTRY_APP_ID, registryObject);
+			CoreUtils.getInstance().getDao().update(REGISTRY_APP_ID, registryObject);
 		}
 	}
 

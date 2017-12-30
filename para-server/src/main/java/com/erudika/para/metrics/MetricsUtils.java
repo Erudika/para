@@ -43,7 +43,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -89,6 +88,11 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 				String host = Config.getConfigParam("metrics.graphite.host", "localhost");
 				int port = Config.getConfigInt("metrics.graphite.port", 2003);
 				String prefixSystem = Config.getConfigParam("metrics.graphite.prefix_system", null);
+				if (INSTANCE_ID != null) {
+					HashMap<String, Object> prefixContext = new HashMap<>();
+					prefixContext.put("INSTANCE_ID", INSTANCE_ID);
+					prefixSystem = Utils.compileMustache(prefixContext, prefixSystem);
+				}
 				GraphiteSettings settings = new GraphiteSettings(host, port);
 				MetricsUtils.createGraphiteReporter(SYSTEM_METRICS_NAME, settings, prefixSystem);
 			}
@@ -158,7 +162,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 
 	private static final Map<String, GraphiteReporter> GRAPHITE_REPORTERS = new HashMap<>();
 	private static final Map<String, GraphiteSettings> GRAPHITE_SETTINGS = new HashMap<>();
-	private static final String GRAPHITE_APP_PREFIX_TEMPLATE = Config.getConfigParam("metrics.graphite.prefix_system", null);
+	private static final String GRAPHITE_APP_PREFIX_TEMPLATE = Config.getConfigParam("metrics.graphite.prefix_apps", null);
 	private static final int GRAPHITE_PERIOD = Config.getConfigInt("metrics.graphite.period", 0);
 
 	/**
@@ -201,13 +205,27 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 	/**
 	 * A utility class for holding the settings for connecting to a Graphite server.
 	 */
-	private static final class GraphiteSettings implements Serializable {
-		private String host;
-		private int port;
+	private static final class GraphiteSettings extends HashMap<String, Object> {
 
 		GraphiteSettings(String host, int port) {
-			this.host = host;
-			this.port = port;
+			this.put("host", host);
+			this.put("port", port);
+		}
+
+		public String getHost() {
+			return (String) this.get("host");
+		}
+
+		public int getPort() {
+			return (int) this.get("port");
+		}
+
+		public static GraphiteSettings parse(Object object) {
+			Map map = (Map) object;
+			if (map == null || !map.containsKey("host") || !map.containsKey("port")) {
+				return null;
+			}
+			return new GraphiteSettings((String) map.get("host"), (int) map.get("port"));
 		}
 
 		@Override
@@ -215,13 +233,13 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 			if (obj == null || this.getClass() != obj.getClass()) {
 				return false;
 			}
-			return Objects.equals(this.host, ((GraphiteSettings) obj).host) &&
-					Objects.equals(this.port, ((GraphiteSettings) obj).port);
+			return Objects.equals(this.getHost(), ((GraphiteSettings) obj).getHost()) &&
+					Objects.equals(this.getPort(), ((GraphiteSettings) obj).getPort());
 		}
 
 		@Override
 		public int hashCode() {
-			return 67 * Objects.hashCode(this.port) + Objects.hashCode(this.host);
+			return 67 * Objects.hashCode(this.getPort()) + Objects.hashCode(this.getHost());
 		}
 	}
 
@@ -381,15 +399,15 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 	 * @param prefix an optional prefix to apply to the reported metrics.
 	 */
 	private static void createGraphiteReporter(String registryName, GraphiteSettings settings, String prefix) {
-		Graphite graphite = new Graphite(settings.host, settings.port);
+		Graphite graphite = new Graphite(settings.getHost(), settings.getPort());
 		GraphiteReporter reporter = GraphiteReporter.forRegistry(SharedMetricRegistries.getOrCreate(registryName))
 				.prefixedWith(prefix)
 				.build(graphite);
 		reporter.start(GRAPHITE_PERIOD, TimeUnit.SECONDS);
 		GRAPHITE_REPORTERS.put(registryName, reporter);
 		GRAPHITE_SETTINGS.put(registryName, settings);
-		logger.info("Created Graphite reporter for registry \"{}\", pushing to {{}:{}}", registryName, settings.host,
-				settings.port);
+		logger.info("Created Graphite reporter for registry \"{}\", pushing to {{}:{}}", registryName, settings.getHost(),
+				settings.getPort());
 	}
 
 	/**
@@ -437,7 +455,10 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 			int numNewReporters = 0;
 			for (Map.Entry<String, Object> iter : graphiteRegistry.entrySet()) {
 				String appid = iter.getKey();
-				GraphiteSettings settings = (GraphiteSettings) iter.getValue();
+				GraphiteSettings settings = GraphiteSettings.parse(iter.getValue());
+				if (settings == null) {
+					continue;
+				}
 				// close an existing reporter
 				if (GRAPHITE_REPORTERS.containsKey(appid)) {
 					if (!settings.equals(GRAPHITE_SETTINGS.get(appid))) {
