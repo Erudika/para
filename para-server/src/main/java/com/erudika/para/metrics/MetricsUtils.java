@@ -83,9 +83,9 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 			// initialize metrics for the system and all existing applications
 			MetricsUtils.initializeMetrics(SYSTEM_METRICS_NAME);
 
-			// setup graphite reporting for the system metrics
-			if (GRAPHITE_PERIOD > 0) {
-				String host = Config.getConfigParam("metrics.graphite.host", "localhost");
+			// setup graphite reporting for the system
+			String host = Config.getConfigParam("metrics.graphite.host", null);
+			if (GRAPHITE_PERIOD > 0 && !StringUtils.isBlank(host)) {
 				int port = Config.getConfigInt("metrics.graphite.port", 2003);
 				String prefixSystem = Config.getConfigParam("metrics.graphite.prefix_system", null);
 				if (INSTANCE_ID != null) {
