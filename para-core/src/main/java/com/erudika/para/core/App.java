@@ -19,6 +19,8 @@ package com.erudika.para.core;
 
 import com.erudika.para.AppCreatedListener;
 import com.erudika.para.AppDeletedListener;
+import com.erudika.para.AppSettingAddedListener;
+import com.erudika.para.AppSettingRemovedListener;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.annotations.Locked;
@@ -87,6 +89,8 @@ public class App implements ParaObject, Serializable {
 	private static final String PREFIX = Utils.type(App.class).concat(Config.SEPARATOR);
 	private static final List<AppCreatedListener> CREATE_LISTENERS = new LinkedList<AppCreatedListener>();
 	private static final List<AppDeletedListener> DELETE_LISTENERS = new LinkedList<AppDeletedListener>();
+	private static final List<AppSettingAddedListener> ADD_SETTING_LISTENERS = new LinkedList<>();
+	private static final List<AppSettingRemovedListener> REMOVE_SETTING_LISTENERS = new LinkedList<>();
 	private static final Logger logger = LoggerFactory.getLogger(App.class);
 
 	@Stored @Locked @NotBlank private String id;
@@ -168,6 +172,10 @@ public class App implements ParaObject, Serializable {
 	public App addSetting(String name, Object value) {
 		if (!StringUtils.isBlank(name) && value != null) {
 			getSettings().put(name, value);
+			for (AppSettingAddedListener listener : ADD_SETTING_LISTENERS) {
+				listener.onSettingAdded(this, name, value);
+				logger.debug("Executed {}.onSettingAdded().", listener.getClass().getName());
+			}
 		}
 		return this;
 	}
@@ -191,7 +199,13 @@ public class App implements ParaObject, Serializable {
 	 */
 	public App removeSetting(String name) {
 		if (!StringUtils.isBlank(name)) {
-			getSettings().remove(name);
+			Object result = getSettings().remove(name);
+			if (result != null) {
+				for (AppSettingRemovedListener listener : REMOVE_SETTING_LISTENERS) {
+					listener.onSettingRemoved(this, name);
+					logger.debug("Executed {}.onSettingRemoved().", listener.getClass().getName());
+				}
+			}
 		}
 		return this;
 	}
@@ -878,6 +892,26 @@ public class App implements ParaObject, Serializable {
 	public static void addAppDeletedListener(AppDeletedListener listener) {
 		if (listener != null) {
 			DELETE_LISTENERS.add(listener);
+		}
+	}
+
+	/**
+	 * Registers a new app setting added listener.
+	 * @param listener the listener
+	 */
+	public static void addAppSettingAddedListener(AppSettingAddedListener listener) {
+		if (listener != null) {
+			ADD_SETTING_LISTENERS.add(listener);
+		}
+	}
+
+	/**
+	 * Registers a new app setting removed listener.
+	 * @param listener the listener
+	 */
+	public static void addAppSettingRemovedListener(AppSettingRemovedListener listener) {
+		if (listener != null) {
+			REMOVE_SETTING_LISTENERS.add(listener);
 		}
 	}
 
