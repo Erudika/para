@@ -20,8 +20,14 @@ package com.erudika.para.utils;
 import com.erudika.para.annotations.Email;
 import com.erudika.para.core.ParaObject;
 import com.samskivert.mustache.Mustache;
+import com.vladsch.flexmark.ext.emoji.EmojiExtension;
+import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension;
+import com.vladsch.flexmark.ext.gfm.tasklist.TaskListExtension;
+import com.vladsch.flexmark.ext.tables.TablesExtension;
 import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
+import com.vladsch.flexmark.util.options.MutableDataHolder;
+import com.vladsch.flexmark.util.options.MutableDataSet;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
@@ -41,6 +47,7 @@ import java.security.SecureRandom;
 import java.text.DateFormatSymbols;
 import java.text.MessageFormat;
 import java.text.NumberFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
@@ -70,8 +77,9 @@ public final class Utils {
 	// maps lowercase simple names to class objects
 	private static final Pattern EMAIL_PATTERN = Pattern.compile(Email.EMAIL_PATTERN);
 	private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance();
-	private static final Parser MD_PARSER = Parser.builder().build();
-	private static final HtmlRenderer HTML_RENDERER = HtmlRenderer.builder().build();
+	private static final MutableDataHolder MD_OPTIONS = getMarkdownOptions();
+	private static final Parser MD_PARSER = Parser.builder(MD_OPTIONS).build();
+	private static final HtmlRenderer HTML_RENDERER = HtmlRenderer.builder(MD_OPTIONS).build();
 	private static HumanTime humantime;
 	private static Utils instance;
 
@@ -394,6 +402,18 @@ public final class Utils {
 		} catch (UnsupportedEncodingException ex) {
 			return "";
 		}
+	}
+
+	private static MutableDataHolder getMarkdownOptions() {
+		return new MutableDataSet()
+				.set(EmojiExtension.USE_IMAGE_URLS, true)
+				// for full GFM table compatibility add the following table extension options:
+				.set(TablesExtension.COLUMN_SPANS, false)
+				.set(TablesExtension.APPEND_MISSING_COLUMNS, true)
+				.set(TablesExtension.DISCARD_EXTRA_COLUMNS, true)
+				.set(TablesExtension.HEADER_SEPARATOR_COLUMN_MATCH, true)
+				.set(Parser.EXTENSIONS, Arrays.asList(TablesExtension.create(), EmojiExtension.create(),
+						StrikethroughExtension.create(), TaskListExtension.create()));
 	}
 
 	/////////////////////////////////////////////

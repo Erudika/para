@@ -14,6 +14,7 @@
 	<properties>
 		<jacksonVer>2.9.2</jacksonVer>
 		<springVer>4.3.12.RELEASE</springVer>
+		<flexmarkVer>0.28.24</flexmarkVer>
 	</properties>
 
 	<dependencies>
@@ -191,7 +192,27 @@
 		<dependency>
 			<groupId>com.vladsch.flexmark</groupId>
 			<artifactId>flexmark</artifactId>
-			<version>0.19.5</version>
+			<version>${flexmarkVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.vladsch.flexmark</groupId>
+			<artifactId>flexmark-ext-emoji</artifactId>
+			<version>${flexmarkVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.vladsch.flexmark</groupId>
+			<artifactId>flexmark-ext-gfm-strikethrough</artifactId>
+			<version>${flexmarkVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.vladsch.flexmark</groupId>
+			<artifactId>flexmark-ext-gfm-tasklist</artifactId>
+			<version>${flexmarkVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.vladsch.flexmark</groupId>
+			<artifactId>flexmark-ext-tables</artifactId>
+			<version>${flexmarkVer}</version>
 		</dependency>
 		<dependency>
 			<groupId>de.svenkubiak</groupId>
