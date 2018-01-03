@@ -70,7 +70,7 @@ public class SearchQueryAspect implements MethodInterceptor {
 
 		Object result = null;
 		if (measuredAnno != null) {
-			result = invokeTimedSearch(appid, superMethod, mi);
+			result = invokeTimedSearch(appid, searchMethod, mi);
 		} else {
 			result = mi.proceed();
 		}
