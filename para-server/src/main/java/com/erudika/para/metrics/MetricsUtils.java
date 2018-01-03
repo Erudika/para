@@ -30,7 +30,6 @@ import com.erudika.para.AppSettingRemovedListener;
 import com.erudika.para.InitializeListener;
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
-import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.rest.CustomResourceHandler;
 import com.erudika.para.rest.RestUtils;
 import com.erudika.para.utils.Config;
@@ -98,24 +97,25 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 				MetricsUtils.createGraphiteReporter(SYSTEM_METRICS_NAME, settings, prefixSystem);
 			}
 
-			// find all app objects even if there are more than 10000 apps in the system
-			// apps will be added in chronological order, root app first, followed by child apps
-			Pager pager = new Pager(1, "_docid", false, Config.DEFAULT_LIMIT);
-			List<App> apps = new LinkedList<>();
-			List<App> appsPage;
-			do {
-				appsPage = Para.getSearch().findQuery(Utils.type(App.class), "*", pager);
-				apps.addAll(appsPage);
-				logger.debug("Found a page of {} apps.", appsPage.size());
-			} while (!appsPage.isEmpty());
-
 			if (HealthUtils.getInstance().isHealthy()) {
+				// find all app objects even if there are more than 10000 apps in the system
+				// apps will be added in chronological order, root app first, followed by child apps
+				Pager pager = new Pager(1, "_docid", false, Config.DEFAULT_LIMIT);
+				List<App> apps = new LinkedList<>();
+				List<App> appsPage;
+				do {
+					appsPage = Para.getSearch().findQuery(Utils.type(App.class), "*", pager);
+					apps.addAll(appsPage);
+					logger.debug("Found a page of {} apps.", appsPage.size());
+				} while (!appsPage.isEmpty());
+
 				logger.info("Found root app '{}' and {} existing child app(s){}", Config.getRootAppIdentifier(),
 						apps.size() - 1, apps.isEmpty() || !logger.isDebugEnabled() ? "." : ":");
-			}
-			for (App app : apps) {
-				logger.debug("   {}{}", app.getAppIdentifier(), app.isRootApp() ? " (root app)" : "");
-				MetricsUtils.initializeMetrics(app.getAppIdentifier());
+
+				for (App app : apps) {
+					logger.debug("   {}{}", app.getAppIdentifier(), app.isRootApp() ? " (root app)" : "");
+					MetricsUtils.initializeMetrics(app.getAppIdentifier());
+				}
 			}
 
 			// schedule the regular check on metrics settings registries to establish app-specific reporting
@@ -290,8 +290,8 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 		MetricRegistry registry = SharedMetricRegistries.getOrCreate(registryName);
 
 		// register the DAO timers
-		if (CoreUtils.getInstance().getDao() != null) {
-			String daoClassName = getClassName(CoreUtils.getInstance().getDao().getClass());
+		if (Para.getDAO() != null) {
+			String daoClassName = getClassName(Para.getDAO().getClass());
 			registry.timer(MetricRegistry.name(daoClassName, "create"));
 			registry.timer(MetricRegistry.name(daoClassName, "read"));
 			registry.timer(MetricRegistry.name(daoClassName, "update"));
@@ -305,7 +305,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 
 		// register the search timers
 		if (Config.isSearchEnabled()) {
-			String searchClassName = getClassName(CoreUtils.getInstance().getSearch().getClass());
+			String searchClassName = getClassName(Para.getSearch().getClass());
 			registry.timer(MetricRegistry.name(searchClassName, "index"));
 			registry.timer(MetricRegistry.name(searchClassName, "unindex"));
 			registry.timer(MetricRegistry.name(searchClassName, "indexAll"));
@@ -326,7 +326,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 
 		// register the cache timers
 		if (Config.isCacheEnabled()) {
-			String cacheClassName = getClassName(CoreUtils.getInstance().getCache().getClass());
+			String cacheClassName = getClassName(Para.getCache().getClass());
 			registry.timer(MetricRegistry.name(cacheClassName, "contains"));
 			registry.timer(MetricRegistry.name(cacheClassName, "put"));
 			registry.timer(MetricRegistry.name(cacheClassName, "get"));

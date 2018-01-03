@@ -18,6 +18,7 @@
 package com.erudika.para.aop;
 
 import com.erudika.para.persistence.DAO;
+import com.erudika.para.search.Search;
 import com.google.inject.AbstractModule;
 import com.google.inject.matcher.Matchers;
 
@@ -29,9 +30,13 @@ public class AOPModule extends AbstractModule {
 
 	protected void configure() {
 		// enable automatic indexing and caching each time an object is created/updated
-		IndexAndCacheAspect aspect = new IndexAndCacheAspect();
-		requestInjection(aspect);
-		bindInterceptor(Matchers.subclassesOf(DAO.class), Matchers.any(), aspect);
+		IndexAndCacheAspect coreAspect = new IndexAndCacheAspect();
+		requestInjection(coreAspect);
+		bindInterceptor(Matchers.subclassesOf(DAO.class), Matchers.any(), coreAspect);
+		// enable the search query interceptor for metrics collection
+		SearchQueryAspect searchAspect = new SearchQueryAspect();
+		//requestInjection(searchAspect);
+		bindInterceptor(Matchers.subclassesOf(Search.class), Matchers.any(), searchAspect);
 	}
 
 }

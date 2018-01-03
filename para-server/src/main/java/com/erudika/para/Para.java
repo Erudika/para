@@ -85,6 +85,7 @@ public final class Para {
 	private static final List<DestroyListener> DESTROY_LISTENERS = new LinkedList<DestroyListener>();
 	private static final List<InitializeListener> INIT_LISTENERS = new LinkedList<InitializeListener>();
 	private static final List<IOListener> IO_LISTENERS = new LinkedList<IOListener>();
+	private static final List<IOListener> SEARCH_LISTENERS = new LinkedList<IOListener>();
 	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(Config.EXECUTOR_THREADS);
 	private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(Config.EXECUTOR_THREADS);
 	private static Injector injector;
@@ -265,6 +266,25 @@ public final class Para {
 	 */
 	public static List<IOListener> getIOListeners() {
 		return IO_LISTENERS;
+	}
+
+	/**
+	 * Registers a new Para I/O listener for listening to search queries.
+	 *
+	 * @param iol the listener
+	 */
+	public static void addSearchQueryListener(IOListener iol) {
+		if (iol != null) {
+			SEARCH_LISTENERS.add(iol);
+		}
+	}
+
+	/**
+	 * Returns a list of I/O listeners for search queries.
+	 * @return the list of registered listeners for listening to search queries
+	 */
+	public static List<IOListener> getSearchQueryListeners() {
+		return SEARCH_LISTENERS;
 	}
 
 	/**
