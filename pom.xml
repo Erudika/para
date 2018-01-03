@@ -126,9 +126,10 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>2.20</version>
+				<version>2.20.1</version>
 				<configuration>
-					<!--<argLine>-Xmx256m ${surefireArgLine}</argLine>-->
+					<!--<argLine>-Xmx256m  ${surefireArgLine}</argLine>-->
+					<argLine>--add-modules java.xml.bind ${surefireArgLine}</argLine>
 					<skipTests>${skipUTs}</skipTests>
 					<!--					<parallel>methods</parallel>
 					<threadCount>10</threadCount>
