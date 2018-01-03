@@ -337,31 +337,33 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 		}
 
 		// register timers on the REST endpoints
-		String restUtilsClassName = getClassName(RestUtils.class);
-		registry.timer(MetricRegistry.name(restUtilsClassName, "crud", "read"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "crud", "create"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "crud", "overwrite"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "crud", "update"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "crud", "delete"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "batch", "read"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "batch", "create"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "batch", "update"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "batch", "delete"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "links", "read"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "links", "delete"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "links", "create"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "search", "id"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "search", "ids"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "search", "nested"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "search", "nearby"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "search", "prefix"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "search", "similar"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "search", "tagged"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "search", "in"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "search", "terms"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "search", "wildcard"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "search", "count"));
-		registry.timer(MetricRegistry.name(restUtilsClassName, "search", "default"));
+		if (Config.API_ENABLED) {
+			String restUtilsClassName = getClassName(RestUtils.class);
+			registry.timer(MetricRegistry.name(restUtilsClassName, "crud", "read"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "crud", "create"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "crud", "overwrite"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "crud", "update"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "crud", "delete"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "batch", "read"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "batch", "create"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "batch", "update"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "batch", "delete"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "links", "read"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "links", "delete"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "links", "create"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "search", "id"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "search", "ids"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "search", "nested"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "search", "nearby"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "search", "prefix"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "search", "similar"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "search", "tagged"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "search", "in"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "search", "terms"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "search", "wildcard"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "search", "count"));
+			registry.timer(MetricRegistry.name(restUtilsClassName, "search", "default"));
+		}
 
 		// register timers on custom resource handlers
 		for (final CustomResourceHandler handler : getCustomResourceHandlers()) {
