@@ -81,11 +81,18 @@ public enum CoreUtils implements InitializeListener {
 			// switch to the real DAO, Search and Cache implementations at runtime
 			if (dao != null && search != null && cache != null) {
 				logger.info("Loaded new DAO, Search and Cache implementations - {}, {} and {}.",
-						dao.getClass().getSimpleName(),
-						search.getClass().getSimpleName(),
-						cache.getClass().getSimpleName());
+						stripGuiceMarkerFromClassname(dao.getClass()),
+						stripGuiceMarkerFromClassname(search.getClass()),
+						stripGuiceMarkerFromClassname(cache.getClass()));
 				setIotFactory(iotFactory);
 			}
+		}
+
+		private String stripGuiceMarkerFromClassname(Class<?> clazz) {
+			if (clazz.getSimpleName().contains("$EnhancerByGuice$")) {
+				return clazz.getSuperclass().getSimpleName();
+			}
+			return clazz.getSimpleName();
 		}
 
 		@Override
