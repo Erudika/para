@@ -322,6 +322,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 			registry.timer(MetricRegistry.name(searchClassName, "findTermInList"));
 			registry.timer(MetricRegistry.name(searchClassName, "findTerms"));
 			registry.timer(MetricRegistry.name(searchClassName, "findWildcard"));
+			registry.timer(MetricRegistry.name(searchClassName, "getCount"));
 		}
 
 		// register the cache timers
