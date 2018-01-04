@@ -129,7 +129,7 @@
 				<version>2.20.1</version>
 				<configuration>
 					<!--<argLine>-Xmx256m  ${surefireArgLine}</argLine>-->
-					<argLine>--add-modules java.xml.bind ${surefireArgLine}</argLine>
+					<argLine>--add-modules java.xml.bind</argLine>
 					<skipTests>${skipUTs}</skipTests>
 					<!--					<parallel>methods</parallel>
 					<threadCount>10</threadCount>
