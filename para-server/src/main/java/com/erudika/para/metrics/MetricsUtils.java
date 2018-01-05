@@ -25,7 +25,6 @@ import com.codahale.metrics.Timer;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.erudika.para.AppCreatedListener;
-import com.erudika.para.AppDeletedListener;
 import com.erudika.para.AppSettingAddedListener;
 import com.erudika.para.AppSettingRemovedListener;
 import com.erudika.para.InitializeListener;
@@ -133,13 +132,6 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 				public void onAppCreated(App app) {
 					if (app != null) {
 						MetricsUtils.initializeMetrics(app.getAppIdentifier());
-					}
-				}
-			});
-			App.addAppDeletedListener(new AppDeletedListener() {
-				public void onAppDeleted(App app) {
-					if (app != null) {
-						app.clearSettings(); // removes the app from all registries, metrics stop on next interval
 					}
 				}
 			});

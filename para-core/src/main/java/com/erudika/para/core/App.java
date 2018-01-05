@@ -976,6 +976,7 @@ public class App implements ParaObject, Serializable {
 				listener.onAppDeleted(this);
 				logger.debug("Executed {}.onAppDeleted().", listener.getClass().getName());
 			}
+			clearSettings();
 		}
 	}
 
