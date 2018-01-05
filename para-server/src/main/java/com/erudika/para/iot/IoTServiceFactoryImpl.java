@@ -18,6 +18,7 @@
 package com.erudika.para.iot;
 
 import com.erudika.para.Para;
+import com.erudika.para.utils.Config;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -29,8 +30,12 @@ import javax.inject.Singleton;
 @Singleton
 public class IoTServiceFactoryImpl implements IoTServiceFactory {
 
+	private static final boolean IOT_ENABLED = Config.getConfigBoolean("iot_enabled", false);
+
 	static {
-		Para.addIOListener(new ThingIOListener());
+		if (IOT_ENABLED) {
+			Para.addIOListener(new ThingIOListener());
+		}
 	}
 
 	@Inject @Named("AWSIoTService")
@@ -46,11 +51,13 @@ public class IoTServiceFactoryImpl implements IoTServiceFactory {
 
 	@Override
 	public IoTService getIoTService(String name) {
-		if ("aws".equalsIgnoreCase(name) || "AWSIoTService".equalsIgnoreCase(name)) {
-			return awsIoTService;
-		}
-		if ("azure".equalsIgnoreCase(name) || "AzureIoTService".equalsIgnoreCase(name)) {
-			return azureIoTService;
+		if (IOT_ENABLED) {
+			if ("aws".equalsIgnoreCase(name) || "AWSIoTService".equalsIgnoreCase(name)) {
+				return awsIoTService;
+			}
+			if ("azure".equalsIgnoreCase(name) || "AzureIoTService".equalsIgnoreCase(name)) {
+				return azureIoTService;
+			}
 		}
 		return null;
 	}
