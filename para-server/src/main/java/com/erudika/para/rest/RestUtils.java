@@ -560,7 +560,7 @@ public final class RestUtils {
 				RestUtils.class, "crud", "delete")) {
 			if (app != null && content != null && content.getId() != null && content.getAppid() != null) {
 				if (checkImplicitAppPermissions(app, content) && checkIfUserCanModifyObject(app, content)) {
-					content.setAppid(app.getAppIdentifier());
+					content.setAppid(isNotAnApp(content.getType()) ? app.getAppIdentifier() : app.getAppid());
 					content.delete();
 					return Response.ok().build();
 				}
