@@ -53,6 +53,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.NotBlank;
@@ -181,6 +182,21 @@ public class App implements ParaObject, Serializable {
 	}
 
 	/**
+	 * Adds all settings to map of app settings and invokes all {@link AppSettingAddedListener}s.
+	 * @param settings a map settings to add
+	 * @return this
+	 */
+	public App addAllSettings(Map<String, Object> settings) {
+		// add the new settings one at a time so the add setting listeners are invoked
+		if (settings != null && !settings.isEmpty()) {
+			for (Map.Entry<String, Object> iter : settings.entrySet()) {
+				addSetting(iter.getKey(), iter.getValue());
+			}
+		}
+		return this;
+	}
+
+	/**
 	 * Returns the value of a setting for a given key.
 	 * @param name the key
 	 * @return the value
@@ -206,6 +222,19 @@ public class App implements ParaObject, Serializable {
 					logger.debug("Executed {}.onSettingRemoved().", listener.getClass().getName());
 				}
 			}
+		}
+		return this;
+	}
+
+	/**
+	 * Clears all app settings and invokes each {@link AppSettingRemovedListener}s.
+	 * @return this
+	 */
+	public App clearSettings() {
+		// remove the old settings one at a time so the remove setting listeners are invoked
+		if (settings != null && !settings.isEmpty()) {
+			List<String> keysToRemove = settings.keySet().stream().collect(Collectors.toList());
+			keysToRemove.stream().forEach(oldKey -> removeSetting(oldKey));
 		}
 		return this;
 	}
