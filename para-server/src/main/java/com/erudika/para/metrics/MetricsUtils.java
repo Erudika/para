@@ -72,7 +72,10 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 				return;
 			}
 			// setup metrics log file reporting
-			MetricRegistry systemRegistry = SharedMetricRegistries.setDefault(SYSTEM_METRICS_NAME);
+			MetricRegistry systemRegistry = SharedMetricRegistries.tryGetDefault();
+			if (systemRegistry == null) {
+				systemRegistry = SharedMetricRegistries.setDefault(SYSTEM_METRICS_NAME);
+			}
 			Logger metricsLogger = LoggerFactory.getLogger("paraMetrics");
 			int loggingRate = Config.getConfigInt("metrics.logging_rate", 60);
 			if (loggingRate > 0) {
