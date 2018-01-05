@@ -68,8 +68,6 @@ public class AppTest {
 		App app = new App("test");
 		app.setAppid("notRoot");
 		assertNull(app.create());
-		app.setAppid(Config.getRootAppIdentifier());
-		assertNotNull(app.create());
 	}
 
 	@Test
