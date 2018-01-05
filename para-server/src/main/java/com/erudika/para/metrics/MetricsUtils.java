@@ -25,6 +25,7 @@ import com.codahale.metrics.Timer;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.erudika.para.AppCreatedListener;
+import com.erudika.para.AppDeletedListener;
 import com.erudika.para.AppSettingAddedListener;
 import com.erudika.para.AppSettingRemovedListener;
 import com.erudika.para.InitializeListener;
@@ -127,7 +128,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 						scheduleAtFixedRate(this, 0, 1, TimeUnit.MINUTES);
 			}
 
-			// setup initialization for all new apps
+			// setup initialization/cleanup for all new apps
 			App.addAppCreatedListener(new AppCreatedListener() {
 				public void onAppCreated(App app) {
 					if (app != null) {
@@ -135,10 +136,16 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 					}
 				}
 			});
+			App.addAppDeletedListener(new AppDeletedListener() {
+				public void onAppDeleted(App app) {
+					if (app != null) {
+						app.clearSettings(); // removes the app from all registries, metrics stop on next interval
+					}
+				}
+			});
 
 			// setup listeners for push metrics settings
 			App.addAppSettingAddedListener(new AppSettingAddedListener() {
-				@Override
 				public void onSettingAdded(App app, String settingKey, Object settingValue) {
 					if (app != null) {
 						MetricsUtils.addAppSetting(app, settingKey, settingValue);
@@ -146,7 +153,6 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 				}
 			});
 			App.addAppSettingRemovedListener(new AppSettingRemovedListener() {
-				@Override
 				public void onSettingRemoved(App app, String settingKey) {
 					if (app != null) {
 						MetricsUtils.removeAppSetting(app, settingKey);
@@ -453,13 +459,15 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 
 	/**
 	 * A scheduled check of metrics setting registries to detect changes and apply them.
+	 *
+	 * Note: this method keeps the local registry of reporters in sync with the central one in the database.
+	 * This ensures that all nodes in a cluster push metrics to the corresponding Graphite servers for each app.
 	 */
 	private static void syncAppMetricsReporters() {
 		// check for app-specific graphite push settings
 		Map<String, Object> graphiteRegistry = RegistryUtils.getRegistry(GRAPHITE_REGISTRY_NAME);
 		if (graphiteRegistry != null && GRAPHITE_PERIOD > 0) {
 			// iterate the registry values
-			int numNewReporters = 0;
 			for (Map.Entry<String, Object> iter : graphiteRegistry.entrySet()) {
 				String appid = iter.getKey();
 				GraphiteSettings settings = GraphiteSettings.parse(iter.getValue());
@@ -477,23 +485,20 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 					}
 				} else {
 					// no existing reporter for this app, create it
-					numNewReporters++;
 					createAppGraphiteReporter(appid, settings);
 				}
 			}
-			if (graphiteRegistry.size() < (GRAPHITE_REPORTERS.size() - numNewReporters)) {
-				// at least one of the graphite reporters was disabled by an app, so we need to remove it
-				List<Map.Entry<String, GraphiteReporter>> appsToRemove = Lists.newArrayList();
-				for (Map.Entry<String, GraphiteReporter> iter : GRAPHITE_REPORTERS.entrySet()) {
-					if (!graphiteRegistry.containsKey(iter.getKey())) {
-						appsToRemove.add(iter);
-					}
+			// check if any of the graphite reporters was disabled by an app, if so, remove it
+			List<Map.Entry<String, GraphiteReporter>> appsToRemove = Lists.newArrayList();
+			for (Map.Entry<String, GraphiteReporter> iter : GRAPHITE_REPORTERS.entrySet()) {
+				if (!iter.getKey().equals(SYSTEM_METRICS_NAME) && !graphiteRegistry.containsKey(iter.getKey())) {
+					appsToRemove.add(iter);
 				}
-				for (Map.Entry<String, GraphiteReporter> iter : appsToRemove) {
-					iter.getValue().stop();
-					GRAPHITE_REPORTERS.remove(iter.getKey());
-					GRAPHITE_SETTINGS.remove(iter.getKey());
-				}
+			}
+			for (Map.Entry<String, GraphiteReporter> iter : appsToRemove) {
+				iter.getValue().stop();
+				GRAPHITE_REPORTERS.remove(iter.getKey());
+				GRAPHITE_SETTINGS.remove(iter.getKey());
 			}
 		}
 	}
