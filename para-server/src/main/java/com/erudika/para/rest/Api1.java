@@ -61,7 +61,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.HttpHeaders;
@@ -651,18 +650,7 @@ public final class Api1 extends ResourceConfig {
 							if (!StringUtils.isBlank(key) && setting.containsKey("value")) {
 								app.addSetting(key, setting.get("value"));
 							} else {
-								// remove the old settings one at a time so the remove setting listeners are invoked
-								Map<String, Object> oldSettings = app.getSettings();
-								if (oldSettings != null && !oldSettings.isEmpty()) {
-									List<String> keysToRemove = oldSettings.keySet().stream().collect(Collectors.toList());
-									keysToRemove.stream().forEach(oldKey -> app.removeSetting(oldKey));
-								}
-								// add the new settings one at a time so the add setting listeners are invoked
-								if (setting != null) {
-									for (Map.Entry<String, Object> iter : setting.entrySet()) {
-										app.addSetting(iter.getKey(), iter.getValue());
-									}
-								}
+								app.clearSettings().addAllSettings(setting);
 							}
 							app.update();
 							return Response.ok().build();
