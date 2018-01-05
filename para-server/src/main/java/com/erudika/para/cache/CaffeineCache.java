@@ -20,6 +20,7 @@ package com.erudika.para.cache;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Expiry;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,7 @@ public class CaffeineCache implements Cache {
 
 	private static final Logger logger = LoggerFactory.getLogger(CaffeineCache.class);
 	private static final Map<String, String> KEY_PREFIXES = new ConcurrentHashMap<>();
-
+	private static final int DEFAULT_EXPIRATION_MIN = Config.getConfigInt("caffeine.evict_after_minutes", 10);
 	private final com.github.benmanes.caffeine.cache.Cache<String, Object> cache;
 
 	/**
@@ -50,8 +51,25 @@ public class CaffeineCache implements Cache {
 	public CaffeineCache() {
 		cache = Caffeine.newBuilder()
 			.maximumSize(Config.getConfigInt("caffeine.cache_size", 10000))
-			.expireAfterWrite(Config.getConfigInt("caffeine.evict_after_minutes", 10), TimeUnit.MINUTES)
+			.expireAfter(new Expiry<String, Object>() {
+				public long expireAfterCreate(String key, Object value, long currentTime) {
+					return TimeUnit.MINUTES.toNanos(DEFAULT_EXPIRATION_MIN);
+				}
+				public long expireAfterUpdate(String key, Object value, long currentTime, long currentDuration) {
+					return currentDuration;
+				}
+				public long expireAfterRead(String key, Object value, long currentTime, long currentDuration) {
+					return currentDuration;
+				}
+			})
 			.build();
+	}
+
+	/**
+	 * @param cache cache
+	 */
+	CaffeineCache(com.github.benmanes.caffeine.cache.Cache<String, Object> cache) {
+		this.cache = cache;
 	}
 
 	@Override
@@ -80,8 +98,9 @@ public class CaffeineCache implements Cache {
 		}
 		if (!StringUtils.isBlank(id) && object != null && !StringUtils.isBlank(appid)) {
 			String key = key(appid, id);
-			cache.put(key, object);
-			cache.put(key + ":ttl", Utils.timestamp() + ttlSeconds * 1000);
+			cache.policy().expireVariably().ifPresent((t) -> {
+				t.put(key, object, ttlSeconds, TimeUnit.SECONDS);
+			});
 			logger.debug("Cache.put() {} {} ttl {}", appid, id, ttlSeconds);
 		}
 	}
@@ -107,15 +126,8 @@ public class CaffeineCache implements Cache {
 			return null;
 		}
 		String key = key(appid, id);
-		if (isExpired((Long) cache.getIfPresent(key + ":ttl"))) {
-			remove(appid, key);
-			remove(appid, key + ":ttl");
-			logger.debug("Cache.get() {} {}", appid, null);
-			return null;
-		} else {
-			logger.debug("Cache.get() {} {}", appid, id);
-			return (T) cache.getIfPresent(key);
-		}
+		logger.debug("Cache.get() {} {}", appid, id);
+		return (T) cache.getIfPresent(key);
 	}
 
 	@Override
@@ -162,13 +174,6 @@ public class CaffeineCache implements Cache {
 			}
 			logger.debug("Cache.removeAll() {} {}", appid, ids.size());
 		}
-	}
-
-	private boolean isExpired(Long ttl) {
-		if (ttl == null) {
-			return false;
-		}
-		return Utils.timestamp() > ttl;
 	}
 
 	private String key(String appid, String id) {
