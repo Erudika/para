@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * This method interceptor watches search queries fora all {@link Search} implementations and gathers metrics.
  * It listens for calls to {@link Search} methods, annotated with {@link Measured}.
  * @author Alex Bogdanovski [alex@erudika.com]
- * @see com.erudika.para.persistence.Search
+ * @see Search
  */
 @SuppressWarnings("unchecked")
 public class SearchQueryAspect implements MethodInterceptor {
