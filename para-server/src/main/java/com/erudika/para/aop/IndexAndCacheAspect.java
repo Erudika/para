@@ -113,7 +113,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 			superMethod = DAO.class.getMethod(daoMethod.getName(), daoMethod.getParameterTypes());
 			indexedAnno = Config.isSearchEnabled() ? superMethod.getAnnotation(Indexed.class) : null;
 			cachedAnno = Config.isCacheEnabled() ? superMethod.getAnnotation(Cached.class) : null;
-			detectNestedInvocations(mi);
+			detectNestedInvocations(daoMethod);
 		} catch (Exception e) {
 			logger.error("Error in AOP layer!", e);
 		}
@@ -380,10 +380,9 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	/**
 	 * Try and detect if a DAO method is called from another public DAO method, annotated with {@link Indexed} or
 	 * {@link Cached}. It causes that method to be intercepted twice and objects will be indexed/cached twice.
-	 * @param mi method invocation
+	 * @param daoMethod invoked dao method
 	 */
-	private void detectNestedInvocations(MethodInvocation mi) {
-		Method daoMethod = mi.getMethod();
+	private void detectNestedInvocations(Method daoMethod) {
 		if (!daoMethod.getName().startsWith("read")) {
 			StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
 			for (StackTraceElement stackTraceElement : stackTraceElements) {
