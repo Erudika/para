@@ -97,6 +97,10 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	 * @throws Throwable error
 	 */
 	public Object invoke(MethodInvocation mi) throws Throwable {
+		if (!Modifier.isPublic(mi.getMethod().getModifiers())) {
+			return mi.proceed();
+		}
+
 		Method daoMethod = mi.getMethod();
 		Object[] args = mi.getArguments();
 		String appid = AOPUtils.getFirstArgOfString(args);
@@ -114,9 +118,6 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 			logger.error("Error in AOP layer!", e);
 		}
 
-		if (!Modifier.isPublic(mi.getMethod().getModifiers())) {
-			return invokeDAO(appid, daoMethod, mi);
-		}
 
 		List<IOListener> ioListeners = Para.getIOListeners();
 		for (IOListener ioListener : ioListeners) {
@@ -379,7 +380,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	/**
 	 * Try and detect if a DAO method is called from another public DAO method, annotated with {@link Indexed} or
 	 * {@link Cached}. It causes that method to be intercepted twice and objects will be indexed/cached twice.
-	 * @param mi method invocation
+	 * @param daoMethod invoked dao method
 	 */
 	private void detectNestedInvocations(Method daoMethod) {
 		if (!daoMethod.getName().startsWith("read")) {
