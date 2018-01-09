@@ -97,7 +97,6 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	 * @throws Throwable error
 	 */
 	public Object invoke(MethodInvocation mi) throws Throwable {
-		detectNestedInvocations(mi);
 		if (!Modifier.isPublic(mi.getMethod().getModifiers())) {
 			return mi.proceed();
 		}
@@ -114,6 +113,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 			superMethod = DAO.class.getMethod(daoMethod.getName(), daoMethod.getParameterTypes());
 			indexedAnno = Config.isSearchEnabled() ? superMethod.getAnnotation(Indexed.class) : null;
 			cachedAnno = Config.isCacheEnabled() ? superMethod.getAnnotation(Cached.class) : null;
+			detectNestedInvocations(mi);
 		} catch (Exception e) {
 			logger.error("Error in AOP layer!", e);
 		}
