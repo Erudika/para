@@ -24,6 +24,7 @@ import com.erudika.para.metrics.MetricsUtils;
 import static com.erudika.para.metrics.MetricsUtils.time;
 import com.erudika.para.search.Search;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.List;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
@@ -48,6 +49,10 @@ public class SearchQueryAspect implements MethodInterceptor {
 	 * @throws Throwable error
 	 */
 	public Object invoke(MethodInvocation mi) throws Throwable {
+		if (!Modifier.isPublic(mi.getMethod().getModifiers())) {
+			return mi.proceed();
+		}
+
 		Method searchMethod = mi.getMethod();
 		Object[] args = mi.getArguments();
 		String appid = AOPUtils.getFirstArgOfString(args);
