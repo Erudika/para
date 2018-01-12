@@ -228,7 +228,14 @@ public final class LuceneUtils {
 		NOT_ANALYZED_FIELDS.add("token");
 
 		// these fields are not indexed
-		IGNORED_FIELDS = new String[]{"validationConstraints", "resourcePermissions"};
+		IGNORED_FIELDS = new String[] {
+			"settings", // App
+			"datatypes", // App
+			"deviceState", // Thing
+			"deviceMetadata", // Thing
+			"resourcePermissions", // App
+			"validationConstraints" // App
+		};
 	}
 
 	private LuceneUtils() { }
