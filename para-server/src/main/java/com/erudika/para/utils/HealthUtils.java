@@ -1,5 +1,6 @@
 package com.erudika.para.utils;
 
+import com.eaio.uuid.UUID;
 import com.erudika.para.InitializeListener;
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
@@ -53,10 +54,16 @@ public enum HealthUtils implements InitializeListener, Runnable {
 					healthy = false;
 					failedServices.add("Search");
 				}
-				// read the root app from the cache, if enabled
-				if (Config.isCacheEnabled() && !Para.getCache().contains(rootAppId)) {
-					healthy = false;
-					failedServices.add("Cache");
+				// test the cache by putting a dummy object in, then remove it
+				// DO NOT assume that the root app object is still cached here from the last read() call above
+				if (Config.isCacheEnabled()) {
+					String cacheTestId = new UUID().toString();
+					Para.getCache().put(cacheTestId, "ok");
+					healthy = Para.getCache().contains(cacheTestId);
+					Para.getCache().remove(cacheTestId);
+					if (!healthy) {
+						failedServices.add("Cache");
+					}
 				}
 			}
 			if (wasHealthy && !healthy) {
