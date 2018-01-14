@@ -118,7 +118,6 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 			logger.error("Error in AOP layer!", e);
 		}
 
-
 		List<IOListener> ioListeners = Para.getIOListeners();
 		for (IOListener ioListener : ioListeners) {
 			ioListener.onPreInvoke(superMethod, args);

@@ -35,7 +35,7 @@ public enum HealthUtils implements InitializeListener, Runnable {
 		}
 
 		@Override
-		public  synchronized void performHealthCheck() {
+		public synchronized void performHealthCheck() {
 			String rootAppId = App.id(Config.getRootAppIdentifier());
 			if (!StringUtils.isBlank(rootAppId)) {
 				healthy = true;
