@@ -424,7 +424,8 @@ public final class RestUtils {
 			Response entityRes = getEntity(is, Map.class);
 			if (entityRes.getStatusInfo() == Response.Status.OK) {
 				Map<String, Object> newContent = (Map<String, Object>) entityRes.getEntity();
-				if (!StringUtils.isBlank(type)) {
+				String declaredType = (String) newContent.get(Config._TYPE);
+				if (!StringUtils.isBlank(type) && (StringUtils.isBlank(declaredType) || !type.startsWith(declaredType))) {
 					newContent.put(Config._TYPE, type);
 				}
 				content = ParaObjectUtils.setAnnotatedFields(newContent);
