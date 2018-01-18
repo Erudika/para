@@ -57,8 +57,8 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 	private final ObjectReader jreader;
 	private static final String PROFILE_URL = "https://api.github.com/user";
 	private static final String TOKEN_URL = "https://github.com/login/oauth/access_token";
-	private static final String PAYLOAD = "code={0}&redirect_uri={1}&scope=&client_id={2}"
-			+ "&client_secret={3}&grant_type=authorization_code";
+	private static final String PAYLOAD = "code={0}&redirect_uri={1}&client_id={2}&client_secret={3}";
+
 	/**
 	 * The default filter mapping.
 	 */
