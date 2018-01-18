@@ -580,9 +580,11 @@ public final class AWSDynamoUtils {
 			while (it.hasNext() && reqs.size() < maxItems) {
 				reqs.add(it.next());
 			}
-			logger.info("Deleting {} items belonging to app '{}', from shared table (page {}/{})...",
-					reqs.size(), appid, i + 1, batchSteps);
-			batchWrite(Collections.singletonMap(tableName, reqs));
+			if (reqs.size() > 0) {
+				logger.info("Deleting {} items belonging to app '{}', from shared table (page {}/{})...",
+						reqs.size(), appid, i + 1, batchSteps);
+				batchWrite(Collections.singletonMap(tableName, reqs));
+			}
 			reqs.clear();
 		}
 	}
