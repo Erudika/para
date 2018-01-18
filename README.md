@@ -203,6 +203,7 @@ Use these `DAO` implementations to connect to different databases:
 - **DynamoDB**: `AWSDynamoDAO` (included in `para-server`)
 - **MongoDB**: [para-dao-mongodb](https://github.com/Erudika/para-dao-mongodb)
 - **Cassandra**: [para-dao-cassandra](https://github.com/Erudika/para-dao-cassandra)
+- **SQL** (MySQL/MariaDB, PostgreSQL, etc.): [para-dao-sql](https://github.com/Erudika/para-dao-sql)
 
 ## Search engine integrations
 
