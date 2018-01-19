@@ -42,6 +42,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
@@ -382,50 +383,69 @@ public final class LuceneUtils {
 		return true;
 	}
 
-	private static void addDocumentFields(JsonNode object, Document doc, String prefix) {
+	private static void addDocumentFields(JsonNode object, Document doc) {
 		try {
-			for (Iterator<Map.Entry<String, JsonNode>> iterator = object.fields(); iterator.hasNext();) {
-				Map.Entry<String, JsonNode> entry = iterator.next();
-				String pre = (StringUtils.isBlank(prefix) ? "" : prefix + ".");
-				String field = pre + entry.getKey();
-				JsonNode value = entry.getValue();
-				if (StringUtils.equalsAny(field, IGNORED_FIELDS)) {
-					continue;
-				}
-				if (value != null) {
+			LinkedList<Map<String, JsonNode>> stack = new LinkedList<>();
+			stack.add(Collections.singletonMap("", object));
+			while (!stack.isEmpty()) {
+				Map<String, JsonNode> singletonMap = stack.pop();
+				String prefix = singletonMap.keySet().iterator().next();
+				JsonNode value = singletonMap.get(prefix);
+				if (!StringUtils.equalsAny(prefix, IGNORED_FIELDS) && value != null) {
 					switch (value.getNodeType()) {
 						case OBJECT:
-							addDocumentFields(value, doc, pre + field);
-							break;
-						case ARRAY:
-							StringBuilder sb = new StringBuilder();
-							for (Iterator<JsonNode> iterator1 = value.elements(); iterator1.hasNext();) {
-								String val = iterator1.next().asText();
-								if (!StringUtils.isBlank(val)) {
-									if (sb.length() > 0) {
-										sb.append(",");
-									}
-									sb.append(val);
-									doc.add(getField(field, val));
-								}
-							}
-							if (sb.length() > 0) {
-								doc.add(new SortedDocValuesField(field, new BytesRef(sb.toString())));
+							String pre = (StringUtils.isBlank(prefix) ? "" : prefix + ".");
+							for (Iterator<Entry<String, JsonNode>> iterator1 = value.fields(); iterator1.hasNext();) {
+								Entry<String, JsonNode> entry = iterator1.next();
+								addFieldToStack(pre + entry.getKey(), entry.getValue(), stack, doc);
 							}
 							break;
 						default:
-							String val = value.asText("null");
-							Field f = getField(field, val);
-							if (!(f instanceof LatLonPoint)) {
-								doc.add(new SortedDocValuesField(field, new BytesRef(val)));
-							}
-							doc.add(f);
+							addFieldToStack(prefix, value, stack, doc);
 							break;
 					}
 				}
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
+		}
+	}
+
+	private static void addFieldToStack(String prefix, JsonNode val, LinkedList<Map<String, JsonNode>> stack, Document doc)
+			throws JsonProcessingException {
+		if (val != null) {
+			switch (val.getNodeType()) {
+				case OBJECT:
+					stack.push(Collections.singletonMap(prefix, val));
+					break;
+				case ARRAY:
+					StringBuilder sb = new StringBuilder();
+					for (Iterator<JsonNode> iterator1 = val.elements(); iterator1.hasNext();) {
+						JsonNode next = iterator1.next();
+						String textValue;
+						if (next.isObject() || next.isArray()) {
+							textValue = ParaObjectUtils.getJsonWriterNoIdent().writeValueAsString(next);
+						} else {
+							textValue = next.asText();
+						}
+						if (!StringUtils.isBlank(textValue)) {
+							sb.append(textValue).append(",");
+							doc.add(getField(prefix, textValue));
+						}
+					}
+					if (sb.length() > 0) {
+						doc.add(new SortedDocValuesField(prefix, new BytesRef(sb.toString())));
+					}
+					break;
+				default:
+					String txt = val.asText("null");
+					Field f = getField(prefix, txt);
+					if (!(f instanceof LatLonPoint)) {
+						doc.add(new SortedDocValuesField(prefix, new BytesRef(txt)));
+					}
+					doc.add(f);
+					break;
+			}
 		}
 	}
 
@@ -476,7 +496,7 @@ public final class LuceneUtils {
 						object.put(Config._TYPE, data.get(Config._TYPE));
 						JsonNode nestedJsonDoc = ParaObjectUtils.getJsonMapper().valueToTree(object);
 						Document nestedDoc = new Document();
-						addDocumentFields(nestedJsonDoc, nestedDoc, "");
+						addDocumentFields(nestedJsonDoc, nestedDoc);
 						addSource(jsonDoc, nestedDoc); // nested field has the source of its parent
 						docs.add(nestedDoc);
 					}
@@ -485,7 +505,7 @@ public final class LuceneUtils {
 			} else {
 				jsonDoc = ParaObjectUtils.getJsonMapper().valueToTree(data);
 			}
-			addDocumentFields(jsonDoc, doc, "");
+			addDocumentFields(jsonDoc, doc);
 			addSource(jsonDoc, doc);
 		} catch (Exception e) {
 			logger.error(null, e);
