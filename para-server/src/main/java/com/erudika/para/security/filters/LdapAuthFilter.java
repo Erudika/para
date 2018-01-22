@@ -112,10 +112,16 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 			String ldapAccountId = profile.getUsername();
 			String email = profile.getMail();
 			String name = StringUtils.join(profile.getCn(), ", ");
+			String adDomain = (String) app.getSetting("security.ldap.active_directory_domain");
 
 			if (StringUtils.isBlank(email)) {
-				LOG.warn("Failed to create LDAP user '{}' with blank email.", ldapAccountId);
-				return null;
+				if (!StringUtils.isBlank(adDomain)) {
+					LOG.warn("The AD doesn't have email attribute. Instead, it uses domain name for email address: {}@{}.", ldapAccountId, adDomain);
+					email = ldapAccountId.concat("@").concat(adDomain);
+				} else {
+					LOG.warn("Failed to create LDAP user '{}' with blank email.", ldapAccountId);
+					return null;
+				}
 			}
 
 			user.setAppid(getAppid(app));
