@@ -17,10 +17,15 @@
  */
 package com.erudika.para.core;
 
+import com.erudika.para.annotations.Stored;
 import static com.erudika.para.core.utils.ParaObjectUtils.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -124,6 +129,19 @@ public class ParaObjectUtilsTest {
 
 	@Test
 	public void testSetAnnotatedFields_Map() {
+		assertNull(setAnnotatedFields(null));
+		assertNull(setAnnotatedFields(Collections.emptyMap()));
+		Map<String, Object> data1 = new HashMap<String, Object>();
+		data1.put("missing", "123");
+		data1.put("type", "custom");
+		Custom c = setAnnotatedFields(data1);
+		assertNull(c.getaBool());
+		assertNull(c.getaLong());
+		data1.put("aLong", 10L);
+		data1.put("aBool", true);
+		Custom c1 = setAnnotatedFields(data1);
+		assertEquals(Long.valueOf(10L), c1.getaLong());
+		assertTrue(c1.getaBool());
 	}
 
 	@Test
@@ -152,6 +170,29 @@ public class ParaObjectUtilsTest {
 
 	@Test
 	public void testToJSON() {
+	}
+
+	public static class Custom extends Sysprop {
+
+		@Stored Long aLong;
+		@Stored Boolean aBool;
+
+		public Long getaLong() {
+			return aLong;
+		}
+
+		public void setaLong(Long aLong) {
+			this.aLong = aLong;
+		}
+
+		public Boolean getaBool() {
+			return aBool;
+		}
+
+		public void setaBool(Boolean aBool) {
+			this.aBool = aBool;
+		}
+
 	}
 
 }

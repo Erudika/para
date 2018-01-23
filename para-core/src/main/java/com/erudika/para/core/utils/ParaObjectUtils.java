@@ -323,7 +323,9 @@ public final class ParaObjectUtils {
 						value = getJsonReader(field.getType()).readValue(value.toString());
 					}
 					field.setAccessible(true);
-					BeanUtils.setProperty(pojo, name, value);
+					if (value != null) {
+						BeanUtils.setProperty(pojo, name, value);
+					}
 				}
 				props.remove(name);
 			}
