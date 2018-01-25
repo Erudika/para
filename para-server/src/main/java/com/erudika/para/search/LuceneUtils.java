@@ -434,14 +434,16 @@ public final class LuceneUtils {
 						}
 					}
 					if (sb.length() > 0) {
-						doc.add(new SortedDocValuesField(prefix, new BytesRef(sb.toString())));
+						String txt = sb.length() > 32766 ? StringUtils.truncate(sb.toString(), 32766) : sb.toString();
+						doc.add(new SortedDocValuesField(prefix, new BytesRef(txt)));
 					}
 					break;
 				default:
 					String txt = val.asText("null");
 					Field f = getField(prefix, txt);
 					if (!(f instanceof LatLonPoint)) {
-						doc.add(new SortedDocValuesField(prefix, new BytesRef(txt)));
+						doc.add(new SortedDocValuesField(prefix, new BytesRef(txt.length() > 32766 ?
+								StringUtils.truncate(txt, 32766) : txt)));
 					}
 					doc.add(f);
 					break;
