@@ -629,12 +629,14 @@ public final class LuceneUtils {
 					}
 				}
 
-				Builder qb2 = new BooleanQuery.Builder();
-				qb2.add(qs(queryString, MultiFields.getIndexedFields(ireader)), BooleanClause.Occur.MUST);
+				Builder qsPart = new BooleanQuery.Builder();
+				qsPart.add(qs(queryString, MultiFields.getIndexedFields(ireader)), BooleanClause.Occur.MUST);
+				Builder filterIdsPart = new BooleanQuery.Builder();
 				for (String id : parentids) {
-					qb2.add(new TermQuery(new Term(Config._ID, id)), BooleanClause.Occur.SHOULD);
+					filterIdsPart.add(new TermQuery(new Term(Config._ID, id)), BooleanClause.Occur.SHOULD);
 				}
-				Document[] hits2 = searchQueryRaw(ireader, appid, type, qb2.build(), page);
+				qsPart.add(filterIdsPart.build(), BooleanClause.Occur.FILTER);
+				Document[] hits2 = searchQueryRaw(ireader, appid, type, qsPart.build(), page);
 				return searchQuery(dao, appid, hits2, page);
 			}
 		} catch (Exception e) {
