@@ -561,6 +561,9 @@ public final class ParaClient {
 		if (objects == null || objects.isEmpty() || objects.get(0) == null) {
 			return Collections.emptyList();
 		}
+		if (chunkSize <= 0) {
+			return createAll(objects);
+		}
 		return IntStream.range(0, (objects.size() + chunkSize - 1) / chunkSize)
 				.mapToObj(i -> objects.subList(i * chunkSize, Math.min((i + 1) * chunkSize, objects.size())))
 				.map(this::<P>createAll)
@@ -578,6 +581,9 @@ public final class ParaClient {
 	public <P extends ParaObject> List<P> readAll(List<String> keys, int chunkSize) {
 		if (keys == null || keys.isEmpty()) {
 			return Collections.emptyList();
+		}
+		if (chunkSize <= 0) {
+			return readAll(keys);
 		}
 		return IntStream.range(0, (keys.size() + chunkSize - 1) / chunkSize)
 				.mapToObj(i -> keys.subList(i * chunkSize, Math.min((i + 1) * chunkSize, keys.size())))
@@ -597,6 +603,9 @@ public final class ParaClient {
 		if (objects == null || objects.isEmpty()) {
 			return Collections.emptyList();
 		}
+		if (chunkSize <= 0) {
+			return updateAll(objects);
+		}
 		return IntStream.range(0, (objects.size() + chunkSize - 1) / chunkSize)
 				.mapToObj(i -> objects.subList(i * chunkSize, Math.min((i + 1) * chunkSize, objects.size())))
 				.map(this::<P>updateAll)
@@ -611,6 +620,10 @@ public final class ParaClient {
 	 */
 	public void deleteAll(List<String> keys, int chunkSize) {
 		if (keys == null || keys.isEmpty()) {
+			return;
+		}
+		if (chunkSize <= 0) {
+			deleteAll(keys);
 			return;
 		}
 		IntStream.range(0, (keys.size() + chunkSize - 1) / chunkSize)
