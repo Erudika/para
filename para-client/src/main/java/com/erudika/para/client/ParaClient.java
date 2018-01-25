@@ -38,6 +38,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.net.ssl.SSLContext;
 import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
@@ -50,6 +52,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.SslConfigurator;
 import org.glassfish.jersey.client.ClientConfig;
@@ -75,6 +78,7 @@ public final class ParaClient {
 	private Long tokenKeyExpires;
 	private Long tokenKeyNextRefresh;
 	private Client apiClient;
+	private int chunkSize = 0;
 
 	/**
 	 * Default constructor.
@@ -214,6 +218,25 @@ public final class ParaClient {
 		tokenKey = null;
 		tokenKeyExpires = null;
 		tokenKeyNextRefresh = null;
+	}
+
+
+	/**
+	 * Sets the chunk size for batch CRUD operations. If chunkSize is greater than zero, any requests made to
+	 * createAll(), readAll(), updateAll() and deleteAll() will be partitioned into chunks equal to this size.
+	 * The chunked requests made to Para Server will be executed synchronously, and the results of all chunk
+	 * operations are aggregated into a single response.
+	 * @param chunkSize the number of objects per chunk
+	 */
+	public void setChunkSize(int chunkSize) {
+		this.chunkSize = chunkSize;
+	}
+
+	/**
+	 * @return the chunk size used for batch CRUD operations
+	 */
+	public int getChunkSize() {
+		return chunkSize;
 	}
 
 	private String key(boolean refresh) {
@@ -493,6 +516,14 @@ public final class ParaClient {
 		invokeDelete(obj.getType().concat("/").concat(obj.getId()), null);
 	}
 
+	private int getNumChunks(List<?> objects, int size) {
+		return size <= 0 ? 1 : (objects.size() + size - 1) / size;
+	}
+
+	private List<?> partitionList(List<?> objects, int i, int size) {
+		return size <= 0 ? objects : objects.subList(i * size, Math.min((i + 1) * size, objects.size()));
+	}
+
 	/**
 	 * Saves multiple objects to the data store.
 	 * @param <P> the type of object
@@ -503,7 +534,14 @@ public final class ParaClient {
 		if (objects == null || objects.isEmpty() || objects.get(0) == null) {
 			return Collections.emptyList();
 		}
-		return getItemsFromList((List<?>) getEntity(invokePost("_batch", Entity.json(objects)), List.class));
+		final int size = this.chunkSize;
+		return IntStream.range(0, getNumChunks(objects, size))
+				.mapToObj(i -> (List<P>) partitionList(objects, i, size))
+				.map(chunk -> invokePost("_batch", Entity.json(chunk)))
+				.map(response -> (List<P>) this.getEntity(response, List.class))
+				.map(entity -> (List<P>) getItemsFromList(entity))
+				.flatMap(List::stream)
+				.collect(Collectors.toList());
 	}
 
 	/**
@@ -516,9 +554,18 @@ public final class ParaClient {
 		if (keys == null || keys.isEmpty()) {
 			return Collections.emptyList();
 		}
-		MultivaluedMap<String, String> ids = new MultivaluedHashMap<>();
-		ids.put("ids", keys);
-		return getItemsFromList((List<?>) getEntity(invokeGet("_batch", ids), List.class));
+		final int size = this.chunkSize;
+		return IntStream.range(0, getNumChunks(keys, size))
+				.mapToObj(i -> (List<String>) partitionList(keys, i, size))
+				.map(chunk -> {
+					MultivaluedMap<String, String> ids = new MultivaluedHashMap<>();
+					ids.put("ids", chunk);
+					return invokeGet("_batch", ids);
+				})
+				.map(response -> (List<P>) this.getEntity(response, List.class))
+				.map(entity -> (List<P>) getItemsFromList(entity))
+				.flatMap(List::stream)
+				.collect(Collectors.toList());
 	}
 
 	/**
@@ -531,7 +578,14 @@ public final class ParaClient {
 		if (objects == null || objects.isEmpty()) {
 			return Collections.emptyList();
 		}
-		return getItemsFromList((List<?>) getEntity(invokePatch("_batch", Entity.json(objects)), List.class));
+		final int size = this.chunkSize;
+		return IntStream.range(0, getNumChunks(objects, size))
+				.mapToObj(i -> (List<P>) partitionList(objects, i, size))
+				.map(chunk -> invokePatch("_batch", Entity.json(chunk)))
+				.map(response -> (List<P>) this.getEntity(response, List.class))
+				.map(entity -> (List<P>) getItemsFromList(entity))
+				.flatMap(List::stream)
+				.collect(Collectors.toList());
 	}
 
 	/**
@@ -542,9 +596,14 @@ public final class ParaClient {
 		if (keys == null || keys.isEmpty()) {
 			return;
 		}
-		MultivaluedMap<String, String> ids = new MultivaluedHashMap<>();
-		ids.put("ids", keys);
-		invokeDelete("_batch", ids);
+		final int size = this.chunkSize;
+		IntStream.range(0, getNumChunks(keys, size))
+			.mapToObj(i -> (List<String>) partitionList(keys, i, size))
+			.forEach(chunk -> {
+				MultivaluedMap<String, String> ids = new MultivaluedHashMap<>();
+				ids.put("ids", chunk);
+				invokeDelete("_batch", ids);
+			});
 	}
 
 	/**
