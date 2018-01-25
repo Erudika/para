@@ -516,12 +516,12 @@ public final class ParaClient {
 		invokeDelete(obj.getType().concat("/").concat(obj.getId()), null);
 	}
 
-	private int getNumChunks(List<?> objects) {
-		return chunkSize <= 0 ? 1 : (objects.size() + chunkSize - 1) / chunkSize;
+	private int getNumChunks(List<?> objects, int size) {
+		return size <= 0 ? 1 : (objects.size() + size - 1) / size;
 	}
 
-	private List<?> partitionList(List<?> objects, int i) {
-		return chunkSize <= 0 ? objects : objects.subList(i * chunkSize, Math.min((i + 1) * chunkSize, objects.size()));
+	private List<?> partitionList(List<?> objects, int i, int size) {
+		return size <= 0 ? objects : objects.subList(i * size, Math.min((i + 1) * size, objects.size()));
 	}
 
 	/**
@@ -534,8 +534,9 @@ public final class ParaClient {
 		if (objects == null || objects.isEmpty() || objects.get(0) == null) {
 			return Collections.emptyList();
 		}
-		return IntStream.range(0, getNumChunks(objects))
-				.mapToObj(i -> (List<P>) partitionList(objects, i))
+		final int size = this.chunkSize;
+		return IntStream.range(0, getNumChunks(objects, size))
+				.mapToObj(i -> (List<P>) partitionList(objects, i, size))
 				.map(chunk -> invokePost("_batch", Entity.json(chunk)))
 				.map(response -> (List<P>) this.getEntity(response, List.class))
 				.map(entity -> (List<P>) getItemsFromList(entity))
@@ -553,8 +554,9 @@ public final class ParaClient {
 		if (keys == null || keys.isEmpty()) {
 			return Collections.emptyList();
 		}
-		return IntStream.range(0, getNumChunks(keys))
-				.mapToObj(i -> (List<String>) partitionList(keys, i))
+		final int size = this.chunkSize;
+		return IntStream.range(0, getNumChunks(keys, size))
+				.mapToObj(i -> (List<String>) partitionList(keys, i, size))
 				.map(chunk -> {
 					MultivaluedMap<String, String> ids = new MultivaluedHashMap<>();
 					ids.put("ids", chunk);
@@ -576,8 +578,9 @@ public final class ParaClient {
 		if (objects == null || objects.isEmpty()) {
 			return Collections.emptyList();
 		}
-		return IntStream.range(0, getNumChunks(objects))
-				.mapToObj(i -> (List<P>) partitionList(objects, i))
+		final int size = this.chunkSize;
+		return IntStream.range(0, getNumChunks(objects, size))
+				.mapToObj(i -> (List<P>) partitionList(objects, i, size))
 				.map(chunk -> invokePatch("_batch", Entity.json(chunk)))
 				.map(response -> (List<P>) this.getEntity(response, List.class))
 				.map(entity -> (List<P>) getItemsFromList(entity))
@@ -593,8 +596,9 @@ public final class ParaClient {
 		if (keys == null || keys.isEmpty()) {
 			return;
 		}
-		IntStream.range(0, getNumChunks(keys))
-			.mapToObj(i -> (List<String>) partitionList(keys, i))
+		final int size = this.chunkSize;
+		IntStream.range(0, getNumChunks(keys, size))
+			.mapToObj(i -> (List<String>) partitionList(keys, i, size))
 			.forEach(chunk -> {
 				MultivaluedMap<String, String> ids = new MultivaluedHashMap<>();
 				ids.put("ids", chunk);
