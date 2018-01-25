@@ -551,70 +551,70 @@ public final class ParaClient {
 	}
 
 	/**
-	 * Saves multiple objects to the data store in batches.
+	 * Saves multiple objects to the data store in chunks.
 	 * @param <P> the type of object
 	 * @param objects the list of objects to save
-	 * @param batchSize the number of objects in each batch
+	 * @param chunkSize the number of objects in each chunk
 	 * @return a list of all returned objects
 	 */
-	public <P extends ParaObject> List<P> createAll(List<P> objects, int batchSize) {
+	public <P extends ParaObject> List<P> createAll(List<P> objects, int chunkSize) {
 		if (objects == null || objects.isEmpty() || objects.get(0) == null) {
 			return Collections.emptyList();
 		}
-		return IntStream.range(0, (objects.size() + batchSize - 1) / batchSize)
-				.mapToObj(i -> objects.subList(i * batchSize, Math.min((i + 1) * batchSize, objects.size())))
+		return IntStream.range(0, (objects.size() + chunkSize - 1) / chunkSize)
+				.mapToObj(i -> objects.subList(i * chunkSize, Math.min((i + 1) * chunkSize, objects.size())))
 				.map(this::<P>createAll)
 				.flatMap(List::stream)
 				.collect(Collectors.toList());
 	}
 
 	/**
-	 * Retrieves multiple objects from the data store in batches.
+	 * Retrieves multiple objects from the data store in chunks.
 	 * @param <P> the type of object
 	 * @param keys a list of object ids
-	 * @param batchSize the number of objects in each batch
+	 * @param chunkSize the number of objects in each chunk
 	 * @return a list of all objects
 	 */
-	public <P extends ParaObject> List<P> readAll(List<String> keys, int batchSize) {
+	public <P extends ParaObject> List<P> readAll(List<String> keys, int chunkSize) {
 		if (keys == null || keys.isEmpty()) {
 			return Collections.emptyList();
 		}
-		return IntStream.range(0, (keys.size() + batchSize - 1) / batchSize)
-				.mapToObj(i -> keys.subList(i * batchSize, Math.min((i + 1) * batchSize, keys.size())))
+		return IntStream.range(0, (keys.size() + chunkSize - 1) / chunkSize)
+				.mapToObj(i -> keys.subList(i * chunkSize, Math.min((i + 1) * chunkSize, keys.size())))
 				.map(this::<P>readAll)
 				.flatMap(List::stream)
 				.collect(Collectors.toList());
 	}
 
 	/**
-	 * Updates multiple objects in batches.
+	 * Updates multiple objects in chunks.
 	 * @param <P> the type of object
 	 * @param objects the objects to update
-	 * @param batchSize the number of objects in each batch
+	 * @param chunkSize the number of objects in each chunk
 	 * @return a list of all objects
 	 */
-	public <P extends ParaObject> List<P> updateAll(List<P> objects, int batchSize) {
+	public <P extends ParaObject> List<P> updateAll(List<P> objects, int chunkSize) {
 		if (objects == null || objects.isEmpty()) {
 			return Collections.emptyList();
 		}
-		return IntStream.range(0, (objects.size() + batchSize - 1) / batchSize)
-				.mapToObj(i -> objects.subList(i * batchSize, Math.min((i + 1) * batchSize, objects.size())))
+		return IntStream.range(0, (objects.size() + chunkSize - 1) / chunkSize)
+				.mapToObj(i -> objects.subList(i * chunkSize, Math.min((i + 1) * chunkSize, objects.size())))
 				.map(this::<P>updateAll)
 				.flatMap(List::stream)
 				.collect(Collectors.toList());
 	}
 
 	/**
-	 * Deletes multiple objects in batches.
+	 * Deletes multiple objects in chunks.
 	 * @param keys the ids of the objects to delete
-	 * @param batchSize the number of objects in each batch
+	 * @param chunkSize the number of objects in each chunk
 	 */
-	public void deleteAll(List<String> keys, int batchSize) {
+	public void deleteAll(List<String> keys, int chunkSize) {
 		if (keys == null || keys.isEmpty()) {
 			return;
 		}
-		IntStream.range(0, (keys.size() + batchSize - 1) / batchSize)
-				.mapToObj(i -> keys.subList(i * batchSize, Math.min((i + 1) * batchSize, keys.size())))
+		IntStream.range(0, (keys.size() + chunkSize - 1) / chunkSize)
+				.mapToObj(i -> keys.subList(i * chunkSize, Math.min((i + 1) * chunkSize, keys.size())))
 				.forEach(this::deleteAll);
 	}
 
