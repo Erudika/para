@@ -38,6 +38,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.net.ssl.SSLContext;
 import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
@@ -50,6 +52,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.SslConfigurator;
 import org.glassfish.jersey.client.ClientConfig;
@@ -545,6 +548,74 @@ public final class ParaClient {
 		MultivaluedMap<String, String> ids = new MultivaluedHashMap<>();
 		ids.put("ids", keys);
 		invokeDelete("_batch", ids);
+	}
+
+	/**
+	 * Saves multiple objects to the data store in batches.
+	 * @param <P> the type of object
+	 * @param objects the list of objects to save
+	 * @param batchSize the number of objects in each batch
+	 * @return a list of all returned objects
+	 */
+	public <P extends ParaObject> List<P> createAll(List<P> objects, int batchSize) {
+		if (objects == null || objects.isEmpty() || objects.get(0) == null) {
+			return Collections.emptyList();
+		}
+		return IntStream.range(0, (objects.size() + batchSize - 1) / batchSize)
+				.mapToObj(i -> objects.subList(i * batchSize, Math.min((i + 1) * batchSize, objects.size())))
+				.map(this::<P>createAll)
+				.flatMap(List::stream)
+				.collect(Collectors.toList());
+	}
+
+	/**
+	 * Retrieves multiple objects from the data store in batches.
+	 * @param <P> the type of object
+	 * @param keys a list of object ids
+	 * @param batchSize the number of objects in each batch
+	 * @return a list of all objects
+	 */
+	public <P extends ParaObject> List<P> readAll(List<String> keys, int batchSize) {
+		if (keys == null || keys.isEmpty()) {
+			return Collections.emptyList();
+		}
+		return IntStream.range(0, (keys.size() + batchSize - 1) / batchSize)
+				.mapToObj(i -> keys.subList(i * batchSize, Math.min((i + 1) * batchSize, keys.size())))
+				.map(this::<P>readAll)
+				.flatMap(List::stream)
+				.collect(Collectors.toList());
+	}
+
+	/**
+	 * Updates multiple objects in batches.
+	 * @param <P> the type of object
+	 * @param objects the objects to update
+	 * @param batchSize the number of objects in each batch
+	 * @return a list of all objects
+	 */
+	public <P extends ParaObject> List<P> updateAll(List<P> objects, int batchSize) {
+		if (objects == null || objects.isEmpty()) {
+			return Collections.emptyList();
+		}
+		return IntStream.range(0, (objects.size() + batchSize - 1) / batchSize)
+				.mapToObj(i -> objects.subList(i * batchSize, Math.min((i + 1) * batchSize, objects.size())))
+				.map(this::<P>updateAll)
+				.flatMap(List::stream)
+				.collect(Collectors.toList());
+	}
+
+	/**
+	 * Deletes multiple objects in batches.
+	 * @param keys the ids of the objects to delete
+	 * @param batchSize the number of objects in each batch
+	 */
+	public void deleteAll(List<String> keys, int batchSize) {
+		if (keys == null || keys.isEmpty()) {
+			return;
+		}
+		IntStream.range(0, (keys.size() + batchSize - 1) / batchSize)
+				.mapToObj(i -> keys.subList(i * batchSize, Math.min((i + 1) * batchSize, keys.size())))
+				.forEach(this::deleteAll);
 	}
 
 	/**
