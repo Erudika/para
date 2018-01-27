@@ -19,6 +19,8 @@ package com.erudika.para.core;
 
 import com.erudika.para.annotations.Stored;
 import static com.erudika.para.core.utils.ParaObjectUtils.*;
+import java.net.URI;
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -139,9 +141,13 @@ public class ParaObjectUtilsTest {
 		assertNull(c.getaLong());
 		data1.put("aLong", 10L);
 		data1.put("aBool", true);
+		data1.put("dateTime", ZonedDateTime.now());
+		data1.put("uri", URI.create("https://test.com"));
 		Custom c1 = setAnnotatedFields(data1);
 		assertEquals(Long.valueOf(10L), c1.getaLong());
 		assertTrue(c1.getaBool());
+		assertNotNull(c1.getDateTime());
+		assertEquals("https://test.com", c1.getUri().toString());
 	}
 
 	@Test
@@ -176,6 +182,24 @@ public class ParaObjectUtilsTest {
 
 		@Stored Long aLong;
 		@Stored Boolean aBool;
+		@Stored private ZonedDateTime dateTime;
+		@Stored private URI uri;
+
+		public ZonedDateTime getDateTime() {
+			return dateTime;
+		}
+
+		public void setDateTime(ZonedDateTime dateTime) {
+			this.dateTime = dateTime;
+		}
+
+		public URI getUri() {
+			return uri;
+		}
+
+		public void setUri(URI uri) {
+			this.uri = uri;
+		}
 
 		public Long getaLong() {
 			return aLong;

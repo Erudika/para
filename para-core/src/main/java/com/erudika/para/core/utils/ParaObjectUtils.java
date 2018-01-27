@@ -127,7 +127,7 @@ public final class ParaObjectUtils {
 	public static Map<String, String> getCoreTypes() {
 		if (CORE_TYPES.isEmpty()) {
 			try {
-				for (Class<? extends ParaObject> clazz : ParaObjectUtils.getCoreClassesMap().values()) {
+				for (Class<? extends ParaObject> clazz : getCoreClassesMap().values()) {
 					ParaObject p = clazz.newInstance();
 					CORE_TYPES.put(p.getPlural(), p.getType());
 				}
