@@ -25,13 +25,16 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import static com.erudika.para.utils.Utils.getAllDeclaredFields;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashMap;
@@ -64,8 +67,6 @@ public final class ParaObjectUtils {
 	private static final Map<String, Class<? extends ParaObject>> CORE_CLASSES = new DualHashBidiMap();
 	private static final CoreClassScanner SCANNER = new CoreClassScanner();
 	private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-	private static final ObjectReader JSON_READER;
-	private static final ObjectWriter JSON_WRITER;
 
 	static {
 		JSON_MAPPER.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
@@ -73,8 +74,7 @@ public final class ParaObjectUtils {
 		JSON_MAPPER.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
 		JSON_MAPPER.enable(SerializationFeature.INDENT_OUTPUT);
 		JSON_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-		JSON_READER = JSON_MAPPER.reader();
-		JSON_WRITER = JSON_MAPPER.writer();
+		JSON_MAPPER.findAndRegisterModules();
 	}
 
 	private ParaObjectUtils() { }
@@ -95,7 +95,7 @@ public final class ParaObjectUtils {
 	 * @return JSON object reader
 	 */
 	public static ObjectReader getJsonReader(Class<?> type) {
-		return JSON_READER.forType(type);
+		return JSON_MAPPER.reader().forType(type);
 	}
 
 	/**
@@ -104,7 +104,7 @@ public final class ParaObjectUtils {
 	 * @return JSON object writer
 	 */
 	public static ObjectWriter getJsonWriter() {
-		return JSON_WRITER;
+		return JSON_MAPPER.writer();
 	}
 
 	/**
@@ -113,7 +113,7 @@ public final class ParaObjectUtils {
 	 * @return JSON object writer with indentation disabled
 	 */
 	public static ObjectWriter getJsonWriterNoIdent() {
-		return JSON_WRITER.without(SerializationFeature.INDENT_OUTPUT);
+		return JSON_MAPPER.writer().without(SerializationFeature.INDENT_OUTPUT);
 	}
 
 	/////////////////////////////////////////////
@@ -166,8 +166,7 @@ public final class ParaObjectUtils {
 			try {
 				String[] parts = StringUtils.split(authorization, '.');
 				if (parts.length > 1) {
-					Map<String, Object> jwt = ParaObjectUtils.getJsonReader(Map.class).
-							readValue(Utils.base64dec(parts[1]));
+					Map<String, Object> jwt = getJsonReader(Map.class).readValue(Utils.base64dec(parts[1]));
 					if (jwt != null && jwt.containsKey(Config._APPID)) {
 						appid = (String) jwt.get(Config._APPID);
 					}
@@ -319,13 +318,15 @@ public final class ParaObjectUtils {
 					}
 					// handle complex JSON objects deserialized to Maps, Arrays, etc.
 					if (!Utils.isBasicType(field.getType()) && value instanceof String) {
-						// in this case the object is a flattened JSON string coming from the DB
-						value = getJsonReader(field.getType()).readValue(value.toString());
+						try {
+							// in this case the object is a flattened JSON string coming from the DB
+							value = getJsonReader(field.getType()).readValue(value.toString());
+						} catch (Exception e) {
+							// try again - value could be a complex object represented by a string (e.g. URI)
+							value = getJsonReader(field.getType()).readValue("\"" + value.toString() + "\"");
+						}
 					}
-					field.setAccessible(true);
-					if (value != null) {
-						BeanUtils.setProperty(pojo, name, value);
-					}
+					setAnnotatedField(pojo, field, value);
 				}
 				props.remove(name);
 			}
@@ -336,6 +337,21 @@ public final class ParaObjectUtils {
 			pojo = null;
 		}
 		return pojo;
+	}
+
+	private static <P> void setAnnotatedField(P pojo, Field field, Object value)
+			throws JsonProcessingException, IllegalAccessException, InvocationTargetException,
+			NoSuchMethodException, IOException {
+		if (value != null && field != null) {
+			field.setAccessible(true);
+			try {
+				BeanUtils.setProperty(pojo, field.getName(), value);
+			} catch (Exception e) {
+				// value is a complex object NOT represented by a string
+				PropertyUtils.setProperty(pojo, field.getName(), getJsonReader(field.getType()).
+						readValue(getJsonWriter().writeValueAsBytes(value)));
+			}
+		}
 	}
 
 	/**
