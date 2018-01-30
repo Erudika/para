@@ -229,7 +229,6 @@ The `Cache` interface is implemented by:
 ## Wishlist / Roadmap
 
 - Elasticsearch v6 compatibility and support for AWS ES
-- `DAO` implementation for PostgreSQL.
 - `Search` implementation for MongoDB
 - Make the API server more efficient with fibers (Quasar?)
 - OpenAPI 3+ compatible API at `/v2` (not soon)
