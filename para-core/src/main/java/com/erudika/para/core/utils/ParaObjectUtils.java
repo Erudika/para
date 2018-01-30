@@ -25,17 +25,16 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import static com.erudika.para.utils.Utils.getAllDeclaredFields;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -253,6 +252,8 @@ public final class ParaObjectUtils {
 		}
 		try {
 			List<Field> fields = getAllDeclaredFields(pojo.getClass());
+			Set<String> annotatedFields = new HashSet<String>(fields.size());
+			boolean hasJsonAnnotations = false;
 			// filter transient fields and those without annotations
 			for (Field field : fields) {
 				boolean dontSkip = ((filter == null) ? true : !field.isAnnotationPresent(filter));
@@ -262,7 +263,23 @@ public final class ParaObjectUtils {
 					if (!Utils.isBasicType(field.getType()) && flattenNestedObjectsToString) {
 						value = getJsonWriterNoIdent().writeValueAsString(value);
 					}
+					if (Arrays.stream(field.getAnnotations()).
+							map((a) -> a.annotationType().getSimpleName()).
+							anyMatch((a) -> StringUtils.startsWithIgnoreCase(a, "Json"))) {
+						annotatedFields.add(name);
+						hasJsonAnnotations = true;
+					}
 					map.put(name, value);
+				}
+			}
+			if (hasJsonAnnotations) {
+				// if @Json* annotations are present - overwrite serialized values with the those from Jackson
+				JsonNode dataNode = getJsonMapper().valueToTree(pojo);
+				Map<String, Object> props = getJsonMapper().convertValue(dataNode, Map.class);
+				for (Map.Entry<String, Object> entry : props.entrySet()) {
+					if (annotatedFields.contains(entry.getKey())) {
+						map.put(entry.getKey(), entry.getValue());
+					}
 				}
 			}
 		} catch (Exception ex) {
@@ -306,7 +323,8 @@ public final class ParaObjectUtils {
 				pojo = (P) toClass((String) data.get(Config._TYPE)).getConstructor().newInstance();
 			}
 			List<Field> fields = getAllDeclaredFields(pojo.getClass());
-			Map<String, Object> props = new HashMap<>(data);
+			Map<String, Object> unknownProps = new HashMap<>(data);
+			Map<String, Object> props = new HashMap<>(data.size());
 			for (Field field : fields) {
 				boolean dontSkip = ((filter == null) ? true : !field.isAnnotationPresent(filter));
 				String name = field.getName();
@@ -322,16 +340,19 @@ public final class ParaObjectUtils {
 							// in this case the object is a flattened JSON string coming from the DB
 							value = getJsonReader(field.getType()).readValue(value.toString());
 						} catch (Exception e) {
-							// try again - value could be a complex object represented by a string (e.g. URI)
-							value = getJsonReader(field.getType()).readValue("\"" + value.toString() + "\"");
+							props.put(name, value.toString());
 						}
 					}
-					setAnnotatedField(pojo, field, value);
+					setAnnotatedField(pojo, props, name, value);
 				}
-				props.remove(name);
+				unknownProps.remove(name); // filter known props
+			}
+			if (!props.isEmpty()) {
+				JsonNode dataNode = getJsonMapper().convertValue(props, JsonNode.class);
+				getJsonMapper().readerForUpdating(pojo).readValue(dataNode);
 			}
 			// handle unknown (user-defined) fields
-			setUserDefinedProperties(pojo, props);
+			setUserDefinedProperties(pojo, unknownProps);
 		} catch (Exception ex) {
 			logger.error(null, ex);
 			pojo = null;
@@ -339,17 +360,13 @@ public final class ParaObjectUtils {
 		return pojo;
 	}
 
-	private static <P> void setAnnotatedField(P pojo, Field field, Object value)
-			throws JsonProcessingException, IllegalAccessException, InvocationTargetException,
-			NoSuchMethodException, IOException {
-		if (value != null && field != null) {
-			field.setAccessible(true);
+	private static <P> void setAnnotatedField(P pojo, Map<String, Object> props, String name, Object value) {
+		if (value != null && !props.containsKey(name)) {
 			try {
-				BeanUtils.setProperty(pojo, field.getName(), value);
+				// perform micro conversion to the correct field type
+				BeanUtils.setProperty(pojo, name, value);
 			} catch (Exception e) {
-				// value is a complex object NOT represented by a string
-				PropertyUtils.setProperty(pojo, field.getName(), getJsonReader(field.getType()).
-						readValue(getJsonWriter().writeValueAsBytes(value)));
+				props.put(name, value);
 			}
 		}
 	}

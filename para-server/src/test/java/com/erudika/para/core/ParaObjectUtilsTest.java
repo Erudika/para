@@ -18,7 +18,13 @@
 package com.erudika.para.core;
 
 import com.erudika.para.annotations.Stored;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import static com.erudika.para.core.utils.ParaObjectUtils.*;
+import com.erudika.para.utils.Cat;
+import com.erudika.para.utils.CatDeserializer;
+import com.erudika.para.utils.CatSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.Collections;
@@ -26,6 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -126,11 +133,30 @@ public class ParaObjectUtilsTest {
 	}
 
 	@Test
-	public void testGetAnnotatedFields_3args() {
+	public void testGetAnnotatedFields() {
+		Custom c1 = new Custom();
+		c1.setId("custom1");
+		c1.setNotStored("not stored");
+		c1.setDateTime(ZonedDateTime.now());
+		c1.setUri(URI.create("https://test.com"));
+		c1.setCat(new Cat(5, "Whiskers"));
+		c1.setNested(Collections.singletonMap("key", "value"));
+
+		Map<String, Object> dataFull = ParaObjectUtils.getAnnotatedFields(c1, false);
+		assertFalse(dataFull.containsKey("notStored"));
+		assertTrue(dataFull.containsKey("cat"));
+		assertEquals("Whiskers::5", dataFull.get("cat"));
+		assertEquals(Collections.singletonMap("key", "value"), dataFull.get("nested"));
+
+		Map<String, Object> dataFlat = ParaObjectUtils.getAnnotatedFields(c1, true);
+		assertFalse(dataFlat.containsKey("notStored"));
+		assertTrue(dataFlat.containsKey("cat"));
+		assertEquals("Whiskers::5", dataFlat.get("cat"));
+		assertEquals("{\"key\":\"value\"}", dataFlat.get("nested"));
 	}
 
 	@Test
-	public void testSetAnnotatedFields_Map() {
+	public void testSetAnnotatedFields() {
 		assertNull(setAnnotatedFields(null));
 		assertNull(setAnnotatedFields(Collections.emptyMap()));
 		Map<String, Object> data1 = new HashMap<String, Object>();
@@ -148,6 +174,22 @@ public class ParaObjectUtilsTest {
 		assertTrue(c1.getaBool());
 		assertNotNull(c1.getDateTime());
 		assertEquals("https://test.com", c1.getUri().toString());
+
+		Custom c2 = new Custom();
+		c2.setId("custom1");
+		c2.setDateTime(ZonedDateTime.now());
+		c2.setUri(URI.create("https://test.com"));
+		c2.setCat(new Cat(5, "Whiskers"));
+
+		Map<String, Object> dataFull = ParaObjectUtils.getAnnotatedFields(c2, false);
+		Map<String, Object> dataFlat = ParaObjectUtils.getAnnotatedFields(c2, true);
+		Custom k1 = ParaObjectUtils.setAnnotatedFields(dataFull);
+		Custom k2 = ParaObjectUtils.setAnnotatedFields(dataFlat);
+		assertEquals(k1.getCat(), k2.getCat());
+		assertEquals(c2.getCat(), k1.getCat());
+		assertEquals(c2.getCat(), k2.getCat());
+		assertEquals(c2.getUri(), k1.getUri());
+		assertEquals(c2.getUri(), k2.getUri());
 	}
 
 	@Test
@@ -180,10 +222,24 @@ public class ParaObjectUtilsTest {
 
 	public static class Custom extends Sysprop {
 
+		private String notStored;
+		@Stored Map<String, Object> nested;
 		@Stored Long aLong;
 		@Stored Boolean aBool;
 		@Stored private ZonedDateTime dateTime;
 		@Stored private URI uri;
+
+		@JsonSerialize(using = CatSerializer.class)
+		@JsonDeserialize(using = CatDeserializer.class)
+		@Stored private Cat cat;
+
+		public Cat getCat() {
+			return cat;
+		}
+
+		public void setCat(Cat cat) {
+			this.cat = cat;
+		}
 
 		public ZonedDateTime getDateTime() {
 			return dateTime;
@@ -215,6 +271,22 @@ public class ParaObjectUtilsTest {
 
 		public void setaBool(Boolean aBool) {
 			this.aBool = aBool;
+		}
+
+		public String getNotStored() {
+			return notStored;
+		}
+
+		public void setNotStored(String notStored) {
+			this.notStored = notStored;
+		}
+
+		public Map<String, Object> getNested() {
+			return nested;
+		}
+
+		public void setNested(Map<String, Object> nested) {
+			this.nested = nested;
 		}
 
 	}
