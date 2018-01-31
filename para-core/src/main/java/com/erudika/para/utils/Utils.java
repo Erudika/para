@@ -406,6 +406,7 @@ public final class Utils {
 
 	private static MutableDataHolder getMarkdownOptions() {
 		return new MutableDataSet()
+				.set(HtmlRenderer.ESCAPE_HTML, true)
 				.set(EmojiExtension.USE_IMAGE_URLS, true)
 				// for full GFM table compatibility add the following table extension options:
 				.set(TablesExtension.COLUMN_SPANS, false)
