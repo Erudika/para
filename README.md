@@ -32,6 +32,7 @@ See how **Para** [compares to other open source backend frameworks](https://erud
 - Simple but effective resource permissions for client access control
 - Robust constraint validation mechanism based on JSR-303 and Hibernate Validator
 - Per-object control of persistence, index and cache operations
+- Advanced serialization and deserialization capabilities (Jackson)
 - Full metrics for monitoring and diagnostics (Dropwizard)
 - Modular design powered by Google Guice and support for plugins
 - I18n utilities for translating language packs and working with currencies
@@ -228,7 +229,7 @@ The `Cache` interface is implemented by:
 
 ## Wishlist / Roadmap
 
-- Elasticsearch v6 compatibility and support for AWS ES
+- Elasticsearch v6 compatibility and support for AWS ES ([whenever the high-level client is done](https://github.com/elastic/elasticsearch/issues/27205))
 - `Search` implementation for MongoDB
 - Make the API server more efficient with fibers (Quasar?)
 - OpenAPI 3+ compatible API at `/v2` (not soon)
