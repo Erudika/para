@@ -377,7 +377,7 @@ public class UtilsTest {
 		map1.put(Config._TYPE, "custom");
 		map1.put("animal", "cat");
 		map1.put("hair", "long");
-		map1.put("color", "white");
+		map1.put("colour", "white");
 		map1.put("legs", 4);
 
 		Sysprop sys2 = setAnnotatedFields(map1);
@@ -389,12 +389,12 @@ public class UtilsTest {
 		assertEquals(8, sys2.getProperties().size());
 		assertEquals(map1.get("animal"), sys2.getProperties().get("animal"));
 		assertEquals(map1.get("hair"), sys2.getProperties().get("hair"));
-		assertEquals(map1.get("color"), sys2.getProperties().get("color"));
+		assertEquals(map1.get("colour"), sys2.getProperties().get("colour"));
 		assertEquals(map1.get("legs"), sys2.getProperties().get("legs"));
 
 		map1.put("animal", null);
 		map1.put("hair", null);
-		map1.put("color", null);
+		map1.put("colour", null);
 		map1.put("legs", null);
 		// update
 		setAnnotatedFields(sys2, map1, Locked.class);

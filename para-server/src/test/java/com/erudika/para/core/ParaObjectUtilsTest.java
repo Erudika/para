@@ -200,8 +200,6 @@ public class ParaObjectUtilsTest {
 		assertNotNull(k2.getColorMap());
 		assertFalse(k1.getColorMap().isEmpty());
 		assertFalse(k2.getColorMap().isEmpty());
-		Map<Color, String> m1 = k1.getColorMap();
-		Map<Color, String> m2 = k2.getColorMap();
 		assertTrue(k1.getColorMap().containsKey(Color.WHITE));
 		assertTrue(k2.getColorMap().containsKey(Color.WHITE));
 	}
@@ -239,7 +237,7 @@ public class ParaObjectUtilsTest {
 
 		@JsonCreator
 		public static Color fromString(String value) {
-			return Color.valueOf(value);
+			return Color.valueOf(value.trim().toUpperCase());
 		}
 
 		@JsonValue

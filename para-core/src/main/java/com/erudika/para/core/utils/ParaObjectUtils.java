@@ -337,8 +337,8 @@ public final class ParaObjectUtils {
 					// handle complex JSON objects deserialized to Maps, Arrays, etc.
 					if (!Utils.isBasicType(field.getType()) && value instanceof String) {
 						try {
-							// in this case the object is a flattened JSON string coming from the DB
-							value = getJsonReader(field.getType()).readValue(value.toString());
+							value = getJsonMapper().readValue(value.toString(),
+									getJsonMapper().constructType(field.getGenericType()));
 						} catch (Exception e) {
 							props.put(name, value.toString());
 						}
