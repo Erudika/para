@@ -23,6 +23,8 @@ import static com.erudika.para.core.utils.ParaObjectUtils.*;
 import com.erudika.para.utils.Cat;
 import com.erudika.para.utils.CatDeserializer;
 import com.erudika.para.utils.CatSerializer;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
@@ -180,6 +182,8 @@ public class ParaObjectUtilsTest {
 		c2.setDateTime(ZonedDateTime.now());
 		c2.setUri(URI.create("https://test.com"));
 		c2.setCat(new Cat(5, "Whiskers"));
+		c2.setColor(Color.BLACK);
+		c2.setColorMap(Collections.singletonMap(Color.WHITE, "brother cat"));
 
 		Map<String, Object> dataFull = ParaObjectUtils.getAnnotatedFields(c2, false);
 		Map<String, Object> dataFlat = ParaObjectUtils.getAnnotatedFields(c2, true);
@@ -190,6 +194,16 @@ public class ParaObjectUtilsTest {
 		assertEquals(c2.getCat(), k2.getCat());
 		assertEquals(c2.getUri(), k1.getUri());
 		assertEquals(c2.getUri(), k2.getUri());
+		assertEquals(Color.BLACK, k1.getColor());
+		assertEquals(Color.BLACK, k2.getColor());
+		assertNotNull(k1.getColorMap());
+		assertNotNull(k2.getColorMap());
+		assertFalse(k1.getColorMap().isEmpty());
+		assertFalse(k2.getColorMap().isEmpty());
+		Map<Color, String> m1 = k1.getColorMap();
+		Map<Color, String> m2 = k2.getColorMap();
+		assertTrue(k1.getColorMap().containsKey(Color.WHITE));
+		assertTrue(k2.getColorMap().containsKey(Color.WHITE));
 	}
 
 	@Test
@@ -220,7 +234,22 @@ public class ParaObjectUtilsTest {
 	public void testToJSON() {
 	}
 
+	public static enum Color {
+		BLACK, WHITE;
+
+		@JsonCreator
+		public static Color fromString(String value) {
+			return Color.valueOf(value);
+		}
+
+		@JsonValue
+		public String toString() {
+			return this.name();
+		}
+	}
+
 	public static class Custom extends Sysprop {
+		private static final long serialVersionUID = 1L;
 
 		private String notStored;
 		@Stored Map<String, Object> nested;
@@ -228,10 +257,30 @@ public class ParaObjectUtilsTest {
 		@Stored Boolean aBool;
 		@Stored private ZonedDateTime dateTime;
 		@Stored private URI uri;
+		@Stored private Color color;
+		@Stored private Map<Color, String> colorMap;
 
 		@JsonSerialize(using = CatSerializer.class)
 		@JsonDeserialize(using = CatDeserializer.class)
 		@Stored private Cat cat;
+
+
+
+		public Color getColor() {
+			return color;
+		}
+
+		public void setColor(Color color) {
+			this.color = color;
+		}
+
+		public Map<Color, String> getColorMap() {
+			return colorMap;
+		}
+
+		public void setColorMap(Map<Color, String> colorMap) {
+			this.colorMap = colorMap;
+		}
 
 		public Cat getCat() {
 			return cat;
