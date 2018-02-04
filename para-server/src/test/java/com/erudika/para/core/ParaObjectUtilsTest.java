@@ -23,8 +23,6 @@ import static com.erudika.para.core.utils.ParaObjectUtils.*;
 import com.erudika.para.utils.Cat;
 import com.erudika.para.utils.CatDeserializer;
 import com.erudika.para.utils.CatSerializer;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
@@ -233,17 +231,7 @@ public class ParaObjectUtilsTest {
 	}
 
 	public static enum Color {
-		BLACK, WHITE;
-
-		@JsonCreator
-		public static Color fromString(String value) {
-			return Color.valueOf(value.trim().toUpperCase());
-		}
-
-		@JsonValue
-		public String toString() {
-			return this.name();
-		}
+		BLACK, WHITE
 	}
 
 	public static class Custom extends Sysprop {
@@ -261,8 +249,6 @@ public class ParaObjectUtilsTest {
 		@JsonSerialize(using = CatSerializer.class)
 		@JsonDeserialize(using = CatDeserializer.class)
 		@Stored private Cat cat;
-
-
 
 		public Color getColor() {
 			return color;
