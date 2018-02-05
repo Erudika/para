@@ -60,10 +60,6 @@
 					<groupId>org.springframework.boot</groupId>
 					<artifactId>spring-boot-starter-tomcat</artifactId>
 				</exclusion>
-				<exclusion>
-					<groupId>org.springframework.boot</groupId>
-					<artifactId>spring-boot-autoconfigure</artifactId>
-				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
@@ -96,7 +92,7 @@
 		<dependency>
 			<groupId>com.unboundid</groupId>
 			<artifactId>unboundid-ldapsdk</artifactId>
-			<version>4.0.1</version>
+			<version>4.0.4</version>
 		</dependency>
 
 		<!-- H2 DB -->
@@ -132,7 +128,7 @@
 		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
 			<artifactId>caffeine</artifactId>
-			<version>2.6.0</version>
+			<version>2.6.1</version>
 		</dependency>
 
 		<!-- JERSEY -->
@@ -197,6 +193,16 @@
 			<groupId>io.dropwizard</groupId>
 			<artifactId>dropwizard-metrics-graphite</artifactId>
 			<version>1.2.2</version>
+		 <exclusions>
+		  <exclusion>
+		   <groupId>joda-time</groupId>
+		   <artifactId>joda-time</artifactId>
+		  </exclusion>
+		  <exclusion>
+		   <groupId>com.google.code.findbugs</groupId>
+		   <artifactId>jsr305</artifactId>
+		  </exclusion>
+		 </exclusions>
 		</dependency>
 
 		<!-- OTHER -->
@@ -204,14 +210,14 @@
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpcore</artifactId>
 			<!-- Skip 4.4 because it causes SSL exceptions with some hostnames-->
-			<version>4.4.6</version>
+			<version>4.4.9</version>
 		</dependency>
 		<dependency>
 			<!-- Skip 4.4 because it causes SSL exceptions with some hostnames-->
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>
 			<!-- Skip 4.4 because it causes SSL exceptions with some hostnames-->
-			<version>4.5.3</version>
+			<version>4.5.5</version>
 		 <exclusions>
 		  <exclusion>
 		   <groupId>commons-logging</groupId>
@@ -222,7 +228,7 @@
 		<dependency>
 			<groupId>org.yaml</groupId>
 			<artifactId>snakeyaml</artifactId>
-			<version>1.18</version>
+			<version>1.19</version>
 		</dependency>
 		<dependency>
 			<groupId>javax.servlet</groupId>
@@ -233,7 +239,7 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>5.1</version>
+			<version>5.4</version>
 		</dependency>
 		<dependency>
 			<groupId>com.microsoft.azure.iothub-java-client</groupId>
@@ -243,12 +249,12 @@
 		<dependency>
 			<groupId>com.microsoft.azure</groupId>
 			<artifactId>azure-eventhubs</artifactId>
-			<version>0.11.0</version>
+			<version>0.15.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.qpid</groupId>
 			<artifactId>proton-j</artifactId>
-			<version>0.18.0</version>
+			<version>0.25.0</version>
 		</dependency>
 
 		<!-- TESTING -->
@@ -301,7 +307,7 @@
 		<dependency>
 			<groupId>com.vmlens</groupId>
 			<artifactId>concurrent-junit</artifactId>
-			<version>1.0.0</version>
+			<version>1.0.2</version>
 			<scope>test</scope>
 		</dependency>
 <!--		<dependency>

@@ -57,7 +57,6 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Map;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -198,16 +197,13 @@ public class AWSIoTService implements IoTService {
 		String id = cloudIDForThing(thing);
 		ByteBuffer bb =  getDataClient().getThingShadow(new GetThingShadowRequest().withThingName(id)).getPayload();
 		if (bb != null) {
-			ByteArrayInputStream bais = new ByteArrayInputStream(bb.array());
-			try {
+			try (ByteArrayInputStream bais = new ByteArrayInputStream(bb.array())) {
 				Map<String, Object> payload = ParaObjectUtils.getJsonReader(Map.class).readValue(bais);
 				if (payload != null && payload.containsKey("state")) {
 					return (Map<String, Object>) ((Map<String, Object>) payload.get("state")).get("desired");
 				}
 			} catch (Exception ex) {
 				logger.warn("Failed to connect to IoT device {}: {}", id, ex.getMessage());
-			} finally {
-				IOUtils.closeQuietly(bais);
 			}
 		}
 		return Collections.emptyMap();
@@ -218,17 +214,14 @@ public class AWSIoTService implements IoTService {
 		if (thing == null || StringUtils.isBlank(thing.getId())) {
 			return;
 		}
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		String id = cloudIDForThing(thing);
-		try {
+		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 			Object data = Collections.singletonMap("state", Collections.singletonMap("desired", thing.getDeviceState()));
 			ParaObjectUtils.getJsonWriterNoIdent().writeValue(baos, data);
 			getDataClient().updateThingShadow(new UpdateThingShadowRequest().
 					withThingName(id).withPayload(ByteBuffer.wrap(baos.toByteArray())));
 		} catch (Exception ex) {
 			logger.warn("Failed to connect to IoT device {}: {}", id, ex.getMessage());
-		} finally {
-			IOUtils.closeQuietly(baos);
 		}
 	}
 

@@ -262,7 +262,7 @@ public class AzureIoTService implements IoTService {
 							String deviceId = (String) receivedEvent.getProperties().get("iothub-connection-device-id");
 							Map<String, Object> deviceState = null;
 							try {
-								deviceState = ParaObjectUtils.getJsonReader(Map.class).readValue(receivedEvent.getBody());
+								deviceState = ParaObjectUtils.getJsonReader(Map.class).readValue(receivedEvent.getBytes());
 								logger.debug("Message received from Azure: {}", deviceState);
 							} catch (Exception e) {	}
 
