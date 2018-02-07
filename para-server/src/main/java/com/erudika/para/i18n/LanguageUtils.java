@@ -354,7 +354,7 @@ public class LanguageUtils {
 		} else if (value == MINUS) {
 			approved = Math.round(percent * (defsize / 100) - 1);
 		}
-		int allowedUntranslated = defsize > 10 ? 3 : 0;
+		int allowedUntranslated = defsize > 10 ? 5 : 0;
 		// allow 3 identical words per language (i.e. Email, etc)
 		if (approved >= defsize - allowedUntranslated) {
 			approved = defsize;
