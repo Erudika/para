@@ -130,6 +130,8 @@ public class UtilsTest {
 		assertNotNull(stripAndTrim(""));
 		assertEquals("test", stripAndTrim("  $% ^&test-?<?> § ±<_ ) (/.,"));
 		assertEquals("test 123 test", stripAndTrim("  $% ^&test		-?<? 123    > § ±test<_ ) (/.,"));
+		assertEquals("тест asd 123", stripAndTrim("тест asd 123 ©"));
+		assertEquals("asd--123", stripAndTrim("тест asd()123 ©", "-", true));
 	}
 
 	@Test

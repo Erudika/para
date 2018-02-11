@@ -333,8 +333,25 @@ public final class Utils {
 	 * @return a clean string
 	 */
 	public static String stripAndTrim(String str, String replaceWith) {
-		return StringUtils.isBlank(str) ? "" :
-			str.replaceAll("[\\p{S}\\p{P}\\p{C}]", replaceWith).replaceAll("\\p{Z}+", " ").trim();
+		return stripAndTrim(str, replaceWith, false);
+	}
+
+	/**
+	 * Strips all symbols, punctuation, whitespace and control chars from a string.
+	 * @param str a dirty string
+	 * @param replaceWith a string to replace spaces with
+	 * @param asciiOnly if true, all non-ASCII characters will be stripped
+	 * @return a clean string
+	 */
+	public static String stripAndTrim(String str, String replaceWith, boolean asciiOnly) {
+		if (StringUtils.isBlank(str)) {
+			return "";
+		}
+		String s = str;
+		if (asciiOnly) {
+			s = str.replaceAll("[^\\p{ASCII}]", "");
+		}
+		return s.replaceAll("[\\p{S}\\p{P}\\p{C}]", replaceWith).replaceAll("\\p{Z}+", " ").trim();
 	}
 
 	/**
