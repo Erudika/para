@@ -166,7 +166,7 @@ public interface ParaObject extends Serializable, Linkable, Votable {
 	void setStored(Boolean isStored);
 
 	/**
-	 * Boolean flat which controls whether this object is indexed
+	 * Boolean flag which controls whether this object is indexed
 	 * by the search engine. Default is true.
 	 * @return true if this object is indexed
 	 */
@@ -179,7 +179,7 @@ public interface ParaObject extends Serializable, Linkable, Votable {
 	void setIndexed(Boolean isIndexed);
 
 	/**
-	 * Boolean flat which controls whether this object is cached.
+	 * Boolean flag which controls whether this object is cached.
 	 * Default is true.
 	 * @return true if this object is cached on update() and create().
 	 */
@@ -190,6 +190,18 @@ public interface ParaObject extends Serializable, Linkable, Votable {
 	 * @param isCached when set to true, object is cached.
 	 */
 	void setCached(Boolean isCached);
+
+	/**
+	 * Returns the version number for this object. Used primarily for optimistic locking.
+	 * @return a positive number, {@code 0} if unused or {@code -1}, indicating a failed update.
+	 */
+	Long getVersion();
+
+	/**
+	 * Sets the version of this object. This value should come from the database.
+	 * @param version a positive number, different than the current value of the version field
+	 */
+	void setVersion(Long version);
 
 	/**
 	 * Stores this object in the data store.

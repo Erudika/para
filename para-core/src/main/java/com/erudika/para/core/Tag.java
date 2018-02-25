@@ -46,6 +46,7 @@ public class Tag implements ParaObject {
 	@Stored private String name;
 	@Stored private List<String> tags;
 	@Stored private Integer votes;
+	@Stored private Long version;
 	@Stored private Boolean stored;
 	@Stored private Boolean indexed;
 	@Stored private Boolean cached;
@@ -329,6 +330,16 @@ public class Tag implements ParaObject {
 	@Override
 	public void setVotes(Integer votes) {
 		this.votes = votes;
+	}
+
+	@Override
+	public Long getVersion() {
+		return (version == null) ? 0 : version;
+	}
+
+	@Override
+	public void setVersion(Long version) {
+		this.version = version;
 	}
 
 	@Override

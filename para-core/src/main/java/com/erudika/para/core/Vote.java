@@ -51,6 +51,7 @@ public class Vote implements ParaObject {
 	@Stored @Locked private String creatorid;
 	@Stored private Long updated;
 	@Stored private String name;
+	@Stored private Long version;
 	@Stored private Boolean stored;
 	@Stored private Boolean indexed;
 	@Stored private Boolean cached;
@@ -355,6 +356,16 @@ public class Vote implements ParaObject {
 
 	@Override
 	public void setVotes(Integer votes) {
+	}
+
+	@Override
+	public Long getVersion() {
+		return (version == null) ? 0 : version;
+	}
+
+	@Override
+	public void setVersion(Long version) {
+		this.version = version;
 	}
 
 	@Override
