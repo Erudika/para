@@ -37,6 +37,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
@@ -214,7 +215,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 			if (addMe.getStored()) {
 				result = invokeDAO(appid, daoMethod, mi);
 			}
-			if (addMe.getIndexed()) {
+			if (addMe.getIndexed() && addMe.getVersion() >= 0) {
 				try (final MetricsUtils.Context context = MetricsUtils.time(appid, search.getClass(), "index")) {
 					search.index(appid, addMe);
 					logger.debug("{}: Indexed {}->{}", getClass().getSimpleName(), appid, addMe.getId());
@@ -246,7 +247,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		List<ParaObject> removedObjects = AOPUtils.removeNotStoredNotIndexed(addUs, indexUs);
 		Object result = invokeDAO(appid, daoMethod, mi);
 		try (final MetricsUtils.Context context = MetricsUtils.time(appid, search.getClass(), "indexAll")) {
-			search.indexAll(appid, indexUs);
+			search.indexAll(appid, indexUs.stream().filter(p -> p.getVersion() >= 0).collect(Collectors.toList()));
 		}
 		// restore removed objects - needed if we have to cache them later
 		// do not remove this line - breaks tests
@@ -290,7 +291,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 
 	private void addToCacheOperation(String appid, Object[] args) {
 		ParaObject putMe = AOPUtils.getArgOfParaObject(args);
-		if (putMe != null && putMe.getCached()) {
+		if (putMe != null && putMe.getCached() && putMe.getVersion() >= 0) {
 			try (final MetricsUtils.Context context = MetricsUtils.time(appid, cache.getClass(), "put")) {
 				cache.put(appid, putMe.getId(), putMe);
 			}
@@ -348,7 +349,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		if (putUs != null && !putUs.isEmpty()) {
 			Map<String, ParaObject> map1 = new LinkedHashMap<>(putUs.size());
 			for (ParaObject obj : putUs) {
-				if (obj != null && obj.getCached()) {
+				if (obj != null && obj.getCached() && obj.getVersion() >= 0) {
 					map1.put(obj.getId(), obj);
 				}
 			}
@@ -382,7 +383,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	 * @param daoMethod invoked dao method
 	 */
 	private void detectNestedInvocations(Method daoMethod) {
-		if (!daoMethod.getName().startsWith("read")) {
+		if (!Config.IN_PRODUCTION && !daoMethod.getName().startsWith("read")) {
 			StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
 			for (StackTraceElement stackTraceElement : stackTraceElements) {
 				if (daoMethod.getDeclaringClass().getName().equals(stackTraceElement.getClassName()) &&
