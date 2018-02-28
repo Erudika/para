@@ -19,12 +19,11 @@ package com.erudika.para.persistence;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.erudika.para.annotations.Locked;
-import com.amazonaws.services.dynamodbv2.model.AttributeAction;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
 import com.amazonaws.services.dynamodbv2.model.GetItemResult;
 import com.amazonaws.services.dynamodbv2.model.KeysAndAttributes;
-import com.amazonaws.services.dynamodbv2.model.AttributeValueUpdate;
 import com.amazonaws.services.dynamodbv2.model.DeleteItemRequest;
 import com.amazonaws.services.dynamodbv2.model.DeleteRequest;
 import com.amazonaws.services.dynamodbv2.model.PutItemRequest;
@@ -128,6 +127,7 @@ public class AWSDynamoDAO implements DAO {
 			so.setTimestamp(Utils.timestamp());
 		}
 		so.setAppid(appid);
+		so.setVersion(1L);
 		createRow(so.getId(), appid, toRow(so, null));
 		logger.debug("DAO.create() {}->{}", appid, so.getId());
 		return so.getId();
@@ -147,7 +147,8 @@ public class AWSDynamoDAO implements DAO {
 	public <P extends ParaObject> void update(String appid, P so) {
 		if (so != null && so.getId() != null) {
 			so.setUpdated(Utils.timestamp());
-			updateRow(so.getId(), appid, toRow(so, Locked.class));
+			boolean updated = updateRow(so.getId(), appid, toRow(so, Locked.class));
+			so.setVersion(updated ? so.getVersion() + 1 : -1);
 			logger.debug("DAO.update() {}->{}", appid, so.getId());
 		}
 	}
@@ -179,21 +180,49 @@ public class AWSDynamoDAO implements DAO {
 		return key;
 	}
 
-	private void updateRow(String key, String appid, Map<String, AttributeValue> row) {
+	private boolean updateRow(String key, String appid, Map<String, AttributeValue> row) {
 		if (StringUtils.isBlank(key) || StringUtils.isBlank(appid) || row == null || row.isEmpty()) {
-			return;
+			return false;
 		}
-		Map<String, AttributeValueUpdate> rou = new HashMap<>();
 		try {
-			for (Entry<String, AttributeValue> attr : row.entrySet()) {
-				rou.put(attr.getKey(), new AttributeValueUpdate(attr.getValue(), AttributeAction.PUT));
+			UpdateItemRequest updateRequest = new UpdateItemRequest();
+			StringBuilder updateExpression = new StringBuilder("SET ");
+			Map<String, String> names = new HashMap<>(row.size() + 1);
+			Map<String, AttributeValue> values = new HashMap<>(row.size() + 1);
+			AttributeValue version = row.remove(Config._VERSION); // ignore the version field here
+			if (version == null || version.getN() == null) {
+				version = new AttributeValue().withN("0");
 			}
-			UpdateItemRequest updateItemRequest = new UpdateItemRequest(getTableNameForAppid(appid),
-					Collections.singletonMap(Config._KEY, new AttributeValue(getKeyForAppid(key, appid))), rou);
-			client().updateItem(updateItemRequest);
+			for (Entry<String, AttributeValue> attr : row.entrySet()) {
+				String name = "#" + attr.getKey();
+				String value = ":" + attr.getKey();
+				updateExpression.append(name).append("=").append(value).append(",");
+				names.put(name, attr.getKey());
+				values.put(value, attr.getValue());
+			}
+			updateExpression.setLength(updateExpression.length() - 1); // remove comma at the end
+
+			if (Config.getConfigBoolean("optimistic_locking_enabled", false)) {
+				names.put("#" + Config._VERSION, Config._VERSION);
+				values.put(":" + Config._VERSION, version);
+				values.put(":plusOne", new AttributeValue().withN("1"));
+				updateRequest.setConditionExpression("#" + Config._VERSION + " = :" + Config._VERSION);
+				updateExpression.append(" ADD #").append(Config._VERSION).append(" :plusOne");
+			}
+
+			updateRequest.setTableName(getTableNameForAppid(appid));
+			updateRequest.setKey(Collections.singletonMap(Config._KEY, new AttributeValue(getKeyForAppid(key, appid))));
+			updateRequest.setExpressionAttributeNames(names);
+			updateRequest.setExpressionAttributeValues(values);
+			updateRequest.setUpdateExpression(updateExpression.toString());
+			client().updateItem(updateRequest);
+			return true;
+		} catch (ConditionalCheckFailedException ex) {
+			logger.warn("Item not updated. Versions don't match. Appid={}, key={}.", appid, key);
 		} catch (Exception e) {
 			logger.error("Could not update row in DB - appid={}, key={}", appid, key, e);
 		}
+		return false;
 	}
 
 	private Map<String, AttributeValue> readRow(String key, String appid) {
@@ -259,6 +288,7 @@ public class AWSDynamoDAO implements DAO {
 				}
 				//if (updateOp) object.setUpdated(Utils.timestamp());
 				object.setAppid(appid);
+				object.setVersion(1L);
 				Map<String, AttributeValue> row = toRow(object, null);
 				setRowKey(getKeyForAppid(object.getId(), appid), row);
 				reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(row)));
@@ -352,7 +382,8 @@ public class AWSDynamoDAO implements DAO {
 			for (P object : objects) {
 				if (object != null && object.getId() != null) {
 					object.setUpdated(Utils.timestamp());
-					updateRow(object.getId(), appid, toRow(object, Locked.class));
+					boolean updated = updateRow(object.getId(), appid, toRow(object, Locked.class));
+					object.setVersion(updated ? object.getVersion() + 1 : -1);
 				}
 			}
 		}

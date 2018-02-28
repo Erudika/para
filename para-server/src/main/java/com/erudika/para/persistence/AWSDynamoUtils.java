@@ -88,7 +88,7 @@ public final class AWSDynamoUtils {
 	/**
 	 * The name of the shared table. Default is "0".
 	 */
-	public static final String SHARED_TABLE = Config.getConfigParam("shared_table_name", "0");
+	static final String SHARED_TABLE = Config.getConfigParam("shared_table_name", "0");
 
 	private AWSDynamoUtils() { }
 
@@ -376,6 +376,7 @@ public final class AWSDynamoUtils {
 				row.put(entry.getKey(), new AttributeValue(value.toString()));
 			}
 		}
+		row.put(Config._VERSION, new AttributeValue().withN(so.getVersion().toString()));
 		return row;
 	}
 
@@ -393,6 +394,7 @@ public final class AWSDynamoUtils {
 		for (Map.Entry<String, AttributeValue> col : row.entrySet()) {
 			props.put(col.getKey(), col.getValue().getS());
 		}
+		props.put(Config._VERSION, row.getOrDefault(Config._VERSION, new AttributeValue().withN("0")).getN());
 		return ParaObjectUtils.setAnnotatedFields(props);
 	}
 

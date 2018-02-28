@@ -268,4 +268,27 @@ public class AWSDynamoDAOIT extends DAOTest {
 		assertEquals(s1.getType(), res.get(s2.getId()).getType());
 		dao().deleteAll(ROOT_APP_NAME, Arrays.asList(s1, s2));
 	}
+
+	@Test
+	public void testOptimisticLockingOnUpdate() {
+		System.setProperty("para.optimistic_locking_enabled", "true");
+		Sysprop s1 = new Sysprop("conditional-update1");
+		dao().create(s1);
+		assertEquals(Long.valueOf(1L), s1.getVersion());
+		Sysprop sr1 = dao().read(s1.getId());
+		assertEquals(Long.valueOf(1L), sr1.getVersion());
+		sr1.setName("Updated");
+		dao().update(sr1);
+		assertEquals(Long.valueOf(2L), sr1.getVersion());
+		s1.setName("FAIL");
+		dao().update(s1);
+		assertEquals(Long.valueOf(-1L), s1.getVersion()); // failed update
+		Sysprop sr2 = dao().read(s1.getId());
+		sr2.setName("SUCCESS");
+		dao().update(sr2);
+		assertEquals(Long.valueOf(3L), sr2.getVersion()); // successful update
+		Sysprop sr3 = dao().read(s1.getId());
+		assertEquals("SUCCESS", sr3.getName());
+		System.setProperty("para.optimistic_locking_enabled", "false");
+	}
 }
