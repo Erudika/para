@@ -74,6 +74,8 @@ public final class Config {
 	public static final String _EMAIL = "email";
 	/** {@value #_GROUPS}. */
 	public static final String _GROUPS = "groups";
+	/** {@value #_VERSION}. */
+	public static final String _VERSION = "version";
 
 	static {
 		init(null);
