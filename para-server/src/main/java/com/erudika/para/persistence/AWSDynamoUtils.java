@@ -88,7 +88,7 @@ public final class AWSDynamoUtils {
 	/**
 	 * The name of the shared table. Default is "0".
 	 */
-	static final String SHARED_TABLE = Config.getConfigParam("shared_table_name", "0");
+	public static final String SHARED_TABLE = Config.getConfigParam("shared_table_name", "0");
 
 	private AWSDynamoUtils() { }
 
