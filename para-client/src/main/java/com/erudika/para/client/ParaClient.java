@@ -28,6 +28,8 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import com.erudika.para.validation.Constraint;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -91,9 +93,11 @@ public final class ParaClient {
 		if (StringUtils.length(secretKey) < 6) {
 			logger.warn("Secret key appears to be invalid. Make sure you call 'signIn()' first.");
 		}
+		ObjectMapper mapper = ParaObjectUtils.getJsonMapper();
+		mapper.setSerializationInclusion(JsonInclude.Include.USE_DEFAULTS);
 		ClientConfig clientConfig = new ClientConfig();
 		clientConfig.register(GenericExceptionMapper.class);
-		clientConfig.register(new JacksonJsonProvider(ParaObjectUtils.getJsonMapper()));
+		clientConfig.register(new JacksonJsonProvider(mapper));
 		clientConfig.connectorProvider(new HttpUrlConnectorProvider().useSetMethodWorkaround());
 		SSLContext sslContext = SslConfigurator.newInstance().securityProtocol("TLSv1").createSSLContext();
 		System.setProperty("https.protocols", "TLSv1");
