@@ -17,7 +17,9 @@
  */
 package com.erudika.para.search;
 
+import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
+import com.erudika.para.persistence.DAO;
 import com.erudika.para.utils.Pager;
 import java.util.List;
 import java.util.Map;
@@ -217,6 +219,16 @@ public class MockSearch implements Search {
 
 	@Override
 	public Long getCount(String appid, String type, Map<String, ?> terms) {
+		throw new UnsupportedOperationException("Not implemented.");
+	}
+
+	@Override
+	public boolean rebuildIndex(DAO dao, App app, Pager... pager) {
+		throw new UnsupportedOperationException("Not implemented.");
+	}
+
+	@Override
+	public boolean isValidQueryString(String queryString) {
 		throw new UnsupportedOperationException("Not implemented.");
 	}
 

@@ -18,8 +18,10 @@
 package com.erudika.para.search;
 
 import com.erudika.para.annotations.Measured;
+import com.erudika.para.core.App;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.core.ParaObject;
+import com.erudika.para.persistence.DAO;
 import java.util.List;
 import java.util.Map;
 
@@ -422,5 +424,26 @@ public interface Search {
 	 */
 	@Measured
 	Long getCount(String appid, String type, Map<String, ?> terms);
+
+	/////////////////////////////////////////////
+	//			  UTILITY METHODS
+	/////////////////////////////////////////////
+
+	/**
+	 * Reads all objects from the database and indexes them into a new index. Old index is usually deleted.
+	 * @param dao a {@link DAO} implementation
+	 * @param app an {@link App} object
+	 * @param pager a {@link Pager} object
+	 * @return true if operation was successful
+	 */
+	@Measured
+	boolean rebuildIndex(DAO dao, App app, Pager... pager);
+
+	/**
+	 * Validates a query string.
+	 * @param queryString a query string
+	 * @return true if query is valid
+	 */
+	boolean isValidQueryString(String queryString);
 
 }

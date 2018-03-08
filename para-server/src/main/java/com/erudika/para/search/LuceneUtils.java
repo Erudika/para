@@ -20,10 +20,12 @@ package com.erudika.para.search;
 import com.erudika.para.DestroyListener;
 import com.erudika.para.Para;
 import com.erudika.para.core.Address;
+import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.utils.Config;
+import static com.erudika.para.utils.Config.DEFAULT_LIMIT;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -93,6 +95,8 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
+import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
+import org.apache.lucene.queryparser.flexible.standard.StandardQueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanQuery.Builder;
@@ -335,16 +339,16 @@ public final class LuceneUtils {
 	 * Rebuilds an index. Reads objects from the data store and indexes them. Works on one DB table and index only.
 	 *
 	 * @param dao DAO for connecting to the DB - the primary data source
-	 * @param appid the index name (alias)
+	 * @param app an app
 	 * @param pager a Pager instance
 	 * @return true if successful, false if index doesn't exist or failed.
 	 */
-	public static boolean rebuildIndex(DAO dao, String appid, Pager... pager) {
-		if (StringUtils.isBlank(appid) || dao == null) {
+	public static boolean rebuildIndex(DAO dao, App app, Pager... pager) {
+		if (app == null || StringUtils.isBlank(app.getAppIdentifier()) || dao == null) {
 			return false;
 		}
 		try {
-			String indexName = appid.trim();
+			String indexName = app.getAppIdentifier().trim();
 			logger.info("Deleting '{}' index before rebuilding it...", indexName);
 			deleteIndex(indexName);
 			logger.debug("rebuildIndex(): {}", indexName);
@@ -355,7 +359,7 @@ public final class LuceneUtils {
 			List<ParaObject> list;
 			List<Document> docs = new LinkedList<Document>();
 			do {
-				list = dao.readPage(appid, p); // use appid!
+				list = dao.readPage(app.getAppIdentifier(), p); // use appid!
 				logger.debug("rebuildIndex(): Read {} objects from table {}.", list.size(), indexName);
 				for (ParaObject obj : list) {
 					if (obj != null) {
@@ -770,7 +774,7 @@ public final class LuceneUtils {
 			} else {
 				int start = (pageNum < 1 || pageNum > Config.MAX_PAGES) ? 0 : (pageNum - 1) * maxPerPage;
 				Sort sort = new Sort(getSortField(pager));
-				TopFieldCollector collector = TopFieldCollector.create(sort, Config.DEFAULT_LIMIT, false, false, false);
+				TopFieldCollector collector = TopFieldCollector.create(sort, DEFAULT_LIMIT, true, false, false, false);
 				isearcher.search(query, collector);
 				topDocs = collector.topDocs(start, maxPerPage);
 			}
@@ -979,6 +983,20 @@ public final class LuceneUtils {
 			}
 		}
 		return new MatchAllDocsQuery();
+	}
+
+	static boolean isValidQueryString(String query) {
+		if (StringUtils.isBlank(query)) {
+			return false;
+		}
+		try {
+			StandardQueryParser parser = new StandardQueryParser();
+			parser.setAllowLeadingWildcard(false);
+			parser.parse(query, "");
+			return true;
+		} catch (QueryNodeException ex) {
+			return false;
+		}
 	}
 
 	static Pager getPager(Pager[] pager) {
