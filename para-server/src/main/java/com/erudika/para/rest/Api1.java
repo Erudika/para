@@ -19,6 +19,7 @@ package com.erudika.para.rest;
 
 import static com.erudika.para.Para.getCustomResourceHandlers;
 import static com.erudika.para.Para.getDAO;
+import static com.erudika.para.Para.getSearch;
 import static com.erudika.para.Para.getVersion;
 
 import com.erudika.para.core.App;
@@ -891,6 +892,10 @@ public final class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				App app1 = (app == null) ? getPrincipalApp() : app;
 				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
+				String query = params.getFirst("q");
+				if (!StringUtils.isBlank(query) && !getSearch().isValidQueryString(query)) {
+					return getStatusResponse(Response.Status.BAD_REQUEST, "Invalid query string syntax.");
+				}
 				String queryType = pathParam("querytype", ctx);
 				if (StringUtils.isBlank(queryType)) {
 					queryType = "default";
