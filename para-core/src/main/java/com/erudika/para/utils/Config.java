@@ -143,17 +143,9 @@ public final class Config {
 	 */
 	public static final String ENVIRONMENT = getConfigParam("env", "embedded");
 	/**
-	 * AWS Access Key.
-	 */
-	public static final String AWS_ACCESSKEY = getConfigParam("aws_access_key", "");
-	/**
-	 * AWS Secret Key.
-	 */
-	public static final String AWS_SECRETKEY = getConfigParam("aws_secret_key", "");
-	/**
 	 * AWS Region.
 	 */
-	public static final String AWS_REGION = getConfigParam("aws_region", "");
+	public static final String AWS_REGION = getConfigParam("aws_region", getConfigParam("AWS_REGION", ""));
 	/**
 	 * Facebook app id (for authentication).
 	 */

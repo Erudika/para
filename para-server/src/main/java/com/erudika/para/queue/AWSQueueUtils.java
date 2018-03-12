@@ -79,9 +79,7 @@ public final class AWSQueueUtils {
 			return sqsClient;
 		}
 		if (Config.IN_PRODUCTION) {
-			sqsClient = AmazonSQSClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(
-				new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY))).
-					withRegion(Config.AWS_REGION).build();
+			sqsClient = AmazonSQSClientBuilder.standard().build();
 		} else {
 			sqsClient = AmazonSQSClientBuilder.standard().
 					withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"))).

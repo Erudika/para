@@ -17,8 +17,6 @@
  */
 package com.erudika.para.iot;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.iot.AWSIot;
 import com.amazonaws.services.iot.AWSIotClientBuilder;
 import com.amazonaws.services.iot.model.AttachPrincipalPolicyRequest;
@@ -81,9 +79,7 @@ public class AWSIoTService implements IoTService {
 			return iotClient;
 		}
 
-		iotClient = AWSIotClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(
-				new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY))).
-				withRegion(Config.AWS_REGION).build();
+		iotClient = AWSIotClientBuilder.standard().build();
 
 		Para.addDestroyListener(new DestroyListener() {
 			public void onDestroy() {
@@ -99,9 +95,7 @@ public class AWSIoTService implements IoTService {
 			return iotDataClient;
 		}
 
-		iotDataClient = AWSIotDataClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(
-				new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY))).
-				withRegion(Config.AWS_REGION).build();
+		iotDataClient = AWSIotDataClientBuilder.standard().build();
 
 		Para.addDestroyListener(new DestroyListener() {
 			public void onDestroy() {

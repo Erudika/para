@@ -17,8 +17,6 @@
  */
 package com.erudika.para.storage;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
@@ -58,9 +56,7 @@ public class AWSFileStore implements FileStore {
 	 */
 	public AWSFileStore(String bucket) {
 		this.bucket = bucket;
-		this.s3 = AmazonS3ClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(
-				new BasicAWSCredentials(Config.AWS_ACCESSKEY, Config.AWS_SECRETKEY))).
-				withRegion(Config.AWS_REGION).build();
+		this.s3 = AmazonS3ClientBuilder.standard().build();
 	}
 
 	@Override
