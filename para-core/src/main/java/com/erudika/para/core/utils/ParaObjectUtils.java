@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -73,6 +74,7 @@ public final class ParaObjectUtils {
 		JSON_MAPPER.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
 		JSON_MAPPER.enable(SerializationFeature.INDENT_OUTPUT);
 		JSON_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+		JSON_MAPPER.registerModule(new JavaTimeModule());
 		JSON_MAPPER.findAndRegisterModules();
 	}
 

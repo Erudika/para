@@ -14,6 +14,7 @@
 	<properties>
 		<springSecVer>5.0.3.RELEASE</springSecVer>
 		<springLdapVer>2.3.2.RELEASE</springLdapVer>
+		<metricsVer>4.0.2</metricsVer>
 	</properties>
 
 	<dependencies>
@@ -187,22 +188,31 @@
 		<dependency>
 			<groupId>io.dropwizard.metrics</groupId>
 			<artifactId>metrics-core</artifactId>
-			<version>3.2.5</version>
+			<version>${metricsVer}</version>
 		</dependency>
 		<dependency>
-			<groupId>io.dropwizard</groupId>
-			<artifactId>dropwizard-metrics-graphite</artifactId>
-			<version>1.2.2</version>
-		 <exclusions>
-		  <exclusion>
-		   <groupId>joda-time</groupId>
-		   <artifactId>joda-time</artifactId>
-		  </exclusion>
-		  <exclusion>
-		   <groupId>com.google.code.findbugs</groupId>
-		   <artifactId>jsr305</artifactId>
-		  </exclusion>
-		 </exclusions>
+			<groupId>io.dropwizard.metrics</groupId>
+			<artifactId>metrics-jmx</artifactId>
+			<version>${metricsVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.dropwizard.metrics</groupId>
+			<artifactId>metrics-graphite</artifactId>
+			<version>${metricsVer}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>joda-time</groupId>
+					<artifactId>joda-time</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.google.code.findbugs</groupId>
+					<artifactId>jsr305</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.hibernate</groupId>
+					<artifactId>hibernate-validator</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<!-- OTHER -->

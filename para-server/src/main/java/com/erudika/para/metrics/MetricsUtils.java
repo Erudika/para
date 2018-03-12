@@ -17,13 +17,13 @@
  */
 package com.erudika.para.metrics;
 
-import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
+import com.codahale.metrics.jmx.JmxReporter;
 import com.erudika.para.AppCreatedListener;
 import com.erudika.para.AppSettingAddedListener;
 import com.erudika.para.AppSettingRemovedListener;
@@ -37,7 +37,6 @@ import com.erudika.para.utils.HealthUtils;
 import com.erudika.para.utils.RegistryUtils;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
-import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +51,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static com.erudika.para.Para.getCustomResourceHandlers;
+import java.util.ArrayList;
 
 /**
  * A centralized utility for managing and retrieving all Para performance metrics.
@@ -482,7 +482,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 				}
 			}
 			// check if any of the graphite reporters was disabled by an app, if so, remove it
-			List<Map.Entry<String, GraphiteReporter>> appsToRemove = Lists.newArrayList();
+			List<Map.Entry<String, GraphiteReporter>> appsToRemove = new ArrayList<>();
 			for (Map.Entry<String, GraphiteReporter> iter : GRAPHITE_REPORTERS.entrySet()) {
 				if (!iter.getKey().equals(SYSTEM_METRICS_NAME) && !graphiteRegistry.containsKey(iter.getKey())) {
 					appsToRemove.add(iter);

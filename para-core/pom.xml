@@ -108,6 +108,21 @@
 			<artifactId>jackson-dataformat-yaml</artifactId>
 			<version>${jacksonVer}</version>
 		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.module</groupId>
+			<artifactId>jackson-module-parameter-names</artifactId>
+			<version>${jacksonVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jdk8</artifactId>
+			<version>${jacksonVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jsr310</artifactId>
+			<version>${jacksonVer}</version>
+		</dependency>
 
 		<!-- LOGGING -->
 		<dependency>
@@ -236,7 +251,7 @@
 		<dependency>
 			<groupId>javax.el</groupId>
 			<artifactId>javax.el-api</artifactId>
-			<version>2.2.5</version>
+			<version>3.0.1-b04</version>
 		</dependency>
 		<dependency>
 			<groupId>org.glassfish.web</groupId>
