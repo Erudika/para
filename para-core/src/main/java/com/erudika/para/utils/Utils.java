@@ -21,6 +21,7 @@ import com.erudika.para.annotations.Email;
 import com.erudika.para.core.ParaObject;
 import com.samskivert.mustache.Mustache;
 import com.vladsch.flexmark.ext.emoji.EmojiExtension;
+import com.vladsch.flexmark.ext.emoji.EmojiShortcutType;
 import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension;
 import com.vladsch.flexmark.ext.gfm.tasklist.TaskListExtension;
 import com.vladsch.flexmark.ext.tables.TablesExtension;
@@ -424,7 +425,7 @@ public final class Utils {
 	private static MutableDataHolder getMarkdownOptions() {
 		return new MutableDataSet()
 				.set(HtmlRenderer.ESCAPE_HTML, true)
-				.set(EmojiExtension.USE_IMAGE_URLS, true)
+				.set(EmojiExtension.USE_SHORTCUT_TYPE, EmojiShortcutType.ANY_GITHUB_PREFERRED)
 				// for full GFM table compatibility add the following table extension options:
 				.set(TablesExtension.COLUMN_SPANS, false)
 				.set(TablesExtension.APPEND_MISSING_COLUMNS, true)

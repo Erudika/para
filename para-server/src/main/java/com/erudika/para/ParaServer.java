@@ -54,15 +54,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.ParentContextApplicationContextInitializer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.boot.context.embedded.AnnotationConfigEmbeddedWebApplicationContext;
-import org.springframework.boot.context.embedded.EmbeddedServletContainerFactory;
-import org.springframework.boot.context.embedded.jetty.JettyEmbeddedServletContainerFactory;
-import org.springframework.boot.context.embedded.jetty.JettyServerCustomizer;
+import org.springframework.boot.web.embedded.jetty.JettyServerCustomizer;
+import org.springframework.boot.web.embedded.jetty.JettyServletWebServerFactory;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
-import org.springframework.boot.web.support.ServletContextApplicationContextInitializer;
+import org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext;
+import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
+import org.springframework.boot.web.servlet.support.ServletContextApplicationContextInitializer;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -164,8 +165,8 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	 * @return Jetty config bean
 	 */
 	@Bean
-	public EmbeddedServletContainerFactory jettyConfigBean() {
-		JettyEmbeddedServletContainerFactory jef = new JettyEmbeddedServletContainerFactory();
+	public ServletWebServerFactory jettyConfigBean() {
+		JettyServletWebServerFactory jef = new JettyServletWebServerFactory();
 		jef.addServerCustomizers(new JettyServerCustomizer() {
 			public void customize(Server server) {
 				if (Config.getConfigBoolean("access_log_enabled", true)) {
@@ -228,7 +229,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	 * @param sources the application classes that will be scanned
 	 * @return the application context
 	 */
-	protected static WebApplicationContext runAsWAR(ServletContext sc, Object... sources) {
+	protected static WebApplicationContext runAsWAR(ServletContext sc, Class<?>... sources) {
 		ApplicationContext parent = null;
 		Object object = sc.getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
 		if (object instanceof ApplicationContext) {
@@ -241,11 +242,11 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 			application.initializers(new ParentContextApplicationContextInitializer(parent));
 		}
 		application.initializers(new ServletContextApplicationContextInitializer(sc));
-		application.contextClass(AnnotationConfigEmbeddedWebApplicationContext.class);
+		application.contextClass(AnnotationConfigServletWebServerApplicationContext.class);
 
 		// entry point (WAR)
 		application.profiles(Config.ENVIRONMENT);
-		application.web(true);
+		application.web(WebApplicationType.SERVLET);
 		application.bannerMode(Banner.Mode.OFF);
 		Para.initialize(getCoreModules());
 		// Ensure error pages are registered
@@ -274,11 +275,11 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	 * @param args command line arguments array (same as those in {@code void main(String[] args)} )
 	 * @param sources the application classes that will be scanned
 	 */
-	protected static void runAsJAR(String[] args, Object... sources) {
+	protected static void runAsJAR(String[] args, Class<?>... sources) {
 		// entry point (JAR)
 		SpringApplication app = new SpringApplication(sources);
 		app.setAdditionalProfiles(Config.ENVIRONMENT);
-		app.setWebEnvironment(true);
+		app.setWebApplicationType(WebApplicationType.SERVLET);
 		app.setBannerMode(Banner.Mode.OFF);
 		Para.initialize(getCoreModules());
 		app.run(args);

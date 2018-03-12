@@ -27,7 +27,7 @@ import com.erudika.para.utils.Utils;
 import java.util.List;
 import java.util.Objects;
 import javax.validation.constraints.Size;
-import org.hibernate.validator.constraints.NotBlank;
+import javax.validation.constraints.NotBlank;
 
 /**
  * This class represents an address. It enables location based search queries.

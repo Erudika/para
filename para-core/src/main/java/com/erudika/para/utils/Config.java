@@ -145,7 +145,7 @@ public final class Config {
 	/**
 	 * AWS Region.
 	 */
-	public static final String AWS_REGION = getConfigParam("aws_region", getConfigParam("AWS_REGION", ""));
+	public static final String AWS_REGION = getConfigParam("aws_region", System.getenv("AWS_REGION"));
 	/**
 	 * Facebook app id (for authentication).
 	 */

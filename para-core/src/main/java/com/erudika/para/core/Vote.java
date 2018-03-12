@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Objects;
 import javax.validation.constraints.NotNull;
 import org.apache.commons.lang3.StringUtils;
-import org.hibernate.validator.constraints.NotBlank;
+import javax.validation.constraints.NotBlank;
 
 /**
  * When a user votes on an object the vote is saved as positive or negative.

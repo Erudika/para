@@ -19,8 +19,8 @@ package com.erudika.para.core;
 
 import java.io.Serializable;
 import java.util.List;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
-import org.hibernate.validator.constraints.NotBlank;
 
 /**
  * The core domain interface. All Para objects implement it.

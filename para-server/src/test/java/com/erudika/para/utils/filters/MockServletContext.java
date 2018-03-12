@@ -288,4 +288,39 @@ public class MockServletContext implements ServletContext {
 		throw new UnsupportedOperationException("Not supported yet.");
 	}
 
+	@Override
+	public ServletRegistration.Dynamic addJspFile(String string, String string1) {
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
+
+	@Override
+	public int getSessionTimeout() {
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
+
+	@Override
+	public void setSessionTimeout(int i) {
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
+
+	@Override
+	public String getRequestCharacterEncoding() {
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
+
+	@Override
+	public void setRequestCharacterEncoding(String string) {
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
+
+	@Override
+	public String getResponseCharacterEncoding() {
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
+
+	@Override
+	public void setResponseCharacterEncoding(String string) {
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
+
 }

@@ -69,6 +69,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
 
 /**
  *
@@ -113,7 +114,7 @@ public class ParaClientIT {
 
 		UserAuthentication ua = new UserAuthentication(new AuthenticatedUserDetails(fbUser));
 		SpringApplication app = new SpringApplication(ParaServer.class);
-		app.setWebEnvironment(true);
+		app.setWebApplicationType(WebApplicationType.SERVLET);
 		app.setBannerMode(Banner.Mode.OFF);
 		SecurityModule secMod = new SecurityModule();
 		FacebookAuthFilter fbaf = new FacebookAuthFilter("/");

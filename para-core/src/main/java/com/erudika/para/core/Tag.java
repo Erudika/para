@@ -26,7 +26,7 @@ import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
-import org.hibernate.validator.constraints.NotBlank;
+import javax.validation.constraints.NotBlank;
 
 /**
  * A tag. Must not be null or empty.

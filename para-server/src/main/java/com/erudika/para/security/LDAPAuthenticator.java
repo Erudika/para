@@ -23,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ldap.core.DirContextOperations;
 import org.springframework.security.authentication.AuthenticationServiceException;
-import org.springframework.security.authentication.encoding.LdapShaPasswordEncoder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.ldap.DefaultSpringSecurityContextSource;
 import org.springframework.security.ldap.authentication.AbstractLdapAuthenticator;
@@ -74,7 +73,6 @@ public final class LDAPAuthenticator implements LdapAuthenticator {
 			if (usePasswordComparison) {
 				PasswordComparisonAuthenticator p = new PasswordComparisonAuthenticator(contextSource);
 				p.setPasswordAttributeName(passAttribute);
-				p.setPasswordEncoder(new LdapShaPasswordEncoder());
 				p.setUserDnPatterns(new String[]{dnPattern});
 				p.setUserSearch(userSearch);
 				authenticator = p;

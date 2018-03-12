@@ -32,7 +32,7 @@ import javax.validation.constraints.Pattern;
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@org.hibernate.validator.constraints.Email(message = "Please provide a valid email address")
+@javax.validation.constraints.Email(message = "Please provide a valid email address")
 @Pattern(regexp = EMAIL_PATTERN, message = "Please provide a valid email address")
 @Target({ ElementType.METHOD, ElementType.FIELD, ElementType.ANNOTATION_TYPE })
 @Retention(RetentionPolicy.RUNTIME)
