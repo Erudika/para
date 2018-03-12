@@ -989,6 +989,9 @@ public final class LuceneUtils {
 		if (StringUtils.isBlank(query)) {
 			return false;
 		}
+		if ("*".equals(query.trim())) {
+			return true;
+		}
 		try {
 			StandardQueryParser parser = new StandardQueryParser();
 			parser.setAllowLeadingWildcard(false);
