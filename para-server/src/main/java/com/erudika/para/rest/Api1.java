@@ -780,9 +780,10 @@ public final class Api1 extends ResourceConfig {
 				ParaObject obj = ParaObjectUtils.toObject(type);
 				obj.setType(type);
 				obj.setId(pathParam(Config._ID, ctx));
+				// allow apps to partially update themselves
+				String appid = StringUtils.equals(type, Utils.type(App.class)) ? app.getAppid() : app.getAppIdentifier();
 				// partial update - equivalent to PATCH method
-				return getUpdateResponse(app, getDAO().read(app.getAppIdentifier(), obj.getId()),
-						ctx.getEntityStream());
+				return getUpdateResponse(app, getDAO().read(appid, obj.getId()), ctx.getEntityStream());
 			}
 		};
 	}
