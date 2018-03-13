@@ -105,7 +105,6 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 
 				HttpPost tokenPost = new HttpPost(TOKEN_URL);
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
-				tokenPost.setHeader(HttpHeaders.ACCEPT, "application/json");
 				tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
 				CloseableHttpResponse resp1 = httpclient.execute(tokenPost);
 
@@ -135,7 +134,6 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 		if (accessToken != null) {
 			HttpGet profileGet = new HttpGet(PROFILE_URL);
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-			profileGet.setHeader(HttpHeaders.ACCEPT, "application/json");
 			CloseableHttpResponse resp2 = httpclient.execute(profileGet);
 			HttpEntity respEntity = resp2.getEntity();
 			String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
