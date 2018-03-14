@@ -50,13 +50,13 @@ public enum HealthUtils implements InitializeListener, Runnable {
 					failedServices.add("DAO");
 				}
 				// read the root app from the search, if enabled
-				if (Config.isSearchEnabled() && Para.getSearch().findById(rootAppId) == null) {
+				if (healthy && Config.isSearchEnabled() && Para.getSearch().findById(rootAppId) == null) {
 					healthy = false;
 					failedServices.add("Search");
 				}
 				// test the cache by putting a dummy object in, then remove it
 				// DO NOT assume that the root app object is still cached here from the last read() call above
-				if (Config.isCacheEnabled()) {
+				if (healthy && Config.isCacheEnabled()) {
 					String cacheTestId = new UUID().toString();
 					Para.getCache().put(cacheTestId, "ok");
 					healthy = Para.getCache().contains(cacheTestId);

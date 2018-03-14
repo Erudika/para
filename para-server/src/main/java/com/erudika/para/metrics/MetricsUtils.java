@@ -113,7 +113,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 				} while (!appsPage.isEmpty());
 
 				logger.info("Found root app '{}' and {} existing child app(s){}", Config.getRootAppIdentifier(),
-						apps.size() - 1, apps.isEmpty() || !logger.isDebugEnabled() ? "." : ":");
+						apps.isEmpty() ? 0 : apps.size() - 1, apps.isEmpty() || !logger.isDebugEnabled() ? "." : ":");
 
 				for (App app : apps) {
 					logger.debug("   {}{}", app.getAppIdentifier(), app.isRootApp() ? " (root app)" : "");
