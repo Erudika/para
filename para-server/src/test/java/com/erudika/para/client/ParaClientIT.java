@@ -38,8 +38,6 @@ import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
 import com.erudika.para.core.Votable;
 import com.erudika.para.core.Vote;
-import com.erudika.para.search.LuceneSearch;
-import com.erudika.para.search.Search;
 import com.erudika.para.security.AuthenticatedUserDetails;
 import com.erudika.para.security.filters.FacebookAuthFilter;
 import com.erudika.para.security.SecurityModule;
@@ -49,8 +47,6 @@ import static com.erudika.para.validation.Constraint.*;
 import com.erudika.para.utils.HumanTime;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
-import com.google.inject.Binder;
-import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -107,6 +103,7 @@ public class ParaClientIT {
 		System.setProperty("para.print_logo", "false");
 		System.setProperty("para.app_name", APP_NAME);
 		System.setProperty("para.cluster_name", "para-test");
+		System.setProperty("para.search", "LuceneSearch");
 		String endpoint = "http://localhost:8080";
 
 		fbUser = new User("fbUser_1");
@@ -125,12 +122,7 @@ public class ParaClientIT {
 		fbaf = spy(fbaf);
 		when(fbaf.getOrCreateUser((App) any(), anyString())).thenReturn(ua);
 		secMod.setFacebookFilter(fbaf);
-
-		Module searchMod = (Binder binder) -> {
-			binder.bind(Search.class).to(LuceneSearch.class).asEagerSingleton();
-		};
-
-		Para.initialize(Modules.override(ParaServer.getCoreModules()).with(searchMod, secMod));
+		Para.initialize(Modules.override(ParaServer.getCoreModules()).with(secMod));
 		app.run();
 
 		CoreUtils.getInstance().setDao(Para.getDAO());

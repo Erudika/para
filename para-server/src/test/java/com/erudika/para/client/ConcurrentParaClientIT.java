@@ -59,6 +59,7 @@ public class ConcurrentParaClientIT {
 		System.setProperty("para.env", "embedded");
 		System.setProperty("para.print_logo", "false");
 		System.setProperty("para.app_name", ROOT_APP_NAME);
+		System.setProperty("para.search", "LuceneSearch");
 		System.setProperty("server.port", "8181");
 		String endpoint = "http://localhost:8181";
 		ParaServer.main(new String[0]);
