@@ -200,24 +200,24 @@ Use these client libraries to quickly integrate Para into your project:
 
 Use these `DAO` implementations to connect to different databases:
 
-- **H2**: `H2DAO` **default** (included in `para-server`)
 - **DynamoDB**: `AWSDynamoDAO` (included in `para-server`)
 - **MongoDB**: [para-dao-mongodb](https://github.com/Erudika/para-dao-mongodb)
 - **Cassandra**: [para-dao-cassandra](https://github.com/Erudika/para-dao-cassandra)
-- **SQL** (MySQL/MariaDB, PostgreSQL, etc.): [para-dao-sql](https://github.com/Erudika/para-dao-sql)
+- **SQL** (H2/MySQL/MariaDB, PostgreSQL, etc.): [para-dao-sql](https://github.com/Erudika/para-dao-sql)
+`H2DAO` is the default `DAO` and it's part of the SQL plugin (packaged with the WAR file)
 
 ## Search engine integrations
 
 The `Search` interface is implemented by:
 
-- **Lucene**: `LuceneSearch` **default** (included in `para-server`)
+- **Lucene**: [para-search-lucene](https://github.com/erudika/para-search-lucene) **default** (packaged with the WAR file)
 - **Elasticsearch**: [para-search-elasticsearch](https://github.com/erudika/para-search-elasticsearch)
 
 ## Cache integrations
 
 The `Cache` interface is implemented by:
 
-- **Caffeine**: **default** objects are cached locally
+- **Caffeine**: **default** objects are cached locally (included in `para-server`)
 - **Hazelcast**: [para-cache-hazelcast](https://github.com/Erudika/para-cache-hazelcast) (distributed)
 
 ## Projects using Para
@@ -229,7 +229,6 @@ The `Cache` interface is implemented by:
 
 ## Wishlist / Roadmap
 
-- Elasticsearch v6 compatibility and support for AWS ES ([whenever the high-level client is done](https://github.com/elastic/elasticsearch/issues/27205))
 - `Search` implementation for MongoDB
 - Make the API server more efficient with fibers (Quasar?)
 - OpenAPI 3+ compatible API at `/v2` (not soon)
