@@ -21,7 +21,6 @@ import com.erudika.para.Para;
 import com.erudika.para.utils.Config;
 import com.google.inject.AbstractModule;
 import java.util.ServiceLoader;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * The default search module.
@@ -31,21 +30,17 @@ public class SearchModule extends AbstractModule {
 
 	protected void configure() {
 		String selectedSearch = Config.getConfigParam("search", "");
-		if (StringUtils.isBlank(selectedSearch) || "lucene".equalsIgnoreCase(selectedSearch)) {
-			bindToDefault();
+		Search searchPlugin = loadExternalSearch(selectedSearch);
+		if (searchPlugin != null) {
+			bind(Search.class).to(searchPlugin.getClass()).asEagerSingleton();
 		} else {
-			Search searchPlugin = loadExternalSearch(selectedSearch);
-			if (searchPlugin != null) {
-				bind(Search.class).to(searchPlugin.getClass()).asEagerSingleton();
-			} else {
-				// default fallback - not implemented!
-				bindToDefault();
-			}
+			// default fallback - not implemented!
+			bindToDefault();
 		}
 	}
 
 	void bindToDefault() {
-		bind(Search.class).to(LuceneSearch.class).asEagerSingleton();
+		bind(Search.class).to(MockSearch.class).asEagerSingleton();
 	}
 
 	/**

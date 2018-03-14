@@ -96,28 +96,6 @@
 			<version>4.0.4</version>
 		</dependency>
 
-		<!-- LUCENE -->
-		<dependency>
-			<groupId>org.apache.lucene</groupId>
-			<artifactId>lucene-core</artifactId>
-			<version>${luceneVer}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.lucene</groupId>
-			<artifactId>lucene-spatial</artifactId>
-			<version>${luceneVer}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.lucene</groupId>
-			<artifactId>lucene-analyzers-common</artifactId>
-			<version>${luceneVer}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.lucene</groupId>
-			<artifactId>lucene-queryparser</artifactId>
-			<version>${luceneVer}</version>
-		</dependency>
-
 		<!--	 CAFFEINE -->
 		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
@@ -265,6 +243,12 @@
 			<groupId>com.erudika</groupId>
 			<artifactId>para-client</artifactId>
 			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.erudika</groupId>
+			<artifactId>para-search-lucene</artifactId>
+			<version>1.28.0</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

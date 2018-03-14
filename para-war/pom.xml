@@ -17,6 +17,16 @@
 			<artifactId>para-server</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>com.erudika</groupId>
+			<artifactId>para-dao-sql</artifactId>
+			<version>1.28.3</version>
+		</dependency>
+		<dependency>
+			<groupId>com.erudika</groupId>
+			<artifactId>para-search-lucene</artifactId>
+			<version>1.28.0</version>
+		</dependency>
 	</dependencies>
 
 	<properties>
@@ -64,6 +74,15 @@
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.eclipse.jetty</groupId>
+				<artifactId>jetty-maven-plugin</artifactId>
+				<version>9.4.8.v20171121</version>
+				<configuration>
+					<war>${project.basedir}/target/para-${project.version}.war</war>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
