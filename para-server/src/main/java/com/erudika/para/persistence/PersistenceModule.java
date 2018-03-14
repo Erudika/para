@@ -38,15 +38,13 @@ public class PersistenceModule extends AbstractModule {
 				bind(DAO.class).to(AWSDynamoDAO.class).asEagerSingleton();
 			}
 		} else {
-			if ("h2".equalsIgnoreCase(selectedDAO)) {
-				bindToDefault();
-			} else if ("dynamodb".equalsIgnoreCase(selectedDAO) ||
+			if ("dynamodb".equalsIgnoreCase(selectedDAO) ||
 					AWSDynamoDAO.class.getSimpleName().equalsIgnoreCase(selectedDAO)) {
 				bind(DAO.class).to(AWSDynamoDAO.class).asEagerSingleton();
 			} else {
 				DAO daoPlugin = loadExternalDAO(selectedDAO);
 				if (daoPlugin != null) {
-					// external plugins - MongoDB, Cassandra, xSQL, etc.
+					// external plugins - MongoDB, Cassandra, H2DAO, xSQL, etc.
 					bind(DAO.class).to(daoPlugin.getClass()).asEagerSingleton();
 				} else {
 					// in-memory DAO - default fallback
@@ -57,7 +55,7 @@ public class PersistenceModule extends AbstractModule {
 	}
 
 	void bindToDefault() {
-		bind(DAO.class).to(H2DAO.class).asEagerSingleton();
+		bind(DAO.class).to(MockDAO.class).asEagerSingleton();
 	}
 
 	/**

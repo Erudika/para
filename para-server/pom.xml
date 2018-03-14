@@ -96,13 +96,6 @@
 			<version>4.0.4</version>
 		</dependency>
 
-		<!-- H2 DB -->
-		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-			<version>1.4.196</version>
-		</dependency>
-
 		<!-- LUCENE -->
 		<dependency>
 			<groupId>org.apache.lucene</groupId>
