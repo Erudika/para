@@ -146,7 +146,6 @@ public class ParaClientIT {
 		}
 
 		Map<String, String> creds = Para.newApp(APP_NAME_CHILD, "Child app with routing", false, false);
-//		ElasticSearchUtils.addIndexAlias(APP_NAME, APP_NAME_CHILD, true);
 
 		pc = new ParaClient(App.id(APP_NAME), rootApp.getSecret());
 		pc.setEndpoint(endpoint);
@@ -1046,5 +1045,23 @@ public class ParaClientIT {
 		pc.delete(todo2);
 		pc.delete(newUser);
 		pc.delete(newUser2);
+
+		// an app should be able to update and delete itself
+		String appId = "para-child-app-test";
+		Map<String, String> creds = Para.newApp(appId, "Child app", false, false);
+		ParaClient pclient = new ParaClient(App.id(appId), creds.get("secretKey"));
+		pclient.setEndpoint(pc.getEndpoint());
+
+		App app = pclient.me();
+		assertNotNull(app);
+		assertEquals(appId, app.getAppIdentifier());
+
+		app.setName("Child application");
+		pclient.update(app);
+		app = pclient.me();
+		assertEquals("Child application", app.getName());
+
+		pclient.delete(app);
+		assertNull(pclient.read(App.id(appId)));
 	}
 }

@@ -528,7 +528,7 @@ public final class RestUtils {
 				} else {
 					return entityRes;
 				}
-				object.setAppid(app.getAppIdentifier());
+				object.setAppid(isNotAnApp(object.getType()) ? app.getAppIdentifier() : app.getAppid());
 				if (newContent.containsKey("_voteup") || newContent.containsKey("_votedown")) {
 					return getVotingResponse(object, newContent);
 				} else {
