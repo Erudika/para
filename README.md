@@ -213,6 +213,8 @@ The `Search` interface is implemented by:
 
 - **Lucene**: [para-search-lucene](https://github.com/erudika/para-search-lucene) **default** (packaged with the WAR file)
 - **Elasticsearch**: [para-search-elasticsearch](https://github.com/erudika/para-search-elasticsearch)
+- **Elasticsearch v5.x**: [para-search-elasticsearch-v5](https://github.com/erudika/para-search-elasticsearch-v5)
+Compatible with ES 5.x only and missing some of the latest features like AWS Elasticsearch support.
 
 ## Cache integrations
 
