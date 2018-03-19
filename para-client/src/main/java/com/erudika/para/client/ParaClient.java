@@ -274,6 +274,8 @@ public final class ParaClient {
 				if (error != null && error.containsKey("code")) {
 					String msg = error.containsKey("message") ? (String) error.get("message") : "error";
 					logger.error("{} - {}", msg, new WebApplicationException((Integer) error.get("code")).getMessage());
+				} else {
+					logger.error("{} - {}", res.getStatus(), res.getStatusInfo().getReasonPhrase());
 				}
 			}
 		}
