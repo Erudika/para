@@ -61,7 +61,7 @@ public class LanguageUtils {
 		for (Locale loc : LocaleUtils.availableLocaleList()) {
 			String locstr = loc.getLanguage();
 			if (!StringUtils.isBlank(locstr)) {
-				ALL_LOCALES.put(locstr, loc);
+				ALL_LOCALES.putIfAbsent(locstr, Locale.forLanguageTag(locstr));
 			}
 		}
 	}
@@ -110,21 +110,21 @@ public class LanguageUtils {
 		Map<String, String> lang = readLanguageFromFile(appid, langCode);
 		if (lang == null || lang.isEmpty()) {
 			// or try to load from DB
+			lang = new TreeMap<String, String>(getDefaultLanguage(appid));
 			Sysprop s = dao.read(appid, keyPrefix.concat(langCode));
 			if (s != null && !s.getProperties().isEmpty()) {
 				Map<String, Object> loaded = s.getProperties();
-				lang = new TreeMap<>();
-				for (Map.Entry<String, Object> entry : loaded.entrySet()) {
-					lang.put(entry.getKey(), String.valueOf(entry.getValue()));
+				for (Map.Entry<String, String> entry : lang.entrySet()) {
+					if (loaded.containsKey(entry.getKey())) {
+						lang.put(entry.getKey(), String.valueOf(loaded.get(entry.getKey())));
+					} else {
+						lang.put(entry.getKey(), entry.getValue());
+					}
 				}
+				LANG_CACHE.put(langCode, lang);
 			}
 		}
-		if (lang == null || lang.isEmpty()) {
-			return getDefaultLanguage(appid);
-		} else {
-			LANG_CACHE.put(langCode, lang);
-			return Collections.unmodifiableMap(lang);
-		}
+		return Collections.unmodifiableMap(lang);
 	}
 
 	/**
@@ -300,14 +300,23 @@ public class LanguageUtils {
 			return false;
 		}
 		Sysprop s = dao.read(appid, keyPrefix.concat(langCode));
-
-		if (s != null && !value.equals(s.getProperty(key))) {
-			s.addProperty(key, value);
-			dao.update(appid, s);
-			updateTranslationProgressMap(appid, langCode, PLUS);
-			return true;
+		boolean create = false;
+		if (s == null) {
+			create = true;
+			s = new Sysprop(keyPrefix.concat(langCode));
+			s.setAppid(appid);
 		}
-		return false;
+		s.addProperty(key, value);
+		if (create) {
+			dao.create(appid, s);
+		} else {
+			dao.update(appid, s);
+		}
+		if (LANG_CACHE.containsKey(langCode)) {
+			LANG_CACHE.get(langCode).put(key, value);
+		}
+		updateTranslationProgressMap(appid, langCode, PLUS);
+		return true;
 	}
 
 	/**
@@ -322,11 +331,13 @@ public class LanguageUtils {
 			return false;
 		}
 		Sysprop s = dao.read(appid, keyPrefix.concat(langCode));
-		String defStr = getDefaultLanguage(appid).get(key);
-
-		if (s != null && !defStr.equals(s.getProperty(key))) {
-			s.addProperty(key, defStr);
+		if (s != null) {
+			String value = getDefaultLanguage(appid).get(key);
+			s.addProperty(key, value);
 			dao.update(appid, s);
+			if (LANG_CACHE.containsKey(langCode)) {
+				LANG_CACHE.get(langCode).put(key, value);
+			}
 			updateTranslationProgressMap(appid, langCode, MINUS);
 			return true;
 		}
