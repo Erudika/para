@@ -296,7 +296,7 @@ public class LanguageUtils {
 	 * @return true if the operation was successful
 	 */
 	public boolean approveTranslation(String appid, String langCode, String key, String value) {
-		if (langCode == null || key == null || value == null || getDefaultLanguageCode().equals(langCode)) {
+		if (StringUtils.isBlank(langCode) || key == null || value == null || getDefaultLanguageCode().equals(langCode)) {
 			return false;
 		}
 		Sysprop s = dao.read(appid, keyPrefix.concat(langCode));
@@ -327,7 +327,7 @@ public class LanguageUtils {
 	 * @return true if the operation was successful
 	 */
 	public boolean disapproveTranslation(String appid, String langCode, String key) {
-		if (langCode == null || key == null || getDefaultLanguageCode().equals(langCode)) {
+		if (StringUtils.isBlank(langCode) || key == null || getDefaultLanguageCode().equals(langCode)) {
 			return false;
 		}
 		Sysprop s = dao.read(appid, keyPrefix.concat(langCode));

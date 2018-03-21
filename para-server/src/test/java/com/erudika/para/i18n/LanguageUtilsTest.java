@@ -178,8 +178,6 @@ public class LanguageUtilsTest {
 		assertFalse(lu.disapproveTranslation(appid, "en", "asd"));
 		assertFalse(lu.disapproveTranslation(appid, "en", "asd"));
 
-		assertFalse(lu.disapproveTranslation(appid, "de", "hello"));
-
 		assertTrue(lu.disapproveTranslation(appid, "de", "yes"));
 		assertEquals("33", lu.getTranslationProgressMap(appid).get("de").toString());
 
