@@ -129,7 +129,7 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 		User user = new User();
 		if (accessToken != null) {
 			HttpGet profileGet = new HttpGet(PROFILE_URL);
-			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "token " + accessToken);
 			profileGet.setHeader(HttpHeaders.ACCEPT, "application/json");
 			CloseableHttpResponse resp2 = httpclient.execute(profileGet);
 			HttpEntity respEntity = resp2.getEntity();
@@ -202,7 +202,7 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private String fetchUserEmail(Integer githubId, String accessToken) throws IOException {
 		HttpGet emailsGet = new HttpGet(PROFILE_URL + "/emails");
-		emailsGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+		emailsGet.setHeader(HttpHeaders.AUTHORIZATION, "token " + accessToken);
 		emailsGet.setHeader(HttpHeaders.ACCEPT, "application/json");
 		CloseableHttpResponse resp = httpclient.execute(emailsGet);
 		HttpEntity respEntity = resp.getEntity();
