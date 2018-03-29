@@ -34,10 +34,12 @@ import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.NoConnectionReuseStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +51,7 @@ import org.slf4j.LoggerFactory;
 public class OXRCurrencyConverter implements CurrencyConverter {
 
 	private static final Logger logger = LoggerFactory.getLogger(OXRCurrencyConverter.class);
+	private final CloseableHttpClient httpClient;
 	private static final String FXRATES_KEY = "fxrates";
 	private static final long REFRESH_AFTER = (long) 24 * 60 * 60 * 1000; // 24 hours in ms
 	private static final String SERVICE_URL = "http://openexchangerates.org/api/latest.json?app_id=".
@@ -63,6 +66,15 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 	@Inject
 	public OXRCurrencyConverter(DAO dao) {
 		this.dao = dao;
+		int timeout = 30 * 1000;
+		this.httpClient = HttpClientBuilder.create().
+				setConnectionReuseStrategy(new NoConnectionReuseStrategy()).
+				setDefaultRequestConfig(RequestConfig.custom().
+						setConnectTimeout(timeout).
+						setConnectionRequestTimeout(timeout).
+						setSocketTimeout(timeout).
+						build()).
+				build();
 	}
 
 	@Override
@@ -100,24 +112,23 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 		CloseableHttpClient http = null;
 
 		try {
-			http = HttpClients.createDefault();
 			HttpGet httpGet = new HttpGet(SERVICE_URL);
-			HttpResponse res = http.execute(httpGet);
-			HttpEntity entity = res.getEntity();
-
-			if (entity != null && Utils.isJsonType(entity.getContentType().getValue())) {
-				JsonNode jsonNode = reader.readTree(entity.getContent());
-				if (jsonNode != null) {
-					JsonNode rates = jsonNode.get("rates");
-					if (rates != null) {
-						map = reader.treeToValue(rates, Map.class);
-						s.setId(FXRATES_KEY);
-						s.setProperties(map);
-//						s.addProperty("fetched", Utils.formatDate("dd MM yyyy HH:mm", Locale.UK));
-						dao.create(s);
+			try (CloseableHttpResponse res = httpClient.execute(httpGet)) {
+				HttpEntity entity = res.getEntity();
+				if (entity != null && Utils.isJsonType(entity.getContentType().getValue())) {
+					JsonNode jsonNode = reader.readTree(entity.getContent());
+					if (jsonNode != null) {
+						JsonNode rates = jsonNode.get("rates");
+						if (rates != null) {
+							map = reader.treeToValue(rates, Map.class);
+							s.setId(FXRATES_KEY);
+							s.setProperties(map);
+	//						s.addProperty("fetched", Utils.formatDate("dd MM yyyy HH:mm", Locale.UK));
+							dao.create(s);
+						}
 					}
+					EntityUtils.consume(entity);
 				}
-				EntityUtils.consume(entity);
 			}
 			logger.debug("Fetched rates from OpenExchange for {}.", new Date().toString());
 		} catch (Exception e) {

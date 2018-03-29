@@ -35,12 +35,14 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.NoConnectionReuseStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
@@ -70,7 +72,15 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 	public GoogleAuthFilter(final String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
 		this.jreader = ParaObjectUtils.getJsonReader(Map.class);
-		this.httpclient = HttpClients.createDefault();
+		int timeout = 30 * 1000;
+		this.httpclient = HttpClientBuilder.create().
+				setConnectionReuseStrategy(new NoConnectionReuseStrategy()).
+				setDefaultRequestConfig(RequestConfig.custom().
+						setConnectTimeout(timeout).
+						setConnectionRequestTimeout(timeout).
+						setSocketTimeout(timeout).
+						build()).
+				build();
 	}
 
 	/**
@@ -100,14 +110,14 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 				HttpPost tokenPost = new HttpPost(TOKEN_URL);
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 				tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
-				CloseableHttpResponse resp1 = httpclient.execute(tokenPost);
-
-				if (resp1 != null && resp1.getEntity() != null) {
-					Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
-					if (token != null && token.containsKey("access_token")) {
-						userAuth = getOrCreateUser(app, (String) token.get("access_token"));
+				try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
+					if (resp1 != null && resp1.getEntity() != null) {
+						Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
+						if (token != null && token.containsKey("access_token")) {
+							userAuth = getOrCreateUser(app, (String) token.get("access_token"));
+						}
+						EntityUtils.consumeQuietly(resp1.getEntity());
 					}
-					EntityUtils.consumeQuietly(resp1.getEntity());
 				}
 			}
 		}
@@ -128,55 +138,56 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (accessToken != null) {
 			HttpGet profileGet = new HttpGet(PROFILE_URL);
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-			CloseableHttpResponse resp2 = httpclient.execute(profileGet);
-			HttpEntity respEntity = resp2.getEntity();
-			String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
+			Map<String, Object> profile = null;
 
-			if (respEntity != null && Utils.isJsonType(ctype)) {
-				Map<String, Object> profile = jreader.readValue(respEntity.getContent());
-
-				if (profile != null && profile.containsKey("sub")) {
-					String googleSubId = (String) profile.get("sub");
-					String pic = (String) profile.get("picture");
-					String email = (String) profile.get("email");
-					String name = (String) profile.get("name");
-
-					user.setAppid(getAppid(app));
-					user.setIdentifier(Config.GPLUS_PREFIX.concat(googleSubId));
-					user.setEmail(email);
-					user = User.readUserForIdentifier(user);
-					if (user == null) {
-						//user is new
-						user = new User();
-						user.setActive(true);
-						user.setAppid(getAppid(app));
-						user.setEmail(StringUtils.isBlank(email) ? googleSubId + "@google.com" : email);
-						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
-						user.setPassword(Utils.generateSecurityToken());
-						user.setPicture(getPicture(pic));
-						user.setIdentifier(Config.GPLUS_PREFIX.concat(googleSubId));
-						String id = user.create();
-						if (id == null) {
-							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
-						}
-					} else {
-						String picture = getPicture(pic);
-						boolean update = false;
-						if (!StringUtils.equals(user.getPicture(), picture)) {
-							user.setPicture(picture);
-							update = true;
-						}
-						if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
-							user.setEmail(email);
-							update = true;
-						}
-						if (update) {
-							user.update();
-						}
-					}
-					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+			try (CloseableHttpResponse resp2 = httpclient.execute(profileGet)) {
+				HttpEntity respEntity = resp2.getEntity();
+				if (respEntity != null) {
+					profile = jreader.readValue(respEntity.getContent());
+					EntityUtils.consumeQuietly(respEntity);
 				}
-				EntityUtils.consumeQuietly(respEntity);
+			}
+
+			if (profile != null && profile.containsKey("sub")) {
+				String googleSubId = (String) profile.get("sub");
+				String pic = (String) profile.get("picture");
+				String email = (String) profile.get("email");
+				String name = (String) profile.get("name");
+
+				user.setAppid(getAppid(app));
+				user.setIdentifier(Config.GPLUS_PREFIX.concat(googleSubId));
+				user.setEmail(email);
+				user = User.readUserForIdentifier(user);
+				if (user == null) {
+					//user is new
+					user = new User();
+					user.setActive(true);
+					user.setAppid(getAppid(app));
+					user.setEmail(StringUtils.isBlank(email) ? googleSubId + "@google.com" : email);
+					user.setName(StringUtils.isBlank(name) ? "No Name" : name);
+					user.setPassword(Utils.generateSecurityToken());
+					user.setPicture(getPicture(pic));
+					user.setIdentifier(Config.GPLUS_PREFIX.concat(googleSubId));
+					String id = user.create();
+					if (id == null) {
+						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
+					}
+				} else {
+					String picture = getPicture(pic);
+					boolean update = false;
+					if (!StringUtils.equals(user.getPicture(), picture)) {
+						user.setPicture(picture);
+						update = true;
+					}
+					if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+						user.setEmail(email);
+						update = true;
+					}
+					if (update) {
+						user.update();
+					}
+				}
+				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);

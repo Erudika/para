@@ -34,10 +34,12 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.NoConnectionReuseStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
@@ -67,7 +69,15 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 	public FacebookAuthFilter(String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
 		this.jreader = ParaObjectUtils.getJsonReader(Map.class);
-		this.httpclient = HttpClients.createDefault();
+		int timeout = 30 * 1000;
+		this.httpclient = HttpClientBuilder.create().
+				setConnectionReuseStrategy(new NoConnectionReuseStrategy()).
+				setDefaultRequestConfig(RequestConfig.custom().
+						setConnectTimeout(timeout).
+						setConnectionRequestTimeout(timeout).
+						setSocketTimeout(timeout).
+						build()).
+				build();
 	}
 
 	/**

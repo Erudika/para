@@ -37,12 +37,14 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.ParseException;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.NoConnectionReuseStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -74,7 +76,15 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 	public TwitterAuthFilter(final String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
 		this.jreader = ParaObjectUtils.getJsonReader(Map.class);
-		this.httpclient = HttpClients.createDefault();
+		int timeout = 30 * 1000;
+		this.httpclient = HttpClientBuilder.create().
+				setConnectionReuseStrategy(new NoConnectionReuseStrategy()).
+				setDefaultRequestConfig(RequestConfig.custom().
+						setConnectTimeout(timeout).
+						setConnectionRequestTimeout(timeout).
+						setSocketTimeout(timeout).
+						build()).
+				build();
 	}
 
 	/**
@@ -120,18 +130,19 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 		tokenPost.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("POST", FLOW_URL1,
 				params, keys[0], keys[1], null, null));
 		tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
-		CloseableHttpResponse resp1 = httpclient.execute(tokenPost);
 
-		if (resp1.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
-			String decoded = EntityUtils.toString(resp1.getEntity());
-			for (String pair : decoded.split("&")) {
-				if (pair.startsWith("oauth_token")) {
-					response.sendRedirect(FLOW_URL2 + pair);
-					return true;
+		try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
+			if (resp1.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
+				String decoded = EntityUtils.toString(resp1.getEntity());
+				EntityUtils.consumeQuietly(resp1.getEntity());
+				for (String pair : decoded.split("&")) {
+					if (pair.startsWith("oauth_token")) {
+						response.sendRedirect(FLOW_URL2 + pair);
+						return true;
+					}
 				}
 			}
 		}
-		EntityUtils.consumeQuietly(resp1.getEntity());
 		return false;
 	}
 
@@ -145,21 +156,22 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 		tokenPost.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("POST", FLOW_URL3,
 				params, keys[0], keys[1], token, null));
 		tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
-		CloseableHttpResponse resp2 = httpclient.execute(tokenPost);
 
-		if (resp2.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
-			String decoded = EntityUtils.toString(resp2.getEntity());
-			String oauthToken = null;
-			String oauthSecret = null;
-			for (String pair : decoded.split("&")) {
-				if (pair.startsWith("oauth_token_secret")) {
-					oauthSecret = pair.substring(19);
-				} else if (pair.startsWith("oauth_token")) {
-					oauthToken = pair.substring(12);
+		try (CloseableHttpResponse resp2 = httpclient.execute(tokenPost)) {
+			if (resp2.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
+				String decoded = EntityUtils.toString(resp2.getEntity());
+				EntityUtils.consumeQuietly(resp2.getEntity());
+				String oauthToken = null;
+				String oauthSecret = null;
+				for (String pair : decoded.split("&")) {
+					if (pair.startsWith("oauth_token_secret")) {
+						oauthSecret = pair.substring(19);
+					} else if (pair.startsWith("oauth_token")) {
+						oauthToken = pair.substring(12);
+					}
 				}
+				return getOrCreateUser(app, oauthToken + Config.SEPARATOR + oauthSecret);
 			}
-			EntityUtils.consumeQuietly(resp2.getEntity());
-			return getOrCreateUser(app, oauthToken + Config.SEPARATOR + oauthSecret);
 		}
 		return null;
 	}
@@ -183,54 +195,57 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 			params2.put("include_email", new String[]{"true"});
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("GET", PROFILE_URL,
 					params2, keys[0], keys[1], tokens[0], tokens[1]));
-			CloseableHttpResponse resp3 = httpclient.execute(profileGet);
 
-			if (resp3.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
-				Map<String, Object> profile = jreader.readValue(resp3.getEntity().getContent());
+			Map<String, Object> profile = null;
 
-				if (profile != null && profile.containsKey("id_str")) {
-					String twitterId = (String) profile.get("id_str");
-					String pic = (String) profile.get("profile_image_url_https");
-					String alias = (String) profile.get("screen_name");
-					String name = (String) profile.get("name");
-					String email = (String) profile.get("email");
-
-					user.setAppid(getAppid(app));
-					user.setIdentifier(Config.TWITTER_PREFIX + twitterId);
-					user.setEmail(email);
-					user = User.readUserForIdentifier(user);
-					if (user == null) {
-						//user is new
-						user = new User();
-						user.setActive(true);
-						user.setAppid(getAppid(app));
-						user.setEmail(StringUtils.isBlank(email) ? alias + "@twitter.com" : email);
-						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
-						user.setPassword(Utils.generateSecurityToken());
-						user.setPicture(getPicture(pic));
-						user.setIdentifier(Config.TWITTER_PREFIX + twitterId);
-						String id = user.create();
-						if (id == null) {
-							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
-						}
-					} else {
-						String picture = getPicture(pic);
-						boolean update = false;
-						if (!StringUtils.equals(user.getPicture(), picture)) {
-							user.setPicture(picture);
-							update = true;
-						}
-						if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
-							user.setEmail(email);
-							update = true;
-						}
-						if (update) {
-							user.update();
-						}
-					}
-					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+			try (CloseableHttpResponse resp3 = httpclient.execute(profileGet)) {
+				if (resp3.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
+					profile = jreader.readValue(resp3.getEntity().getContent());
+					EntityUtils.consumeQuietly(resp3.getEntity());
 				}
-				EntityUtils.consumeQuietly(resp3.getEntity());
+			}
+
+			if (profile != null && profile.containsKey("id_str")) {
+				String twitterId = (String) profile.get("id_str");
+				String pic = (String) profile.get("profile_image_url_https");
+				String alias = (String) profile.get("screen_name");
+				String name = (String) profile.get("name");
+				String email = (String) profile.get("email");
+
+				user.setAppid(getAppid(app));
+				user.setIdentifier(Config.TWITTER_PREFIX + twitterId);
+				user.setEmail(email);
+				user = User.readUserForIdentifier(user);
+				if (user == null) {
+					//user is new
+					user = new User();
+					user.setActive(true);
+					user.setAppid(getAppid(app));
+					user.setEmail(StringUtils.isBlank(email) ? alias + "@twitter.com" : email);
+					user.setName(StringUtils.isBlank(name) ? "No Name" : name);
+					user.setPassword(Utils.generateSecurityToken());
+					user.setPicture(getPicture(pic));
+					user.setIdentifier(Config.TWITTER_PREFIX + twitterId);
+					String id = user.create();
+					if (id == null) {
+						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
+					}
+				} else {
+					String picture = getPicture(pic);
+					boolean update = false;
+					if (!StringUtils.equals(user.getPicture(), picture)) {
+						user.setPicture(picture);
+						update = true;
+					}
+					if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+						user.setEmail(email);
+						update = true;
+					}
+					if (update) {
+						user.update();
+					}
+				}
+				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);

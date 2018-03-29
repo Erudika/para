@@ -34,11 +34,13 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.NoConnectionReuseStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
@@ -69,7 +71,15 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 	public LinkedInAuthFilter(final String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
 		this.jreader = ParaObjectUtils.getJsonReader(Map.class);
-		this.httpclient = HttpClients.createDefault();
+		int timeout = 30 * 1000;
+		this.httpclient = HttpClientBuilder.create().
+				setConnectionReuseStrategy(new NoConnectionReuseStrategy()).
+				setDefaultRequestConfig(RequestConfig.custom().
+						setConnectTimeout(timeout).
+						setConnectionRequestTimeout(timeout).
+						setSocketTimeout(timeout).
+						build()).
+				build();
 	}
 
 	/**
@@ -92,21 +102,17 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
 				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
 				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.LINKEDIN_PREFIX);
-				CloseableHttpResponse resp1 = null;
 				String url = Utils.formatMessage(TOKEN_URL, authCode, redirectURI, keys[0], keys[1]);
-				try {
-					HttpPost tokenPost = new HttpPost(url);
-					resp1 = httpclient.execute(tokenPost);
-				} catch (Exception e) {
-					logger.warn("LinkedIn auth request failed: GET " + url, e);
-				}
 
-				if (resp1 != null && resp1.getEntity() != null) {
-					Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
-					if (token != null && token.containsKey("access_token")) {
-						userAuth = getOrCreateUser(app, (String) token.get("access_token"));
+				HttpPost tokenPost = new HttpPost(url);
+				try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
+					if (resp1 != null && resp1.getEntity() != null) {
+						Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
+						if (token != null && token.containsKey("access_token")) {
+							userAuth = getOrCreateUser(app, (String) token.get("access_token"));
+						}
+						EntityUtils.consumeQuietly(resp1.getEntity());
 					}
-					EntityUtils.consumeQuietly(resp1.getEntity());
 				}
 			}
 		}
@@ -125,64 +131,59 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 		UserAuthentication userAuth = null;
 		User user = new User();
 		if (accessToken != null) {
-			String ctype = null;
-			HttpEntity respEntity = null;
-			CloseableHttpResponse resp2 = null;
-			try {
-				HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
-				resp2 = httpclient.execute(profileGet);
-				respEntity = resp2.getEntity();
-				ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
-			} catch (Exception e) {
-				logger.warn("LinkedIn auth request failed: GET " + PROFILE_URL + accessToken, e);
+			HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
+			profileGet.setHeader(HttpHeaders.ACCEPT, "application/json");
+			Map<String, Object> profile = null;
+
+			try (CloseableHttpResponse resp2 = httpclient.execute(profileGet)) {
+				HttpEntity respEntity = resp2.getEntity();
+				if (respEntity != null) {
+					profile = jreader.readValue(respEntity.getContent());
+					EntityUtils.consumeQuietly(respEntity);
+				}
 			}
 
-			if (respEntity != null && Utils.isJsonType(ctype)) {
-				Map<String, Object> profile = jreader.readValue(respEntity.getContent());
+			if (profile != null && profile.containsKey("id")) {
+				String linkedInID = (String) profile.get("id");
+				String email = (String) profile.get("emailAddress");
+				String pic = (String) profile.get("pictureUrl");
+				String fName = (String) profile.get("firstName");
+				String lName = (String) profile.get("lastName");
+				String name = fName + " " + lName;
 
-				if (profile != null && profile.containsKey("id")) {
-					String linkedInID = (String) profile.get("id");
-					String email = (String) profile.get("emailAddress");
-					String pic = (String) profile.get("pictureUrl");
-					String fName = (String) profile.get("firstName");
-					String lName = (String) profile.get("lastName");
-					String name = fName + " " + lName;
-
+				user.setAppid(getAppid(app));
+				user.setIdentifier(Config.LINKEDIN_PREFIX.concat(linkedInID));
+				user.setEmail(email);
+				user = User.readUserForIdentifier(user);
+				if (user == null) {
+					//user is new
+					user = new User();
+					user.setActive(true);
 					user.setAppid(getAppid(app));
+					user.setEmail(StringUtils.isBlank(email) ? linkedInID + "@linkedin.com" : email);
+					user.setName(StringUtils.isBlank(name) ? "No Name" : name);
+					user.setPassword(Utils.generateSecurityToken());
+					user.setPicture(pic);
 					user.setIdentifier(Config.LINKEDIN_PREFIX.concat(linkedInID));
-					user.setEmail(email);
-					user = User.readUserForIdentifier(user);
-					if (user == null) {
-						//user is new
-						user = new User();
-						user.setActive(true);
-						user.setAppid(getAppid(app));
-						user.setEmail(StringUtils.isBlank(email) ? linkedInID + "@linkedin.com" : email);
-						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
-						user.setPassword(Utils.generateSecurityToken());
-						user.setPicture(pic);
-						user.setIdentifier(Config.LINKEDIN_PREFIX.concat(linkedInID));
-						String id = user.create();
-						if (id == null) {
-							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
-						}
-					} else {
-						boolean update = false;
-						if (!StringUtils.equals(user.getPicture(), pic)) {
-							user.setPicture(pic);
-							update = true;
-						}
-						if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
-							user.setEmail(email);
-							update = true;
-						}
-						if (update) {
-							user.update();
-						}
+					String id = user.create();
+					if (id == null) {
+						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 					}
-					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+				} else {
+					boolean update = false;
+					if (!StringUtils.equals(user.getPicture(), pic)) {
+						user.setPicture(pic);
+						update = true;
+					}
+					if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+						user.setEmail(email);
+						update = true;
+					}
+					if (update) {
+						user.update();
+					}
 				}
-				EntityUtils.consumeQuietly(respEntity);
+				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);
