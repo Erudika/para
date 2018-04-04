@@ -45,7 +45,6 @@ import org.apache.http.impl.NoConnectionReuseStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
@@ -149,7 +148,6 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 				if (respEntity != null) {
 					profile = jreader.readValue(respEntity.getContent());
 					EntityUtils.consumeQuietly(respEntity);
-					LoggerFactory.getLogger(GitHubAuthFilter.class).info("GitHub profile: {}", profile);
 				}
 			}
 
