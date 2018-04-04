@@ -47,12 +47,17 @@ public class LDAPAuthenticationProvider implements AuthenticationProvider {
 			Map<String, String> ldapSettings = auth.getLdapSettings();
 			if (!ldapSettings.isEmpty()) {
 				String adDomain = ldapSettings.get("security.ldap.active_directory_domain"); // set this to enable AD
-				String server = ldapSettings.get("security.ldap.server_url");
+				String ldapServerURL = ldapSettings.get("security.ldap.server_url");
+				String searchFilter = ldapSettings.get("security.ldap.user_search_filter");
 				AbstractLdapAuthenticationProvider ldapProvider;
 				if (StringUtils.isBlank(adDomain)) {
 					ldapProvider = new LdapAuthenticationProvider(new LDAPAuthenticator(ldapSettings));
 				} else {
-					ldapProvider = new ActiveDirectoryLdapAuthenticationProvider(adDomain, server);
+					ldapProvider = new ActiveDirectoryLdapAuthenticationProvider(adDomain, ldapServerURL);
+					((ActiveDirectoryLdapAuthenticationProvider) ldapProvider).setConvertSubErrorCodesToExceptions(true);
+					if (!StringUtils.isBlank(searchFilter)) {
+						((ActiveDirectoryLdapAuthenticationProvider) ldapProvider).setSearchFilter(searchFilter);
+					}
 				}
 				ldapProvider.setUserDetailsContextMapper(new InetOrgPersonContextMapper());
 				return ldapProvider.authenticate(authentication);
