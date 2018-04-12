@@ -216,7 +216,9 @@ public class ParaClientIT {
 	public void testCRUD() {
 		assertNull(pc.create(null));
 
-		Tag t1 = pc.create(new Tag("test1"));
+		Tag tag1 = new Tag("test1");
+		tag1.setVersion(1L);
+		Tag t1 = pc.create(tag1);
 		User ux = null;
 		try {
 			// validation fails
@@ -238,9 +240,16 @@ public class ParaClientIT {
 		assertNotNull(tr);
 		assertNotNull(tr.getTimestamp());
 		assertEquals(t1.getTag(), tr.getTag());
+		assertEquals(t1.getVersion(), tr.getVersion());
 
 		tr.setCount(15);
+		tr.setVersion(-1L);
 		Tag tu = pc.update(tr);
+		assertNotEquals(Long.valueOf(-1), tu.getVersion());
+		tr.setVersion(5L);
+		tu = pc.update(tr);
+		assertNotEquals(Long.valueOf(5), tu.getVersion());
+
 		assertNull(pc.update(new Tag("null")));
 		assertNotNull(tu);
 		assertEquals(tu.getCount(), tr.getCount());

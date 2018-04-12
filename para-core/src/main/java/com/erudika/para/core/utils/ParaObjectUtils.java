@@ -328,10 +328,9 @@ public final class ParaObjectUtils {
 			Map<String, Object> unknownProps = new HashMap<>(data);
 			Map<String, Object> props = new HashMap<>(data.size());
 			for (Field field : fields) {
-				boolean dontSkip = ((filter == null) ? true : !field.isAnnotationPresent(filter));
 				String name = field.getName();
 				Object value = data.get(name);
-				if (field.isAnnotationPresent(Stored.class) && dontSkip) {
+				if (field.isAnnotationPresent(Stored.class) && !isIgnoredField(field, filter)) {
 					// try to read a default value from the bean if any
 					if (value == null && PropertyUtils.isReadable(pojo, name)) {
 						value = PropertyUtils.getProperty(pojo, name);
@@ -371,6 +370,10 @@ public final class ParaObjectUtils {
 				props.put(name, value);
 			}
 		}
+	}
+
+	private static boolean isIgnoredField(Field field, Class<? extends Annotation> filter) {
+		return ((filter == null) ? false : Config._VERSION.equals(field.getName()) || field.isAnnotationPresent(filter));
 	}
 
 	/**
