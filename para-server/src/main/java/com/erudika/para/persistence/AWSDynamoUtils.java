@@ -374,7 +374,11 @@ public final class AWSDynamoUtils {
 				row.put(entry.getKey(), new AttributeValue(value.toString()));
 			}
 		}
-		row.put(Config._VERSION, new AttributeValue().withN(so.getVersion().toString()));
+		if (so.getVersion() != null && so.getVersion() > 0) {
+			row.put(Config._VERSION, new AttributeValue().withN(so.getVersion().toString()));
+		} else {
+			row.remove(Config._VERSION);
+		}
 		return row;
 	}
 

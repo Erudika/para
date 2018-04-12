@@ -127,7 +127,6 @@ public class AWSDynamoDAO implements DAO {
 			so.setTimestamp(Utils.timestamp());
 		}
 		so.setAppid(appid);
-		so.setVersion(1L);
 		createRow(so.getId(), appid, toRow(so, null));
 		logger.debug("DAO.create() {}->{}", appid, so.getId());
 		return so.getId();
@@ -148,7 +147,11 @@ public class AWSDynamoDAO implements DAO {
 		if (so != null && so.getId() != null) {
 			so.setUpdated(Utils.timestamp());
 			boolean updated = updateRow(so.getId(), appid, toRow(so, Locked.class));
-			so.setVersion(updated ? so.getVersion() + 1 : -1);
+			if (so.getVersion() != null && so.getVersion() > 0) {
+				so.setVersion(updated ? so.getVersion() + 1 : -1);
+			} else {
+				so.setVersion(0L);
+			}
 			logger.debug("DAO.update() {}->{}", appid, so.getId());
 		}
 	}
@@ -189,9 +192,13 @@ public class AWSDynamoDAO implements DAO {
 			StringBuilder updateExpression = new StringBuilder("SET ");
 			Map<String, String> names = new HashMap<>(row.size() + 1);
 			Map<String, AttributeValue> values = new HashMap<>(row.size() + 1);
+			boolean isLockingEnabledForRow = false;
 			AttributeValue version = row.remove(Config._VERSION); // ignore the version field here
 			if (version == null || version.getN() == null) {
 				version = new AttributeValue().withN("0");
+			}
+			if (Long.parseLong(version.getN()) > 0L) {
+				isLockingEnabledForRow = true;
 			}
 			for (Entry<String, AttributeValue> attr : row.entrySet()) {
 				String name = "#" + attr.getKey();
@@ -202,7 +209,7 @@ public class AWSDynamoDAO implements DAO {
 			}
 			updateExpression.setLength(updateExpression.length() - 1); // remove comma at the end
 
-			if (Config.getConfigBoolean("optimistic_locking_enabled", false)) {
+			if (isLockingEnabledForRow) {
 				names.put("#" + Config._VERSION, Config._VERSION);
 				values.put(":" + Config._VERSION, version);
 				values.put(":plusOne", new AttributeValue().withN("1"));
@@ -288,7 +295,6 @@ public class AWSDynamoDAO implements DAO {
 				}
 				//if (updateOp) object.setUpdated(Utils.timestamp());
 				object.setAppid(appid);
-				object.setVersion(1L);
 				Map<String, AttributeValue> row = toRow(object, null);
 				setRowKey(getKeyForAppid(object.getId(), appid), row);
 				reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(row)));
@@ -383,7 +389,11 @@ public class AWSDynamoDAO implements DAO {
 				if (object != null && object.getId() != null) {
 					object.setUpdated(Utils.timestamp());
 					boolean updated = updateRow(object.getId(), appid, toRow(object, Locked.class));
-					object.setVersion(updated ? object.getVersion() + 1 : -1);
+					if (object.getVersion() != null && object.getVersion() > 0) {
+						object.setVersion(updated ? object.getVersion() + 1 : -1);
+					} else {
+						object.setVersion(0L);
+					}
 				}
 			}
 		}
