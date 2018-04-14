@@ -217,7 +217,7 @@ public class ParaClientIT {
 		assertNull(pc.create(null));
 
 		Tag tag1 = new Tag("test1");
-		tag1.setVersion(1L);
+		tag1.setVersion(1L); // enable optimistic locking
 		Tag t1 = pc.create(tag1);
 		User ux = null;
 		try {
@@ -245,15 +245,18 @@ public class ParaClientIT {
 		tr.setCount(15);
 		tr.setVersion(-1L);
 		Tag tu = pc.update(tr);
+		assertNotNull(tu);
 		assertNotEquals(Long.valueOf(-1), tu.getVersion());
 		tr.setVersion(5L);
 		tu = pc.update(tr);
 		assertNotEquals(Long.valueOf(5), tu.getVersion());
 
 		assertNull(pc.update(new Tag("null")));
-		assertNotNull(tu);
 		assertEquals(tu.getCount(), tr.getCount());
 		assertNotNull(tu.getUpdated());
+
+		tu.setVersion(0L); // disable optimistic locking
+		assertEquals(Long.valueOf(0L), pc.create(tu).getVersion()); // overwrite to disable locking
 
 		Sysprop s = new Sysprop();
 		s.setType(dogsType);

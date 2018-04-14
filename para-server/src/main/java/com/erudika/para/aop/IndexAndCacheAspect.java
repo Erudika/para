@@ -214,6 +214,10 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 			AOPUtils.checkAndFixType(addMe);
 			if (addMe.getStored()) {
 				result = invokeDAO(appid, daoMethod, mi);
+				if (addMe.getVersion() == -1) {
+					logger.warn("DAO operation failed for object '{}' due to version mismatch. "
+							+ "Indexing and caching will be skipped.", addMe.getId());
+				}
 			}
 			if (addMe.getIndexed() && addMe.getVersion() >= 0) {
 				try (final MetricsUtils.Context context = MetricsUtils.time(appid, search.getClass(), "index")) {
@@ -246,8 +250,13 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		List<ParaObject> indexUs = new LinkedList<>();
 		List<ParaObject> removedObjects = AOPUtils.removeNotStoredNotIndexed(addUs, indexUs);
 		Object result = invokeDAO(appid, daoMethod, mi);
+		List<ParaObject> indexUsFiltered = indexUs.stream().filter(p -> p.getVersion() >= 0).collect(Collectors.toList());
+		if (!indexUs.isEmpty() && indexUsFiltered.isEmpty()) {
+			logger.warn("DAO batch operation failed for {} objects due to version mismatch or rollback. "
+					+ "Indexing and caching for these objects will be skipped.", indexUs.size());
+		}
 		try (final MetricsUtils.Context context = MetricsUtils.time(appid, search.getClass(), "indexAll")) {
-			search.indexAll(appid, indexUs.stream().filter(p -> p.getVersion() >= 0).collect(Collectors.toList()));
+			search.indexAll(appid, indexUsFiltered);
 		}
 		// restore removed objects - needed if we have to cache them later
 		// do not remove this line - breaks tests

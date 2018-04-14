@@ -41,6 +41,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -540,6 +541,11 @@ public final class RestUtils {
 						if (errors.length == 0 && checkIfUserCanModifyObject(app, object)) {
 							// Secondary validation pass: object is validated again before being updated
 							object.update();
+							// check if update failed due to optimistic locking
+							if (object.getVersion() == -1) {
+								return getStatusResponse(Response.Status.PRECONDITION_FAILED,
+										"Update failed due to 'version' mismatch.");
+							}
 							return Response.ok(object).build();
 						}
 					}
@@ -656,6 +662,7 @@ public final class RestUtils {
 				RestUtils.class, "batch", "update")) {
 			if (app != null && oldObjects != null && newProperties != null) {
 				LinkedList<ParaObject> updatedObjects = new LinkedList<>();
+				boolean hasPositiveVersions = false;
 				for (Map<String, Object> newProps : newProperties) {
 					if (newProps != null && newProps.containsKey(Config._ID)) {
 						ParaObject oldObject = oldObjects.get((String) newProps.get(Config._ID));
@@ -665,11 +672,29 @@ public final class RestUtils {
 							if (isValidObject(app, updatedObject) && checkIfUserCanModifyObject(app, updatedObject)) {
 								updatedObject.setAppid(app.getAppIdentifier());
 								updatedObjects.add(updatedObject);
+								if (updatedObject.getVersion() != null && updatedObject.getVersion() > 0) {
+									hasPositiveVersions = true;
+								}
 							}
 						}
 					}
 				}
 				Para.getDAO().updateAll(app.getAppIdentifier(), updatedObjects);
+				// check if any or all updates failed due to optimistic locking
+				if (hasPositiveVersions) {
+					boolean wasNotEmpty = !updatedObjects.isEmpty();
+					Iterator<ParaObject> it = updatedObjects.iterator();
+					while (it.hasNext()) {
+						ParaObject updatedObject = it.next();
+						if (updatedObject.getVersion() == -1) {
+							it.remove();
+						}
+					}
+					if (wasNotEmpty && updatedObjects.isEmpty()) {
+						return getStatusResponse(Response.Status.PRECONDITION_FAILED,
+								"Update failed for all objects in batch due to 'version' mismatch.");
+					}
+				}
 				return Response.ok(updatedObjects).build();
 			} else {
 				return getStatusResponse(Response.Status.BAD_REQUEST);
