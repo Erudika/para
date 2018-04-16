@@ -82,7 +82,7 @@
 		<logbackVer>1.2.3</logbackVer>
 		<awsJdkVer>1.11.213</awsJdkVer>
 		<jerseyVer>2.26</jerseyVer>
-		<springBootVer>2.0.0.RELEASE</springBootVer>
+		<springBootVer>2.0.1.RELEASE</springBootVer>
 	</properties>
 
 	<dependencies>

@@ -12,7 +12,7 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>5.0.3.RELEASE</springSecVer>
+		<springSecVer>5.0.4.RELEASE</springSecVer>
 		<springLdapVer>2.3.2.RELEASE</springLdapVer>
 		<metricsVer>4.0.2</metricsVer>
 	</properties>
@@ -93,7 +93,7 @@
 		<dependency>
 			<groupId>com.unboundid</groupId>
 			<artifactId>unboundid-ldapsdk</artifactId>
-			<version>4.0.4</version>
+			<version>4.0.5</version>
 		</dependency>
 
 		<!--	 CAFFEINE -->
@@ -248,7 +248,7 @@
 		<dependency>
 			<groupId>com.erudika</groupId>
 			<artifactId>para-search-lucene</artifactId>
-			<version>1.28.0</version>
+			<version>1.29.0</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
