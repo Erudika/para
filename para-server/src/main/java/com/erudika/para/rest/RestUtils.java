@@ -681,21 +681,7 @@ public final class RestUtils {
 				}
 				Para.getDAO().updateAll(app.getAppIdentifier(), updatedObjects);
 				// check if any or all updates failed due to optimistic locking
-				if (hasPositiveVersions) {
-					boolean wasNotEmpty = !updatedObjects.isEmpty();
-					Iterator<ParaObject> it = updatedObjects.iterator();
-					while (it.hasNext()) {
-						ParaObject updatedObject = it.next();
-						if (updatedObject.getVersion() == -1) {
-							it.remove();
-						}
-					}
-					if (wasNotEmpty && updatedObjects.isEmpty()) {
-						return getStatusResponse(Response.Status.PRECONDITION_FAILED,
-								"Update failed for all objects in batch due to 'version' mismatch.");
-					}
-				}
-				return Response.ok(updatedObjects).build();
+				return handleFailedUpdates(hasPositiveVersions, updatedObjects);
 			} else {
 				return getStatusResponse(Response.Status.BAD_REQUEST);
 			}
@@ -946,6 +932,24 @@ public final class RestUtils {
 			return Collections.singletonList(obj);
 		}
 		return Collections.emptyList();
+	}
+
+	private static Response handleFailedUpdates(boolean precondition, List<ParaObject> updatedObjects) {
+		if (precondition) {
+			boolean wasNotEmpty = !updatedObjects.isEmpty();
+			Iterator<ParaObject> it = updatedObjects.iterator();
+			while (it.hasNext()) {
+				ParaObject updatedObject = it.next();
+				if (updatedObject.getVersion() == -1) {
+					it.remove();
+				}
+			}
+			if (wasNotEmpty && updatedObjects.isEmpty()) {
+				return getStatusResponse(Response.Status.PRECONDITION_FAILED,
+						"Update failed for all objects in batch due to 'version' mismatch.");
+			}
+		}
+		return Response.ok(updatedObjects).build();
 	}
 
 	private static String paramOrDefault(MultivaluedMap<String, String> params, String name, String defaultValue) {
