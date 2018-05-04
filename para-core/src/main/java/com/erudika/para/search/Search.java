@@ -436,8 +436,18 @@ public interface Search {
 	 * @param pager a {@link Pager} object
 	 * @return true if operation was successful
 	 */
-	@Measured
 	boolean rebuildIndex(DAO dao, App app, Pager... pager);
+
+	/**
+	 * Reads all objects from the database and indexes them into a new index. Old index is usually deleted.
+	 * @param dao a {@link DAO} implementation
+	 * @param app an {@link App} object
+	 * @param destinationIndex the name of an existing index where data will be reindexed to
+	 * @param pager a {@link Pager} object
+	 * @return true if operation was successful
+	 */
+	@Measured
+	boolean rebuildIndex(DAO dao, App app, String destinationIndex, Pager... pager);
 
 	/**
 	 * Validates a query string.

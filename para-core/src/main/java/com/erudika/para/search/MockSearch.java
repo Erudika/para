@@ -228,6 +228,11 @@ public class MockSearch implements Search {
 	}
 
 	@Override
+	public boolean rebuildIndex(DAO dao, App app, String destinationIndex, Pager... pager) {
+		throw new UnsupportedOperationException("Not implemented.");
+	}
+
+	@Override
 	public boolean isValidQueryString(String queryString) {
 		throw new UnsupportedOperationException("Not implemented.");
 	}
