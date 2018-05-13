@@ -25,7 +25,6 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
-import java.io.IOException;
 import java.util.Date;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -109,7 +108,6 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 		Map<String, Object> map;
 		Sysprop s = new Sysprop();
 		ObjectReader reader = ParaObjectUtils.getJsonReader(Map.class);
-		CloseableHttpClient http = null;
 
 		try {
 			HttpGet httpGet = new HttpGet(SERVICE_URL);
@@ -123,7 +121,6 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 							map = reader.treeToValue(rates, Map.class);
 							s.setId(FXRATES_KEY);
 							s.setProperties(map);
-	//						s.addProperty("fetched", Utils.formatDate("dd MM yyyy HH:mm", Locale.UK));
 							dao.create(s);
 						}
 					}
@@ -133,14 +130,6 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 			logger.debug("Fetched rates from OpenExchange for {}.", new Date().toString());
 		} catch (Exception e) {
 			logger.error("TimerTask failed: {}", e);
-		} finally {
-			if (http != null) {
-				try {
-					http.close();
-				} catch (IOException ex) {
-					logger.error(null, ex);
-				}
-			}
 		}
 		return s;
 	}
