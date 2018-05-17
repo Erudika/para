@@ -64,6 +64,9 @@ public class LanguageUtils {
 				ALL_LOCALES.putIfAbsent(locstr, Locale.forLanguageTag(locstr));
 			}
 		}
+		ALL_LOCALES.remove("zh");
+		ALL_LOCALES.putIfAbsent(Locale.SIMPLIFIED_CHINESE.toString(), Locale.SIMPLIFIED_CHINESE);
+		ALL_LOCALES.putIfAbsent(Locale.TRADITIONAL_CHINESE.toString(), Locale.TRADITIONAL_CHINESE);
 	}
 
 	private static final Map<String, Map<String, String>> LANG_CACHE =
@@ -101,9 +104,10 @@ public class LanguageUtils {
 	 * @return the language map
 	 */
 	public Map<String, String> readLanguage(String appid, String langCode) {
-		if (StringUtils.isBlank(langCode) || !ALL_LOCALES.containsKey(langCode) ||
-				langCode.equals(getDefaultLanguageCode())) {
+		if (StringUtils.isBlank(langCode) || langCode.equals(getDefaultLanguageCode())) {
 			return getDefaultLanguage(appid);
+		} else if (langCode.length() > 2 && !ALL_LOCALES.containsKey(langCode)) {
+			return readLanguage(appid, langCode.substring(0, 2));
 		} else if (LANG_CACHE.containsKey(langCode)) {
 			return LANG_CACHE.get(langCode);
 		}
@@ -164,10 +168,16 @@ public class LanguageUtils {
 	 * @return a locale. default is English
 	 */
 	public Locale getProperLocale(String langCode) {
-		langCode = StringUtils.substring(langCode, 0, 2);
-		langCode = (StringUtils.isBlank(langCode) || !ALL_LOCALES.containsKey(langCode)) ?
-				"en" : langCode.trim().toLowerCase();
-		return ALL_LOCALES.get(langCode);
+		if (StringUtils.startsWith(langCode, "zh")) {
+			if ("zh_tw".equalsIgnoreCase(langCode)) {
+				return Locale.TRADITIONAL_CHINESE;
+			} else {
+				return Locale.SIMPLIFIED_CHINESE;
+			}
+		}
+		String lang = StringUtils.substring(langCode, 0, 2);
+		lang = (StringUtils.isBlank(lang) || !ALL_LOCALES.containsKey(lang)) ? "en" : lang.trim().toLowerCase();
+		return ALL_LOCALES.get(lang);
 	}
 
 	/**
@@ -400,11 +410,11 @@ public class LanguageUtils {
 
 	private Map<String, String> readLanguageFromFile(String appid, String langCode) {
 		Map<String, String> langmap = new TreeMap<>();
-		if (langCode == null || langCode.length() != 2) {
+		if (langCode == null) {
 			return langmap;
 		}
 		Properties lang = new Properties();
-		String file = "lang_" + langCode + ".properties";
+		String file = "lang_" + langCode.toLowerCase() + ".properties";
 		InputStream ins = null;
 		try {
 			ins = LanguageUtils.class.getClassLoader().getResourceAsStream(file);
@@ -415,13 +425,13 @@ public class LanguageUtils {
 			lang.load(ins);
 			for (String propKey : lang.stringPropertyNames()) {
 				String propVal = lang.getProperty(propKey);
-				if (!langCode.equals(getDefaultLanguageCode()) && !StringUtils.isBlank(propVal) &&
+				if (!langCode.equalsIgnoreCase(getDefaultLanguageCode()) && !StringUtils.isBlank(propVal) &&
 						!StringUtils.equalsIgnoreCase(propVal, getDefaultLanguage(appid).get(propKey))) {
 					progress++;
 				}
 				langmap.put(propKey, propVal);
 			}
-			if (langCode.equals(getDefaultLanguageCode())) {
+			if (langCode.equalsIgnoreCase(getDefaultLanguageCode())) {
 				progress = langmap.size(); // 100%
 			}
 			if (progress > 0) {
