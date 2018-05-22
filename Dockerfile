@@ -1,7 +1,9 @@
 FROM openjdk:8-jre-alpine
 
 ENV BOOT_SLEEP=0 \
-    JAVA_OPTS=""
+    JAVA_OPTS="" \
+    PARA_VERSION=1.29.1 \
+	REPO_URL=https://oss.sonatype.org/service/local/repositories/releases/content/com/erudika
 
 RUN addgroup -S para && adduser -S -G para para && \
 	mkdir -p /para/lib && \
@@ -12,7 +14,7 @@ USER para
 
 WORKDIR /para
 
-ADD para-war/target/para-*.war /para/
+RUN wget -q -P /para/ $REPO_URL/para-war/$PARA_VERSION/para-war-$PARA_VERSION.war
 
 VOLUME ["/para/data"]
 
