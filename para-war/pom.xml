@@ -17,16 +17,6 @@
 			<artifactId>para-server</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		<dependency>
-			<groupId>com.erudika</groupId>
-			<artifactId>para-dao-sql</artifactId>
-			<version>1.28.3</version>
-		</dependency>
-		<dependency>
-			<groupId>com.erudika</groupId>
-			<artifactId>para-search-lucene</artifactId>
-			<version>1.28.0</version>
-		</dependency>
 	</dependencies>
 
 	<properties>
@@ -86,4 +76,48 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>default</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-dao-sql</artifactId>
+					<version>1.28.3</version>
+				</dependency>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-search-lucene</artifactId>
+					<version>1.28.0</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>base</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-maven-plugin</artifactId>
+						<version>${springBootVer}</version>
+						<executions>
+							<execution>
+								<goals>
+									<goal>repackage</goal>
+								</goals>
+								<configuration>
+									<finalName>para-base-${project.version}</finalName>
+									<mainClass>com.erudika.para.ParaServer</mainClass>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

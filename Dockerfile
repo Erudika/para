@@ -1,8 +1,10 @@
-FROM openjdk:8-jre-alpine
+# Default Para docker image bundled with H2 and Lucene plugins
+
+FROM openjdk:8-jdk-alpine
 
 ENV BOOT_SLEEP=0 \
     JAVA_OPTS="" \
-    PARA_VERSION=1.29.1 \
+    PARA_VERSION="1.29.1" \
 	REPO_URL=https://oss.sonatype.org/service/local/repositories/releases/content/com/erudika
 
 RUN addgroup -S para && adduser -S -G para para && \
@@ -20,5 +22,5 @@ VOLUME ["/para/data"]
 
 EXPOSE 8080
 
-CMD sleep ${BOOT_SLEEP} && \
-    java ${JAVA_OPTS} -Djava.security.egd=file:/dev/./urandom -jar para-*.war
+CMD sleep $BOOT_SLEEP && \
+    java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar para-*.war

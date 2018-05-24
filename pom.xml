@@ -297,6 +297,11 @@
 				</plugins>
 			</build>
 		</profile>
+
+		<profile>
+			<!--FOR DOCKER BASE IMAGE-->
+			<id>base</id>
+		</profile>
 	</profiles>
 
 	<reporting>
