@@ -21,7 +21,7 @@ WORKDIR /para
 
 RUN git clone --depth=1 https://github.com/Erudika/para /para/clone && \
 	cd /para/clone && \
-	mvn -Pbase -DskipTests=true package && \
+	mvn -Pbase -DskipTests=true clean package && \
 	mv para-war/target/para-base-*.war /para/ && \
 	cd /para &&	rm -rf /para/clone && rm -rf ~/.m2
 	
