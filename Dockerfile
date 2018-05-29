@@ -10,7 +10,7 @@ ENV BOOT_SLEEP=0 \
 RUN addgroup -S para && adduser -S -G para para && \
 	mkdir -p /para/lib && \
 	mkdir -p /para/data && \
-	chown -R para /para
+	chown -R para:para /para
 
 USER para
 
