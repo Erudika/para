@@ -373,7 +373,7 @@ public final class ParaObjectUtils {
 	}
 
 	private static boolean isIgnoredField(Field field, Class<? extends Annotation> filter) {
-		return ((filter == null) ? false : Config._VERSION.equals(field.getName()) || field.isAnnotationPresent(filter));
+		return ((filter == null) ? false : field.isAnnotationPresent(filter));
 	}
 
 	/**
