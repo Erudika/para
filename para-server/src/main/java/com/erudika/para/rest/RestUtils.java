@@ -25,7 +25,12 @@ import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.metrics.MetricsUtils;
-import com.erudika.para.security.SecurityUtils;
+import static com.erudika.para.security.SecurityUtils.checkIfUserCanModifyObject;
+import static com.erudika.para.security.SecurityUtils.checkImplicitAppPermissions;
+import static com.erudika.para.security.SecurityUtils.getAuthenticatedUser;
+import static com.erudika.para.security.SecurityUtils.getPrincipalApp;
+import static com.erudika.para.security.SecurityUtils.isNotAnApp;
+import static com.erudika.para.security.SecurityUtils.warnIfUserTypeDetected;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -186,32 +191,6 @@ public final class RestUtils {
 	}
 
 	/**
-	 * Returns the current authenticated {@link App} object.
-	 * @return an App object or null
-	 */
-	public static App getPrincipalApp() {
-		App app = SecurityUtils.getAuthenticatedApp();
-		if (app != null) {
-			return app;
-		}
-		// avoid reading app from DB if it's found in the security context
-		app = SecurityUtils.getAppFromJWTAuthentication();
-		if (app != null) {
-			return app;
-		}
-		app = SecurityUtils.getAppFromLdapAuthentication();
-		if (app != null) {
-			return app;
-		}
-		User user = SecurityUtils.getAuthenticatedUser();
-		if (user != null) {
-			return Para.getDAO().read(Config.getRootAppIdentifier(), App.id(user.getAppid()));
-		}
-		logger.warn("Unauthenticated request - app not found in security context.");
-		return null;
-	}
-
-	/**
 	 * Returns a Response with the entity object inside it and 200 status code.
 	 * If there was and error the status code is different than 200.
 	 *
@@ -246,91 +225,6 @@ public final class RestUtils {
 		}
 
 		return Response.ok(entity).build();
-	}
-
-	/**
-	 * An app can edit itself or delete itself. It can't read, edit, overwrite or delete other apps,
-	 * unless it is the root app.
-	 * @param app an app
-	 * @param object another object
-	 * @return true if app passes the check
-	 */
-	private static boolean checkImplicitAppPermissions(App app, ParaObject object) {
-		if (app != null && object != null) {
-			return isNotAnApp(object.getType()) || app.getId().equals(object.getId()) || app.isRootApp();
-		}
-		return false;
-	}
-
-	/**
-	 * @param type some type
-	 * @return true if type of object is not "app"
-	 */
-	private static boolean isNotAnApp(String type) {
-		return !StringUtils.equals(type, Utils.type(App.class));
-	}
-
-	/**
-	 * @param type some type
-	 */
-	private static void warnIfUserTypeDetected(String type) {
-		if (Utils.type(User.class).equals(type)) {
-			logger.warn("Users should be created through /jwt_auth or through an authentication filter.");
-		}
-	}
-
-	/**
-	 * Check if a user can modify an object. If there's no user principal found, this returns true.
-	 * @param app app in context
-	 * @param object some object
-	 * @return true if user is the owner/creator of the object.
-	 */
-	private static boolean checkIfUserCanModifyObject(App app, ParaObject object) {
-		User user = SecurityUtils.getAuthenticatedUser();
-		if (user != null && app != null && object != null) {
-			if (permissionContainsOwnKeyword(app, user, object)) {
-				return user.canModify(object);
-			}
-		}
-		return true; // skip
-	}
-
-	/**
-	 * Check if the permissions map contains "OWN" keyword, which restricts access to objects to their creators.
-	 * @param app app in context
-	 * @param user user in context
-	 * @param object some object
-	 * @return true if app contains permission for this resource and it is marked with "OWN"
-	 */
-	private static boolean permissionContainsOwnKeyword(App app, User user, ParaObject object) {
-		if (app == null || user == null || object == null) {
-			return false;
-		}
-		String resourcePath1 = object.getType();
-		String resourcePath2 = object.getObjectURI().substring(1); // remove first '/'
-		String resourcePath3 = object.getPlural();
-		return  hasOwnKeyword(app, App.ALLOW_ALL, resourcePath1) ||
-				hasOwnKeyword(app, App.ALLOW_ALL, resourcePath2) ||
-				hasOwnKeyword(app, App.ALLOW_ALL, resourcePath3) ||
-				hasOwnKeyword(app, user.getId(), resourcePath1) ||
-				hasOwnKeyword(app, user.getId(), resourcePath2) ||
-				hasOwnKeyword(app, user.getId(), resourcePath3);
-	}
-
-	/**
-	 * @param app app in context
-	 * @param subjectid id of user
-	 * @param resourcePath path
-	 * @return true if app contains permission for this resource path and it is marked with "OWN"
-	 */
-	private static boolean hasOwnKeyword(App app, String subjectid, String resourcePath) {
-		if (app == null || subjectid == null || resourcePath == null) {
-			return false;
-		}
-		return app.getResourcePermissions().containsKey(subjectid) &&
-					app.getResourcePermissions().get(subjectid).containsKey(resourcePath) &&
-					app.getResourcePermissions().get(subjectid).get(resourcePath).
-							contains(App.AllowedMethods.OWN.toString());
 	}
 
 	/**
@@ -381,7 +275,7 @@ public final class RestUtils {
 				voteSuccess = object.voteUp(upvoterId);
 			} else if (!StringUtils.isBlank(downvoterId)) {
 				voteSuccess = object.voteDown(downvoterId);
-			}
+	}
 			if (voteSuccess) {
 				object.update();
 			}
@@ -979,11 +873,11 @@ public final class RestUtils {
 
 	private static void setCreatorid(App app, ParaObject content) {
 		if (content != null) {
-			User user = SecurityUtils.getAuthenticatedUser();
+			User user = getAuthenticatedUser();
 			if (user != null) {
 				content.setCreatorid(user.getId());
 				if (!StringUtils.isBlank(content.getId()) && content.getCreatorid() != null &&
-						permissionContainsOwnKeyword(app, user, content) &&
+						app.permissionsContainOwnKeyword(user, content) &&
 						!content.getId().startsWith(content.getCreatorid() + "_")) {
 					// prevents one user from overwriting another user's objects
 					content.setId(content.getCreatorid() + "_" + content.getId());

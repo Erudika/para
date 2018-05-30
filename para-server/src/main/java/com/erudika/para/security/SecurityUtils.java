@@ -17,11 +17,14 @@
  */
 package com.erudika.para.security;
 
+import com.erudika.para.Para;
 import com.erudika.para.core.App;
+import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.User;
 import com.erudika.para.rest.Signer;
 import com.erudika.para.utils.BufferedRequestWrapper;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Utils;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -124,6 +127,83 @@ public final class SecurityUtils {
 			}
 		}
 		return app;
+	}
+
+
+	/**
+	 * Returns the current authenticated {@link App} object.
+	 *
+	 * @return an App object or null
+	 */
+	public static App getPrincipalApp() {
+		App app = SecurityUtils.getAuthenticatedApp();
+		if (app != null) {
+			return app;
+		}
+		// avoid reading app from DB if it's found in the security context
+		app = SecurityUtils.getAppFromJWTAuthentication();
+		if (app != null) {
+			return app;
+		}
+		app = SecurityUtils.getAppFromLdapAuthentication();
+		if (app != null) {
+			return app;
+		}
+		User user = SecurityUtils.getAuthenticatedUser();
+		if (user != null) {
+			return Para.getDAO().read(Config.getRootAppIdentifier(), App.id(user.getAppid()));
+		}
+		logger.warn("Unauthenticated request - app not found in security context.");
+		return null;
+	}
+
+	/**
+	 * An app can edit itself or delete itself. It can't read, edit, overwrite or delete other apps, unless it is the
+	 * root app.
+	 *
+	 * @param app an app
+	 * @param object another object
+	 * @return true if app passes the check
+	 */
+	public static boolean checkImplicitAppPermissions(App app, ParaObject object) {
+		if (app != null && object != null) {
+			return isNotAnApp(object.getType()) || app.getId().equals(object.getId()) || app.isRootApp();
+		}
+		return false;
+	}
+
+	/**
+	 * @param type some type
+	 * @return true if type of object is not "app"
+	 */
+	public static boolean isNotAnApp(String type) {
+		return !StringUtils.equals(type, Utils.type(App.class));
+	}
+
+	/**
+	 * @param type some type
+	 */
+	public static void warnIfUserTypeDetected(String type) {
+		if (Utils.type(User.class).equals(type)) {
+			logger.warn("Users should be created through /jwt_auth or through an authentication filter.");
+		}
+	}
+
+	/**
+	 * Check if a user can modify an object. If there's no user principal found, this returns true.
+	 *
+	 * @param app app in context
+	 * @param object some object
+	 * @return true if user is the owner/creator of the object.
+	 */
+	public static boolean checkIfUserCanModifyObject(App app, ParaObject object) {
+		User user = SecurityUtils.getAuthenticatedUser();
+		if (user != null && app != null && object != null) {
+			if (app.permissionsContainOwnKeyword(user, object)) {
+				return user.canModify(object);
+			}
+		}
+		return true; // skip
 	}
 
 	/**

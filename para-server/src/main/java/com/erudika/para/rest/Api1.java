@@ -35,7 +35,6 @@ import static com.erudika.para.rest.RestUtils.getCreateResponse;
 import static com.erudika.para.rest.RestUtils.getDeleteResponse;
 import static com.erudika.para.rest.RestUtils.getEntity;
 import static com.erudika.para.rest.RestUtils.getOverwriteResponse;
-import static com.erudika.para.rest.RestUtils.getPrincipalApp;
 import static com.erudika.para.rest.RestUtils.getReadResponse;
 import static com.erudika.para.rest.RestUtils.getStatusResponse;
 import static com.erudika.para.rest.RestUtils.getUpdateResponse;
@@ -45,6 +44,7 @@ import static com.erudika.para.rest.RestUtils.queryParams;
 
 import com.erudika.para.metrics.MetricsUtils;
 import com.erudika.para.security.SecurityUtils;
+import static com.erudika.para.security.SecurityUtils.getPrincipalApp;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.HealthUtils;
 import com.erudika.para.utils.HumanTime;

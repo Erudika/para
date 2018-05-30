@@ -833,6 +833,45 @@ public class App implements ParaObject, Serializable {
 	}
 
 	/**
+	 * Check if the permissions map contains "OWN" keyword, which restricts access to objects to their creators.
+	 *
+	 * @param user user in context
+	 * @param object some object
+	 * @return true if app contains permission for this resource and it is marked with "OWN"
+	 */
+	public boolean permissionsContainOwnKeyword(User user, ParaObject object) {
+		if (user == null || object == null) {
+			return false;
+		}
+		String resourcePath1 = object.getType();
+		String resourcePath2 = object.getObjectURI().substring(1); // remove first '/'
+		String resourcePath3 = object.getPlural();
+		return hasOwnKeyword(App.ALLOW_ALL, resourcePath1)
+				|| hasOwnKeyword(App.ALLOW_ALL, resourcePath2)
+				|| hasOwnKeyword(App.ALLOW_ALL, resourcePath3)
+				|| hasOwnKeyword(user.getId(), resourcePath1)
+				|| hasOwnKeyword(user.getId(), resourcePath2)
+				|| hasOwnKeyword(user.getId(), resourcePath3);
+	}
+
+	/**
+	 * @param subjectid id of user
+	 * @param resourcePath path
+	 * @return true if app contains permission for this resource path and it is marked with "OWN"
+	 */
+	final boolean hasOwnKeyword(String subjectid, String resourcePath) {
+		if (subjectid == null || resourcePath == null) {
+			return false;
+		}
+		return getResourcePermissions().containsKey(subjectid)
+				&& getResourcePermissions().get(subjectid).containsKey(resourcePath)
+				&& getResourcePermissions().
+						get(subjectid).
+						get(resourcePath).
+						contains(App.AllowedMethods.OWN.toString());
+	}
+
+	/**
 	 * Adds a user-defined data type to the types map.
 	 * @param pluralDatatype the plural form of the type
 	 * @param datatype a datatype, must not be null or empty
