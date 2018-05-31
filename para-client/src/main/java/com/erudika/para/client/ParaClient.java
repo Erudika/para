@@ -261,7 +261,7 @@ public final class ParaClient {
 	 * @return a POJO
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T getEntity(Response res, Class<?> type) {
+	public <T> T getEntity(Response res, Class<?> type) throws WebApplicationException {
 		if (res != null) {
 			if (res.getStatus() == Response.Status.OK.getStatusCode()
 					|| res.getStatus() == Response.Status.CREATED.getStatusCode()
@@ -273,7 +273,9 @@ public final class ParaClient {
 				Map<String, Object> error = res.hasEntity() ? res.readEntity(Map.class) : null;
 				if (error != null && error.containsKey("code")) {
 					String msg = error.containsKey("message") ? (String) error.get("message") : "error";
-					logger.error("{} - {}", msg, new WebApplicationException((Integer) error.get("code")).getMessage());
+					WebApplicationException e = new WebApplicationException(msg, (Integer) error.get("code"));
+					logger.error("{} - {}", msg, e.getMessage());
+					throw e;
 				} else {
 					logger.error("{} - {}", res.getStatus(), res.getStatusInfo().getReasonPhrase());
 				}
