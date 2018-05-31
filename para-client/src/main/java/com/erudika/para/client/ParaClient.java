@@ -81,6 +81,7 @@ public final class ParaClient {
 	private Long tokenKeyNextRefresh;
 	private Client apiClient;
 	private int chunkSize = 0;
+	private boolean throwExceptionOnHTTPError;
 
 	/**
 	 * Default constructor.
@@ -93,6 +94,7 @@ public final class ParaClient {
 		if (StringUtils.length(secretKey) < 6) {
 			logger.warn("Secret key appears to be invalid. Make sure you call 'signIn()' first.");
 		}
+		this.throwExceptionOnHTTPError = false;
 		ObjectMapper mapper = ParaObjectUtils.getJsonMapper();
 		mapper.setSerializationInclusion(JsonInclude.Include.USE_DEFAULTS);
 		ClientConfig clientConfig = new ClientConfig();
@@ -243,6 +245,14 @@ public final class ParaClient {
 		return chunkSize;
 	}
 
+	/**
+	 * @param enabled if true, the client will throw an exception when an error response is received.
+	 * If false, the error is only logged.
+	 */
+	public void throwExceptionOnHTTPError(boolean enabled) {
+		this.throwExceptionOnHTTPError = enabled;
+	}
+
 	private String key(boolean refresh) {
 		if (tokenKey != null) {
 			if (refresh) {
@@ -275,9 +285,14 @@ public final class ParaClient {
 					String msg = error.containsKey("message") ? (String) error.get("message") : "error";
 					WebApplicationException e = new WebApplicationException(msg, (Integer) error.get("code"));
 					logger.error("{} - {}", msg, e.getMessage());
-					throw e;
+					if (throwExceptionOnHTTPError) {
+						throw e;
+					}
 				} else {
 					logger.error("{} - {}", res.getStatus(), res.getStatusInfo().getReasonPhrase());
+					if (throwExceptionOnHTTPError) {
+						throw new WebApplicationException(res.getStatusInfo().getReasonPhrase(), res.getStatus());
+					}
 				}
 			}
 		}
