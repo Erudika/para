@@ -48,7 +48,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -247,7 +247,7 @@ public class App implements ParaObject, Serializable {
 	@JsonIgnore
 	public Map<String, Object> getSettings() {
 		if (settings == null) {
-			settings = new HashMap<>();
+			settings = new LinkedHashMap<>();
 		}
 		return settings;
 	}
@@ -266,7 +266,7 @@ public class App implements ParaObject, Serializable {
 	 */
 	public Map<String, Map<String, Map<String, Map<String, ?>>>> getValidationConstraints() {
 		if (validationConstraints == null) {
-			validationConstraints = new HashMap<>();
+			validationConstraints = new LinkedHashMap<>();
 		}
 		return validationConstraints;
 	}
@@ -285,7 +285,7 @@ public class App implements ParaObject, Serializable {
 	 */
 	public Map<String, Map<String, List<String>>> getResourcePermissions() {
 		if (resourcePermissions == null) {
-			resourcePermissions = new HashMap<>();
+			resourcePermissions = new LinkedHashMap<>();
 		}
 		return resourcePermissions;
 	}
@@ -483,14 +483,13 @@ public class App implements ParaObject, Serializable {
 	 * @return a map of validation constraints for given types
 	 */
 	public Map<String, Map<String, Map<String, Map<String, ?>>>> getAllValidationConstraints(String... types) {
-		Map<String, Map<String, Map<String, Map<String, ?>>>> allConstr =
-				new HashMap<>();
+		Map<String, Map<String, Map<String, Map<String, ?>>>> allConstr = new LinkedHashMap<>();
 		if (types == null || types.length == 0) {
 			types = ParaObjectUtils.getAllTypes(this).values().toArray(new String[0]);
 		}
 		try {
 			for (String aType : types) {
-				Map<String, Map<String, Map<String, ?>>> vc = new HashMap<>();
+				Map<String, Map<String, Map<String, ?>>> vc = new LinkedHashMap<>();
 				// add all core constraints first
 				if (ValidationUtils.getCoreValidationConstraints().containsKey(aType)) {
 					vc.putAll(ValidationUtils.getCoreValidationConstraints().get(aType));
@@ -526,11 +525,11 @@ public class App implements ParaObject, Serializable {
 			if (fieldMap != null) {
 				consMap = fieldMap.get(field);
 				if (consMap == null) {
-					consMap = new HashMap<>();
+					consMap = new LinkedHashMap<>();
 				}
 			} else {
-				fieldMap = new HashMap<>();
-				consMap = new HashMap<>();
+				fieldMap = new LinkedHashMap<>();
+				consMap = new LinkedHashMap<>();
 			}
 			consMap.put(c.getName(), c.getPayload());
 			fieldMap.put(field, consMap);
@@ -572,7 +571,7 @@ public class App implements ParaObject, Serializable {
 	 * @return a map of all resource permissions per subject
 	 */
 	public Map<String, Map<String, List<String>>> getAllResourcePermissions(String... subjectids) {
-		Map<String, Map<String, List<String>>> allPermits = new HashMap<>();
+		Map<String, Map<String, List<String>>> allPermits = new LinkedHashMap<>();
 		if (subjectids == null || subjectids.length == 0) {
 			return getResourcePermissions();
 		}
@@ -582,7 +581,7 @@ public class App implements ParaObject, Serializable {
 					if (getResourcePermissions().containsKey(subjectid)) {
 						allPermits.put(subjectid, getResourcePermissions().get(subjectid));
 					} else {
-						allPermits.put(subjectid, new HashMap<>(0));
+						allPermits.put(subjectid, new LinkedHashMap<>(0));
 					}
 					if (getResourcePermissions().containsKey(ALLOW_ALL)) {
 						allPermits.put(ALLOW_ALL, getResourcePermissions().get(ALLOW_ALL));
@@ -627,7 +626,7 @@ public class App implements ParaObject, Serializable {
 			allowGuestAccess = permission.remove(GUEST) || allowGuestAccess;
 			EnumSet<AllowedMethods> methods = getAllowedMethodsSet(permission);
 			if (!getResourcePermissions().containsKey(subjectid)) {
-				Map<String, List<String>> perm = new HashMap<>();
+				Map<String, List<String>> perm = new LinkedHashMap<>();
 				perm.put(resourcePath, new ArrayList<>(permission.size()));
 				getResourcePermissions().put(subjectid, perm);
 			}
@@ -934,13 +933,10 @@ public class App implements ParaObject, Serializable {
 		if (getId() == null) {
 			return Collections.emptyMap();
 		} else {
-			return new HashMap<String, String>() {
-				private static final long serialVersionUID = 1L;
-				{
-					put("accessKey", getId());
-					put("secretKey", getSecret());
-				}
-			};
+			Map<String, String> keys = new LinkedHashMap<String, String>(2);
+			keys.put("accessKey", getId());
+			keys.put("secretKey", getSecret());
+			return keys;
 		}
 	}
 
