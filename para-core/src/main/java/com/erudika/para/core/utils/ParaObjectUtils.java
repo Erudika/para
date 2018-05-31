@@ -39,9 +39,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.collections.bidimap.DualHashBidiMap;
@@ -399,6 +401,52 @@ public final class ParaObjectUtils {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Finds all fields which are marked with all of the given annotations.
+	 * @param <P> the object type
+	 * @param app the {@link App} object. If provided and not null, the method will check if there are
+	 * any custom locked fields declared by clients and will also include them in the result.
+	 * @return a set of field names to list of values
+	 */
+	public static <P extends ParaObject> Set<String> getFieldsWithAnnotations(P obj, App app,
+			Class<? extends Annotation>... annotations) {
+		LinkedHashSet<String> lockedFields = new LinkedHashSet<>();
+		if (obj == null) {
+			return lockedFields;
+		}
+		try {
+			Set<String> annotationSet = Arrays.stream(annotations).map(anno -> anno.getSimpleName()).
+					collect(Collectors.toSet());
+
+			Class<?> parent = obj.getClass();
+			if (app != null && obj instanceof Sysprop) {
+				if (app.getSettings().containsKey("typesMetadata")) {
+					Map<String, List<String>> metadata = (Map<String, List<String>>) app.getSetting("typesMetadata");
+					metadata.entrySet().stream().
+							filter(e -> e.getValue().containsAll(annotationSet)).
+							forEach(e -> lockedFields.add(e.getKey()));
+				}
+			}
+			do {
+				for (Field field : parent.getDeclaredFields()) {
+					if (!Modifier.isTransient(field.getModifiers()) && !field.getName().equals("serialVersionUID") &&
+							Arrays.stream(field.getDeclaredAnnotations()).
+									map(anno -> anno.annotationType().getSimpleName()).
+									collect(Collectors.toSet()).
+									containsAll(annotationSet)) {
+						lockedFields.add(field.getName());
+					} else {
+						lockedFields.remove(field.getName());
+					}
+				}
+				parent = parent.getSuperclass();
+			} while (!parent.equals(Object.class));
+		} catch (Exception e) {
+			logger.error(null, e);
+		}
+		return lockedFields;
 	}
 
 	/**

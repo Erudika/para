@@ -17,6 +17,7 @@
  */
 package com.erudika.para.core;
 
+import com.erudika.para.annotations.Locked;
 import com.erudika.para.annotations.Stored;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import static com.erudika.para.core.utils.ParaObjectUtils.*;
@@ -27,9 +28,12 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -200,6 +204,32 @@ public class ParaObjectUtilsTest {
 		assertFalse(k2.getColorMap().isEmpty());
 		assertTrue(k1.getColorMap().containsKey(Color.WHITE));
 		assertTrue(k2.getColorMap().containsKey(Color.WHITE));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void testGetLockedFields() {
+		User u = new User();
+		Set<String> locked1 = ParaObjectUtils.getFieldsWithAnnotations(u, null, Locked.class);
+		assertTrue(locked1.contains("creatorid"));
+		assertFalse(locked1.contains("name"));
+		assertTrue(locked1.contains("type"));
+		assertTrue(locked1.contains("parentid"));
+
+		Sysprop customType = new Sysprop();
+		customType.setType("cat");
+		customType.addProperty("paws", 4);
+		App app = new App();
+		Map<String, List<String>> typesMetadata = new HashMap<>();
+		typesMetadata.put("paws", Arrays.asList("Locked", "Stored"));
+		typesMetadata.put("name", Arrays.asList("Locked")); // NOT ALLOWED! Can't change the annotaions of declared fields
+		app.addSetting("typesMetadata", typesMetadata);
+
+		Set<String> locked2 = ParaObjectUtils.getFieldsWithAnnotations(customType, app, Locked.class);
+		assertTrue(locked2.contains("paws"));
+		assertFalse(locked2.contains("name"));
+		Set<String> locked3 = ParaObjectUtils.getFieldsWithAnnotations(customType, app, Locked.class, Stored.class);
+		assertTrue(locked3.contains("paws"));
 	}
 
 	@Test
