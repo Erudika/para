@@ -141,7 +141,7 @@ $ docker run -ti -p 8080:8080 --rm -v $(pwd)/application.conf:/para/application.
 To use plugins, create a new `Dockerfile-plugins` which does a multi-stage build like so:
 ```
 # change X.Y.Z with latest tag
-FROM erudikaltd/para:X.Y.Z-base
+FROM erudikaltd/para:vX.Y.Z-base
 
 FROM erudikaltd/para-dao-mongodb:X.Y.Z
 ```
