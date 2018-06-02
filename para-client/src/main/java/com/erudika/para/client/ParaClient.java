@@ -247,7 +247,7 @@ public final class ParaClient {
 
 	/**
 	 * @param enabled if true, the client will throw an exception when an error response is received.
-	 * If false, the error is only logged.
+	 * If false, the error is only logged. Default is false.
 	 */
 	public void throwExceptionOnHTTPError(boolean enabled) {
 		this.throwExceptionOnHTTPError = enabled;
@@ -269,6 +269,7 @@ public final class ParaClient {
 	 * @param res response
 	 * @param type the type to convert to
 	 * @return a POJO
+	 * @throws WebApplicationException exception on HTTP error response
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> T getEntity(Response res, Class<?> type) throws WebApplicationException {
@@ -462,6 +463,14 @@ public final class ParaClient {
 		return getItems("items", result, pager);
 	}
 
+	private int getNumChunks(List<?> objects, int size) {
+		return size <= 0 ? 1 : (objects.size() + size - 1) / size;
+	}
+
+	private List<?> partitionList(List<?> objects, int i, int size) {
+		return size <= 0 ? objects : objects.subList(i * size, Math.min((i + 1) * size, objects.size()));
+	}
+
 	/////////////////////////////////////////////
 	//				 PERSISTENCE
 	/////////////////////////////////////////////
@@ -537,14 +546,6 @@ public final class ParaClient {
 			return;
 		}
 		invokeDelete(obj.getType().concat("/").concat(obj.getId()), null);
-	}
-
-	private int getNumChunks(List<?> objects, int size) {
-		return size <= 0 ? 1 : (objects.size() + size - 1) / size;
-	}
-
-	private List<?> partitionList(List<?> objects, int i, int size) {
-		return size <= 0 ? objects : objects.subList(i * size, Math.min((i + 1) * size, objects.size()));
 	}
 
 	/**

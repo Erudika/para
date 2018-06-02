@@ -39,11 +39,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.collections.bidimap.DualHashBidiMap;
@@ -65,8 +64,10 @@ public final class ParaObjectUtils {
 	private static final Logger logger = LoggerFactory.getLogger(ParaObjectUtils.class);
 	// maps plural to singular type definitions
 	private static final Map<String, String> CORE_TYPES = new DualHashBidiMap();
+	private static final Map<String, String> CORE_PARA_TYPES = new DualHashBidiMap();
 	// maps lowercase simple names to class objects
 	private static final Map<String, Class<? extends ParaObject>> CORE_CLASSES = new DualHashBidiMap();
+	private static final Map<String, Class<? extends ParaObject>> CORE_PARA_CLASSES = new DualHashBidiMap();
 	private static final CoreClassScanner SCANNER = new CoreClassScanner();
 	private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
@@ -139,6 +140,25 @@ public final class ParaObjectUtils {
 			}
 		}
 		return Collections.unmodifiableMap(CORE_TYPES);
+	}
+
+	/**
+	 * Returns a map of the core data types declared in Para Core only.
+	 * @return a map of type plural - type singular form
+	 */
+	public static Map<String, String> getCoreParaTypes() {
+		if (CORE_PARA_TYPES.isEmpty()) {
+			try {
+				getCoreClassesMap();
+				for (Class<? extends ParaObject> clazz : CORE_PARA_CLASSES.values()) {
+					ParaObject p = clazz.newInstance();
+					CORE_PARA_TYPES.put(p.getPlural(), p.getType());
+				}
+			} catch (Exception ex) {
+				logger.error(null, ex);
+			}
+		}
+		return Collections.unmodifiableMap(CORE_PARA_TYPES);
 	}
 
 	/**
@@ -260,8 +280,7 @@ public final class ParaObjectUtils {
 			boolean hasJsonAnnotations = false;
 			// filter transient fields and those without annotations
 			for (Field field : fields) {
-				boolean dontSkip = ((filter == null) ? true : !field.isAnnotationPresent(filter));
-				if (field.isAnnotationPresent(Stored.class) && dontSkip) {
+				if (field.isAnnotationPresent(Stored.class) && !isIgnoredField(field, filter)) {
 					String name = field.getName();
 					Object value = PropertyUtils.getProperty(pojo, name);
 					if (!Utils.isBasicType(field.getType()) && flattenNestedObjectsToString) {
@@ -404,52 +423,6 @@ public final class ParaObjectUtils {
 	}
 
 	/**
-	 * Finds all fields which are marked with all of the given annotations.
-	 * @param <P> the object type
-	 * @param app the {@link App} object. If provided and not null, the method will check if there are
-	 * any custom locked fields declared by clients and will also include them in the result.
-	 * @return a set of field names to list of values
-	 */
-	public static <P extends ParaObject> Set<String> getFieldsWithAnnotations(P obj, App app,
-			Class<? extends Annotation>... annotations) {
-		LinkedHashSet<String> lockedFields = new LinkedHashSet<>();
-		if (obj == null) {
-			return lockedFields;
-		}
-		try {
-			Set<String> annotationSet = Arrays.stream(annotations).map(anno -> anno.getSimpleName()).
-					collect(Collectors.toSet());
-
-			Class<?> parent = obj.getClass();
-			if (app != null && obj instanceof Sysprop) {
-				if (app.getSettings().containsKey("typesMetadata")) {
-					Map<String, List<String>> metadata = (Map<String, List<String>>) app.getSetting("typesMetadata");
-					metadata.entrySet().stream().
-							filter(e -> e.getValue().containsAll(annotationSet)).
-							forEach(e -> lockedFields.add(e.getKey()));
-				}
-			}
-			do {
-				for (Field field : parent.getDeclaredFields()) {
-					if (!Modifier.isTransient(field.getModifiers()) && !field.getName().equals("serialVersionUID") &&
-							Arrays.stream(field.getDeclaredAnnotations()).
-									map(anno -> anno.annotationType().getSimpleName()).
-									collect(Collectors.toSet()).
-									containsAll(annotationSet)) {
-						lockedFields.add(field.getName());
-					} else {
-						lockedFields.remove(field.getName());
-					}
-				}
-				parent = parent.getSuperclass();
-			} while (!parent.equals(Object.class));
-		} catch (Exception e) {
-			logger.error(null, e);
-		}
-		return lockedFields;
-	}
-
-	/**
 	 * Constructs a new instance of a core object.
 	 *
 	 * @param <P> the object type
@@ -504,19 +477,10 @@ public final class ParaObjectUtils {
 	public static Map<String, Class<? extends ParaObject>> getCoreClassesMap() {
 		if (CORE_CLASSES.isEmpty()) {
 			try {
-				Set<Class<? extends ParaObject>> s = SCANNER.getComponentClasses(ParaObject.class.getPackage().getName());
+				CORE_PARA_CLASSES.putAll(SCANNER.getComponentClasses(ParaObject.class.getPackage().getName()));
+				CORE_CLASSES.putAll(CORE_PARA_CLASSES);
 				if (!Config.CORE_PACKAGE_NAME.isEmpty()) {
-					Set<Class<? extends ParaObject>> s2 = SCANNER.getComponentClasses(Config.CORE_PACKAGE_NAME);
-					s.addAll(s2);
-				}
-
-				for (Class<? extends ParaObject> coreClass : s) {
-					boolean isAbstract = Modifier.isAbstract(coreClass.getModifiers());
-					boolean isInterface = Modifier.isInterface(coreClass.getModifiers());
-					boolean isCoreObject = ParaObject.class.isAssignableFrom(coreClass);
-					if (isCoreObject && !isAbstract && !isInterface) {
-						CORE_CLASSES.put(coreClass.getSimpleName().toLowerCase(), coreClass);
-					}
+					CORE_CLASSES.putAll(SCANNER.getComponentClasses(Config.CORE_PACKAGE_NAME));
 				}
 				logger.debug("Found {} ParaObject classes: {}", CORE_CLASSES.size(), CORE_CLASSES);
 			} catch (Exception ex) {
@@ -538,15 +502,20 @@ public final class ParaObjectUtils {
 			addIncludeFilter(new AssignableTypeFilter(ParaObject.class));
 		}
 
-		public final Set<Class<? extends ParaObject>> getComponentClasses(String basePackage) {
+		final Map<String, Class<? extends ParaObject>> getComponentClasses(String basePackage) {
 			basePackage = (basePackage == null) ? "" : basePackage;
-			Set<Class<? extends ParaObject>> classes = new HashSet<>();
+			Map<String, Class<? extends ParaObject>> classes = new LinkedHashMap<>();
 			for (BeanDefinition candidate : findCandidateComponents(basePackage)) {
 				try {
-					Class<? extends ParaObject> cls = (Class<? extends ParaObject>)
+					Class<? extends ParaObject> clazz = (Class<? extends ParaObject>)
 							ClassUtils.resolveClassName(candidate.getBeanClassName(),
 									Thread.currentThread().getContextClassLoader());
-					classes.add(cls);
+					boolean isAbstract = Modifier.isAbstract(clazz.getModifiers());
+					boolean isInterface = Modifier.isInterface(clazz.getModifiers());
+					boolean isCoreObject = ParaObject.class.isAssignableFrom(clazz);
+					if (isCoreObject && !isAbstract && !isInterface) {
+						classes.put(clazz.getSimpleName().toLowerCase(), clazz);
+					}
 				} catch (Exception ex) {
 					LOG.error(null, ex);
 				}

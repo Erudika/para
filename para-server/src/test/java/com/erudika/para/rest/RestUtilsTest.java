@@ -205,7 +205,6 @@ public class RestUtilsTest {
 		// new feature - specific resource paths
 		Mockito.when(req.getRequestURI()).thenReturn("/v2.0/posts/123");
 		assertEquals("posts/123", extractResourcePath(req));
-
 	}
 
 	@Test

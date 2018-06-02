@@ -56,10 +56,10 @@ public class CaffeineCache implements Cache {
 					return TimeUnit.MINUTES.toNanos(DEFAULT_EXPIRATION_MIN);
 				}
 				public long expireAfterUpdate(String key, Object value, long currentTime, long currentDuration) {
-					return TimeUnit.MINUTES.toNanos(DEFAULT_EXPIRATION_MIN);
+					return currentDuration;
 				}
 				public long expireAfterRead(String key, Object value, long currentTime, long currentDuration) {
-					return TimeUnit.MINUTES.toNanos(DEFAULT_EXPIRATION_MIN);
+					return currentDuration;
 				}
 			})
 			.build();
