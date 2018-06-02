@@ -121,7 +121,34 @@ $ para-cli read --id todo1
 $ para-cli search "type:todo"
 ```
 
-### Building Para
+## Docker
+
+Tagged Docker images for Scoold are located at `erudikaltd/scoold` on Docker Hub.
+First, create an `application.conf` file in a directory and run this command:
+
+```
+$ docker run -ti -p 8080:8080 --rm -v $(pwd)/application.conf:/para/application.conf \
+  -e JAVA_OPTS="-Dconfig.file=/para/application.conf" erudikaltd/scoold
+```
+
+**Environment variables**
+
+`JAVA_OPTS` - Java system properties, e.g. `-Dpara.port=8000`
+`BOOT_SLEEP` - Startup delay, in seconds
+
+**Plugins**
+
+To use plugins, create a new `Dockerfile-plugins` which does a multi-stage build like so:
+```
+# change X.Y.Z with latest tag
+FROM erudikaltd/para:X.Y.Z-base
+
+FROM erudikaltd/para-dao-mongodb:X.Y.Z
+```
+
+Then simply run `$ docker build -f Dockerfile-plugins -t ParaMongo`.
+
+## Building Para
 
 Para can be compiled with JDK 8:
 
@@ -139,7 +166,7 @@ To run a local instance of Para for development, use:
 $ mvn -Dconfig.file=./application.conf spring-boot:run
 ```
 
-### Standalone server
+## Standalone server
 
 You can run Para as a standalone server by downloading the executable WAR and then:
 
@@ -154,9 +181,9 @@ a JWT access token is generated locally and sent to the server on each request.
 
 Alternatively, you can grab the WAR file and deploy it to your favorite servlet container.
 
-### [Download WAR](https://github.com/Erudika/para/releases)
+## [Download WAR](https://github.com/Erudika/para/releases)
 
-### Maven dependency
+## Maven dependency
 
 You can also integrate Para with your project by adding it as a dependency. Para is hosted on Maven Central.
 Here's the Maven snippet to include in your `pom.xml`:

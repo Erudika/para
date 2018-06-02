@@ -18,7 +18,7 @@ git log $lastver..HEAD --oneline >> changelog.txt && \
 echo "" >> changelog.txt && \
 echo "" >> changelog.txt && \
 echo "### :package: [Download JAR](https://oss.sonatype.org/service/local/repositories/releases/content/com/erudika/para-war/${ver}/para-war-${ver}.war)" >> changelog.txt && \
-hub release create -F changelog.txt $ver && \
+hub release create -F changelog.txt "v$ver" && \
 rm changelog.txt
 
 
