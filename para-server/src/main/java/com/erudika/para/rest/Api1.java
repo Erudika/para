@@ -77,6 +77,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.erudika.para.Para.newApp;
 import static com.erudika.para.Para.setup;
+import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This is the main REST API configuration class which defines all endpoints for all resources
@@ -187,6 +189,11 @@ public final class Api1 extends ResourceConfig {
 		Resource.Builder utilsRes = Resource.builder("utils/{method}");
 		utilsRes.addMethod(GET).produces(JSON).handledBy(utilsHandler());
 		registerResources(utilsRes.build());
+
+		// rebuild index
+		Resource.Builder reindexRes = Resource.builder("_reindex");
+		reindexRes.addMethod(POST).produces(JSON).handledBy(reindexHandler());
+		registerResources(reindexRes.build());
 
 		// register custom resources
 		for (final CustomResourceHandler handler : getCustomResourceHandlers()) {
@@ -904,6 +911,30 @@ public final class Api1 extends ResourceConfig {
 					queryType = "default";
 				}
 				return Response.ok(RestUtils.buildQueryAndSearch(app1, queryType, params, type)).build();
+			}
+		};
+	}
+
+	/**
+	 * @return response
+	 */
+	public static Inflector<ContainerRequestContext, Response> reindexHandler() {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				App app = getPrincipalApp();
+				if (app != null) {
+					long startTime = System.nanoTime();
+					MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
+					Pager pager = RestUtils.getPagerFromParams(params);
+					String destinationIndex = params.getFirst("destinationIndex");
+					getSearch().rebuildIndex(getDAO(), app, destinationIndex, pager);
+					long tookMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
+					Map<String, Object> response = new HashMap<>(2);
+					response.put("reindexed", pager.getCount());
+					response.put("tookMillis", tookMillis);
+					return Response.ok(response, JSON).build();
+				}
+				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
 		};
 	}
