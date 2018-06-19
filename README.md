@@ -105,7 +105,7 @@ para.worker_id = 1
 ```
 # run setup and set endpoint to either 'http://localhost:8080' or 'https://paraio.com'
 $ para-cli setup
-$ para-cli new-app "scoold" --name "My App"
+$ para-cli new-app "myapp" --name "My App"
 ```
 6. Open [Para Web Console](https://console.paraio.org) or integrate with one of the API clients below.
 
@@ -123,12 +123,12 @@ $ para-cli search "type:todo"
 
 ## Docker
 
-Tagged Docker images for Scoold are located at `erudikaltd/scoold` on Docker Hub.
+Tagged Docker images for Para are located at `erudikaltd/para` on Docker Hub.
 First, create an `application.conf` file in a directory and run this command:
 
 ```
 $ docker run -ti -p 8080:8080 --rm -v $(pwd)/application.conf:/para/application.conf \
-  -e JAVA_OPTS="-Dconfig.file=/para/application.conf" erudikaltd/scoold
+  -e JAVA_OPTS="-Dconfig.file=/para/application.conf" erudikaltd/para
 ```
 
 **Environment variables**
