@@ -132,7 +132,7 @@ public final class ParaObjectUtils {
 		if (CORE_TYPES.isEmpty()) {
 			try {
 				for (Class<? extends ParaObject> clazz : getCoreClassesMap().values()) {
-					ParaObject p = clazz.newInstance();
+					ParaObject p = clazz.getConstructor().newInstance();
 					CORE_TYPES.put(p.getPlural(), p.getType());
 				}
 			} catch (Exception ex) {
@@ -151,7 +151,7 @@ public final class ParaObjectUtils {
 			try {
 				getCoreClassesMap();
 				for (Class<? extends ParaObject> clazz : CORE_PARA_CLASSES.values()) {
-					ParaObject p = clazz.newInstance();
+					ParaObject p = clazz.getConstructor().newInstance();
 					CORE_PARA_TYPES.put(p.getPlural(), p.getType());
 				}
 			} catch (Exception ex) {
