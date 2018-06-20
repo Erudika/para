@@ -17,18 +17,26 @@
 			<artifactId>para-server</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<!-- PARA PLUGINS : BEGIN -->
+		<dependency>
+			<groupId>com.erudika</groupId>
+			<artifactId>para-dao-sql</artifactId>
+			<version>1.30.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.erudika</groupId>
+			<artifactId>para-search-lucene</artifactId>
+			<version>1.30.0</version>
+		</dependency>
+		<!-- PARA PLUGINS : END -->
 	</dependencies>
-
-	<properties>
-		<start-class>com.erudika.para.ParaServer</start-class>
-	</properties>
 
 	<build>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-war-plugin</artifactId>
-				<version>3.1.0</version>
+				<version>3.2.2</version>
 				<configuration>
 					<failOnMissingWebXml>false</failOnMissingWebXml>
 					<archive>
@@ -50,23 +58,6 @@
 			</plugin>
 
 			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-				<version>${springBootVer}</version>
-				<executions>
-					<execution>
-						<goals>
-							<goal>repackage</goal>
-						</goals>
-						<configuration>
-							<finalName>para-${project.version}</finalName>
-							<mainClass>com.erudika.para.ParaServer</mainClass>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
-			<plugin>
 				<groupId>org.eclipse.jetty</groupId>
 				<artifactId>jetty-maven-plugin</artifactId>
 				<version>9.4.8.v20171121</version>
@@ -76,48 +67,4 @@
 			</plugin>
 		</plugins>
 	</build>
-
-	<profiles>
-		<profile>
-			<id>default</id>
-			<activation>
-				<activeByDefault>true</activeByDefault>
-			</activation>
-			<dependencies>
-				<dependency>
-					<groupId>com.erudika</groupId>
-					<artifactId>para-dao-sql</artifactId>
-					<version>1.30.0</version>
-				</dependency>
-				<dependency>
-					<groupId>com.erudika</groupId>
-					<artifactId>para-search-lucene</artifactId>
-					<version>1.30.0</version>
-				</dependency>
-			</dependencies>
-		</profile>
-		<profile>
-			<id>base</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.springframework.boot</groupId>
-						<artifactId>spring-boot-maven-plugin</artifactId>
-						<version>${springBootVer}</version>
-						<executions>
-							<execution>
-								<goals>
-									<goal>repackage</goal>
-								</goals>
-								<configuration>
-									<finalName>para-base-${project.version}</finalName>
-									<mainClass>com.erudika.para.ParaServer</mainClass>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
 </project>

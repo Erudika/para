@@ -1,0 +1,101 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.erudika</groupId>
+		<artifactId>para-parent</artifactId>
+		<version>1.29.3-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>para-jar</artifactId>
+	<packaging>jar</packaging>
+	<name>para-jar</name>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.erudika</groupId>
+			<artifactId>para-server</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+	</dependencies>
+
+	<properties>
+		<start-class>com.erudika.para.ParaServer</start-class>
+	</properties>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<version>${deployPluginVer}</version>
+				<configuration>
+					<skip>true</skip>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>${springBootVer}</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+						<configuration>
+							<finalName>para-${project.version}</finalName>
+							<mainClass>com.erudika.para.ParaServer</mainClass>
+							<layout>ZIP</layout>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+	<profiles>
+		<profile>
+			<id>default</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-dao-sql</artifactId>
+					<version>1.30.0</version>
+				</dependency>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-search-lucene</artifactId>
+					<version>1.30.0</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>base</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-maven-plugin</artifactId>
+						<version>${springBootVer}</version>
+						<executions>
+							<execution>
+								<goals>
+									<goal>repackage</goal>
+								</goals>
+								<configuration>
+									<finalName>para-base-${project.version}</finalName>
+									<mainClass>com.erudika.para.ParaServer</mainClass>
+									<layout>ZIP</layout>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+</project>
