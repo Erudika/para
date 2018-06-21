@@ -16,6 +16,12 @@
 			<groupId>com.erudika</groupId>
 			<artifactId>para-server</artifactId>
 			<version>${project.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-jetty</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<!-- PARA PLUGINS : BEGIN -->
 		<dependency>

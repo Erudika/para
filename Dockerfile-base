@@ -20,15 +20,15 @@ USER para
 WORKDIR /para
 
 RUN git clone --depth=1 https://github.com/Erudika/para /para/clone && \
-	cd /para/clone && \
-	mvn -Pbase -DskipTests=true clean package && \
-	mv para-war/target/para-base-*.war /para/ && \
+	cd /para/clone/para-jar && \
+	mvn -Pbase clean package && \
+	mv target/para-base-*.jar /para/ && \
 	cd /para &&	rm -rf /para/clone && rm -rf ~/.m2
-	
+
 
 VOLUME ["/para/data"]
 
 EXPOSE 8080
 
 CMD sleep $BOOT_SLEEP && \
-    java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar para-base-*.war
+    java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar para-base-*.jar

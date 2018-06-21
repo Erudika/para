@@ -37,7 +37,7 @@ See how **Para** [compares to other open source backend frameworks](https://erud
 - Full metrics for monitoring and diagnostics (Dropwizard)
 - Modular design powered by Google Guice and support for plugins
 - I18n utilities for translating language packs and working with currencies
-- Standalone executable WAR with embedded Jetty
+- Standalone executable JAR with embedded Jetty
 - [Para Web Console](https://console.paraio.org) - admin user interface
 
 ### Architecture
@@ -97,8 +97,8 @@ para.security.api_security = true
 para.worker_id = 1
 ```
 
-1. [Download the latest executable WAR](https://github.com/Erudika/para/releases)
-2. Execute it with `java -jar -Dconfig.file=./application.conf para-*.war`
+1. [Download the latest executable JAR](https://github.com/Erudika/para/releases)
+2. Execute it with `java -jar -Dconfig.file=./application.conf para-*.jar`
 3. Call `curl localhost:8080/v1/_setup` to get the access and secret keys for the root app (required)
 4. Install `para-cli` tool for easy access `npm install -g para-cli` (optional)
 5. Create a new "child" app for regular use (optional):
@@ -158,8 +158,13 @@ To compile it you'll need Maven. Once you have it, just clone and build:
 $ git clone https://github.com/erudika/para.git && cd para
 $ mvn install -DskipTests=true
 ```
-To generate the executable "uber-war" run `$ mvn package` and it will be in `./para-war/target/para-x.y.z-SNAPSHOT.war`.
-Two WAR files will be generated in total - the fat one is a bit bigger in size.
+To generate the executable "fat-jar" run `$ mvn package` and it will be in `./para-jar/target/para-x.y.z-SNAPSHOT.jar`.
+Two JAR files will be generated in total - the fat one is a bit bigger in size.
+
+To build the base package without plugins (excludes `para-dao-sql` and `para-search-lucene`), run:
+```
+$ cd para-jar && mvn -Pbase package
+```
 
 To run a local instance of Para for development, use:
 ```sh
@@ -168,10 +173,10 @@ $ mvn -Dconfig.file=./application.conf spring-boot:run
 
 ## Standalone server
 
-You can run Para as a standalone server by downloading the executable WAR and then:
+You can run Para as a standalone server by downloading the executable JAR and then:
 
 ```sh
-$ java -jar para-X.Y.Z.war
+$ java -jar para-X.Y.Z.jar
 ```
 
 The you can browse your objects through the **Para Web Console** [console.paraio.org](https://console.paraio.org).
@@ -179,9 +184,12 @@ Simply change the API endpoint to be your local server and connect your access k
 The admin interface is client-side only and your secret key is never sent over the the network. Instead,
 a JWT access token is generated locally and sent to the server on each request.
 
-Alternatively, you can grab the WAR file and deploy it to your favorite servlet container.
+Alternatively, you can build a WAR file and deploy it to your favorite servlet container:
+```
+$ cd para-war && mvn package
+```
 
-## [Download WAR](https://github.com/Erudika/para/releases)
+## [Download JAR](https://github.com/Erudika/para/releases)
 
 ## Maven dependency
 
@@ -232,13 +240,13 @@ Use these `DAO` implementations to connect to different databases:
 - **MongoDB**: [para-dao-mongodb](https://github.com/Erudika/para-dao-mongodb)
 - **Cassandra**: [para-dao-cassandra](https://github.com/Erudika/para-dao-cassandra)
 - **SQL** (H2/MySQL/MariaDB, PostgreSQL, etc.): [para-dao-sql](https://github.com/Erudika/para-dao-sql)
-`H2DAO` is the default `DAO` and it's part of the SQL plugin (packaged with the WAR file)
+`H2DAO` is the default `DAO` and it's part of the SQL plugin (packaged with the JAR file)
 
 ## Search engine integrations
 
 The `Search` interface is implemented by:
 
-- **Lucene**: [para-search-lucene](https://github.com/erudika/para-search-lucene) **default** (packaged with the WAR file)
+- **Lucene**: [para-search-lucene](https://github.com/erudika/para-search-lucene) **default** (packaged with the JAR file)
 - **Elasticsearch**: [para-search-elasticsearch](https://github.com/erudika/para-search-elasticsearch)
 - **Elasticsearch v5.x**: [para-search-elasticsearch-v5](https://github.com/erudika/para-search-elasticsearch-v5)
 Compatible with ES 5.x only and missing some of the latest features like AWS Elasticsearch support.
