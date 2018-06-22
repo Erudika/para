@@ -1328,6 +1328,26 @@ public final class ParaClient {
 				Entity.json(Collections.singletonMap("_votedown", voterid))), Boolean.class);
 	}
 
+	/**
+	 * Rebuilds the entire search index.
+	 * @return a response object with properties "tookMillis" and "reindexed"
+	 */
+	public Map<String, Object> rebuildIndex() {
+		return getEntity(invokePost("_reindex", null), Map.class);
+	}
+
+	/**
+	 * Rebuilds the entire search index.
+	 * @param destinationIndex an existing index as destination
+	 * @return a response object with properties "tookMillis" and "reindexed"
+	 */
+	public Map<String, Object> rebuildIndex(String destinationIndex) {
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
+		params.putSingle("destinationIndex", destinationIndex);
+		return getEntity(invokeSignedRequest(getApiClient(), accessKey, key(true), POST,
+				getEndpoint(), getFullPath("_reindex"), null, params, new byte[0]), Map.class);
+	}
+
 	/////////////////////////////////////////////
 	//			Validation Constraints
 	/////////////////////////////////////////////
