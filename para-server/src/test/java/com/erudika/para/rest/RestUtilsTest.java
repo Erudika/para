@@ -18,6 +18,7 @@
 package com.erudika.para.rest;
 
 import com.erudika.para.Para;
+import com.erudika.para.ParaServer;
 import com.erudika.para.cache.Cache;
 import com.erudika.para.cache.MockCache;
 import com.erudika.para.core.App;
@@ -62,7 +63,7 @@ public class RestUtilsTest {
 		System.setProperty("para.app_name", "para-test");
 		System.setProperty("para.cluster_name", "para-test");
 		System.setProperty("para.print_logo", "false");
-		Para.initialize(new Module() {
+		ParaServer.initialize(new Module() {
 			public void configure(Binder binder) {
 				binder.bind(DAO.class).toInstance(new MockDAO());
 				binder.bind(Cache.class).toInstance(new MockCache());

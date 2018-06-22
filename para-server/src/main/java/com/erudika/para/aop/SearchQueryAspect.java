@@ -25,7 +25,7 @@ import static com.erudika.para.metrics.MetricsUtils.time;
 import com.erudika.para.search.Search;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.List;
+import java.util.Set;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.slf4j.Logger;
@@ -67,7 +67,7 @@ public class SearchQueryAspect implements MethodInterceptor {
 			logger.error("Error in search AOP layer!", e);
 		}
 
-		List<IOListener> ioListeners = Para.getSearchQueryListeners();
+		Set<IOListener> ioListeners = Para.getSearchQueryListeners();
 		for (IOListener ioListener : ioListeners) {
 			ioListener.onPreInvoke(superMethod, args);
 			logger.debug("Executed {}.onPreInvoke().", ioListener.getClass().getName());

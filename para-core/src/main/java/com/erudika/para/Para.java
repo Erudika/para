@@ -20,28 +20,21 @@ package com.erudika.para;
 import com.erudika.para.cache.Cache;
 import com.erudika.para.core.App;
 import com.erudika.para.core.utils.CoreUtils;
-import com.erudika.para.metrics.MetricsUtils;
 import com.erudika.para.persistence.DAO;
-import com.erudika.para.queue.Queue;
 import com.erudika.para.rest.CustomResourceHandler;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
-import com.erudika.para.utils.HealthUtils;
 import com.erudika.para.utils.VersionInfo;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Module;
-import com.google.inject.Stage;
-import com.google.inject.util.Modules;
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -82,67 +75,45 @@ public final class Para {
 	}
 
 	private static final Logger logger = LoggerFactory.getLogger(Para.class);
-	private static final List<DestroyListener> DESTROY_LISTENERS = new LinkedList<DestroyListener>();
-	private static final List<InitializeListener> INIT_LISTENERS = new LinkedList<InitializeListener>();
-	private static final List<IOListener> IO_LISTENERS = new LinkedList<IOListener>();
-	private static final List<IOListener> SEARCH_LISTENERS = new LinkedList<IOListener>();
+	private static final Set<DestroyListener> DESTROY_LISTENERS = new LinkedHashSet<DestroyListener>();
+	private static final Set<InitializeListener> INIT_LISTENERS = new LinkedHashSet<InitializeListener>();
+	private static final Set<IOListener> IO_LISTENERS = new LinkedHashSet<IOListener>();
+	private static final Set<IOListener> SEARCH_LISTENERS = new LinkedHashSet<IOListener>();
 	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(Config.EXECUTOR_THREADS);
 	private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(Config.EXECUTOR_THREADS);
-	private static Injector injector;
 	private static ClassLoader paraClassLoader;
+	private static volatile boolean isInitialized = false;
 
 	/**
 	 * No-args constructor.
 	 */
 	private Para() { }
 
+	static {
+		addInitListener(CoreUtils.getInstance());
+	}
+
 	/**
-	 * Initializes the Para core modules and allows the user to override them. Call this method first.
-	 *
-	 * @param modules a list of modules that override the main modules
+	 * Executes all initialize listeners and prints logo. Call this method first.
 	 */
-	public static void initialize(Module... modules) {
-		if (injector == null) {
-			printLogo();
-			try {
-				logger.info("--- Para.initialize() [{}] ---", Config.ENVIRONMENT);
-				Stage stage = Config.IN_PRODUCTION ? Stage.PRODUCTION : Stage.DEVELOPMENT;
+	public static void initialize() {
+		if (isInitialized) {
+			return;
+		}
+		isInitialized = true;
+		printLogo();
+		try {
+			logger.info("--- Para.initialize() [{}] ---", Config.ENVIRONMENT);
 
-				List<Module> coreModules = Arrays.asList(modules);
-				List<Module> externalModules = getExternalModules();
-
-				if (coreModules.isEmpty() && externalModules.isEmpty()) {
-					logger.warn("No implementing modules found. Aborting...");
-					destroy();
-					return;
+			for (InitializeListener initListener : INIT_LISTENERS) {
+				if (initListener != null) {
+					initListener.onInitialize();
+					logger.debug("Executed {}.onInitialize().", initListener.getClass().getName());
 				}
-
-				if (!externalModules.isEmpty()) {
-					injector = Guice.createInjector(stage, Modules.override(coreModules).with(externalModules));
-				} else {
-					injector = Guice.createInjector(stage, coreModules);
-				}
-
-				addInitListener(CoreUtils.getInstance());
-				addInitListener(HealthUtils.getInstance());
-				addInitListener(MetricsUtils.getInstance());
-
-				for (InitializeListener initListener : INIT_LISTENERS) {
-					if (initListener != null) {
-						injectInto(initListener);
-						initListener.onInitialize();
-						logger.debug("Executed {}.onInitialize().", initListener.getClass().getName());
-					}
-				}
-				// this enables the "River" feature - polls the default queue for objects and imports them into Para
-				if (Config.getConfigBoolean("queue_link_enabled", false) && HealthUtils.getInstance().isHealthy()) {
-					injector.getInstance(Queue.class).startPolling();
-				}
-
-				logger.info("Instance #{} initialized.", Config.WORKER_ID);
-			} catch (Exception e) {
-				logger.error(null, e);
 			}
+			logger.info("Instance #{} initialized.", Config.WORKER_ID);
+		} catch (Exception e) {
+			logger.error("Failed to initialize Para.", e);
 		}
 	}
 
@@ -154,14 +125,10 @@ public final class Para {
 			logger.info("--- Para.destroy() ---");
 			for (DestroyListener destroyListener : DESTROY_LISTENERS) {
 				if (destroyListener != null) {
-					if (injector != null) {
-						injectInto(destroyListener);
-					}
 					destroyListener.onDestroy();
 					logger.debug("Executed {}.onDestroy().", destroyListener.getClass().getName());
 				}
 			}
-			injector = null;
 			if (!EXECUTOR.isShutdown()) {
 				EXECUTOR.shutdown();
 				EXECUTOR.awaitTermination(60, TimeUnit.SECONDS);
@@ -171,36 +138,8 @@ public final class Para {
 				SCHEDULER.awaitTermination(60, TimeUnit.SECONDS);
 			}
 		} catch (Exception e) {
-			logger.error(null, e);
+			logger.error("Failed to destroy Para.", e);
 		}
-	}
-
-	/**
-	 * Inject dependencies into a given object.
-	 *
-	 * @param obj the object we inject into
-	 */
-	public static void injectInto(Object obj) {
-		if (obj == null) {
-			return;
-		}
-		if (injector == null) {
-			handleNotInitializedError();
-		}
-		injector.injectMembers(obj);
-	}
-
-	/**
-	 * Return an instance of some class if it has been wired through DI.
-	 * @param <T> any type
-	 * @param type any type
-	 * @return an object
-	 */
-	public static <T> T getInstance(Class<T> type) {
-		if (injector == null) {
-			handleNotInitializedError();
-		}
-		return injector.getInstance(type);
 	}
 
 	/**
@@ -208,7 +147,7 @@ public final class Para {
 	 * @see DAO
 	 */
 	public static DAO getDAO() {
-		return getInstance(DAO.class);
+		return CoreUtils.getInstance().getDao();
 	}
 
 	/**
@@ -216,7 +155,7 @@ public final class Para {
 	 * @see Search
 	 */
 	public static Search getSearch() {
-		return getInstance(Search.class);
+		return CoreUtils.getInstance().getSearch();
 	}
 
 	/**
@@ -224,7 +163,7 @@ public final class Para {
 	 * @see Cache
 	 */
 	public static Cache getCache() {
-		return getInstance(Cache.class);
+		return CoreUtils.getInstance().getCache();
 	}
 
 	/**
@@ -239,6 +178,13 @@ public final class Para {
 	}
 
 	/**
+	 * @return a list of {@link InitializeListener}
+	 */
+	protected static Set<InitializeListener> getInitListeners() {
+		return Collections.unmodifiableSet(INIT_LISTENERS);
+	}
+
+	/**
 	 * Registers a new destruction listener.
 	 *
 	 * @param dl the listener
@@ -247,6 +193,13 @@ public final class Para {
 		if (dl != null) {
 			DESTROY_LISTENERS.add(dl);
 		}
+	}
+
+	/**
+	 * @return a list of {@link DestroyListener
+	 */
+	protected static Set<DestroyListener> getDestroyListeners() {
+		return Collections.unmodifiableSet(DESTROY_LISTENERS);
 	}
 
 	/**
@@ -264,8 +217,8 @@ public final class Para {
 	 * Returns a list of I/O listeners (callbacks).
 	 * @return the list of registered listeners
 	 */
-	public static List<IOListener> getIOListeners() {
-		return IO_LISTENERS;
+	public static Set<IOListener> getIOListeners() {
+		return Collections.unmodifiableSet(IO_LISTENERS);
 	}
 
 	/**
@@ -283,8 +236,8 @@ public final class Para {
 	 * Returns a list of I/O listeners for search queries.
 	 * @return the list of registered listeners for listening to search queries
 	 */
-	public static List<IOListener> getSearchQueryListeners() {
-		return SEARCH_LISTENERS;
+	public static Set<IOListener> getSearchQueryListeners() {
+		return Collections.unmodifiableSet(SEARCH_LISTENERS);
 	}
 
 	/**
@@ -353,20 +306,10 @@ public final class Para {
 		List<CustomResourceHandler> externalResources = new ArrayList<>();
 		for (CustomResourceHandler handler : loader) {
 			if (handler != null) {
-				injectInto(handler);
 				externalResources.add(handler);
 			}
 		}
 		return externalResources;
-	}
-
-	private static List<Module> getExternalModules() {
-		ServiceLoader<Module> moduleLoader = ServiceLoader.load(Module.class, Para.getParaClassLoader());
-		List<Module> externalModules = new ArrayList<>();
-		for (Module module : moduleLoader) {
-			externalModules.add(module);
-		}
-		return externalModules;
 	}
 
 	/**
@@ -392,10 +335,6 @@ public final class Para {
 			}
 		}
 		return paraClassLoader;
-	}
-
-	private static void handleNotInitializedError() {
-		throw new IllegalStateException("Call Para.initialize() first!");
 	}
 
 	/**
@@ -432,9 +371,6 @@ public final class Para {
 						app.isRootApp() ? "root" : "new", app.getAppIdentifier(), sharedTable, sharedIndex);
 				creds.putAll(app.getCredentials());
 				creds.put("message", "Save the secret key - it is shown only once!");
-				if (app.isRootApp()) {
-					HealthUtils.getInstance().performHealthCheck();
-				}
 			} else {
 				logger.error("Failed to create app '{}'!", appid);
 				creds.put("message", "Error - app was not created.");

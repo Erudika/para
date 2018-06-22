@@ -23,18 +23,32 @@ import com.erudika.para.cache.CacheModule;
 import com.erudika.para.email.EmailModule;
 import com.erudika.para.i18n.I18nModule;
 import com.erudika.para.iot.IoTModule;
+import com.erudika.para.metrics.MetricsUtils;
 import com.erudika.para.persistence.PersistenceModule;
+import com.erudika.para.queue.Queue;
 import com.erudika.para.queue.QueueModule;
 import com.erudika.para.rest.Api1;
+import com.erudika.para.rest.CustomResourceHandler;
 import com.erudika.para.search.SearchModule;
 import com.erudika.para.security.JWTRestfulAuthFilter;
 import com.erudika.para.security.SecurityModule;
 import com.erudika.para.storage.StorageModule;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.HealthUtils;
 import com.erudika.para.utils.filters.CORSFilter;
 import com.erudika.para.utils.filters.ErrorFilter;
 import com.erudika.para.utils.filters.GZipServletFilter;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.inject.Stage;
+import com.google.inject.util.Modules;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ServiceLoader;
 import javax.annotation.PreDestroy;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -83,6 +97,8 @@ import org.springframework.web.context.WebApplicationContext;
 public class ParaServer implements WebApplicationInitializer, Ordered {
 
 	private static final Logger logger = LoggerFactory.getLogger(ParaServer.class);
+	private static LinkedList<CustomResourceHandler> customResourceHandlers;
+	private static Injector injector;
 
 	/**
 	 * Returns the list of core modules.
@@ -103,6 +119,118 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		};
 	}
 
+	/**
+	 * Initializes the Para core modules and allows the user to override them. Call this method first.
+	 *	This method calls {@code Para.initialize()}.
+	 * @param modules a list of modules that override the main modules
+	 */
+	public static void initialize(Module... modules) {
+		Stage stage = Config.IN_PRODUCTION ? Stage.PRODUCTION : Stage.DEVELOPMENT;
+
+		List<Module> coreModules = Arrays.asList(modules);
+		List<Module> externalModules = getExternalModules();
+
+		if (coreModules.isEmpty() && externalModules.isEmpty()) {
+			logger.warn("No implementing modules found. Aborting...");
+			destroy();
+			return;
+		}
+
+		if (!externalModules.isEmpty()) {
+			injector = Guice.createInjector(stage, Modules.override(coreModules).with(externalModules));
+		} else {
+			injector = Guice.createInjector(stage, coreModules);
+		}
+
+		Para.addInitListener(HealthUtils.getInstance());
+		Para.addInitListener(MetricsUtils.getInstance());
+
+		Para.getInitListeners().forEach((initListener) -> {
+			injectInto(initListener);
+		});
+
+		Para.initialize();
+
+		// this enables the "river" feature - polls the default queue for objects and imports them into Para
+		if (Config.getConfigBoolean("queue_link_enabled", false) && HealthUtils.getInstance().isHealthy()) {
+			injector.getInstance(Queue.class).startPolling();
+		}
+	}
+
+	/**
+	 * Calls all registered listeners on exit. Call this method last.
+	 * This method calls {@code Para.destroy()}.
+	 */
+	public static void destroy() {
+		Para.getDestroyListeners().forEach((destroyListener) -> {
+			injectInto(destroyListener);
+		});
+		Para.destroy();
+	}
+
+	/**
+	 * Inject dependencies into a given object.
+	 *
+	 * @param obj the object we inject into
+	 */
+	public static void injectInto(Object obj) {
+		if (obj == null) {
+			return;
+		}
+		if (injector == null) {
+			handleNotInitializedError();
+		}
+		injector.injectMembers(obj);
+	}
+
+	/**
+	 * Return an instance of some class if it has been wired through DI.
+	 *
+	 * @param <T> any type
+	 * @param type any type
+	 * @return an object
+	 */
+	public static <T> T getInstance(Class<T> type) {
+		if (injector == null) {
+			handleNotInitializedError();
+		}
+		return injector.getInstance(type);
+	}
+
+	/**
+	 * Try loading external {@link com.erudika.para.rest.CustomResourceHandler} classes. These will handle custom API
+	 * requests. via {@link java.util.ServiceLoader#load(java.lang.Class)}.
+	 *
+	 * @return a loaded list of ServletContextListener class.
+	 */
+	public static List<CustomResourceHandler> getCustomResourceHandlers() {
+		if (customResourceHandlers == null) {
+			customResourceHandlers = new LinkedList<>();
+			ServiceLoader<CustomResourceHandler> loader = ServiceLoader.
+					load(CustomResourceHandler.class, Para.getParaClassLoader());
+			for (CustomResourceHandler handler : loader) {
+				if (handler != null) {
+					injectInto(handler);
+					customResourceHandlers.add(handler);
+				}
+			}
+		}
+		return Collections.unmodifiableList(customResourceHandlers);
+	}
+
+	private static List<Module> getExternalModules() {
+		ServiceLoader<Module> moduleLoader = ServiceLoader.load(Module.class, Para.getParaClassLoader());
+		List<Module> externalModules = new ArrayList<>();
+		for (Module module : moduleLoader) {
+			externalModules.add(module);
+		}
+		return externalModules;
+	}
+
+	private static void handleNotInitializedError() {
+		throw new IllegalStateException("Call ParaServer.initialize() first!");
+	}
+
 	@Override
 	public int getOrder() {
 		return 1;
@@ -112,9 +240,9 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	 * @return API servlet bean
 	 */
 	@Bean
-	public ServletRegistrationBean apiV1RegistrationBean() {
+	public ServletRegistrationBean<?> apiV1RegistrationBean() {
 		String path = Api1.PATH + "*";
-		ServletRegistrationBean reg = new ServletRegistrationBean(new ServletContainer(new Api1()), path);
+		ServletRegistrationBean<?> reg = new ServletRegistrationBean<>(new ServletContainer(new Api1()), path);
 		logger.debug("Initializing Para API v1 [{}]...", path);
 		reg.setName(Api1.class.getSimpleName());
 		reg.setAsyncSupported(true);
@@ -127,9 +255,9 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	 * @return GZIP filter bean
 	 */
 	@Bean
-	public FilterRegistrationBean gzipFilterRegistrationBean() {
+	public FilterRegistrationBean<?> gzipFilterRegistrationBean() {
 		String path = Api1.PATH + "*";
-		FilterRegistrationBean frb = new FilterRegistrationBean(new GZipServletFilter());
+		FilterRegistrationBean<?> frb = new FilterRegistrationBean<>(new GZipServletFilter());
 		logger.debug("Initializing GZip filter [{}]...", path);
 		frb.addUrlPatterns(path);
 		frb.setAsyncSupported(true);
@@ -143,10 +271,10 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	 * @return CORS filter bean
 	 */
 	@Bean
-	public FilterRegistrationBean corsFilterRegistrationBean() {
+	public FilterRegistrationBean<?> corsFilterRegistrationBean() {
 		String path = Api1.PATH + "*";
 		logger.debug("Initializing CORS filter [{}]...", path);
-		FilterRegistrationBean frb = new FilterRegistrationBean(new CORSFilter());
+		FilterRegistrationBean<?> frb = new FilterRegistrationBean<>(new CORSFilter());
 		frb.addInitParameter("cors.support.credentials", "true");
 		frb.addInitParameter("cors.allowed.methods", "GET,POST,PATCH,PUT,DELETE,HEAD,OPTIONS");
 		frb.addInitParameter("cors.exposed.headers", "Cache-Control,Content-Length,Content-Type,Date,ETag,Expires");
@@ -167,38 +295,36 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	@Bean
 	public ServletWebServerFactory jettyConfigBean() {
 		JettyServletWebServerFactory jef = new JettyServletWebServerFactory();
-		jef.addServerCustomizers(new JettyServerCustomizer() {
-			public void customize(Server server) {
-				if (Config.getConfigBoolean("access_log_enabled", true)) {
-					// enable access log via Logback
-					HandlerCollection handlers = new HandlerCollection();
-					for (Handler handler : server.getHandlers()) {
-						handlers.addHandler(handler);
-					}
-					RequestLogHandler reqLogs = new RequestLogHandler();
-					reqLogs.setServer(server);
-					RequestLogImpl rli = new RequestLogImpl();
-					rli.setResource("/logback-access.xml");
-					rli.setQuiet(true);
-					rli.start();
-					reqLogs.setRequestLog(rli);
-					handlers.addHandler(reqLogs);
-					server.setHandler(handlers);
+		jef.addServerCustomizers((JettyServerCustomizer) (Server server) -> {
+			if (Config.getConfigBoolean("access_log_enabled", true)) {
+				// enable access log via Logback
+				HandlerCollection handlers = new HandlerCollection();
+				for (Handler handler : server.getHandlers()) {
+					handlers.addHandler(handler);
 				}
+				RequestLogHandler reqLogs = new RequestLogHandler();
+				reqLogs.setServer(server);
+				RequestLogImpl rli = new RequestLogImpl();
+				rli.setResource("/logback-access.xml");
+				rli.setQuiet(true);
+				rli.start();
+				reqLogs.setRequestLog(rli);
+				handlers.addHandler(reqLogs);
+				server.setHandler(handlers);
+			}
 
-				for (Connector y : server.getConnectors()) {
-					for (ConnectionFactory cf : y.getConnectionFactories()) {
-						if (cf instanceof HttpConnectionFactory) {
-							HttpConnectionFactory dcf = (HttpConnectionFactory) cf;
-							// support for X-Forwarded-Proto
-							// redirect back to https if original request uses it
-							if (Config.IN_PRODUCTION) {
-								HttpConfiguration httpConfiguration = dcf.getHttpConfiguration();
-								httpConfiguration.addCustomizer(new ForwardedRequestCustomizer());
-							}
-							// Disable Jetty version header
-							dcf.getHttpConfiguration().setSendServerVersion(false);
+			for (Connector y : server.getConnectors()) {
+				for (ConnectionFactory cf : y.getConnectionFactories()) {
+					if (cf instanceof HttpConnectionFactory) {
+						HttpConnectionFactory dcf = (HttpConnectionFactory) cf;
+						// support for X-Forwarded-Proto
+						// redirect back to https if original request uses it
+						if (Config.IN_PRODUCTION) {
+							HttpConfiguration httpConfiguration = dcf.getHttpConfiguration();
+							httpConfiguration.addCustomizer(new ForwardedRequestCustomizer());
 						}
+						// Disable Jetty version header
+						dcf.getHttpConfiguration().setSendServerVersion(false);
 					}
 				}
 			}
@@ -248,7 +374,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		application.profiles(Config.ENVIRONMENT);
 		application.web(WebApplicationType.SERVLET);
 		application.bannerMode(Banner.Mode.OFF);
-		Para.initialize(getCoreModules());
+		initialize(getCoreModules());
 		// Ensure error pages are registered
 		application.sources(ErrorFilter.class);
 
@@ -281,7 +407,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		app.setAdditionalProfiles(Config.ENVIRONMENT);
 		app.setWebApplicationType(WebApplicationType.SERVLET);
 		app.setBannerMode(Banner.Mode.OFF);
-		Para.initialize(getCoreModules());
+		initialize(getCoreModules());
 		app.run(args);
 	}
 

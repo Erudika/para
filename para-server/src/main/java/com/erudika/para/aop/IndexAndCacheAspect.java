@@ -37,6 +37,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import org.aopalliance.intercept.MethodInterceptor;
@@ -119,7 +120,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 			logger.error("Error in AOP layer!", e);
 		}
 
-		List<IOListener> ioListeners = Para.getIOListeners();
+		Set<IOListener> ioListeners = Para.getIOListeners();
 		for (IOListener ioListener : ioListeners) {
 			ioListener.onPreInvoke(superMethod, args);
 			logger.debug("Executed {}.onPreInvoke().", ioListener.getClass().getName());

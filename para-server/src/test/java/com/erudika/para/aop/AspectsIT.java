@@ -63,7 +63,7 @@ public class AspectsIT {
 		System.setProperty("para.app_name", "para-test");
 		System.setProperty("para.cluster_name", "para-test");
 		System.setProperty("para.cache_enabled", "true");
-		Para.initialize(Modules.override(ParaServer.getCoreModules()).with(new Module() {
+		ParaServer.initialize(Modules.override(ParaServer.getCoreModules()).with(new Module() {
 			public void configure(Binder binder) {
 				binder.bind(DAO.class).to(MockDAO.class).asEagerSingleton();
 				binder.bind(Cache.class).to(MockCache.class).asEagerSingleton();

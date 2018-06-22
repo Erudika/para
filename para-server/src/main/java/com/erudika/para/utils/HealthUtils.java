@@ -29,6 +29,14 @@ public enum HealthUtils implements InitializeListener, Runnable {
 		private final List<String> failedServices = new ArrayList<>(3);
 		private final int healthCheckInterval = Config.getConfigInt("health.check_interval", 60);
 
+		{
+			App.addAppCreatedListener((App app) -> {
+				if (app.isRootApp()) {
+					performHealthCheck();
+				}
+			});
+		}
+
 		@Override
 		public boolean isHealthy() {
 			return healthy;

@@ -26,7 +26,7 @@ import com.erudika.para.security.filters.GitHubAuthFilter;
 import com.erudika.para.security.filters.LinkedInAuthFilter;
 import com.erudika.para.security.filters.GenericOAuth2Filter;
 import com.erudika.para.security.filters.FacebookAuthFilter;
-import com.erudika.para.Para;
+import static com.erudika.para.ParaServer.getInstance;
 import com.erudika.para.security.filters.LdapAuthFilter;
 import com.erudika.para.utils.Config;
 import com.typesafe.config.ConfigList;
@@ -82,19 +82,19 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	 * No-args constructor.
 	 */
 	public SecurityConfig() {
-		csrfTokenRepository = Para.getInstance(CachedCsrfTokenRepository.class);
-		rememberMeServices = Para.getInstance(SimpleRememberMeServices.class);
-		passwordFilter = Para.getInstance(PasswordAuthFilter.class);
-		openidFilter = Para.getInstance(OpenIDAuthFilter.class);
-		facebookFilter = Para.getInstance(FacebookAuthFilter.class);
-		googleFilter = Para.getInstance(GoogleAuthFilter.class);
-		linkedinFilter = Para.getInstance(LinkedInAuthFilter.class);
-		twitterFilter = Para.getInstance(TwitterAuthFilter.class);
-		githubFilter = Para.getInstance(GitHubAuthFilter.class);
-		microsoftFilter = Para.getInstance(MicrosoftAuthFilter.class);
-		oauth2Filter = Para.getInstance(GenericOAuth2Filter.class);
-		ldapFilter = Para.getInstance(LdapAuthFilter.class);
-		jwtFilter = Para.getInstance(JWTRestfulAuthFilter.class);
+		csrfTokenRepository = getInstance(CachedCsrfTokenRepository.class);
+		rememberMeServices = getInstance(SimpleRememberMeServices.class);
+		passwordFilter = getInstance(PasswordAuthFilter.class);
+		openidFilter = getInstance(OpenIDAuthFilter.class);
+		facebookFilter = getInstance(FacebookAuthFilter.class);
+		googleFilter = getInstance(GoogleAuthFilter.class);
+		linkedinFilter = getInstance(LinkedInAuthFilter.class);
+		twitterFilter = getInstance(TwitterAuthFilter.class);
+		githubFilter = getInstance(GitHubAuthFilter.class);
+		microsoftFilter = getInstance(MicrosoftAuthFilter.class);
+		oauth2Filter = getInstance(GenericOAuth2Filter.class);
+		ldapFilter = getInstance(LdapAuthFilter.class);
+		jwtFilter = getInstance(JWTRestfulAuthFilter.class);
 	}
 
 	/**

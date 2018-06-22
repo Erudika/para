@@ -122,7 +122,7 @@ public class ParaClientIT {
 		fbaf = spy(fbaf);
 		when(fbaf.getOrCreateUser((App) any(), anyString())).thenReturn(ua);
 		secMod.setFacebookFilter(fbaf);
-		Para.initialize(Modules.override(ParaServer.getCoreModules()).with(secMod));
+		ParaServer.initialize(Modules.override(ParaServer.getCoreModules()).with(secMod));
 		app.run();
 
 		CoreUtils.getInstance().setDao(Para.getDAO());
