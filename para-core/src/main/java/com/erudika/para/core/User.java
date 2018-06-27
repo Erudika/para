@@ -729,7 +729,7 @@ public class User implements ParaObject {
 	private void setGravatarPicture() {
 		if (StringUtils.isBlank(picture)) {
 			if (email != null) {
-				String emailHash = Utils.md5(email);
+				String emailHash = Utils.md5(email.toLowerCase());
 				setPicture("https://www.gravatar.com/avatar/" + emailHash + "?size=400&d=mm&r=pg");
 			} else {
 				setPicture("https://www.gravatar.com/avatar?d=mm&size=400");
