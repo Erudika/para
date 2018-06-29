@@ -43,6 +43,7 @@ import static com.erudika.para.persistence.AWSDynamoUtils.getTableNameForAppid;
 import static com.erudika.para.persistence.AWSDynamoUtils.isSharedAppid;
 import static com.erudika.para.persistence.AWSDynamoUtils.readPageFromSharedTable;
 import static com.erudika.para.persistence.AWSDynamoUtils.readPageFromTable;
+import static com.erudika.para.persistence.AWSDynamoUtils.throwIfNecessary;
 import static com.erudika.para.persistence.AWSDynamoUtils.toRow;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
@@ -179,6 +180,7 @@ public class AWSDynamoDAO implements DAO {
 			client().putItem(putItemRequest);
 		} catch (Exception e) {
 			logger.error("Could not write row to DB - appid={}, key={}", appid, key, e);
+			throwIfNecessary(e);
 		}
 		return key;
 	}
@@ -228,6 +230,7 @@ public class AWSDynamoDAO implements DAO {
 			logger.warn("Item not updated. Versions don't match. Appid={}, key={}.", appid, key);
 		} catch (Exception e) {
 			logger.error("Could not update row in DB - appid={}, key={}", appid, key, e);
+			throwIfNecessary(e);
 		}
 		return false;
 	}
@@ -260,6 +263,7 @@ public class AWSDynamoDAO implements DAO {
 			client().deleteItem(delItemRequest);
 		} catch (Exception e) {
 			logger.error("Could not delete row from DB - appid={}, key={}", appid, key, e);
+			throwIfNecessary(e);
 		}
 	}
 

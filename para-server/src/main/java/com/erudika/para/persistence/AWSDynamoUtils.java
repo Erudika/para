@@ -460,6 +460,7 @@ public final class AWSDynamoUtils {
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
+			throwIfNecessary(e);
 		}
 	}
 
@@ -627,6 +628,12 @@ public final class AWSDynamoUtils {
 
 	private static String keyPrefix(String appIdentifier) {
 		return StringUtils.join(StringUtils.trim(appIdentifier), "_");
+	}
+
+	protected static void throwIfNecessary(Throwable t) {
+		if (t != null && Config.getConfigBoolean("fail_on_write_errors", false)) {
+			throw new RuntimeException("DAO write operation failed!", t);
+		}
 	}
 
 }
