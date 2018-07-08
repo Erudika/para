@@ -50,6 +50,7 @@ import com.amazonaws.services.dynamodbv2.model.Projection;
 import com.amazonaws.services.dynamodbv2.model.ProjectionType;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.amazonaws.services.dynamodbv2.model.ReturnConsumedCapacity;
+import com.amazonaws.services.dynamodbv2.model.SSESpecification;
 import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
@@ -86,9 +87,14 @@ public final class AWSDynamoUtils {
 	private static final Logger logger = LoggerFactory.getLogger(AWSDynamoUtils.class);
 
 	/**
-	 * The name of the shared table. Default is "0".
+	 * The name of the shared table. Default is {@code 0}.
 	 */
 	public static final String SHARED_TABLE = Config.getConfigParam("shared_table_name", "0");
+
+	/**
+	 * Toggles SSE (encryption-at-rest) for all newly created DynamoDB tables. Default is {@code false}.
+	 */
+	public static final boolean ENCRYPTION_AT_REST_ENABLED = Config.getConfigBoolean("dynamodb.sse_enabled", false);
 
 	private AWSDynamoUtils() { }
 
@@ -184,6 +190,7 @@ public final class AWSDynamoUtils {
 			String table = getTableNameForAppid(appid);
 			getClient().createTable(new CreateTableRequest().withTableName(table).
 					withKeySchema(new KeySchemaElement(Config._KEY, KeyType.HASH)).
+					withSSESpecification(new SSESpecification().withEnabled(ENCRYPTION_AT_REST_ENABLED)).
 					withAttributeDefinitions(new AttributeDefinition(Config._KEY, ScalarAttributeType.S)).
 					withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
 			logger.info("Created DynamoDB table '{}'.", table);
@@ -261,6 +268,7 @@ public final class AWSDynamoUtils {
 
 			getClient().createTable(new CreateTableRequest().withTableName(getTableNameForAppid(SHARED_TABLE)).
 					withKeySchema(new KeySchemaElement(Config._KEY, KeyType.HASH)).
+					withSSESpecification(new SSESpecification().withEnabled(ENCRYPTION_AT_REST_ENABLED)).
 					withAttributeDefinitions(new AttributeDefinition(Config._KEY, ScalarAttributeType.S),
 							new AttributeDefinition(Config._APPID, ScalarAttributeType.S),
 							new AttributeDefinition(Config._ID, ScalarAttributeType.S)).
