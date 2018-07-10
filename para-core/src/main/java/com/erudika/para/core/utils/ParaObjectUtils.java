@@ -37,7 +37,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -167,7 +166,7 @@ public final class ParaObjectUtils {
 	 * @return a map of plural - singular form of type names
 	 */
 	public static Map<String, String> getAllTypes(App app) {
-		Map<String, String> map = new HashMap<>(getCoreTypes());
+		Map<String, String> map = new LinkedHashMap<>(getCoreTypes());
 		if (app != null) {
 			map.putAll(app.getDatatypes());
 		}
@@ -270,7 +269,7 @@ public final class ParaObjectUtils {
 	 */
 	public static <P extends ParaObject> Map<String, Object> getAnnotatedFields(P pojo,
 			Class<? extends Annotation> filter, boolean flattenNestedObjectsToString) {
-		HashMap<String, Object> map = new HashMap<>();
+		LinkedHashMap<String, Object> map = new LinkedHashMap<>();
 		if (pojo == null) {
 			return map;
 		}
@@ -346,8 +345,8 @@ public final class ParaObjectUtils {
 				pojo = (P) toClass((String) data.get(Config._TYPE)).getConstructor().newInstance();
 			}
 			List<Field> fields = getAllDeclaredFields(pojo.getClass());
-			Map<String, Object> unknownProps = new HashMap<>(data);
-			Map<String, Object> props = new HashMap<>(data.size());
+			Map<String, Object> unknownProps = new LinkedHashMap<>(data);
+			Map<String, Object> props = new LinkedHashMap<>(data.size());
 			for (Field field : fields) {
 				String name = field.getName();
 				Object value = data.get(name);
