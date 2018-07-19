@@ -76,6 +76,8 @@ public final class Config {
 	public static final String _GROUPS = "groups";
 	/** {@value #_VERSION}. */
 	public static final String _VERSION = "version";
+	/** {@value #_PROPERTIES}. */
+	public static final String _PROPERTIES = "properties";
 
 	static {
 		init(null);
