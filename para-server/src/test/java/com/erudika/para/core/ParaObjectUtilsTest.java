@@ -18,8 +18,10 @@
 package com.erudika.para.core;
 
 import com.erudika.para.annotations.Stored;
-import com.erudika.para.core.utils.ParaObjectUtils;
-import static com.erudika.para.core.utils.ParaObjectUtils.*;
+import static com.erudika.para.core.utils.ParaObjectUtils.getAnnotatedFields;
+import static com.erudika.para.core.utils.ParaObjectUtils.getAppidFromAuthHeader;
+import static com.erudika.para.core.utils.ParaObjectUtils.getCoreTypes;
+import static com.erudika.para.core.utils.ParaObjectUtils.setAnnotatedFields;
 import com.erudika.para.utils.Cat;
 import com.erudika.para.utils.CatDeserializer;
 import com.erudika.para.utils.CatSerializer;
@@ -27,8 +29,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
@@ -142,13 +146,13 @@ public class ParaObjectUtilsTest {
 		c1.setCat(new Cat(5, "Whiskers"));
 		c1.setNested(Collections.singletonMap("key", "value"));
 
-		Map<String, Object> dataFull = ParaObjectUtils.getAnnotatedFields(c1, false);
+		Map<String, Object> dataFull = getAnnotatedFields(c1, false);
 		assertFalse(dataFull.containsKey("notStored"));
 		assertTrue(dataFull.containsKey("cat"));
 		assertEquals("Whiskers::5", dataFull.get("cat"));
 		assertEquals(Collections.singletonMap("key", "value"), dataFull.get("nested"));
 
-		Map<String, Object> dataFlat = ParaObjectUtils.getAnnotatedFields(c1, true);
+		Map<String, Object> dataFlat = getAnnotatedFields(c1, true);
 		assertFalse(dataFlat.containsKey("notStored"));
 		assertTrue(dataFlat.containsKey("cat"));
 		assertEquals("Whiskers::5", dataFlat.get("cat"));
@@ -156,6 +160,7 @@ public class ParaObjectUtilsTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void testSetAnnotatedFields() {
 		assertNull(setAnnotatedFields(null));
 		assertNull(setAnnotatedFields(Collections.emptyMap()));
@@ -183,10 +188,10 @@ public class ParaObjectUtilsTest {
 		c2.setColor(Color.BLACK);
 		c2.setColorMap(Collections.singletonMap(Color.WHITE, "brother cat"));
 
-		Map<String, Object> dataFull = ParaObjectUtils.getAnnotatedFields(c2, false);
-		Map<String, Object> dataFlat = ParaObjectUtils.getAnnotatedFields(c2, true);
-		Custom k1 = ParaObjectUtils.setAnnotatedFields(dataFull);
-		Custom k2 = ParaObjectUtils.setAnnotatedFields(dataFlat);
+		Map<String, Object> dataFull = getAnnotatedFields(c2, false);
+		Map<String, Object> dataFlat = getAnnotatedFields(c2, true);
+		Custom k1 = setAnnotatedFields(dataFull);
+		Custom k2 = setAnnotatedFields(dataFlat);
 		assertEquals(k1.getCat(), k2.getCat());
 		assertEquals(c2.getCat(), k1.getCat());
 		assertEquals(c2.getCat(), k2.getCat());
@@ -200,6 +205,36 @@ public class ParaObjectUtilsTest {
 		assertFalse(k2.getColorMap().isEmpty());
 		assertTrue(k1.getColorMap().containsKey(Color.WHITE));
 		assertTrue(k2.getColorMap().containsKey(Color.WHITE));
+
+		// test properties field conflict for types other than Sysprop
+		Custom c3 = new Custom();
+		c3.setId("custom3");
+		c3.setProperties("string");
+
+		dataFull = getAnnotatedFields(c3, false);
+		dataFlat = getAnnotatedFields(c3, true);
+		Custom k3 = setAnnotatedFields(dataFull);
+		Custom k4 = setAnnotatedFields(dataFlat);
+		assertEquals(c3.getProperties(), k3.getProperties());
+		assertEquals(c3.getProperties(), k4.getProperties());
+
+		c3.setProperties(Arrays.asList("string1", "string2"));
+		dataFull = getAnnotatedFields(c3, false);
+		dataFlat = getAnnotatedFields(c3, true);
+		k3 = setAnnotatedFields(dataFull);
+		k4 = setAnnotatedFields(dataFlat);
+		assertEquals(c3.getProperties(), k3.getProperties());
+		assertEquals(c3.getProperties(), k4.getProperties());
+		assertTrue(((List<String>) c3.getProperties()).get(0).equals("string1"));
+
+		c3.setProperties(false);
+		dataFull = getAnnotatedFields(c3, false);
+		dataFlat = getAnnotatedFields(c3, true);
+		k3 = setAnnotatedFields(dataFull);
+		k4 = setAnnotatedFields(dataFlat);
+		assertEquals(c3.getProperties(), k3.getProperties());
+		assertEquals(c3.getProperties(), k4.getProperties());
+		assertFalse(((Boolean) c3.getProperties()));
 	}
 
 	@Test
@@ -234,7 +269,7 @@ public class ParaObjectUtilsTest {
 		BLACK, WHITE
 	}
 
-	public static class Custom extends Sysprop {
+	public static class Custom extends Tag { // don't extend Sysprop in order to test custom properties field
 		private static final long serialVersionUID = 1L;
 
 		private String notStored;
@@ -245,10 +280,19 @@ public class ParaObjectUtilsTest {
 		@Stored private URI uri;
 		@Stored private Color color;
 		@Stored private Map<Color, String> colorMap;
+		@Stored private Object properties; // CONFLICT! must not clash with Sysprop's properties field
 
 		@JsonSerialize(using = CatSerializer.class)
 		@JsonDeserialize(using = CatDeserializer.class)
 		@Stored private Cat cat;
+
+		public Object getProperties() {
+			return properties;
+		}
+
+		public void setProperties(Object properties) {
+			this.properties = properties;
+		}
 
 		public Color getColor() {
 			return color;

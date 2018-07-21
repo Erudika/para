@@ -361,12 +361,17 @@ public final class ParaObjectUtils {
 							value = getJsonMapper().readValue(value.toString(),
 									getJsonMapper().constructType(field.getGenericType()));
 						} catch (Exception e) {
-							props.put(name, value.toString());
+							if (!isPropertiesField(name)) {
+								props.put(name, value.toString());
+							}
 						}
 					}
 					setAnnotatedField(pojo, props, name, value);
 				}
 				unknownProps.remove(name); // filter known props
+				if (isPropertiesFieldOfDifferentType(name, value)) {
+					unknownProps.put("properties", value);
+				}
 			}
 			if (!props.isEmpty()) {
 				JsonNode dataNode = getJsonMapper().convertValue(props, JsonNode.class);
@@ -387,9 +392,19 @@ public final class ParaObjectUtils {
 				// perform micro conversion to the correct field type
 				BeanUtils.setProperty(pojo, name, value);
 			} catch (Exception e) {
-				props.put(name, value);
+				if (!isPropertiesField(name)) {
+					props.put(name, value);
+				}
 			}
 		}
+	}
+
+	private static boolean isPropertiesField(String name) {
+		return Config._PROPERTIES.equals(name);
+	}
+
+	private static boolean isPropertiesFieldOfDifferentType(String name, Object value) {
+		return isPropertiesField(name) && !(value instanceof Map);
 	}
 
 	private static boolean isIgnoredField(Field field, Class<? extends Annotation> filter) {
@@ -410,7 +425,7 @@ public final class ParaObjectUtils {
 				Object value = entry.getValue();
 				// handle the case where we have custom user-defined properties
 				// which are not defined as Java class fields
-				if (!PropertyUtils.isReadable(pojo, name)) {
+				if (!PropertyUtils.isReadable(pojo, name) || isPropertiesFieldOfDifferentType(name, value)) {
 					if (value == null) {
 						((Sysprop) pojo).removeProperty(name);
 					} else {
