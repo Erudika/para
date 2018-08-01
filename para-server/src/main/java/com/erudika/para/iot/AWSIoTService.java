@@ -19,7 +19,7 @@ package com.erudika.para.iot;
 
 import com.amazonaws.services.iot.AWSIot;
 import com.amazonaws.services.iot.AWSIotClientBuilder;
-import com.amazonaws.services.iot.model.AttachPrincipalPolicyRequest;
+import com.amazonaws.services.iot.model.AttachPolicyRequest;
 import com.amazonaws.services.iot.model.AttachThingPrincipalRequest;
 import com.amazonaws.services.iot.model.AttributePayload;
 import com.amazonaws.services.iot.model.CertificateStatus;
@@ -34,7 +34,7 @@ import com.amazonaws.services.iot.model.DeletePolicyVersionRequest;
 import com.amazonaws.services.iot.model.DeleteThingRequest;
 import com.amazonaws.services.iot.model.DescribeEndpointRequest;
 import com.amazonaws.services.iot.model.DescribeThingRequest;
-import com.amazonaws.services.iot.model.DetachPrincipalPolicyRequest;
+import com.amazonaws.services.iot.model.DetachPolicyRequest;
 import com.amazonaws.services.iot.model.DetachThingPrincipalRequest;
 import com.amazonaws.services.iot.model.ListPolicyVersionsRequest;
 import com.amazonaws.services.iot.model.PolicyVersion;
@@ -155,8 +155,7 @@ public class AWSIoTService implements IoTService {
 				withPolicyDocument(policyString).withPolicyName(id + "-Policy"));
 
 		// STEP 4: Attach policy to certificate
-		getClient().attachPrincipalPolicy(new AttachPrincipalPolicyRequest().
-				withPrincipal(resp2.getCertificateArn()).withPolicyName(id + "-Policy"));
+		getClient().attachPolicy(new AttachPolicyRequest().withPolicyName(id + "-Policy"));
 
 		// STEP 5: Attach thing to certificate
 		getClient().attachThingPrincipal(new AttachThingPrincipalRequest().
@@ -240,8 +239,7 @@ public class AWSIoTService implements IoTService {
 					withPrincipal(cARN).withThingName(id));
 		} catch (Exception e) { }
 		try {
-			getClient().detachPrincipalPolicy(new DetachPrincipalPolicyRequest().
-					withPrincipal(cARN).withPolicyName(policy));
+			getClient().detachPolicy(new DetachPolicyRequest().withPolicyName(policy));
 		} catch (Exception e) { }
 		try {
 			getClient().deletePolicy(new DeletePolicyRequest().withPolicyName(policy));
