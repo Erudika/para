@@ -17,6 +17,7 @@
  */
 package com.erudika.para.metrics;
 
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Slf4jReporter;
@@ -84,20 +85,20 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 			}
 
 			// initialize metrics for the system and all existing applications
-			MetricsUtils.initializeMetrics(SYSTEM_METRICS_NAME);
+			initializeMetrics(SYSTEM_METRICS_NAME);
 
 			// setup graphite reporting for the system
 			String host = Config.getConfigParam("metrics.graphite.host", null);
 			if (GRAPHITE_PERIOD > 0 && !StringUtils.isBlank(host)) {
 				int port = Config.getConfigInt("metrics.graphite.port", 2003);
-				String prefixSystem = Config.getConfigParam("metrics.graphite.prefix_system", null);
+				String prefixSystem = MetricsUtils.GRAPHITE_SYS_PREFIX_TEMPLATE;
 				if (INSTANCE_ID != null) {
 					HashMap<String, Object> prefixContext = new HashMap<>();
 					prefixContext.put("INSTANCE_ID", INSTANCE_ID);
 					prefixSystem = Utils.compileMustache(prefixContext, prefixSystem);
 				}
 				GraphiteSettings settings = new GraphiteSettings(host, port);
-				MetricsUtils.createGraphiteReporter(SYSTEM_METRICS_NAME, settings, prefixSystem);
+				createGraphiteReporter(SYSTEM_METRICS_NAME, settings, prefixSystem);
 			}
 
 			if (HealthUtils.getInstance().isHealthy()) {
@@ -117,7 +118,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 
 				for (App app : apps) {
 					logger.debug("   {}{}", app.getAppIdentifier(), app.isRootApp() ? " (root app)" : "");
-					MetricsUtils.initializeMetrics(app.getAppIdentifier());
+					initializeMetrics(app.getAppIdentifier());
 				}
 			}
 
@@ -131,7 +132,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 			App.addAppCreatedListener(new AppCreatedListener() {
 				public void onAppCreated(App app) {
 					if (app != null) {
-						MetricsUtils.initializeMetrics(app.getAppIdentifier());
+						initializeMetrics(app.getAppIdentifier());
 					}
 				}
 			});
@@ -140,14 +141,14 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 			App.addAppSettingAddedListener(new AppSettingAddedListener() {
 				public void onSettingAdded(App app, String settingKey, Object settingValue) {
 					if (app != null) {
-						MetricsUtils.addAppSetting(app, settingKey, settingValue);
+						addAppSetting(app, settingKey, settingValue);
 					}
 				}
 			});
 			App.addAppSettingRemovedListener(new AppSettingRemovedListener() {
 				public void onSettingRemoved(App app, String settingKey) {
 					if (app != null) {
-						MetricsUtils.removeAppSetting(app, settingKey);
+						removeAppSetting(app, settingKey);
 					}
 				}
 			});
@@ -155,7 +156,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 
 		@Override
 		public void run() {
-			MetricsUtils.syncAppMetricsReporters();
+			syncAppMetricsReporters();
 		}
 	};
 
@@ -164,6 +165,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 
 	private static final Map<String, GraphiteReporter> GRAPHITE_REPORTERS = new HashMap<>();
 	private static final Map<String, GraphiteSettings> GRAPHITE_SETTINGS = new HashMap<>();
+	private static final String GRAPHITE_SYS_PREFIX_TEMPLATE = Config.getConfigParam("metrics.graphite.prefix_system", null);
 	private static final String GRAPHITE_APP_PREFIX_TEMPLATE = Config.getConfigParam("metrics.graphite.prefix_apps", null);
 	private static final int GRAPHITE_PERIOD = Config.getConfigInt("metrics.graphite.period", 0);
 
@@ -260,11 +262,31 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 	 * @param names one or more unique names to identify the timer - usually a method name
 	 * @return a closeable context that encapsulates the timed method
 	 */
-	public static MetricsUtils.Context time(String appid, Class clazz, String... names) {
+	public static Context time(String appid, Class<?> clazz, String... names) {
 		String className = getClassName(clazz);
 		Timer systemTimer = getTimer(SYSTEM_METRICS_NAME, className, names);
 		Timer appTimer = appid == null || appid.isEmpty() ? null : getTimer(appid, className, names);
-		return new MetricsUtils.Context(systemTimer, appTimer);
+		return new Context(systemTimer, appTimer);
+	}
+
+	/**
+	 * Creates a new counter for a particular class and method for a specific application.
+	 * @param appid the application that invoked the request
+	 * @param clazz the Class to be counted
+	 * @param names one or more unique names to identify the counter - usually a method name
+	 * @return a counter
+	 */
+	public static Counter counter(String appid, Class<?> clazz, String... names) {
+		String className = getClassName(clazz);
+		return getCounter(App.isRoot(appid) ? SYSTEM_METRICS_NAME : appid, className, names);
+	}
+
+	private static Timer getTimer(String registryName, String className, String... names) {
+		return SharedMetricRegistries.getOrCreate(registryName).timer(MetricRegistry.name(className, names));
+	}
+
+	private static Counter getCounter(String registryName, String className, String... names) {
+		return SharedMetricRegistries.getOrCreate(registryName).counter(MetricRegistry.name(className, names));
 	}
 
 	private static String getClassName(Class clazz) {
@@ -276,10 +298,6 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 		} else {
 			return clazz.getSimpleName();
 		}
-	}
-
-	private static Timer getTimer(String registryName, String className, String... names) {
-		return SharedMetricRegistries.getOrCreate(registryName).timer(MetricRegistry.name(className, names));
 	}
 
 	/**
@@ -430,7 +448,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 				if (graphiteSettings.containsKey("host") && graphiteSettings.containsKey("port")) {
 					String host = (String) graphiteSettings.get("host");
 					Integer port = (Integer) graphiteSettings.get("port");
-					if (!StringUtils.isBlank(host) && port != null && port.intValue() > 0) {
+					if (!StringUtils.isBlank(host) && port != null && port > 0) {
 						GraphiteSettings settings = new GraphiteSettings(host, port);
 						RegistryUtils.putValue(GRAPHITE_REGISTRY_NAME, app.getAppIdentifier(), settings);
 					}
