@@ -161,6 +161,13 @@
 			<version>${logbackVer}</version>
 		</dependency>
 
+		<!-- METRICS -->
+		<dependency>
+			<groupId>io.dropwizard.metrics</groupId>
+			<artifactId>metrics-core</artifactId>
+			<version>${metricsVer}</version>
+		</dependency>
+
 		<!-- OTHER -->
 		<dependency>
 			<groupId>commons-beanutils</groupId>

@@ -23,7 +23,7 @@ import com.erudika.para.annotations.Cached;
 import com.erudika.para.annotations.Indexed;
 import com.erudika.para.cache.Cache;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.metrics.MetricsUtils;
+import com.erudika.para.metrics.Metrics;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
@@ -148,7 +148,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	}
 
 	private Object invokeDAO(String appid, Method daoMethod, MethodInvocation mi) throws Throwable {
-		try (final MetricsUtils.Context context = MetricsUtils.time(appid, daoMethod.getDeclaringClass(), daoMethod.getName())) {
+		try (final Metrics.Context context = Metrics.time(appid, daoMethod.getDeclaringClass(), daoMethod.getName())) {
 			return mi.proceed();
 		}
 	}
@@ -221,7 +221,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 				}
 			}
 			if (addMe.getIndexed() && addMe.getVersion() >= 0) {
-				try (final MetricsUtils.Context context = MetricsUtils.time(appid, search.getClass(), "index")) {
+				try (final Metrics.Context context = Metrics.time(appid, search.getClass(), "index")) {
 					search.index(appid, addMe);
 					logger.debug("{}: Indexed {}->{}", getClass().getSimpleName(), appid, addMe.getId());
 				}
@@ -237,7 +237,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		Object result = invokeDAO(appid, daoMethod, mi); // delete from DB even if "isStored = false"
 		ParaObject removeMe = AOPUtils.getArgOfParaObject(args);
 		AOPUtils.checkAndFixType(removeMe);
-		try (final MetricsUtils.Context context = MetricsUtils.time(appid, search.getClass(), "unindex")) {
+		try (final Metrics.Context context = Metrics.time(appid, search.getClass(), "unindex")) {
 			search.unindex(appid, removeMe); // remove from index even if "isIndexed = false"
 			logger.debug("{}: Unindexed {}->{}", getClass().getSimpleName(), appid,
 					(removeMe == null) ? null : removeMe.getId());
@@ -256,7 +256,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 			logger.warn("DAO batch operation failed for {} objects due to version mismatch or rollback. "
 					+ "Indexing and caching for these objects will be skipped.", indexUs.size());
 		}
-		try (final MetricsUtils.Context context = MetricsUtils.time(appid, search.getClass(), "indexAll")) {
+		try (final Metrics.Context context = Metrics.time(appid, search.getClass(), "indexAll")) {
 			search.indexAll(appid, indexUsFiltered);
 		}
 		// restore removed objects - needed if we have to cache them later
@@ -271,7 +271,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	private Object removeFromIndexBatchOperation(String appid, Method daoMethod, Object[] args, MethodInvocation mi) throws Throwable {
 		List<ParaObject> removeUs = AOPUtils.getArgOfListOfType(args, ParaObject.class);
 		Object result = invokeDAO(appid, daoMethod, mi); // delete from DB even if "isStored = false"
-		try (final MetricsUtils.Context context = MetricsUtils.time(appid, search.getClass(), "unindexAll")) {
+		try (final Metrics.Context context = Metrics.time(appid, search.getClass(), "unindexAll")) {
 			search.unindexAll(appid, removeUs); // remove from index even if "isIndexed = false"
 		}
 		logger.debug("{}: Unindexed all {}->{}", getClass().getSimpleName(),
@@ -282,7 +282,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	private Object readFromCacheOperation(String appid, Method daoMethod, Object[] args, MethodInvocation mi) throws Throwable {
 		Object result = null;
 		String getMeId = (args != null && args.length > 1) ? (String) args[1] : null;
-		try (final MetricsUtils.Context context = MetricsUtils.time(appid, cache.getClass(), "get")) {
+		try (final Metrics.Context context = Metrics.time(appid, cache.getClass(), "get")) {
 			result = cache.get(appid, getMeId);
 		}
 		if (result != null) {
@@ -290,7 +290,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		} else if (getMeId != null) {
 			result = invokeDAO(appid, daoMethod, mi);
 			if (result != null && ((ParaObject) result).getCached()) {
-				try (final MetricsUtils.Context context = MetricsUtils.time(appid, cache.getClass(), "put")) {
+				try (final Metrics.Context context = Metrics.time(appid, cache.getClass(), "put")) {
 					cache.put(appid, getMeId, result);
 				}
 				logger.debug("{}: Cache miss: {}->{}", getClass().getSimpleName(), appid, getMeId);
@@ -302,7 +302,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	private void addToCacheOperation(String appid, Object[] args) {
 		ParaObject putMe = AOPUtils.getArgOfParaObject(args);
 		if (putMe != null && putMe.getCached() && putMe.getVersion() >= 0) {
-			try (final MetricsUtils.Context context = MetricsUtils.time(appid, cache.getClass(), "put")) {
+			try (final Metrics.Context context = Metrics.time(appid, cache.getClass(), "put")) {
 				cache.put(appid, putMe.getId(), putMe);
 			}
 			logger.debug("{}: Cache put: {}->{}", getClass().getSimpleName(), appid, putMe.getId());
@@ -312,7 +312,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	private void removeFromCacheOperation(String appid, Object[] args) {
 		ParaObject deleteMe = AOPUtils.getArgOfParaObject(args);
 		if (deleteMe != null) { // clear from cache even if "isCached = false"
-			try (final MetricsUtils.Context context = MetricsUtils.time(appid, cache.getClass(), "remove")) {
+			try (final Metrics.Context context = Metrics.time(appid, cache.getClass(), "remove")) {
 				cache.remove(appid, deleteMe.getId());
 			}
 			logger.debug("{}: Cache delete: {}->{}", getClass().getSimpleName(), appid, deleteMe.getId());
@@ -324,7 +324,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		List<String> getUs = AOPUtils.getArgOfListOfType(args, String.class);
 		if (getUs != null) {
 			Map<String, ParaObject> cached;
-			try (final MetricsUtils.Context context = MetricsUtils.time(appid, cache.getClass(), "getAll")) {
+			try (final Metrics.Context context = Metrics.time(appid, cache.getClass(), "getAll")) {
 				cached = cache.getAll(appid, getUs);
 			}
 			logger.debug("{}: Cache getAll(): {}->{}", getClass().getSimpleName(), appid, getUs);
@@ -338,7 +338,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 						if (!cached.containsKey(id)) {
 							ParaObject obj = ((Map<String, ParaObject>) result).get(id);
 							if (obj != null && obj.getCached()) {
-								try (final MetricsUtils.Context context = MetricsUtils.time(appid, cache.getClass(), "put")) {
+								try (final Metrics.Context context = Metrics.time(appid, cache.getClass(), "put")) {
 									cache.put(appid, obj.getId(), obj);
 								}
 								logger.debug("{}: Cache miss on readAll: {}->{}", getClass().getSimpleName(), appid, id);
@@ -364,7 +364,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 				}
 			}
 			if (!map1.isEmpty()) {
-				try (final MetricsUtils.Context context = MetricsUtils.time(appid, cache.getClass(), "putAll")) {
+				try (final Metrics.Context context = Metrics.time(appid, cache.getClass(), "putAll")) {
 					cache.putAll(appid, map1);
 				}
 			}
@@ -380,7 +380,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 				list.add(paraObject.getId());
 			}
 			// clear from cache even if "isCached = false"
-			try (final MetricsUtils.Context context = MetricsUtils.time(appid, cache.getClass(), "removeAll")) {
+			try (final Metrics.Context context = Metrics.time(appid, cache.getClass(), "removeAll")) {
 				cache.removeAll(appid, list);
 			}
 			logger.debug("{}: Cache delete page: {}->{}", getClass().getSimpleName(), appid, list);

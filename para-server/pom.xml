@@ -14,7 +14,6 @@
 	<properties>
 		<springSecVer>5.0.5.RELEASE</springSecVer>
 		<springLdapVer>2.3.2.RELEASE</springLdapVer>
-		<metricsVer>4.0.2</metricsVer>
 	</properties>
 
 	<dependencies>
@@ -156,11 +155,6 @@
 		</dependency>
 
 		<!-- METRICS -->
-		<dependency>
-			<groupId>io.dropwizard.metrics</groupId>
-			<artifactId>metrics-core</artifactId>
-			<version>${metricsVer}</version>
-		</dependency>
 		<dependency>
 			<groupId>io.dropwizard.metrics</groupId>
 			<artifactId>metrics-jmx</artifactId>

@@ -20,8 +20,8 @@ package com.erudika.para.aop;
 import com.erudika.para.IOListener;
 import com.erudika.para.Para;
 import com.erudika.para.annotations.Measured;
-import com.erudika.para.metrics.MetricsUtils;
-import static com.erudika.para.metrics.MetricsUtils.time;
+import com.erudika.para.metrics.Metrics;
+import static com.erudika.para.metrics.Metrics.time;
 import com.erudika.para.search.Search;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -89,7 +89,7 @@ public class SearchQueryAspect implements MethodInterceptor {
 	}
 
 	private Object invokeTimedSearch(String appid, Method searchMethod, MethodInvocation mi) throws Throwable {
-		try (final MetricsUtils.Context context = time(appid, searchMethod.getDeclaringClass(), searchMethod.getName())) {
+		try (final Metrics.Context context = time(appid, searchMethod.getDeclaringClass(), searchMethod.getName())) {
 			return mi.proceed();
 		}
 	}

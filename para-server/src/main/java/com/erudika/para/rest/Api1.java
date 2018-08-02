@@ -42,7 +42,6 @@ import static com.erudika.para.rest.RestUtils.pathParam;
 import static com.erudika.para.rest.RestUtils.queryParam;
 import static com.erudika.para.rest.RestUtils.queryParams;
 
-import com.erudika.para.metrics.MetricsUtils;
 import com.erudika.para.security.SecurityUtils;
 import static com.erudika.para.security.SecurityUtils.getPrincipalApp;
 import com.erudika.para.utils.Config;
@@ -77,6 +76,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.erudika.para.Para.newApp;
 import static com.erudika.para.Para.setup;
+import com.erudika.para.metrics.Metrics;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -201,7 +201,7 @@ public final class Api1 extends ResourceConfig {
 			custom.addMethod(GET).produces(JSON).handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
 					String appid = ParaObjectUtils.getAppidFromAuthHeader(ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
-					try (final MetricsUtils.Context context = MetricsUtils.time(appid, handler.getClass(), "handleGet")) {
+					try (final Metrics.Context context = Metrics.time(appid, handler.getClass(), "handleGet")) {
 						return handler.handleGet(ctx);
 					}
 				}
@@ -210,7 +210,7 @@ public final class Api1 extends ResourceConfig {
 					handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
 					String appid = ParaObjectUtils.getAppidFromAuthHeader(ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
-					try (final MetricsUtils.Context context = MetricsUtils.time(appid, handler.getClass(), "handlePost")) {
+					try (final Metrics.Context context = Metrics.time(appid, handler.getClass(), "handlePost")) {
 						return handler.handlePost(ctx);
 					}
 				}
@@ -219,7 +219,7 @@ public final class Api1 extends ResourceConfig {
 					handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
 					String appid = ParaObjectUtils.getAppidFromAuthHeader(ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
-					try (final MetricsUtils.Context context = MetricsUtils.time(appid, handler.getClass(), "handlePatch")) {
+					try (final Metrics.Context context = Metrics.time(appid, handler.getClass(), "handlePatch")) {
 						return handler.handlePatch(ctx);
 					}
 				}
@@ -228,7 +228,7 @@ public final class Api1 extends ResourceConfig {
 					handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
 					String appid = ParaObjectUtils.getAppidFromAuthHeader(ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
-					try (final MetricsUtils.Context context = MetricsUtils.time(appid, handler.getClass(), "handlePut")) {
+					try (final Metrics.Context context = Metrics.time(appid, handler.getClass(), "handlePut")) {
 						return handler.handlePut(ctx);
 					}
 				}
@@ -236,7 +236,7 @@ public final class Api1 extends ResourceConfig {
 			custom.addMethod(DELETE).produces(JSON).handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
 					String appid = ParaObjectUtils.getAppidFromAuthHeader(ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
-					try (final MetricsUtils.Context context = MetricsUtils.time(appid, handler.getClass(), "handleDelete")) {
+					try (final Metrics.Context context = Metrics.time(appid, handler.getClass(), "handleDelete")) {
 						return handler.handleDelete(ctx);
 					}
 				}

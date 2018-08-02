@@ -17,11 +17,9 @@
  */
 package com.erudika.para.metrics;
 
-import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Slf4jReporter;
-import com.codahale.metrics.Timer;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.codahale.metrics.jmx.JmxReporter;
@@ -41,18 +39,16 @@ import com.erudika.para.utils.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.Closeable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Objects;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-
 import static com.erudika.para.Para.getCustomResourceHandlers;
+import static com.erudika.para.metrics.Metrics.SYSTEM_METRICS_NAME;
 import java.util.ArrayList;
+import java.util.Objects;
 
 /**
  * A centralized utility for managing and retrieving all Para performance metrics.
@@ -170,11 +166,6 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 	private static final int GRAPHITE_PERIOD = Config.getConfigInt("metrics.graphite.period", 0);
 
 	/**
-	 * The name of the default system @{link MetricRegistry}.
-	 */
-	public static final String SYSTEM_METRICS_NAME = "_system";
-
-	/**
 	 * The name of the registry holding app-specific settings for reporting metrics to Graphite.
 	 */
 	public static final String GRAPHITE_REGISTRY_NAME = "GraphiteReporter";
@@ -183,28 +174,6 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 	 * The name of the app settings object that contains the info to push an app's metrics to Graphite.
 	 */
 	public static final String GRAPHITE_APP_SETTINGS_NAME = "metricsGraphiteReporter";
-
-	/**
-	 * An auto-closeable class that manages timers for both the overall system as well as specific application.
-	 */
-	public static final class Context implements Closeable {
-
-		private final Timer.Context systemContext;
-		private final Timer.Context appContext;
-
-		private Context(Timer systemTimer, Timer appTimer) {
-			this.systemContext = systemTimer.time();
-			this.appContext = appTimer == null ? null : appTimer.time();
-		}
-
-		@Override
-		public void close() {
-			systemContext.stop();
-			if (appContext != null) {
-				appContext.stop();
-			}
-		}
-	}
 
 	/**
 	 * A utility class for holding the settings for connecting to a Graphite server.
@@ -256,51 +225,6 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 	}
 
 	/**
-	 * Instantiate timing of a particular class and method for a specific application.
-	 * @param appid the application that invoked the request
-	 * @param clazz the Class to be timed
-	 * @param names one or more unique names to identify the timer - usually a method name
-	 * @return a closeable context that encapsulates the timed method
-	 */
-	public static Context time(String appid, Class<?> clazz, String... names) {
-		String className = getClassName(clazz);
-		Timer systemTimer = getTimer(SYSTEM_METRICS_NAME, className, names);
-		Timer appTimer = appid == null || appid.isEmpty() ? null : getTimer(appid, className, names);
-		return new Context(systemTimer, appTimer);
-	}
-
-	/**
-	 * Creates a new counter for a particular class and method for a specific application.
-	 * @param appid the application that invoked the request
-	 * @param clazz the Class to be counted
-	 * @param names one or more unique names to identify the counter - usually a method name
-	 * @return a counter
-	 */
-	public static Counter counter(String appid, Class<?> clazz, String... names) {
-		String className = getClassName(clazz);
-		return getCounter(App.isRoot(appid) ? SYSTEM_METRICS_NAME : appid, className, names);
-	}
-
-	private static Timer getTimer(String registryName, String className, String... names) {
-		return SharedMetricRegistries.getOrCreate(registryName).timer(MetricRegistry.name(className, names));
-	}
-
-	private static Counter getCounter(String registryName, String className, String... names) {
-		return SharedMetricRegistries.getOrCreate(registryName).counter(MetricRegistry.name(className, names));
-	}
-
-	private static String getClassName(Class clazz) {
-		if (clazz.getSimpleName().contains("EnhancerByGuice")) {
-			clazz = clazz.getSuperclass();
-		}
-		if (CustomResourceHandler.class.isAssignableFrom(clazz)) {
-			return clazz.getCanonicalName();
-		} else {
-			return clazz.getSimpleName();
-		}
-	}
-
-	/**
 	 * Initialize all the possible metrics for a specific registry (either the system registry or an application registry).
 	 * This ensures that all metrics report with zero values from system startup or application creation.
 	 * @param registryName the name of the registry to initialize. Either the system default name or an appid.
@@ -310,7 +234,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 
 		// register the DAO timers
 		if (Para.getDAO() != null) {
-			String daoClassName = getClassName(Para.getDAO().getClass());
+			String daoClassName = Metrics.getClassName(Para.getDAO().getClass());
 			registry.timer(MetricRegistry.name(daoClassName, "create"));
 			registry.timer(MetricRegistry.name(daoClassName, "read"));
 			registry.timer(MetricRegistry.name(daoClassName, "update"));
@@ -324,7 +248,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 
 		// register the search timers
 		if (Config.isSearchEnabled()) {
-			String searchClassName = getClassName(Para.getSearch().getClass());
+			String searchClassName = Metrics.getClassName(Para.getSearch().getClass());
 			registry.timer(MetricRegistry.name(searchClassName, "index"));
 			registry.timer(MetricRegistry.name(searchClassName, "unindex"));
 			registry.timer(MetricRegistry.name(searchClassName, "indexAll"));
@@ -347,7 +271,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 
 		// register the cache timers
 		if (Config.isCacheEnabled()) {
-			String cacheClassName = getClassName(Para.getCache().getClass());
+			String cacheClassName = Metrics.getClassName(Para.getCache().getClass());
 			registry.timer(MetricRegistry.name(cacheClassName, "contains"));
 			registry.timer(MetricRegistry.name(cacheClassName, "put"));
 			registry.timer(MetricRegistry.name(cacheClassName, "get"));
@@ -359,7 +283,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 
 		// register timers on the REST endpoints
 		if (Config.API_ENABLED) {
-			String restUtilsClassName = getClassName(RestUtils.class);
+			String restUtilsClassName = Metrics.getClassName(RestUtils.class);
 			registry.timer(MetricRegistry.name(restUtilsClassName, "crud", "read"));
 			registry.timer(MetricRegistry.name(restUtilsClassName, "crud", "create"));
 			registry.timer(MetricRegistry.name(restUtilsClassName, "crud", "overwrite"));
@@ -388,7 +312,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 
 		// register timers on custom resource handlers
 		for (final CustomResourceHandler handler : getCustomResourceHandlers()) {
-			String resourceHandlerClassName = getClassName(handler.getClass());
+			String resourceHandlerClassName = Metrics.getClassName(handler.getClass());
 			registry.timer(MetricRegistry.name(resourceHandlerClassName, "handleGet"));
 			registry.timer(MetricRegistry.name(resourceHandlerClassName, "handlePost"));
 			registry.timer(MetricRegistry.name(resourceHandlerClassName, "handlePatch"));
@@ -440,7 +364,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 	 * @param key the name of the setting
 	 * @param value the value of the setting
 	 */
-	public static void addAppSetting(App app, String key, Object value) {
+	private static void addAppSetting(App app, String key, Object value) {
 		if (GRAPHITE_APP_SETTINGS_NAME.equals(key)) {
 			// validate the graphite reporter settings and, if valid, save them to the registry
 			if (Map.class.isAssignableFrom(value.getClass())) {
