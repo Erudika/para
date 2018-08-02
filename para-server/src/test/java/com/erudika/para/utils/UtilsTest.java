@@ -376,7 +376,7 @@ public class UtilsTest {
 				((List<String>) sys.getProperties().get("testprop4")).get(0));
 
 		// unknown fields and custom types test
-		map1.put(Config._TYPE, "custom");
+		map1.put(Config._TYPE, "customtype");
 		map1.put("animal", "cat");
 		map1.put("hair", "long");
 		map1.put("colour", "white");

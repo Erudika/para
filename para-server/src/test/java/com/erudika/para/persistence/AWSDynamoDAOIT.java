@@ -254,8 +254,8 @@ public class AWSDynamoDAOIT extends DAOTest {
 	public void testReadAllPartial() {
 		Sysprop s1 = new Sysprop("read-partially1");
 		Sysprop s2 = new Sysprop("read-partially2");
-		s1.setType("custom");
-		s2.setType("custom");
+		s1.setType("customtype");
+		s2.setType("customtype");
 
 		dao().create(ROOT_APP_NAME, s1);
 		dao().create(ROOT_APP_NAME, s2);

@@ -357,14 +357,7 @@ public final class ParaObjectUtils {
 					}
 					// handle complex JSON objects deserialized to Maps, Arrays, etc.
 					if (!Utils.isBasicType(field.getType()) && value instanceof String) {
-						try {
-							value = getJsonMapper().readValue(value.toString(),
-									getJsonMapper().constructType(field.getGenericType()));
-						} catch (Exception e) {
-							if (!isPropertiesField(name)) {
-								props.put(name, value.toString());
-							}
-						}
+						value = parseFlattenedObject(field, value.toString(), props);
 					}
 					setAnnotatedField(pojo, props, name, value);
 				}
@@ -384,6 +377,17 @@ public final class ParaObjectUtils {
 			pojo = null;
 		}
 		return pojo;
+	}
+
+	private static Object parseFlattenedObject(Field field, String stringValue, Map<String, Object> props) {
+		try {
+			return getJsonMapper().readValue(stringValue, getJsonMapper().constructType(field.getGenericType()));
+		} catch (Exception e) {
+			if (!isPropertiesField(field.getName())) {
+				props.put(field.getName(), stringValue);
+			}
+		}
+		return stringValue;
 	}
 
 	private static <P> void setAnnotatedField(P pojo, Map<String, Object> props, String name, Object value) {
