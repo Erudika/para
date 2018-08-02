@@ -12,9 +12,9 @@
 	<name>para-core</name>
 
 	<properties>
-		<jacksonVer>2.9.5</jacksonVer>
-		<springVer>5.0.6.RELEASE</springVer>
-		<flexmarkVer>0.32.24</flexmarkVer>
+		<jacksonVer>2.9.6</jacksonVer>
+		<springVer>5.0.7.RELEASE</springVer>
+		<flexmarkVer>0.34.8</flexmarkVer>
 	</properties>
 
 	<dependencies>
@@ -188,7 +188,7 @@
 		<dependency>
 			<groupId>org.hibernate.validator</groupId>
 			<artifactId>hibernate-validator</artifactId>
-			<version>6.0.8.Final</version>
+			<version>6.0.10.Final</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
