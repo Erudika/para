@@ -94,32 +94,26 @@ public class LocalFileStore implements FileStore {
 			return null;
 		}
 		int maxFileSizeMBytes = Config.getConfigInt("para.localstorage.max_filesize_mb", 10);
-		FileOutputStream fos = null;
-		BufferedOutputStream bos = null;
 		try {
 			if (data.available() > 0 && data.available() <= (maxFileSizeMBytes * 1024 * 1024)) {
 				File f = new File(folder + File.separator + path);
 				if (f.canWrite()) {
-					fos = new FileOutputStream(f);
-					bos = new BufferedOutputStream(fos);
-					int read = 0;
-					byte[] bytes = new byte[1024];
-					while ((read = data.read(bytes)) != -1) {
-						bos.write(bytes, 0, read);
+					try (FileOutputStream fos = new FileOutputStream(f)) {
+						try	(BufferedOutputStream bos = new BufferedOutputStream(fos)) {
+							int read = 0;
+							byte[] bytes = new byte[1024];
+							while ((read = data.read(bytes)) != -1) {
+								bos.write(bytes, 0, read);
+							}
+							return f.getAbsolutePath();
+						}
 					}
-					return f.getAbsolutePath();
 				}
 			}
 		} catch (IOException e) {
 			logger.error(null, e);
 		} finally {
 			try {
-				if (fos != null) {
-					fos.close();
-				}
-				if (bos != null) {
-					bos.close();
-				}
 				data.close();
 			} catch (IOException e) {
 				logger.error(null, e);
