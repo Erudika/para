@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.erudika</groupId>
 		<artifactId>para-parent</artifactId>
-		<version>1.29.3-SNAPSHOT</version>
+		<version>1.30.0</version>
 	</parent>
 
 	<artifactId>para-client</artifactId>
