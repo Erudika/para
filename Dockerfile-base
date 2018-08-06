@@ -20,6 +20,7 @@ USER para
 WORKDIR /para
 
 RUN git clone --depth=1 https://github.com/Erudika/para /para/clone && \
+	mvn install -DskipTests=true -DskipITs=true && \
 	cd /para/clone/para-jar && \
 	mvn -Pbase clean package && \
 	mv target/para-base-*.jar /para/ && \

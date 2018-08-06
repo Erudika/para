@@ -239,7 +239,7 @@ Use these `DAO` implementations to connect to different databases:
 - **DynamoDB**: `AWSDynamoDAO` (included in `para-server`)
 - **MongoDB**: [para-dao-mongodb](https://github.com/Erudika/para-dao-mongodb)
 - **Cassandra**: [para-dao-cassandra](https://github.com/Erudika/para-dao-cassandra)
-- **SQL** (H2/MySQL/MariaDB, PostgreSQL, etc.): [para-dao-sql](https://github.com/Erudika/para-dao-sql)
+- **SQL** (H2/MySQL/SQL Server/PostgreSQL, etc.): [para-dao-sql](https://github.com/Erudika/para-dao-sql)
 `H2DAO` is the default `DAO` and it's part of the SQL plugin (packaged with the JAR file)
 
 ## Search engine integrations
@@ -268,7 +268,6 @@ The `Cache` interface is implemented by:
 ## Wishlist / Roadmap
 
 - `Search` implementation for MongoDB
-- Make the API server more efficient with fibers (Quasar?)
 - OpenAPI 3+ compatible API at `/v2` (not soon)
 
 ## Contributing
