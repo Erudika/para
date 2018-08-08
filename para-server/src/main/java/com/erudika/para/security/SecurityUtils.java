@@ -446,4 +446,34 @@ public final class SecurityUtils {
 
 		return StringUtils.equals(givenSig, recreatedSig);
 	}
+
+	/**
+	 * @param request HTTP request
+	 * @return the URL with the correct protocol, read from X-Forwarded-Proto and CloudFront-Forwarded-Proto headers.
+	 */
+	public static String getRedirectUrl(HttpServletRequest request) {
+		String url = request.getRequestURL().toString();
+		if (!StringUtils.isBlank(request.getHeader("X-Forwarded-Proto"))) {
+			return request.getHeader("X-Forwarded-Proto") + url.substring(url.indexOf(':'));
+		} else if (!StringUtils.isBlank(request.getHeader("CloudFront-Forwarded-Proto"))) {
+			return request.getHeader("CloudFront-Forwarded-Proto") + url.substring(url.indexOf(':'));
+		}
+		return url;
+	}
+
+	/**
+	 * @param request HTTP request
+	 * @return the appid if it's present in either the 'state' or 'appid' query parameters
+	 */
+	public static String getAppidFromAuthRequest(HttpServletRequest request) {
+		String appid1 = request.getParameter("state");
+		String appid2 = request.getParameter(Config._APPID);
+		if (StringUtils.isBlank(appid1) && StringUtils.isBlank(appid2)) {
+			return null;
+		} else if (!StringUtils.isBlank(appid1)) {
+			return StringUtils.trimToNull(appid1);
+		} else {
+			return StringUtils.trimToNull(appid2);
+		}
+	}
 }

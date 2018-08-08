@@ -29,13 +29,13 @@ import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
+import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -79,6 +79,7 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 				setDefaultRequestConfig(RequestConfig.custom().
 						setConnectTimeout(timeout).
 						setConnectionRequestTimeout(timeout).
+						setCookieSpec(CookieSpecs.STANDARD).
 						setSocketTimeout(timeout).
 						build()).
 				build();
@@ -100,13 +101,11 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (requestURI.endsWith(GITHUB_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
-				String appid = request.getParameter(Config._APPID);
-				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
+				String appid = SecurityUtils.getAppidFromAuthRequest(request);
+				String redirectURI = SecurityUtils.getRedirectUrl(request);
 				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
 				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.GITHUB_PREFIX);
-				String entity = Utils.formatMessage(PAYLOAD,
-						URLEncoder.encode(authCode, "UTF-8"),
-						URLEncoder.encode(redirectURI, "UTF-8"), keys[0], keys[1]);
+				String entity = Utils.formatMessage(PAYLOAD, authCode, Utils.urlEncode(redirectURI), keys[0], keys[1]);
 
 				HttpPost tokenPost = new HttpPost(TOKEN_URL);
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");

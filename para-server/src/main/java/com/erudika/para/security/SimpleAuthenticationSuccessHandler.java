@@ -21,7 +21,6 @@ import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
-import static com.erudika.para.security.filters.MicrosoftAuthFilter.MICROSOFT_ACTION;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.HttpUtils;
 import com.erudika.para.utils.Utils;
@@ -54,11 +53,7 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 			u.update();
 		}
 
-		// Special case for Microsoft Live account login: oauth/v2 endpoint doesn't allow
-		// query parameters in redirect_uri like ?redirect_uri=/microsoft_auth?appid=app
-		// Instead, we must use the "state" parameter to remember the appid of the app initiating the auth request.
-		String appidParam = request.getRequestURI().contains(MICROSOFT_ACTION) ? "state" : Config._APPID;
-		String appid = request.getParameter(appidParam);
+		String appid = SecurityUtils.getAppidFromAuthRequest(request);
 		if (!StringUtils.isBlank(appid)) {
 			// try to reload custom redirect URI from app
 			App app = Para.getDAO().read(App.id(appid));

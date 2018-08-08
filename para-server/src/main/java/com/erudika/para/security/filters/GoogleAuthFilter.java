@@ -28,13 +28,13 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
+import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -44,6 +44,7 @@ import org.apache.http.impl.NoConnectionReuseStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
@@ -56,9 +57,9 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private final CloseableHttpClient httpclient;
 	private final ObjectReader jreader;
-	private static final String PROFILE_URL = "https://www.googleapis.com/oauth2/v3/userinfo"; // old: https://www.googleapis.com/plus/v1/people/me/openIdConnect
-	private static final String TOKEN_URL = "https://www.googleapis.com/oauth2/v4/token"; //old: https://accounts.google.com/o/oauth2/token
-	private static final String PAYLOAD = "code={0}&redirect_uri={1}&scope=&client_id={2}"
+	private static final String PROFILE_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
+	private static final String TOKEN_URL = "https://www.googleapis.com/oauth2/v4/token";
+	private static final String PAYLOAD = "code={0}&redirect_uri={1}&client_id={2}"
 			+ "&client_secret={3}&grant_type=authorization_code";
 	/**
 	 * The default filter mapping.
@@ -78,6 +79,7 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 				setDefaultRequestConfig(RequestConfig.custom().
 						setConnectTimeout(timeout).
 						setConnectionRequestTimeout(timeout).
+						setCookieSpec(CookieSpecs.STANDARD).
 						setSocketTimeout(timeout).
 						build()).
 				build();
@@ -99,21 +101,22 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (requestURI.endsWith(GOOGLE_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
-				String appid = request.getParameter(Config._APPID);
-				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
+				String appid = SecurityUtils.getAppidFromAuthRequest(request);
+				String redirectURI = SecurityUtils.getRedirectUrl(request);
 				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
 				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.GPLUS_PREFIX);
-				String entity = Utils.formatMessage(PAYLOAD,
-						URLEncoder.encode(authCode, "UTF-8"),
-						URLEncoder.encode(redirectURI, "UTF-8"), keys[0], keys[1]);
+				String entity = Utils.formatMessage(PAYLOAD, authCode, Utils.urlEncode(redirectURI), keys[0], keys[1]);
 
 				HttpPost tokenPost = new HttpPost(TOKEN_URL);
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 				tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
+				LoggerFactory.getLogger(GoogleAuthFilter.class).info(">>>>>> AT1: {} {} {}", tokenPost, entity, redirectURI);
 				try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
+					LoggerFactory.getLogger(GoogleAuthFilter.class).info(">>>>>> AT1: {}", resp1);
 					if (resp1 != null && resp1.getEntity() != null) {
 						Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
 						if (token != null && token.containsKey("access_token")) {
+							LoggerFactory.getLogger(GoogleAuthFilter.class).info(">>>>>> AT2: {} {}", token);
 							userAuth = getOrCreateUser(app, (String) token.get("access_token"));
 						}
 						EntityUtils.consumeQuietly(resp1.getEntity());

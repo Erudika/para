@@ -28,7 +28,6 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -37,6 +36,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
+import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -63,7 +63,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 	private static final String TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
 	private static final String PAYLOAD = "code={0}&redirect_uri={1}"
 			+ "&scope=https%3A%2F%2Fgraph.microsoft.com%2Fuser.read&client_id={2}"
-			+ "&client_secret={3}&state={4}&grant_type=authorization_code";
+			+ "&client_secret={3}&grant_type=authorization_code";
 	/**
 	 * The default filter mapping.
 	 */
@@ -82,6 +82,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 				setDefaultRequestConfig(RequestConfig.custom().
 						setConnectTimeout(timeout).
 						setConnectionRequestTimeout(timeout).
+						setCookieSpec(CookieSpecs.STANDARD).
 						setSocketTimeout(timeout).
 						build()).
 				build();
@@ -103,15 +104,11 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 		if (requestURI.endsWith(MICROSOFT_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
-				// v2.0 endpoint doesn't like query parameters in redirect_uri
-				// so we use the "state" parameter to remember the appid
-				String appid = request.getParameter("state");
-				String redirectURI = request.getRequestURL().toString();
+				String appid = SecurityUtils.getAppidFromAuthRequest(request);
+				String redirectURI = SecurityUtils.getRedirectUrl(request);
 				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
 				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.MICROSOFT_PREFIX);
-				String entity = Utils.formatMessage(PAYLOAD,
-						URLEncoder.encode(authCode, "UTF-8"),
-						URLEncoder.encode(redirectURI, "UTF-8"), keys[0], keys[1], appid);
+				String entity = Utils.formatMessage(PAYLOAD, authCode, Utils.urlEncode(redirectURI), keys[0], keys[1]);
 
 				HttpPost tokenPost = new HttpPost(TOKEN_URL);
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");

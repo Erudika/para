@@ -34,10 +34,12 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
+import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.NoConnectionReuseStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -55,9 +57,10 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 	private final CloseableHttpClient httpclient;
 	private final ObjectReader jreader;
 	private static final String PROFILE_URL = "https://api.linkedin.com/v1/people/~"
-			+ ":(id,firstName,lastName,email-address,picture-url)?format=json&oauth2_access_token=";
-	private static final String TOKEN_URL = "https://www.linkedin.com/uas/oauth2/accessToken?"
-			+ "grant_type=authorization_code&code={0}&redirect_uri={1}&client_id={2}&client_secret={3}";
+			+ ":(id,firstName,lastName,email-address,picture-url)?format=json";
+	private static final String TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken";
+	private static final String PAYLOAD = "code={0}&redirect_uri={1}&client_id={2}&client_secret={3}"
+			+ "&grant_type=authorization_code";
 
 	/**
 	 * The default filter mapping.
@@ -77,6 +80,7 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 				setDefaultRequestConfig(RequestConfig.custom().
 						setConnectTimeout(timeout).
 						setConnectionRequestTimeout(timeout).
+						setCookieSpec(CookieSpecs.STANDARD).
 						setSocketTimeout(timeout).
 						build()).
 				build();
@@ -98,13 +102,15 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (requestURI.endsWith(LINKEDIN_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
-				String appid = request.getParameter(Config._APPID);
-				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
+				String appid = SecurityUtils.getAppidFromAuthRequest(request);
+				String redirectURI = SecurityUtils.getRedirectUrl(request);
 				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
 				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.LINKEDIN_PREFIX);
-				String url = Utils.formatMessage(TOKEN_URL, authCode, redirectURI, keys[0], keys[1]);
+				String entity = Utils.formatMessage(PAYLOAD, authCode, Utils.urlEncode(redirectURI), keys[0], keys[1]);
 
-				HttpPost tokenPost = new HttpPost(url);
+				HttpPost tokenPost = new HttpPost(TOKEN_URL);
+				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
+				tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
 				try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
 					if (resp1 != null && resp1.getEntity() != null) {
 						Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
@@ -131,7 +137,8 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 		UserAuthentication userAuth = null;
 		User user = new User();
 		if (accessToken != null) {
-			HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
+			HttpGet profileGet = new HttpGet(PROFILE_URL);
+			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 			profileGet.setHeader(HttpHeaders.ACCEPT, "application/json");
 			Map<String, Object> profile = null;
 

@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
+import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -80,6 +81,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 				setDefaultRequestConfig(RequestConfig.custom().
 						setConnectTimeout(timeout).
 						setConnectionRequestTimeout(timeout).
+						setCookieSpec(CookieSpecs.STANDARD).
 						setSocketTimeout(timeout).
 						build()).
 				build();
@@ -101,13 +103,12 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		if (requestURI.endsWith(OAUTH2_ACTION)) {
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
-				String appid = request.getParameter(Config._APPID);
-				String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
+				String appid = SecurityUtils.getAppidFromAuthRequest(request);
+				String redirectURI = SecurityUtils.getRedirectUrl(request);
 				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
 				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.OAUTH2_PREFIX);
 				String entity = Utils.formatMessage(PAYLOAD,
-						URLEncoder.encode(authCode, "UTF-8"),
-						URLEncoder.encode(redirectURI, "UTF-8"),
+						authCode, Utils.urlEncode(redirectURI),
 						URLEncoder.encode(Config.getConfigParam("security.oauth.scope", ""), "UTF-8"),
 						keys[0], keys[1]);
 

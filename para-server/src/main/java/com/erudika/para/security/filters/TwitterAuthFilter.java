@@ -37,6 +37,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.ParseException;
+import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -82,6 +83,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 				setDefaultRequestConfig(RequestConfig.custom().
 						setConnectTimeout(timeout).
 						setConnectionRequestTimeout(timeout).
+						setCookieSpec(CookieSpecs.STANDARD).
 						setSocketTimeout(timeout).
 						build()).
 				build();
@@ -102,9 +104,9 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 		if (requestURI.endsWith(TWITTER_ACTION)) {
 			String verifier = request.getParameter("oauth_verifier");
-			String appid = request.getParameter(Config._APPID);
+			String appid = SecurityUtils.getAppidFromAuthRequest(request);
 			String denied = request.getParameter("denied");
-			String redirectURI = request.getRequestURL().toString() + (appid == null ? "" : "?appid=" + appid);
+			String redirectURI = SecurityUtils.getRedirectUrl(request) + (appid == null ? "" : "?appid=" + appid);
 			App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
 			String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.TWITTER_PREFIX);
 			if (denied != null) {
