@@ -13,7 +13,7 @@
 
 	<properties>
 		<jacksonVer>2.9.6</jacksonVer>
-		<springVer>5.0.7.RELEASE</springVer>
+		<springVer>5.0.8.RELEASE</springVer>
 		<flexmarkVer>0.34.8</flexmarkVer>
 	</properties>
 

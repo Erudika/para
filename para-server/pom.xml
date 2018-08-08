@@ -182,25 +182,6 @@
 
 		<!-- OTHER -->
 		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpcore</artifactId>
-			<!-- Skip 4.4 because it causes SSL exceptions with some hostnames-->
-			<version>4.4.9</version>
-		</dependency>
-		<dependency>
-			<!-- Skip 4.4 because it causes SSL exceptions with some hostnames-->
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpclient</artifactId>
-			<!-- Skip 4.4 because it causes SSL exceptions with some hostnames-->
-			<version>4.5.5</version>
-		 <exclusions>
-		  <exclusion>
-		   <groupId>commons-logging</groupId>
-		   <artifactId>commons-logging</artifactId>
-		  </exclusion>
-		 </exclusions>
-		</dependency>
-		<dependency>
 			<groupId>org.yaml</groupId>
 			<artifactId>snakeyaml</artifactId>
 			<version>1.21</version>
@@ -220,6 +201,12 @@
 			<groupId>com.microsoft.azure.iothub-java-client</groupId>
 			<artifactId>iothub-java-service-client</artifactId>
 			<version>1.0.11</version>
+		 <exclusions>
+		  <exclusion>
+		   <groupId>commons-codec</groupId>
+		   <artifactId>commons-codec</artifactId>
+		  </exclusion>
+		 </exclusions>
 		</dependency>
 		<dependency>
 			<groupId>com.microsoft.azure</groupId>
@@ -284,6 +271,12 @@
 			<artifactId>spring-ldap-test</artifactId>
 			<version>${springLdapVer}</version>
 			<scope>test</scope>
+		 <exclusions>
+		  <exclusion>
+		   <groupId>commons-codec</groupId>
+		   <artifactId>commons-codec</artifactId>
+		  </exclusion>
+		 </exclusions>
 		</dependency>
 		<dependency>
 			<groupId>com.vmlens</groupId>
@@ -303,6 +296,11 @@
 			<version>${springSecVer}</version>
 			<scope>test</scope>
 		</dependency>-->
+	 <dependency>
+	  <groupId>commons-codec</groupId>
+	  <artifactId>commons-codec</artifactId>
+	  <version>1.10</version>
+	 </dependency>
 	</dependencies>
 
 	<build>
