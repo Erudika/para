@@ -44,7 +44,6 @@ import org.apache.http.impl.NoConnectionReuseStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
@@ -110,13 +109,10 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 				HttpPost tokenPost = new HttpPost(TOKEN_URL);
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 				tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
-				LoggerFactory.getLogger(GoogleAuthFilter.class).info(">>>>>> AT1: {} {} {}", tokenPost, entity, redirectURI);
 				try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
-					LoggerFactory.getLogger(GoogleAuthFilter.class).info(">>>>>> AT1: {}", resp1);
 					if (resp1 != null && resp1.getEntity() != null) {
 						Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
 						if (token != null && token.containsKey("access_token")) {
-							LoggerFactory.getLogger(GoogleAuthFilter.class).info(">>>>>> AT2: {} {}", token);
 							userAuth = getOrCreateUser(app, (String) token.get("access_token"));
 						}
 						EntityUtils.consumeQuietly(resp1.getEntity());
