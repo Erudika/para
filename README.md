@@ -127,7 +127,8 @@ Tagged Docker images for Para are located at `erudikaltd/para` on Docker Hub.
 First, create an `application.conf` file in a directory and run this command:
 
 ```
-$ docker run -ti -p 8080:8080 --rm -v $(pwd)/application.conf:/para/application.conf \
+$ docker run -ti -p 8080:8080 --rm -v para-data:/para/data \
+  -v $(pwd)/application.conf:/para/application.conf \
   -e JAVA_OPTS="-Dconfig.file=/para/application.conf" erudikaltd/para
 ```
 
@@ -140,7 +141,7 @@ $ docker run -ti -p 8080:8080 --rm -v $(pwd)/application.conf:/para/application.
 
 To use plugins, create a new `Dockerfile-plugins` which does a multi-stage build like so:
 ```
-# change X.Y.Z with latest tag
+# change X.Y.Z to the version you want to use
 FROM erudikaltd/para:vX.Y.Z-base
 
 FROM erudikaltd/para-dao-mongodb:X.Y.Z
