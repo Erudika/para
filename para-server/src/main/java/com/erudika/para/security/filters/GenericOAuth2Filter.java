@@ -57,9 +57,6 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 
 	private final CloseableHttpClient httpclient;
 	private final ObjectReader jreader;
-	private static final String DOMAIN = Config.getConfigParam("security.oauth.domain", "invalid.co");
-	private static final String PROFILE_URL = Config.getConfigParam("security.oauth.profile_url", "");
-	private static final String TOKEN_URL = Config.getConfigParam("security.oauth.token_url", "");
 	private static final String PAYLOAD = "code={0}&redirect_uri={1}"
 			+ "&scope={2}&client_id={3}&client_secret={4}&grant_type=authorization_code";
 
@@ -109,11 +106,11 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.OAUTH2_PREFIX);
 				String entity = Utils.formatMessage(PAYLOAD,
 						authCode, Utils.urlEncode(redirectURI),
-						URLEncoder.encode(Config.getConfigParam("security.oauth.scope", ""), "UTF-8"),
+						URLEncoder.encode(SecurityUtils.getSettingForApp(app, "security.oauth.scope", ""), "UTF-8"),
 						keys[0], keys[1]);
 
-				String acceptHeader = Config.getConfigParam("security.oauth.accept_header", "");
-				HttpPost tokenPost = new HttpPost(TOKEN_URL);
+				String acceptHeader = SecurityUtils.getSettingForApp(app, "security.oauth.accept_header", "");
+				HttpPost tokenPost = new HttpPost(SecurityUtils.getSettingForApp(app, "security.oauth.token_url", ""));
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 				tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
 				if (!StringUtils.isBlank(acceptHeader)) {
@@ -146,8 +143,8 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		UserAuthentication userAuth = null;
 		User user = new User();
 		if (accessToken != null) {
-			String acceptHeader = Config.getConfigParam("security.oauth.accept_header", "");
-			HttpGet profileGet = new HttpGet(PROFILE_URL);
+			String acceptHeader = SecurityUtils.getSettingForApp(app, "security.oauth.accept_header", "");
+			HttpGet profileGet = new HttpGet(SecurityUtils.getSettingForApp(app, "security.oauth.profile_url", ""));
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 			Map<String, Object> profile = null;
 
@@ -163,10 +160,11 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 				}
 			}
 
-			String accountIdParam = Config.getConfigParam("security.oauth.parameters.id", "id");
-			String pictureParam = Config.getConfigParam("security.oauth.parameters.picture", "picture");
-			String emailParam = Config.getConfigParam("security.oauth.parameters.email", "email");
-			String nameParam = Config.getConfigParam("security.oauth.parameters.name", "name");
+			String accountIdParam = SecurityUtils.getSettingForApp(app, "security.oauth.parameters.id", "id");
+			String pictureParam = SecurityUtils.getSettingForApp(app, "security.oauth.parameters.picture", "picture");
+			String emailDomain = SecurityUtils.getSettingForApp(app, "security.oauth.domain", "paraio.com");
+			String emailParam = SecurityUtils.getSettingForApp(app, "security.oauth.parameters.email", "email");
+			String nameParam = SecurityUtils.getSettingForApp(app, "security.oauth.parameters.name", "name");
 
 			if (profile != null && profile.containsKey(accountIdParam)) {
 				String oauthAccountId = (String) profile.get(accountIdParam);
@@ -183,7 +181,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 					user = new User();
 					user.setActive(true);
 					user.setAppid(getAppid(app));
-					user.setEmail(StringUtils.isBlank(email) ? oauthAccountId + "@" + DOMAIN : email);
+					user.setEmail(StringUtils.isBlank(email) ? oauthAccountId + "@" + emailDomain : email);
 					user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 					user.setPassword(Utils.generateSecurityToken());
 					user.setPicture(getPicture(pic));

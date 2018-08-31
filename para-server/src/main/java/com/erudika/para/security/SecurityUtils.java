@@ -362,6 +362,25 @@ public final class SecurityUtils {
 	}
 
 	/**
+	 * Returns the value of the app setting, read from from app.settings or from the config file if app is root.
+	 * @param app the app in which to look for these keys
+	 * @param key setting key
+	 * @param defaultValue default value
+	 * @return the value of the configuration property as string
+	 */
+	public static String getSettingForApp(App app, String key, String defaultValue) {
+		if (app != null) {
+			Map<String, Object> settings = app.getSettings();
+			if (settings.containsKey(key)) {
+				return settings.getOrDefault(key, defaultValue) + "";
+			} else if (app.isRootApp()) {
+				return Config.getConfigParam(key, defaultValue);
+			}
+		}
+		return defaultValue;
+	}
+
+	/**
 	 * Checks if account is active.
 	 * @param userAuth user authentication object
 	 * @param user user object
