@@ -160,7 +160,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 				}
 			}
 
-			String accountIdParam = SecurityUtils.getSettingForApp(app, "security.oauth.parameters.id", "id");
+			String accountIdParam = SecurityUtils.getSettingForApp(app, "security.oauth.parameters.id", "sub");
 			String pictureParam = SecurityUtils.getSettingForApp(app, "security.oauth.parameters.picture", "picture");
 			String emailDomain = SecurityUtils.getSettingForApp(app, "security.oauth.domain", "paraio.com");
 			String emailParam = SecurityUtils.getSettingForApp(app, "security.oauth.parameters.email", "email");
