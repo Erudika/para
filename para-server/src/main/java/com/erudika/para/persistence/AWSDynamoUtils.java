@@ -29,6 +29,7 @@ import com.amazonaws.services.dynamodbv2.document.KeyAttribute;
 import com.amazonaws.services.dynamodbv2.document.Page;
 import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
 import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.dynamodbv2.document.internal.PageIterable;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
@@ -67,7 +68,6 @@ import com.erudika.para.utils.Pager;
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -448,8 +448,9 @@ public final class AWSDynamoUtils {
 	/**
 	 * Writes multiple items in batch.
 	 * @param items a map of tables->write requests
+	 * @param backoff backoff seconds
 	 */
-	protected static void batchWrite(Map<String, List<WriteRequest>> items) {
+	protected static void batchWrite(Map<String, List<WriteRequest>> items, int backoff) {
 		if (items == null || items.isEmpty()) {
 			return;
 		}
@@ -462,9 +463,9 @@ public final class AWSDynamoUtils {
 			logger.debug("batchWrite(): total {}, cc {}", items.size(), result.getConsumedCapacity());
 
 			if (result.getUnprocessedItems() != null && !result.getUnprocessedItems().isEmpty()) {
-				Thread.sleep(1000);
+				Thread.sleep(backoff * 1000);
 				logger.warn("{} UNPROCESSED write requests!", result.getUnprocessedItems().size());
-				batchWrite(result.getUnprocessedItems());
+				batchWrite(result.getUnprocessedItems(), backoff * 2);
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -522,12 +523,14 @@ public final class AWSDynamoUtils {
 		if (StringUtils.isBlank(appid)) {
 			return results;
 		}
-		Page<Item, QueryOutcome> items = queryGSI(appid, pager);
-		if (items != null) {
-			for (Item item : items) {
-				P obj = ParaObjectUtils.setAnnotatedFields(item.asMap());
-				if (obj != null) {
-					results.add(obj);
+		PageIterable<Item, QueryOutcome> pages = queryGSI(appid, pager);
+		if (pages != null) {
+			for (Page<Item, QueryOutcome> page : pages) {
+				for (Item item : page) {
+					P obj = ParaObjectUtils.setAnnotatedFields(item.asMap());
+					if (obj != null) {
+						results.add(obj);
+					}
 				}
 			}
 		}
@@ -537,7 +540,7 @@ public final class AWSDynamoUtils {
 		return results;
 	}
 
-	private static Page<Item, QueryOutcome> queryGSI(String appid, Pager p) {
+	private static PageIterable<Item, QueryOutcome> queryGSI(String appid, Pager p) {
 		Pager pager = (p != null) ? p : new Pager();
 		Index index = getSharedIndex();
 		QuerySpec spec = new QuerySpec().
@@ -551,7 +554,7 @@ public final class AWSDynamoUtils {
 					new KeyAttribute(Config._ID, pager.getLastKey()), // RANGE/SORT KEY
 					new KeyAttribute(Config._KEY, getKeyForAppid(pager.getLastKey(), appid))); // TABLE PRIMARY KEY
 		}
-		return index != null ? index.query(spec).firstPage() : null;
+		return index != null ? index.query(spec).pages() : null;
 	}
 
 	/**
@@ -562,44 +565,35 @@ public final class AWSDynamoUtils {
 		if (StringUtils.isBlank(appid) || !isSharedAppid(appid)) {
 			return;
 		}
-		Pager pager = new Pager(50);
-		List<WriteRequest> allDeletes = new LinkedList<>();
-		Page<Item, QueryOutcome> items;
-		// read all phase
+		Pager pager = new Pager(25);
+		PageIterable<Item, QueryOutcome> pages;
+		Map<String, AttributeValue> lastKey = null;
 		do {
-			items = queryGSI(appid, pager);
-			if (items == null) {
+			// read all phase
+			pages = queryGSI(appid, pager);
+			if (pages == null) {
 				break;
 			}
-			for (Item item : items) {
-				String key = item.getString(Config._KEY);
-				// only delete rows which belong to the given appid
-				if (StringUtils.startsWith(key, appid.trim())) {
-					logger.debug("Preparing to delete '{}' from shared table, appid: '{}'.", key, appid);
-					pager.setLastKey(item.getString(Config._ID));
-					allDeletes.add(new WriteRequest().withDeleteRequest(new DeleteRequest().
-							withKey(Collections.singletonMap(Config._KEY, new AttributeValue(key)))));
+			List<WriteRequest> deletePage = new LinkedList<>();
+			for (Page<Item, QueryOutcome> page : pages) {
+				for (Item item : page) {
+					String key = item.getString(Config._KEY);
+					// only delete rows which belong to the given appid
+					if (StringUtils.startsWith(key, appid.trim())) {
+						logger.debug("Preparing to delete '{}' from shared table, appid: '{}'.", key, appid);
+						pager.setLastKey(item.getString(Config._ID));
+						deletePage.add(new WriteRequest().withDeleteRequest(new DeleteRequest().
+								withKey(Collections.singletonMap(Config._KEY, new AttributeValue(key)))));
+					}
 				}
+				lastKey = page.getLowLevelResult().getQueryResult().getLastEvaluatedKey();
 			}
-		} while (items.iterator().hasNext());
-
-		// delete all phase
-		final int maxItems = 20;
-		int batchSteps = (allDeletes.size() > maxItems) ? (allDeletes.size() / maxItems) + 1 : 1;
-		List<WriteRequest> reqs = new LinkedList<>();
-		Iterator<WriteRequest> it = allDeletes.iterator();
-		String tableName = getTableNameForAppid(appid);
-		for (int i = 0; i < batchSteps; i++) {
-			while (it.hasNext() && reqs.size() < maxItems) {
-				reqs.add(it.next());
+			// delete all phase
+			logger.info("Deleting {} items belonging to app '{}', from shared table...", deletePage.size(), appid);
+			if (!deletePage.isEmpty()) {
+				batchWrite(Collections.singletonMap(getTableNameForAppid(appid), deletePage), 1);
 			}
-			if (reqs.size() > 0) {
-				logger.info("Deleting {} items belonging to app '{}', from shared table (page {}/{})...",
-						reqs.size(), appid, i + 1, batchSteps);
-				batchWrite(Collections.singletonMap(tableName, reqs));
-			}
-			reqs.clear();
-		}
+		} while (lastKey != null && !lastKey.isEmpty());
 	}
 
 	/**

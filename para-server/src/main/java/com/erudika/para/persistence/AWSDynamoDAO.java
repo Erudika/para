@@ -304,7 +304,7 @@ public class AWSDynamoDAO implements DAO {
 				reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(row)));
 				j++;
 			}
-			batchWrite(Collections.singletonMap(tableName, reqs));
+			batchWrite(Collections.singletonMap(tableName, reqs), 1);
 			reqs.clear();
 			j = 0;
 		}
@@ -418,7 +418,7 @@ public class AWSDynamoDAO implements DAO {
 								new AttributeValue(getKeyForAppid(object.getId(), appid))))));
 			}
 		}
-		batchWrite(Collections.singletonMap(getTableNameForAppid(appid), reqs));
+		batchWrite(Collections.singletonMap(getTableNameForAppid(appid), reqs), 1);
 		logger.debug("DAO.deleteAll() {}", objects.size());
 	}
 
