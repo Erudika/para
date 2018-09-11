@@ -52,6 +52,9 @@ public class SimpleAuthenticationFailureHandler extends SimpleUrlAuthenticationF
 				if (app.isRootApp() && StringUtils.isBlank(customURI)) {
 					customURI = Config.getConfigParam("security.signin_failure", "/");
 				}
+				if (StringUtils.contains(customURI, "cause=?")) {
+					customURI = customURI.replace("cause=?", "cause=" + exception.getMessage());
+				}
 				if (!StringUtils.isBlank(customURI)) {
 					redirectStrategy.sendRedirect(request, response, customURI);
 					return;

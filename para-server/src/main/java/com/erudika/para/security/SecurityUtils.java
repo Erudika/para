@@ -392,14 +392,15 @@ public final class SecurityUtils {
 			if (throwException) {
 				throw new BadCredentialsException("Bad credentials.");
 			} else {
-				logger.error("Bad credentials.");
+				logger.debug("Bad credentials. {}", userAuth);
 				return null;
 			}
 		} else if (!user.getActive()) {
 			if (throwException) {
-				throw new LockedException("Account " + user.getId() + " is locked.");
+				throw new LockedException("Account " + user.getId() + " (" + user.getAppid() + "/" +
+						user.getIdentifier() + ") is locked.");
 			} else {
-				logger.error("Account {} is locked.", user.getId());
+				logger.warn("Account {} ({}/{}) is locked.", user.getId(), user.getAppid(), user.getIdentifier());
 				return null;
 			}
 		}

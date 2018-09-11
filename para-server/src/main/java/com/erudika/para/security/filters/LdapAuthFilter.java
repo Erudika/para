@@ -94,6 +94,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 				}
 			} catch (Exception ex) {
 				LOG.info("Failed to authenticate '{}' with LDAP server: {}", username, ex.getMessage());
+				throw new AuthenticationServiceException(ex.getMessage(), ex.getCause());
 			}
 		}
 
