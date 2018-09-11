@@ -867,7 +867,7 @@ public final class Api1 extends ResourceConfig {
 					List<Map<String, Object>> newProps = (List<Map<String, Object>>) entityRes.getEntity();
 					ArrayList<String> ids = new ArrayList<>(newProps.size());
 					for (Map<String, Object> props : newProps) {
-						if (props.containsKey(Config._ID)) {
+						if (props != null && props.containsKey(Config._ID)) {
 							ids.add((String) props.get(Config._ID));
 						}
 					}

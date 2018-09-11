@@ -547,7 +547,7 @@ public class User implements ParaObject {
 			}
 			return user;
 		}
-		logger.info("User not found for identifier {}/{}, {}.", u.getAppid(), identifier, u.getId());
+		logger.debug("User not found for identifier {}/{}, {}.", u.getAppid(), identifier, u.getId());
 		return null;
 	}
 
