@@ -78,7 +78,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 		UserAuthentication userAuth = null;
 		String username = request.getParameter(USERNAME);
 		String password = request.getParameter(PASSWORD);
-		String appid = request.getParameter(Config._APPID);
+		String appid = SecurityUtils.getAppidFromAuthRequest(request);
 
 		if (requestURI.endsWith(LDAP_ACTION) && !StringUtils.isBlank(username) && !StringUtils.isBlank(password)) {
 			try	{

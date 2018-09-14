@@ -372,7 +372,7 @@ public final class SecurityUtils {
 		if (app != null) {
 			Map<String, Object> settings = app.getSettings();
 			if (settings.containsKey(key)) {
-				return settings.getOrDefault(key, defaultValue) + "";
+				return String.valueOf(settings.getOrDefault(key, defaultValue));
 			} else if (app.isRootApp()) {
 				return Config.getConfigParam(key, defaultValue);
 			}
