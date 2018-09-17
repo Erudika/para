@@ -106,6 +106,8 @@ public final class Config {
 	public static final String OAUTH2_PREFIX = "oa2" + SEPARATOR;
 	/** LDAP prefix - defaults to 'ldap:'. */
 	public static final String LDAP_PREFIX = "ldap" + SEPARATOR;
+	/** SAML prefix - defaults to 'saml:'. */
+	public static final String SAML_PREFIX = "saml" + SEPARATOR;
 
 	//////////  INITIALIZATION PARAMETERS  //////////////
 	/**

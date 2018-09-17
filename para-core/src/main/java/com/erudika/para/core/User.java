@@ -445,6 +445,24 @@ public class User implements ParaObject {
 	}
 
 	/**
+	 * Is the main identifier a LDAP account.
+	 * @return true if user is signed in with a LDAP account
+	 */
+	@JsonIgnore
+	public boolean isLDAPUser() {
+		return StringUtils.startsWithIgnoreCase(identifier, Config.LDAP_PREFIX);
+	}
+
+	/**
+	 * Is the main identifier a SAML account.
+	 * @return true if user is signed in with a SAML account
+	 */
+	@JsonIgnore
+	public boolean isSAMLUser() {
+		return StringUtils.startsWithIgnoreCase(identifier, Config.SAML_PREFIX);
+	}
+
+	/**
 	 * Checks for admin rights.
 	 * @return true if user has admin rights
 	 */
@@ -479,6 +497,10 @@ public class User implements ParaObject {
 			return "linkedin";
 		} else if (isMicrosoftUser()) {
 			return "microsoft";
+		} else if (isLDAPUser()) {
+			return "ldap";
+		} else if (isSAMLUser()) {
+			return "saml";
 		} else {
 			return "generic";
 		}
