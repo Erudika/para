@@ -33,6 +33,8 @@ public final class CsrfProtectionRequestMatcher implements RequestMatcher {
 	public static final RequestMatcher INSTANCE = new CsrfProtectionRequestMatcher();
 	private final Pattern allowedMethods = Pattern.compile("^(GET|HEAD|TRACE|OPTIONS)$");
 	private final Pattern authEndpoints = Pattern.compile("^/\\w+_auth$");
+	private final Pattern samlEndpoint = Pattern.compile("^/saml_auth.*$");
+	private final Pattern samlMetaEndpoint = Pattern.compile("^/saml_metadata.*$");
 
 	private CsrfProtectionRequestMatcher() {
 	}
@@ -41,6 +43,8 @@ public final class CsrfProtectionRequestMatcher implements RequestMatcher {
 	public boolean matches(HttpServletRequest request) {
 		boolean matches = !RestRequestMatcher.INSTANCE.matches(request)
 				&& !IgnoredRequestMatcher.INSTANCE.matches(request)
+				&& !samlMetaEndpoint.matcher(request.getRequestURI()).matches()
+				&& !samlEndpoint.matcher(request.getRequestURI()).matches()
 				&& !authEndpoints.matcher(request.getRequestURI()).matches()
 				&& !allowedMethods.matcher(request.getMethod()).matches();
 		return matches;

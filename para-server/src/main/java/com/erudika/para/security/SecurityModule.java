@@ -28,6 +28,8 @@ import com.erudika.para.security.filters.GenericOAuth2Filter;
 import com.erudika.para.security.filters.FacebookAuthFilter;
 import com.erudika.para.cache.Cache;
 import com.erudika.para.security.filters.LdapAuthFilter;
+import com.erudika.para.security.filters.SAMLAuthFilter;
+import com.erudika.para.security.filters.SAMLMetadataFilter;
 import com.erudika.para.utils.Config;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -56,6 +58,8 @@ public class SecurityModule extends AbstractModule {
 	private MicrosoftAuthFilter microsoftFilter;
 	private GenericOAuth2Filter oauth2Filter;
 	private LdapAuthFilter ldapFilter;
+	private SAMLAuthFilter samlFilter;
+	private SAMLMetadataFilter samlMetaFilter;
 	private JWTRestfulAuthFilter jwtFilter;
 
 	protected void configure() {
@@ -358,6 +362,45 @@ public class SecurityModule extends AbstractModule {
 	 */
 	public void setLdapAuthFilter(LdapAuthFilter ldapFilter) {
 		this.ldapFilter = ldapFilter;
+	}
+
+	/**
+	 * @return filter
+	 */
+	@Provides
+	public SAMLAuthFilter getSamlAuthFilter() {
+		if (samlFilter == null) {
+			samlFilter = new SAMLAuthFilter(SAMLAuthFilter.SAML_ACTION + "/*");
+			samlFilter.setAuthenticationSuccessHandler(getSuccessHandler());
+			samlFilter.setAuthenticationFailureHandler(getFailureHandler());
+			samlFilter.setRememberMeServices(getRemembeMeServices());
+		}
+		return samlFilter;
+	}
+
+	/**
+	 * @param samlFilter filter
+	 */
+	public void setSamlAuthFilter(SAMLAuthFilter samlFilter) {
+		this.samlFilter = samlFilter;
+	}
+
+	/**
+	 * @return filter
+	 */
+	@Provides
+	public SAMLMetadataFilter getSamlMetadataFilter() {
+		if (samlMetaFilter == null) {
+			samlMetaFilter = new SAMLMetadataFilter();
+		}
+		return samlMetaFilter;
+	}
+
+	/**
+	 * @param samleMetaFilter filter
+	 */
+	public void setSamlMetadataFilter(SAMLMetadataFilter samleMetaFilter) {
+		this.samlMetaFilter = samleMetaFilter;
 	}
 
 	/**

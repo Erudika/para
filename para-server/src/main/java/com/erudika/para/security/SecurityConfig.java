@@ -28,6 +28,8 @@ import com.erudika.para.security.filters.GenericOAuth2Filter;
 import com.erudika.para.security.filters.FacebookAuthFilter;
 import static com.erudika.para.ParaServer.getInstance;
 import com.erudika.para.security.filters.LdapAuthFilter;
+import com.erudika.para.security.filters.SAMLAuthFilter;
+import com.erudika.para.security.filters.SAMLMetadataFilter;
 import com.erudika.para.utils.Config;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigObject;
@@ -76,6 +78,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	private final MicrosoftAuthFilter microsoftFilter;
 	private final GenericOAuth2Filter oauth2Filter;
 	private final LdapAuthFilter ldapFilter;
+	private final SAMLAuthFilter samlFilter;
+	private final SAMLMetadataFilter samlMetaFilter;
 	private final JWTRestfulAuthFilter jwtFilter;
 
 	/**
@@ -94,6 +98,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		microsoftFilter = getInstance(MicrosoftAuthFilter.class);
 		oauth2Filter = getInstance(GenericOAuth2Filter.class);
 		ldapFilter = getInstance(LdapAuthFilter.class);
+		samlFilter = getInstance(SAMLAuthFilter.class);
+		samlMetaFilter = getInstance(SAMLMetadataFilter.class);
 		jwtFilter = getInstance(JWTRestfulAuthFilter.class);
 	}
 
@@ -234,6 +240,15 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		if (ldapFilter != null) {
 			ldapFilter.setAuthenticationManager(authenticationManager());
 			http.addFilterAfter(ldapFilter, BasicAuthenticationFilter.class);
+		}
+
+		if (samlFilter != null) {
+			samlFilter.setAuthenticationManager(authenticationManager());
+			http.addFilterAfter(samlFilter, BasicAuthenticationFilter.class);
+		}
+
+		if (samlMetaFilter != null) {
+			http.addFilterAfter(samlMetaFilter, BasicAuthenticationFilter.class);
 		}
 	}
 

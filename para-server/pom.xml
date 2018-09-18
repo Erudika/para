@@ -95,6 +95,13 @@
 			<version>4.0.6</version>
 		</dependency>
 
+		<!-- SAML -->
+		<dependency>
+			<groupId>com.onelogin</groupId>
+			<artifactId>java-saml</artifactId>
+			<version>2.3.0</version>
+		</dependency>
+
 		<!--	 CAFFEINE -->
 		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>

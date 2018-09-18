@@ -22,6 +22,7 @@ import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.User;
 import com.erudika.para.rest.Signer;
+import com.erudika.para.security.filters.SAMLAuthFilter;
 import com.erudika.para.utils.BufferedRequestWrapper;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
@@ -489,7 +490,11 @@ public final class SecurityUtils {
 		String appid1 = request.getParameter("state");
 		String appid2 = request.getParameter(Config._APPID);
 		if (StringUtils.isBlank(appid1) && StringUtils.isBlank(appid2)) {
-			return null;
+			if (StringUtils.startsWith(request.getRequestURI(), SAMLAuthFilter.SAML_ACTION + "/")) {
+				return StringUtils.trimToNull(request.getRequestURI().substring(SAMLAuthFilter.SAML_ACTION.length() + 1));
+			} else {
+				return null;
+			}
 		} else if (!StringUtils.isBlank(appid1)) {
 			return StringUtils.trimToNull(appid1);
 		} else {
