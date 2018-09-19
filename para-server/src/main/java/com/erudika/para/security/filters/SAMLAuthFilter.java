@@ -244,11 +244,10 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 		conf.put(DEBUG_PROPERTY_KEY, !Config.IN_PRODUCTION);
 
 		// SP
-		conf.put(SP_ENTITYID_PROPERTY_KEY, getConfigProp(app, SP_ENTITYID_PROPERTY_KEY, ""));
+		String spEntityId = getConfigProp(app, SP_ENTITYID_PROPERTY_KEY, "");
+		conf.put(SP_ENTITYID_PROPERTY_KEY, spEntityId);
 		conf.put(SP_ASSERTION_CONSUMER_SERVICE_URL_PROPERTY_KEY,
-				getConfigProp(app, SP_ASSERTION_CONSUMER_SERVICE_URL_PROPERTY_KEY, ""));
-		conf.put(SP_ASSERTION_CONSUMER_SERVICE_BINDING_PROPERTY_KEY,
-				getConfigProp(app, SP_ASSERTION_CONSUMER_SERVICE_BINDING_PROPERTY_KEY, Constants.BINDING_HTTP_POST));
+				getConfigProp(app, SP_ASSERTION_CONSUMER_SERVICE_URL_PROPERTY_KEY, spEntityId));
 		conf.put(SP_NAMEIDFORMAT_PROPERTY_KEY,
 				getConfigProp(app, SP_NAMEIDFORMAT_PROPERTY_KEY, Constants.NAMEID_UNSPECIFIED));
 		conf.put(SP_X509CERT_PROPERTY_KEY, Utils.base64dec(getConfigProp(app, SP_X509CERT_PROPERTY_KEY, "")));
@@ -257,7 +256,6 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 		// IDP
 		String entityId = getConfigProp(app, IDP_ENTITYID_PROPERTY_KEY, "");
 		String ssoServiceUrl = getConfigProp(app, IDP_SINGLE_SIGN_ON_SERVICE_URL_PROPERTY_KEY, "");
-		String ssoServiceBinding = getConfigProp(app, IDP_SINGLE_SIGN_ON_SERVICE_BINDING_PROPERTY_KEY, "");
 		String idpCert = Utils.base64dec(getConfigProp(app, IDP_X509CERT_PROPERTY_KEY, ""));
 		if (!StringUtils.isBlank(entityId)) {
 			conf.put(IDP_ENTITYID_PROPERTY_KEY, entityId);
@@ -265,20 +263,15 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (!StringUtils.isBlank(ssoServiceUrl)) {
 			conf.put(IDP_SINGLE_SIGN_ON_SERVICE_URL_PROPERTY_KEY, ssoServiceUrl);
 		}
-		if (!StringUtils.isBlank(ssoServiceBinding)) {
-			conf.put(IDP_SINGLE_SIGN_ON_SERVICE_BINDING_PROPERTY_KEY, ssoServiceBinding);
-		}
 		if (!StringUtils.isBlank(idpCert)) {
 			conf.put(IDP_X509CERT_PROPERTY_KEY, idpCert);
 		}
 
 		// Security
-		conf.put(SECURITY_NAMEID_ENCRYPTED, getConfigPropBool(app, SECURITY_NAMEID_ENCRYPTED, false));
 		conf.put(SECURITY_AUTHREQUEST_SIGNED, getConfigPropBool(app, SECURITY_AUTHREQUEST_SIGNED, false));
 		conf.put(SECURITY_WANT_MESSAGES_SIGNED, getConfigPropBool(app, SECURITY_WANT_MESSAGES_SIGNED, false));
 		conf.put(SECURITY_WANT_ASSERTIONS_SIGNED, getConfigPropBool(app, SECURITY_WANT_ASSERTIONS_SIGNED, false));
 		conf.put(SECURITY_WANT_ASSERTIONS_ENCRYPTED, getConfigPropBool(app, SECURITY_WANT_ASSERTIONS_ENCRYPTED, false));
-		conf.put(SECURITY_WANT_NAMEID, getConfigPropBool(app, SECURITY_WANT_NAMEID, true));
 		conf.put(SECURITY_WANT_NAMEID_ENCRYPTED, getConfigPropBool(app, SECURITY_WANT_NAMEID_ENCRYPTED, false));
 		conf.put(SECURITY_SIGN_METADATA, getConfigPropBool(app, SECURITY_SIGN_METADATA, false));
 		conf.put(SECURITY_WANT_XML_VALIDATION, getConfigPropBool(app, SECURITY_WANT_XML_VALIDATION, true));
