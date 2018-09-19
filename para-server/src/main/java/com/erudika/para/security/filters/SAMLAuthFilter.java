@@ -282,7 +282,7 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 		conf.put(SECURITY_WANT_NAMEID_ENCRYPTED, getConfigPropBool(app, SECURITY_WANT_NAMEID_ENCRYPTED, false));
 		conf.put(SECURITY_SIGN_METADATA, getConfigPropBool(app, SECURITY_SIGN_METADATA, false));
 		conf.put(SECURITY_WANT_XML_VALIDATION, getConfigPropBool(app, SECURITY_WANT_XML_VALIDATION, true));
-		conf.put(SECURITY_SIGNATURE_ALGORITHM, getConfigProp(app, SECURITY_SIGNATURE_ALGORITHM, Constants.RSA_SHA256));
+		conf.put(SECURITY_SIGNATURE_ALGORITHM, getConfigProp(app, SECURITY_SIGNATURE_ALGORITHM, ""));
 
 		return conf;
 	}

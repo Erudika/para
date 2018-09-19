@@ -27,7 +27,7 @@ See how **Para** [compares to other open source backend frameworks](https://erud
 - Distributed and local object cache (Hazelcast, Caffeine)
 - Multitenancy - each app has its own table, index and cache
 - IoT support and integration with AWS and Azure
-- Flexible security based on Spring Security (LDAP, social login, CSRF protection, etc.)
+- Flexible security based on Spring Security (LDAP, SAML, social login, CSRF protection, etc.)
 - Stateless client authentication with JSON Web Tokens (JWT)
 - Simple but effective resource permissions for client access control
 - Robust constraint validation mechanism based on JSR-303 and Hibernate Validator
