@@ -245,9 +245,9 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 		// SP
 		String spEntityId = getConfigProp(app, SP_ENTITYID_PROPERTY_KEY, "");
+		String spACS = getConfigProp(app, SP_ASSERTION_CONSUMER_SERVICE_URL_PROPERTY_KEY, spEntityId);
 		conf.put(SP_ENTITYID_PROPERTY_KEY, spEntityId);
-		conf.put(SP_ASSERTION_CONSUMER_SERVICE_URL_PROPERTY_KEY,
-				getConfigProp(app, SP_ASSERTION_CONSUMER_SERVICE_URL_PROPERTY_KEY, spEntityId));
+		conf.put(SP_ASSERTION_CONSUMER_SERVICE_URL_PROPERTY_KEY, StringUtils.isBlank(spACS) ? spEntityId : spACS);
 		conf.put(SP_NAMEIDFORMAT_PROPERTY_KEY,
 				getConfigProp(app, SP_NAMEIDFORMAT_PROPERTY_KEY, Constants.NAMEID_UNSPECIFIED));
 		conf.put(SP_X509CERT_PROPERTY_KEY, Utils.base64dec(getConfigProp(app, SP_X509CERT_PROPERTY_KEY, "")));
