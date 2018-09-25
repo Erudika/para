@@ -30,7 +30,24 @@ import com.onelogin.saml2.exception.SettingsException;
 import static com.onelogin.saml2.settings.IdPMetadataParser.parseRemoteXML;
 import com.onelogin.saml2.settings.Saml2Settings;
 import com.onelogin.saml2.settings.SettingsBuilder;
-import static com.onelogin.saml2.settings.SettingsBuilder.*;
+import static com.onelogin.saml2.settings.SettingsBuilder.DEBUG_PROPERTY_KEY;
+import static com.onelogin.saml2.settings.SettingsBuilder.IDP_ENTITYID_PROPERTY_KEY;
+import static com.onelogin.saml2.settings.SettingsBuilder.IDP_SINGLE_SIGN_ON_SERVICE_URL_PROPERTY_KEY;
+import static com.onelogin.saml2.settings.SettingsBuilder.IDP_X509CERT_PROPERTY_KEY;
+import static com.onelogin.saml2.settings.SettingsBuilder.SECURITY_AUTHREQUEST_SIGNED;
+import static com.onelogin.saml2.settings.SettingsBuilder.SECURITY_SIGNATURE_ALGORITHM;
+import static com.onelogin.saml2.settings.SettingsBuilder.SECURITY_SIGN_METADATA;
+import static com.onelogin.saml2.settings.SettingsBuilder.SECURITY_WANT_ASSERTIONS_ENCRYPTED;
+import static com.onelogin.saml2.settings.SettingsBuilder.SECURITY_WANT_ASSERTIONS_SIGNED;
+import static com.onelogin.saml2.settings.SettingsBuilder.SECURITY_WANT_MESSAGES_SIGNED;
+import static com.onelogin.saml2.settings.SettingsBuilder.SECURITY_WANT_NAMEID_ENCRYPTED;
+import static com.onelogin.saml2.settings.SettingsBuilder.SECURITY_WANT_XML_VALIDATION;
+import static com.onelogin.saml2.settings.SettingsBuilder.SP_ASSERTION_CONSUMER_SERVICE_URL_PROPERTY_KEY;
+import static com.onelogin.saml2.settings.SettingsBuilder.SP_ENTITYID_PROPERTY_KEY;
+import static com.onelogin.saml2.settings.SettingsBuilder.SP_NAMEIDFORMAT_PROPERTY_KEY;
+import static com.onelogin.saml2.settings.SettingsBuilder.SP_PRIVATEKEY_PROPERTY_KEY;
+import static com.onelogin.saml2.settings.SettingsBuilder.SP_X509CERT_PROPERTY_KEY;
+import static com.onelogin.saml2.settings.SettingsBuilder.STRICT_PROPERTY_KEY;
 import com.onelogin.saml2.util.Constants;
 import java.io.IOException;
 import java.net.URL;
@@ -137,47 +154,21 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	/**
 	 * @param app the app where the user will be created, use null for root app
-	 * @param profile SAML attibutes from response assertion
+	 * @param samlAttributes SAML attibutes from response assertion
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException ex
 	 */
-	public UserAuthentication getOrCreateUser(App app, Map<String, List<String>> profile) throws IOException {
+	public UserAuthentication getOrCreateUser(App app, Map<String, List<String>> samlAttributes) throws IOException {
 		UserAuthentication userAuth = null;
 		User user = new User();
-		String useridIdParam = SecurityUtils.getSettingForApp(app, "security.saml.attributes.id", "UserID");
-		String pictureParam = SecurityUtils.getSettingForApp(app, "security.saml.attributes.picture", "Picture");
-		String emailParam = SecurityUtils.getSettingForApp(app, "security.saml.attributes.email", "EmailAddress");
-		String nameParam = SecurityUtils.getSettingForApp(app, "security.saml.attributes.name", "GivenName");
-		String fnameParam = SecurityUtils.getSettingForApp(app, "security.saml.attributes.firstname", "FirstName");
-		String lnameParam = SecurityUtils.getSettingForApp(app, "security.saml.attributes.lastname", "LastName");
-		String emailDomain = SecurityUtils.getSettingForApp(app, "security.saml.domain", "paraio.com");
+		Map<String, String> userData = populateUserData(app, samlAttributes);
 
-		if (profile != null && profile.containsKey(useridIdParam)) {
-			String samlUserId = profile.get(useridIdParam).get(0);
-			String pic = null;
-			String email = null;
-			String name = "";
-			if (profile.containsKey(pictureParam) && !profile.get(pictureParam).isEmpty()) {
-				pic = profile.get(pictureParam).get(0);
-			}
-			if (profile.containsKey(emailParam) && !profile.get(emailParam).isEmpty()) {
-				email = profile.get(emailParam).get(0);
-			} else {
-				LOG.warn("Missing value for SAML attribute '{}'.", emailParam);
-			}
-			if (profile.containsKey(nameParam) && !profile.get(nameParam).isEmpty()) {
-				name = profile.get(nameParam).get(0);
-			}
-			if (name.isEmpty() && profile.containsKey(fnameParam) && !profile.get(fnameParam).isEmpty()) {
-				name = profile.get(fnameParam).get(0);
-			}
-			if (profile.containsKey(lnameParam) && !profile.get(lnameParam).isEmpty()) {
-				name += " " + profile.get(lnameParam).get(0);
-			}
-			name = StringUtils.trimToEmpty(name);
-			if (name.isEmpty()) {
-				LOG.warn("Missing values for SAML attributes '{}', '{}', '{}'.", nameParam, fnameParam, lnameParam);
-			}
+		if (!userData.isEmpty()) {
+			String samlUserId = userData.get("uid");
+			String pic = userData.getOrDefault("pic", null);
+			String email = userData.getOrDefault("email", null);
+			String name = userData.getOrDefault("name", "");
+			String emailDomain = userData.get("domain");
 
 			user.setAppid(getAppid(app));
 			user.setIdentifier(Config.SAML_PREFIX.concat(samlUserId));
@@ -213,10 +204,47 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 				}
 			}
 			userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+		}
+		return SecurityUtils.checkIfActive(userAuth, user, false);
+	}
+
+	private static Map<String, String> populateUserData(App app, Map<String, List<String>> attributes) {
+		Map<String, String> data = new HashMap<String, String>();
+		String useridIdParam = SecurityUtils.getSettingForApp(app, "security.saml.attributes.id", "UserID");
+		String pictureParam = SecurityUtils.getSettingForApp(app, "security.saml.attributes.picture", "Picture");
+		String emailParam = SecurityUtils.getSettingForApp(app, "security.saml.attributes.email", "EmailAddress");
+		String nameParam = SecurityUtils.getSettingForApp(app, "security.saml.attributes.name", "GivenName");
+		String fnameParam = SecurityUtils.getSettingForApp(app, "security.saml.attributes.firstname", "FirstName");
+		String lnameParam = SecurityUtils.getSettingForApp(app, "security.saml.attributes.lastname", "LastName");
+		String emailDomain = SecurityUtils.getSettingForApp(app, "security.saml.domain", "paraio.com");
+
+		if (attributes.containsKey(useridIdParam)) {
+			data.put("uid", attributes.get(useridIdParam).get(0));
+			data.put("domain", emailDomain);
+			if (attributes.containsKey(pictureParam) && !attributes.get(pictureParam).isEmpty()) {
+				data.put("pic", attributes.get(pictureParam).get(0));
+			}
+			if (attributes.containsKey(emailParam) && !attributes.get(emailParam).isEmpty()) {
+				data.put("email", attributes.get(emailParam).get(0));
+			} else {
+				LOG.warn("Missing value for SAML attribute '{}'.", emailParam);
+			}
+			if (attributes.containsKey(nameParam) && !attributes.get(nameParam).isEmpty()) {
+				data.put("name", attributes.get(nameParam).get(0));
+			}
+			if (!data.containsKey("name") && attributes.containsKey(fnameParam)) {
+				String fname = attributes.get(fnameParam).get(0);
+				if (attributes.containsKey(lnameParam)) {
+					data.put("name", StringUtils.trimToEmpty(fname + " " + attributes.get(lnameParam).get(0)));
+				}
+			}
+			if (!data.containsKey("name") || StringUtils.isBlank(data.get("name"))) {
+				LOG.warn("Missing values for SAML attributes '{}', '{}', '{}'.", nameParam, fnameParam, lnameParam);
+			}
 		} else {
 			LOG.error("Incorrect SAML attibute mapping - couldn't find user id value for key '{}'.", useridIdParam);
 		}
-		return SecurityUtils.checkIfActive(userAuth, user, false);
+		return data;
 	}
 
 	private static String getPicture(String pic) {
