@@ -12,7 +12,7 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>5.0.7.RELEASE</springSecVer>
+		<springSecVer>5.1.0.RELEASE</springSecVer>
 		<springLdapVer>2.3.2.RELEASE</springLdapVer>
 	</properties>
 
@@ -92,7 +92,7 @@
 		<dependency>
 			<groupId>com.unboundid</groupId>
 			<artifactId>unboundid-ldapsdk</artifactId>
-			<version>4.0.6</version>
+			<version>4.0.8</version>
 		</dependency>
 
 		<!-- SAML -->
@@ -158,7 +158,7 @@
 		<dependency>
 			<groupId>com.google.inject</groupId>
 			<artifactId>guice</artifactId>
-			<version>3.0</version>
+			<version>4.2.1</version>
 		</dependency>
 
 		<!-- METRICS -->
@@ -191,18 +191,18 @@
 		<dependency>
 			<groupId>org.yaml</groupId>
 			<artifactId>snakeyaml</artifactId>
-			<version>1.21</version>
+			<version>1.23</version>
 		</dependency>
 		<dependency>
 			<groupId>javax.servlet</groupId>
 			<artifactId>javax.servlet-api</artifactId>
-			<version>4.0.0</version>
+			<version>4.0.1</version>
 			<!--<scope>provided</scope>-->
 		</dependency>
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>5.10</version>
+			<version>6.0.2</version>
 		</dependency>
 		<dependency>
 			<groupId>com.microsoft.azure.iothub-java-client</groupId>
@@ -236,13 +236,13 @@
 		<dependency>
 			<groupId>com.erudika</groupId>
 			<artifactId>para-search-lucene</artifactId>
-			<version>1.29.0</version>
+			<version>1.30.2</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.elasticmq</groupId>
 			<artifactId>elasticmq-rest-sqs_2.11</artifactId>
-			<version>0.13.8</version>
+			<version>0.14.5</version>
 			<scope>test</scope>
 			<exclusions>
 				<exclusion>
@@ -306,7 +306,7 @@
 	 <dependency>
 	  <groupId>commons-codec</groupId>
 	  <artifactId>commons-codec</artifactId>
-	  <version>1.10</version>
+	  <version>1.11</version>
 	 </dependency>
 	</dependencies>
 
@@ -341,7 +341,7 @@
 
 			<plugin>
 				<artifactId>maven-dependency-plugin</artifactId>
-				<version>3.0.2</version>
+				<version>3.1.1</version>
 				<executions>
 					<execution>
 						<id>unpack-dynamodb-local</id>
@@ -392,7 +392,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.0.0</version>
+				<version>3.0.1</version>
 				<executions>
 					<execution>
 						<id>javadocs</id>

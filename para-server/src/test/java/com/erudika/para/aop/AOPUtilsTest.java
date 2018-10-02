@@ -71,8 +71,8 @@ public class AOPUtilsTest {
 		assertNull(getArgOfListOfType(new Object[]{badList}, ParaObject.class));
 
 		assertNull(getFirstArgOfString(new Object[]{list1}));
-		assertNotNull(getFirstArgOfString(new Object[]{new Integer(123), "asd"}));
-		assertEquals("asd", getFirstArgOfString(new Object[]{new Integer(123), "asd"}));
+		assertNotNull(getFirstArgOfString(new Object[]{Integer.valueOf(123), "asd"}));
+		assertEquals("asd", getFirstArgOfString(new Object[]{Integer.valueOf(123), "asd"}));
 
 		DAO dao = new MockDAO();
 		Search search = getSearch(dao);

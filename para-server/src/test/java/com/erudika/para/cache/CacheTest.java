@@ -58,7 +58,7 @@ public abstract class CacheTest {
 		c.put("", "empty");
 		c.put("1", "");
 		c.put("2", null);
-		c.put("123", new Integer(123));
+		c.put("123", Integer.valueOf(123));
 		c.put("1234", new User("111"));
 		assertFalse(c.contains(""));
 		assertTrue(c.contains("1"));

@@ -49,7 +49,7 @@ public enum CurrencyUtils {
 				for (Locale l : locales) {
 					if (!StringUtils.isBlank(l.getCountry())) {
 						countryToLocaleMap.put(l.getCountry(), l);
-						Currency c = Currency.getInstance(l);
+						Currency c = getCurrency(l);
 						if (c != null) {
 							currencyToLocaleMap.put(c.getCurrencyCode(), l);
 							currenciesMap.put(c.getCurrencyCode(), getCurrencyName(c.getCurrencyCode(),
@@ -110,6 +110,18 @@ public enum CurrencyUtils {
 		}
 
 		@Override
+		public Currency getCurrency(Locale loc) {
+			if (loc != null) {
+				try {
+					return Currency.getInstance(loc);
+				} catch (Exception e) {
+					logger.debug(null, e);
+				}
+			}
+			return null;
+		}
+
+		@Override
 		public Map<String, String> getCurrenciesMap() {
 			return currenciesMap;
 		}
@@ -153,6 +165,14 @@ public enum CurrencyUtils {
 	 * @return the currency
 	 */
 	public abstract Currency getCurrency(String cur);
+
+	/**
+	 * Returns the currency instance for a given locale.
+	 *
+	 * @param loc locale
+	 * @return the currency instance or null if not found
+	 */
+	public abstract Currency getCurrency(Locale loc);
 
 	/**
 	 * Returns a map of all available currencies in the form:

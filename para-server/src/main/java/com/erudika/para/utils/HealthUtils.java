@@ -1,11 +1,11 @@
 package com.erudika.para.utils;
 
-import com.eaio.uuid.UUID;
 import com.erudika.para.InitializeListener;
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
@@ -65,7 +65,7 @@ public enum HealthUtils implements InitializeListener, Runnable {
 				// test the cache by putting a dummy object in, then remove it
 				// DO NOT assume that the root app object is still cached here from the last read() call above
 				if (healthy && Config.isCacheEnabled()) {
-					String cacheTestId = new UUID().toString();
+					String cacheTestId = UUID.randomUUID().toString();
 					Para.getCache().put(cacheTestId, "ok");
 					healthy = Para.getCache().contains(cacheTestId);
 					Para.getCache().remove(cacheTestId);

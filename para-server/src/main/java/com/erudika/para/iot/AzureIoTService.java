@@ -17,7 +17,6 @@
  */
 package com.erudika.para.iot;
 
-import com.eaio.uuid.UUID;
 import com.erudika.para.DestroyListener;
 import com.erudika.para.Para;
 import com.erudika.para.core.Thing;
@@ -36,6 +35,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -173,9 +173,9 @@ public class AzureIoTService implements IoTService {
 					writeValueAsBytes(thing.getDeviceState()));
 
 			messageToSend.setDeliveryAcknowledgement(DeliveryAcknowledgement.None);
-			messageToSend.setMessageId(new UUID().toString());
+			messageToSend.setMessageId(UUID.randomUUID().toString());
 			messageToSend.setExpiryTimeUtc(new Date(now.getTime() + 24 * 60 * 60 * 1000));
-			messageToSend.setCorrelationId(new UUID().toString());
+			messageToSend.setCorrelationId(UUID.randomUUID().toString());
 //			messageToSend.setUserId(thing.getCreatorid());
 			messageToSend.clearCustomProperties();
 

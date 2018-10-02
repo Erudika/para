@@ -463,7 +463,7 @@ public final class AWSDynamoUtils {
 			logger.debug("batchWrite(): total {}, cc {}", items.size(), result.getConsumedCapacity());
 
 			if (result.getUnprocessedItems() != null && !result.getUnprocessedItems().isEmpty()) {
-				Thread.sleep(backoff * 1000);
+				Thread.sleep((long) backoff * 1000L);
 				logger.warn("{} UNPROCESSED write requests!", result.getUnprocessedItems().size());
 				batchWrite(result.getUnprocessedItems(), backoff * 2);
 			}
