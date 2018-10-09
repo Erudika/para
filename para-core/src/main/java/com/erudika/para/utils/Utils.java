@@ -637,11 +637,11 @@ public final class Utils {
 
 	/**
 	 * Email validation.
-	 * @param url a URL
+	 * @param email email address
 	 * @return true if the URL is valid
 	 */
-	public static boolean isValidEmail(String url) {
-		return EMAIL_PATTERN.matcher(url).matches();
+	public static boolean isValidEmail(String email) {
+		return email != null && EMAIL_PATTERN.matcher(email).matches();
 	}
 
 	/**
