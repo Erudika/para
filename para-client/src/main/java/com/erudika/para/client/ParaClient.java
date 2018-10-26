@@ -101,8 +101,7 @@ public final class ParaClient {
 		clientConfig.register(GenericExceptionMapper.class);
 		clientConfig.register(new JacksonJsonProvider(mapper));
 		clientConfig.connectorProvider(new HttpUrlConnectorProvider().useSetMethodWorkaround());
-		SSLContext sslContext = SslConfigurator.newInstance().securityProtocol("TLSv1.2").createSSLContext();
-		System.setProperty("https.protocols", "TLSv1.2");
+		SSLContext sslContext = SslConfigurator.newInstance().createSSLContext();
 		apiClient = ClientBuilder.newBuilder().
 				sslContext(sslContext).
 				withConfig(clientConfig).build();
