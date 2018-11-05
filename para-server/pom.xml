@@ -236,7 +236,7 @@
 		<dependency>
 			<groupId>com.erudika</groupId>
 			<artifactId>para-search-lucene</artifactId>
-			<version>1.30.2</version>
+			<version>1.31.0</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
