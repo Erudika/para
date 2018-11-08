@@ -25,6 +25,7 @@ public enum HealthUtils implements InitializeListener, Runnable {
 
 		private boolean healthy = false;
 		private boolean wasHealthy = false;
+		private boolean rootAppExists = false;
 		private ScheduledFuture<?> scheduledHealthCheck;
 		private final List<String> failedServices = new ArrayList<>(3);
 		private final int healthCheckInterval = Config.getConfigInt("health.check_interval", 60);
@@ -53,9 +54,12 @@ public enum HealthUtils implements InitializeListener, Runnable {
 					Para.getCache().remove(rootAppId);
 				}
 				// read the root app from the DAO
-				if (Para.getDAO() != null && Para.getDAO().read(rootAppId) == null) {
-					healthy = false;
-					failedServices.add("DAO");
+				if (Para.getDAO() != null) {
+					rootAppExists = Para.getDAO().read(rootAppId) != null;
+					if (!rootAppExists) {
+						healthy = false;
+						failedServices.add("DAO");
+					}
 				}
 				// read the root app from the search, if enabled
 				if (healthy && Config.isSearchEnabled() && Para.getSearch().findById(rootAppId) == null) {
@@ -88,7 +92,9 @@ public enum HealthUtils implements InitializeListener, Runnable {
 		public void onInitialize() {
 			performHealthCheck();
 			if (!isHealthy()) {
-				logger.warn("Server is unhealthy - root app not found. Open /v1/_setup in the browser to initialize Para.");
+				logger.warn("Server is unhealthy - " + (rootAppExists ?
+						"the search index may be corrupted and may have to be rebuilt." :
+						"root app not found. Open /v1/_setup in the browser to initialize Para."));
 			}
 			if (Config.getConfigBoolean("health_check_enabled", true) && scheduledHealthCheck == null) {
 				scheduledHealthCheck = Para.getScheduledExecutorService().
