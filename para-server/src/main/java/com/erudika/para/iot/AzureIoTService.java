@@ -25,6 +25,7 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.microsoft.azure.eventhubs.EventData;
 import com.microsoft.azure.eventhubs.EventHubClient;
+import com.microsoft.azure.eventhubs.EventPosition;
 import com.microsoft.azure.eventhubs.PartitionReceiver;
 import com.microsoft.azure.iot.service.sdk.DeliveryAcknowledgement;
 import com.microsoft.azure.iot.service.sdk.Device;
@@ -216,8 +217,9 @@ public class AzureIoTService implements IoTService {
 	private static EventHubClient receiveEventsAsync(final String partitionId) {
 		EventHubClient client = null;
 		try {
-			client = EventHubClient.createFromConnectionStringSync(EVENTHUB_CONN_STR);
-			client.createReceiver(EventHubClient.DEFAULT_CONSUMER_GROUP_NAME, partitionId, Instant.now()).
+			client = EventHubClient.createSync(EVENTHUB_CONN_STR, Para.getExecutorService());
+			client.createReceiver(EventHubClient.DEFAULT_CONSUMER_GROUP_NAME, partitionId,
+						EventPosition.fromEnqueuedTime(Instant.now())).
 					thenAccept(new Receiver(partitionId));
 		} catch (Exception e) {
 			logger.warn("Couldn't start receiving messages from Azure cloud: {}", e.getMessage());

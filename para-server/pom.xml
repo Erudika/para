@@ -202,7 +202,7 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>6.0.2</version>
+			<version>6.3</version>
 		</dependency>
 		<dependency>
 			<groupId>com.microsoft.azure.iothub-java-client</groupId>
@@ -218,12 +218,12 @@
 		<dependency>
 			<groupId>com.microsoft.azure</groupId>
 			<artifactId>azure-eventhubs</artifactId>
-			<version>0.15.1</version>
+			<version>1.2.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.qpid</groupId>
 			<artifactId>proton-j</artifactId>
-			<version>0.25.0</version>
+			<version>0.30.0</version>
 		</dependency>
 
 		<!-- TESTING -->
