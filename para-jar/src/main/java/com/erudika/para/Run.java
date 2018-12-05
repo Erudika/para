@@ -20,6 +20,10 @@ package com.erudika.para;
 /**
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public interface Dummy {
+public class Run {
+
+	public static void main(String[] args) {
+		ParaServer.main(args);
+	}
 
 }
