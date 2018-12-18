@@ -26,8 +26,10 @@ import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.security.UserAuthentication;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -56,8 +58,10 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private final CloseableHttpClient httpclient;
 	private final ObjectReader jreader;
-	private static final String PROFILE_URL = "https://api.linkedin.com/v1/people/~"
-			+ ":(id,firstName,lastName,email-address,picture-url)?format=json";
+	private static final String PROFILE_URL = "https://api.linkedin.com/v2/me"
+			+ "?projection=(id,firstName,lastName,profilePicture(displayImage~:playableStreams))";
+	private static final String EMAIL_URL = "https://api.linkedin.com/v2/emailAddress"
+			+ "?projection=(elements*(handle~))&q=members";
 	private static final String TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken";
 	private static final String PAYLOAD = "code={0}&redirect_uri={1}&client_id={2}&client_secret={3}"
 			+ "&grant_type=authorization_code";
@@ -140,23 +144,39 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 			HttpGet profileGet = new HttpGet(PROFILE_URL);
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 			profileGet.setHeader(HttpHeaders.ACCEPT, "application/json");
-			Map<String, Object> profile = null;
+			JsonNode profileNode = null;
 
 			try (CloseableHttpResponse resp2 = httpclient.execute(profileGet)) {
 				HttpEntity respEntity = resp2.getEntity();
 				if (respEntity != null) {
-					profile = jreader.readValue(respEntity.getContent());
+					profileNode = jreader.readTree(respEntity.getContent());
 					EntityUtils.consumeQuietly(respEntity);
 				}
 			}
 
-			if (profile != null && profile.containsKey("id")) {
-				String linkedInID = (String) profile.get("id");
-				String email = (String) profile.get("emailAddress");
-				String pic = (String) profile.get("pictureUrl");
-				String fName = (String) profile.get("firstName");
-				String lName = (String) profile.get("lastName");
-				String name = fName + " " + lName;
+			// GET email
+			HttpGet emailGet = new HttpGet(EMAIL_URL);
+			emailGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+			emailGet.setHeader(HttpHeaders.ACCEPT, "application/json");
+			String email = "";
+
+			try (CloseableHttpResponse resp3 = httpclient.execute(emailGet)) {
+				HttpEntity respEntity = resp3.getEntity();
+				if (respEntity != null) {
+					JsonNode handle = jreader.readTree(respEntity.getContent());
+					EntityUtils.consumeQuietly(respEntity);
+					JsonNode emailNode = handle.at("/elements/0");
+					JsonNode emailNode2 = emailNode.at("/handle~");
+					if (!emailNode2.isMissingNode()) {
+						email = emailNode2.at("/emailAddress").asText();
+					}
+				}
+			}
+
+			if (profileNode != null && profileNode.hasNonNull("id")) {
+				String linkedInID = profileNode.get("id").asText();
+				String pic = getProfilePicture(profileNode);
+				String name = getFullName(profileNode);
 
 				user.setAppid(getAppid(app));
 				user.setIdentifier(Config.LINKEDIN_PREFIX.concat(linkedInID));
@@ -194,6 +214,29 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);
+	}
+
+	private String getProfilePicture(JsonNode profileNode) {
+		String url = "";
+		JsonNode picNode = profileNode.at("/profilePicture/displayImage~");
+		if (!picNode.isMissingNode()) {
+			List<String> elements = picNode.findValuesAsText("identifier");
+			for (String picUrl : elements) {
+				url = picUrl;
+				if (picUrl.contains("400_400")) {
+					break;
+				}
+			}
+		}
+		return url;
+	}
+
+	private String getFullName(JsonNode profileNode) {
+		JsonNode fNameNode = profileNode.at("/firstName/localized");
+		JsonNode lNameNode = profileNode.at("/lastName/localized");
+		String fName = fNameNode.elements().hasNext() ? fNameNode.elements().next().textValue() : "";
+		String lName = lNameNode.elements().hasNext() ? lNameNode.elements().next().textValue() : "";
+		return (fName + " " + lName).trim();
 	}
 
 	private String getAppid(App app) {
