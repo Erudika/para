@@ -355,7 +355,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	 * @param sources the application classes that will be scanned
 	 * @return the application context
 	 */
-	protected static WebApplicationContext runAsWAR(ServletContext sc, Class<?>... sources) {
+	public static WebApplicationContext runAsWAR(ServletContext sc, Class<?>... sources) {
 		ApplicationContext parent = null;
 		Object object = sc.getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
 		if (object instanceof ApplicationContext) {
@@ -401,7 +401,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	 * @param args command line arguments array (same as those in {@code void main(String[] args)} )
 	 * @param sources the application classes that will be scanned
 	 */
-	protected static void runAsJAR(String[] args, Class<?>... sources) {
+	public static void runAsJAR(String[] args, Class<?>... sources) {
 		// entry point (JAR)
 		SpringApplication app = new SpringApplication(sources);
 		app.setAdditionalProfiles(Config.ENVIRONMENT);
