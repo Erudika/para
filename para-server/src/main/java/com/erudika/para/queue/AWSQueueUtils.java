@@ -40,9 +40,9 @@ import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.utils.Config;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -57,13 +57,12 @@ public final class AWSQueueUtils {
 	private static AmazonSQS sqsClient;
 	private static final int MAX_MESSAGES = 10;  //max in bulk
 	private static final int SLEEP = Config.getConfigInt("queue.polling_sleep_seconds", 60);
+	private static final Map<String, Future<?>> POLLING_THREADS = new ConcurrentHashMap<String, Future<?>>();
 	private static final int POLLING_INTERVAL = Config.getConfigInt("queue.polling_interval_seconds",
 			Config.IN_PRODUCTION ? 20 : 0);
 
 	private static final String LOCAL_ENDPOINT = "http://localhost:9324";
 	private static final Logger logger = LoggerFactory.getLogger(AWSQueueUtils.class);
-
-	private static volatile Map<String, Future<?>> pollingThreads = new HashMap<String, Future<?>>();
 
 	/**
 	 * No-args constructor.
@@ -239,9 +238,9 @@ public final class AWSQueueUtils {
 	 * @param queueURL a queue URL
 	 */
 	public static void startPollingForMessages(final String queueURL) {
-		if (!StringUtils.isBlank(queueURL) && !pollingThreads.containsKey(queueURL)) {
+		if (!StringUtils.isBlank(queueURL) && !POLLING_THREADS.containsKey(queueURL)) {
 			logger.info("Starting SQS river using queue {} (polling interval: {}s)", queueURL, POLLING_INTERVAL);
-			pollingThreads.put(queueURL, Para.getExecutorService().submit(new SQSRiver(queueURL)));
+			POLLING_THREADS.putIfAbsent(queueURL, Para.getExecutorService().submit(new SQSRiver(queueURL)));
 			Para.addDestroyListener(new DestroyListener() {
 				public void onDestroy() {
 					stopPollingForMessages(queueURL);
@@ -255,10 +254,10 @@ public final class AWSQueueUtils {
 	 * @param queueURL the queue URL
 	 */
 	public static void stopPollingForMessages(String queueURL) {
-		if (!StringUtils.isBlank(queueURL) && pollingThreads.containsKey(queueURL)) {
+		if (!StringUtils.isBlank(queueURL) && POLLING_THREADS.containsKey(queueURL)) {
 			logger.info("Stopping SQS river on queue {} ...", queueURL);
-			pollingThreads.get(queueURL).cancel(true);
-			pollingThreads.remove(queueURL);
+			POLLING_THREADS.get(queueURL).cancel(true);
+			POLLING_THREADS.remove(queueURL);
 		}
 	}
 
