@@ -12,7 +12,7 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>5.1.2.RELEASE</springSecVer>
+		<springSecVer>5.1.3.RELEASE</springSecVer>
 		<springLdapVer>2.3.2.RELEASE</springLdapVer>
 	</properties>
 
@@ -202,7 +202,7 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>6.5</version>
+			<version>6.5.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.microsoft.azure.iothub-java-client</groupId>
@@ -236,13 +236,13 @@
 		<dependency>
 			<groupId>com.erudika</groupId>
 			<artifactId>para-search-lucene</artifactId>
-			<version>1.31.0</version>
+			<version>1.31.1</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.elasticmq</groupId>
 			<artifactId>elasticmq-rest-sqs_2.11</artifactId>
-			<version>0.14.5</version>
+			<version>0.14.6</version>
 			<scope>test</scope>
 			<exclusions>
 				<exclusion>
