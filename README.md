@@ -268,8 +268,9 @@ The `Cache` interface is implemented by:
 
 ## Wishlist / Roadmap
 
+- Client library for Python
+- Para `2.0` - migration to [Micronaut](https://github.com/micronaut-projects/micronaut-core), Java 11+ only
 - `Search` implementation for MongoDB
-- OpenAPI 3+ compatible API at `/v2` (not soon)
 
 ## Contributing
 
