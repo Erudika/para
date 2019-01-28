@@ -67,6 +67,10 @@ See how **Para** [compares to other open source backend frameworks](https://erud
 
 ### [Read the Docs](https://paraio.org/docs)
 
+## Blog
+
+### [Read more about Para on our blog](https://erudika.com/blog/tags/para/)
+
 ## Hosting
 
 We offer **hosting and premium support** at [paraio.com](https://paraio.com) where you can try Para online with a
