@@ -36,12 +36,12 @@
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-core</artifactId>
 			<version>${springVer}</version>
-		 <exclusions>
-		  <exclusion>
-		   <groupId>commons-logging</groupId>
-		   <artifactId>commons-logging</artifactId>
-		  </exclusion>
-		 </exclusions>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
@@ -173,12 +173,12 @@
 			<groupId>commons-beanutils</groupId>
 			<artifactId>commons-beanutils</artifactId>
 			<version>1.9.3</version>
-		 <exclusions>
-		  <exclusion>
-		   <groupId>commons-logging</groupId>
-		   <artifactId>commons-logging</artifactId>
-		  </exclusion>
-		 </exclusions>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>com.typesafe</groupId>
@@ -258,7 +258,7 @@
 		<dependency>
 			<groupId>javax.xml.bind</groupId>
 			<artifactId>jaxb-api</artifactId>
-			<version>2.3.1</version>
+			<version>2.4.0-b180830.0359</version>
 		</dependency>
 		<dependency>
 			<groupId>org.glassfish.web</groupId>

@@ -82,7 +82,7 @@
 		<slf4jVer>1.7.25</slf4jVer>
 		<logbackVer>1.2.3</logbackVer>
 		<awsJdkVer>1.11.382</awsJdkVer>
-		<jerseyVer>2.27</jerseyVer>
+		<jerseyVer>2.28</jerseyVer>
 		<springBootVer>2.1.2.RELEASE</springBootVer>
 		<metricsVer>4.0.5</metricsVer>
 	</properties>
