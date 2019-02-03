@@ -17,6 +17,7 @@
  */
 package com.erudika.para;
 
+import ch.qos.logback.access.jetty.RequestLogImpl;
 import com.erudika.para.aop.AOPModule;
 import com.erudika.para.cache.CacheModule;
 import com.erudika.para.email.EmailModule;
@@ -53,6 +54,15 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletException;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.ForwardedRequestCustomizer;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +71,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.ParentContextApplicationContextInitializer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.web.embedded.jetty.JettyServerCustomizer;
 import org.springframework.boot.web.embedded.jetty.JettyServletWebServerFactory;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
@@ -68,7 +79,6 @@ import org.springframework.boot.web.servlet.context.AnnotationConfigServletWebSe
 import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
 import org.springframework.boot.web.servlet.support.ServletContextApplicationContextInitializer;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -116,12 +126,6 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	 */
 	public static void initialize(Module... modules) {
 		Stage stage = Config.IN_PRODUCTION ? Stage.PRODUCTION : Stage.DEVELOPMENT;
-		System.setProperty("server.port", String.valueOf(getServerPort()));
-
-		if (Config.getConfigBoolean("access_log_enabled", true)) {
-			// enable access log via Logback
-			System.setProperty("server.jetty.accesslog.enabled", "true");
-		}
 
 		List<Module> coreModules = Arrays.asList(modules);
 		List<Module> externalModules = getExternalModules();
@@ -285,16 +289,50 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		return frb;
 	}
 
-	@Bean
-	public ServletWebServerFactory servletWebServerFactory() {
-		return new JettyServletWebServerFactory();
-	}
-
 	/**
-	 * @return the port of this Para server
+	 * @return Jetty config bean
 	 */
-	public static int getServerPort() {
-		return NumberUtils.toInt(System.getProperty("server.port"), Config.getConfigInt("port", 8080));
+	@Bean
+	public ServletWebServerFactory jettyConfigBean() {
+		JettyServletWebServerFactory jef = new JettyServletWebServerFactory();
+		jef.addServerCustomizers((JettyServerCustomizer) (Server server) -> {
+			if (Config.getConfigBoolean("access_log_enabled", true)) {
+				// enable access log via Logback
+				HandlerCollection handlers = new HandlerCollection();
+				for (Handler handler : server.getHandlers()) {
+					handlers.addHandler(handler);
+				}
+				RequestLogHandler reqLogs = new RequestLogHandler();
+				reqLogs.setServer(server);
+				RequestLogImpl rli = new RequestLogImpl();
+				rli.setResource("/logback-access.xml");
+				rli.setQuiet(true);
+				rli.start();
+				reqLogs.setRequestLog(rli);
+				handlers.addHandler(reqLogs);
+				server.setHandler(handlers);
+			}
+
+			for (Connector y : server.getConnectors()) {
+				for (ConnectionFactory cf : y.getConnectionFactories()) {
+					if (cf instanceof HttpConnectionFactory) {
+						HttpConnectionFactory dcf = (HttpConnectionFactory) cf;
+						// support for X-Forwarded-Proto
+						// redirect back to https if original request uses it
+						if (Config.IN_PRODUCTION) {
+							HttpConfiguration httpConfiguration = dcf.getHttpConfiguration();
+							httpConfiguration.addCustomizer(new ForwardedRequestCustomizer());
+						}
+						// Disable Jetty version header
+						dcf.getHttpConfiguration().setSendServerVersion(false);
+					}
+				}
+			}
+		});
+		int defaultPort = NumberUtils.toInt(System.getProperty("jetty.http.port", "8080"));
+		jef.setPort(NumberUtils.toInt(System.getProperty("server.port"), defaultPort));
+		logger.info("Listening on port {}...", jef.getPort());
+		return jef;
 	}
 
 	/**
@@ -354,7 +392,6 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 			sc.getSessionCookieConfig().setHttpOnly(true);
 			sc.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
 		}
-		logger.info("Listening on port {}...", getServerPort());
 		return rootAppContext;
 	}
 
@@ -363,17 +400,15 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	 * from the command line: java -jar para.jar.
 	 * @param args command line arguments array (same as those in {@code void main(String[] args)} )
 	 * @param sources the application classes that will be scanned
-	 * @return the application context object
 	 */
-	public static ConfigurableApplicationContext runAsJAR(String[] args, Class<?>... sources) {
+	public static void runAsJAR(String[] args, Class<?>... sources) {
 		// entry point (JAR)
 		SpringApplication app = new SpringApplication(sources);
 		app.setAdditionalProfiles(Config.ENVIRONMENT);
 		app.setWebApplicationType(WebApplicationType.SERVLET);
 		app.setBannerMode(Banner.Mode.OFF);
 		initialize(getCoreModules());
-		logger.info("Listening on port {}...", getServerPort());
-		return app.run(args);
+		app.run(args);
 	}
 
 	/**
