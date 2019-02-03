@@ -44,7 +44,9 @@ public class AWSEmailer implements Emailer {
 	 * No-args constructor.
 	 */
 	public AWSEmailer() {
-		sesclient = AmazonSimpleEmailServiceClientBuilder.standard().build();
+		sesclient = AmazonSimpleEmailServiceClientBuilder.standard().
+				// AWS SES is not available in all regions and it's best if we set it manually
+				withRegion(Config.getConfigParam("aws_ses_region", "eu-west-1")).build();
 	}
 
 	@Override
