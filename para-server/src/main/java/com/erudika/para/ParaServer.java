@@ -340,7 +340,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	 */
 	@PreDestroy
 	public void preDestroy() {
-		Para.destroy();
+		destroy();
 	}
 
 	@Override
