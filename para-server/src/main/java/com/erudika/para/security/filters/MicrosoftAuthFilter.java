@@ -59,7 +59,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 	private final CloseableHttpClient httpclient;
 	private final ObjectReader jreader;
 	private static final String PROFILE_URL = "https://graph.microsoft.com/v1.0/me";
-	private static final String PHOTO_URL = "https://graph.microsoft.com/beta/me/photos/360x360/$value";
+	private static final String PHOTO_URL = "https://graph.microsoft.com/v1.0/me/photo/$value";
 	private static final String TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
 	private static final String PAYLOAD = "code={0}&redirect_uri={1}"
 			+ "&scope=https%3A%2F%2Fgraph.microsoft.com%2Fuser.read&client_id={2}"
