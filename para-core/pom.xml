@@ -14,7 +14,7 @@
 	<properties>
 		<jacksonVer>2.9.8</jacksonVer>
 		<springVer>5.1.4.RELEASE</springVer>
-		<flexmarkVer>0.40.6</flexmarkVer>
+		<flexmarkVer>0.42.6</flexmarkVer>
 	</properties>
 
 	<dependencies>
