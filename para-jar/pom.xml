@@ -97,6 +97,7 @@
 		<profile>
 			<id>base</id>
 			<build>
+				<finalName>para-base-${project.version}</finalName>
 				<plugins>
 					<plugin>
 						<groupId>org.springframework.boot</groupId>
@@ -108,7 +109,6 @@
 									<goal>repackage</goal>
 								</goals>
 								<configuration>
-									<finalName>para-base-${project.version}</finalName>
 									<mainClass>com.erudika.para.Run</mainClass>
 									<layout>ZIP</layout>
 								</configuration>
