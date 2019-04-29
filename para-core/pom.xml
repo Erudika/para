@@ -13,7 +13,7 @@
 
 	<properties>
 		<jacksonVer>2.9.8</jacksonVer>
-		<springVer>5.1.4.RELEASE</springVer>
+		<springVer>5.1.6.RELEASE</springVer>
 		<flexmarkVer>0.42.6</flexmarkVer>
 	</properties>
 
@@ -183,17 +183,17 @@
 		<dependency>
 			<groupId>com.typesafe</groupId>
 			<artifactId>config</artifactId>
-			<version>1.3.3</version>
+			<version>1.3.4</version>
 		</dependency>
 		<dependency>
 			<groupId>org.hibernate.validator</groupId>
 			<artifactId>hibernate-validator</artifactId>
-			<version>6.0.14.Final</version>
+			<version>6.0.16.Final</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
-			<version>3.8.1</version>
+			<version>3.9</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
@@ -336,7 +336,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.0.1</version>
+				<version>3.1.0</version>
 				<executions>
 					<execution>
 						<id>javadocs</id>

@@ -92,7 +92,7 @@
 		<dependency>
 			<groupId>com.unboundid</groupId>
 			<artifactId>unboundid-ldapsdk</artifactId>
-			<version>4.0.9</version>
+			<version>4.0.10</version>
 		</dependency>
 
 		<!-- SAML -->
@@ -106,7 +106,7 @@
 		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
 			<artifactId>caffeine</artifactId>
-			<version>2.6.2</version>
+			<version>2.7.0</version>
 		</dependency>
 
 		<!-- JERSEY -->
@@ -191,7 +191,7 @@
 		<dependency>
 			<groupId>org.yaml</groupId>
 			<artifactId>snakeyaml</artifactId>
-			<version>1.23</version>
+			<version>1.24</version>
 		</dependency>
 		<dependency>
 			<groupId>javax.servlet</groupId>
@@ -306,7 +306,7 @@
 		<dependency>
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
-			<version>1.11</version>
+			<version>1.12</version>
 		</dependency>
 	</dependencies>
 
@@ -392,7 +392,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.0.1</version>
+				<version>3.1.0</version>
 				<executions>
 					<execution>
 						<id>javadocs</id>

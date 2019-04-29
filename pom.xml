@@ -79,11 +79,11 @@
 		<skipITs>${skipTests}</skipITs>
 		<skipUTs>${skipTests}</skipUTs>
 		<deployPluginVer>2.8.2</deployPluginVer>
-		<slf4jVer>1.7.25</slf4jVer>
+		<slf4jVer>1.7.26</slf4jVer>
 		<logbackVer>1.2.3</logbackVer>
-		<awsJdkVer>1.11.382</awsJdkVer>
+		<awsJdkVer>1.11.486</awsJdkVer>
 		<jerseyVer>2.28</jerseyVer>
-		<springBootVer>2.1.2.RELEASE</springBootVer>
+		<springBootVer>2.1.4.RELEASE</springBootVer>
 		<metricsVer>4.0.5</metricsVer>
 	</properties>
 
@@ -223,7 +223,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
-						<version>3.0.1</version>
+						<version>3.1.0</version>
 						<executions>
 							<execution>
 								<id>attach-javadocs</id>
