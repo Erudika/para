@@ -347,7 +347,7 @@ public final class SecurityUtils {
 			ldapSettings.put("security.ldap.bind_pass", "");
 			ldapSettings.put("security.ldap.user_search_base", "");
 			ldapSettings.put("security.ldap.user_search_filter", "(cn={0})");
-			ldapSettings.put("security.ldap.user_dn_pattern", "uid={0},ou=people");
+			ldapSettings.put("security.ldap.user_dn_pattern", "uid={0}");
 			ldapSettings.put("security.ldap.password_attribute", "userPassword");
 			//ldapSettings.put("security.ldap.compare_passwords", "false"); //don't remove comment
 			Map<String, Object> settings = app.getSettings();
