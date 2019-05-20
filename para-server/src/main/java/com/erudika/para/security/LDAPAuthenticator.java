@@ -17,6 +17,7 @@
  */
 package com.erudika.para.security;
 
+import com.erudika.para.utils.Utils;
 import java.util.Arrays;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -50,7 +51,7 @@ public final class LDAPAuthenticator implements LdapAuthenticator {
 		if (ldapSettings != null && ldapSettings.containsKey("security.ldap.server_url")) {
 			String serverUrl = ldapSettings.get("security.ldap.server_url");
 			String baseDN = ldapSettings.get("security.ldap.base_dn");
-			String bindDN = ldapSettings.get("security.ldap.bind_dn");
+			String bindDN = Utils.noSpaces(ldapSettings.get("security.ldap.bind_dn"), "%20");
 			String basePass = ldapSettings.get("security.ldap.bind_pass");
 			String searchBase = ldapSettings.get("security.ldap.user_search_base");
 			String searchFilter = ldapSettings.get("security.ldap.user_search_filter");
