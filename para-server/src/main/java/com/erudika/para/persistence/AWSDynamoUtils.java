@@ -188,12 +188,15 @@ public final class AWSDynamoUtils {
 		}
 		try {
 			String table = getTableNameForAppid(appid);
-			getClient().createTable(new CreateTableRequest().withTableName(table).
+			getClient();
+			Table tbl = ddb.createTable(new CreateTableRequest().withTableName(table).
 					withKeySchema(new KeySchemaElement(Config._KEY, KeyType.HASH)).
 					withSSESpecification(new SSESpecification().withEnabled(ENCRYPTION_AT_REST_ENABLED)).
 					withAttributeDefinitions(new AttributeDefinition(Config._KEY, ScalarAttributeType.S)).
 					withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
-			logger.info("Created DynamoDB table '{}'.", table);
+			logger.info("Waiting for DynamoDB table to become ACTIVE...");
+			String status = tbl.waitForActive().getTableStatus();
+			logger.info("Created DynamoDB table '{}', status {}.", table, status);
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;
@@ -256,6 +259,7 @@ public final class AWSDynamoUtils {
 				existsTable(SHARED_TABLE)) {
 			return false;
 		}
+		String table = getTableNameForAppid(SHARED_TABLE);
 		try {
 			GlobalSecondaryIndex secIndex = new GlobalSecondaryIndex().
 					withIndexName(getSharedIndexName()).
@@ -265,8 +269,8 @@ public final class AWSDynamoUtils {
 					withProjection(new Projection().withProjectionType(ProjectionType.ALL)).
 					withKeySchema(new KeySchemaElement().withAttributeName(Config._APPID).withKeyType(KeyType.HASH),
 							new KeySchemaElement().withAttributeName(Config._ID).withKeyType(KeyType.RANGE));
-
-			getClient().createTable(new CreateTableRequest().withTableName(getTableNameForAppid(SHARED_TABLE)).
+			getClient();
+			Table tbl = ddb.createTable(new CreateTableRequest().withTableName(table).
 					withKeySchema(new KeySchemaElement(Config._KEY, KeyType.HASH)).
 					withSSESpecification(new SSESpecification().withEnabled(ENCRYPTION_AT_REST_ENABLED)).
 					withAttributeDefinitions(new AttributeDefinition(Config._KEY, ScalarAttributeType.S),
@@ -274,6 +278,9 @@ public final class AWSDynamoUtils {
 							new AttributeDefinition(Config._ID, ScalarAttributeType.S)).
 					withGlobalSecondaryIndexes(secIndex).
 					withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
+			logger.info("Waiting for DynamoDB table to become ACTIVE...");
+			String status = tbl.waitForActive().getTableStatus();
+			logger.info("Created shared table '{}', status {}.", table, status);
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;
