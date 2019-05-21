@@ -441,7 +441,7 @@ public final class AWSDynamoUtils {
 				batchGet(result.getUnprocessedKeys(), results);
 			}
 		} catch (Exception e) {
-			logger.error(null, e);
+			logger.error("Failed to execute batch read operation on table '{}'", kna.keySet().iterator().next(), e);
 		}
 	}
 
@@ -468,7 +468,7 @@ public final class AWSDynamoUtils {
 				batchWrite(result.getUnprocessedItems(), backoff * 2);
 			}
 		} catch (Exception e) {
-			logger.error(null, e);
+			logger.error("Failed to execute batch write operation on table '{}'", items.keySet().iterator().next(), e);
 			throwIfNecessary(e);
 		}
 	}

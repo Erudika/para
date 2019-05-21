@@ -173,13 +173,14 @@ public class AWSDynamoDAO implements DAO {
 		if (StringUtils.isBlank(key) || StringUtils.isBlank(appid) || row == null || row.isEmpty()) {
 			return null;
 		}
+		String table = getTableNameForAppid(appid);
 		try {
 			key = getKeyForAppid(key, appid);
 			setRowKey(key, row);
-			PutItemRequest putItemRequest = new PutItemRequest(getTableNameForAppid(appid), row);
+			PutItemRequest putItemRequest = new PutItemRequest(table, row);
 			client().putItem(putItemRequest);
 		} catch (Exception e) {
-			logger.error("Could not write row to DB - appid={}, key={}", appid, key, e);
+			logger.error("Could not write row to DB - table={}, appid={}, key={}", table, appid, key, e);
 			throwIfNecessary(e);
 		}
 		return key;
@@ -189,6 +190,7 @@ public class AWSDynamoDAO implements DAO {
 		if (StringUtils.isBlank(key) || StringUtils.isBlank(appid) || row == null || row.isEmpty()) {
 			return false;
 		}
+		String table = getTableNameForAppid(appid);
 		try {
 			UpdateItemRequest updateRequest = new UpdateItemRequest();
 			StringBuilder updateExpression = new StringBuilder("SET ");
@@ -219,7 +221,7 @@ public class AWSDynamoDAO implements DAO {
 				updateExpression.append(" ADD #").append(Config._VERSION).append(" :plusOne");
 			}
 
-			updateRequest.setTableName(getTableNameForAppid(appid));
+			updateRequest.setTableName(table);
 			updateRequest.setKey(Collections.singletonMap(Config._KEY, new AttributeValue(getKeyForAppid(key, appid))));
 			updateRequest.setExpressionAttributeNames(names);
 			updateRequest.setExpressionAttributeValues(values);
@@ -227,9 +229,9 @@ public class AWSDynamoDAO implements DAO {
 			client().updateItem(updateRequest);
 			return true;
 		} catch (ConditionalCheckFailedException ex) {
-			logger.warn("Item not updated. Versions don't match. Appid={}, key={}.", appid, key);
+			logger.warn("Item not updated - versions don't match. table={}, appid={}, key={}.", table, appid, key);
 		} catch (Exception e) {
-			logger.error("Could not update row in DB - appid={}, key={}", appid, key, e);
+			logger.error("Could not update row in DB - table={}, appid={}, key={}", table, appid, key, e);
 			throwIfNecessary(e);
 		}
 		return false;
@@ -240,15 +242,16 @@ public class AWSDynamoDAO implements DAO {
 			return null;
 		}
 		Map<String, AttributeValue> row = null;
+		String table = getTableNameForAppid(appid);
 		try {
-			GetItemRequest getItemRequest = new GetItemRequest(getTableNameForAppid(appid),
+			GetItemRequest getItemRequest = new GetItemRequest(table,
 					Collections.singletonMap(Config._KEY, new AttributeValue(getKeyForAppid(key, appid))));
 			GetItemResult res = client().getItem(getItemRequest);
 			if (res != null && res.getItem() != null && !res.getItem().isEmpty()) {
 				row = res.getItem();
 			}
 		} catch (Exception e) {
-			logger.error("Could not read row from DB - appid={}, key={}", appid, key, e);
+			logger.error("Could not read row from DB - table={}, appid={}, key={}", appid, key, e);
 		}
 		return (row == null || row.isEmpty()) ? null : row;
 	}
@@ -257,12 +260,13 @@ public class AWSDynamoDAO implements DAO {
 		if (StringUtils.isBlank(key) || StringUtils.isBlank(appid)) {
 			return;
 		}
+		String table = getTableNameForAppid(appid);
 		try {
-			DeleteItemRequest delItemRequest = new DeleteItemRequest(getTableNameForAppid(appid),
+			DeleteItemRequest delItemRequest = new DeleteItemRequest(table,
 					Collections.singletonMap(Config._KEY, new AttributeValue(getKeyForAppid(key, appid))));
 			client().deleteItem(delItemRequest);
 		} catch (Exception e) {
-			logger.error("Could not delete row from DB - appid={}, key={}", appid, key, e);
+			logger.error("Could not delete row from DB - table={}, appid={}, key={}", table, appid, key, e);
 			throwIfNecessary(e);
 		}
 	}
@@ -325,7 +329,7 @@ public class AWSDynamoDAO implements DAO {
 
 		Map<String, P> results = new LinkedHashMap<>(keySet.size(), 0.75f, true);
 		ArrayList<Map<String, AttributeValue>> keyz = new ArrayList<>(MAX_KEYS_PER_READ);
-
+		String table = getTableNameForAppid(appid);
 		try {
 			int batchSteps = 1;
 			if ((keySet.size() > MAX_KEYS_PER_READ)) {
@@ -334,7 +338,6 @@ public class AWSDynamoDAO implements DAO {
 			}
 
 			Iterator<String> it = keySet.iterator();
-			String tableName = getTableNameForAppid(appid);
 			int j = 0;
 
 			for (int i = 0; i < batchSteps; i++) {
@@ -350,13 +353,13 @@ public class AWSDynamoDAO implements DAO {
 					kna.setAttributesToGet(Arrays.asList(Config._ID, Config._KEY, Config._TYPE));
 				}
 
-				batchGet(Collections.singletonMap(tableName, kna), results);
+				batchGet(Collections.singletonMap(table, kna), results);
 				keyz.clear();
 				j = 0;
 			}
 			logger.debug("DAO.readAll({}) {}", keySet, results.size());
 		} catch (Exception e) {
-			logger.error("Failed to readAll({}): {}", keys, e);
+			logger.error("Failed to readAll({}), table={}: {}", keys, table, e);
 		}
 		return results;
 	}
@@ -370,6 +373,7 @@ public class AWSDynamoDAO implements DAO {
 			pager = new Pager();
 		}
 		List<P> results = new LinkedList<>();
+		String table = getTableNameForAppid(appid);
 		try {
 			if (isSharedAppid(appid)) {
 				results = readPageFromSharedTable(appid, pager);
@@ -378,7 +382,7 @@ public class AWSDynamoDAO implements DAO {
 			}
 			pager.setCount(pager.getCount() + results.size());
 		} catch (Exception e) {
-			logger.error("Failed to readPage({}): {}", appid, e);
+			logger.error("Failed to readPage({}), table={}: {}", appid, table, e);
 		}
 		return results;
 	}
