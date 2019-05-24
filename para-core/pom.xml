@@ -12,7 +12,7 @@
 	<name>para-core</name>
 
 	<properties>
-		<jacksonVer>2.9.8</jacksonVer>
+		<jacksonVer>2.9.9</jacksonVer>
 		<springVer>5.1.6.RELEASE</springVer>
 		<flexmarkVer>0.42.6</flexmarkVer>
 	</properties>
