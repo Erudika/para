@@ -20,6 +20,7 @@ package com.erudika.para.security;
 import com.erudika.para.utils.Utils;
 import java.util.Arrays;
 import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ldap.core.DirContextOperations;
@@ -52,10 +53,10 @@ public final class LDAPAuthenticator implements LdapAuthenticator {
 			String serverUrl = ldapSettings.get("security.ldap.server_url");
 			String baseDN = ldapSettings.get("security.ldap.base_dn");
 			String bindDN = Utils.noSpaces(ldapSettings.get("security.ldap.bind_dn"), "%20");
-			String basePass = ldapSettings.get("security.ldap.bind_pass");
-			String searchBase = ldapSettings.get("security.ldap.user_search_base");
-			String searchFilter = ldapSettings.get("security.ldap.user_search_filter");
-			String dnPattern = ldapSettings.get("security.ldap.user_dn_pattern");
+			String bindPass = ldapSettings.get("security.ldap.bind_pass");
+			String userSearchBase = ldapSettings.get("security.ldap.user_search_base");
+			String userSearchFilter = ldapSettings.get("security.ldap.user_search_filter");
+			String userDnPattern = ldapSettings.get("security.ldap.user_dn_pattern");
 			String passAttribute = ldapSettings.get("security.ldap.password_attribute");
 			boolean usePasswordComparison = ldapSettings.containsKey("security.ldap.compare_passwords");
 
@@ -66,20 +67,20 @@ public final class LDAPAuthenticator implements LdapAuthenticator {
 			if (!bindDN.isEmpty()) {
 				contextSource.setUserDn(bindDN);
 			}
-			if (!basePass.isEmpty()) {
-				contextSource.setPassword(basePass);
+			if (!bindPass.isEmpty()) {
+				contextSource.setPassword(bindPass);
 			}
-			LdapUserSearch userSearch = new FilterBasedLdapUserSearch(searchBase, searchFilter, contextSource);
+			LdapUserSearch userSearch = new FilterBasedLdapUserSearch(userSearchBase, userSearchFilter, contextSource);
 
 			if (usePasswordComparison) {
 				PasswordComparisonAuthenticator p = new PasswordComparisonAuthenticator(contextSource);
 				p.setPasswordAttributeName(passAttribute);
-				p.setUserDnPatterns(new String[]{dnPattern});
+				p.setUserDnPatterns(getUserDnPatterns(userDnPattern));
 				p.setUserSearch(userSearch);
 				authenticator = p;
 			} else {
 				BindAuthenticator b = new BindAuthenticator(contextSource);
-				b.setUserDnPatterns(new String[]{dnPattern});
+				b.setUserDnPatterns(getUserDnPatterns(userDnPattern));
 				b.setUserSearch(userSearch);
 				authenticator = b;
 			}
@@ -96,5 +97,15 @@ public final class LDAPAuthenticator implements LdapAuthenticator {
 			logger.warn("Failed to authenticate user with LDAP server: {}", e.getMessage());
 		}
 		throw new AuthenticationServiceException("LDAP user not found.");
+	}
+
+	private String[] getUserDnPatterns(String userDnPattern) {
+		if (StringUtils.isBlank(userDnPattern)) {
+			return new String[]{""};
+		}
+		if (userDnPattern.contains("|")) {
+			return userDnPattern.split("\\|");
+		}
+		return new String[]{userDnPattern};
 	}
 }
