@@ -117,7 +117,8 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 			user = User.readUserForIdentifier(u);
 			if (user == null) {
 				user = new User();
-				user.setActive(Config.getConfigBoolean("security.allow_unverified_emails", false));
+				user.setActive(Boolean.parseBoolean(SecurityUtils.getSettingForApp(app, "security.allow_unverified_emails",
+						Config.getConfigParam("security.allow_unverified_emails", "false"))));
 				user.setAppid(appid);
 				user.setName(name);
 				user.setIdentifier(email);
