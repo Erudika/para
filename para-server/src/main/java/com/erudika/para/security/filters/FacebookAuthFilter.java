@@ -179,6 +179,10 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 							user.setEmail(email);
 							update = true;
 						}
+						if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
+							user.setName(name);
+							update = true;
+						}
 						if (update) {
 							user.update();
 						}
