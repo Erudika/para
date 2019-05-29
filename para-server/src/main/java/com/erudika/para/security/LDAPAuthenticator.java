@@ -65,9 +65,11 @@ public final class LDAPAuthenticator implements LdapAuthenticator {
 			contextSource.setAuthenticationSource(new SpringSecurityAuthenticationSource());
 			contextSource.setCacheEnvironmentProperties(false);
 			if (!bindDN.isEmpty()) {
+				// this is usually not required for authentication - leave blank
 				contextSource.setUserDn(bindDN);
 			}
 			if (!bindPass.isEmpty()) {
+				// this is usually not required for authentication - leave blank
 				contextSource.setPassword(bindPass);
 			}
 			LdapUserSearch userSearch = new FilterBasedLdapUserSearch(userSearchBase, userSearchFilter, contextSource);

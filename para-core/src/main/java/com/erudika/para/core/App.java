@@ -49,10 +49,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang3.StringUtils;
@@ -88,10 +89,10 @@ public class App implements ParaObject, Serializable {
 
 	private static final long serialVersionUID = 1L;
 	private static final String PREFIX = Utils.type(App.class).concat(Config.SEPARATOR);
-	private static final List<AppCreatedListener> CREATE_LISTENERS = new LinkedList<AppCreatedListener>();
-	private static final List<AppDeletedListener> DELETE_LISTENERS = new LinkedList<AppDeletedListener>();
-	private static final List<AppSettingAddedListener> ADD_SETTING_LISTENERS = new LinkedList<>();
-	private static final List<AppSettingRemovedListener> REMOVE_SETTING_LISTENERS = new LinkedList<>();
+	private static final Set<AppCreatedListener> CREATE_LISTENERS = new LinkedHashSet<AppCreatedListener>();
+	private static final Set<AppDeletedListener> DELETE_LISTENERS = new LinkedHashSet<AppDeletedListener>();
+	private static final Set<AppSettingAddedListener> ADD_SETTING_LISTENERS = new LinkedHashSet<>();
+	private static final Set<AppSettingRemovedListener> REMOVE_SETTING_LISTENERS = new LinkedHashSet<>();
 	private static final Logger logger = LoggerFactory.getLogger(App.class);
 
 	@Stored @Locked @NotBlank private String id;
@@ -1010,7 +1011,7 @@ public class App implements ParaObject, Serializable {
 			logger.info("App '{}' deleted.", getId());
 			for (AppDeletedListener listener : DELETE_LISTENERS) {
 				listener.onAppDeleted(this);
-				logger.debug("Executed {}.onAppDeleted().", listener.getClass().getName());
+				logger.info("Executed {}.onAppDeleted().", listener.getClass().getName());
 			}
 			clearSettings();
 		}
