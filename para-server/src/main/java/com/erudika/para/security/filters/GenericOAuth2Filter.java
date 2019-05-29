@@ -181,7 +181,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 					user = new User();
 					user.setActive(true);
 					user.setAppid(getAppid(app));
-					user.setEmail(StringUtils.isBlank(email) ? oauthAccountId + "@" + emailDomain : email);
+					user.setEmail(StringUtils.isBlank(email) ? Utils.getNewId() + "@" + emailDomain : email);
 					user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 					user.setPassword(Utils.generateSecurityToken());
 					user.setPicture(getPicture(pic));

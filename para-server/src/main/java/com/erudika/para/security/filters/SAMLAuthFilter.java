@@ -179,7 +179,7 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 				user = new User();
 				user.setActive(true);
 				user.setAppid(getAppid(app));
-				user.setEmail(StringUtils.isBlank(email) ? samlUserId + "@" + emailDomain : email);
+				user.setEmail(StringUtils.isBlank(email) ? Utils.getNewId() + "@" + emailDomain : email);
 				user.setName(StringUtils.isBlank(name) ? "Anonymous" : name);
 				user.setPassword(Utils.generateSecurityToken());
 				user.setPicture(getPicture(pic));

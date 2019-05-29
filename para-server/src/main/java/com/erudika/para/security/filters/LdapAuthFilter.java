@@ -134,7 +134,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 				user = new User();
 				user.setActive(true);
 				user.setAppid(getAppid(app));
-				user.setEmail(StringUtils.isBlank(email) ? ldapAccountId + "@ldap.com" : email);
+				user.setEmail(StringUtils.isBlank(email) ? Utils.getNewId() + "@paraio.com" : email);
 				user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 				user.setPassword(Utils.generateSecurityToken());
 				user.setIdentifier(Config.LDAP_PREFIX.concat(ldapAccountId));

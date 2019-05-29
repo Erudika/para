@@ -162,7 +162,7 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 					user = new User();
 					user.setActive(true);
 					user.setAppid(getAppid(app));
-					user.setEmail(StringUtils.isBlank(email) ? googleSubId + "@google.com" : email);
+					user.setEmail(StringUtils.isBlank(email) ? Utils.getNewId() + "@google.com" : email);
 					user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 					user.setPassword(Utils.generateSecurityToken());
 					user.setPicture(getPicture(pic));

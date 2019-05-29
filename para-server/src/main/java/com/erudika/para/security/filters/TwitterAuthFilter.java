@@ -223,8 +223,8 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 					user = new User();
 					user.setActive(true);
 					user.setAppid(getAppid(app));
-					user.setEmail(StringUtils.isBlank(email) ? alias + "@twitter.com" : email);
-					user.setName(StringUtils.isBlank(name) ? "No Name" : name);
+					user.setEmail(StringUtils.isBlank(email) ? Utils.getNewId() + "@twitter.com" : email);
+					user.setName(StringUtils.isBlank(name) ? alias : name);
 					user.setPassword(Utils.generateSecurityToken());
 					user.setPicture(getPicture(pic));
 					user.setIdentifier(Config.TWITTER_PREFIX + twitterId);
