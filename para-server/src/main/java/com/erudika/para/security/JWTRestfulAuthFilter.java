@@ -50,6 +50,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -108,9 +109,10 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 				SecurityContextHolder.getContext().getAuthentication() == null) {
 			try {
 				// validate token if present
-				JWTAuthentication jwt = getJWTfromRequest(request);
-				if (jwt != null) {
-					Authentication auth = authenticationManager.authenticate(jwt);
+				JWTAuthentication jwtAuth = getJWTfromRequest(request);
+				if (jwtAuth != null) {
+					Authentication auth = authenticationManager.authenticate(jwtAuth);
+					validateDelegatedTokenIfNecessary(jwtAuth);
 					// success!
 					SecurityContextHolder.getContext().setAuthentication(auth);
 				} else {
@@ -182,6 +184,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 				if (user != null) {
 					// check and reissue token
 					jwtAuth = (JWTAuthentication) authenticationManager.authenticate(jwtAuth);
+					validateDelegatedTokenIfNecessary(jwtAuth);
 					if (jwtAuth != null && jwtAuth.getApp() != null) {
 						SignedJWT newToken = SecurityUtils.generateJWToken(user, jwtAuth.getApp());
 						if (newToken != null) {
@@ -206,6 +209,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 				User user = SecurityUtils.getAuthenticatedUser(jwtAuth);
 				if (user != null) {
 					jwtAuth = (JWTAuthentication) authenticationManager.authenticate(jwtAuth);
+					validateDelegatedTokenIfNecessary(jwtAuth);
 					if (jwtAuth != null && jwtAuth.getApp() != null) {
 						user.resetTokenSecret();
 						CoreUtils.getInstance().overwrite(jwtAuth.getApp().getAppIdentifier(), user);
@@ -451,5 +455,27 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	@Inject
 	public void setPasswordAuth(PasswordAuthFilter passwordAuth) {
 		this.passwordAuth = passwordAuth;
+	}
+
+	private void validateDelegatedTokenIfNecessary(JWTAuthentication jwt) throws AuthenticationException, IOException {
+		User user = SecurityUtils.getAuthenticatedUser(jwt);
+		if (user != null) {
+			String identityProvider = (String) jwt.getClaims().getClaim("idp");
+			if (StringUtils.isBlank(identityProvider)) {
+				identityProvider = user.getIdentityProvider();
+			}
+			App app = jwt.getApp();
+			// Send user password (access token) to IDP for validation:
+			// - if token delegation is enabled AND
+			// - if the generic OAuth 2 filter is used
+			if ("oauth2".equalsIgnoreCase(identityProvider) && oauth2Auth.isAccessTokenDelegationEnabled(app) &&
+					!oauth2Auth.isValidAccessToken(app, user.getPassword())) {
+				logger.info("The access token delegated from '" + identityProvider + "' is invalid for " +
+						user.getAppid() + "/" + user.getId());
+				throw new AuthenticationServiceException("The access token delegated from '" +
+						identityProvider + "' is invalid.");
+			}
+			// authentication success
+		}
 	}
 }

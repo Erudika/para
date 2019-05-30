@@ -176,21 +176,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 					}
 				} else {
-					String picture = getPicture(accessToken);
-					boolean update = false;
-					if (!StringUtils.equals(user.getPicture(), picture)) {
-						user.setPicture(picture);
-						update = true;
-					}
-					if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
-						user.setEmail(email);
-						update = true;
-					}
-					if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
-						user.setName(name);
-						update = true;
-					}
-					if (update) {
+					if (updateUserInfo(user, email, name, accessToken)) {
 						user.update();
 					}
 				}
@@ -198,6 +184,24 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);
+	}
+
+	private boolean updateUserInfo(User user, String email, String name, String accessToken) throws IOException {
+		String picture = getPicture(accessToken);
+		boolean update = false;
+		if (!StringUtils.equals(user.getPicture(), picture)) {
+			user.setPicture(picture);
+			update = true;
+		}
+		if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+			user.setEmail(email);
+			update = true;
+		}
+		if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
+			user.setName(name);
+			update = true;
+		}
+		return update;
 	}
 
 	private String getPicture(String accessToken) throws IOException {

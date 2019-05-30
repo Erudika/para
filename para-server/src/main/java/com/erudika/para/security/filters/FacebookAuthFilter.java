@@ -169,21 +169,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 						}
 					} else {
-						String picture = getPicture(fbId);
-						boolean update = false;
-						if (!StringUtils.equals(user.getPicture(), picture)) {
-							user.setPicture(picture);
-							update = true;
-						}
-						if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
-							user.setEmail(email);
-							update = true;
-						}
-						if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
-							user.setName(name);
-							update = true;
-						}
-						if (update) {
+						if (updateUserInfo(user, fbId, email, name)) {
 							user.update();
 						}
 					}
@@ -193,6 +179,24 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);
+	}
+
+	private boolean updateUserInfo(User user, String fbId, String email, String name) {
+		String picture = getPicture(fbId);
+		boolean update = false;
+		if (!StringUtils.equals(user.getPicture(), picture)) {
+			user.setPicture(picture);
+			update = true;
+		}
+		if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+			user.setEmail(email);
+			update = true;
+		}
+		if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
+			user.setName(name);
+			update = true;
+		}
+		return update;
 	}
 
 	@SuppressWarnings("unchecked")

@@ -279,6 +279,7 @@ public final class SecurityUtils {
 				claimsSet.claim(Config._APPID, app.getId());
 				if (user != null) {
 					claimsSet.subject(user.getId());
+					claimsSet.claim("idp", user.getIdentityProvider());
 					userSecret = user.getTokenSecret();
 				}
 				JWSSigner signer = new MACSigner(app.getSecret() + userSecret);

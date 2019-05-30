@@ -463,6 +463,15 @@ public class User implements ParaObject {
 	}
 
 	/**
+	 * Is the main identifier from a generic OAuth 2.0/OpenID Connect provider.
+	 * @return true if user is signed in with a generic OAauth 2.0 account
+	 */
+	@JsonIgnore
+	public boolean isOAuth2User() {
+		return StringUtils.startsWithIgnoreCase(identifier, Config.OAUTH2_PREFIX);
+	}
+
+	/**
 	 * Checks for admin rights.
 	 * @return true if user has admin rights
 	 */
@@ -501,6 +510,8 @@ public class User implements ParaObject {
 			return "ldap";
 		} else if (isSAMLUser()) {
 			return "saml";
+		} else if (isOAuth2User()) {
+			return "oauth2";
 		} else {
 			return "generic";
 		}

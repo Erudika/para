@@ -137,28 +137,14 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	 * @param app the app where the user will be created, use null for root app
 	 * @param accessToken access token
 	 * @return {@link UserAuthentication} object or null if something went wrong
-	 * @throws IOException ex
+	 * @throws IOException ex if connection fails
 	 */
 	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
 		UserAuthentication userAuth = null;
 		User user = new User();
 		if (accessToken != null) {
-			String acceptHeader = SecurityUtils.getSettingForApp(app, "security.oauth.accept_header", "");
-			HttpGet profileGet = new HttpGet(SecurityUtils.getSettingForApp(app, "security.oauth.profile_url", ""));
-			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-			Map<String, Object> profile = null;
-
-			if (!StringUtils.isBlank(acceptHeader)) {
-				profileGet.setHeader(HttpHeaders.ACCEPT, acceptHeader);
-			}
-
-			try (CloseableHttpResponse resp2 = httpclient.execute(profileGet)) {
-				HttpEntity respEntity = resp2.getEntity();
-				if (respEntity != null) {
-					profile = jreader.readValue(respEntity.getContent());
-					EntityUtils.consumeQuietly(respEntity);
-				}
-			}
+			boolean tokenDelegationEnabled = isAccessTokenDelegationEnabled(app);
+			Map<String, Object> profile = fetchProfileFromIDP(app, accessToken);
 
 			String accountIdParam = SecurityUtils.getSettingForApp(app, "security.oauth.parameters.id", "sub");
 			String pictureParam = SecurityUtils.getSettingForApp(app, "security.oauth.parameters.picture", "picture");
@@ -183,7 +169,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 					user.setAppid(getAppid(app));
 					user.setEmail(StringUtils.isBlank(email) ? Utils.getNewId() + "@" + emailDomain : email);
 					user.setName(StringUtils.isBlank(name) ? "No Name" : name);
-					user.setPassword(Utils.generateSecurityToken());
+					user.setPassword(tokenDelegationEnabled ? accessToken : Utils.generateSecurityToken());
 					user.setPicture(getPicture(pic));
 					user.setIdentifier(Config.OAUTH2_PREFIX.concat(oauthAccountId));
 					String id = user.create();
@@ -191,21 +177,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 					}
 				} else {
-					String picture = getPicture(pic);
-					boolean update = false;
-					if (!StringUtils.equals(user.getPicture(), picture)) {
-						user.setPicture(picture);
-						update = true;
-					}
-					if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
-						user.setEmail(email);
-						update = true;
-					}
-					if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
-						user.setName(name);
-						update = true;
-					}
-					if (update) {
+					if (updateUserInfo(user, pic, email, name, accessToken, tokenDelegationEnabled)) {
 						user.update();
 					}
 				}
@@ -213,6 +185,83 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);
+	}
+
+	private boolean updateUserInfo(User user, String pic, String email, String name, String accessToken,
+			boolean tokenDelegationEnabled) {
+		String picture = getPicture(pic);
+		boolean update = false;
+		if (!StringUtils.equals(user.getPicture(), picture)) {
+			user.setPicture(picture);
+			update = true;
+		}
+		if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+			user.setEmail(email);
+			update = true;
+		}
+		if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
+			user.setName(name);
+			update = true;
+		}
+		if (tokenDelegationEnabled) {
+			user.setPassword(accessToken);
+			update = true;
+		}
+		return update;
+	}
+
+	/**
+	 * If true, access tokens from the IDP are stored inside the user object and sent back to IDP for validation.
+	 * @param app an app object
+	 * @return false by default
+	 */
+	public boolean isAccessTokenDelegationEnabled(App app) {
+		return Boolean.parseBoolean(SecurityUtils.getSettingForApp(app,
+				"security.oauth.token_delegation_enabled", "false"));
+	}
+
+	/**
+	 * Validates the access token against the IDP server.
+	 * @param app an app object
+	 * @param accessToken access token
+	 * @return true if access token is valid
+	 */
+	public boolean isValidAccessToken(App app, String accessToken) {
+		try {
+			Map<String, Object> profile = fetchProfileFromIDP(app, accessToken);
+			return profile != null && profile.containsKey(SecurityUtils.getSettingForApp(app,
+					"security.oauth.parameters.id", "sub"));
+		} catch (Exception e) {
+			logger.error(null, e);
+			return false;
+		}
+	}
+
+	/**
+	 * Sends a profile request to the IDP server with a given access token.
+	 * @param app an app object
+	 * @param accessToken access token
+	 * @return null if the token was invalid or a map containing user information
+	 * @throws IOException if connection fails
+	 */
+	private Map<String, Object> fetchProfileFromIDP(App app, String accessToken) throws IOException {
+		Map<String, Object> profile = null;
+		String acceptHeader = SecurityUtils.getSettingForApp(app, "security.oauth.accept_header", "");
+		HttpGet profileGet = new HttpGet(SecurityUtils.getSettingForApp(app, "security.oauth.profile_url", ""));
+		profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+
+		if (!StringUtils.isBlank(acceptHeader)) {
+			profileGet.setHeader(HttpHeaders.ACCEPT, acceptHeader);
+		}
+
+		try (CloseableHttpResponse resp2 = httpclient.execute(profileGet)) {
+			HttpEntity respEntity = resp2.getEntity();
+			if (respEntity != null) {
+				profile = jreader.readValue(respEntity.getContent());
+				EntityUtils.consumeQuietly(respEntity);
+			}
+		}
+		return profile;
 	}
 
 	private static String getPicture(String pic) {

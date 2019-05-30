@@ -143,22 +143,26 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 					throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 				}
 			} else {
-				boolean update = false;
-				if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
-					user.setEmail(email);
-					update = true;
-				}
-				if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
-					user.setName(name);
-					update = true;
-				}
-				if (update) {
+				if (updateUserInfo(user, email, name)) {
 					user.update();
 				}
 			}
 			userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 		}
 		return userAuth;
+	}
+
+	private boolean updateUserInfo(User user, String email, String name) {
+		boolean update = false;
+		if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+			user.setEmail(email);
+			update = true;
+		}
+		if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
+			user.setName(name);
+			update = true;
+		}
+		return update;
 	}
 
 	/**

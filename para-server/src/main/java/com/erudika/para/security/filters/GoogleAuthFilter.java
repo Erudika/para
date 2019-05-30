@@ -172,21 +172,7 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 					}
 				} else {
-					String picture = getPicture(pic);
-					boolean update = false;
-					if (!StringUtils.equals(user.getPicture(), picture)) {
-						user.setPicture(picture);
-						update = true;
-					}
-					if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
-						user.setEmail(email);
-						update = true;
-					}
-					if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
-						user.setName(name);
-						update = true;
-					}
-					if (update) {
+					if (updateUserInfo(user, pic, email, name)) {
 						user.update();
 					}
 				}
@@ -194,6 +180,24 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);
+	}
+
+	private boolean updateUserInfo(User user, String pic, String email, String name) {
+		String picture = getPicture(pic);
+		boolean update = false;
+		if (!StringUtils.equals(user.getPicture(), picture)) {
+			user.setPicture(picture);
+			update = true;
+		}
+		if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+			user.setEmail(email);
+			update = true;
+		}
+		if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
+			user.setName(name);
+			update = true;
+		}
+		return update;
 	}
 
 	private static String getPicture(String pic) {

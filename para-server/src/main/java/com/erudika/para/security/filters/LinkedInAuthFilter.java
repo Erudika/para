@@ -197,20 +197,7 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 					}
 				} else {
-					boolean update = false;
-					if (!StringUtils.equals(user.getPicture(), pic)) {
-						user.setPicture(pic);
-						update = true;
-					}
-					if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
-						user.setEmail(email);
-						update = true;
-					}
-					if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
-						user.setName(name);
-						update = true;
-					}
-					if (update) {
+					if (updateUserInfo(user, pic, email, name)) {
 						user.update();
 					}
 				}
@@ -218,6 +205,23 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);
+	}
+
+	private boolean updateUserInfo(User user, String pic, String email, String name) {
+		boolean update = false;
+		if (!StringUtils.equals(user.getPicture(), pic)) {
+			user.setPicture(pic);
+			update = true;
+		}
+		if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+			user.setEmail(email);
+			update = true;
+		}
+		if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
+			user.setName(name);
+			update = true;
+		}
+		return update;
 	}
 
 	private String getProfilePicture(JsonNode profileNode) {
