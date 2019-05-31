@@ -459,10 +459,15 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 
 	private void validateDelegatedTokenIfNecessary(JWTAuthentication jwt) throws AuthenticationException, IOException {
 		User user = SecurityUtils.getAuthenticatedUser(jwt);
-		if (user != null) {
-			String identityProvider = (String) jwt.getClaims().getClaim("idp");
+		if (user != null && jwt != null) {
+			String identityProvider = null;
+			try {
+				identityProvider = (String) jwt.getJwt().getJWTClaimsSet().getClaim("idp");
+			} catch (ParseException ex) {
+				logger.error(null, ex);
+			}
 			if (StringUtils.isBlank(identityProvider)) {
-				identityProvider = user.getIdentityProvider();
+				identityProvider = user.getIdentityProvider(); // less reliable, because user identifier can change
 			}
 			App app = jwt.getApp();
 			// Send user password (access token) to IDP for validation:

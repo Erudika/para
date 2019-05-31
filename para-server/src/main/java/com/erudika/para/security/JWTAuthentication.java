@@ -18,7 +18,6 @@
 package com.erudika.para.security;
 
 import com.erudika.para.core.App;
-import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 
 /**
@@ -31,7 +30,6 @@ public class JWTAuthentication extends UserAuthentication {
 
 	private App app;
 	private SignedJWT jwt;
-	private JWTClaimsSet claims;
 
 	/**
 	 * Default constructor.
@@ -71,12 +69,5 @@ public class JWTAuthentication extends UserAuthentication {
 	 */
 	public App getApp() {
 		return app;
-	}
-
-	/**
-	 * @return claims set
-	 */
-	public JWTClaimsSet getClaims() {
-		return claims;
 	}
 }
