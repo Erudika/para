@@ -56,6 +56,7 @@ public class LdapAuthTest {
 
 		LdapTestUtils.loadLdif(server, new ClassPathResource("test-server.ldif"));
 		Map<String, String> defaultSettings = SecurityUtils.getLdapSettingsForApp(new App("test"));
+		defaultSettings.put("security.ldap.user_dn_pattern", "uid={0},ou=people");
 		bindAuthenticator = new LDAPAuthenticator(defaultSettings);
 		defaultSettings.put("security.ldap.compare_passwords", "true");
 		passComparingAuthenticator = new LDAPAuthenticator(defaultSettings);
