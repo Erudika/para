@@ -180,7 +180,7 @@ public class AWSDynamoDAO implements DAO {
 			PutItemRequest putItemRequest = new PutItemRequest(table, row);
 			client().putItem(putItemRequest);
 		} catch (Exception e) {
-			logger.error("Could not write row to DB - table={}, appid={}, key={}", table, appid, key, e);
+			logger.error("Could not write row to DB - table={}, appid={}, key={}: {}", table, appid, key, e);
 			throwIfNecessary(e);
 		}
 		return key;
@@ -231,7 +231,7 @@ public class AWSDynamoDAO implements DAO {
 		} catch (ConditionalCheckFailedException ex) {
 			logger.warn("Item not updated - versions don't match. table={}, appid={}, key={}.", table, appid, key);
 		} catch (Exception e) {
-			logger.error("Could not update row in DB - table={}, appid={}, key={}", table, appid, key, e);
+			logger.error("Could not update row in DB - table={}, appid={}, key={}: {}", table, appid, key, e);
 			throwIfNecessary(e);
 		}
 		return false;
@@ -251,7 +251,7 @@ public class AWSDynamoDAO implements DAO {
 				row = res.getItem();
 			}
 		} catch (Exception e) {
-			logger.error("Could not read row from DB - table={}, appid={}, key={}", appid, key, e);
+			logger.error("Could not read row from DB - table={}, appid={}, key={}: {}", table, appid, key, e);
 		}
 		return (row == null || row.isEmpty()) ? null : row;
 	}
@@ -266,7 +266,7 @@ public class AWSDynamoDAO implements DAO {
 					Collections.singletonMap(Config._KEY, new AttributeValue(getKeyForAppid(key, appid))));
 			client().deleteItem(delItemRequest);
 		} catch (Exception e) {
-			logger.error("Could not delete row from DB - table={}, appid={}, key={}", table, appid, key, e);
+			logger.error("Could not delete row from DB - table={}, appid={}, key={}: {}", table, appid, key, e);
 			throwIfNecessary(e);
 		}
 	}

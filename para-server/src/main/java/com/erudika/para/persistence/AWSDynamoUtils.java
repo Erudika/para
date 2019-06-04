@@ -114,12 +114,11 @@ public final class AWSDynamoUtils {
 					withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("local", "null"))).
 					withEndpointConfiguration(new EndpointConfiguration(LOCAL_ENDPOINT, "")).build();
 		}
+		ddb = new DynamoDB(ddbClient);
 
 		if (!existsTable(Config.getRootAppIdentifier())) {
 			createTable(Config.getRootAppIdentifier());
 		}
-
-		ddb = new DynamoDB(ddbClient);
 
 		Para.addDestroyListener(new DestroyListener() {
 			public void onDestroy() {
@@ -640,7 +639,7 @@ public final class AWSDynamoUtils {
 	}
 
 	protected static void throwIfNecessary(Throwable t) {
-		if (t != null && Config.getConfigBoolean("fail_on_write_errors", false)) {
+		if (t != null && Config.getConfigBoolean("fail_on_write_errors", true)) {
 			throw new RuntimeException("DAO write operation failed!", t);
 		}
 	}
