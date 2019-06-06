@@ -13,8 +13,8 @@
 
 	<properties>
 		<jacksonVer>2.9.9</jacksonVer>
-		<springVer>5.1.6.RELEASE</springVer>
-		<flexmarkVer>0.42.6</flexmarkVer>
+		<springVer>5.1.7.RELEASE</springVer>
+		<flexmarkVer>0.50.4</flexmarkVer>
 	</properties>
 
 	<dependencies>
@@ -208,7 +208,7 @@
 		<dependency>
 			<groupId>org.jsoup</groupId>
 			<artifactId>jsoup</artifactId>
-			<version>1.11.3</version>
+			<version>1.12.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.vladsch.flexmark</groupId>
@@ -312,7 +312,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-checkstyle-plugin</artifactId>
-				<version>3.0.0</version>
+				<version>3.1.0</version>
 				<executions>
 					<execution>
 						<id>validate-core</id>

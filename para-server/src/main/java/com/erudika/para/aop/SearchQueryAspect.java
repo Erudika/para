@@ -89,7 +89,7 @@ public class SearchQueryAspect implements MethodInterceptor {
 	}
 
 	private Object invokeTimedSearch(String appid, Method searchMethod, MethodInvocation mi) throws Throwable {
-		try (final Metrics.Context context = time(appid, searchMethod.getDeclaringClass(), searchMethod.getName())) {
+		try (Metrics.Context context = time(appid, searchMethod.getDeclaringClass(), searchMethod.getName())) {
 			return mi.proceed();
 		}
 	}

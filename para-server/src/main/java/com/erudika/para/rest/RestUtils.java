@@ -294,7 +294,7 @@ public final class RestUtils {
 	 * @return status code 200 or 404
 	 */
 	public static Response getReadResponse(App app, ParaObject content) {
-		try (final Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
+		try (Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
 				RestUtils.class, "crud", "read")) {
 			// app can't modify other apps except itself
 			if (app != null && content != null &&
@@ -313,7 +313,7 @@ public final class RestUtils {
 	 * @return a status code 201 or 400
 	 */
 	public static Response getCreateResponse(App app, String type, InputStream is) {
-		try (final Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
+		try (Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
 				RestUtils.class, "crud", "create")) {
 			ParaObject content;
 			Response entityRes = getEntity(is, Map.class);
@@ -364,7 +364,7 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getOverwriteResponse(App app, String id, String type, InputStream is) {
-		try (final Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
+		try (Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
 				RestUtils.class, "crud", "overwrite")) {
 			ParaObject content;
 			Response entityRes = getEntity(is, Map.class);
@@ -412,7 +412,7 @@ public final class RestUtils {
 	 * @return a status code 200 or 400 or 404
 	 */
 	public static Response getUpdateResponse(App app, ParaObject object, InputStream is) {
-		try (final Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
+		try (Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
 				RestUtils.class, "crud", "update")) {
 			if (app != null && object != null) {
 				Map<String, Object> newContent;
@@ -457,7 +457,7 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getDeleteResponse(App app, ParaObject content) {
-		try (final Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
+		try (Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
 				RestUtils.class, "crud", "delete")) {
 			if (app != null && content != null && content.getId() != null && content.getAppid() != null) {
 				if (checkImplicitAppPermissions(app, content) && checkIfUserCanModifyObject(app, content)) {
@@ -478,7 +478,7 @@ public final class RestUtils {
 	 * @return status code 200 or 400
 	 */
 	public static Response getBatchReadResponse(App app, List<String> ids) {
-		try (final Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
+		try (Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
 				RestUtils.class, "batch", "read")) {
 			if (app != null && ids != null && !ids.isEmpty()) {
 				ArrayList<ParaObject> results = new ArrayList<>(ids.size());
@@ -501,7 +501,7 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getBatchCreateResponse(final App app, InputStream is) {
-		try (final Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
+		try (Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
 				RestUtils.class, "batch", "create")) {
 			if (app != null) {
 				final LinkedList<ParaObject> newObjects = new LinkedList<>();
@@ -552,7 +552,7 @@ public final class RestUtils {
 	 */
 	public static Response getBatchUpdateResponse(App app, Map<String, ParaObject> oldObjects,
 			List<Map<String, Object>> newProperties) {
-		try (final Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
+		try (Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
 				RestUtils.class, "batch", "update")) {
 			if (app != null && oldObjects != null && newProperties != null) {
 				LinkedList<ParaObject> updatedObjects = new LinkedList<>();
@@ -589,7 +589,7 @@ public final class RestUtils {
 	 * @return a status code 200 or 400
 	 */
 	public static Response getBatchDeleteResponse(App app, List<String> ids) {
-		try (final Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
+		try (Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
 				RestUtils.class, "batch", "delete")) {
 			LinkedList<ParaObject> objects = new LinkedList<>();
 			if (app != null && ids != null && !ids.isEmpty()) {
@@ -630,7 +630,7 @@ public final class RestUtils {
 	 */
 	public static Response readLinksHandler(ParaObject pobj, String id2, String type2,
 			MultivaluedMap<String, String> params, Pager pager, boolean childrenOnly) {
-		try (final Metrics.Context context = Metrics.time(null, RestUtils.class, "links", "read")) {
+		try (Metrics.Context context = Metrics.time(null, RestUtils.class, "links", "read")) {
 			String query = params.getFirst("q");
 			if (type2 != null) {
 				if (id2 != null) {
@@ -679,7 +679,7 @@ public final class RestUtils {
 	 * @return a Response
 	 */
 	public static Response deleteLinksHandler(ParaObject pobj, String id2, String type2, boolean childrenOnly) {
-		try (final Metrics.Context context = Metrics.time(null, RestUtils.class, "links", "delete")) {
+		try (Metrics.Context context = Metrics.time(null, RestUtils.class, "links", "delete")) {
 			if (type2 == null && id2 == null) {
 				pobj.unlinkAll();
 			} else if (type2 != null) {
@@ -700,7 +700,7 @@ public final class RestUtils {
 	 * @return a Response
 	 */
 	public static Response createLinksHandler(ParaObject pobj, String id2) {
-		try (final Metrics.Context context = Metrics.time(null, RestUtils.class, "links", "create")) {
+		try (Metrics.Context context = Metrics.time(null, RestUtils.class, "links", "create")) {
 			if (id2 != null && pobj != null) {
 				String linkid = pobj.link(id2);
 				if (linkid == null) {
@@ -729,7 +729,7 @@ public final class RestUtils {
 		if (!StringUtils.isBlank(typeOverride) && !"search".equals(typeOverride)) {
 			type = typeOverride;
 		}
-		try (final Metrics.Context context = Metrics.time(appid, RestUtils.class, "search", queryType)) {
+		try (Metrics.Context context = Metrics.time(appid, RestUtils.class, "search", queryType)) {
 			if (params == null) {
 				return buildPageResponse(Para.getSearch().findQuery(appid, type, query, pager), pager);
 			}
