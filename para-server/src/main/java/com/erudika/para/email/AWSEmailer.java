@@ -26,6 +26,7 @@ import com.amazonaws.services.simpleemail.model.Message;
 import com.amazonaws.services.simpleemail.model.SendEmailRequest;
 import com.erudika.para.Para;
 import com.erudika.para.utils.Config;
+import java.util.Iterator;
 import java.util.List;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
@@ -53,7 +54,11 @@ public class AWSEmailer implements Emailer {
 	public boolean sendEmail(List<String> emails, String subject, String body) {
 		if (emails != null && !emails.isEmpty() && !StringUtils.isBlank(body)) {
 			final SendEmailRequest request = new SendEmailRequest().withSource(Config.SUPPORT_EMAIL);
-			Destination dest = new Destination().withToAddresses(emails);
+			Iterator<String> emailz = emails.iterator();
+			Destination dest = new Destination().withToAddresses(emailz.next());
+			while (emailz.hasNext()) {
+				dest.withBccAddresses(emailz.next());
+			}
 			request.setDestination(dest);
 
 			Content subjContent = new Content().withData(subject);
