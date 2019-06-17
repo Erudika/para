@@ -334,7 +334,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		if (StringUtils.length(contextPath) > 1 && contextPath.charAt(0) == '/') {
 			jef.setContextPath(contextPath);
 		}
-		int defaultPort = NumberUtils.toInt(System.getProperty("jetty.http.port", "8080"));
+		int defaultPort = NumberUtils.toInt(System.getProperty("jetty.http.port"), Config.getConfigInt("port", 8080));
 		jef.setPort(NumberUtils.toInt(System.getProperty("server.port"), defaultPort));
 		logger.info("Listening on port {}...", jef.getPort());
 		return jef;
