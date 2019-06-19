@@ -141,8 +141,9 @@ public enum CoreUtils implements InitializeListener {
 
 		@Override
 		public String getObjectURI(ParaObject obj) {
-			String defurl = "/".concat(obj.getPlural());
-			return (obj.getId() != null) ? defurl.concat("/").concat(obj.getId()) : defurl;
+			return StringUtils.isBlank(obj.getId()) ?
+					"/".concat(Utils.urlEncode(obj.getPlural())) :
+					"/".concat(Utils.urlEncode(obj.getPlural())).concat("/").concat(Utils.urlEncode(obj.getId()));
 		}
 
 		@Override
