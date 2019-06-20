@@ -44,6 +44,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -57,6 +58,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -798,9 +800,26 @@ public final class RestUtils {
 	private static <P extends ParaObject> List<P> findSimilarQuery(MultivaluedMap<String, String> params,
 			String appid, String type, Pager pager) {
 		List<String> fields = params.get("fields");
+		String like = params.getFirst("like");
 		String[] fieldz = (fields != null) ? fields.toArray(new String[0]) : null;
-		return Para.getSearch().findSimilar(appid, type, params.getFirst("filterid"),
-				fieldz, params.getFirst("like"), pager);
+		if (StringUtils.startsWith(like, "id:")) {
+			ParaObject likeObj = Para.getDAO().read(appid, StringUtils.removeStart(like, "id:"));
+			if (likeObj != null) {
+				StringBuilder sb = new StringBuilder();
+				Arrays.asList(fieldz).forEach(field -> {
+					try {
+						String value = BeanUtils.getProperty(likeObj, field);
+						if (value != null) {
+							sb.append(Utils.stripAndTrim(value)).append(" ");
+						}
+					} catch (Exception e) {
+						logger.debug("Missing fields {} in object {}: {}", fields, likeObj.getId(), e.getMessage());
+					}
+				});
+				like = sb.toString();
+			}
+		}
+		return Para.getSearch().findSimilar(appid, type, params.getFirst("filterid"), fieldz, like, pager);
 	}
 
 	private static <P extends ParaObject> List<P> findNearbyQuery(MultivaluedMap<String, String> params,
