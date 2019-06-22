@@ -474,7 +474,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			// - if token delegation is enabled AND
 			// - if the generic OAuth 2 filter is used
 			if ("oauth2".equalsIgnoreCase(identityProvider) && oauth2Auth.isAccessTokenDelegationEnabled(app) &&
-					!oauth2Auth.isValidAccessToken(app, user.getPassword())) {
+					!oauth2Auth.isValidAccessToken(app, user)) {
 				logger.debug("The access token delegated from '" + identityProvider + "' is invalid for " +
 						user.getAppid() + "/" + user.getId());
 				throw new AuthenticationServiceException("The access token delegated from '" +

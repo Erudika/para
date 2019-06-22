@@ -70,6 +70,9 @@ public class User implements ParaObject {
 	@Stored private String picture;
 	@Stored private String lastIp;
 	@Stored @Locked private String tokenSecret;
+	@Stored private String idpAccessToken;
+	@Stored private String idpRefreshToken;
+	@Stored private String idpAccessTokenPayload;
 
 	private transient String password;
 
@@ -532,6 +535,60 @@ public class User implements ParaObject {
 	 */
 	public void setPassword(String password) {
 		this.password = password;
+	}
+
+	/**
+	 * Used for storing the access token from an OpenID Connect/OAuth 2.0 identity provider.
+	 * @return a JWT access token (JWT is always assumed to be the format)
+	 */
+	@JsonIgnore
+	public String getIdpAccessToken() {
+		return idpAccessToken;
+	}
+
+	/**
+	 * Sets the IDP access token.
+	 * @param idpAccessToken a token
+	 */
+	public void setIdpAccessToken(String idpAccessToken) {
+		if (!StringUtils.isBlank(idpAccessToken)) {
+			setIdpAccessTokenPayload(StringUtils.substringBetween(idpAccessToken, "."));
+		}
+		this.idpAccessToken = idpAccessToken;
+	}
+
+	/**
+	 * Stores the refresh token from the identity provider.
+	 * @return a JWT refresh token
+	 */
+	@JsonIgnore
+	public String getIdpRefreshToken() {
+		return idpRefreshToken;
+	}
+
+	/**
+	 * Sets the refresh token.
+	 * @param idpRefreshToken a refresh token
+	 */
+	public void setIdpRefreshToken(String idpRefreshToken) {
+		this.idpRefreshToken = idpRefreshToken;
+	}
+
+	/**
+	 * Returns the JWT payload for the access token coming from the IDP.
+	 * Used for delegating user attributes data to clients.
+	 * @return the payload part in Base64
+	 */
+	public String getIdpAccessTokenPayload() {
+		return idpAccessTokenPayload;
+	}
+
+	/**
+	 * Sets the access token payload.
+	 * @param idpAccessTokenPayload Base64 encoded payload
+	 */
+	public void setIdpAccessTokenPayload(String idpAccessTokenPayload) {
+		this.idpAccessTokenPayload = idpAccessTokenPayload;
 	}
 
 	/**

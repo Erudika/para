@@ -59,6 +59,8 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	private final ObjectReader jreader;
 	private static final String PAYLOAD = "code={0}&redirect_uri={1}"
 			+ "&scope={2}&client_id={3}&client_secret={4}&grant_type=authorization_code";
+	private static final String REFRESH_PAYLOAD = "refresh_token={0}"
+			+ "&scope={1}&client_id={2}&client_secret={3}&grant_type=refresh_token";
 
 	/**
 	 * The default filter mapping.
@@ -101,30 +103,12 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = SecurityUtils.getAppidFromAuthRequest(request);
-				String redirectURI = SecurityUtils.getRedirectUrl(request);
 				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
-				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.OAUTH2_PREFIX);
-				String entity = Utils.formatMessage(PAYLOAD,
-						authCode, Utils.urlEncode(redirectURI),
-						URLEncoder.encode(SecurityUtils.getSettingForApp(app, "security.oauth.scope", ""), "UTF-8"),
-						keys[0], keys[1]);
 
-				String acceptHeader = SecurityUtils.getSettingForApp(app, "security.oauth.accept_header", "");
-				HttpPost tokenPost = new HttpPost(SecurityUtils.getSettingForApp(app, "security.oauth.token_url", ""));
-				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
-				tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
-				if (!StringUtils.isBlank(acceptHeader)) {
-					tokenPost.setHeader(HttpHeaders.ACCEPT, acceptHeader);
-				}
-
-				try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
-					if (resp1 != null && resp1.getEntity() != null) {
-						Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
-						if (token != null && token.containsKey("access_token")) {
-							userAuth = getOrCreateUser(app, (String) token.get("access_token"));
-						}
-						EntityUtils.consumeQuietly(resp1.getEntity());
-					}
+				Map<String, Object> token = tokenRequest(app, authCode, SecurityUtils.getRedirectUrl(request));
+				if (token != null && token.containsKey("access_token")) {
+					userAuth = getOrCreateUser(app, token.get("access_token") +
+							Config.SEPARATOR + token.get("refresh_token"));
 				}
 			}
 		}
@@ -143,6 +127,13 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		UserAuthentication userAuth = null;
 		User user = new User();
 		if (accessToken != null) {
+			String[] tokens = accessToken.split(Config.SEPARATOR);
+			String refreshToken = null;
+			if (tokens.length > 1) {
+				accessToken = tokens[0];
+				refreshToken = tokens[1];
+			}
+
 			boolean tokenDelegationEnabled = isAccessTokenDelegationEnabled(app);
 			Map<String, Object> profile = fetchProfileFromIDP(app, accessToken);
 
@@ -169,7 +160,11 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 					user.setAppid(getAppid(app));
 					user.setEmail(StringUtils.isBlank(email) ? Utils.getNewId() + "@" + emailDomain : email);
 					user.setName(StringUtils.isBlank(name) ? "No Name" : name);
-					user.setPassword(tokenDelegationEnabled ? accessToken : Utils.generateSecurityToken());
+					user.setPassword(Utils.generateSecurityToken());
+					if (tokenDelegationEnabled) {
+						user.setIdpAccessToken(accessToken);
+						user.setIdpRefreshToken(refreshToken);
+					}
 					user.setPicture(getPicture(pic));
 					user.setIdentifier(Config.OAUTH2_PREFIX.concat(oauthAccountId));
 					String id = user.create();
@@ -177,7 +172,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 					}
 				} else {
-					if (updateUserInfo(user, pic, email, name, accessToken, tokenDelegationEnabled)) {
+					if (updateUserInfo(user, pic, email, name, accessToken, refreshToken, tokenDelegationEnabled)) {
 						user.update();
 					}
 				}
@@ -187,8 +182,8 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		return SecurityUtils.checkIfActive(userAuth, user, false);
 	}
 
-	private boolean updateUserInfo(User user, String pic, String email, String name, String accessToken,
-			boolean tokenDelegationEnabled) {
+	private boolean updateUserInfo(User user, String pic, String email, String name,
+			String accessToken, String refreshToken, boolean tokenDelegationEnabled) {
 		String picture = getPicture(pic);
 		boolean update = false;
 		if (!StringUtils.equals(user.getPicture(), picture)) {
@@ -204,7 +199,8 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			update = true;
 		}
 		if (tokenDelegationEnabled) {
-			user.setPassword(accessToken);
+			user.setIdpAccessToken(accessToken);
+			user.setIdpRefreshToken(refreshToken);
 			update = true;
 		}
 		return update;
@@ -223,12 +219,16 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	/**
 	 * Validates the access token against the IDP server.
 	 * @param app an app object
-	 * @param accessToken access token
+	 * @param user the user object holding the tokens
 	 * @return true if access token is valid
 	 */
-	public boolean isValidAccessToken(App app, String accessToken) {
+	public boolean isValidAccessToken(App app, User user) {
 		try {
-			Map<String, Object> profile = fetchProfileFromIDP(app, accessToken);
+			Map<String, Object> profile = fetchProfileFromIDP(app, user.getIdpAccessToken());
+			if (profile == null && user.getIdpRefreshToken() != null) {
+				refreshTokens(app, user);
+				profile = fetchProfileFromIDP(app, user.getIdpAccessToken());
+			}
 			return profile != null && profile.containsKey(SecurityUtils.getSettingForApp(app,
 					"security.oauth.parameters.id", "sub"));
 		} catch (Exception e) {
@@ -256,12 +256,56 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 
 		try (CloseableHttpResponse resp2 = httpclient.execute(profileGet)) {
 			HttpEntity respEntity = resp2.getEntity();
-			if (respEntity != null) {
+			if (respEntity != null && resp2.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
 				profile = jreader.readValue(respEntity.getContent());
-				EntityUtils.consumeQuietly(respEntity);
 			}
+			EntityUtils.consumeQuietly(respEntity);
 		}
 		return profile;
+	}
+
+	private void refreshTokens(App app, User user) throws IOException {
+		Map<String, Object> token = tokenRequest(app, user.getIdpRefreshToken(), null);
+		if (token != null && token.containsKey("access_token")) {
+			user.setIdpAccessToken((String) token.get("access_token"));
+			String newRefresh = (String) token.get("refresh_token");
+			if (!StringUtils.equals(newRefresh, user.getIdpRefreshToken())) {
+				user.setIdpRefreshToken(newRefresh);
+			}
+			user.update();
+		}
+	}
+
+	private Map<String, Object> tokenRequest(App app, String authCodeOrRefreshToken, String redirectURI) throws IOException {
+		String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.OAUTH2_PREFIX);
+
+		String entity;
+		if (redirectURI == null) {
+			entity = Utils.formatMessage(REFRESH_PAYLOAD, authCodeOrRefreshToken,
+					URLEncoder.encode(SecurityUtils.getSettingForApp(app, "security.oauth.scope", ""), "UTF-8"),
+					keys[0], keys[1]);
+		} else {
+			entity = Utils.formatMessage(PAYLOAD, authCodeOrRefreshToken, Utils.urlEncode(redirectURI),
+					URLEncoder.encode(SecurityUtils.getSettingForApp(app, "security.oauth.scope", ""), "UTF-8"),
+					keys[0], keys[1]);
+		}
+
+		String acceptHeader = SecurityUtils.getSettingForApp(app, "security.oauth.accept_header", "");
+		HttpPost tokenPost = new HttpPost(SecurityUtils.getSettingForApp(app, "security.oauth.token_url", ""));
+		tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
+		tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
+		if (!StringUtils.isBlank(acceptHeader)) {
+			tokenPost.setHeader(HttpHeaders.ACCEPT, acceptHeader);
+		}
+
+		Map<String, Object> tokens = null;
+		try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
+			if (resp1 != null && resp1.getEntity() != null) {
+				tokens = jreader.readValue(resp1.getEntity().getContent());
+				EntityUtils.consumeQuietly(resp1.getEntity());
+			}
+		}
+		return tokens;
 	}
 
 	private static String getPicture(String pic) {
