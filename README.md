@@ -26,6 +26,7 @@ See how **Para** [compares to other open source backend frameworks](https://erud
 - Full-text search (Lucene, Elasticsearch)
 - Distributed and local object cache (Hazelcast, Caffeine)
 - Multitenancy - each app has its own table, index and cache
+- Webhooks with signed payloads
 - IoT support and integration with AWS and Azure
 - Flexible security based on Spring Security (LDAP, SAML, social login, CSRF protection, etc.)
 - Stateless client authentication with JSON Web Tokens (JWT)
@@ -262,6 +263,13 @@ The `Cache` interface is implemented by:
 
 - **Caffeine**: **default** objects are cached locally (included in `para-server`)
 - **Hazelcast**: [para-cache-hazelcast](https://github.com/Erudika/para-cache-hazelcast) (distributed)
+
+## Queue implementations
+
+The `Queue` interface is implemented by:
+
+- **AWS SQS**: in the `AWSQueue` class
+- `LocalQueue` for single-host deployments and local development
 
 ## Projects using Para
 
