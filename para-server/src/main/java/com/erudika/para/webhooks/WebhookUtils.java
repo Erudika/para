@@ -24,7 +24,6 @@ import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.nimbusds.jose.crypto.impl.HMAC;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -118,7 +117,6 @@ public final class WebhookUtils {
 	 * @param id webhook id
 	 * @param parsed payload with metadata
 	 * @return number of processed webhooks 1 or 0
-	 * @throws IOException exception
 	 */
 	public static int processWebhookPayload(String appid, String id, Map<String, Object> parsed) {
 		if (!parsed.containsKey("targetUrl") || StringUtils.isBlank(id) || parsed.isEmpty()) {

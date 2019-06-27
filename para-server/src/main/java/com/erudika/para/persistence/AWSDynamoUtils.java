@@ -600,7 +600,7 @@ public final class AWSDynamoUtils {
 		try {
 			DescribeTableResponse t = getClient().describeTable(b -> b.tableName(getTableNameForAppid(SHARED_TABLE)));
 			return t.table().globalSecondaryIndexes().stream().
-					filter(gsi -> gsi.indexName().equals(getSharedIndexName())).findFirst().get();
+					filter(gsi -> gsi.indexName().equals(getSharedIndexName())).findFirst().orElse(null);
 		} catch (Exception e) {
 			logger.info("Could not get shared index: {}.", e.getMessage());
 		}
