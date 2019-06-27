@@ -21,6 +21,7 @@ import com.erudika.para.cache.Cache;
 import com.erudika.para.core.App;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.persistence.DAO;
+import com.erudika.para.queue.Queue;
 import com.erudika.para.rest.CustomResourceHandler;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
@@ -164,6 +165,14 @@ public final class Para {
 	 */
 	public static Cache getCache() {
 		return CoreUtils.getInstance().getCache();
+	}
+
+	/**
+	 * @return an instance of the core queue class.
+	 * @see Queue
+	 */
+	public static Queue getQueue() {
+		return CoreUtils.getInstance().getQueue();
 	}
 
 	/**

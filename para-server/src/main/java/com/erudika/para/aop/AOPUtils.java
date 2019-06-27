@@ -54,7 +54,7 @@ public final class AOPUtils {
 	protected static ParaObject getArgOfParaObject(Object[] args) {
 		if (args != null) {
 			for (Object arg : args) {
-				if (arg != null && ParaObject.class.isAssignableFrom(arg.getClass())) {
+				if (arg != null && arg instanceof ParaObject) {
 					return (ParaObject) arg;
 				}
 			}

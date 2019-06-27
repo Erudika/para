@@ -31,7 +31,7 @@ public abstract class QueueTest {
 	protected static Queue q;
 
 	@Test
-	public void testPushPull() {
+	public void testPushPull() throws InterruptedException {
 		q.push(null);
 		assertEquals("", q.pull());
 		String msg1 = "{\"test1\": 123 }";
@@ -39,8 +39,12 @@ public abstract class QueueTest {
 		String msg3 = "{\"test3\": 123 }";
 
 		q.push(msg1);
+		Thread.sleep(500);
 		q.push(msg2);
+		Thread.sleep(500);
 		q.push(msg3);
+		Thread.sleep(500);
+		// ORDER IS NOT GUARANTEED!
 		assertEquals(msg1, q.pull());
 		assertEquals(msg2, q.pull());
 		assertEquals(msg3, q.pull());

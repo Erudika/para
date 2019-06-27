@@ -17,47 +17,6 @@
  */
 package com.erudika.para.persistence;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-import com.amazonaws.services.dynamodbv2.document.DynamoDB;
-import com.amazonaws.services.dynamodbv2.document.Index;
-import com.amazonaws.services.dynamodbv2.document.Item;
-import com.amazonaws.services.dynamodbv2.document.KeyAttribute;
-import com.amazonaws.services.dynamodbv2.document.Page;
-import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
-import com.amazonaws.services.dynamodbv2.document.Table;
-import com.amazonaws.services.dynamodbv2.document.internal.PageIterable;
-import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
-import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
-import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.BatchGetItemRequest;
-import com.amazonaws.services.dynamodbv2.model.BatchGetItemResult;
-import com.amazonaws.services.dynamodbv2.model.BatchWriteItemRequest;
-import com.amazonaws.services.dynamodbv2.model.BatchWriteItemResult;
-import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
-import com.amazonaws.services.dynamodbv2.model.DeleteRequest;
-import com.amazonaws.services.dynamodbv2.model.DeleteTableRequest;
-import com.amazonaws.services.dynamodbv2.model.DescribeTableResult;
-import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndex;
-import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
-import com.amazonaws.services.dynamodbv2.model.KeyType;
-import com.amazonaws.services.dynamodbv2.model.KeysAndAttributes;
-import com.amazonaws.services.dynamodbv2.model.ListTablesResult;
-import com.amazonaws.services.dynamodbv2.model.Projection;
-import com.amazonaws.services.dynamodbv2.model.ProjectionType;
-import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
-import com.amazonaws.services.dynamodbv2.model.ReturnConsumedCapacity;
-import com.amazonaws.services.dynamodbv2.model.SSESpecification;
-import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
-import com.amazonaws.services.dynamodbv2.model.ScanRequest;
-import com.amazonaws.services.dynamodbv2.model.ScanResult;
-import com.amazonaws.services.dynamodbv2.model.TableDescription;
-import com.amazonaws.services.dynamodbv2.model.UpdateTableRequest;
-import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.erudika.para.DestroyListener;
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
@@ -66,14 +25,39 @@ import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import java.lang.annotation.Annotation;
+import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.BatchGetItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.CreateTableResponse;
+import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
+import software.amazon.awssdk.services.dynamodb.model.GlobalSecondaryIndex;
+import software.amazon.awssdk.services.dynamodb.model.GlobalSecondaryIndexDescription;
+import software.amazon.awssdk.services.dynamodb.model.KeyType;
+import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
+import software.amazon.awssdk.services.dynamodb.model.ListTablesResponse;
+import software.amazon.awssdk.services.dynamodb.model.ProjectionType;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.ReturnConsumedCapacity;
+import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
+import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
+import software.amazon.awssdk.services.dynamodb.model.TableDescription;
+import software.amazon.awssdk.services.dynamodb.model.TableStatus;
+import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 /**
  * Helper utilities for connecting to AWS DynamoDB.
@@ -81,8 +65,8 @@ import org.slf4j.LoggerFactory;
  */
 public final class AWSDynamoUtils {
 
-	private static AmazonDynamoDB ddbClient;
-	private static DynamoDB ddb;
+	private static DynamoDbClient ddbClient;
+//	private static DynamoDb ddb;
 	private static final String LOCAL_ENDPOINT = "http://localhost:8000";
 	private static final Logger logger = LoggerFactory.getLogger(AWSDynamoUtils.class);
 
@@ -102,19 +86,20 @@ public final class AWSDynamoUtils {
 	 * Returns a client instance for AWS DynamoDB.
 	 * @return a client that talks to DynamoDB
 	 */
-	public static AmazonDynamoDB getClient() {
+	public static DynamoDbClient getClient() {
 		if (ddbClient != null) {
 			return ddbClient;
 		}
 
 		if (Config.IN_PRODUCTION) {
-			ddbClient = AmazonDynamoDBClientBuilder.standard().build();
+			ddbClient = DynamoDbClient.create();
 		} else {
-			ddbClient = AmazonDynamoDBClientBuilder.standard().
-					withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("local", "null"))).
-					withEndpointConfiguration(new EndpointConfiguration(LOCAL_ENDPOINT, "")).build();
+			ddbClient = DynamoDbClient.builder().
+					endpointOverride(URI.create(LOCAL_ENDPOINT)).
+					credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("local", "null"))).
+					build();
 		}
-		ddb = new DynamoDB(ddbClient);
+//		ddb = new DynamoDb(ddbClient);
 
 		if (!existsTable(Config.getRootAppIdentifier())) {
 			createTable(Config.getRootAppIdentifier());
@@ -135,10 +120,10 @@ public final class AWSDynamoUtils {
 	 */
 	protected static void shutdownClient() {
 		if (ddbClient != null) {
-			ddbClient.shutdown();
+			ddbClient.close();
 			ddbClient = null;
-			ddb.shutdown();
-			ddb = null;
+//			ddb.shutdown();
+//			ddb = null;
 		}
 	}
 
@@ -152,7 +137,7 @@ public final class AWSDynamoUtils {
 			return false;
 		}
 		try {
-			DescribeTableResult res = getClient().describeTable(getTableNameForAppid(appid));
+			DescribeTableResponse res = getClient().describeTable(b -> b.tableName(getTableNameForAppid(appid)));
 			return res != null;
 		} catch (Exception e) {
 			return false;
@@ -187,15 +172,17 @@ public final class AWSDynamoUtils {
 		}
 		try {
 			String table = getTableNameForAppid(appid);
-			getClient();
-			Table tbl = ddb.createTable(new CreateTableRequest().withTableName(table).
-					withKeySchema(new KeySchemaElement(Config._KEY, KeyType.HASH)).
-					withSSESpecification(new SSESpecification().withEnabled(ENCRYPTION_AT_REST_ENABLED)).
-					withAttributeDefinitions(new AttributeDefinition(Config._KEY, ScalarAttributeType.S)).
-					withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
+			CreateTableResponse tbl = getClient().createTable(b -> b.tableName(table).
+					keySchema(b1 -> b1.attributeName(Config._KEY).keyType(KeyType.HASH)).
+					sseSpecification(b2 -> b2.enabled(ENCRYPTION_AT_REST_ENABLED)).
+					attributeDefinitions(b3 -> b3.attributeName(Config._KEY).attributeType(ScalarAttributeType.S)).
+					provisionedThroughput(b4 -> b4.readCapacityUnits(readCapacity).writeCapacityUnits(writeCapacity)));
+
 			logger.info("Waiting for DynamoDB table to become ACTIVE...");
-			String status = tbl.waitForActive().getTableStatus();
-			logger.info("Created DynamoDB table '{}', status {}.", table, status);
+			waitForActive(table);
+			// NOT IMPLEMENTED in SDK v2:
+			// String status = tbl.waitForActive().getTableStatus();
+			logger.info("Created DynamoDB table '{}', status {}.", table, tbl.tableDescription().tableStatus());
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;
@@ -217,8 +204,8 @@ public final class AWSDynamoUtils {
 		String table = getTableNameForAppid(appid);
 		try {
 			// AWS throws an exception if the new read/write capacity values are the same as the current ones
-			getClient().updateTable(new UpdateTableRequest().withTableName(table).
-					withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
+			getClient().updateTable(b -> b.tableName(table).
+					provisionedThroughput(b1 -> b1.readCapacityUnits(readCapacity).writeCapacityUnits(writeCapacity)));
 			return true;
 		} catch (Exception e) {
 			logger.error("Could not update table '{}' - table is not active or no change to capacity: {}",
@@ -238,7 +225,7 @@ public final class AWSDynamoUtils {
 		}
 		try {
 			String table = getTableNameForAppid(appid);
-			getClient().deleteTable(new DeleteTableRequest().withTableName(table));
+			getClient().deleteTable(b -> b.tableName(table));
 			logger.info("Deleted DynamoDB table '{}'.", table);
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -260,26 +247,24 @@ public final class AWSDynamoUtils {
 		}
 		String table = getTableNameForAppid(SHARED_TABLE);
 		try {
-			GlobalSecondaryIndex secIndex = new GlobalSecondaryIndex().
-					withIndexName(getSharedIndexName()).
-					withProvisionedThroughput(new ProvisionedThroughput().
-							withReadCapacityUnits(1L).
-							withWriteCapacityUnits(1L)).
-					withProjection(new Projection().withProjectionType(ProjectionType.ALL)).
-					withKeySchema(new KeySchemaElement().withAttributeName(Config._APPID).withKeyType(KeyType.HASH),
-							new KeySchemaElement().withAttributeName(Config._ID).withKeyType(KeyType.RANGE));
-			getClient();
-			Table tbl = ddb.createTable(new CreateTableRequest().withTableName(table).
-					withKeySchema(new KeySchemaElement(Config._KEY, KeyType.HASH)).
-					withSSESpecification(new SSESpecification().withEnabled(ENCRYPTION_AT_REST_ENABLED)).
-					withAttributeDefinitions(new AttributeDefinition(Config._KEY, ScalarAttributeType.S),
-							new AttributeDefinition(Config._APPID, ScalarAttributeType.S),
-							new AttributeDefinition(Config._ID, ScalarAttributeType.S)).
-					withGlobalSecondaryIndexes(secIndex).
-					withProvisionedThroughput(new ProvisionedThroughput(readCapacity, writeCapacity)));
+			GlobalSecondaryIndex secIndex = GlobalSecondaryIndex.builder().
+					indexName(getSharedIndexName()).
+					provisionedThroughput(b -> b.readCapacityUnits(1L).writeCapacityUnits(1L)).
+					projection(b1 -> b1.projectionType(ProjectionType.ALL)).
+					keySchema(b2 -> b2.attributeName(Config._APPID).keyType(KeyType.HASH),
+							b3 -> b3.attributeName(Config._ID).keyType(KeyType.RANGE)).build();
+
+			CreateTableResponse tbl = getClient().createTable(b -> b.tableName(table).
+					keySchema(b1 -> b1.attributeName(Config._KEY).keyType(KeyType.HASH)).
+					sseSpecification(b2 -> b2.enabled(ENCRYPTION_AT_REST_ENABLED)).
+					attributeDefinitions(b3 -> b3.attributeName(Config._KEY).attributeType(ScalarAttributeType.S),
+							b4 ->  b4.attributeName(Config._APPID).attributeType(ScalarAttributeType.S),
+							b5 -> b5.attributeName(Config._ID).attributeType(ScalarAttributeType.S)).
+					globalSecondaryIndexes(secIndex).
+					provisionedThroughput(b6 -> b6.readCapacityUnits(readCapacity).writeCapacityUnits(writeCapacity)));
 			logger.info("Waiting for DynamoDB table to become ACTIVE...");
-			String status = tbl.waitForActive().getTableStatus();
-			logger.info("Created shared table '{}', status {}.", table, status);
+			waitForActive(table);
+			logger.info("Created shared table '{}', status {}.", table, tbl.tableDescription().tableStatus());
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;
@@ -297,15 +282,15 @@ public final class AWSDynamoUtils {
 			return Collections.emptyMap();
 		}
 		try {
-			final TableDescription td = getClient().describeTable(getTableNameForAppid(appid)).getTable();
+			final TableDescription td = getClient().describeTable(b -> b.tableName(getTableNameForAppid(appid))).table();
 			HashMap<String, Object> dbStatus = new HashMap<>();
 			dbStatus.put("id", appid);
-			dbStatus.put("status", td.getTableStatus());
-			dbStatus.put("created", td.getCreationDateTime().getTime());
-			dbStatus.put("sizeBytes", td.getTableSizeBytes());
-			dbStatus.put("itemCount", td.getItemCount());
-			dbStatus.put("readCapacityUnits", td.getProvisionedThroughput().getReadCapacityUnits());
-			dbStatus.put("writeCapacityUnits", td.getProvisionedThroughput().getWriteCapacityUnits());
+			dbStatus.put("status", td.tableStatus());
+			dbStatus.put("created", td.creationDateTime().toEpochMilli());
+			dbStatus.put("sizeBytes", td.tableSizeBytes());
+			dbStatus.put("itemCount", td.itemCount());
+			dbStatus.put("readCapacityUnits", td.provisionedThroughput().readCapacityUnits());
+			dbStatus.put("writeCapacityUnits", td.provisionedThroughput().writeCapacityUnits());
 			return dbStatus;
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -319,18 +304,17 @@ public final class AWSDynamoUtils {
 	 */
 	public static List<String> listAllTables() {
 		int items = 100;
-		ListTablesResult ltr = getClient().listTables(items);
+		ListTablesResponse ltr = getClient().listTables(b -> b.limit(items));
 		List<String> tables = new LinkedList<>();
-		String lastKey;
 		do {
-			tables.addAll(ltr.getTableNames());
-			lastKey = ltr.getLastEvaluatedTableName();
-			logger.info("Found {} tables. Total found: {}.", ltr.getTableNames().size(), tables.size());
-			if (lastKey == null) {
+			tables.addAll(ltr.tableNames());
+			logger.info("Found {} tables. Total found: {}.", ltr.tableNames().size(), tables.size());
+			if (ltr.lastEvaluatedTableName() == null) {
 				break;
 			}
-			ltr = getClient().listTables(lastKey, items);
-		} while (!ltr.getTableNames().isEmpty());
+			final String lastKey = ltr.lastEvaluatedTableName();
+			ltr = getClient().listTables(b -> b.limit(items).exclusiveStartTableName(lastKey));
+		} while (!ltr.tableNames().isEmpty());
 		return tables;
 	}
 
@@ -385,11 +369,11 @@ public final class AWSDynamoUtils {
 		for (Map.Entry<String, Object> entry : ParaObjectUtils.getAnnotatedFields(so, filter).entrySet()) {
 			Object value = entry.getValue();
 			if (value != null && !StringUtils.isBlank(value.toString())) {
-				row.put(entry.getKey(), new AttributeValue(value.toString()));
+				row.put(entry.getKey(), AttributeValue.builder().s(value.toString()).build());
 			}
 		}
 		if (so.getVersion() != null && so.getVersion() > 0) {
-			row.put(Config._VERSION, new AttributeValue().withN(so.getVersion().toString()));
+			row.put(Config._VERSION, AttributeValue.builder().n(so.getVersion().toString()).build());
 		} else {
 			row.remove(Config._VERSION);
 		}
@@ -408,9 +392,9 @@ public final class AWSDynamoUtils {
 		}
 		Map<String, Object> props = new HashMap<>();
 		for (Map.Entry<String, AttributeValue> col : row.entrySet()) {
-			props.put(col.getKey(), col.getValue().getS());
+			props.put(col.getKey(), col.getValue().s());
 		}
-		props.put(Config._VERSION, row.getOrDefault(Config._VERSION, new AttributeValue().withN("0")).getN());
+		props.put(Config._VERSION, row.getOrDefault(Config._VERSION, AttributeValue.builder().n("0").build()).n());
 		return ParaObjectUtils.setAnnotatedFields(props);
 	}
 
@@ -425,13 +409,13 @@ public final class AWSDynamoUtils {
 			return;
 		}
 		try {
-			BatchGetItemResult result = getClient().batchGetItem(new BatchGetItemRequest().
-					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL).withRequestItems(kna));
+			BatchGetItemResponse result = getClient().batchGetItem(b -> b.
+					returnConsumedCapacity(ReturnConsumedCapacity.TOTAL).requestItems(kna));
 			if (result == null) {
 				return;
 			}
 
-			List<Map<String, AttributeValue>> res = result.getResponses().get(kna.keySet().iterator().next());
+			List<Map<String, AttributeValue>> res = result.responses().get(kna.keySet().iterator().next());
 
 			for (Map<String, AttributeValue> item : res) {
 				P obj = fromRow(item);
@@ -439,12 +423,12 @@ public final class AWSDynamoUtils {
 					results.put(obj.getId(), obj);
 				}
 			}
-			logger.debug("batchGet(): total {}, cc {}", res.size(), result.getConsumedCapacity());
+			logger.debug("batchGet(): total {}, cc {}", res.size(), result.consumedCapacity());
 
-			if (result.getUnprocessedKeys() != null && !result.getUnprocessedKeys().isEmpty()) {
+			if (result.unprocessedKeys() != null && !result.unprocessedKeys().isEmpty()) {
 				Thread.sleep(1000);
-				logger.warn("{} UNPROCESSED read requests!", result.getUnprocessedKeys().size());
-				batchGet(result.getUnprocessedKeys(), results);
+				logger.warn("{} UNPROCESSED read requests!", result.unprocessedKeys().size());
+				batchGet(result.unprocessedKeys(), results);
 			}
 		} catch (Exception e) {
 			logger.error("Failed to execute batch read operation on table '{}'", kna.keySet().iterator().next(), e);
@@ -461,17 +445,17 @@ public final class AWSDynamoUtils {
 			return;
 		}
 		try {
-			BatchWriteItemResult result = getClient().batchWriteItem(new BatchWriteItemRequest().
-					withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL).withRequestItems(items));
+			BatchWriteItemResponse result = getClient().batchWriteItem(b -> b.
+					returnConsumedCapacity(ReturnConsumedCapacity.TOTAL).requestItems(items));
 			if (result == null) {
 				return;
 			}
-			logger.debug("batchWrite(): total {}, cc {}", items.size(), result.getConsumedCapacity());
+			logger.debug("batchWrite(): total {}, cc {}", items.size(), result.consumedCapacity());
 
-			if (result.getUnprocessedItems() != null && !result.getUnprocessedItems().isEmpty()) {
+			if (result.unprocessedItems() != null && !result.unprocessedItems().isEmpty()) {
 				Thread.sleep((long) backoff * 1000L);
-				logger.warn("{} UNPROCESSED write requests!", result.getUnprocessedItems().size());
-				batchWrite(result.getUnprocessedItems(), backoff * 2);
+				logger.warn("{} UNPROCESSED write requests!", result.unprocessedItems().size());
+				batchWrite(result.unprocessedItems(), backoff * 2);
 			}
 		} catch (Exception e) {
 			logger.error("Failed to execute batch write operation on table '{}'", items.keySet().iterator().next(), e);
@@ -488,27 +472,27 @@ public final class AWSDynamoUtils {
 	 */
 	public static <P extends ParaObject> List<P> readPageFromTable(String appid, Pager p) {
 		Pager pager = (p != null) ? p : new Pager();
-		ScanRequest scanRequest = new ScanRequest().
-				withTableName(getTableNameForAppid(appid)).
-				withLimit(pager.getLimit()).
-				withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
+		ScanRequest.Builder scanRequest = ScanRequest.builder().
+				tableName(getTableNameForAppid(appid)).
+				limit(pager.getLimit()).
+				returnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
 
 		if (!StringUtils.isBlank(pager.getLastKey())) {
-			scanRequest = scanRequest.withExclusiveStartKey(Collections.
-					singletonMap(Config._KEY, new AttributeValue(pager.getLastKey())));
+			scanRequest.exclusiveStartKey(Collections.
+					singletonMap(Config._KEY, AttributeValue.builder().s(pager.getLastKey()).build()));
 		}
 
-		ScanResult result = getClient().scan(scanRequest);
+		ScanResponse result = getClient().scan(scanRequest.build());
 		LinkedList<P> results = new LinkedList<>();
-		for (Map<String, AttributeValue> item : result.getItems()) {
+		for (Map<String, AttributeValue> item : result.items()) {
 			P obj = fromRow(item);
 			if (obj != null) {
 				results.add(obj);
 			}
 		}
 
-		if (result.getLastEvaluatedKey() != null) {
-			pager.setLastKey(result.getLastEvaluatedKey().get(Config._KEY).getS());
+		if (result.lastEvaluatedKey() != null && !result.lastEvaluatedKey().isEmpty()) {
+			pager.setLastKey(result.lastEvaluatedKey().get(Config._KEY).s());
 		} else if (!results.isEmpty()) {
 			// set last key to be equal to the last result - end reached.
 			pager.setLastKey(results.peekLast().getId());
@@ -529,14 +513,13 @@ public final class AWSDynamoUtils {
 		if (StringUtils.isBlank(appid)) {
 			return results;
 		}
-		PageIterable<Item, QueryOutcome> pages = queryGSI(appid, pager);
+		QueryResponse pages = queryGSI(appid, pager);
 		if (pages != null) {
-			for (Page<Item, QueryOutcome> page : pages) {
-				for (Item item : page) {
-					P obj = ParaObjectUtils.setAnnotatedFields(item.asMap());
-					if (obj != null) {
-						results.add(obj);
-					}
+			for (Map<String, AttributeValue> item : pages.items()) {
+				P obj = ParaObjectUtils.setAnnotatedFields(item.entrySet().stream().
+						collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().s())));
+				if (obj != null) {
+					results.add(obj);
 				}
 			}
 		}
@@ -546,21 +529,29 @@ public final class AWSDynamoUtils {
 		return results;
 	}
 
-	private static PageIterable<Item, QueryOutcome> queryGSI(String appid, Pager p) {
+	private static QueryResponse queryGSI(String appid, Pager p) {
 		Pager pager = (p != null) ? p : new Pager();
-		Index index = getSharedIndex();
-		QuerySpec spec = new QuerySpec().
-				withMaxPageSize(pager.getLimit()).
-				withMaxResultSize(pager.getLimit()).
-				withKeyConditionExpression(Config._APPID + " = :aid").
-				withValueMap(new ValueMap().withString(":aid", appid));
+		GlobalSecondaryIndexDescription index = getSharedGlobalIndex();
+
+		QueryRequest.Builder query = QueryRequest.builder().
+				limit(pager.getLimit()).
+				keyConditionExpression(Config._APPID + " = :aid").
+				expressionAttributeValues(Collections.singletonMap(":aid", AttributeValue.builder().s(appid).build()));
 
 		if (!StringUtils.isBlank(pager.getLastKey())) {
-			spec = spec.withExclusiveStartKey(new KeyAttribute(Config._APPID, appid),	// HASH/PARTITION KEY
-					new KeyAttribute(Config._ID, pager.getLastKey()), // RANGE/SORT KEY
-					new KeyAttribute(Config._KEY, getKeyForAppid(pager.getLastKey(), appid))); // TABLE PRIMARY KEY
+			// See https://stackoverflow.com/questions/40988397/42735813#42735813
+			Map<String, AttributeValue> startKey = new HashMap<>(3);
+			// HASH/PARTITION KEY
+			startKey.put(Config._APPID, AttributeValue.builder().s(appid).build());
+			// RANGE/SORT KEY
+			startKey.put(Config._ID, AttributeValue.builder().s(pager.getLastKey()).build());
+			// TABLE PRIMARY KEY
+			startKey.put(Config._KEY, AttributeValue.builder().s(getKeyForAppid(pager.getLastKey(), appid)).build());
+			query.exclusiveStartKey(startKey);
 		}
-		return index != null ? index.query(spec).pages() : null;
+
+		return index != null ? getClient().query(query.indexName(index.indexName()).
+				tableName(getTableNameForAppid(SHARED_TABLE)).build()) : null;
 	}
 
 	/**
@@ -572,7 +563,7 @@ public final class AWSDynamoUtils {
 			return;
 		}
 		Pager pager = new Pager(25);
-		PageIterable<Item, QueryOutcome> pages;
+		QueryResponse pages;
 		Map<String, AttributeValue> lastKey = null;
 		do {
 			// read all phase
@@ -581,19 +572,18 @@ public final class AWSDynamoUtils {
 				break;
 			}
 			List<WriteRequest> deletePage = new LinkedList<>();
-			for (Page<Item, QueryOutcome> page : pages) {
-				for (Item item : page) {
-					String key = item.getString(Config._KEY);
-					// only delete rows which belong to the given appid
-					if (StringUtils.startsWith(key, appid.trim())) {
-						logger.debug("Preparing to delete '{}' from shared table, appid: '{}'.", key, appid);
-						pager.setLastKey(item.getString(Config._ID));
-						deletePage.add(new WriteRequest().withDeleteRequest(new DeleteRequest().
-								withKey(Collections.singletonMap(Config._KEY, new AttributeValue(key)))));
-					}
+			for (Map<String, AttributeValue> item : pages.items()) {
+				String key = item.get(Config._KEY).s();
+				// only delete rows which belong to the given appid
+				if (StringUtils.startsWith(key, keyPrefix(appid))) {
+					logger.debug("Preparing to delete '{}' from shared table, appid: '{}'.", key, appid);
+					pager.setLastKey(item.get(Config._ID).s());
+					deletePage.add(WriteRequest.builder().deleteRequest(b -> b.
+							key(Collections.singletonMap(Config._KEY, AttributeValue.builder().s(key).
+									build()))).build());
 				}
-				lastKey = page.getLowLevelResult().getQueryResult().getLastEvaluatedKey();
 			}
+			lastKey = pages.lastEvaluatedKey();
 			// delete all phase
 			logger.info("Deleting {} items belonging to app '{}', from shared table...", deletePage.size(), appid);
 			if (!deletePage.isEmpty()) {
@@ -606,15 +596,11 @@ public final class AWSDynamoUtils {
 	 * Returns the Index object for the shared table.
 	 * @return the Index object or null
 	 */
-	public static Index getSharedIndex() {
-		if (ddb == null) {
-			getClient();
-		}
+	public static GlobalSecondaryIndexDescription getSharedGlobalIndex() {
 		try {
-			Table t = ddb.getTable(getTableNameForAppid(SHARED_TABLE));
-			if (t != null) {
-				return t.getIndex(getSharedIndexName());
-			}
+			DescribeTableResponse t = getClient().describeTable(b -> b.tableName(getTableNameForAppid(SHARED_TABLE)));
+			return t.table().globalSecondaryIndexes().stream().
+					filter(gsi -> gsi.indexName().equals(getSharedIndexName())).findFirst().get();
 		} catch (Exception e) {
 			logger.info("Could not get shared index: {}.", e.getMessage());
 		}
@@ -636,6 +622,25 @@ public final class AWSDynamoUtils {
 
 	private static String keyPrefix(String appIdentifier) {
 		return StringUtils.join(StringUtils.trim(appIdentifier), "_");
+	}
+
+	private static void waitForActive(String table) throws InterruptedException {
+		int attempts = 0;
+		boolean active = false;
+		int	tries = 30;
+		int sleep = 2000;
+		while (attempts < tries) {
+			DescribeTableResponse result = getClient().describeTable(b -> b.tableName(table));
+			if (result.table().tableStatus().equals(TableStatus.ACTIVE)) {
+				active = true;
+				break;
+			}
+			Thread.sleep(sleep);
+			attempts++;
+		}
+		if (!active) {
+			logger.warn("DynamoDB table {} did not become active within {}s!", table, ((tries * sleep) / 1000));
+		}
 	}
 
 	protected static void throwIfNecessary(Throwable t) {

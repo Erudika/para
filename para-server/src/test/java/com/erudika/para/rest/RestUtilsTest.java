@@ -29,6 +29,7 @@ import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.iot.IoTServiceFactory;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
+import com.erudika.para.queue.Queue;
 import static com.erudika.para.rest.RestUtils.*;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
@@ -68,6 +69,7 @@ public class RestUtilsTest {
 				binder.bind(DAO.class).toInstance(new MockDAO());
 				binder.bind(Cache.class).toInstance(new MockCache());
 				binder.bind(Search.class).toInstance(Mockito.mock(Search.class));
+				binder.bind(Queue.class).toInstance(Mockito.mock(Queue.class));
 				binder.bind(IoTServiceFactory.class).toInstance(Mockito.mock(IoTServiceFactory.class));
 			}
 		});

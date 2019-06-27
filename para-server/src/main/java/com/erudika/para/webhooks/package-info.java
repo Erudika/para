@@ -1,6 +1,6 @@
 /**
- * The queue module - handles queues.
+ * The webhooks module.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-package com.erudika.para.queue;
+package com.erudika.para.webhooks;
 

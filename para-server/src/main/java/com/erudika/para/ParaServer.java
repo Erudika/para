@@ -25,7 +25,6 @@ import com.erudika.para.i18n.I18nModule;
 import com.erudika.para.iot.IoTModule;
 import com.erudika.para.metrics.MetricsUtils;
 import com.erudika.para.persistence.PersistenceModule;
-import com.erudika.para.queue.Queue;
 import com.erudika.para.queue.QueueModule;
 import com.erudika.para.rest.Api1;
 import com.erudika.para.rest.CustomResourceHandler;
@@ -38,6 +37,7 @@ import com.erudika.para.utils.HealthUtils;
 import com.erudika.para.utils.filters.CORSFilter;
 import com.erudika.para.utils.filters.ErrorFilter;
 import com.erudika.para.utils.filters.GZipServletFilter;
+import com.erudika.para.webhooks.WebhookIOListener;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
@@ -110,11 +110,11 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 			new PersistenceModule(),
 			new SearchModule(),
 			new CacheModule(),
+			new QueueModule(),
 			new AOPModule(),
 			new IoTModule(),
 			new EmailModule(),
 			new I18nModule(),
-			new QueueModule(),
 			new StorageModule(),
 			new SecurityModule()
 		};
@@ -150,11 +150,17 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 			injectInto(initListener);
 		});
 
+		if (Config.WEBHOOKS_ENABLED) {
+			Para.addIOListener(new WebhookIOListener());
+		}
+
 		Para.initialize();
 
 		// this enables the "river" feature - polls the default queue for objects and imports them into Para
-		if (Config.getConfigBoolean("queue_link_enabled", false) && HealthUtils.getInstance().isHealthy()) {
-			injector.getInstance(Queue.class).startPolling();
+		// additionally, the polling feature is used for implementing a webhooks worker node
+		if ((Config.getConfigBoolean("queue_link_enabled", false) || Config.WEBHOOKS_ENABLED) &&
+				HealthUtils.getInstance().isHealthy()) {
+			Para.getQueue().startPolling();
 		}
 	}
 

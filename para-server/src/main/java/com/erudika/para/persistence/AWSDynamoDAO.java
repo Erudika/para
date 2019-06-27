@@ -17,19 +17,7 @@
  */
 package com.erudika.para.persistence;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.erudika.para.annotations.Locked;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
-import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
-import com.amazonaws.services.dynamodbv2.model.GetItemResult;
-import com.amazonaws.services.dynamodbv2.model.KeysAndAttributes;
-import com.amazonaws.services.dynamodbv2.model.DeleteItemRequest;
-import com.amazonaws.services.dynamodbv2.model.DeleteRequest;
-import com.amazonaws.services.dynamodbv2.model.PutItemRequest;
-import com.amazonaws.services.dynamodbv2.model.PutRequest;
-import com.amazonaws.services.dynamodbv2.model.UpdateItemRequest;
-import com.amazonaws.services.dynamodbv2.model.WriteRequest;
 import com.erudika.para.AppCreatedListener;
 import com.erudika.para.AppDeletedListener;
 import com.erudika.para.Para;
@@ -64,6 +52,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Set;
 import java.util.TreeSet;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
+import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
+import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 /**
  * An implementation of the {@link DAO} interface using AWS DynamoDB as a data store.
@@ -108,7 +103,7 @@ public class AWSDynamoDAO implements DAO {
 		});
 	}
 
-	AmazonDynamoDB client() {
+	DynamoDbClient client() {
 		return AWSDynamoUtils.getClient();
 	}
 
@@ -177,8 +172,7 @@ public class AWSDynamoDAO implements DAO {
 		try {
 			key = getKeyForAppid(key, appid);
 			setRowKey(key, row);
-			PutItemRequest putItemRequest = new PutItemRequest(table, row);
-			client().putItem(putItemRequest);
+			client().putItem(b -> b.tableName(table).item(row));
 		} catch (Exception e) {
 			logger.error("Could not write row to DB - table={}, appid={}, key={}: {}", table, appid, key, e);
 			throwIfNecessary(e);
@@ -192,16 +186,16 @@ public class AWSDynamoDAO implements DAO {
 		}
 		String table = getTableNameForAppid(appid);
 		try {
-			UpdateItemRequest updateRequest = new UpdateItemRequest();
+			UpdateItemRequest.Builder updateRequest = UpdateItemRequest.builder();
 			StringBuilder updateExpression = new StringBuilder("SET ");
 			Map<String, String> names = new HashMap<>(row.size() + 1);
 			Map<String, AttributeValue> values = new HashMap<>(row.size() + 1);
 			boolean isLockingEnabledForRow = false;
 			AttributeValue version = row.remove(Config._VERSION); // ignore the version field here
-			if (version == null || version.getN() == null) {
-				version = new AttributeValue().withN("0");
+			if (version == null || version.n() == null) {
+				version = AttributeValue.builder().n("0").build();
 			}
-			if (Long.parseLong(version.getN()) > 0L) {
+			if (Long.parseLong(version.n()) > 0L) {
 				isLockingEnabledForRow = true;
 			}
 			for (Entry<String, AttributeValue> attr : row.entrySet()) {
@@ -216,17 +210,17 @@ public class AWSDynamoDAO implements DAO {
 			if (isLockingEnabledForRow) {
 				names.put("#" + Config._VERSION, Config._VERSION);
 				values.put(":" + Config._VERSION, version);
-				values.put(":plusOne", new AttributeValue().withN("1"));
-				updateRequest.setConditionExpression("#" + Config._VERSION + " = :" + Config._VERSION);
+				values.put(":plusOne", AttributeValue.builder().n("1").build());
+				updateRequest.conditionExpression("#" + Config._VERSION + " = :" + Config._VERSION);
 				updateExpression.append(" ADD #").append(Config._VERSION).append(" :plusOne");
 			}
 
-			updateRequest.setTableName(table);
-			updateRequest.setKey(Collections.singletonMap(Config._KEY, new AttributeValue(getKeyForAppid(key, appid))));
-			updateRequest.setExpressionAttributeNames(names);
-			updateRequest.setExpressionAttributeValues(values);
-			updateRequest.setUpdateExpression(updateExpression.toString());
-			client().updateItem(updateRequest);
+			updateRequest.tableName(table);
+			updateRequest.key(rowKey(key, appid));
+			updateRequest.expressionAttributeNames(names);
+			updateRequest.expressionAttributeValues(values);
+			updateRequest.updateExpression(updateExpression.toString());
+			client().updateItem(updateRequest.build());
 			return true;
 		} catch (ConditionalCheckFailedException ex) {
 			logger.warn("Item not updated - versions don't match. table={}, appid={}, key={}.", table, appid, key);
@@ -244,11 +238,9 @@ public class AWSDynamoDAO implements DAO {
 		Map<String, AttributeValue> row = null;
 		String table = getTableNameForAppid(appid);
 		try {
-			GetItemRequest getItemRequest = new GetItemRequest(table,
-					Collections.singletonMap(Config._KEY, new AttributeValue(getKeyForAppid(key, appid))));
-			GetItemResult res = client().getItem(getItemRequest);
-			if (res != null && res.getItem() != null && !res.getItem().isEmpty()) {
-				row = res.getItem();
+			GetItemResponse res = client().getItem(b -> b.tableName(table).key(rowKey(key, appid)));
+			if (res != null && res.item() != null && !res.item().isEmpty()) {
+				row = res.item();
 			}
 		} catch (Exception e) {
 			logger.error("Could not read row from DB - table={}, appid={}, key={}: {}", table, appid, key, e);
@@ -262,9 +254,7 @@ public class AWSDynamoDAO implements DAO {
 		}
 		String table = getTableNameForAppid(appid);
 		try {
-			DeleteItemRequest delItemRequest = new DeleteItemRequest(table,
-					Collections.singletonMap(Config._KEY, new AttributeValue(getKeyForAppid(key, appid))));
-			client().deleteItem(delItemRequest);
+			client().deleteItem(b -> b.tableName(table).key(rowKey(key, appid)));
 		} catch (Exception e) {
 			logger.error("Could not delete row from DB - table={}, appid={}, key={}: {}", table, appid, key, e);
 			throwIfNecessary(e);
@@ -305,14 +295,14 @@ public class AWSDynamoDAO implements DAO {
 				object.setAppid(appid);
 				Map<String, AttributeValue> row = toRow(object, null);
 				setRowKey(getKeyForAppid(object.getId(), appid), row);
-				reqs.add(new WriteRequest().withPutRequest(new PutRequest().withItem(row)));
+				reqs.add(WriteRequest.builder().putRequest(b -> b.item(row)).build());
 				j++;
 			}
 			batchWrite(Collections.singletonMap(tableName, reqs), 1);
 			reqs.clear();
 			j = 0;
 		}
-		logger.debug("DAO.createAll() {}->{}", appid, (objects == null) ? 0 : objects.size());
+		logger.debug("DAO.createAll() {}->{}", appid, objects.size());
 	}
 
 	@Override
@@ -344,16 +334,16 @@ public class AWSDynamoDAO implements DAO {
 				while (it.hasNext() && j < MAX_KEYS_PER_READ) {
 					String key = it.next();
 					results.put(key, null);
-					keyz.add(Collections.singletonMap(Config._KEY, new AttributeValue(getKeyForAppid(key, appid))));
+					keyz.add(rowKey(key, appid));
 					j++;
 				}
 
-				KeysAndAttributes kna = new KeysAndAttributes().withKeys(keyz);
+				KeysAndAttributes.Builder kna = KeysAndAttributes.builder().keys(keyz);
 				if (!getAllColumns) {
-					kna.setAttributesToGet(Arrays.asList(Config._ID, Config._KEY, Config._TYPE));
+					kna.attributesToGet(Arrays.asList(Config._ID, Config._KEY, Config._TYPE));
 				}
 
-				batchGet(Collections.singletonMap(table, kna), results);
+				batchGet(Collections.singletonMap(table, kna.build()), results);
 				keyz.clear();
 				j = 0;
 			}
@@ -417,9 +407,7 @@ public class AWSDynamoDAO implements DAO {
 		List<WriteRequest> reqs = new ArrayList<>(objects.size());
 		for (ParaObject object : objects) {
 			if (object != null) {
-				reqs.add(new WriteRequest().withDeleteRequest(new DeleteRequest().
-						withKey(Collections.singletonMap(Config._KEY,
-								new AttributeValue(getKeyForAppid(object.getId(), appid))))));
+				reqs.add(WriteRequest.builder().deleteRequest(b -> b.key(rowKey(object.getId(), appid))).build());
 			}
 		}
 		batchWrite(Collections.singletonMap(getTableNameForAppid(appid), reqs), 1);
@@ -435,7 +423,11 @@ public class AWSDynamoDAO implements DAO {
 			logger.warn("Attribute name conflict:  "
 				+ "attribute {} will be overwritten! {} is a reserved keyword.", Config._KEY);
 		}
-		row.put(Config._KEY, new AttributeValue(key));
+		row.put(Config._KEY, AttributeValue.builder().s(key).build());
+	}
+
+	private Map<String, AttributeValue> rowKey(String key, String appid) {
+		return Collections.singletonMap(Config._KEY, AttributeValue.builder().s(getKeyForAppid(key, appid)).build());
 	}
 
 	//////////////////////////////////////////////////////

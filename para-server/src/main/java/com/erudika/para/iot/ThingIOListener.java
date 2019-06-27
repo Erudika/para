@@ -35,7 +35,7 @@ public class ThingIOListener implements IOListener {
 	public void onPreInvoke(Method method, Object[] args) { }
 
 	@Override
-	public void onPostInvoke(Method method, Object result) {
+	public void onPostInvoke(Method method, Object[] args, Object result) {
 		if (method != null && method.getName().equalsIgnoreCase("read") && result instanceof Thing) {
 			final Thing t = (Thing) result;
 			final IoTService iot = CoreUtils.getInstance().getIotFactory().getIoTService(t.getServiceBroker());

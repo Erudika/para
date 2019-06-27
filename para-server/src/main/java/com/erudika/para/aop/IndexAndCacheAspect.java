@@ -140,7 +140,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 		}
 
 		for (IOListener ioListener : ioListeners) {
-			ioListener.onPostInvoke(superMethod, result);
+			ioListener.onPostInvoke(superMethod, args, result);
 			logger.debug("Executed {}.onPostInvoke().", ioListener.getClass().getName());
 		}
 

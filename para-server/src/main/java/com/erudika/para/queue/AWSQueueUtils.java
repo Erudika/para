@@ -17,19 +17,6 @@
  */
 package com.erudika.para.queue;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
-import com.amazonaws.services.sqs.model.CreateQueueRequest;
-import com.amazonaws.services.sqs.model.DeleteMessageBatchRequestEntry;
-import com.amazonaws.services.sqs.model.DeleteQueueRequest;
-import com.amazonaws.services.sqs.model.Message;
-import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
-import com.amazonaws.services.sqs.model.SendMessageBatchRequestEntry;
 import com.erudika.para.DestroyListener;
 import com.erudika.para.Para;
 import com.erudika.para.annotations.Locked;
@@ -38,15 +25,27 @@ import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Thing;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.utils.Config;
+import com.erudika.para.webhooks.WebhookUtils;
+import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.core.exception.SdkException;
+import software.amazon.awssdk.services.sqs.SqsAsyncClient;
+import software.amazon.awssdk.services.sqs.model.DeleteMessageBatchRequestEntry;
+import software.amazon.awssdk.services.sqs.model.Message;
+import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 
 /**
  * Helper utilities for connecting to AWS SQS.
@@ -54,12 +53,12 @@ import org.slf4j.LoggerFactory;
  */
 public final class AWSQueueUtils {
 
-	private static AmazonSQS sqsClient;
+	private static SqsAsyncClient sqsClient;
 	private static final int MAX_MESSAGES = 10;  //max in bulk
 	private static final int SLEEP = Config.getConfigInt("queue.polling_sleep_seconds", 60);
 	private static final Map<String, Future<?>> POLLING_THREADS = new ConcurrentHashMap<String, Future<?>>();
 	private static final int POLLING_INTERVAL = Config.getConfigInt("queue.polling_interval_seconds",
-			Config.IN_PRODUCTION ? 20 : 0);
+			Config.IN_PRODUCTION ? 20 : 5);
 
 	private static final String LOCAL_ENDPOINT = "http://localhost:9324";
 	private static final Logger logger = LoggerFactory.getLogger(AWSQueueUtils.class);
@@ -73,21 +72,20 @@ public final class AWSQueueUtils {
 	 * Returns a client instance for AWS SQS.
 	 * @return a client that talks to SQS
 	 */
-	public static AmazonSQS getClient() {
+	public static SqsAsyncClient getClient() {
 		if (sqsClient != null) {
 			return sqsClient;
 		}
-		if (Config.IN_PRODUCTION) {
-			sqsClient = AmazonSQSClientBuilder.standard().build();
+		if (Config.getConfigBoolean("aws_sqs_local", false)) {
+			sqsClient = SqsAsyncClient.builder().endpointOverride(URI.create(LOCAL_ENDPOINT)).
+					credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x"))).build();
 		} else {
-			sqsClient = AmazonSQSClientBuilder.standard().
-					withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("x", "x"))).
-					withEndpointConfiguration(new EndpointConfiguration(LOCAL_ENDPOINT, "")).build();
+			sqsClient = SqsAsyncClient.create();
 		}
 
 		Para.addDestroyListener(new DestroyListener() {
 			public void onDestroy() {
-				sqsClient.shutdown();
+				sqsClient.close();
 			}
 		});
 		return sqsClient;
@@ -105,11 +103,13 @@ public final class AWSQueueUtils {
 		String queueURL = getQueueURL(name);
 		if (queueURL == null) {
 			try {
-				queueURL = getClient().createQueue(new CreateQueueRequest(name)).getQueueUrl();
-			} catch (AmazonServiceException ase) {
+				queueURL = getClient().createQueue(b -> b.queueName(name)).get().queueUrl();
+			} catch (AwsServiceException ase) {
 				logException(ase);
-			} catch (AmazonClientException ace) {
+			} catch (SdkException ace) {
 				logger.error("Could not reach SQS. {0}", ace.toString());
+			} catch (InterruptedException | ExecutionException ex) {
+				logger.error(null, ex);
 			}
 		}
 		return queueURL;
@@ -122,10 +122,10 @@ public final class AWSQueueUtils {
 	public static void deleteQueue(String queueURL) {
 		if (!StringUtils.isBlank(queueURL)) {
 			try {
-				getClient().deleteQueue(new DeleteQueueRequest(queueURL));
-			} catch (AmazonServiceException ase) {
+				getClient().deleteQueue(b -> b.queueUrl(queueURL));
+			} catch (AwsServiceException ase) {
 				logException(ase);
-			} catch (AmazonClientException ace) {
+			} catch (SdkException ace) {
 				logger.error("Could not reach SQS. {0}", ace.toString());
 			}
 		}
@@ -138,7 +138,7 @@ public final class AWSQueueUtils {
 	 */
 	public static String getQueueURL(String name) {
 		try {
-			return getClient().getQueueUrl(name).getQueueUrl();
+			return getClient().getQueueUrl(b -> b.queueName(name)).get().queueUrl();
 		} catch (Exception e) {
 			logger.info("Queue '{}' could not be found: {}", name, e.getMessage());
 			return null;
@@ -152,11 +152,13 @@ public final class AWSQueueUtils {
 	public static List<String> listQueues() {
 		List<String> list = new ArrayList<>();
 		try {
-			list = getClient().listQueues().getQueueUrls();
-		} catch (AmazonServiceException ase) {
+			list = getClient().listQueues().get().queueUrls();
+		} catch (AwsServiceException ase) {
 			logException(ase);
-		} catch (AmazonClientException ace) {
+		} catch (SdkException ace) {
 			logger.error("Could not reach SQS. {0}", ace.toString());
+		} catch (InterruptedException | ExecutionException ex) {
+			logger.error(null, ex);
 		}
 		return list;
 	}
@@ -175,21 +177,21 @@ public final class AWSQueueUtils {
 				for (int i = 0; i < messages.size(); i++) {
 					String message = messages.get(i);
 					if (!StringUtils.isBlank(message)) {
-						msgs.add(new SendMessageBatchRequestEntry().
-								withMessageBody(message).
-								withId(Integer.toString(i)));
+						msgs.add(SendMessageBatchRequestEntry.builder().
+								messageBody(message).
+								id(Integer.toString(i)).build());
 					}
 					if (++j >= MAX_MESSAGES || i == messages.size() - 1) {
 						if (!msgs.isEmpty()) {
-							getClient().sendMessageBatch(queueURL, msgs);
+							getClient().sendMessageBatch(b -> b.queueUrl(queueURL).entries(msgs));
 							msgs.clear();
 						}
 						j = 0;
 					}
 				}
-			} catch (AmazonServiceException ase) {
+			} catch (AwsServiceException ase) {
 				logException(ase);
-			} catch (AmazonClientException ace) {
+			} catch (SdkException ace) {
 				logger.error("Could not reach SQS. {}", ace.toString());
 			}
 		}
@@ -206,28 +208,35 @@ public final class AWSQueueUtils {
 		if (!StringUtils.isBlank(queueURL)) {
 			try {
 				int batchSteps = 1;
-				int maxForBatch = numberOfMessages;
+				final int maxForBatch;
 				if ((numberOfMessages > MAX_MESSAGES)) {
 					batchSteps = (numberOfMessages / MAX_MESSAGES) + ((numberOfMessages % MAX_MESSAGES > 0) ? 1 : 0);
 					maxForBatch = MAX_MESSAGES;
+				} else {
+					maxForBatch = numberOfMessages;
 				}
 
 				for (int i = 0; i < batchSteps; i++) {
-					List<Message> list = getClient().receiveMessage(new ReceiveMessageRequest(queueURL).
-							withMaxNumberOfMessages(maxForBatch).withWaitTimeSeconds(POLLING_INTERVAL)).getMessages();
+					List<Message> list = getClient().receiveMessage(b -> b.queueUrl(queueURL).
+							maxNumberOfMessages(maxForBatch).
+							waitTimeSeconds(POLLING_INTERVAL)).get().messages();
+
 					if (list != null && !list.isEmpty()) {
 						List<DeleteMessageBatchRequestEntry> del = new ArrayList<>();
 						for (Message msg : list) {
-							messages.add(msg.getBody());
-							del.add(new DeleteMessageBatchRequestEntry(msg.getMessageId(), msg.getReceiptHandle()));
+							messages.add(msg.body());
+							del.add(DeleteMessageBatchRequestEntry.builder().
+									id(msg.messageId()).receiptHandle(msg.receiptHandle()).build());
 						}
-						getClient().deleteMessageBatch(queueURL, del);
+						getClient().deleteMessageBatch(b -> b.queueUrl(queueURL).entries(del));
 					}
 				}
-			} catch (AmazonServiceException ase) {
+			} catch (AwsServiceException ase) {
 				logException(ase);
-			} catch (AmazonClientException ace) {
+			} catch (SdkException ace) {
 				logger.error("Could not reach SQS. {}", ace.toString());
+			} catch (InterruptedException | ExecutionException ex) {
+				logger.error(null, ex);
 			}
 		}
 		return messages;
@@ -269,9 +278,11 @@ public final class AWSQueueUtils {
 
 		private int idleCount = 0;
 		private final String queueURL;
+		private final ObjectReader jreader;
 
 		SQSRiver(String queueURL) {
 			this.queueURL = queueURL;
+			this.jreader = ParaObjectUtils.getJsonReader(Map.class);
 		}
 
 		@SuppressWarnings("unchecked")
@@ -286,19 +297,26 @@ public final class AWSQueueUtils {
 				logger.debug("Pulled {} messages from queue.", msgs.size());
 
 				try {
+					int	processedHooks = 0;
 					for (final String msg : msgs) {
 						logger.debug("SQS MESSAGE: {}", msg);
 						if (StringUtils.contains(msg, Config._APPID) && StringUtils.contains(msg, Config._TYPE)) {
-							parseAndCategorizeMessage(msg, createList, updateList, deleteList);
+							processedHooks += parseAndCategorizeMessage(msg, createList, updateList, deleteList);
 						}
 					}
 
-					if (!createList.isEmpty() || !updateList.isEmpty() || !deleteList.isEmpty()) {
-						Para.getDAO().createAll(createList);
-						Para.getDAO().updateAll(updateList);
-						Para.getDAO().deleteAll(deleteList);
-						logger.debug("Objects pulled from SQS queue: {} created, {} updated, {} deleted.",
-								createList.size(), updateList.size(), deleteList.size());
+					if (!createList.isEmpty() || !updateList.isEmpty() || !deleteList.isEmpty() || processedHooks > 0) {
+						if (!createList.isEmpty()) {
+							Para.getDAO().createAll(createList);
+						}
+						if (!updateList.isEmpty()) {
+							Para.getDAO().updateAll(updateList);
+						}
+						if (!deleteList.isEmpty()) {
+							Para.getDAO().deleteAll(deleteList);
+						}
+						logger.debug("SQS river summary: {} created, {} updated, {} deleted, {} webhooks delivered.",
+								createList.size(), updateList.size(), deleteList.size(), processedHooks);
 						createList.clear();
 						updateList.clear();
 						deleteList.clear();
@@ -322,39 +340,46 @@ public final class AWSQueueUtils {
 				}
 			}
 		}
-	}
 
-	private static void parseAndCategorizeMessage(final String msg, ArrayList<ParaObject> createList,
-			ArrayList<ParaObject> updateList, ArrayList<ParaObject> deleteList) throws IOException {
-		Map<String, Object> parsed = ParaObjectUtils.getJsonReader(Map.class).readValue(msg);
-		String id = parsed.containsKey(Config._ID) ? (String) parsed.get(Config._ID) : null;
-		String type = (String) parsed.get(Config._TYPE);
-		String appid = (String) parsed.get(Config._APPID);
-		Class<?> clazz = ParaObjectUtils.toClass(type);
-		boolean isWhitelistedType = clazz.equals(Thing.class) || clazz.equals(Sysprop.class);
+		private int parseAndCategorizeMessage(final String msg, ArrayList<ParaObject> createList,
+				ArrayList<ParaObject> updateList, ArrayList<ParaObject> deleteList)
+				throws IOException {
+			Map<String, Object> parsed = jreader.readValue(msg);
+			String id = parsed.containsKey(Config._ID) ? (String) parsed.get(Config._ID) : null;
+			String type = (String) parsed.get(Config._TYPE);
+			String appid = (String) parsed.get(Config._APPID);
+			Class<?> clazz = ParaObjectUtils.toClass(type);
+			boolean isWhitelistedType = clazz.equals(Thing.class) || clazz.equals(Sysprop.class);
 
-		if (!StringUtils.isBlank(appid) && isWhitelistedType) {
-			if (parsed.containsKey("_delete") && "true".equals(parsed.get("_delete"))) {
-				Sysprop s = new Sysprop(id);
-				s.setAppid(appid);
-				deleteList.add(s);
-			} else {
-				if (id == null) {
-					ParaObject obj = ParaObjectUtils.setAnnotatedFields(parsed);
-					if (obj != null) {
-						createList.add(obj);
-					}
+			if (!StringUtils.isBlank(appid) && isWhitelistedType) {
+				if ("webhookpayload".equals(type)) {
+					return WebhookUtils.processWebhookPayload(appid, id, parsed);
+				}
+
+				if (parsed.containsKey("_delete") && "true".equals(parsed.get("_delete")) && id != null) {
+					Sysprop s = new Sysprop(id);
+					s.setAppid(appid);
+					deleteList.add(s);
 				} else {
-					updateList.add(ParaObjectUtils.setAnnotatedFields(Para.getDAO().
-							read(appid, id), parsed, Locked.class));
+					if (id == null || "true".equals(parsed.get("_create"))) {
+						ParaObject obj = ParaObjectUtils.setAnnotatedFields(parsed);
+						if (obj != null) {
+							createList.add(obj);
+						}
+					} else {
+						updateList.add(ParaObjectUtils.setAnnotatedFields(Para.getDAO().
+								read(appid, id), parsed, Locked.class));
+					}
 				}
 			}
+			return 0;
 		}
 	}
 
-	private static void logException(AmazonServiceException ase) {
-		logger.error("AmazonServiceException: error={}, statuscode={}, awserrcode={}, errtype={}, reqid={}",
-				ase.toString(), ase.getStatusCode(), ase.getErrorCode(), ase.getErrorType(), ase.getRequestId());
+	private static void logException(AwsServiceException ase) {
+		logger.error("AmazonServiceException: error={}, statuscode={}, awserrcode={}, errmessage={}, reqid={}",
+				ase.toString(), ase.statusCode(), ase.awsErrorDetails().errorCode(),
+				ase.awsErrorDetails().errorMessage(), ase.requestId());
 	}
 
 }

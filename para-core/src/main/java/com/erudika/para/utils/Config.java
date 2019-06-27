@@ -147,10 +147,6 @@ public final class Config {
 	 */
 	public static final String ENVIRONMENT = getConfigParam("env", "embedded");
 	/**
-	 * AWS Region.
-	 */
-	public static final String AWS_REGION = getConfigParam("aws_region", System.getenv("AWS_REGION"));
-	/**
 	 * Facebook app id (for authentication).
 	 */
 	public static final String FB_APP_ID = getConfigParam("fb_app_id", "");
@@ -278,6 +274,10 @@ public final class Config {
 	 * Enable the GZIP filter for API requests. Default: false
 	 */
 	public static final boolean GZIP_ENABLED = Boolean.parseBoolean(getConfigParam("gzip_enabled", "false"));
+	/**
+	 * Enable webhooks for CRUD methods. Requires a queue. Default: false
+	 */
+	public static final boolean WEBHOOKS_ENABLED = Boolean.parseBoolean(getConfigParam("webhooks_enabled", "false"));
 	/**
 	 * Production environment flag.
 	 */

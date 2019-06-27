@@ -33,10 +33,16 @@ public class MockQueue implements Queue {
 
 	private String name;
 
+	/**
+	 * Default constructor.
+	 */
 	public MockQueue() {
 		this("queue");
 	}
 
+	/**
+	 * @param name name
+	 */
 	public MockQueue(String name) {
 		this.name = name;
 	}
@@ -66,12 +72,12 @@ public class MockQueue implements Queue {
 
 	@Override
 	public void startPolling() {
-		LoggerFactory.getLogger(MockQueue.class).info("Started polling...");
+		LoggerFactory.getLogger(MockQueue.class).info("Started polling (not really!)...");
 	}
 
 	@Override
 	public void stopPolling() {
-		LoggerFactory.getLogger(MockQueue.class).info("Stopped polling...");
+		LoggerFactory.getLogger(MockQueue.class).info("Stopped polling (not really!)...");
 	}
 
 }

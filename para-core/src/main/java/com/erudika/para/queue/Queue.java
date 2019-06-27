@@ -24,7 +24,7 @@ package com.erudika.para.queue;
 public interface Queue {
 
 	/**
-	 * Pulls a message from a queue.
+	 * Pulls one or more messages from a queue.
 	 * @return the message
 	 */
 	String pull();

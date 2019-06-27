@@ -17,33 +17,6 @@
  */
 package com.erudika.para.iot;
 
-import com.amazonaws.services.iot.AWSIot;
-import com.amazonaws.services.iot.AWSIotClientBuilder;
-import com.amazonaws.services.iot.model.AttachPolicyRequest;
-import com.amazonaws.services.iot.model.AttachThingPrincipalRequest;
-import com.amazonaws.services.iot.model.AttributePayload;
-import com.amazonaws.services.iot.model.CertificateStatus;
-import com.amazonaws.services.iot.model.CreateKeysAndCertificateRequest;
-import com.amazonaws.services.iot.model.CreateKeysAndCertificateResult;
-import com.amazonaws.services.iot.model.CreatePolicyRequest;
-import com.amazonaws.services.iot.model.CreateThingRequest;
-import com.amazonaws.services.iot.model.CreateThingResult;
-import com.amazonaws.services.iot.model.DeleteCertificateRequest;
-import com.amazonaws.services.iot.model.DeletePolicyRequest;
-import com.amazonaws.services.iot.model.DeletePolicyVersionRequest;
-import com.amazonaws.services.iot.model.DeleteThingRequest;
-import com.amazonaws.services.iot.model.DescribeEndpointRequest;
-import com.amazonaws.services.iot.model.DescribeThingRequest;
-import com.amazonaws.services.iot.model.DetachPolicyRequest;
-import com.amazonaws.services.iot.model.DetachThingPrincipalRequest;
-import com.amazonaws.services.iot.model.ListPolicyVersionsRequest;
-import com.amazonaws.services.iot.model.PolicyVersion;
-import com.amazonaws.services.iot.model.UpdateCertificateRequest;
-import com.amazonaws.services.iotdata.AWSIotData;
-import com.amazonaws.services.iotdata.AWSIotDataClientBuilder;
-import com.amazonaws.services.iotdata.model.DeleteThingShadowRequest;
-import com.amazonaws.services.iotdata.model.GetThingShadowRequest;
-import com.amazonaws.services.iotdata.model.UpdateThingShadowRequest;
 import com.erudika.para.DestroyListener;
 import com.erudika.para.Para;
 import com.erudika.para.core.Thing;
@@ -52,12 +25,38 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
+import software.amazon.awssdk.services.iot.IotClient;
+import software.amazon.awssdk.services.iot.model.AttachPolicyRequest;
+import software.amazon.awssdk.services.iot.model.AttachThingPrincipalRequest;
+import software.amazon.awssdk.services.iot.model.AttributePayload;
+import software.amazon.awssdk.services.iot.model.CertificateStatus;
+import software.amazon.awssdk.services.iot.model.CreateKeysAndCertificateRequest;
+import software.amazon.awssdk.services.iot.model.CreateKeysAndCertificateResponse;
+import software.amazon.awssdk.services.iot.model.CreatePolicyRequest;
+import software.amazon.awssdk.services.iot.model.CreateThingRequest;
+import software.amazon.awssdk.services.iot.model.CreateThingResponse;
+import software.amazon.awssdk.services.iot.model.DeleteCertificateRequest;
+import software.amazon.awssdk.services.iot.model.DeletePolicyRequest;
+import software.amazon.awssdk.services.iot.model.DeletePolicyVersionRequest;
+import software.amazon.awssdk.services.iot.model.DeleteThingRequest;
+import software.amazon.awssdk.services.iot.model.DescribeEndpointRequest;
+import software.amazon.awssdk.services.iot.model.DescribeThingRequest;
+import software.amazon.awssdk.services.iot.model.DetachPolicyRequest;
+import software.amazon.awssdk.services.iot.model.DetachThingPrincipalRequest;
+import software.amazon.awssdk.services.iot.model.ListPolicyVersionsRequest;
+import software.amazon.awssdk.services.iot.model.PolicyVersion;
+import software.amazon.awssdk.services.iot.model.UpdateCertificateRequest;
+import software.amazon.awssdk.services.iotdataplane.IotDataPlaneClient;
+import software.amazon.awssdk.services.iotdataplane.model.DeleteThingShadowRequest;
+import software.amazon.awssdk.services.iotdataplane.model.GetThingShadowRequest;
+import software.amazon.awssdk.services.iotdataplane.model.UpdateThingShadowRequest;
 
 /**
  * AWS IoT client.
@@ -65,8 +64,8 @@ import org.slf4j.LoggerFactory;
  */
 public class AWSIoTService implements IoTService {
 
-	private static AWSIot iotClient;
-	private static AWSIotData iotDataClient;
+	private static IotClient iotClient;
+	private static IotDataPlaneClient iotDataClient;
 	private static final Logger logger = LoggerFactory.getLogger(AWSIoTService.class);
 
 	/**
@@ -74,12 +73,12 @@ public class AWSIoTService implements IoTService {
 	 */
 	public AWSIoTService() { }
 
-	protected AWSIot getClient() {
+	protected IotClient getClient() {
 		if (iotClient != null) {
 			return iotClient;
 		}
 
-		iotClient = AWSIotClientBuilder.standard().build();
+		iotClient = IotClient.create();
 
 		Para.addDestroyListener(new DestroyListener() {
 			public void onDestroy() {
@@ -90,12 +89,12 @@ public class AWSIoTService implements IoTService {
 		return iotClient;
 	}
 
-	protected AWSIotData getDataClient() {
+	protected IotDataPlaneClient getDataClient() {
 		if (iotDataClient != null) {
 			return iotDataClient;
 		}
 
-		iotDataClient = AWSIotDataClientBuilder.standard().build();
+		iotDataClient = IotDataPlaneClient.create();
 
 		Para.addDestroyListener(new DestroyListener() {
 			public void onDestroy() {
@@ -112,7 +111,7 @@ public class AWSIoTService implements IoTService {
 	 */
 	protected void shutdownClient() {
 		if (iotClient != null) {
-			iotClient.shutdown();
+			iotClient.close();
 			iotClient = null;
 		}
 	}
@@ -123,7 +122,7 @@ public class AWSIoTService implements IoTService {
 	 */
 	protected void shutdownDataClient() {
 		if (iotDataClient != null) {
-			iotDataClient.shutdown();
+			iotDataClient.close();
 			iotDataClient = null;
 		}
 	}
@@ -137,46 +136,48 @@ public class AWSIoTService implements IoTService {
 		thing.setId(Utils.getNewId());
 		String id = cloudIDForThing(thing);
 		String appid = thing.getAppid();
+		String region = new DefaultAwsRegionProviderChain().getRegion().id();
 
 		// STEP 1: Create thing
-		CreateThingResult resp1 = getClient().createThing(new CreateThingRequest().withThingName(id).
-				withAttributePayload(new AttributePayload().addAttributesEntry(Config._APPID, appid)));
+		CreateThingResponse resp1 = getClient().createThing(CreateThingRequest.builder().thingName(id).
+				attributePayload(AttributePayload.builder().attributes(Collections.singletonMap(Config._APPID, appid)).
+						build()).build());
 
 		// STEP 2: Create certificate
-		CreateKeysAndCertificateResult resp2 = getClient().createKeysAndCertificate(
-				new CreateKeysAndCertificateRequest().withSetAsActive(true));
+		CreateKeysAndCertificateResponse resp2 = getClient().createKeysAndCertificate(
+				CreateKeysAndCertificateRequest.builder().setAsActive(true).build());
 
-		String accountId = getAccountIdFromARN(resp1.getThingArn());
+		String accountId = getAccountIdFromARN(resp1.thingArn());
 		String policyString = (String) (thing.getDeviceMetadata().containsKey("policyJSON") ?
-				thing.getDeviceMetadata().get("policyJSON") : getDefaultPolicyDocument(accountId, id));
+				thing.getDeviceMetadata().get("policyJSON") : getDefaultPolicyDocument(accountId, id, region));
 
 		// STEP 3: Create policy
-		getClient().createPolicy(new CreatePolicyRequest().
-				withPolicyDocument(policyString).withPolicyName(id + "-Policy"));
+		getClient().createPolicy(CreatePolicyRequest.builder().
+				policyDocument(policyString).policyName(id + "-Policy").build());
 
 		// STEP 4: Attach policy to certificate
-		getClient().attachPolicy(new AttachPolicyRequest().withPolicyName(id + "-Policy"));
+		getClient().attachPolicy(AttachPolicyRequest.builder().policyName(id + "-Policy").build());
 
 		// STEP 5: Attach thing to certificate
-		getClient().attachThingPrincipal(new AttachThingPrincipalRequest().
-				withPrincipal(resp2.getCertificateArn()).withThingName(id));
+		getClient().attachThingPrincipal(AttachThingPrincipalRequest.builder().
+				principal(resp2.certificateArn()).thingName(id).build());
 
 		thing.getDeviceMetadata().remove("policyJSON");
 
 		thing.setServiceBroker("AWS");
 		thing.getDeviceMetadata().put("thingId", thing.getId());
 		thing.getDeviceMetadata().put("thingName", id);
-		thing.getDeviceMetadata().put("thingARN", resp1.getThingArn());
+		thing.getDeviceMetadata().put("thingARN", resp1.thingArn());
 		thing.getDeviceMetadata().put("clientId", id);
-		thing.getDeviceMetadata().put("clientCertId", resp2.getCertificateId());
-		thing.getDeviceMetadata().put("clientCertARN", resp2.getCertificateArn());
-		thing.getDeviceMetadata().put("clientCert", resp2.getCertificatePem());
-		thing.getDeviceMetadata().put("privateKey", resp2.getKeyPair().getPrivateKey());
-		thing.getDeviceMetadata().put("publicKey", resp2.getKeyPair().getPublicKey());
-		thing.getDeviceMetadata().put("region", Config.AWS_REGION);
+		thing.getDeviceMetadata().put("clientCertId", resp2.certificateId());
+		thing.getDeviceMetadata().put("clientCertARN", resp2.certificateArn());
+		thing.getDeviceMetadata().put("clientCert", resp2.certificatePem());
+		thing.getDeviceMetadata().put("privateKey", resp2.keyPair().privateKey());
+		thing.getDeviceMetadata().put("publicKey", resp2.keyPair().publicKey());
+		thing.getDeviceMetadata().put("region", region);
 		thing.getDeviceMetadata().put("port", 8883);
 		thing.getDeviceMetadata().put("host", getClient().
-				describeEndpoint(new DescribeEndpointRequest()).getEndpointAddress());
+				describeEndpoint(DescribeEndpointRequest.builder().build()).endpointAddress());
 
 		return thing;
 	}
@@ -188,9 +189,9 @@ public class AWSIoTService implements IoTService {
 			return Collections.emptyMap();
 		}
 		String id = cloudIDForThing(thing);
-		ByteBuffer bb =  getDataClient().getThingShadow(new GetThingShadowRequest().withThingName(id)).getPayload();
+		SdkBytes bb =  getDataClient().getThingShadow(GetThingShadowRequest.builder().thingName(id).build()).payload();
 		if (bb != null) {
-			try (ByteArrayInputStream bais = new ByteArrayInputStream(bb.array())) {
+			try (ByteArrayInputStream bais = new ByteArrayInputStream(bb.asByteArray())) {
 				Map<String, Object> payload = ParaObjectUtils.getJsonReader(Map.class).readValue(bais);
 				if (payload != null && payload.containsKey("state")) {
 					return (Map<String, Object>) ((Map<String, Object>) payload.get("state")).get("desired");
@@ -211,8 +212,8 @@ public class AWSIoTService implements IoTService {
 		try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 			Object data = Collections.singletonMap("state", Collections.singletonMap("desired", thing.getDeviceState()));
 			ParaObjectUtils.getJsonWriterNoIdent().writeValue(baos, data);
-			getDataClient().updateThingShadow(new UpdateThingShadowRequest().
-					withThingName(id).withPayload(ByteBuffer.wrap(baos.toByteArray())));
+			getDataClient().updateThingShadow(UpdateThingShadowRequest.builder().
+					thingName(id).payload(SdkBytes.fromByteArray(baos.toByteArray())).build());
 		} catch (Exception ex) {
 			logger.warn("Failed to connect to IoT device {}: {}", id, ex.getMessage());
 		}
@@ -227,37 +228,37 @@ public class AWSIoTService implements IoTService {
 		String cARN = (String) thing.getDeviceMetadata().get("clientCertARN");
 		String certId = (String) thing.getDeviceMetadata().get("clientCertId");
 		String policy = id + "-Policy";
-		for (PolicyVersion p : getClient().listPolicyVersions(new ListPolicyVersionsRequest().
-				withPolicyName(policy)).getPolicyVersions()) {
+		for (PolicyVersion p : getClient().listPolicyVersions(ListPolicyVersionsRequest.builder().
+				policyName(policy).build()).policyVersions()) {
 			if (!p.isDefaultVersion()) {
-				getClient().deletePolicyVersion(new DeletePolicyVersionRequest().
-						withPolicyName(policy).withPolicyVersionId(p.getVersionId()));
+				getClient().deletePolicyVersion(DeletePolicyVersionRequest.builder().
+						policyName(policy).policyVersionId(p.versionId()).build());
 			}
 		}
 		try {
-			getClient().detachThingPrincipal(new DetachThingPrincipalRequest().
-					withPrincipal(cARN).withThingName(id));
+			getClient().detachThingPrincipal(DetachThingPrincipalRequest.builder().
+					principal(cARN).thingName(id).build());
 		} catch (Exception e) { }
 		try {
-			getClient().detachPolicy(new DetachPolicyRequest().withPolicyName(policy));
+			getClient().detachPolicy(DetachPolicyRequest.builder().policyName(policy).build());
 		} catch (Exception e) { }
 		try {
-			getClient().deletePolicy(new DeletePolicyRequest().withPolicyName(policy));
+			getClient().deletePolicy(DeletePolicyRequest.builder().policyName(policy).build());
 		} catch (Exception e) { }
 		try {
-			getClient().updateCertificate(new UpdateCertificateRequest().withCertificateId(certId).
-					withNewStatus(CertificateStatus.INACTIVE));
+			getClient().updateCertificate(UpdateCertificateRequest.builder().certificateId(certId).
+					newStatus(CertificateStatus.INACTIVE).build());
 		} catch (Exception e) { }
 		try {
-			getClient().deleteCertificate(new DeleteCertificateRequest().withCertificateId(certId));
+			getClient().deleteCertificate(DeleteCertificateRequest.builder().certificateId(certId).build());
 		} catch (Exception e) { }
-		getClient().deleteThing(new DeleteThingRequest().withThingName(id));
+		getClient().deleteThing(DeleteThingRequest.builder().thingName(id).build());
 		try {
-			getDataClient().deleteThingShadow(new DeleteThingShadowRequest().withThingName(id));
+			getDataClient().deleteThingShadow(DeleteThingShadowRequest.builder().thingName(id).build());
 		} catch (Exception e) { }
 	}
 
-	private String getDefaultPolicyDocument(String accountId, String id) {
+	private String getDefaultPolicyDocument(String accountId, String id, String region) {
 		return "{"
 			+ "  \"Version\": \"2012-10-17\","
 			+ "  \"Statement\": ["
@@ -270,7 +271,7 @@ public class AWSIoTService implements IoTService {
 			+ "      \"Effect\": \"Allow\","
 			+ "      \"Action\": [\"iot:Publish\"],"
 			+ "      \"Resource\": ["
-			+ "        \"arn:aws:iot:" + Config.AWS_REGION + ":" + accountId + ":topic/$aws/things/" + id + "/*\""
+			+ "        \"arn:aws:iot:" + region + ":" + accountId + ":topic/$aws/things/" + id + "/*\""
 			+ "      ]"
 			+ "    },"
 			+ "    {"
@@ -284,7 +285,7 @@ public class AWSIoTService implements IoTService {
 			+ "        \"iot:UpdateThingShadow\","
 			+ "        \"iot:GetThingShadow\""
 			+ "      ],"
-			+ "      \"Resource\": [\"arn:aws:iot:" + Config.AWS_REGION + ":" + accountId + ":thing/" + id + "\"]"
+			+ "      \"Resource\": [\"arn:aws:iot:" + region + ":" + accountId + ":thing/" + id + "\"]"
 			+ "    }"
 			+ "  ]"
 			+ "}";
@@ -296,7 +297,7 @@ public class AWSIoTService implements IoTService {
 			return false;
 		}
 		try {
-			return getClient().describeThing(new DescribeThingRequest().withThingName(cloudIDForThing(thing))) != null;
+			return getClient().describeThing(DescribeThingRequest.builder().thingName(cloudIDForThing(thing)).build()) != null;
 		} catch (Exception e) {
 			return false;
 		}

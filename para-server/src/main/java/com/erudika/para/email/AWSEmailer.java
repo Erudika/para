@@ -17,19 +17,19 @@
  */
 package com.erudika.para.email;
 
-import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
-import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClientBuilder;
-import com.amazonaws.services.simpleemail.model.Body;
-import com.amazonaws.services.simpleemail.model.Content;
-import com.amazonaws.services.simpleemail.model.Destination;
-import com.amazonaws.services.simpleemail.model.Message;
-import com.amazonaws.services.simpleemail.model.SendEmailRequest;
 import com.erudika.para.Para;
 import com.erudika.para.utils.Config;
 import java.util.Iterator;
 import java.util.List;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.ses.SesClient;
+import software.amazon.awssdk.services.ses.model.Body;
+import software.amazon.awssdk.services.ses.model.Content;
+import software.amazon.awssdk.services.ses.model.Destination;
+import software.amazon.awssdk.services.ses.model.Message;
+import software.amazon.awssdk.services.ses.model.SendEmailRequest;
 
 /**
  * An emailer that uses AWS Simple Email Service (SES).
@@ -39,40 +39,41 @@ import org.apache.commons.lang3.StringUtils;
 @Singleton
 public class AWSEmailer implements Emailer {
 
-	private final AmazonSimpleEmailService sesclient;
+	private final SesClient sesclient;
 
 	/**
 	 * No-args constructor.
 	 */
 	public AWSEmailer() {
-		sesclient = AmazonSimpleEmailServiceClientBuilder.standard().
+		sesclient = SesClient.builder().
 				// AWS SES is not available in all regions and it's best if we set it manually
-				withRegion(Config.getConfigParam("aws_ses_region", "eu-west-1")).build();
+				region(Region.of(Config.getConfigParam("aws_ses_region", "eu-west-1"))).build();
 	}
 
 	@Override
 	public boolean sendEmail(List<String> emails, String subject, String body) {
 		if (emails != null && !emails.isEmpty() && !StringUtils.isBlank(body)) {
-			final SendEmailRequest request = new SendEmailRequest().withSource(Config.SUPPORT_EMAIL);
+			SendEmailRequest.Builder request = SendEmailRequest.builder();
+			request.source(Config.SUPPORT_EMAIL).build();
 			Iterator<String> emailz = emails.iterator();
-			Destination dest = new Destination().withToAddresses(emailz.next());
+			Destination.Builder dest = Destination.builder();
+			dest.toAddresses(emailz.next());
 			while (emailz.hasNext()) {
-				dest.withBccAddresses(emailz.next());
+				dest.bccAddresses(emailz.next());
 			}
-			request.setDestination(dest);
+			request.destination(dest.build());
 
-			Content subjContent = new Content().withData(subject);
-			Message msg = new Message().withSubject(subjContent);
+			Message.Builder msg = Message.builder();
+			msg.subject(Content.builder().data(subject).build());
 
 			// Include a body in both text and HTML formats
-			Content textContent = new Content().withData(body).withCharset(Config.DEFAULT_ENCODING);
-			msg.setBody(new Body().withHtml(textContent));
+			msg.body(Body.builder().html(Content.builder().data(body).charset(Config.DEFAULT_ENCODING).build()).build());
 
-			request.setMessage(msg);
+			request.message(msg.build());
 
 			Para.asyncExecute(new Runnable() {
 				public void run() {
-					sesclient.sendEmail(request);
+					sesclient.sendEmail(request.build());
 				}
 			});
 			return true;

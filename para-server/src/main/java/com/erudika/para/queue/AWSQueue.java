@@ -17,7 +17,6 @@
  */
 package com.erudika.para.queue;
 
-import com.amazonaws.services.sqs.AmazonSQS;
 import com.erudika.para.utils.Config;
 import java.util.Collections;
 import java.util.List;
@@ -48,10 +47,6 @@ public class AWSQueue implements Queue {
 	 */
 	public AWSQueue(String name) {
 		setName(name);
-	}
-
-	AmazonSQS client() {
-		return AWSQueueUtils.getClient();
 	}
 
 	@Override

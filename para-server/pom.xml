@@ -12,7 +12,7 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>5.1.5.RELEASE</springSecVer>
+		<springSecVer>5.2.0.M3</springSecVer>
 		<springLdapVer>2.3.2.RELEASE</springLdapVer>
 	</properties>
 
@@ -129,28 +129,33 @@
 
 		<!-- AWS JAVA SDK -->
 		<dependency>
-			<groupId>com.amazonaws</groupId>
-			<artifactId>aws-java-sdk-dynamodb</artifactId>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>dynamodb</artifactId>
 			<version>${awsJdkVer}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.amazonaws</groupId>
-			<artifactId>aws-java-sdk-s3</artifactId>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
 			<version>${awsJdkVer}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.amazonaws</groupId>
-			<artifactId>aws-java-sdk-ses</artifactId>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>ses</artifactId>
 			<version>${awsJdkVer}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.amazonaws</groupId>
-			<artifactId>aws-java-sdk-sqs</artifactId>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>sqs</artifactId>
 			<version>${awsJdkVer}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.amazonaws</groupId>
-			<artifactId>aws-java-sdk-iot</artifactId>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>iot</artifactId>
+			<version>${awsJdkVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>iotdataplane</artifactId>
 			<version>${awsJdkVer}</version>
 		</dependency>
 
@@ -224,6 +229,11 @@
 			<groupId>org.apache.qpid</groupId>
 			<artifactId>proton-j</artifactId>
 			<version>0.30.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.5.9</version>
 		</dependency>
 
 		<!-- TESTING -->

@@ -28,6 +28,8 @@ import com.erudika.para.core.Vote;
 import com.erudika.para.iot.IoTServiceFactory;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
+import com.erudika.para.queue.MockQueue;
+import com.erudika.para.queue.Queue;
 import com.erudika.para.search.MockSearch;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
@@ -64,12 +66,14 @@ public enum CoreUtils implements InitializeListener {
 		private transient DAO dao;
 		private transient Search search;
 		private transient Cache cache;
+		private transient Queue queue;
 		private transient IoTServiceFactory iotFactory;
 
 		{
 			dao = new MockDAO();
 			search = new MockSearch();
 			cache = new MockCache();
+			queue = new MockQueue();
 			logger.debug("Using default impementations - {}, {} and {}.",
 					dao.getClass().getSimpleName(),
 					search.getClass().getSimpleName(),
@@ -126,6 +130,17 @@ public enum CoreUtils implements InitializeListener {
 		@Override
 		public void setCache(Cache cache) {
 			this.cache = cache;
+		}
+
+		@Override
+		public Queue getQueue() {
+			return queue;
+		}
+
+		@Inject
+		@Override
+		public void setQueue(Queue queue) {
+			this.queue = queue;
 		}
 
 		@Override
@@ -441,6 +456,18 @@ public enum CoreUtils implements InitializeListener {
 	 * @param cache {@link Cache}
 	 */
 	public abstract void setCache(Cache cache);
+
+	/**
+	 * Returns the Queue object.
+	 * @return {@link Queue} object
+	 */
+	public abstract Queue getQueue();
+
+	/**
+	 * Sets the Queue object.
+	 * @param queue {@link Queue}
+	 */
+	public abstract void setQueue(Queue queue);
 
 	/**
 	 * Returns the default IoT factory.

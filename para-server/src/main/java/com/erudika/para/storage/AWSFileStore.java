@@ -17,20 +17,22 @@
  */
 package com.erudika.para.storage;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.StorageClass;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+import javax.ws.rs.core.HttpHeaders;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.StorageClass;
 
 /**
  * An implementation of the {@link FileStore} interface using AWS S3.
@@ -39,8 +41,8 @@ import org.slf4j.LoggerFactory;
 public class AWSFileStore implements FileStore {
 
 	private static final Logger logger = LoggerFactory.getLogger(AWSFileStore.class);
-	private final String baseUrl = "https://s3-{0}.amazonaws.com/{1}/{2}";
-	private AmazonS3 s3;
+	private static final String S3_URL = "https://s3-{0}.amazonaws.com/{1}/{2}";
+	private S3Client s3;
 	private String bucket;
 
 	/**
@@ -56,7 +58,7 @@ public class AWSFileStore implements FileStore {
 	 */
 	public AWSFileStore(String bucket) {
 		this.bucket = bucket;
-		this.s3 = AmazonS3ClientBuilder.standard().build();
+		this.s3 = S3Client.create();
 	}
 
 	@Override
@@ -65,8 +67,8 @@ public class AWSFileStore implements FileStore {
 			path = path.substring(1);
 		}
 		if (!StringUtils.isBlank(path)) {
-			S3Object file = s3.getObject(bucket, path);
-			return file.getObjectContent();
+			final String key = path;
+			return s3.getObject(b -> b.bucket(bucket).key(key));
 		}
 		return null;
 	}
@@ -82,18 +84,19 @@ public class AWSFileStore implements FileStore {
 		int maxFileSizeMBytes = Config.getConfigInt("para.s3.max_filesize_mb", 10);
 		try {
 			if (data.available() > 0 && data.available() <= (maxFileSizeMBytes * 1024 * 1024)) {
-				ObjectMetadata om = new ObjectMetadata();
-				om.setCacheControl("max-age=15552000, must-revalidate");	// 180 days
+				Map<String, String> om = new HashMap<String, String>(3);
+				om.put(HttpHeaders.CACHE_CONTROL, "max-age=15552000, must-revalidate");	// 180 days
 				if (path.endsWith(".gz")) {
-					om.setContentEncoding("gzip");
+					om.put(HttpHeaders.CONTENT_ENCODING, "gzip");
 					path = path.substring(0, path.length() - 3);
 				}
-				path = System.currentTimeMillis() + "." + path;
-				PutObjectRequest por = new PutObjectRequest(bucket, path, data, om);
-				por.setCannedAcl(CannedAccessControlList.PublicRead);
-				por.setStorageClass(StorageClass.ReducedRedundancy);
-				s3.putObject(por);
-				return Utils.formatMessage(baseUrl, Config.AWS_REGION, bucket, path);
+				PutObjectRequest por = PutObjectRequest.builder().
+						bucket(bucket).key(path).
+						metadata(om).
+						acl(ObjectCannedACL.PUBLIC_READ).
+						storageClass(StorageClass.REDUCED_REDUNDANCY).build();
+				s3.putObject(por, RequestBody.fromInputStream(data, data.available())); //.bucket, path, data, om
+				return Utils.formatMessage(S3_URL, new DefaultAwsRegionProviderChain().getRegion().id(), bucket, path);
 			}
 		} catch (IOException e) {
 			logger.error(null, e);
@@ -113,7 +116,8 @@ public class AWSFileStore implements FileStore {
 			path = path.substring(1);
 		}
 		if (!StringUtils.isBlank(path)) {
-			s3.deleteObject(bucket, path);
+			final String key = path;
+			s3.deleteObject(b -> b.bucket(bucket).key(key));
 			return true;
 		}
 		return false;

@@ -37,13 +37,9 @@ public class AWSQueueIT extends QueueTest {
 
 	private static SQSRestServer sqsServer;
 
-	static {
-		System.setProperty("para.aws_access_key", "x");
-		System.setProperty("para.aws_secret_key", "x");
-	}
-
 	@BeforeClass
 	public static void setUpClass() throws InterruptedException {
+		System.setProperty("para.aws_sqs_local", "true");
 		sqsServer = SQSRestServerBuilder.start();
 		Thread.sleep(1000);
 		q = new AWSQueue("testq");
@@ -51,11 +47,12 @@ public class AWSQueueIT extends QueueTest {
 
 	@AfterClass
 	public static void tearDownClass() {
+		System.setProperty("para.aws_sqs_local", "false");
 		sqsServer.stopAndWait();
 	}
 
 	@Test
-	public void testBatchSend() {
+	public void testBatchSend() throws InterruptedException {
 		AWSQueue qu = new AWSQueue("testq2");
 		int n = 15;
 		List<String> list = new ArrayList<>();
@@ -63,6 +60,7 @@ public class AWSQueueIT extends QueueTest {
 			list.add("{\"test" + i + "\": " + i + "23 }");
 		}
 		AWSQueueUtils.pushMessages(qu.getUrl(), list);
+		Thread.sleep(1000); // AWSQueue push is async
 		List<String> result = AWSQueueUtils.pullMessages(qu.getUrl(), n);
 		assertNotNull(result);
 		assertFalse(result.isEmpty());

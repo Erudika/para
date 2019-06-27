@@ -17,7 +17,11 @@
  */
 package com.erudika.para.queue;
 
+import com.erudika.para.Para;
+import com.erudika.para.utils.Config;
 import com.google.inject.AbstractModule;
+import java.util.ServiceLoader;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * The default queue module.
@@ -26,7 +30,47 @@ import com.google.inject.AbstractModule;
 public class QueueModule extends AbstractModule {
 
 	protected void configure() {
-		bind(Queue.class).to(AWSQueue.class).asEagerSingleton();
+		String selectedQueue = Config.getConfigParam("queue", "");
+		if (StringUtils.isBlank(selectedQueue)) {
+			if ("embedded".equals(Config.ENVIRONMENT)) {
+				bindToDefault();
+			} else {
+				bind(Queue.class).to(AWSQueue.class).asEagerSingleton();
+			}
+		} else {
+			if ("sqs".equalsIgnoreCase(selectedQueue) ||
+					AWSQueue.class.getSimpleName().equalsIgnoreCase(selectedQueue)) {
+				bind(Queue.class).to(AWSQueue.class).asEagerSingleton();
+			} else {
+				Queue queuePlugin = loadExternalQueue(selectedQueue);
+				if (queuePlugin != null) {
+					bind(Queue.class).to(queuePlugin.getClass()).asEagerSingleton();
+				} else {
+					// default fallback - not implemented!
+					bindToDefault();
+				}
+			}
+		}
+	}
+
+	void bindToDefault() {
+		bind(Queue.class).to(LocalQueue.class).asEagerSingleton();
+	}
+
+	/**
+	 * Scans the classpath for Queue implementations, through the
+	 * {@link ServiceLoader} mechanism and returns one.
+	 * @param classSimpleName the name of the class name to look for and load
+	 * @return a Queue instance if found, or null
+	 */
+	final Queue loadExternalQueue(String classSimpleName) {
+		ServiceLoader<Queue> queueLoader = ServiceLoader.load(Queue.class, Para.getParaClassLoader());
+		for (Queue queue : queueLoader) {
+			if (queue != null && classSimpleName.equalsIgnoreCase(queue.getClass().getSimpleName())) {
+				return queue;
+			}
+		}
+		return null;
 	}
 
 }
