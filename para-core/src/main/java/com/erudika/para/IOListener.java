@@ -35,8 +35,9 @@ public interface IOListener {
 	/**
 	 * Called after an I/O (CRUD) operation has occurred.
 	 * @param method the {@code DAO} method which was invoked before this
+	 * @param args the list of arguments supplied to the {@code DAO} method called
 	 * @param result the result of the IO operation
 	 */
-	void onPostInvoke(Method method, Object result);
+	void onPostInvoke(Method method, Object[] args, Object result);
 
 }
