@@ -225,7 +225,6 @@ public final class ParaClient {
 		tokenKeyNextRefresh = null;
 	}
 
-
 	/**
 	 * Sets the chunk size for batch CRUD operations. If chunkSize is greater than zero, any requests made to
 	 * createAll(), readAll(), updateAll() and deleteAll() will be partitioned into chunks equal to this size.
@@ -487,9 +486,10 @@ public final class ParaClient {
 			return null;
 		}
 		if (StringUtils.isBlank(obj.getId()) || StringUtils.isBlank(obj.getType())) {
-			return getEntity(invokePost(obj.getType(), Entity.json(obj)), obj.getClass());
+			return getEntity(invokePost(Utils.urlEncode(obj.getType()), Entity.json(obj)), obj.getClass());
 		} else {
-			return getEntity(invokePut(obj.getType().concat("/").concat(obj.getId()), Entity.json(obj)), obj.getClass());
+			return getEntity(invokePut(Utils.urlEncode(obj.getType()).concat("/").concat(Utils.urlEncode(obj.getId())),
+					Entity.json(obj)), obj.getClass());
 		}
 	}
 
@@ -505,7 +505,8 @@ public final class ParaClient {
 			return null;
 		}
 
-		return getEntity(invokeGet(type.concat("/").concat(id), null), ParaObjectUtils.toClass(type));
+		return getEntity(invokeGet(Utils.urlEncode(type).concat("/").concat(Utils.urlEncode(id)), null),
+				ParaObjectUtils.toClass(type));
 	}
 
 	/**
@@ -518,7 +519,7 @@ public final class ParaClient {
 		if (StringUtils.isBlank(id)) {
 			return null;
 		}
-		Map<String, Object> data = getEntity(invokeGet("_id/".concat(id), null), Map.class);
+		Map<String, Object> data = getEntity(invokeGet("_id/".concat(Utils.urlEncode(id)), null), Map.class);
 		return ParaObjectUtils.setAnnotatedFields(data);
 	}
 
@@ -532,7 +533,8 @@ public final class ParaClient {
 		if (obj == null) {
 			return null;
 		}
-		return getEntity(invokePatch(obj.getType().concat("/").concat(obj.getId()), Entity.json(obj)), obj.getClass());
+		return getEntity(invokePatch(Utils.urlEncode(obj.getType()).concat("/").concat(Utils.urlEncode(obj.getId())),
+				Entity.json(obj)), obj.getClass());
 	}
 
 	/**
@@ -544,7 +546,7 @@ public final class ParaClient {
 		if (obj == null || obj.getId() == null) {
 			return;
 		}
-		invokeDelete(obj.getType().concat("/").concat(obj.getId()), null);
+		invokeDelete(Utils.urlEncode(obj.getType()).concat("/").concat(Utils.urlEncode(obj.getId())), null);
 	}
 
 	/**
@@ -642,7 +644,8 @@ public final class ParaClient {
 		if (StringUtils.isBlank(type)) {
 			return Collections.emptyList();
 		}
-		return getItems((Map<String, Object>) getEntity(invokeGet(type, pagerToParams(pager)), Map.class), pager);
+		return getItems((Map<String, Object>) getEntity(invokeGet(Utils.urlEncode(type),
+				pagerToParams(pager)), Map.class), pager);
 	}
 
 	/////////////////////////////////////////////
@@ -942,7 +945,7 @@ public final class ParaClient {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("count", "true");
 		Pager pager = new Pager();
-		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
 		getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
 		return pager.getCount();
 	}
@@ -960,7 +963,7 @@ public final class ParaClient {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return Collections.emptyList();
 		}
-		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
 		return getItems((Map<String, Object>) getEntity(invokeGet(url, pagerToParams(pager)), Map.class), pager);
 	}
 
@@ -984,7 +987,7 @@ public final class ParaClient {
 		params.putSingle("field", field);
 		params.putSingle("q", (query == null) ? "*" : query);
 		params.putAll(pagerToParams(pager));
-		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
 		return getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
 	}
 
@@ -999,7 +1002,8 @@ public final class ParaClient {
 		if (obj == null || obj.getId() == null || type2 == null || id2 == null) {
 			return false;
 		}
-		String url = Utils.formatMessage("{0}/links/{1}/{2}", obj.getObjectURI(), type2, id2);
+		String url = Utils.formatMessage("{0}/links/{1}/{2}", obj.getObjectURI(),
+				Utils.urlEncode(type2), Utils.urlEncode(id2));
 		Boolean result = getEntity(invokeGet(url, null), Boolean.class);
 		return result != null && result;
 	}
@@ -1029,7 +1033,7 @@ public final class ParaClient {
 		if (obj == null || obj.getId() == null || id2 == null) {
 			return null;
 		}
-		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), id2);
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(id2));
 		return getEntity(invokePost(url, null), String.class);
 	}
 
@@ -1044,7 +1048,8 @@ public final class ParaClient {
 		if (obj == null || obj.getId() == null || type2 == null || id2 == null) {
 			return;
 		}
-		String url = Utils.formatMessage("{0}/links/{1}/{2}", obj.getObjectURI(), type2, id2);
+		String url = Utils.formatMessage("{0}/links/{1}/{2}", obj.getObjectURI(),
+				Utils.urlEncode(type2), Utils.urlEncode(id2));
 		invokeDelete(url, null);
 	}
 
@@ -1077,7 +1082,7 @@ public final class ParaClient {
 		params.putSingle("count", "true");
 		params.putSingle("childrenonly", "true");
 		Pager pager = new Pager();
-		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
 		getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
 		return pager.getCount();
 	}
@@ -1098,7 +1103,7 @@ public final class ParaClient {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("childrenonly", "true");
 		params.putAll(pagerToParams(pager));
-		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
 		return getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
 	}
 
@@ -1123,7 +1128,7 @@ public final class ParaClient {
 		params.putSingle("field", field);
 		params.putSingle("term", term);
 		params.putAll(pagerToParams(pager));
-		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
 		return getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
 	}
 
@@ -1146,7 +1151,7 @@ public final class ParaClient {
 		params.putSingle("childrenonly", "true");
 		params.putSingle("q", (query == null) ? "*" : query);
 		params.putAll(pagerToParams(pager));
-		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
 		return getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
 	}
 
@@ -1161,7 +1166,7 @@ public final class ParaClient {
 		}
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("childrenonly", "true");
-		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), type2);
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
 		invokeDelete(url, params);
 	}
 
@@ -1309,7 +1314,7 @@ public final class ParaClient {
 		if (obj == null || StringUtils.isBlank(voterid)) {
 			return false;
 		}
-		return getEntity(invokePatch(obj.getType().concat("/").concat(obj.getId()),
+		return getEntity(invokePatch(Utils.urlEncode(obj.getType()).concat("/").concat(Utils.urlEncode(obj.getId())),
 				Entity.json(Collections.singletonMap("_voteup", voterid))), Boolean.class);
 	}
 
@@ -1323,7 +1328,7 @@ public final class ParaClient {
 		if (obj == null || StringUtils.isBlank(voterid)) {
 			return false;
 		}
-		return getEntity(invokePatch(obj.getType().concat("/").concat(obj.getId()),
+		return getEntity(invokePatch(Utils.urlEncode(obj.getType()).concat("/").concat(Utils.urlEncode(obj.getId())),
 				Entity.json(Collections.singletonMap("_votedown", voterid))), Boolean.class);
 	}
 
@@ -1380,7 +1385,7 @@ public final class ParaClient {
 		if (StringUtils.isBlank(type) || StringUtils.isBlank(field) || c == null) {
 			return Collections.emptyMap();
 		}
-		return getEntity(invokePut(Utils.formatMessage("_constraints/{0}/{1}/{2}", type,
+		return getEntity(invokePut(Utils.formatMessage("_constraints/{0}/{1}/{2}", Utils.urlEncode(type),
 				field, c.getName()), Entity.json(c.getPayload())), Map.class);
 	}
 
@@ -1396,7 +1401,7 @@ public final class ParaClient {
 		if (StringUtils.isBlank(type) || StringUtils.isBlank(field) || StringUtils.isBlank(constraintName)) {
 			return Collections.emptyMap();
 		}
-		return getEntity(invokeDelete(Utils.formatMessage("_constraints/{0}/{1}/{2}", type,
+		return getEntity(invokeDelete(Utils.formatMessage("_constraints/{0}/{1}/{2}", Utils.urlEncode(type),
 				field, constraintName), null), Map.class);
 	}
 
@@ -1418,6 +1423,7 @@ public final class ParaClient {
 	 * @return a map of subject ids to resource names to a list of allowed methods
 	 */
 	public Map<String, Map<String, List<String>>> resourcePermissions(String subjectid) {
+		subjectid = Utils.urlEncode(subjectid);
 		return getEntity(invokeGet(Utils.formatMessage("_permissions/{0}", subjectid), null), Map.class);
 	}
 
@@ -1449,6 +1455,7 @@ public final class ParaClient {
 		if (allowGuestAccess && App.ALLOW_ALL.equals(subjectid)) {
 			permission.add(App.AllowedMethods.GUEST);
 		}
+		subjectid = Utils.urlEncode(subjectid);
 		resourcePath = Utils.urlEncode(resourcePath);
 		return getEntity(invokePut(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourcePath),
 				Entity.json(permission)), Map.class);
@@ -1464,6 +1471,7 @@ public final class ParaClient {
 		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourcePath)) {
 			return Collections.emptyMap();
 		}
+		subjectid = Utils.urlEncode(subjectid);
 		resourcePath = Utils.urlEncode(resourcePath);
 		return getEntity(invokeDelete(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourcePath),
 				null), Map.class);
@@ -1478,6 +1486,7 @@ public final class ParaClient {
 		if (StringUtils.isBlank(subjectid)) {
 			return Collections.emptyMap();
 		}
+		subjectid = Utils.urlEncode(subjectid);
 		return getEntity(invokeDelete(Utils.formatMessage("_permissions/{0}", subjectid), null), Map.class);
 	}
 
@@ -1492,6 +1501,7 @@ public final class ParaClient {
 		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourcePath) || StringUtils.isBlank(httpMethod)) {
 			return false;
 		}
+		subjectid = Utils.urlEncode(subjectid);
 		resourcePath = Utils.urlEncode(resourcePath);
 		String url = Utils.formatMessage("_permissions/{0}/{1}/{2}", subjectid, resourcePath, httpMethod);
 		Boolean result = getEntity(invokeGet(url, null), Boolean.class);

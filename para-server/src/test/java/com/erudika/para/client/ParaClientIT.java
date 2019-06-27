@@ -93,6 +93,7 @@ public class ParaClientIT {
 	protected static Tag t;
 	protected static Sysprop s1;
 	protected static Sysprop s2;
+	protected static Sysprop s3;
 	protected static Address a1;
 	protected static Address a2;
 	protected static User fbUser;
@@ -198,8 +199,12 @@ public class ParaClientIT {
 		s2.addProperty("text", "We are testing this thing. This sentence is a test. One, two.");
 		s2.setTimestamp(Utils.timestamp());
 
+		s3 = new Sysprop("уникод");
+		s3.setType("тип");
+		s3.setTimestamp(Utils.timestamp());
+
 		assertNotNull(fbUser.create());
-		pc.createAll(Arrays.asList(u, u1, u2, t, s1, s2, a1, a2));
+		pc.createAll(Arrays.asList(u, u1, u2, t, s1, s2, s3, a1, a2));
 //		Thread.sleep(1000);
 	}
 
@@ -417,10 +422,10 @@ public class ParaClientIT {
 		String id2 = "file.txt?/!./=-+)))(*&^%+$#@><`~±_|'";
 		String type1 = "type?/!./=-+)))(*&^%+$#@><`~±_|'";	// # should be removed
 		String type2 = "___ type 123  +__";
-		Sysprop so1 = new Sysprop(Utils.urlEncode(id1));
-		Sysprop so2 = new Sysprop(Utils.urlEncode(id2));
-		so1.setType(Utils.urlEncode(type1));
-		so2.setType(Utils.urlEncode(type2));
+		Sysprop so1 = new Sysprop(id1);
+		Sysprop so2 = new Sysprop(id2);
+		so1.setType(type1);
+		so2.setType(type2);
 		Sysprop obj1 = pc.create(so1);
 		Sysprop obj2 = pc.create(so2);
 		assertNotNull(obj1);
@@ -433,8 +438,8 @@ public class ParaClientIT {
 		assertNotNull(sr2.getTimestamp());
 		assertEquals(id1, sr1.getId());
 		assertEquals(id2, sr2.getId());
-		assertNotNull(pc.read(Utils.urlEncode(obj1.getType()), Utils.urlEncode(obj1.getId())));
-		assertNotNull(pc.read(Utils.urlEncode(obj2.getType()), Utils.urlEncode(obj2.getId())));
+		assertNotNull(pc.read(obj1.getType(), obj1.getId()));
+		assertNotNull(pc.read(obj2.getType(), obj2.getId()));
 		so1.setName("test name");
 		Sysprop su = pc.update(so1);
 		assertNotNull(su);
@@ -454,6 +459,22 @@ public class ParaClientIT {
 		assertEquals(id2, srl.get(1).getId());
 		pc.deleteAll(Arrays.asList(id1, id2));
 		assertTrue(pc.readAll(Arrays.asList(id1, id2)).isEmpty());
+
+		// test unicode ids
+		assertNotNull(pc.read(s3.getId()));
+		s3.addProperty("text", "текст");
+		pc.update(s3);
+		assertEquals("текст", ((Sysprop) pc.read(s3.getId())).getProperty("text"));
+
+		pc.link(s3, t.getId());
+		assertTrue(pc.isLinked(s3, t.getType(), t.getId()));
+		assertEquals(1, pc.countLinks(s3, t.getType()).intValue());
+		pc.unlink(s3, t.getType(), t.getId());
+		assertTrue(pc.getLinkedObjects(s3, t.getType()).isEmpty());
+		assertTrue(pc.voteUp(s3, u1.getId()));
+
+		pc.delete(s3);
+		assertNull(pc.read(s3.getId()));
 	}
 
 	@Test
