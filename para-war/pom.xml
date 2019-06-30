@@ -21,12 +21,12 @@
 		<dependency>
 			<groupId>com.erudika</groupId>
 			<artifactId>para-dao-sql</artifactId>
-			<version>1.31.3</version>
+			<version>1.32.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.erudika</groupId>
 			<artifactId>para-search-lucene</artifactId>
-			<version>1.31.4</version>
+			<version>1.32.0</version>
 		</dependency>
 		<!-- PARA PLUGINS : END -->
 	</dependencies>
