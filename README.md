@@ -280,9 +280,9 @@ The `Queue` interface is implemented by:
 
 ## Wishlist / Roadmap
 
-- Client library for Python
-- Para `2.0` - migration to [Micronaut](https://github.com/micronaut-projects/micronaut-core), Java 11+ only
-- `Search` implementation for MongoDB
+- Para `2.0` - migration to Micronaut or Quarkus, Java 12+ only
+- Client libraries for Python, Go
+- GraphQL support
 
 ## Contributing
 
