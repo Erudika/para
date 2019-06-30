@@ -535,6 +535,7 @@ public class App implements ParaObject, Serializable {
 			consMap.put(c.getName(), c.getPayload());
 			fieldMap.put(field, consMap);
 			getValidationConstraints().put(type, fieldMap);
+			addDatatype(Utils.singularToPlural(type), type);
 			return true;
 		}
 		return false;
@@ -642,6 +643,8 @@ public class App implements ParaObject, Serializable {
 				perm.add(allowedMethod.toString());
 			}
 			getResourcePermissions().get(subjectid).put(resourcePath, perm);
+			String typ = resourcePath.split("\\/")[0];
+			addDatatype(Utils.singularToPlural(typ), typ);
 			return true;
 		}
 		return false;

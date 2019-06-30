@@ -45,17 +45,17 @@ public class ParaObjectTest {
 
 	@Test
 	public void testGetObjectURI() {
-		assertEquals("/tags/tag", new Tag("tag").getObjectURI());
-		assertEquals("/users/1", new User("1").getObjectURI());
-		assertEquals("/votes", new Vote(null,null,null).getObjectURI());
+		assertEquals("/tag/tag", new Tag("tag").getObjectURI());
+		assertEquals("/user/1", new User("1").getObjectURI());
+		assertEquals("/vote", new Vote(null,null,null).getObjectURI());
 
 		Sysprop s = new Sysprop("уникод");
 		s.setType("тип");
 		assertEquals("/%D1%82%D0%B8%D0%BF/%D1%83%D0%BD%D0%B8%D0%BA%D0%BE%D0%B4", s.getObjectURI());
 
-		assertEquals("/sysprops", new Sysprop(null).getObjectURI());
-		assertEquals("/sysprops", new Sysprop("").getObjectURI());
-		assertEquals("/sysprops", new Sysprop("   ").getObjectURI());
+		assertEquals("/sysprop", new Sysprop(null).getObjectURI());
+		assertEquals("/sysprop", new Sysprop("").getObjectURI());
+		assertEquals("/sysprop", new Sysprop("   ").getObjectURI());
 	}
 
 	@Test

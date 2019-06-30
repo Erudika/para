@@ -84,7 +84,7 @@ public class Tag implements ParaObject {
 
 	@Override
 	public String getObjectURI() {
-		String defurl = "/".concat(getPlural());
+		String defurl = "/".concat(getType());
 		return (getTag() != null) ? defurl.concat("/").concat(getTag()) : defurl;
 	}
 
