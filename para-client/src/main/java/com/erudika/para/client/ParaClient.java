@@ -488,7 +488,7 @@ public final class ParaClient {
 		if (StringUtils.isBlank(obj.getId()) || StringUtils.isBlank(obj.getType())) {
 			return getEntity(invokePost(Utils.urlEncode(obj.getType()), Entity.json(obj)), obj.getClass());
 		} else {
-			return getEntity(invokePut(Utils.urlEncode(obj.getType()).concat("/").concat(Utils.urlEncode(obj.getId())),
+			return getEntity(invokePut(obj.getObjectURI(),
 					Entity.json(obj)), obj.getClass());
 		}
 	}
@@ -533,8 +533,7 @@ public final class ParaClient {
 		if (obj == null) {
 			return null;
 		}
-		return getEntity(invokePatch(Utils.urlEncode(obj.getType()).concat("/").concat(Utils.urlEncode(obj.getId())),
-				Entity.json(obj)), obj.getClass());
+		return getEntity(invokePatch(obj.getObjectURI(), Entity.json(obj)), obj.getClass());
 	}
 
 	/**
@@ -546,7 +545,7 @@ public final class ParaClient {
 		if (obj == null || obj.getId() == null) {
 			return;
 		}
-		invokeDelete(Utils.urlEncode(obj.getType()).concat("/").concat(Utils.urlEncode(obj.getId())), null);
+		invokeDelete(obj.getObjectURI(), null);
 	}
 
 	/**
@@ -1314,7 +1313,7 @@ public final class ParaClient {
 		if (obj == null || StringUtils.isBlank(voterid)) {
 			return false;
 		}
-		return getEntity(invokePatch(Utils.urlEncode(obj.getType()).concat("/").concat(Utils.urlEncode(obj.getId())),
+		return getEntity(invokePatch(obj.getObjectURI(),
 				Entity.json(Collections.singletonMap("_voteup", voterid))), Boolean.class);
 	}
 
@@ -1328,7 +1327,7 @@ public final class ParaClient {
 		if (obj == null || StringUtils.isBlank(voterid)) {
 			return false;
 		}
-		return getEntity(invokePatch(Utils.urlEncode(obj.getType()).concat("/").concat(Utils.urlEncode(obj.getId())),
+		return getEntity(invokePatch(obj.getObjectURI(),
 				Entity.json(Collections.singletonMap("_votedown", voterid))), Boolean.class);
 	}
 
@@ -1370,7 +1369,7 @@ public final class ParaClient {
 	 * @return a map containing all validation constraints for this type.
 	 */
 	public Map<String, Map<String, Map<String, Map<String, ?>>>> validationConstraints(String type) {
-		return getEntity(invokeGet(Utils.formatMessage("_constraints/{0}", type), null), Map.class);
+		return getEntity(invokeGet(Utils.formatMessage("_constraints/{0}", Utils.urlEncode(type)), null), Map.class);
 	}
 
 	/**
