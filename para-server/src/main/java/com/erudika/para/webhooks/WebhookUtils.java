@@ -142,7 +142,7 @@ public final class WebhookUtils {
 			try (CloseableHttpResponse resp1 = HTTP.execute(postToTarget)) {
 				if (resp1 != null && resp1.getStatusLine().getStatusCode() != 200) {
 					status = resp1.getStatusLine().getReasonPhrase();
-					logger.info("Webhook {} delivery failed! {} responed with {} {} instead of 200 OK.", id,
+					logger.info("Webhook {} delivery failed! {} responded with {} {} instead of 200 OK.", id,
 							targetUrl, resp1.getStatusLine().getStatusCode(), resp1.getStatusLine().getReasonPhrase());
 				} else {
 					logger.debug("Webhook {} delivered to {} successfully.", id, targetUrl);
