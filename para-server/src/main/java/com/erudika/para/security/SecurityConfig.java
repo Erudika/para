@@ -30,6 +30,7 @@ import static com.erudika.para.ParaServer.getInstance;
 import com.erudika.para.security.filters.LdapAuthFilter;
 import com.erudika.para.security.filters.SAMLAuthFilter;
 import com.erudika.para.security.filters.SAMLMetadataFilter;
+import com.erudika.para.security.filters.SlackAuthFilter;
 import com.erudika.para.utils.Config;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigObject;
@@ -76,6 +77,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	private final TwitterAuthFilter twitterFilter;
 	private final GitHubAuthFilter githubFilter;
 	private final MicrosoftAuthFilter microsoftFilter;
+	private final SlackAuthFilter slackFilter;
 	private final GenericOAuth2Filter oauth2Filter;
 	private final LdapAuthFilter ldapFilter;
 	private final SAMLAuthFilter samlFilter;
@@ -96,6 +98,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		twitterFilter = getInstance(TwitterAuthFilter.class);
 		githubFilter = getInstance(GitHubAuthFilter.class);
 		microsoftFilter = getInstance(MicrosoftAuthFilter.class);
+		slackFilter = getInstance(SlackAuthFilter.class);
 		oauth2Filter = getInstance(GenericOAuth2Filter.class);
 		ldapFilter = getInstance(LdapAuthFilter.class);
 		samlFilter = getInstance(SAMLAuthFilter.class);
@@ -230,6 +233,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		if (microsoftFilter != null) {
 			microsoftFilter.setAuthenticationManager(authenticationManager());
 			http.addFilterAfter(microsoftFilter, BasicAuthenticationFilter.class);
+		}
+
+		if (slackFilter != null) {
+			slackFilter.setAuthenticationManager(authenticationManager());
+			http.addFilterAfter(slackFilter, BasicAuthenticationFilter.class);
 		}
 
 		if (oauth2Filter != null) {

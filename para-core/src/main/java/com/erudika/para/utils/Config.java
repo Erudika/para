@@ -102,6 +102,8 @@ public final class Config {
 	public static final String GITHUB_PREFIX = "gh" + SEPARATOR;
 	/** Microsoft prefix - defaults to 'ms:'. */
 	public static final String MICROSOFT_PREFIX = "ms" + SEPARATOR;
+	/** Slack prefix - defaults to 'sl:'. */
+	public static final String SLACK_PREFIX = "sl" + SEPARATOR;
 	/** OAuth2 generic prefix - defaults to 'oa2:'. */
 	public static final String OAUTH2_PREFIX = "oa2" + SEPARATOR;
 	/** LDAP prefix - defaults to 'ldap:'. */
@@ -194,6 +196,14 @@ public final class Config {
 	 * Microsoft app secret (for authentication).
 	 */
 	public static final String MICROSOFT_SECRET = getConfigParam("ms_secret", "");
+	/**
+	 * Slack app id (for authentication).
+	 */
+	public static final String SLACK_APP_ID = getConfigParam("sl_app_id", "");
+	/**
+	 * Slack app secret (for authentication).
+	 */
+	public static final String SLACK_SECRET = getConfigParam("sl_secret", "");
 	/**
 	 * The identifier of the first administrator (can be email, OpenID, or Facebook user id).
 	 */

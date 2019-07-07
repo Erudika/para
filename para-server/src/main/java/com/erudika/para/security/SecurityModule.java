@@ -30,6 +30,7 @@ import com.erudika.para.cache.Cache;
 import com.erudika.para.security.filters.LdapAuthFilter;
 import com.erudika.para.security.filters.SAMLAuthFilter;
 import com.erudika.para.security.filters.SAMLMetadataFilter;
+import com.erudika.para.security.filters.SlackAuthFilter;
 import com.erudika.para.utils.Config;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -56,6 +57,7 @@ public class SecurityModule extends AbstractModule {
 	private TwitterAuthFilter twitterFilter;
 	private GitHubAuthFilter githubFilter;
 	private MicrosoftAuthFilter microsoftFilter;
+	private SlackAuthFilter slackFilter;
 	private GenericOAuth2Filter oauth2Filter;
 	private LdapAuthFilter ldapFilter;
 	private SAMLAuthFilter samlFilter;
@@ -320,6 +322,27 @@ public class SecurityModule extends AbstractModule {
 	 */
 	public void setMicrosoftFilter(MicrosoftAuthFilter microsoftFilter) {
 		this.microsoftFilter = microsoftFilter;
+	}
+
+	/**
+	 * @return filter
+	 */
+	@Provides
+	public SlackAuthFilter getSlackFilter() {
+		if (slackFilter == null) {
+			slackFilter = new SlackAuthFilter("/" + SlackAuthFilter.SLACK_ACTION);
+			slackFilter.setAuthenticationSuccessHandler(getSuccessHandler());
+			slackFilter.setAuthenticationFailureHandler(getFailureHandler());
+			slackFilter.setRememberMeServices(getRemembeMeServices());
+		}
+		return slackFilter;
+	}
+
+	/**
+	 * @param slackFilter filter
+	 */
+	public void setMicrosoftFilter(SlackAuthFilter slackFilter) {
+		this.slackFilter = slackFilter;
 	}
 
 	/**

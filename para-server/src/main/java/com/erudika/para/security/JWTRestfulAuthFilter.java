@@ -31,6 +31,7 @@ import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
 import com.erudika.para.security.filters.LdapAuthFilter;
+import com.erudika.para.security.filters.SlackAuthFilter;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.nimbusds.jwt.SignedJWT;
@@ -74,6 +75,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	private LinkedInAuthFilter linkedinAuth;
 	private TwitterAuthFilter twitterAuth;
 	private MicrosoftAuthFilter microsoftAuth;
+	private SlackAuthFilter slackAuth;
 	private GenericOAuth2Filter oauth2Auth;
 	private LdapAuthFilter ldapAuth;
 	private PasswordAuthFilter passwordAuth;
@@ -290,6 +292,8 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			return twitterAuth.getOrCreateUser(app, accessToken);
 		} else if ("microsoft".equalsIgnoreCase(identityProvider)) {
 			return microsoftAuth.getOrCreateUser(app, accessToken);
+		} else if ("slack".equalsIgnoreCase(identityProvider)) {
+			return slackAuth.getOrCreateUser(app, accessToken);
 		} else if ("oauth2".equalsIgnoreCase(identityProvider)) {
 			return oauth2Auth.getOrCreateUser(app, accessToken);
 		} else if ("ldap".equalsIgnoreCase(identityProvider)) {
