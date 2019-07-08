@@ -128,8 +128,8 @@ public class LanguageUtils {
 					}
 				}
 			}
-			LANG_CACHE.put(langCode, lang);
 		}
+		LANG_CACHE.put(langCode, lang);
 		return Collections.unmodifiableMap(lang);
 	}
 
@@ -423,11 +423,17 @@ public class LanguageUtils {
 			}
 			int progress = 0;
 			lang.load(ins);
-			for (String propKey : lang.stringPropertyNames()) {
+			Set<String> keySet = langCode.equalsIgnoreCase(getDefaultLanguageCode()) ?
+					lang.stringPropertyNames() : getDefaultLanguage(appid).keySet();
+			for (String propKey : keySet) {
 				String propVal = lang.getProperty(propKey);
-				if (!langCode.equalsIgnoreCase(getDefaultLanguageCode()) && !StringUtils.isBlank(propVal) &&
-						!StringUtils.equalsIgnoreCase(propVal, getDefaultLanguage(appid).get(propKey))) {
-					progress++;
+				if (!langCode.equalsIgnoreCase(getDefaultLanguageCode())) {
+					String defaultVal = getDefaultLanguage(appid).get(propKey);
+					if (!StringUtils.isBlank(propVal) && !StringUtils.equalsIgnoreCase(propVal, defaultVal)) {
+						progress++;
+					} else if (StringUtils.isBlank(propVal)) {
+						propVal = defaultVal;
+					}
 				}
 				langmap.put(propKey, propVal);
 			}
