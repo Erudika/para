@@ -28,6 +28,7 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -179,12 +180,14 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 					user.setPassword(Utils.generateSecurityToken());
 					user.setPicture(getPicture(pic));
 					user.setIdentifier(Config.SLACK_PREFIX + slackId);
+					String payload = "{\"access_token\":\"" + accessToken + "\"}";
+					user.setIdpAccessTokenPayload(Utils.base64enc(payload.getBytes(Config.DEFAULT_ENCODING)));
 					String id = user.create();
 					if (id == null) {
 						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 					}
 				} else {
-					if (updateUserInfo(user, pic, email, name)) {
+					if (updateUserInfo(user, pic, email, name, accessToken)) {
 						user.update();
 					}
 				}
@@ -194,7 +197,8 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 		return SecurityUtils.checkIfActive(userAuth, user, false);
 	}
 
-	private boolean updateUserInfo(User user, String pic, String email, String name) {
+	private boolean updateUserInfo(User user, String pic, String email, String name, String accessToken)
+			throws UnsupportedEncodingException {
 		String picture = getPicture(pic);
 		boolean update = false;
 		if (!StringUtils.equals(user.getPicture(), picture)) {
@@ -207,6 +211,11 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 		}
 		if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
 			user.setName(name);
+			update = true;
+		}
+		String payload = "{\"access_token\":\"" + accessToken + "\"}";
+		if (!payload.equals(Utils.base64dec(user.getIdpAccessTokenPayload()))) {
+			user.setIdpAccessTokenPayload(Utils.base64enc(payload.getBytes(Config.DEFAULT_ENCODING)));
 			update = true;
 		}
 		return update;

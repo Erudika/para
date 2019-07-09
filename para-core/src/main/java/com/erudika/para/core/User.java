@@ -587,7 +587,7 @@ public class User implements ParaObject {
 
 	/**
 	 * Returns the JWT payload for the access token coming from the IDP.
-	 * Used for delegating user attributes data to clients.
+	 * Used for delegating user attributes data to clients. This must be a Base64-encoded JSON string.
 	 * @return the payload part in Base64
 	 */
 	public String getIdpAccessTokenPayload() {
@@ -595,7 +595,7 @@ public class User implements ParaObject {
 	}
 
 	/**
-	 * Sets the access token payload.
+	 * Sets the access token payload. This must be a Base64-encoded JSON string.
 	 * @param idpAccessTokenPayload Base64 encoded payload
 	 */
 	public void setIdpAccessTokenPayload(String idpAccessTokenPayload) {
