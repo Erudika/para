@@ -161,6 +161,15 @@ public class App implements ParaObject, Serializable {
 		}
 	}
 
+	/**
+	 * Returns the identifier without the "app:" prefix.
+	 * @param appid app id
+	 * @return just the name of the app
+	 */
+	public static final String identifier(String appid) {
+		return (appid != null) ? appid.replaceFirst(PREFIX, "") : "";
+	}
+
 	@Override
 	public final void setId(String id) {
 		this.id = id(id);
