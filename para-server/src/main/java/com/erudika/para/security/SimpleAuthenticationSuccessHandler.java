@@ -67,7 +67,8 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 					customURI = customURI.replace("jwt=?", "jwt=" + newJWT.serialize());
 				} else if (StringUtils.contains(customURI, "jwt=incookie")) {
 					SignedJWT newJWT = SecurityUtils.generateJWToken(u, app);
-					HttpUtils.setStateParam(app.getAppIdentifier() + "-auth", newJWT.serialize(), request, response, true);
+					HttpUtils.setStateParam(app.getAppIdentifier().trim() + "-auth",
+							newJWT.serialize(), request, response, true);
 				}
 				if (!StringUtils.isBlank(customURI)) {
 					redirectStrategy.sendRedirect(request, response, customURI);
