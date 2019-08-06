@@ -4,9 +4,9 @@ install: true
 jdk:
   - openjdk8
 script:
-  - mvn clean package
+  - mvn -q clean package
 after_success:
-  - mvn sonar:sonar
+  - mvn -q sonar:sonar
 addons:
   sonarcloud:
     organization: "erudika"
