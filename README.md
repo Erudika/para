@@ -9,7 +9,7 @@
 
 **Para** is a simple and modular backend framework for object persistence and retrieval.
 It helps you build and prototype applications faster by taking care of backend operations.
-It can be a part of your JVM-based application or it can be deployed a standalone, multitenant API server with
+It can be a part of your JVM-based application or it can be deployed as standalone, multitenant API server with
 multiple applications and clients connecting to it.
 
 The name "pára" means "steam" in Bulgarian. And just like steam is used to power stuff, you can use
