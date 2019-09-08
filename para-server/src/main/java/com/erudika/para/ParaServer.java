@@ -61,6 +61,7 @@ import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
@@ -327,8 +328,18 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 						// support for X-Forwarded-Proto
 						// redirect back to https if original request uses it
 						if (Config.IN_PRODUCTION) {
+							ForwardedRequestCustomizer frc = new ForwardedRequestCustomizer() {
+								public void customize(Connector connector, HttpConfiguration config, Request request) {
+									super.customize(connector, config, request);
+									String cfProto = request.getHeader("CloudFront-Forwarded-Proto");
+									if (StringUtils.equalsIgnoreCase(cfProto, config.getSecureScheme())) {
+										request.setScheme(cfProto);
+										request.setSecure(true);
+									}
+								}
+							};
 							HttpConfiguration httpConfiguration = dcf.getHttpConfiguration();
-							httpConfiguration.addCustomizer(new ForwardedRequestCustomizer());
+							httpConfiguration.addCustomizer(frc);
 						}
 						// Disable Jetty version header
 						dcf.getHttpConfiguration().setSendServerVersion(false);
