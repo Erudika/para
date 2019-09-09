@@ -73,6 +73,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.ParentContextApplicationContextInitializer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.ApplicationPidFileWriter;
 import org.springframework.boot.web.embedded.jetty.JettyServerCustomizer;
 import org.springframework.boot.web.embedded.jetty.JettyServletWebServerFactory;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -351,10 +352,17 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		if (StringUtils.length(contextPath) > 1 && contextPath.charAt(0) == '/') {
 			jef.setContextPath(contextPath);
 		}
-		int defaultPort = NumberUtils.toInt(System.getProperty("jetty.http.port"), Config.getConfigInt("port", 8080));
-		jef.setPort(NumberUtils.toInt(System.getProperty("server.port"), defaultPort));
+		jef.setPort(getServerPort());
 		logger.info("Listening on port {}...", jef.getPort());
 		return jef;
+	}
+
+	/**
+	 * @return the server port
+	 */
+	public static int getServerPort() {
+		int defaultPort = NumberUtils.toInt(System.getProperty("jetty.http.port"), Config.getConfigInt("port", 8080));
+		return NumberUtils.toInt(System.getProperty("server.port"), defaultPort);
 	}
 
 	/**
@@ -429,6 +437,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		app.setAdditionalProfiles(Config.ENVIRONMENT);
 		app.setWebApplicationType(WebApplicationType.SERVLET);
 		app.setBannerMode(Banner.Mode.OFF);
+		app.addListeners(new ApplicationPidFileWriter(Config.PARA + "_" + getServerPort() + ".pid"));
 		initialize(getCoreModules());
 		app.run(args);
 	}
