@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -516,8 +515,7 @@ public final class AWSDynamoUtils {
 		QueryResponse pages = queryGSI(appid, pager);
 		if (pages != null) {
 			for (Map<String, AttributeValue> item : pages.items()) {
-				P obj = ParaObjectUtils.setAnnotatedFields(item.entrySet().stream().
-						collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().s())));
+				P obj = fromRow(item);
 				if (obj != null) {
 					results.add(obj);
 				}
