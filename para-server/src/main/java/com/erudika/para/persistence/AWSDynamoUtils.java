@@ -284,7 +284,7 @@ public final class AWSDynamoUtils {
 			final TableDescription td = getClient().describeTable(b -> b.tableName(getTableNameForAppid(appid))).table();
 			HashMap<String, Object> dbStatus = new HashMap<>();
 			dbStatus.put("id", appid);
-			dbStatus.put("status", td.tableStatus());
+			dbStatus.put("status", td.tableStatus().name());
 			dbStatus.put("created", td.creationDateTime().toEpochMilli());
 			dbStatus.put("sizeBytes", td.tableSizeBytes());
 			dbStatus.put("itemCount", td.itemCount());
