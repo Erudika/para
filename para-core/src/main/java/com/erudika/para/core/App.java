@@ -138,12 +138,12 @@ public class App implements ParaObject, Serializable {
 	 * @param id the name of the app
 	 */
 	public App(String id) {
-		this.sharingIndex = true;
-		this.sharingTable = false;
 		this.active = true;
 		this.readOnly = false;
 		setId(id);
 		setName(getName());
+		this.sharingIndex = !isRoot(getId());
+		this.sharingTable = false;
 	}
 
 	/**
@@ -436,7 +436,7 @@ public class App implements ParaObject, Serializable {
 	 * @return true if it does
 	 */
 	public boolean isSharingIndex() {
-		return sharingIndex;
+		return isRoot(getId()) ? false : sharingIndex;
 	}
 
 	/**
@@ -461,13 +461,6 @@ public class App implements ParaObject, Serializable {
 	 */
 	public void setSharingTable(boolean sharingTable) {
 		this.sharingTable = sharingTable;
-	}
-
-	/**
-	 * @return returns true only if app has its own dedicated index and DB table
-	 */
-	public boolean isShared() {
-		return sharingIndex || sharingTable;
 	}
 
 	/**
@@ -1000,6 +993,7 @@ public class App implements ParaObject, Serializable {
 		}
 		if (!isRoot(getAppid())) {
 			// third level apps not allowed
+			logger.error("Child apps cannot contain app objects.");
 			return null;
 		}
 		if (StringUtils.isBlank(secret)) {
