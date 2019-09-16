@@ -482,10 +482,12 @@ public final class AWSDynamoUtils {
 		}
 
 		ScanResponse result = getClient().scan(scanRequest.build());
+		String lastKey = null;
 		LinkedList<P> results = new LinkedList<>();
 		for (Map<String, AttributeValue> item : result.items()) {
 			P obj = fromRow(item);
 			if (obj != null) {
+				lastKey = item.get(Config._KEY).s();
 				results.add(obj);
 			}
 		}
@@ -494,7 +496,7 @@ public final class AWSDynamoUtils {
 			pager.setLastKey(result.lastEvaluatedKey().get(Config._KEY).s());
 		} else if (!results.isEmpty()) {
 			// set last key to be equal to the last result - end reached.
-			pager.setLastKey(results.peekLast().getId());
+			pager.setLastKey(lastKey);
 		}
 		return results;
 	}
