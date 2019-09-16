@@ -437,7 +437,9 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		app.setAdditionalProfiles(Config.ENVIRONMENT);
 		app.setWebApplicationType(WebApplicationType.SERVLET);
 		app.setBannerMode(Banner.Mode.OFF);
-		app.addListeners(new ApplicationPidFileWriter(Config.PARA + "_" + getServerPort() + ".pid"));
+		if (Config.getConfigBoolean("pidfile_enabled", true)) {
+			app.addListeners(new ApplicationPidFileWriter(Config.PARA + "_" + getServerPort() + ".pid"));
+		}
 		initialize(getCoreModules());
 		app.run(args);
 	}
