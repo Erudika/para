@@ -221,10 +221,6 @@ public final class Config {
 	 */
 	public static final String APP_NAME = getConfigParam("app_name", PARA);
 	/**
-	 * The name of the authentication cookie.
-	 */
-	public static final String AUTH_COOKIE = getConfigParam("auth_cookie", PARA.concat("-auth"));
-	/**
 	 * The name of the "return to" cookie.
 	 */
 	public static final String RETURNTO_COOKIE = getConfigParam("returnto_cookie", PARA.concat("-returnto"));

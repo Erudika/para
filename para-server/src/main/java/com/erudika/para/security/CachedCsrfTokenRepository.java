@@ -118,7 +118,8 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	}
 
 	private String getIdentifierFromCookie(HttpServletRequest request) {
-		String cookie = HttpUtils.getStateParam(Config.AUTH_COOKIE, request);
+		String authCookie = Config.getConfigParam("auth_cookie", Config.PARA.concat("-auth"));
+		String cookie = HttpUtils.getStateParam(authCookie, request);
 		String ident = null;
 		if (cookie != null) {
 			String[] ctokens = Utils.base64dec(cookie).split(":");
