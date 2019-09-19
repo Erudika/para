@@ -480,7 +480,9 @@ public class User implements ParaObject {
 	 */
 	@JsonIgnore
 	public boolean isOAuth2User() {
-		return StringUtils.startsWithIgnoreCase(identifier, Config.OAUTH2_PREFIX);
+		return StringUtils.startsWithIgnoreCase(identifier, Config.OAUTH2_PREFIX) ||
+				StringUtils.startsWithIgnoreCase(identifier, Config.OAUTH2_SECOND_PREFIX) ||
+				StringUtils.startsWithIgnoreCase(identifier, Config.OAUTH2_THIRD_PREFIX);
 	}
 
 	/**

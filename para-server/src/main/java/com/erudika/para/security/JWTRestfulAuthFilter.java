@@ -296,6 +296,10 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			return slackAuth.getOrCreateUser(app, accessToken);
 		} else if ("oauth2".equalsIgnoreCase(identityProvider)) {
 			return oauth2Auth.getOrCreateUser(app, accessToken);
+		} else if ("oauth2second".equalsIgnoreCase(identityProvider)) {
+			return oauth2Auth.getOrCreateUser(app, accessToken, "second");
+		} else if ("oauth2third".equalsIgnoreCase(identityProvider)) {
+			return oauth2Auth.getOrCreateUser(app, accessToken, "third");
 		} else if ("ldap".equalsIgnoreCase(identityProvider)) {
 			return ldapAuth.getOrCreateUser(app, accessToken);
 		} else if ("password".equalsIgnoreCase(identityProvider)) {
@@ -477,7 +481,8 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			// Send user password (access token) to IDP for validation:
 			// - if token delegation is enabled AND
 			// - if the generic OAuth 2 filter is used
-			if ("oauth2".equalsIgnoreCase(identityProvider) && oauth2Auth.isAccessTokenDelegationEnabled(app) &&
+			if ("oauth2".equalsIgnoreCase(identityProvider) &&
+					oauth2Auth.isAccessTokenDelegationEnabled(app, user) &&
 					!oauth2Auth.isValidAccessToken(app, user)) {
 				logger.debug("The access token delegated from '" + identityProvider + "' is invalid for " +
 						user.getAppid() + "/" + user.getId());

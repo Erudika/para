@@ -106,6 +106,10 @@ public final class Config {
 	public static final String SLACK_PREFIX = "sl" + SEPARATOR;
 	/** OAuth2 generic prefix - defaults to 'oa2:'. */
 	public static final String OAUTH2_PREFIX = "oa2" + SEPARATOR;
+	/** OAuth2 second generic prefix - defaults to 'oa2second:'. */
+	public static final String OAUTH2_SECOND_PREFIX = "oa2second" + SEPARATOR;
+	/** OAuth2 third generic prefix - defaults to 'oa2third:'. */
+	public static final String OAUTH2_THIRD_PREFIX = "oa2third" + SEPARATOR;
 	/** LDAP prefix - defaults to 'ldap:'. */
 	public static final String LDAP_PREFIX = "ldap" + SEPARATOR;
 	/** SAML prefix - defaults to 'saml:'. */

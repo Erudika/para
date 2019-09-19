@@ -66,6 +66,8 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	 * The default filter mapping.
 	 */
 	public static final String OAUTH2_ACTION = "oauth2_auth";
+	public static final String OAUTH2_SECOND_ACTION = "oauth2second_auth";
+	public static final String OAUTH2_THIRD_ACTION = "oauth2third_auth";
 
 	/**
 	 * Default constructor.
@@ -98,14 +100,17 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			throws IOException {
 		final String requestURI = request.getRequestURI();
 		UserAuthentication userAuth = null;
+		boolean isSecond = requestURI.endsWith(OAUTH2_SECOND_ACTION);
+		boolean isThird = requestURI.endsWith(OAUTH2_THIRD_ACTION);
 
-		if (requestURI.endsWith(OAUTH2_ACTION)) {
+		if (requestURI.endsWith(OAUTH2_ACTION) || isSecond || isThird) {
+			String alias = isThird ? "third" : (isSecond ? "second" : "");
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = SecurityUtils.getAppidFromAuthRequest(request);
 				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
 
-				Map<String, Object> token = tokenRequest(app, authCode, SecurityUtils.getRedirectUrl(request));
+				Map<String, Object> token = tokenRequest(app, authCode, SecurityUtils.getRedirectUrl(request), alias);
 				if (token != null && token.containsKey("access_token")) {
 					userAuth = getOrCreateUser(app, token.get("access_token") +
 							Config.SEPARATOR + token.get("refresh_token"));
@@ -124,6 +129,18 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	 * @throws IOException ex if connection fails
 	 */
 	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
+		return getOrCreateUser(app, accessToken, null);
+	}
+
+	/**
+	 * Calls an external API to get the user profile using a given access token.
+	 * @param app the app where the user will be created, use null for root app
+	 * @param accessToken access token
+	 * @param alias alias
+	 * @return {@link UserAuthentication} object or null if something went wrong
+	 * @throws IOException ex if connection fails
+	 */
+	public UserAuthentication getOrCreateUser(App app, String accessToken, String alias) throws IOException {
 		UserAuthentication userAuth = null;
 		User user = new User();
 		if (accessToken != null) {
@@ -134,14 +151,14 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 				refreshToken = tokens[1];
 			}
 
-			boolean tokenDelegationEnabled = isAccessTokenDelegationEnabled(app);
-			Map<String, Object> profile = fetchProfileFromIDP(app, accessToken);
+			boolean tokenDelegationEnabled = isAccessTokenDelegationEnabled(app, alias);
+			Map<String, Object> profile = fetchProfileFromIDP(app, accessToken, alias);
 
-			String accountIdParam = SecurityUtils.getSettingForApp(app, "security.oauth.parameters.id", "sub");
-			String pictureParam = SecurityUtils.getSettingForApp(app, "security.oauth.parameters.picture", "picture");
-			String emailDomain = SecurityUtils.getSettingForApp(app, "security.oauth.domain", "paraio.com");
-			String emailParam = SecurityUtils.getSettingForApp(app, "security.oauth.parameters.email", "email");
-			String nameParam = SecurityUtils.getSettingForApp(app, "security.oauth.parameters.name", "name");
+			String accountIdParam = SecurityUtils.getSettingForApp(app, configKey("parameters.id", alias), "sub");
+			String pictureParam = SecurityUtils.getSettingForApp(app, configKey("parameters.picture", alias), "picture");
+			String emailDomain = SecurityUtils.getSettingForApp(app, configKey("domain", alias), "paraio.com");
+			String emailParam = SecurityUtils.getSettingForApp(app, configKey("parameters.email", alias), "email");
+			String nameParam = SecurityUtils.getSettingForApp(app, configKey("parameters.name", alias), "name");
 
 			if (profile != null && profile.containsKey(accountIdParam)) {
 				String oauthAccountId = (String) profile.get(accountIdParam);
@@ -150,7 +167,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 				String name = (String) profile.get(nameParam);
 
 				user.setAppid(getAppid(app));
-				user.setIdentifier(Config.OAUTH2_PREFIX.concat(oauthAccountId));
+				user.setIdentifier(oauthPrefix(alias).concat(oauthAccountId));
 				user.setEmail(email);
 				user = User.readUserForIdentifier(user);
 				if (user == null) {
@@ -166,7 +183,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 						user.setIdpRefreshToken(refreshToken);
 					}
 					user.setPicture(getPicture(pic));
-					user.setIdentifier(Config.OAUTH2_PREFIX.concat(oauthAccountId));
+					user.setIdentifier(oauthPrefix(alias).concat(oauthAccountId));
 					String id = user.create();
 					if (id == null) {
 						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
@@ -209,11 +226,16 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	/**
 	 * If true, access tokens from the IDP are stored inside the user object and sent back to IDP for validation.
 	 * @param app an app object
+	 * @param user user
 	 * @return false by default
 	 */
-	public boolean isAccessTokenDelegationEnabled(App app) {
+	public boolean isAccessTokenDelegationEnabled(App app, User user) {
+		return isAccessTokenDelegationEnabled(app, oauthAlias(user.getIdentifier()));
+	}
+
+	private boolean isAccessTokenDelegationEnabled(App app, String alias) {
 		return Boolean.parseBoolean(SecurityUtils.getSettingForApp(app,
-				"security.oauth.token_delegation_enabled", "false"));
+				configKey("token_delegation_enabled", alias), "false"));
 	}
 
 	/**
@@ -224,13 +246,14 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	 */
 	public boolean isValidAccessToken(App app, User user) {
 		try {
-			Map<String, Object> profile = fetchProfileFromIDP(app, user.getIdpAccessToken());
+			String alias = oauthAlias(user.getIdentifier());
+			Map<String, Object> profile = fetchProfileFromIDP(app, user.getIdpAccessToken(), alias);
 			if (profile == null && user.getIdpRefreshToken() != null) {
 				refreshTokens(app, user);
-				profile = fetchProfileFromIDP(app, user.getIdpAccessToken());
+				profile = fetchProfileFromIDP(app, user.getIdpAccessToken(), alias);
 			}
 			return profile != null && profile.containsKey(SecurityUtils.getSettingForApp(app,
-					"security.oauth.parameters.id", "sub"));
+					configKey("parameters.id", alias), "sub"));
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;
@@ -244,10 +267,10 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	 * @return null if the token was invalid or a map containing user information
 	 * @throws IOException if connection fails
 	 */
-	private Map<String, Object> fetchProfileFromIDP(App app, String accessToken) throws IOException {
+	private Map<String, Object> fetchProfileFromIDP(App app, String accessToken, String alias) throws IOException {
 		Map<String, Object> profile = null;
-		String acceptHeader = SecurityUtils.getSettingForApp(app, "security.oauth.accept_header", "");
-		HttpGet profileGet = new HttpGet(SecurityUtils.getSettingForApp(app, "security.oauth.profile_url", ""));
+		String acceptHeader = SecurityUtils.getSettingForApp(app, configKey("accept_header", alias), "");
+		HttpGet profileGet = new HttpGet(SecurityUtils.getSettingForApp(app, configKey("profile_url", alias), ""));
 		profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
 		if (!StringUtils.isBlank(acceptHeader)) {
@@ -265,7 +288,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	}
 
 	private void refreshTokens(App app, User user) throws IOException {
-		Map<String, Object> token = tokenRequest(app, user.getIdpRefreshToken(), null);
+		Map<String, Object> token = tokenRequest(app, user.getIdpRefreshToken(), null, oauthAlias(user.getIdentifier()));
 		if (token != null && token.containsKey("access_token")) {
 			user.setIdpAccessToken((String) token.get("access_token"));
 			String newRefresh = (String) token.get("refresh_token");
@@ -276,22 +299,22 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		}
 	}
 
-	private Map<String, Object> tokenRequest(App app, String authCodeOrRefreshToken, String redirectURI) throws IOException {
-		String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.OAUTH2_PREFIX);
+	private Map<String, Object> tokenRequest(App app, String authCodeOrRefreshToken, String redirectURI, String alias)
+			throws IOException {
+		String[] keys = SecurityUtils.getOAuthKeysForApp(app, oauthPrefix(alias));
 
 		String entity;
+		String scope = SecurityUtils.getSettingForApp(app, configKey("scope", alias), "");
 		if (redirectURI == null) {
 			entity = Utils.formatMessage(REFRESH_PAYLOAD, authCodeOrRefreshToken,
-					URLEncoder.encode(SecurityUtils.getSettingForApp(app, "security.oauth.scope", ""), "UTF-8"),
-					keys[0], keys[1]);
+					URLEncoder.encode(scope, "UTF-8"), keys[0], keys[1]);
 		} else {
 			entity = Utils.formatMessage(PAYLOAD, authCodeOrRefreshToken, Utils.urlEncode(redirectURI),
-					URLEncoder.encode(SecurityUtils.getSettingForApp(app, "security.oauth.scope", ""), "UTF-8"),
-					keys[0], keys[1]);
+					URLEncoder.encode(scope, "UTF-8"), keys[0], keys[1]);
 		}
 
-		String acceptHeader = SecurityUtils.getSettingForApp(app, "security.oauth.accept_header", "");
-		HttpPost tokenPost = new HttpPost(SecurityUtils.getSettingForApp(app, "security.oauth.token_url", ""));
+		String acceptHeader = SecurityUtils.getSettingForApp(app, configKey("accept_header", alias), "");
+		HttpPost tokenPost = new HttpPost(SecurityUtils.getSettingForApp(app, configKey("token_url", alias), ""));
 		tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 		tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
 		if (!StringUtils.isBlank(acceptHeader)) {
@@ -306,6 +329,33 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			}
 		}
 		return tokens;
+	}
+
+	private String oauthPrefix(String alias) {
+		if ("third".equalsIgnoreCase(alias)) {
+			return Config.OAUTH2_THIRD_PREFIX;
+		} else if ("second".equalsIgnoreCase(alias)) {
+			return Config.OAUTH2_SECOND_PREFIX;
+		} else {
+			return Config.OAUTH2_PREFIX;
+		}
+	}
+
+	private String oauthAlias(String identifier) {
+		if (identifier.startsWith(Config.OAUTH2_THIRD_PREFIX)) {
+			return "third";
+		} else if (identifier.startsWith(Config.OAUTH2_SECOND_PREFIX)) {
+			return "second";
+		} else {
+			return "";
+		}
+	}
+
+	private String configKey(String key, String alias) {
+		if (StringUtils.isBlank(alias)) {
+			return "security.oauth." + key;
+		}
+		return "security.oauth" + alias + "." + key;
 	}
 
 	private static String getPicture(String pic) {
