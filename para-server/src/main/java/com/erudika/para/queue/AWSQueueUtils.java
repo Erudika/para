@@ -226,8 +226,10 @@ public final class AWSQueueUtils {
 				logException(ase);
 			} catch (SdkException ace) {
 				logger.error("Could not reach SQS. {}", ace.toString());
-			} catch (InterruptedException | ExecutionException ex) {
-				logger.error(null, ex);
+			} catch (ExecutionException ee) {
+				logger.error("SQS Execution exception. {}", ee.toString());
+			} catch (InterruptedException ex) {
+				logger.error("Interrupted while pulling messages from queue!", ex);
 				Thread.currentThread().interrupt();
 			}
 		}

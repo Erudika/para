@@ -30,7 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 public class QueueModule extends AbstractModule {
 
 	protected void configure() {
-		String selectedQueue = Config.getConfigParam("queue", "");
+		String selectedQueue = Config.getConfigParam("q", "");
 		if (StringUtils.isBlank(selectedQueue)) {
 			if ("embedded".equals(Config.ENVIRONMENT)) {
 				bindToDefault();
