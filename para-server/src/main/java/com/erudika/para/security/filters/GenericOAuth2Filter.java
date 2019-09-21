@@ -66,7 +66,13 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	 * The default filter mapping.
 	 */
 	public static final String OAUTH2_ACTION = "oauth2_auth";
+	/**
+	 * Second filter mapping.
+	 */
 	public static final String OAUTH2_SECOND_ACTION = "oauth2second_auth";
+	/**
+	 * Third filter mapping.
+	 */
 	public static final String OAUTH2_THIRD_ACTION = "oauth2third_auth";
 
 	/**
