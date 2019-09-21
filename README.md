@@ -277,6 +277,7 @@ The `Queue` interface is implemented by:
 - [ParaIO.com](https://paraio.com) - managed Para hosting
 - [Erudika.com](https://erudika.com/blog) - the search bar on our blog uses Para
 - [Angular2 demo app](https://github.com/albogdano/angular2-para) - a sample Angular2 project
+- [React demo app](https://github.com/albogdano/react-para) - a sample React project
 
 ## Wishlist / Roadmap
 
