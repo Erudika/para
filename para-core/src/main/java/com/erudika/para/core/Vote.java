@@ -57,7 +57,8 @@ public class Vote implements ParaObject {
 	@Stored private Boolean cached;
 
 	@Stored @Locked @NotBlank private String value;
-	@Stored @Locked @NotNull private Long expiresAfter;
+	@Stored @Locked @NotNull private Integer expiresAfter;
+	@Stored @Locked @NotNull private Integer lockedAfter;
 
 	/**
 	 * No-args constructor.
@@ -78,7 +79,8 @@ public class Vote implements ParaObject {
 		timestamp = Utils.timestamp();
 		setName(getType());
 		this.value = value != null ? value.toString() : null;
-		this.expiresAfter = (long) Config.VOTE_EXPIRES_AFTER_SEC;
+		this.expiresAfter = Config.VOTE_EXPIRES_AFTER_SEC;
+		this.lockedAfter = Config.VOTE_LOCKED_AFTER_SEC;
 	}
 
 	@Override
@@ -142,9 +144,9 @@ public class Vote implements ParaObject {
 	 * Returns the expiration period.
 	 * @return time in seconds
 	 */
-	public Long getExpiresAfter() {
+	public Integer getExpiresAfter() {
 		if (expiresAfter == null) {
-			expiresAfter = (long) Config.VOTE_EXPIRES_AFTER_SEC;
+			expiresAfter = Config.VOTE_EXPIRES_AFTER_SEC;
 		}
 		return expiresAfter;
 	}
@@ -153,8 +155,27 @@ public class Vote implements ParaObject {
 	 * Sets the expiration period.
 	 * @param expiresAfter time in seconds
 	 */
-	public void setExpiresAfter(Long expiresAfter) {
+	public void setExpiresAfter(Integer expiresAfter) {
 		this.expiresAfter = expiresAfter;
+	}
+
+	/**
+	 * The period during which a vote can be amended.
+	 * @return lock after period in seconds
+	 */
+	public Integer getLockedAfter() {
+		if (lockedAfter == null) {
+			lockedAfter = Config.VOTE_LOCKED_AFTER_SEC;
+		}
+		return lockedAfter;
+	}
+
+	/**
+	 * Sets the lock after period.
+	 * @param lockedAfter time in seconds
+	 */
+	public void setLockedAfter(Integer lockedAfter) {
+		this.lockedAfter = lockedAfter;
 	}
 
 	/**
@@ -165,7 +186,7 @@ public class Vote implements ParaObject {
 		if (getTimestamp() == null || getExpiresAfter() == 0) {
 			return false;
 		}
-		long expires = (getExpiresAfter() * 1000);
+		long expires = (getExpiresAfter() * 1000L);
 		long now = Utils.timestamp();
 		return (getTimestamp() + expires) <= now;
 	}
@@ -180,7 +201,7 @@ public class Vote implements ParaObject {
 		}
 		long now = Utils.timestamp();
 		// check timestamp for recent correction,
-		return (getTimestamp() + (Config.VOTE_LOCKED_AFTER_SEC * 1000)) > now;
+		return (getTimestamp() + (getLockedAfter() * 1000L)) > now;
 	}
 
 	////////////////////////////////////////////////////////

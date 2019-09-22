@@ -82,7 +82,7 @@ public class VoteTest {
 
 		// isAmendable() = false
 		v = dao.read("vote:111:222");
-		v.setExpiresAfter(0L);
+		v.setExpiresAfter(0);
 		v.setTimestamp(-1234L);
 		dao.create(v);
 

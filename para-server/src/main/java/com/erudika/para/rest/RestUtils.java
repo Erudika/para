@@ -24,6 +24,7 @@ import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
+import com.erudika.para.core.Votable;
 import com.erudika.para.metrics.Metrics;
 import static com.erudika.para.security.SecurityUtils.checkIfUserCanModifyObject;
 import static com.erudika.para.security.SecurityUtils.checkImplicitAppPermissions;
@@ -271,16 +272,32 @@ public final class RestUtils {
 	public static Response getVotingResponse(ParaObject object, Map<String, Object> entity) {
 		boolean voteSuccess = false;
 		if (object != null && entity != null) {
-			String upvoterId = (String) entity.get("_voteup");
-			String downvoterId = (String) entity.get("_votedown");
-			if (!StringUtils.isBlank(upvoterId)) {
-				voteSuccess = object.voteUp(upvoterId);
-			} else if (!StringUtils.isBlank(downvoterId)) {
-				voteSuccess = object.voteDown(downvoterId);
-	}
-			if (voteSuccess) {
-				object.update();
-			}
+//			try {
+				String upvoterId = (String) entity.get("_voteup");
+				String downvoterId = (String) entity.get("_votedown");
+				Integer lockAfter = (Integer) entity.get("_vote_locked_after");
+				Integer expiresAfter = (Integer) entity.get("_vote_expires_after");
+				if (!StringUtils.isBlank(upvoterId)) {
+					if (lockAfter == null && expiresAfter == null) {
+						voteSuccess = object.voteUp(upvoterId);
+					} else {
+						voteSuccess = CoreUtils.getInstance().
+								vote(object, upvoterId, Votable.VoteValue.UP, expiresAfter, lockAfter);
+					}
+				} else if (!StringUtils.isBlank(downvoterId)) {
+					if (lockAfter == null && expiresAfter == null) {
+						voteSuccess = object.voteDown(downvoterId);
+					} else {
+						voteSuccess = CoreUtils.getInstance().
+								vote(object, upvoterId, Votable.VoteValue.DOWN, expiresAfter, lockAfter);
+					}
+				}
+				if (voteSuccess) {
+					object.update();
+				}
+//			} catch (Exception e) {
+//				return Response.ok(false).build();
+//			}
 		}
 		return Response.ok(voteSuccess).build();
 	}

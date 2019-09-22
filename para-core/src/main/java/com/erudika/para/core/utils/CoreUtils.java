@@ -379,6 +379,11 @@ public enum CoreUtils implements InitializeListener {
 
 		@Override
 		public boolean vote(ParaObject votable, String userid, VoteValue upDown) {
+			return vote(votable, userid, upDown, null, null);
+		}
+
+		@Override
+		public boolean vote(ParaObject votable, String userid, VoteValue upDown, Integer expiresAfter, Integer lockedAfter) {
 			if (StringUtils.isBlank(userid) || votable == null || votable.getId() == null || upDown == null) {
 				return false;
 			}
@@ -388,6 +393,12 @@ public enum CoreUtils implements InitializeListener {
 			}
 
 			Vote v = new Vote(userid, votable.getId(), upDown);
+			if (expiresAfter != null) {
+				v.setExpiresAfter(expiresAfter);
+			}
+			if (lockedAfter != null) {
+				v.setLockedAfter(lockedAfter);
+			}
 			Vote saved = getDao().read(votable.getAppid(), v.getId());
 			boolean done = false;
 
@@ -719,4 +730,17 @@ public enum CoreUtils implements InitializeListener {
 	 * @return true if the vote was successful
 	 */
 	public abstract boolean vote(ParaObject votable, String userid, Votable.VoteValue upDown);
+
+	/**
+	 * Casts a vote on a given object.
+	 *
+	 * @param votable the object to vote on
+	 * @param userid the voter
+	 * @param upDown up or down
+	 * @param expiresAfter expires after seconds
+	 * @param lockedAfter locked after seconds
+	 * @return true if the vote was successful
+	 */
+	public abstract boolean vote(ParaObject votable, String userid, Votable.VoteValue upDown,
+			Integer expiresAfter, Integer lockedAfter);
 }

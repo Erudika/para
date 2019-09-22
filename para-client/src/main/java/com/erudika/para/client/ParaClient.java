@@ -1310,11 +1310,30 @@ public final class ParaClient {
 	 * @return true if vote was successful
 	 */
 	public boolean voteUp(ParaObject obj, String voterid) {
+		return voteUp(obj, voterid, null, null);
+	}
+
+	/**
+	 * Upvote an object and register the vote in DB.
+	 * @param obj the object to receive +1 votes
+	 * @param voterid the userid of the voter
+	 * @param expiresAfter expires after seconds
+	 * @param lockedAfter locked after seconds
+	 * @return true if vote was successful
+	 */
+	public boolean voteUp(ParaObject obj, String voterid, Integer expiresAfter, Integer lockedAfter) {
 		if (obj == null || StringUtils.isBlank(voterid)) {
 			return false;
 		}
-		return getEntity(invokePatch(obj.getObjectURI(),
-				Entity.json(Collections.singletonMap("_voteup", voterid))), Boolean.class);
+		if (expiresAfter == null && lockedAfter == null) {
+			return getEntity(invokePatch(obj.getObjectURI(),
+					Entity.json(Collections.singletonMap("_voteup", voterid))), Boolean.class);
+		}
+		Map<String, Object> vote = new HashMap<>();
+		vote.put("_voteup", voterid);
+		vote.put("_vote_locked_after", lockedAfter);
+		vote.put("_vote_expires_after", expiresAfter);
+		return getEntity(invokePatch(obj.getObjectURI(), Entity.json(vote)), Boolean.class);
 	}
 
 	/**
@@ -1324,11 +1343,30 @@ public final class ParaClient {
 	 * @return true if vote was successful
 	 */
 	public boolean voteDown(ParaObject obj, String voterid) {
+		return voteDown(obj, voterid, null, null);
+	}
+
+	/**
+	 * Downvote an object and register the vote in DB.
+	 * @param obj the object to receive -1 votes
+	 * @param voterid the userid of the voter
+	 * @param expiresAfter expires after seconds
+	 * @param lockedAfter locked after seconds
+	 * @return true if vote was successful
+	 */
+	public boolean voteDown(ParaObject obj, String voterid, Integer expiresAfter, Integer lockedAfter) {
 		if (obj == null || StringUtils.isBlank(voterid)) {
 			return false;
 		}
-		return getEntity(invokePatch(obj.getObjectURI(),
-				Entity.json(Collections.singletonMap("_votedown", voterid))), Boolean.class);
+		if (expiresAfter == null && lockedAfter == null) {
+			return getEntity(invokePatch(obj.getObjectURI(),
+					Entity.json(Collections.singletonMap("_votedown", voterid))), Boolean.class);
+		}
+		Map<String, Object> vote = new HashMap<>();
+		vote.put("_votedown", voterid);
+		vote.put("_vote_locked_after", lockedAfter);
+		vote.put("_vote_expires_after", expiresAfter);
+		return getEntity(invokePatch(obj.getObjectURI(), Entity.json(vote)), Boolean.class);
 	}
 
 	/**
