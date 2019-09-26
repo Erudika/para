@@ -49,6 +49,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -344,6 +345,8 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 						}
 						// Disable Jetty version header
 						dcf.getHttpConfiguration().setSendServerVersion(false);
+						// Increase idle timeout
+						dcf.getHttpConfiguration().setIdleTimeout(TimeUnit.MINUTES.toMillis(5));
 					}
 				}
 			}
