@@ -49,9 +49,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -524,6 +526,7 @@ public final class RestUtils {
 				RestUtils.class, "batch", "create")) {
 			if (app != null) {
 				final LinkedList<ParaObject> newObjects = new LinkedList<>();
+				Set<String> ids = new LinkedHashSet<>();
 				Response entityRes = getEntity(is, List.class);
 				if (entityRes.getStatusInfo() == Response.Status.OK) {
 					List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
@@ -536,6 +539,11 @@ public final class RestUtils {
 							if (pobj != null && isValidObject(app, pobj)) {
 								pobj.setAppid(app.getAppIdentifier());
 								setCreatorid(app, pobj);
+								if (pobj.getId() != null && ids.contains(pobj.getId())) {
+									logger.warn("Batch contains objects with duplicate ids. "
+											+ "Duplicate object {} might not be persisted!", pobj.getId());
+								}
+								ids.add(pobj.getId());
 								newObjects.add(pobj);
 							}
 						}

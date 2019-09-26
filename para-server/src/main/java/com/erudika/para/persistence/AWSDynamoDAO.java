@@ -52,6 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
@@ -68,7 +69,7 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 public class AWSDynamoDAO implements DAO {
 
 	private static final Logger logger = LoggerFactory.getLogger(AWSDynamoDAO.class);
-	private static final int MAX_ITEMS_PER_WRITE = 20;
+	private static final int MAX_ITEMS_PER_WRITE = 25;
 	private static final int MAX_KEYS_PER_READ = 100;
 
 	/**
@@ -271,7 +272,7 @@ public class AWSDynamoDAO implements DAO {
 			return;
 		}
 
-		List<WriteRequest> reqs = new ArrayList<>(objects.size());
+		Map<String, WriteRequest> reqs = new LinkedHashMap<>(objects.size());
 		int batchSteps = 1;
 		if ((objects.size() > MAX_ITEMS_PER_WRITE)) {
 			batchSteps = (objects.size() / MAX_ITEMS_PER_WRITE) +
@@ -295,10 +296,10 @@ public class AWSDynamoDAO implements DAO {
 				object.setAppid(appid);
 				Map<String, AttributeValue> row = toRow(object, null);
 				setRowKey(getKeyForAppid(object.getId(), appid), row);
-				reqs.add(WriteRequest.builder().putRequest(b -> b.item(row)).build());
+				reqs.put(object.getId(), WriteRequest.builder().putRequest(b -> b.item(row)).build());
 				j++;
 			}
-			batchWrite(Collections.singletonMap(tableName, reqs), 1);
+			batchWrite(Collections.singletonMap(tableName, reqs.values().stream().collect(Collectors.toList())), 1);
 			reqs.clear();
 			j = 0;
 		}
@@ -404,13 +405,30 @@ public class AWSDynamoDAO implements DAO {
 			return;
 		}
 
-		List<WriteRequest> reqs = new ArrayList<>(objects.size());
-		for (ParaObject object : objects) {
-			if (object != null) {
-				reqs.add(WriteRequest.builder().deleteRequest(b -> b.key(rowKey(object.getId(), appid))).build());
-			}
+		Map<String, WriteRequest> reqs = new LinkedHashMap<>(objects.size());
+		int batchSteps = 1;
+		if ((objects.size() > MAX_ITEMS_PER_WRITE)) {
+			batchSteps = (objects.size() / MAX_ITEMS_PER_WRITE)
+					+ ((objects.size() % MAX_ITEMS_PER_WRITE > 0) ? 1 : 0);
 		}
-		batchWrite(Collections.singletonMap(getTableNameForAppid(appid), reqs), 1);
+
+		Iterator<P> it = objects.iterator();
+		String tableName = getTableNameForAppid(appid);
+		int j = 0;
+
+		for (int i = 0; i < batchSteps; i++) {
+			while (it.hasNext() && j < MAX_ITEMS_PER_WRITE) {
+				ParaObject object = it.next();
+				if (object != null) {
+					reqs.put(object.getId(), WriteRequest.builder().
+							deleteRequest(b -> b.key(rowKey(object.getId(), appid))).build());
+					j++;
+				}
+			}
+			batchWrite(Collections.singletonMap(tableName, reqs.values().stream().collect(Collectors.toList())), 1);
+			reqs.clear();
+			j = 0;
+		}
 		logger.debug("DAO.deleteAll() {}", objects.size());
 	}
 

@@ -444,12 +444,13 @@ public final class AWSDynamoUtils {
 			return;
 		}
 		try {
+			logger.debug("batchWrite(): requests {}, backoff {}", items.values().iterator().next().size(), backoff);
 			BatchWriteItemResponse result = getClient().batchWriteItem(b -> b.
 					returnConsumedCapacity(ReturnConsumedCapacity.TOTAL).requestItems(items));
 			if (result == null) {
 				return;
 			}
-			logger.debug("batchWrite(): total {}, cc {}", items.size(), result.consumedCapacity());
+			logger.debug("batchWrite(): success - consumed capacity {}", result.consumedCapacity());
 
 			if (result.unprocessedItems() != null && !result.unprocessedItems().isEmpty()) {
 				Thread.sleep((long) backoff * 1000L);
