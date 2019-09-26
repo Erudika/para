@@ -612,20 +612,15 @@ public final class RestUtils {
 				RestUtils.class, "batch", "delete")) {
 			LinkedList<ParaObject> objects = new LinkedList<>();
 			if (app != null && ids != null && !ids.isEmpty()) {
-				if (ids.size() <= Config.MAX_ITEMS_PER_PAGE) {
-					for (ParaObject pobj : Para.getDAO().readAll(app.getAppIdentifier(), ids, true).values()) {
-						if (pobj != null && pobj.getId() != null && pobj.getType() != null) {
-							// deleting apps in batch is not allowed
-							if (isNotAnApp(pobj.getType()) && checkIfUserCanModifyObject(app, pobj)) {
-								objects.add(pobj);
-							}
+				for (ParaObject pobj : Para.getDAO().readAll(app.getAppIdentifier(), ids, true).values()) {
+					if (pobj != null && pobj.getId() != null && pobj.getType() != null) {
+						// deleting apps in batch is not allowed
+						if (isNotAnApp(pobj.getType()) && checkIfUserCanModifyObject(app, pobj)) {
+							objects.add(pobj);
 						}
 					}
-					Para.getDAO().deleteAll(app.getAppIdentifier(), objects);
-				} else {
-					return getStatusResponse(Response.Status.BAD_REQUEST,
-							"Limit reached. Maximum number of items to delete is " + Config.MAX_ITEMS_PER_PAGE);
 				}
+				Para.getDAO().deleteAll(app.getAppIdentifier(), objects);
 			} else {
 				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing ids.");
 			}
