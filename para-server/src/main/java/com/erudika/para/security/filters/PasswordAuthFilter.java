@@ -98,12 +98,26 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 */
 	public UserAuthentication getOrCreateUser(App app, String accessToken) {
+		return getOrCreateUser(app, accessToken,
+				Boolean.parseBoolean(SecurityUtils.getSettingForApp(app, "security.allow_unverified_emails",
+						Config.getConfigParam("security.allow_unverified_emails", "false"))));
+	}
+
+	/**
+	 * Authenticates or creates a {@link User} using an email and password.
+	 * Access token must be in the format: "email:full_name:password" or "email::password_hash"
+	 * @param app the app where the user will be created, use null for root app
+	 * @param accessToken token in the format "email:full_name:password" or "email::password_hash"
+	 * @param verified is the user verified already, e.g. coming from LDAP, SAML, etc. sets "active:true"
+	 * @return {@link UserAuthentication} object or null if something went wrong
+	 */
+	public UserAuthentication getOrCreateUser(App app, String accessToken, boolean verified) {
 		UserAuthentication userAuth = null;
 		User user = new User();
 		if (accessToken != null && accessToken.contains(Config.SEPARATOR)) {
 			String[] parts = accessToken.split(Config.SEPARATOR, 3);
 			String email = parts[0];
-			String name = parts[1];
+			String name = StringUtils.trimToEmpty(parts[1]);
 			String pass = (parts.length > 2) ? parts[2] : "";
 
 			String appid = (app == null) ? null : app.getAppIdentifier();
@@ -117,8 +131,7 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 			user = User.readUserForIdentifier(u);
 			if (user == null) {
 				user = new User();
-				user.setActive(Boolean.parseBoolean(SecurityUtils.getSettingForApp(app, "security.allow_unverified_emails",
-						Config.getConfigParam("security.allow_unverified_emails", "false"))));
+				user.setActive(verified);
 				user.setAppid(appid);
 				user.setName(name);
 				user.setIdentifier(email);
