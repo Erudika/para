@@ -633,7 +633,7 @@ public class User implements ParaObject {
 					findTerms(u.getAppid(), u.getType(), terms, true, new Pager(1));
 			if (!users.isEmpty()) {
 				user = users.get(0);
-				password = Utils.generateSecurityToken();
+				password = StringUtils.isBlank(u.getPassword()) ? Utils.generateSecurityToken() : u.getPassword();
 				user.createIdentifier(u.getIdentifier(), password);
 			}
 		}
