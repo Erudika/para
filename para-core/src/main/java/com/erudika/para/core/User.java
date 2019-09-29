@@ -633,12 +633,14 @@ public class User implements ParaObject {
 					findTerms(u.getAppid(), u.getType(), terms, true, new Pager(1));
 			if (!users.isEmpty()) {
 				user = users.get(0);
-				password = StringUtils.isBlank(u.getPassword()) ? Utils.generateSecurityToken() : u.getPassword();
+				// keep this random! dangerous to set it to user.getPassword()
+				password = Utils.generateSecurityToken();
 				user.createIdentifier(u.getIdentifier(), password);
 			}
 		}
 		if (user != null) {
 			if (password != null) {
+				// used for remember me token signature calculations
 				user.setPassword(password);
 			}
 			if (!identifier.equals(user.getIdentifier())) {
