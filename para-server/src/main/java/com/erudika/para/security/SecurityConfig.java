@@ -28,6 +28,7 @@ import com.erudika.para.security.filters.GenericOAuth2Filter;
 import com.erudika.para.security.filters.FacebookAuthFilter;
 import static com.erudika.para.ParaServer.getInstance;
 import com.erudika.para.security.filters.LdapAuthFilter;
+import com.erudika.para.security.filters.PasswordlessAuthFilter;
 import com.erudika.para.security.filters.SAMLAuthFilter;
 import com.erudika.para.security.filters.SAMLMetadataFilter;
 import com.erudika.para.security.filters.SlackAuthFilter;
@@ -70,6 +71,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	private final CachedCsrfTokenRepository csrfTokenRepository;
 	private final SimpleRememberMeServices rememberMeServices;
 	private final PasswordAuthFilter passwordFilter;
+	private final PasswordlessAuthFilter passwordlessFilter;
 	private final OpenIDAuthFilter openidFilter;
 	private final FacebookAuthFilter facebookFilter;
 	private final GoogleAuthFilter googleFilter;
@@ -91,6 +93,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		csrfTokenRepository = getInstance(CachedCsrfTokenRepository.class);
 		rememberMeServices = getInstance(SimpleRememberMeServices.class);
 		passwordFilter = getInstance(PasswordAuthFilter.class);
+		passwordlessFilter = getInstance(PasswordlessAuthFilter.class);
 		openidFilter = getInstance(OpenIDAuthFilter.class);
 		facebookFilter = getInstance(FacebookAuthFilter.class);
 		googleFilter = getInstance(GoogleAuthFilter.class);
@@ -198,6 +201,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		if (passwordFilter != null) {
 			passwordFilter.setAuthenticationManager(authenticationManager());
 			http.addFilterAfter(passwordFilter, BasicAuthenticationFilter.class);
+		}
+
+		if (passwordlessFilter != null) {
+			passwordlessFilter.setAuthenticationManager(authenticationManager());
+			http.addFilterAfter(passwordlessFilter, BasicAuthenticationFilter.class);
 		}
 
 		if (openidFilter != null) {

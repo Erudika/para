@@ -31,6 +31,7 @@ import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
 import com.erudika.para.security.filters.LdapAuthFilter;
+import com.erudika.para.security.filters.PasswordlessAuthFilter;
 import com.erudika.para.security.filters.SlackAuthFilter;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
@@ -79,6 +80,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	private GenericOAuth2Filter oauth2Auth;
 	private LdapAuthFilter ldapAuth;
 	private PasswordAuthFilter passwordAuth;
+	private PasswordlessAuthFilter passwordlessAuth;
 
 	/**
 	 * The default filter mapping.
@@ -304,8 +306,8 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			return ldapAuth.getOrCreateUser(app, accessToken);
 		} else if ("password".equalsIgnoreCase(identityProvider)) {
 			return passwordAuth.getOrCreateUser(app, accessToken);
-		} else if ("password_verified".equalsIgnoreCase(identityProvider)) {
-			return passwordAuth.getOrCreateUser(app, accessToken, true);
+		} else if ("passwordless".equalsIgnoreCase(identityProvider)) {
+			return passwordlessAuth.getOrCreateUser(app, accessToken);
 		}
 		return null;
 	}
@@ -465,6 +467,21 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	@Inject
 	public void setPasswordAuth(PasswordAuthFilter passwordAuth) {
 		this.passwordAuth = passwordAuth;
+	}
+
+	/**
+	 * @return auth filter
+	 */
+	public PasswordlessAuthFilter getPasswordlessAuth() {
+		return passwordlessAuth;
+	}
+
+	/**
+	 * @param passwordlessAuth auth filter
+	 */
+	@Inject
+	public void setPasswordlessAuth(PasswordlessAuthFilter passwordlessAuth) {
+		this.passwordlessAuth = passwordlessAuth;
 	}
 
 	private void validateDelegatedTokenIfNecessary(JWTAuthentication jwt) throws AuthenticationException, IOException {

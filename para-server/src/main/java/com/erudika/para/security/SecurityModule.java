@@ -28,6 +28,7 @@ import com.erudika.para.security.filters.GenericOAuth2Filter;
 import com.erudika.para.security.filters.FacebookAuthFilter;
 import com.erudika.para.cache.Cache;
 import com.erudika.para.security.filters.LdapAuthFilter;
+import com.erudika.para.security.filters.PasswordlessAuthFilter;
 import com.erudika.para.security.filters.SAMLAuthFilter;
 import com.erudika.para.security.filters.SAMLMetadataFilter;
 import com.erudika.para.security.filters.SlackAuthFilter;
@@ -50,6 +51,7 @@ public class SecurityModule extends AbstractModule {
 	private SimpleAuthenticationFailureHandler failureHandler;
 	private SimpleRememberMeServices rememberMeServices;
 	private PasswordAuthFilter passwordFilter;
+	private PasswordlessAuthFilter passwordlessFilter;
 	private OpenIDAuthFilter openidFilter;
 	private FacebookAuthFilter facebookFilter;
 	private GoogleAuthFilter googleFilter;
@@ -170,6 +172,27 @@ public class SecurityModule extends AbstractModule {
 	 */
 	public void setPasswordFilter(PasswordAuthFilter passwordFilter) {
 		this.passwordFilter = passwordFilter;
+	}
+
+	/**
+	 * @return filter
+	 */
+	@Provides
+	public PasswordlessAuthFilter getPasswordlessFilter() {
+		if (passwordlessFilter == null) {
+			passwordlessFilter = new PasswordlessAuthFilter("/" + PasswordlessAuthFilter.PASSWORDLESS_ACTION);
+			passwordlessFilter.setAuthenticationSuccessHandler(getSuccessHandler());
+			passwordlessFilter.setAuthenticationFailureHandler(getFailureHandler());
+			passwordlessFilter.setRememberMeServices(getRemembeMeServices());
+		}
+		return passwordlessFilter;
+	}
+
+	/**
+	 * @param passwordlessFilter filter
+	 */
+	public void setPasswordlessFilter(PasswordlessAuthFilter passwordlessFilter) {
+		this.passwordlessFilter = passwordlessFilter;
 	}
 
 	/**
@@ -437,12 +460,14 @@ public class SecurityModule extends AbstractModule {
 	 * @param oAuth2 filter
 	 * @param ldAuth filter
 	 * @param pwAuth filter
+	 * @param plAuth filter
 	 * @return filter
 	 */
 	@Provides
 	public JWTRestfulAuthFilter getJWTAuthFilter(FacebookAuthFilter fbAuth, GoogleAuthFilter gpAuth,
 			GitHubAuthFilter ghAuth, LinkedInAuthFilter liAuth, TwitterAuthFilter twAuth,
-			MicrosoftAuthFilter msAuth, GenericOAuth2Filter oAuth2, LdapAuthFilter ldAuth, PasswordAuthFilter pwAuth) {
+			MicrosoftAuthFilter msAuth, GenericOAuth2Filter oAuth2, LdapAuthFilter ldAuth,
+			PasswordAuthFilter pwAuth, PasswordlessAuthFilter plAuth) {
 		if (jwtFilter == null) {
 			jwtFilter = new JWTRestfulAuthFilter("/" + JWTRestfulAuthFilter.JWT_ACTION);
 			jwtFilter.setFacebookAuth(fbAuth);
@@ -454,6 +479,7 @@ public class SecurityModule extends AbstractModule {
 			jwtFilter.setGenericOAuth2Auth(oAuth2);
 			jwtFilter.setLdapAuth(ldAuth);
 			jwtFilter.setPasswordAuth(pwAuth);
+			jwtFilter.setPasswordlessAuth(plAuth);
 		}
 		return jwtFilter;
 	}

@@ -24,33 +24,32 @@ import com.erudika.para.security.AuthenticatedUserDetails;
 import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.security.UserAuthentication;
 import com.erudika.para.utils.Config;
+import com.nimbusds.jwt.SignedJWT;
 import java.io.IOException;
+import java.text.ParseException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
 /**
- * A filter that handles simple authentication requests with email and password.
+ * A filter which simply authenticates a users without a password by just verifying a simple JWT. The assumption here
+ * is that users are verified and authenticated externally - LDAP, SAML, custom authentication (SSO).
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
-
-	private static final String PASSWORD = "password";
-	private static final String EMAIL = "email";
+public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	/**
 	 * The default filter mapping.
 	 */
-	public static final String PASSWORD_ACTION = "password_auth";
+	public static final String PASSWORDLESS_ACTION = "passwordless_auth";
 
 	/**
 	 * Default constructor.
 	 * @param defaultFilterProcessesUrl the url of the filter
 	 */
-	public PasswordAuthFilter(String defaultFilterProcessesUrl) {
+	public PasswordlessAuthFilter(String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
 	}
 
@@ -69,67 +68,64 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 		UserAuthentication userAuth = null;
 		User user = null;
 
-		if (requestURI.endsWith(PASSWORD_ACTION)) {
-			user = new User();
-			user.setIdentifier(request.getParameter(EMAIL));
-			user.setPassword(request.getParameter(PASSWORD));
+		if (requestURI.endsWith(PASSWORDLESS_ACTION)) {
 			String appid = SecurityUtils.getAppidFromAuthRequest(request);
-			if (!App.isRoot(appid)) {
-				App app = Para.getDAO().read(App.id(appid));
-				if (app != null) {
+			String token = request.getParameter("token"); // JWT
+			App app = Para.getDAO().read(App.id(appid));
+			if (app != null) {
+				userAuth = getOrCreateUser(app, token);
+				if (userAuth != null) {
+					user = (User) userAuth.getPrincipal();
 					user.setAppid(app.getAppIdentifier());
 				}
-			}
-			if (User.passwordMatches(user) && StringUtils.contains(user.getIdentifier(), "@")) {
-				//success!
-				user = User.readUserForIdentifier(user);
-				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, true);
 	}
 
 	/**
-	 * Authenticates or creates a {@link User} using an email and password.
-	 * Access token must be in the format: "email:full_name:password" or "email::password_hash"
+	 * Authenticates or creates a {@link User} using an signed JWT token.
+	 * Access token must be a valid JWT signed with "para.app_secret_key".
 	 * @param app the app where the user will be created, use null for root app
-	 * @param accessToken token in the format "email:full_name:password" or "email::password_hash"
+	 * @param accessToken JWT
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 */
 	public UserAuthentication getOrCreateUser(App app, String accessToken) {
 		UserAuthentication userAuth = null;
 		User user = new User();
-		if (accessToken != null && accessToken.contains(Config.SEPARATOR)) {
-			String[] parts = accessToken.split(Config.SEPARATOR, 3);
-			String email = parts[0];
-			String name = StringUtils.trimToEmpty(parts[1]);
-			String pass = (parts.length > 2) ? parts[2] : "";
+		String secret = SecurityUtils.getSettingForApp(app, "app_secret_key", "");
+		try {
+			SignedJWT jwt = SignedJWT.parse(accessToken);
+			if (SecurityUtils.isValidJWToken(secret, jwt) && app != null) {
+				String email = jwt.getJWTClaimsSet().getStringClaim(Config._EMAIL);
+				String name = jwt.getJWTClaimsSet().getStringClaim(Config._NAME);
+				String identifier = jwt.getJWTClaimsSet().getStringClaim(Config._IDENTIFIER);;
+				String appid = app.getAppIdentifier();
 
-			String appid = (app == null) ? null : app.getAppIdentifier();
-			User u = new User();
-			u.setAppid(appid);
-			u.setIdentifier(email);
-			u.setPassword(pass);
-			u.setEmail(email);
-			// NOTE TO SELF:
-			// do not overwrite 'u' here - overwrites the password hash!
-			user = User.readUserForIdentifier(u);
-			if (user == null) {
-				user = new User();
-				user.setActive(Boolean.parseBoolean(SecurityUtils.getSettingForApp(app, "security.allow_unverified_emails",
-						Config.getConfigParam("security.allow_unverified_emails", "false"))));
-				user.setAppid(appid);
-				user.setName(name);
-				user.setIdentifier(email);
-				user.setEmail(email);
-				user.setPassword(pass);
-				if (user.create() != null) {
-					// allow temporary first-time login without verifying email address
+				User u = new User();
+				u.setAppid(appid);
+				u.setIdentifier(identifier);
+				u.setEmail(email);
+				// NOTE TO SELF:
+				// do not overwrite 'u' here - overwrites the password hash!
+				user = User.readUserForIdentifier(u);
+				if (user == null) {
+					user = new User();
+					user.setActive(true);
+					user.setAppid(appid);
+					user.setName(name);
+					user.setIdentifier(identifier);
+					user.setEmail(email);
+					if (user.create() != null) {
+						// allow temporary first-time login without verifying email address
+						userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+					}
+				} else {
 					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 				}
-			} else if (User.passwordMatches(u)) {
-				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 			}
+		} catch (ParseException e) {
+			logger.warn("Invalid token: " + e.getMessage());
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);
 	}
