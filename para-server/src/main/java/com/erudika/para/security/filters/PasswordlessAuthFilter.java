@@ -99,7 +99,7 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 			if (SecurityUtils.isValidJWToken(secret, jwt) && app != null) {
 				String email = jwt.getJWTClaimsSet().getStringClaim(Config._EMAIL);
 				String name = jwt.getJWTClaimsSet().getStringClaim(Config._NAME);
-				String identifier = jwt.getJWTClaimsSet().getStringClaim(Config._IDENTIFIER);;
+				String identifier = jwt.getJWTClaimsSet().getStringClaim(Config._IDENTIFIER);
 				String appid = app.getAppIdentifier();
 
 				User u = new User();
