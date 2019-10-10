@@ -238,7 +238,7 @@ public final class SecurityUtils {
 					Date expirationTime = claims.getExpirationTime();
 					Date notBeforeTime = claims.getNotBeforeTime();
 					boolean expired = expirationTime == null || expirationTime.before(referenceTime);
-					boolean notYetValid = notBeforeTime == null || notBeforeTime.after(referenceTime);
+					boolean notYetValid = notBeforeTime != null && notBeforeTime.after(referenceTime);
 
 					return !(expired || notYetValid);
 				}
