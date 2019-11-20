@@ -200,6 +200,10 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 					}
 				}
 				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+			} else {
+				logger.error("Authentication was successful but OAuth 2 parameter names not configured properly - "
+						+ "'id' property not found in user data (data." + accountIdParam + " = null). "
+						+ "The names available are: " + (profile != null ? profile.keySet() : null));
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);
