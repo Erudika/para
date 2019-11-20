@@ -117,12 +117,17 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 			if (StringUtils.isBlank(email)) {
 				if (!StringUtils.isBlank(adDomain)) {
-					LOG.warn("The AD doesn't have email attribute. Instead, it uses domain name for email address: {}@{}.", ldapAccountId, adDomain);
+					LOG.warn("The AD doesn't have email attribute. Instead, it uses domain name for email address: "
+							+ "{}@{}.", ldapAccountId, adDomain);
 					email = ldapAccountId.concat("@").concat(adDomain);
 				} else {
 					LOG.warn("Failed to create LDAP user '{}' with blank email.", ldapAccountId);
 					return null;
 				}
+			}
+
+			if (Boolean.parseBoolean(app.getSetting("security.ldap.username_as_name") + "")) {
+				name = email.split("@")[0];
 			}
 
 			user.setAppid(getAppid(app));
