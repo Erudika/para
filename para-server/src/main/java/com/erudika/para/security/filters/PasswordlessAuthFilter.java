@@ -100,6 +100,7 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 				String email = jwt.getJWTClaimsSet().getStringClaim(Config._EMAIL);
 				String name = jwt.getJWTClaimsSet().getStringClaim(Config._NAME);
 				String identifier = jwt.getJWTClaimsSet().getStringClaim(Config._IDENTIFIER);
+				String picture = jwt.getJWTClaimsSet().getStringClaim("picture");
 				String appid = app.getAppIdentifier();
 
 				User u = new User();
@@ -116,6 +117,7 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 					user.setName(name);
 					user.setIdentifier(identifier);
 					user.setEmail(email);
+					user.setPicture(picture);
 					if (user.create() != null) {
 						// allow temporary first-time login without verifying email address
 						userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
