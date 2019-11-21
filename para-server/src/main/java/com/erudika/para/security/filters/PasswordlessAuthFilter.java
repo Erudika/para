@@ -30,6 +30,7 @@ import java.text.ParseException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
@@ -118,17 +119,35 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 					user.setIdentifier(identifier);
 					user.setEmail(email);
 					user.setPicture(picture);
-					if (user.create() != null) {
-						// allow temporary first-time login without verifying email address
-						userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
-					}
+					// allow temporary first-time login without verifying email address
+					user.create();
 				} else {
-					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+					if (updateUserInfo(user, picture, email, name, accessToken)) {
+						user.update();
+					}
 				}
+				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 			}
 		} catch (ParseException e) {
 			logger.warn("Invalid token: " + e.getMessage());
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);
+	}
+
+	private boolean updateUserInfo(User user, String picture, String email, String name, String accessToken) {
+		boolean update = false;
+		if (!StringUtils.equals(user.getPicture(), picture)) {
+			user.setPicture(picture);
+			update = true;
+		}
+		if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+			user.setEmail(email);
+			update = true;
+		}
+		if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
+			user.setName(name);
+			update = true;
+		}
+		return update;
 	}
 }
