@@ -117,9 +117,13 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
 
 				Map<String, Object> token = tokenRequest(app, authCode, SecurityUtils.getRedirectUrl(request), alias);
-				if (token != null && token.containsKey("access_token")) {
-					userAuth = getOrCreateUser(app, token.get("access_token") +
-							Config.SEPARATOR + token.get("refresh_token"));
+				if (token != null) {
+					if (token.containsKey("access_token")) {
+						userAuth = getOrCreateUser(app, token.get("access_token") +
+								Config.SEPARATOR + token.get("refresh_token"));
+					} else {
+						logger.error("OAuth 2.0 token request failed with response " + token);
+					}
 				}
 			}
 		}
