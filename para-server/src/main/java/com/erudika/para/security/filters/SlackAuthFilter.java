@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * For issues and patches go to: https://slack.com/erudika
+ * For issues and patches go to: https://github.com/erudika
  */
 package com.erudika.para.security.filters;
 
