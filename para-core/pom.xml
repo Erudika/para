@@ -218,6 +218,12 @@
 			<groupId>com.vladsch.flexmark</groupId>
 			<artifactId>flexmark-ext-emoji</artifactId>
 			<version>${flexmarkVer}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>com.vladsch.flexmark</groupId>
+					<artifactId>flexmark-jira-converter</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>com.vladsch.flexmark</groupId>
