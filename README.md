@@ -134,7 +134,7 @@ First, create an `application.conf` file in a directory and run this command:
 ```
 $ docker run -ti -p 8080:8080 --rm -v para-data:/para/data \
   -v $(pwd)/application.conf:/para/application.conf \
-  -e JAVA_OPTS="-Dconfig.file=/para/application.conf" erudikaltd/para
+  -e JAVA_OPTS="-Dconfig.file=/para/application.conf -Dloader.path=lib" erudikaltd/para
 ```
 
 **Environment variables**
