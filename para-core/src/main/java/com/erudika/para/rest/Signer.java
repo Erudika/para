@@ -17,6 +17,7 @@
  */
 package com.erudika.para.rest;
 
+import com.erudika.para.Para;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.utils.Config;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -268,6 +269,12 @@ public final class Signer extends BaseAws4Signer {
 		} else {
 			builder.header(HttpHeaders.AUTHORIZATION, signedHeaders.get(HttpHeaders.AUTHORIZATION)).
 					header("X-Amz-Date", signedHeaders.get("X-Amz-Date"));
+		}
+
+		if (Config.getConfigBoolean("user_agent_id_enabled", true)) {
+			String userAgent = new StringBuilder("Para client ").append(Para.getVersion()).append(" ").append(accessKey).
+					append(" (Java ").append(System.getProperty("java.runtime.version")).append(")").toString();
+			builder.header(HttpHeaders.USER_AGENT, userAgent);
 		}
 
 		if (jsonPayload != null) {
