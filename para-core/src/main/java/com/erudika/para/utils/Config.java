@@ -104,6 +104,8 @@ public final class Config {
 	public static final String MICROSOFT_PREFIX = "ms" + SEPARATOR;
 	/** Slack prefix - defaults to 'sl:'. */
 	public static final String SLACK_PREFIX = "sl" + SEPARATOR;
+	/** Mattermost prefix - defaults to 'mm:'. */
+	public static final String MATTERMOST_PREFIX = "mm" + Config.SEPARATOR;
 	/** OAuth2 generic prefix - defaults to 'oa2:'. */
 	public static final String OAUTH2_PREFIX = "oa2" + SEPARATOR;
 	/** OAuth2 second generic prefix - defaults to 'oa2second:'. */
@@ -208,6 +210,14 @@ public final class Config {
 	 * Slack app secret (for authentication).
 	 */
 	public static final String SLACK_SECRET = getConfigParam("sl_secret", "");
+	/**
+	 * Mattermost app id (for authentication).
+	 */
+	public static final String MATTERMOST_APP_ID = getConfigParam("mm_app_id", "");
+	/**
+	 * Mattermost app secret (for authentication).
+	 */
+	public static final String MATTERMOST_SECRET = getConfigParam("mm_secret", "");
 	/**
 	 * The identifier of the first administrator (can be email, OpenID, or Facebook user id).
 	 */

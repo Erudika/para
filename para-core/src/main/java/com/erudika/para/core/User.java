@@ -449,11 +449,20 @@ public class User implements ParaObject {
 
 	/**
 	 * Is the main identifier a Slack account id.
-	 * @return true if user is signed in with a Microsoft account
+	 * @return true if user is signed in with a Slack account
 	 */
 	@JsonIgnore
 	public boolean isSlackUser() {
 		return StringUtils.startsWithIgnoreCase(identifier, Config.SLACK_PREFIX);
+	}
+
+	/**
+	 * Is the main identifier a Mattermost account id.
+	 * @return true if user is signed in with a Mattermost account
+	 */
+	@JsonIgnore
+	public boolean isMattermostUser() {
+		return StringUtils.startsWithIgnoreCase(identifier, Config.MATTERMOST_PREFIX);
 	}
 
 	/**
