@@ -91,6 +91,8 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 				if (ldapAuth != null) {
 					//success!
 					userAuth = getOrCreateUser(app, ldapAuth);
+				} else {
+					LOG.error("LDAP authentication failed.");
 				}
 			} catch (Exception ex) {
 				LOG.info("Failed to authenticate '{}' with LDAP server: {}", username, ex.getMessage());
@@ -102,6 +104,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 	}
 
 	private UserAuthentication getOrCreateUser(App app, Authentication ldapAuth) {
+		LOG.debug("LDAP response: {}", ldapAuth);
 		if (ldapAuth == null) {
 			return null;
 		}
@@ -121,8 +124,8 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 							+ "{}@{}.", ldapAccountId, adDomain);
 					email = ldapAccountId.concat("@").concat(adDomain);
 				} else {
-					LOG.warn("Failed to create LDAP user '{}' with blank email.", ldapAccountId);
-					return null;
+					LOG.warn("Blank email attribute for LDAP user '{}'.", ldapAccountId);
+					email = ldapAccountId + "@paraio.com";
 				}
 			}
 
@@ -139,7 +142,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 				user = new User();
 				user.setActive(true);
 				user.setAppid(getAppid(app));
-				user.setEmail(StringUtils.isBlank(email) ? Utils.getNewId() + "@paraio.com" : email);
+				user.setEmail(email);
 				user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 				user.setPassword(Utils.generateSecurityToken());
 				user.setIdentifier(Config.LDAP_PREFIX.concat(ldapAccountId));
@@ -153,6 +156,8 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 				}
 			}
 			userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+		} else {
+			LOG.error("Failed to create account - is the LDAP user active? principal={}", profile);
 		}
 		return userAuth;
 	}
