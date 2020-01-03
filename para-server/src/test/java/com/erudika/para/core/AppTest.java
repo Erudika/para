@@ -186,6 +186,12 @@ public class AppTest {
 		app.revokeAllResourcePermissions("123");
 		assertFalse(app.isAllowedTo("123", "_test", GET.toString()));
 		assertFalse(app.isAllowedTo("123", "_test1", READ_ONLY.toString()));
+
+		app.grantResourcePermission(ALLOW_ALL, ALLOW_ALL, EnumSet.of(GET, GUEST));
+		assertTrue(app.isAllowedTo("", "sysprops", GET.toString()));
+		assertFalse(app.isAllowedTo("", "sysprops", POST.toString()));
+		assertTrue(app.isAllowedTo("123", "any", READ_ONLY.toString()));
+		assertTrue(app.isAllowedTo("", "any", READ_ONLY.toString()));
 	}
 
 	@Test

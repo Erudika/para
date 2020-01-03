@@ -753,9 +753,8 @@ public class App implements ParaObject, Serializable {
 
 	final boolean isAllowed(String subjectid, String resourcePath, String httpMethod) {
 		boolean allowed = false;
-		if (subjectid != null && resourcePath != null && httpMethod != null &&
-				getResourcePermissions().containsKey(subjectid)) {
-			httpMethod = httpMethod.toUpperCase();
+		if (subjectid != null && resourcePath != null && getResourcePermissions().containsKey(subjectid)) {
+			httpMethod = StringUtils.upperCase(httpMethod);
 			String wildcard = ALLOW_ALL;
 			String exactPathToMatch = resourcePath;
 			if (fromString(httpMethod) == GUEST) {
@@ -782,8 +781,11 @@ public class App implements ParaObject, Serializable {
 				}
 			}
 			if (!allowed && getResourcePermissions().get(subjectid).containsKey(exactPathToMatch)) {
-				// check exact resource path as it is
+				// check if exact resource path is accessible
 				allowed = pathMatches(subjectid, exactPathToMatch, httpMethod, wildcard);
+			} else if (!allowed && getResourcePermissions().get(subjectid).containsKey(ALLOW_ALL)) {
+				// check if ALL resources are accessible
+				allowed = pathMatches(subjectid, ALLOW_ALL, httpMethod, wildcard);
 			}
 		}
 		return allowed;
@@ -791,8 +793,10 @@ public class App implements ParaObject, Serializable {
 
 
 	private boolean pathMatches(String subjectid, String path, String httpMethod, String wildcard) {
-		return (getResourcePermissions().get(subjectid).get(path).contains(httpMethod)
-						|| getResourcePermissions().get(subjectid).get(path).contains(wildcard));
+		return (getResourcePermissions().getOrDefault(subjectid, Collections.emptyMap()).
+				getOrDefault(path, Collections.emptyList()).contains(httpMethod)
+						|| getResourcePermissions().getOrDefault(subjectid, Collections.emptyMap()).
+								getOrDefault(path, Collections.emptyList()).contains(wildcard));
 	}
 
 	/**
