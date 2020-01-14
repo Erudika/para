@@ -403,8 +403,9 @@ public final class Api1 extends ResourceConfig {
 
 				id2 = StringUtils.isBlank(id2) ? params.getFirst(Config._ID) : id2;
 				type2 = StringUtils.isBlank(type2) ? params.getFirst(Config._TYPE) : type2;
+				type2 = ParaObjectUtils.toObject(app, type2).getType();
 
-				ParaObject pobj = ParaObjectUtils.toObject(type);
+				ParaObject pobj = ParaObjectUtils.toObject(app, type);
 				pobj.setId(id);
 				pobj = getDAO().read(app.getAppIdentifier(), pobj.getId());
 
@@ -765,7 +766,7 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : getPrincipalApp();
-				ParaObject obj = ParaObjectUtils.toObject(type);
+				ParaObject obj = ParaObjectUtils.toObject(app, type);
 				obj.setId(pathParam(Config._ID, ctx));
 				if (app.getId().equals(obj.getId())) {
 					return getReadResponse(app, app);
@@ -784,8 +785,7 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : getPrincipalApp();
-				ParaObject obj = ParaObjectUtils.toObject(type);
-				obj.setType(type);
+				ParaObject obj = ParaObjectUtils.toObject(app, type);
 				obj.setId(pathParam(Config._ID, ctx));
 				// allow apps to partially update themselves
 				String appid = StringUtils.equals(type, Utils.type(App.class)) ? app.getAppid() : app.getAppIdentifier();
@@ -819,8 +819,7 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : getPrincipalApp();
-				ParaObject obj = ParaObjectUtils.toObject(type);
-				obj.setType(type);
+				ParaObject obj = ParaObjectUtils.toObject(app, type);
 				obj.setId(pathParam(Config._ID, ctx));
 				return getDeleteResponse(app, obj);
 			}

@@ -448,9 +448,17 @@ public final class ParaObjectUtils {
 	 * @return a new instance of a core class. Defaults to {@link com.erudika.para.core.Sysprop}.
 	 * @see #toClass(java.lang.String)
 	 */
-	public static <P extends ParaObject> P toObject(String type) {
+	public static <P extends ParaObject> P toObject(App app, String type) {
 		try {
-			return (P) toClass(type).getConstructor().newInstance();
+			if (app == null) {
+				return (P) toClass(type).getConstructor().newInstance();
+			} else {
+				Map<String, String> alltypes = getAllTypes(app);
+				String typ = alltypes.containsKey(type) ? alltypes.get(type) : type;
+				P p = (P) toClass(type).getConstructor().newInstance();
+				p.setType(typ);
+				return p;
+			}
 		} catch (Exception ex) {
 			logger.error(null, ex);
 			return null;

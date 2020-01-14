@@ -18,6 +18,7 @@
 package com.erudika.para.utils;
 
 import com.erudika.para.annotations.Locked;
+import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
@@ -405,12 +406,18 @@ public class UtilsTest {
 
 	@Test
 	public void testToObject() {
-		assertNotNull(toObject(null));
-		assertNotNull(toObject(""));
-		assertNotNull(toObject("test123"));
-		assertEquals(Sysprop.class, toObject("test123").getClass());
-		assertEquals(User.class, toObject(Utils.type(User.class)).getClass());
-		assertEquals(Tag.class, toObject(Utils.type(Tag.class)).getClass());
+		assertNotNull(toObject(null, null));
+		assertNotNull(toObject(null, ""));
+		assertNotNull(toObject(null, "test123"));
+		assertEquals(Sysprop.class, toObject(null, "test123").getClass());
+		assertEquals(User.class, toObject(null, Utils.type(User.class)).getClass());
+		assertEquals(Tag.class, toObject(null, Utils.type(Tag.class)).getClass());
+
+		App app = new App();
+		app.addDatatype("wolves", "wolf");
+		assertEquals("wolf", toObject(app, "wolves").getType());
+		assertEquals("wolf", toObject(app, "wolf").getType());
+		assertEquals("wolfs", toObject(app, "wolfs").getType());
 	}
 
 	@Test

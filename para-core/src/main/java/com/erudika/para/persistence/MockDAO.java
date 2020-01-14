@@ -172,7 +172,7 @@ public class MockDAO implements DAO {
 			so.setTimestamp(Utils.timestamp());
 		}
 		so.setAppid(appid);
-		getMap(appid).put(so.getId(), ParaObjectUtils.setAnnotatedFields(ParaObjectUtils.toObject(so.getType()),
+		getMap(appid).put(so.getId(), ParaObjectUtils.setAnnotatedFields(ParaObjectUtils.toObject(null, so.getType()),
 				ParaObjectUtils.getAnnotatedFields(so), null));
 	}
 
