@@ -444,6 +444,7 @@ public final class ParaObjectUtils {
 	 * Constructs a new instance of a core object.
 	 *
 	 * @param <P> the object type
+	 * @param app an app object
 	 * @param type the simple name of a class
 	 * @return a new instance of a core class. Defaults to {@link com.erudika.para.core.Sysprop}.
 	 * @see #toClass(java.lang.String)
