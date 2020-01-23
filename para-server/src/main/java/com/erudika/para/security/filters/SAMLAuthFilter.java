@@ -170,6 +170,15 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 			String name = userData.getOrDefault("name", "");
 			String emailDomain = userData.get("domain");
 
+			if (StringUtils.isBlank(email)) {
+				if (!StringUtils.isBlank(emailDomain)) {
+					email = samlUserId.concat("@").concat(emailDomain);
+				} else {
+					LOG.warn("Blank email attribute for SAML user '{}'.", samlUserId);
+					email = samlUserId + "@scoold.com";
+				}
+			}
+
 			user.setAppid(getAppid(app));
 			user.setIdentifier(Config.SAML_PREFIX.concat(samlUserId));
 			user.setEmail(email);
@@ -179,7 +188,7 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 				user = new User();
 				user.setActive(true);
 				user.setAppid(getAppid(app));
-				user.setEmail(StringUtils.isBlank(email) ? Utils.getNewId() + "@" + emailDomain : email);
+				user.setEmail(email);
 				user.setName(StringUtils.isBlank(name) ? "Anonymous" : name);
 				user.setPassword(Utils.generateSecurityToken());
 				user.setPicture(getPicture(pic));

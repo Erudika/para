@@ -45,6 +45,8 @@ import org.apache.http.impl.NoConnectionReuseStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
@@ -55,6 +57,7 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
  */
 public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter {
 
+	private static final Logger LOG = LoggerFactory.getLogger(GenericOAuth2Filter.class);
 	private final CloseableHttpClient httpclient;
 	private final ObjectReader jreader;
 	private static final String PAYLOAD = "code={0}&redirect_uri={1}"
@@ -122,7 +125,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 						userAuth = getOrCreateUser(app, token.get("access_token") +
 								Config.SEPARATOR + token.get("refresh_token"));
 					} else {
-						logger.error("OAuth 2.0 token request failed with response " + token);
+						LOG.error("OAuth 2.0 token request failed with response " + token);
 					}
 				}
 			}
@@ -176,6 +179,15 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 				String email = (String) profile.get(emailParam);
 				String name = (String) profile.get(nameParam);
 
+				if (StringUtils.isBlank(email)) {
+					if (!StringUtils.isBlank(emailDomain)) {
+						email = oauthAccountId.concat("@").concat(emailDomain);
+					} else {
+						LOG.warn("Blank email attribute for OAuth2 user '{}'.", oauthAccountId);
+						email = oauthAccountId + "@scoold.com";
+					}
+				}
+
 				user.setAppid(getAppid(app));
 				user.setIdentifier(oauthPrefix(alias).concat(oauthAccountId));
 				user.setEmail(email);
@@ -185,7 +197,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 					user = new User();
 					user.setActive(true);
 					user.setAppid(getAppid(app));
-					user.setEmail(StringUtils.isBlank(email) ? Utils.getNewId() + "@" + emailDomain : email);
+					user.setEmail(email);
 					user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 					user.setPassword(Utils.generateSecurityToken());
 					if (tokenDelegationEnabled) {
@@ -205,7 +217,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 				}
 				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 			} else {
-				logger.error("Authentication was successful but OAuth 2 parameter names not configured properly - "
+				LOG.error("Authentication was successful but OAuth 2 parameter names not configured properly - "
 						+ "'id' property not found in user data (data." + accountIdParam + " = null). "
 						+ "The names available are: " + (profile != null ? profile.keySet() : null));
 			}
@@ -269,7 +281,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			return profile != null && profile.containsKey(SecurityUtils.getSettingForApp(app,
 					configKey("parameters.id", alias), "sub"));
 		} catch (Exception e) {
-			logger.error(null, e);
+			LOG.error(null, e);
 			return false;
 		}
 	}
