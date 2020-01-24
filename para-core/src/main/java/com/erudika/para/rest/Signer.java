@@ -110,7 +110,8 @@ public final class Signer extends BaseAws4Signer {
 	public SdkHttpFullRequest sign(SdkHttpFullRequest request, String accessKey, String secretKey, Clock override) {
 		Aws4SignerParams.Builder<?> signerParams = Aws4SignerParams.builder().
 				awsCredentials(AwsBasicCredentials.create(accessKey, secretKey)).
-				doubleUrlEncode(true). // this is important!
+				// this is important!
+				doubleUrlEncode(true).
 				signingName(Config.PARA).
 				signingRegion(Region.US_EAST_1);
 		if (override != null) {
