@@ -54,7 +54,6 @@ import software.amazon.awssdk.auth.signer.params.Aws4SignerParams;
 import software.amazon.awssdk.http.SdkHttpFullRequest;
 import software.amazon.awssdk.http.SdkHttpMethod;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.utils.http.SdkHttpUtils;
 
 /**
  * This class extends {@code BaseAws4Signer} implementing the AWS Signature Version 4 algorithm.
@@ -111,7 +110,7 @@ public final class Signer extends BaseAws4Signer {
 	public SdkHttpFullRequest sign(SdkHttpFullRequest request, String accessKey, String secretKey, Clock override) {
 		Aws4SignerParams.Builder<?> signerParams = Aws4SignerParams.builder().
 				awsCredentials(AwsBasicCredentials.create(accessKey, secretKey)).
-				doubleUrlEncode(false).
+				doubleUrlEncode(true). // this is important!
 				signingName(Config.PARA).
 				signingRegion(Region.US_EAST_1);
 		if (override != null) {
@@ -138,7 +137,9 @@ public final class Signer extends BaseAws4Signer {
 			}
 		}
 		if (!StringUtils.isBlank(resourcePath)) {
-			r.encodedPath(SdkHttpUtils.urlEncodeIgnoreSlashes(resourcePath));
+			// Don't encode resource paths manually! can lead to invalid signatures
+			r.encodedPath(resourcePath);
+			//r.encodedPath(SdkHttpUtils.urlEncodeIgnoreSlashes(resourcePath));
 		}
 
 		if (headers != null) {
