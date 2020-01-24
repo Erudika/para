@@ -2,6 +2,7 @@ package com.erudika.para.utils;
 
 import com.erudika.para.InitializeListener;
 import com.erudika.para.Para;
+import com.erudika.para.ParaServer;
 import com.erudika.para.core.App;
 import java.util.ArrayList;
 import java.util.List;
@@ -94,7 +95,8 @@ public enum HealthUtils implements InitializeListener, Runnable {
 			if (!isHealthy()) {
 				logger.warn("Server is unhealthy - " + (rootAppExists ?
 						"the search index may be corrupted and may have to be rebuilt." :
-						"root app not found. Open /v1/_setup in the browser to initialize Para."));
+						"root app not found. Open http://localhost:" + ParaServer.getServerPort() +
+								"/v1/_setup in the browser to initialize Para."));
 			}
 			if (Config.getConfigBoolean("health_check_enabled", true) && scheduledHealthCheck == null) {
 				scheduledHealthCheck = Para.getScheduledExecutorService().

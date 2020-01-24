@@ -379,7 +379,7 @@ public final class Para {
 				logger.info("Created {} app '{}', sharingTable = {}, sharingIndex = {}.",
 						app.isRootApp() ? "root" : "new", app.getAppIdentifier(), sharedTable, sharedIndex);
 				creds.putAll(app.getCredentials());
-				creds.put("message", "Save the secret key - it is shown only once!");
+				creds.put("message", "Save these keys - they are shown only once!");
 			} else {
 				logger.error("Failed to create app '{}'!", appid);
 				creds.put("message", "Error - app was not created.");

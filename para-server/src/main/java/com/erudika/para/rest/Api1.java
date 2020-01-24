@@ -902,7 +902,8 @@ public final class Api1 extends ResourceConfig {
 				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
 				String query = params.getFirst("q");
 				if (!StringUtils.isBlank(query) && !getSearch().isValidQueryString(query)) {
-					return getStatusResponse(Response.Status.BAD_REQUEST, "Invalid query string syntax.");
+					return getStatusResponse(Response.Status.BAD_REQUEST, "Invalid query string syntax q=" +
+							query + " in request " + ctx.getMethod() + " " + ctx.getUriInfo().getRequestUri());
 				}
 				String queryType = pathParam("querytype", ctx);
 				if (StringUtils.isBlank(queryType)) {
