@@ -39,6 +39,8 @@ import static javax.ws.rs.HttpMethod.PATCH;
 import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -49,6 +51,8 @@ import org.springframework.web.filter.GenericFilterBean;
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class RestAuthFilter extends GenericFilterBean implements InitializingBean {
+
+	private static final Logger LOG = LoggerFactory.getLogger(SecurityUtils.class);
 
 	/**
 	 * Default constructor.
@@ -86,7 +90,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 				proceed = appAuthRequestHandler(appid, request, response);
 			}
 		} catch (Exception e) {
-			logger.error("Failed to authorize request.", e);
+			LOG.error("Failed to authorize request.", e);
 		}
 
 		if (proceed) {
@@ -177,7 +181,11 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 				SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
 				return true;
 			}
-			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN, "Request signature is invalid.");
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
+					Utils.formatMessage("Invalid signature for request {0} {1} coming from app {2}",
+							request.getMethod(), request.getRequestURI(), app.getAppIdentifier()));
+			LOG.warn("Invalid signature for request {} {} coming from app {}", request.getMethod(),
+					request.getRequestURI(), app.getAppIdentifier());
 		} else {
 			RestUtils.returnStatusResponse(response, (Integer) failures[0], (String) failures[1]);
 		}
