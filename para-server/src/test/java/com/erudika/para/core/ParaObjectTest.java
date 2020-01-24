@@ -53,6 +53,13 @@ public class ParaObjectTest {
 		s.setType("тип");
 		assertEquals("/%D1%82%D0%B8%D0%BF/%D1%83%D0%BD%D0%B8%D0%BA%D0%BE%D0%B4", s.getObjectURI());
 
+		Sysprop s1 = new Sysprop("753344895351001088:profile");
+		s1.setType("profile");
+		assertEquals("/profile/753344895351001088%3Aprofile", s1.getObjectURI());
+
+		Tag tag = new Tag("日本語");
+		assertEquals("/tag/%E6%97%A5%E6%9C%AC%E8%AA%9E", tag.getObjectURI());
+
 		assertEquals("/sysprop", new Sysprop(null).getObjectURI());
 		assertEquals("/sysprop", new Sysprop("").getObjectURI());
 		assertEquals("/sysprop", new Sysprop("   ").getObjectURI());
