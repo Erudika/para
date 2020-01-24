@@ -283,7 +283,7 @@ public final class ParaClient {
 				if (error != null && error.containsKey("code")) {
 					String msg = error.containsKey("message") ? (String) error.get("message") : "error";
 					WebApplicationException e = new WebApplicationException(msg, (Integer) error.get("code"));
-					logger.error("{} - {}", msg, e.getMessage());
+					logger.error("{} - {}", error.get("code"), e.getMessage());
 					if (throwExceptionOnHTTPError) {
 						throw e;
 					}
