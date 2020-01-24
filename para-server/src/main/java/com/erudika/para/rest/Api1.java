@@ -401,9 +401,8 @@ public final class Api1 extends ResourceConfig {
 				String typeSingular = (type == null) ? null : ParaObjectUtils.getAllTypes(app).get(type);
 				type = (typeSingular == null) ? type : typeSingular;
 
-				id2 = StringUtils.isBlank(id2) ? params.getFirst(Config._ID) : id2;
-				type2 = StringUtils.isBlank(type2) ? params.getFirst(Config._TYPE) : type2;
-				type2 = ParaObjectUtils.toObject(app, type2).getType();
+				id2 = StringUtils.isBlank(id2) ? null : id2;
+				type2 = StringUtils.isBlank(type2) ? null : ParaObjectUtils.toObject(app, type2).getType();
 
 				ParaObject pobj = ParaObjectUtils.toObject(app, type);
 				pobj.setId(id);
