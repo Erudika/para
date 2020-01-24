@@ -70,6 +70,8 @@ public class UtilsTest {
 		assertFalse(bcryptMatches("", "test"));
 		assertFalse(bcryptMatches("test", "test"));
 		assertTrue(bcryptMatches("testpass", "$2a$12$OQXURSOiBPvDHZc0xzSn.erVlBGChnY8hi.OLLZVBczquUaOTJTg."));
+		String unicodeHash = bcrypt("あいうえおお");
+		assertTrue(bcryptMatches("あいうえおお", unicodeHash));
 	}
 
 	@Test
