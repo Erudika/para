@@ -285,6 +285,13 @@ The `Queue` interface is implemented by:
 - Client libraries for Python, Go
 - GraphQL support
 
+## Getting help
+
+- Have a question? - [ask it on Gitter](https://gitter.im/Erudika/para)
+- Found a bug? - submit a [bug report here](https://github.com/Erudika/para/issues)
+- Ask a question on Stack Overflow using the [`para`](https://stackoverflow.com/tags/para/info) tag
+- For questions related to Scoold, use the [`para`](https://stackoverflow.com/tags/scoold/info) tag on Stack Overflow
+
 ## Contributing
 
 1. Fork this repository and clone the fork to your machine
