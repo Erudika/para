@@ -466,7 +466,12 @@ public final class SecurityUtils {
 		String auth2 = sig.get(HttpHeaders.AUTHORIZATION);
 		String recreatedSig = StringUtils.substringAfter(auth2, "Signature=");
 
-		return StringUtils.equals(givenSig, recreatedSig);
+		boolean signaturesMatch = StringUtils.equals(givenSig, recreatedSig);
+		if (Config.getConfigBoolean("debug_request_signatures", false)) {
+			logger.info("Incoming client signature for request {} {}: {} == {} calculated by server, matching: {}",
+					httpMethod, path, givenSig, recreatedSig, signaturesMatch);
+		}
+		return signaturesMatch;
 	}
 
 	/**
