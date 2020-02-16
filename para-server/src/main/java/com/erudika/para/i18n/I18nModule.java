@@ -27,7 +27,6 @@ public class I18nModule extends AbstractModule {
 
 	protected void configure() {
 		bind(CurrencyConverter.class).to(OXRCurrencyConverter.class);
-		bind(LanguageUtils.class).asEagerSingleton();
 	}
 
 }
