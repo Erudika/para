@@ -12,9 +12,9 @@
 	<name>para-core</name>
 
 	<properties>
-		<jacksonVer>2.10.1</jacksonVer>
-		<springVer>5.2.1.RELEASE</springVer>
-		<flexmarkVer>0.50.46</flexmarkVer>
+		<jacksonVer>2.10.2</jacksonVer>
+		<springVer>5.2.3.RELEASE</springVer>
+		<flexmarkVer>0.50.50</flexmarkVer>
 	</properties>
 
 	<dependencies>
@@ -197,7 +197,7 @@
 		<dependency>
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
-			<version>1.13</version>
+			<version>${commonsCodecVer}</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-io</groupId>
