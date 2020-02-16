@@ -48,6 +48,7 @@ import software.amazon.awssdk.services.dynamodb.model.KeyType;
 import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
 import software.amazon.awssdk.services.dynamodb.model.ListTablesResponse;
 import software.amazon.awssdk.services.dynamodb.model.ProjectionType;
+import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughputExceededException;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.ReturnConsumedCapacity;
@@ -402,8 +403,10 @@ public final class AWSDynamoUtils {
 	 * @param <P> type of object
 	 * @param kna a map of row key->data
 	 * @param results a map of ID->ParaObject
+	 * @param backoff backoff seconds
 	 */
-	protected static <P extends ParaObject> void batchGet(Map<String, KeysAndAttributes> kna, Map<String, P> results) {
+	protected static <P extends ParaObject> void batchGet(Map<String, KeysAndAttributes> kna, Map<String, P> results,
+			int backoff) {
 		if (kna == null || kna.isEmpty() || results == null) {
 			return;
 		}
@@ -425,9 +428,19 @@ public final class AWSDynamoUtils {
 			logger.debug("batchGet(): total {}, cc {}", res.size(), result.consumedCapacity());
 
 			if (result.unprocessedKeys() != null && !result.unprocessedKeys().isEmpty()) {
-				Thread.sleep(1000);
+				Thread.sleep((long) backoff * 1000L);
 				logger.warn("{} UNPROCESSED read requests!", result.unprocessedKeys().size());
-				batchGet(result.unprocessedKeys(), results);
+				batchGet(result.unprocessedKeys(), results, backoff * 2);
+			}
+		} catch (ProvisionedThroughputExceededException ex) {
+			logger.warn("Read capacity exceeded for table '{}'. Retrying request in {} seconds.",
+					kna.keySet().iterator().next(), backoff);
+			try {
+				Thread.sleep((long) backoff * 1000L);
+				// retry forever
+				batchGet(kna, results, backoff * 2);
+			} catch (InterruptedException ie) {
+				logger.error(null, ie);
 			}
 		} catch (Exception e) {
 			logger.error("Failed to execute batch read operation on table '{}'", kna.keySet().iterator().next(), e);
@@ -456,6 +469,17 @@ public final class AWSDynamoUtils {
 				Thread.sleep((long) backoff * 1000L);
 				logger.warn("{} UNPROCESSED write requests!", result.unprocessedItems().size());
 				batchWrite(result.unprocessedItems(), backoff * 2);
+			}
+		} catch (ProvisionedThroughputExceededException ex) {
+			logger.warn("Write capacity exceeded for table '{}'. Retrying request in {} seconds.",
+					items.keySet().iterator().next(), backoff);
+			try {
+				Thread.sleep((long) backoff * 1000L);
+				// retry forever
+				batchWrite(items, backoff * 2);
+			} catch (InterruptedException ie) {
+				logger.error(null, ie);
+				throwIfNecessary(ie);
 			}
 		} catch (Exception e) {
 			logger.error("Failed to execute batch write operation on table '{}'", items.keySet().iterator().next(), e);

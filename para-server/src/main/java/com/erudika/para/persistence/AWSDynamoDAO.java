@@ -344,7 +344,7 @@ public class AWSDynamoDAO implements DAO {
 					kna.attributesToGet(Arrays.asList(Config._ID, Config._KEY, Config._TYPE));
 				}
 
-				batchGet(Collections.singletonMap(table, kna.build()), results);
+				batchGet(Collections.singletonMap(table, kna.build()), results, 1);
 				keyz.clear();
 				j = 0;
 			}
