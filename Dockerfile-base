@@ -8,7 +8,7 @@ RUN apk --update add git openssh maven && \
 
 ENV BOOT_SLEEP=0 \
     JAVA_OPTS="" \
-    PARA_VERSION="1.35.0" \
+    PARA_VERSION="1.35.0"
 
 RUN addgroup -S para && adduser -S -G para para && \
 	mkdir -p /para/lib && \
@@ -25,7 +25,7 @@ RUN git clone --depth=1 --branch v$PARA_VERSION https://github.com/Erudika/para 
 	mvn install -DskipTests=true -DskipITs=true && \
 	cd /para/clone/para-jar && \
 	mvn -Pbase clean package && \
-	mv target/para-base-*.jar /para/ && \
+	mv target/para-${PARA_VERSION}*.jar /para/ && \
 	cd /para &&	rm -rf /para/clone && rm -rf ~/.m2
 
 
@@ -34,4 +34,4 @@ VOLUME ["/para/data"]
 EXPOSE 8080
 
 CMD sleep $BOOT_SLEEP && \
-    java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar para-${PARA_VERSION}*.jar
+    java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar para-*.jar
