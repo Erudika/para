@@ -417,9 +417,10 @@ public final class Utils {
 		}
 		try {
 			return new String(Base64.decodeBase64(str), Config.DEFAULT_ENCODING);
-		} catch (UnsupportedEncodingException ex) {
-			return "";
+		} catch (Exception ex) {
+			logger.error("Failed to decode base64 string '{}'.", str, ex);
 		}
+		return "";
 	}
 
 	private static MutableDataHolder getMarkdownOptions() {
