@@ -184,8 +184,8 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN,
 					Utils.formatMessage("Invalid signature for request {0} {1} coming from app {2}",
 							request.getMethod(), request.getRequestURI(), app.getAppIdentifier()));
-			LOG.warn("Invalid signature for request {} {} coming from app {}", request.getMethod(),
-					request.getRequestURI(), app.getAppIdentifier());
+			LOG.warn("Invalid signature for request {} {} coming from app '{}'", request.getMethod(),
+					request.getRequestURI() + "?" + request.getQueryString(), app.getAppIdentifier());
 		} else {
 			RestUtils.returnStatusResponse(response, (Integer) failures[0], (String) failures[1]);
 		}
