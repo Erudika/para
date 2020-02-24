@@ -123,7 +123,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 		String ident = null;
 		if (cookie != null) {
 			String[] ctokens = Utils.base64dec(cookie).split(":");
-			ident = Utils.base64dec(ctokens[0]);
+			ident = Utils.base64dec(Utils.urlDecode(ctokens[0]));
 		}
 		return ident;
 	}
