@@ -234,6 +234,7 @@ Use these client libraries to quickly integrate Para into your project:
 - **Java**: [para-client](https://github.com/erudika/para/tree/master/para-client)
 - **JavaScript / Node.js**: [para-client-js](https://github.com/erudika/para-client-js)
 - **PHP**: [para-client-php](https://github.com/erudika/para-client-php)
+- **Python**: [para-client-python](https://github.com/erudika/para-client-python)
 - **C# / .NET**: [para-client-csharp](https://github.com/erudika/para-client-csharp)
 - **Android**: [para-client-android](https://github.com/erudika/para-client-android)
 - **Swift / iOS**: [para-client-ios](https://github.com/erudika/para-client-ios)
@@ -281,8 +282,7 @@ The `Queue` interface is implemented by:
 
 ## Wishlist / Roadmap
 
-- Para `2.0` - migration to Micronaut or Quarkus, Java 12+ only
-- Client libraries for Python, Go
+- Para `2.0` - migration to Quarkus, Java 13+ only, native image
 - GraphQL support
 
 ## Getting help
