@@ -22,9 +22,13 @@ import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.search.Search;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import com.erudika.para.validation.ValidationUtils;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.After;
 import org.junit.Test;
@@ -212,6 +216,7 @@ public class UserTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void testReadUserForIdentifier() {
 		User u = u();
 		String secIdent = "fb:1";
@@ -238,6 +243,27 @@ public class UserTest {
 
 		u.setIdentifier(u.getEmail());
 		assertNull(User.readUserForIdentifier(u));
+
+		HashMap<String, Object> terms = new HashMap<>(2);
+		terms.put(Config._EMAIL, u.getEmail());
+		terms.put(Config._APPID, u.getAppid());
+		when(CoreUtils.getInstance().getSearch().findTerms(eq(u.getAppid()), eq(u.getType()),
+				eq(terms), anyBoolean(), any(Pager.class))).thenReturn(Arrays.asList(u));
+
+		User u1 = u;
+		u1.setEmail(u.getId() + "@Email.Com");
+		u1.setIdentifier("fb:2");
+
+		HashMap<String, Object> terms2 = new HashMap<>(2);
+		terms2.put(Config._EMAIL, u.getId() + "@Email.Com");
+		terms2.put(Config._APPID, u1.getAppid());
+		when(CoreUtils.getInstance().getSearch().findTerms(eq(u.getAppid()), eq(u.getType()),
+				eq(terms2), anyBoolean(), any(Pager.class))).thenReturn(Collections.emptyList());
+
+		assertTrue(u1.getEmail().equalsIgnoreCase(u.getEmail()));
+		User x = User.readUserForIdentifier(u1);
+		assertNotNull(x);
+		assertEquals(u, x);
 	}
 
 	@Test

@@ -256,7 +256,7 @@ public class User implements ParaObject {
 	 * @return email
 	 */
 	public String getEmail() {
-		return email;
+		return StringUtils.lowerCase(email);
 	}
 
 	/**
@@ -638,13 +638,16 @@ public class User implements ParaObject {
 			HashMap<String, Object> terms = new HashMap<>(2);
 			terms.put(Config._EMAIL, u.getEmail());
 			terms.put(Config._APPID, u.getAppid());
-			List<User> users = CoreUtils.getInstance().getSearch().
-					findTerms(u.getAppid(), u.getType(), terms, true, new Pager(1));
+			Pager p = new Pager(1);
+			List<User> users = CoreUtils.getInstance().getSearch().findTerms(u.getAppid(), u.getType(), terms, true, p);
 			if (!users.isEmpty()) {
 				user = users.get(0);
 				// keep this random! dangerous to set it to user.getPassword()
 				password = Utils.generateSecurityToken();
 				user.createIdentifier(u.getIdentifier(), password);
+				if (p.getCount() > 1) {
+					logger.warn("{} user objects exist with the same email {}", p.getCount(), user.getEmail());
+				}
 			}
 		}
 		if (user != null) {
