@@ -53,6 +53,8 @@ public class LDAPAuthenticationProvider implements AuthenticationProvider {
 				if (StringUtils.isBlank(adDomain)) {
 					ldapProvider = new LdapAuthenticationProvider(new LDAPAuthenticator(ldapSettings));
 				} else {
+					// Fix for https://github.com/Erudika/scoold/issues/67
+					authentication = new LDAPAuthentication(StringUtils.substringBefore(auth.getName(), "@"), auth.getCredentials());
 					ldapProvider = new ActiveDirectoryLdapAuthenticationProvider(adDomain, ldapServerURL);
 					((ActiveDirectoryLdapAuthenticationProvider) ldapProvider).setConvertSubErrorCodesToExceptions(true);
 					if (!StringUtils.isBlank(searchFilter)) {
