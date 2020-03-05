@@ -531,6 +531,8 @@ public class User implements ParaObject {
 			return "microsoft";
 		} else if (isSlackUser()) {
 			return "slack";
+		} else if (isMattermostUser()) {
+			return "mattermost";
 		} else if (isLDAPUser()) {
 			return "ldap";
 		} else if (isSAMLUser()) {
