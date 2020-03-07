@@ -21,8 +21,8 @@ import com.erudika.para.cache.Cache;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.HttpUtils;
 import com.erudika.para.utils.Utils;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -46,7 +46,9 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	private String parameterName = "_csrf";
 	private final String headerName = "X-CSRF-TOKEN";
 	private final String cookieName = Config.getConfigParam("security.csrf_cookie", "para-csrf-token");
-	private final Map<String, Object[]> localCache = new HashMap<>();
+	private final String authCookie = Config.getConfigParam("auth_cookie", Config.PARA.concat("-auth"));
+	private final String anonIdentCookieName = cookieName + "-anonid";
+	private final Map<String, Object[]> localCache = new ConcurrentHashMap<>();
 
 	private Cache cache;
 
@@ -75,16 +77,26 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	 */
 	public void saveToken(CsrfToken t, HttpServletRequest request, HttpServletResponse response) {
 		String ident = getIdentifierFromCookie(request);
+		if (StringUtils.isBlank(ident) && StringUtils.isBlank(HttpUtils.getStateParam(authCookie, request))) {
+			ident = Utils.generateSecurityToken(16);
+			storeAnonIdentCookie(ident, request, response);
+		}
 		if (ident != null) {
-			String key = ident.concat(parameterName);
 			CsrfToken token = loadToken(request);
 			if (token == null) {
-				token = generateToken(null);
-				if (Config.isCacheEnabled()) {
-					cache.put(Config.getRootAppIdentifier(), key, token, (long) Config.SESSION_TIMEOUT_SEC);
+				String anonid = HttpUtils.getStateParam(anonIdentCookieName, request);
+				if (anonid != null) {
+					token = loadTokenFromCache(ident);
+					if (token == null) {
+						HttpUtils.removeStateParam(cookieName, request, response);
+						HttpUtils.removeStateParam(anonIdentCookieName, request, response);
+						removeTokenFromCache(ident);
+						return;
+					}
 				} else {
-					localCache.put(key, new Object[]{token, System.currentTimeMillis()});
+					token = generateToken(null);
 				}
+				storeTokenInCache(ident, token);
 			}
 			storeTokenAsCookie(token, request, response);
 		}
@@ -100,30 +112,76 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 		String ident = getIdentifierFromCookie(request);
 		if (ident != null) {
 			String key = ident.concat(parameterName);
-			if (Config.isCacheEnabled()) {
-				token = cache.get(Config.getRootAppIdentifier(), key);
-			} else {
-				Object[] arr = localCache.get(key);
-				if (arr != null && arr.length == 2) {
-					boolean expired = (((Long) arr[1]) + Config.SESSION_TIMEOUT_SEC * 1000) < System.currentTimeMillis();
-					if (expired) {
-						localCache.remove(key);
-					} else {
-						token = (CsrfToken) arr[0];
-					}
+			token = loadTokenFromCache(key);
+			String anonid = HttpUtils.getStateParam(anonIdentCookieName, request);
+			if (anonid != null) {
+				CsrfToken anonToken = loadTokenFromCache(anonid);
+				if (!ident.equals(anonid) && anonToken != null && token != null) {
+					// sync anon and auth csrf tokens
+					//storeTokenInCache(anonid, token);
+					storeTokenInCache(ident, anonToken);
+					token = anonToken;
+				}
+			}
+		}
+		if (token != null && !StringUtils.isBlank(token.getToken()) && StringUtils.isBlank(getTokenFromCookie(request))) {
+			token = null;
+		}
+		return token;
+	}
+
+	private void storeTokenInCache(String key, CsrfToken token) {
+		if (!key.endsWith(parameterName)) {
+			key = key.concat(parameterName);
+		}
+		if (Config.isCacheEnabled()) {
+			cache.put(Config.getRootAppIdentifier(), key, token, (long) Config.SESSION_TIMEOUT_SEC);
+		} else {
+			localCache.put(key, new Object[]{token, System.currentTimeMillis()});
+		}
+	}
+
+	private CsrfToken loadTokenFromCache(String key) {
+		if (!key.endsWith(parameterName)) {
+			key = key.concat(parameterName);
+		}
+		CsrfToken token = null;
+		if (Config.isCacheEnabled()) {
+			token = cache.get(Config.getRootAppIdentifier(), key);
+		} else {
+			Object[] arr = localCache.get(key);
+			if (arr != null && arr.length == 2) {
+				boolean expired = (((Long) arr[1]) + Config.SESSION_TIMEOUT_SEC * 1000) < System.currentTimeMillis();
+				if (expired) {
+					removeTokenFromCache(key);
+				} else {
+					token = (CsrfToken) arr[0];
 				}
 			}
 		}
 		return token;
 	}
 
+	private void removeTokenFromCache(String key) {
+		if (!key.endsWith(parameterName)) {
+			key = key.concat(parameterName);
+		}
+		if (Config.isCacheEnabled()) {
+			cache.remove(key);
+		} else {
+			localCache.remove(key);
+		}
+	}
+
 	private String getIdentifierFromCookie(HttpServletRequest request) {
-		String authCookie = Config.getConfigParam("auth_cookie", Config.PARA.concat("-auth"));
 		String cookie = HttpUtils.getStateParam(authCookie, request);
 		String ident = null;
 		if (cookie != null) {
 			String[] ctokens = Utils.base64dec(cookie).split(":");
 			ident = Utils.base64dec(Utils.urlDecode(ctokens[0]));
+		}
+		if (ident == null) {
+			ident = HttpUtils.getStateParam(anonIdentCookieName, request);
 		}
 		return ident;
 	}
@@ -146,6 +204,16 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 			c.setPath("/");
 			response.addCookie(c);
 		}
+	}
+
+	private void storeAnonIdentCookie(String anonid, HttpServletRequest request, HttpServletResponse response) {
+		Cookie c = new Cookie(anonIdentCookieName, anonid);
+		c.setMaxAge(Config.SESSION_TIMEOUT_SEC);
+		// don't enable HttpOnly - javascript can't access the cookie if enabled
+		c.setHttpOnly(false);
+		c.setSecure("https".equalsIgnoreCase(request.getScheme()));
+		c.setPath("/");
+		response.addCookie(c);
 	}
 
 	private boolean isValidButNotInCookie(CsrfToken token, HttpServletRequest request) {
