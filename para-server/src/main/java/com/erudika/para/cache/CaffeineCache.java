@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
@@ -41,7 +40,6 @@ import org.slf4j.LoggerFactory;
 public class CaffeineCache implements Cache {
 
 	private static final Logger logger = LoggerFactory.getLogger(CaffeineCache.class);
-	private static final Map<String, String> KEY_PREFIXES = new ConcurrentHashMap<>();
 	private static final int DEFAULT_EXPIRATION_MIN = Config.getConfigInt("caffeine.evict_after_minutes", 10);
 	private final com.github.benmanes.caffeine.cache.Cache<String, Object> cache;
 
@@ -160,7 +158,7 @@ public class CaffeineCache implements Cache {
 	public void removeAll(String appid) {
 		if (!StringUtils.isBlank(appid)) {
 			logger.debug("Cache.removeAll() {}", appid);
-			KEY_PREFIXES.remove(appid);
+			cache.asMap().remove("key_prefix_" + appid);
 		}
 	}
 
@@ -177,7 +175,7 @@ public class CaffeineCache implements Cache {
 	}
 
 	private String key(String appid, String id) {
-		return KEY_PREFIXES.computeIfAbsent(appid, (k) -> Utils.getNewId()) + "_" + id;
+		return cache.asMap().computeIfAbsent("key_prefix_" + appid, k -> Utils.getNewId()) + "_" + id;
 	}
 
 	////////////////////////////////////////////////////

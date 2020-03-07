@@ -26,6 +26,7 @@ import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.security.UserAuthentication;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
 import java.util.Map;
@@ -103,9 +104,11 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
 				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.FB_PREFIX);
 				String url = Utils.formatMessage(TOKEN_URL, authCode, redirectURI, keys[0], keys[1]);
-				try {
-					HttpGet tokenPost = new HttpGet(url);
-					String accessToken = parseAccessToken(httpclient.execute(tokenPost));
+				HttpGet tokenPost = new HttpGet(url);
+				try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
+					// Facebook keep changing their API so we try to read the access_token by the old and new ways
+					String token = EntityUtils.toString(resp1.getEntity(), Config.DEFAULT_ENCODING);
+					String accessToken = parseAccessToken(token);
 					if (accessToken != null) {
 						userAuth = getOrCreateUser(app, accessToken);
 					}
@@ -130,52 +133,47 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 		UserAuthentication userAuth = null;
 		User user = new User();
 		if (accessToken != null) {
-			String ctype = null;
-			HttpEntity respEntity = null;
-			CloseableHttpResponse resp2 = null;
-			try {
-				HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
-				resp2 = httpclient.execute(profileGet);
-				respEntity = resp2.getEntity();
-				ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
+			HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
+			try (CloseableHttpResponse resp2 = httpclient.execute(profileGet)) {
+				HttpEntity respEntity = resp2.getEntity();
+				String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
+
+				if (respEntity != null && Utils.isJsonType(ctype)) {
+					Map<String, Object> profile = jreader.readValue(respEntity.getContent());
+
+					if (profile != null && profile.containsKey("id")) {
+						String fbId = (String) profile.get("id");
+						String email = (String) profile.get("email");
+						String name = (String) profile.get("name");
+
+						user.setAppid(getAppid(app));
+						user.setIdentifier(Config.FB_PREFIX.concat(fbId));
+						user.setEmail(email);
+						user = User.readUserForIdentifier(user);
+						if (user == null) {
+							//user is new
+							user = new User();
+							user.setActive(true);
+							user.setAppid(getAppid(app));
+							user.setEmail(StringUtils.isBlank(email) ? Utils.getNewId() + "@facebook.com" : email);
+							user.setName(StringUtils.isBlank(name) ? "No Name" : name);
+							user.setPassword(Utils.generateSecurityToken());
+							user.setPicture(getPicture(fbId));
+							user.setIdentifier(Config.FB_PREFIX.concat(fbId));
+							String id = user.create();
+							if (id == null) {
+								throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
+							}
+						} else {
+							if (updateUserInfo(user, fbId, email, name)) {
+								user.update();
+							}
+						}
+						userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+					}
+				}
 			} catch (Exception e) {
 				logger.warn("Facebook auth request failed: GET " + PROFILE_URL + accessToken, e);
-			}
-
-			if (respEntity != null && Utils.isJsonType(ctype)) {
-				Map<String, Object> profile = jreader.readValue(respEntity.getContent());
-
-				if (profile != null && profile.containsKey("id")) {
-					String fbId = (String) profile.get("id");
-					String email = (String) profile.get("email");
-					String name = (String) profile.get("name");
-
-					user.setAppid(getAppid(app));
-					user.setIdentifier(Config.FB_PREFIX.concat(fbId));
-					user.setEmail(email);
-					user = User.readUserForIdentifier(user);
-					if (user == null) {
-						//user is new
-						user = new User();
-						user.setActive(true);
-						user.setAppid(getAppid(app));
-						user.setEmail(StringUtils.isBlank(email) ? Utils.getNewId() + "@facebook.com" : email);
-						user.setName(StringUtils.isBlank(name) ? "No Name" : name);
-						user.setPassword(Utils.generateSecurityToken());
-						user.setPicture(getPicture(fbId));
-						user.setIdentifier(Config.FB_PREFIX.concat(fbId));
-						String id = user.create();
-						if (id == null) {
-							throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
-						}
-					} else {
-						if (updateUserInfo(user, fbId, email, name)) {
-							user.update();
-						}
-					}
-					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
-				}
-				EntityUtils.consumeQuietly(respEntity);
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);
@@ -207,25 +205,15 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 		return null;
 	}
 
-	private String parseAccessToken(CloseableHttpResponse resp1) {
-		if (resp1 != null && resp1.getEntity() != null) {
-			try {
-				// Facebook keep changing their API so we try to read the access_token by the old and new ways
-				String token = EntityUtils.toString(resp1.getEntity(), Config.DEFAULT_ENCODING);
-				if (token != null) {
-					if (token.startsWith("access_token")) {
-						return token.substring(token.indexOf('=') + 1, token.indexOf('&'));
-					} else {
-						Map<String, Object> tokenObject = jreader.readValue(token);
-						if (tokenObject != null && tokenObject.containsKey("access_token")) {
-							return (String) tokenObject.get("access_token");
-						}
-					}
+	private String parseAccessToken(String token) throws JsonProcessingException {
+		if (token != null) {
+			if (token.startsWith("access_token")) {
+				return token.substring(token.indexOf('=') + 1, token.indexOf('&'));
+			} else {
+				Map<String, Object> tokenObject = jreader.readValue(token);
+				if (tokenObject != null && tokenObject.containsKey("access_token")) {
+					return (String) tokenObject.get("access_token");
 				}
-			} catch (Exception e) {
-				logger.error(null, e);
-			} finally {
-				EntityUtils.consumeQuietly(resp1.getEntity());
 			}
 		}
 		return null;

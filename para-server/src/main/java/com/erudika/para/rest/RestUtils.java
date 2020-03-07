@@ -982,19 +982,13 @@ public final class RestUtils {
 		if (response == null) {
 			return;
 		}
-		PrintWriter out = null;
-		try {
+		try (PrintWriter out = response.getWriter()) {
 			response.setStatus(status);
 			response.setContentType(MediaType.APPLICATION_JSON);
-			out = response.getWriter();
 			ParaObjectUtils.getJsonWriter().writeValue(out, getStatusResponse(Response.Status.
 					fromStatusCode(status), message).getEntity());
 		} catch (Exception ex) {
 			logger.error(null, ex);
-		} finally {
-			if (out != null) {
-				out.close();
-			}
 		}
 	}
 
@@ -1007,18 +1001,12 @@ public final class RestUtils {
 		if (response == null) {
 			return;
 		}
-		PrintWriter out = null;
-		try {
+		try (PrintWriter out = response.getWriter()) {
 			response.setStatus(HttpServletResponse.SC_OK);
 			response.setContentType(MediaType.APPLICATION_JSON);
-			out = response.getWriter();
 			ParaObjectUtils.getJsonWriter().writeValue(out, obj);
 		} catch (Exception ex) {
 			logger.error(null, ex);
-		} finally {
-			if (out != null) {
-				out.close();
-			}
 		}
 	}
 
