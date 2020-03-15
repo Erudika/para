@@ -218,11 +218,11 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 		return null;
 	}
 
-	private String fetchUserEmail(Integer githubId, String accessToken) throws IOException {
+	private String fetchUserEmail(Integer githubId, String accessToken) {
 		HttpGet emailsGet = new HttpGet(PROFILE_URL + "/emails");
 		emailsGet.setHeader(HttpHeaders.AUTHORIZATION, "token " + accessToken);
 		emailsGet.setHeader(HttpHeaders.ACCEPT, "application/json");
-
+		String defaultEmail = githubId + "@github.com";
 		try (CloseableHttpResponse resp = httpclient.execute(emailsGet)) {
 			HttpEntity respEntity = resp.getEntity();
 			if (respEntity != null) {
@@ -240,8 +240,10 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 					return email;
 				}
 			}
+		} catch (IOException e) {
+			logger.warn("Failed to fetch user email from GitHub, using default: " + defaultEmail);
 		}
-		return githubId + "@github.com";
+		return defaultEmail;
 	}
 
 	private String getAppid(App app) {
