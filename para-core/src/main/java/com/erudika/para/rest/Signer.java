@@ -202,7 +202,7 @@ public final class Signer extends BaseAws4Signer {
 		byte[] jsonEntity = null;
 		if (entity != null) {
 			try {
-				jsonEntity = ParaObjectUtils.getJsonWriter().writeValueAsBytes(entity.getEntity());
+				jsonEntity = ParaObjectUtils.getJsonWriterNoIdent().writeValueAsBytes(entity.getEntity());
 			} catch (JsonProcessingException ex) {
 				jsonEntity = null;
 				logger.error(null, ex);
