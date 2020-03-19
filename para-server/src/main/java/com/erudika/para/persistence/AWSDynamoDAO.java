@@ -175,7 +175,7 @@ public class AWSDynamoDAO implements DAO {
 			setRowKey(key, row);
 			client().putItem(b -> b.tableName(table).item(row));
 		} catch (Exception e) {
-			logger.error("Could not write row to DB - table={}, appid={}, key={}: {}", table, appid, key, e);
+			logger.error("Could not write row to DB - table={}, appid={}, key={}:", table, appid, key, e);
 			throwIfNecessary(e);
 		}
 		return key;
@@ -226,7 +226,7 @@ public class AWSDynamoDAO implements DAO {
 		} catch (ConditionalCheckFailedException ex) {
 			logger.warn("Item not updated - versions don't match. table={}, appid={}, key={}.", table, appid, key);
 		} catch (Exception e) {
-			logger.error("Could not update row in DB - table={}, appid={}, key={}: {}", table, appid, key, e);
+			logger.error("Could not update row in DB - table={}, appid={}, key={}:", table, appid, key, e);
 			throwIfNecessary(e);
 		}
 		return false;
@@ -244,7 +244,7 @@ public class AWSDynamoDAO implements DAO {
 				row = res.item();
 			}
 		} catch (Exception e) {
-			logger.error("Could not read row from DB - table={}, appid={}, key={}: {}", table, appid, key, e);
+			logger.error("Could not read row from DB - table={}, appid={}, key={}:", table, appid, key, e);
 		}
 		return (row == null || row.isEmpty()) ? null : row;
 	}
@@ -257,7 +257,7 @@ public class AWSDynamoDAO implements DAO {
 		try {
 			client().deleteItem(b -> b.tableName(table).key(rowKey(key, appid)));
 		} catch (Exception e) {
-			logger.error("Could not delete row from DB - table={}, appid={}, key={}: {}", table, appid, key, e);
+			logger.error("Could not delete row from DB - table={}, appid={}, key={}:", table, appid, key, e);
 			throwIfNecessary(e);
 		}
 	}
@@ -350,7 +350,7 @@ public class AWSDynamoDAO implements DAO {
 			}
 			logger.debug("DAO.readAll({}) {}", keySet, results.size());
 		} catch (Exception e) {
-			logger.error("Failed to readAll({}), table={}: {}", keys, table, e);
+			logger.error("Failed to readAll({}), table={}:", keys, table, e);
 		}
 		return results;
 	}
@@ -373,7 +373,7 @@ public class AWSDynamoDAO implements DAO {
 			}
 			pager.setCount(pager.getCount() + results.size());
 		} catch (Exception e) {
-			logger.error("Failed to readPage({}), table={}: {}", appid, table, e);
+			logger.error("Failed to readPage({}), table={}:", appid, table, e);
 		}
 		return results;
 	}

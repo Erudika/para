@@ -129,7 +129,7 @@ public class OXRCurrencyConverter implements CurrencyConverter {
 			}
 			logger.debug("Fetched rates from OpenExchange for {}.", new Date().toString());
 		} catch (Exception e) {
-			logger.error("TimerTask failed: {}", e);
+			logger.error("TimerTask failed: ", e);
 		}
 		return s;
 	}

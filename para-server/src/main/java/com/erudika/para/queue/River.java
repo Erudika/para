@@ -99,7 +99,7 @@ public abstract class River implements Runnable {
 					}
 				}
 			} catch (Exception e) {
-				logger.error("Batch processing operation failed: {}", e);
+				logger.error("Batch processing operation failed:", e);
 			}
 			if (Thread.interrupted()) {
 				break;

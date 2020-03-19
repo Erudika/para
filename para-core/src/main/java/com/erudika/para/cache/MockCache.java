@@ -95,7 +95,7 @@ public class MockCache implements Cache {
 		}
 		if (isExpired((Long) getMap(appid).get(id + ":ttl"))) {
 			remove(appid, id);
-			logger.debug("Cache.get() {} {}", appid, null);
+			logger.debug("Cache.get() {}", appid);
 			return null;
 		} else {
 			logger.debug("Cache.get() {} {}", appid, id);

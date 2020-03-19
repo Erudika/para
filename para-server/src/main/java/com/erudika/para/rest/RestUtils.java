@@ -190,7 +190,7 @@ public final class RestUtils {
 				return Para.getDAO().read(appid, id);
 			}
 		} catch (Exception e) {
-			logger.debug("Invalid resource path {}: {}", path, e);
+			logger.debug("Invalid resource path {}:", path, e);
 		}
 		return null;
 	}

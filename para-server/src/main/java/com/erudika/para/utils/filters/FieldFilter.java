@@ -81,7 +81,7 @@ public class FieldFilter implements ContainerResponseFilter {
 				}
 			}
 		} catch (Exception e) {
-			LoggerFactory.getLogger(this.getClass()).warn("Failed to limit returned fields using ?select=: {}", e);
+			LoggerFactory.getLogger(this.getClass()).warn("Failed to limit returned fields using ?select=:", e);
 		}
 	}
 
