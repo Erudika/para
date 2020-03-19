@@ -20,6 +20,7 @@ package com.erudika.para.security.filters;
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.security.AuthenticatedUserDetails;
 import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.security.UserAuthentication;
@@ -101,6 +102,7 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 				String email = jwt.getJWTClaimsSet().getStringClaim(Config._EMAIL);
 				String name = jwt.getJWTClaimsSet().getStringClaim(Config._NAME);
 				String identifier = jwt.getJWTClaimsSet().getStringClaim(Config._IDENTIFIER);
+				String groups = jwt.getJWTClaimsSet().getStringClaim(Config._GROUPS);
 				String picture = jwt.getJWTClaimsSet().getStringClaim("picture");
 				String appid = app.getAppIdentifier();
 
@@ -116,13 +118,14 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 					user.setActive(true);
 					user.setAppid(appid);
 					user.setName(name);
+					user.setGroups(StringUtils.isBlank(groups) ? User.Groups.USERS.toString() : groups);
 					user.setIdentifier(identifier);
 					user.setEmail(email);
 					user.setPicture(picture);
 					// allow temporary first-time login without verifying email address
 					user.create();
 				} else {
-					if (updateUserInfo(user, picture, email, name, accessToken)) {
+					if (updateUserInfo(user, picture, email, name, accessToken, groups)) {
 						user.update();
 					}
 				}
@@ -134,7 +137,7 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 		return SecurityUtils.checkIfActive(userAuth, user, false);
 	}
 
-	private boolean updateUserInfo(User user, String picture, String email, String name, String accessToken) {
+	private boolean updateUserInfo(User user, String picture, String email, String name, String accessToken, String groups) {
 		boolean update = false;
 		if (!StringUtils.equals(user.getPicture(), picture)) {
 			user.setPicture(picture);
@@ -147,6 +150,11 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 		if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
 			user.setName(name);
 			update = true;
+		}
+		if (!StringUtils.isBlank(groups) && !StringUtils.equals(user.getGroups(), groups)) {
+			user.setGroups(groups);
+			CoreUtils.getInstance().overwrite(user.getAppid(), user);
+			update = false;
 		}
 		return update;
 	}

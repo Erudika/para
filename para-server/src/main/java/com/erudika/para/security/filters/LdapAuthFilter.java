@@ -20,6 +20,7 @@ package com.erudika.para.security.filters;
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.security.AuthenticatedUserDetails;
 import com.erudika.para.security.LDAPAuthentication;
 import com.erudika.para.security.SecurityUtils;
@@ -117,6 +118,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 			String email = profile.getMail();
 			String name = StringUtils.join(profile.getCn(), ", ");
 			String adDomain = (String) app.getSetting("security.ldap.active_directory_domain");
+			String groups = getGroupsFromDN(profile.getDn(), app);
 
 			if (StringUtils.isBlank(email)) {
 				if (!StringUtils.isBlank(adDomain)) {
@@ -143,6 +145,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 				user.setActive(true);
 				user.setAppid(getAppid(app));
 				user.setEmail(email);
+				user.setGroups(groups);
 				user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 				user.setPassword(Utils.generateSecurityToken());
 				user.setIdentifier(Config.LDAP_PREFIX.concat(ldapAccountId));
@@ -151,7 +154,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 					throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 				}
 			} else {
-				if (updateUserInfo(user, email, name)) {
+				if (updateUserInfo(user, email, name, groups)) {
 					user.update();
 				}
 			}
@@ -162,7 +165,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 		return userAuth;
 	}
 
-	private boolean updateUserInfo(User user, String email, String name) {
+	private boolean updateUserInfo(User user, String email, String name, String groups) {
 		boolean update = false;
 		if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
 			user.setEmail(email);
@@ -171,6 +174,11 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
 			user.setName(name);
 			update = true;
+		}
+		if (!StringUtils.isBlank(groups) && !StringUtils.equals(user.getGroups(), groups)) {
+			user.setGroups(groups);
+			CoreUtils.getInstance().overwrite(user.getAppid(), user);
+			update = false;
 		}
 		return update;
 	}
@@ -208,5 +216,20 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private String getAppid(App app) {
 		return (app == null) ? null : app.getAppIdentifier();
+	}
+
+	private String getGroupsFromDN(String dn, App app) {
+		String group = User.Groups.USERS.toString();
+		if (!StringUtils.isBlank(dn)) {
+			String modsNode = (String) app.getSetting("security.ldap.mods_group_node");
+			String adminsNode = (String) app.getSetting("security.ldap.admins_group_node");
+			if (!StringUtils.isBlank(modsNode) && StringUtils.containsIgnoreCase(dn, modsNode + ",")) {
+				group = User.Groups.MODS.toString();
+			}
+			if (!StringUtils.isBlank(adminsNode) && StringUtils.containsIgnoreCase(dn, adminsNode + ",")) {
+				group = User.Groups.ADMINS.toString();
+			}
+		}
+		return group;
 	}
 }
