@@ -42,7 +42,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,6 +53,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -982,9 +982,10 @@ public final class RestUtils {
 		if (response == null) {
 			return;
 		}
-		try (PrintWriter out = response.getWriter()) {
+		try (ServletOutputStream out = response.getOutputStream()) {
 			response.setStatus(status);
 			response.setContentType(MediaType.APPLICATION_JSON);
+			response.setCharacterEncoding(Config.DEFAULT_ENCODING);
 			ParaObjectUtils.getJsonWriter().writeValue(out, getStatusResponse(Response.Status.
 					fromStatusCode(status), message).getEntity());
 		} catch (Exception ex) {
@@ -1001,9 +1002,10 @@ public final class RestUtils {
 		if (response == null) {
 			return;
 		}
-		try (PrintWriter out = response.getWriter()) {
+		try (ServletOutputStream out = response.getOutputStream()) {
 			response.setStatus(HttpServletResponse.SC_OK);
 			response.setContentType(MediaType.APPLICATION_JSON);
+			response.setCharacterEncoding(Config.DEFAULT_ENCODING);
 			ParaObjectUtils.getJsonWriter().writeValue(out, obj);
 		} catch (Exception ex) {
 			logger.error(null, ex);
