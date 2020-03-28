@@ -37,7 +37,6 @@ import com.erudika.para.utils.HealthUtils;
 import com.erudika.para.utils.filters.CORSFilter;
 import com.erudika.para.utils.filters.ErrorFilter;
 import com.erudika.para.utils.filters.GZipServletFilter;
-import com.erudika.para.webhooks.WebhookIOListener;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;

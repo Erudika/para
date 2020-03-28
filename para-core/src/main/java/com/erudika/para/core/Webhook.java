@@ -17,11 +17,21 @@
  */
 package com.erudika.para.core;
 
+import com.erudika.para.Para;
 import com.erudika.para.annotations.Stored;
+import com.erudika.para.core.utils.ParaObjectUtils;
+import com.erudika.para.utils.Config;
+import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import javax.validation.constraints.NotBlank;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.URL;
+import org.slf4j.LoggerFactory;
 
 /**
  * Represents a webhook registration.
@@ -31,7 +41,7 @@ public class Webhook extends Sysprop {
 	private static final long serialVersionUID = 1L;
 
 	@Stored @NotBlank @URL private String targetUrl;
-	@Stored @NotBlank private String secret;
+	@Stored private String secret;
 	@Stored private String typeFilter;
 	@Stored private Boolean urlEncoded;
 	@Stored private Boolean active;
@@ -43,6 +53,9 @@ public class Webhook extends Sysprop {
 	@Stored private Boolean createAll;
 	@Stored private Boolean updateAll;
 	@Stored private Boolean deleteAll;
+	@Stored private List<String> customEvents;
+	@Stored private String triggeredEvent;
+	@Stored private Object customPayload;
 
 	/**
 	 * No-args constructor.
@@ -237,6 +250,55 @@ public class Webhook extends Sysprop {
 	}
 
 	/**
+	 * @return the name of the custom event
+	 */
+	public List<String> getCustomEvents() {
+		if (customEvents == null) {
+			customEvents = new LinkedList<>();
+		}
+		return customEvents;
+	}
+
+	/**
+	 * @param customEvents set the name of the custom event
+	 */
+	public void setCustomEvents(List<String> customEvents) {
+		this.customEvents = customEvents;
+	}
+
+	/**
+	 * @return the name of the custom event to be triggered
+	 */
+	public String getTriggeredEvent() {
+		return triggeredEvent;
+	}
+
+	/**
+	 * @param triggeredEvent custom event name
+	 */
+	public void setTriggeredEvent(String triggeredEvent) {
+		this.triggeredEvent = triggeredEvent;
+		if (!StringUtils.isBlank(triggeredEvent)) {
+			// get around the validation
+			setTargetUrl("https://para");
+		}
+	}
+
+	/**
+	 * @return the custom payload object
+	 */
+	public Object getCustomPayload() {
+		return customPayload;
+	}
+
+	/**
+	 * @param customPayload set the custom payload object which will be sent when a custom event is triggered
+	 */
+	public void setCustomPayload(Object customPayload) {
+		this.customPayload = customPayload;
+	}
+
+	/**
 	 * Resets the secret key by generating a new one.
 	 */
 	public void resetSecret() {
@@ -248,19 +310,107 @@ public class Webhook extends Sysprop {
 		if (active) {
 			this.tooManyFailures = false; // clear notification flag
 		}
+		triggeredEvent = null; // not used
+		customPayload = null; // not used
 		super.update();
 	}
 
 	@Override
 	public String create() {
+		// check if this is a trigger request for a custom event using PUT /webhooks/trigger:custom.event
+		if (!StringUtils.isBlank(triggeredEvent) && customPayload != null) {
+			sendEventPayloadToQueue(getAppid(), "customEvents", triggeredEvent, customPayload);
+			setId("triggered" + Config.SEPARATOR + triggeredEvent);
+			setName("This webhook object is not persisted and should be discarded.");
+			setStored(false);
+			setIndexed(false);
+			setCached(false);
+			return getId();
+		}
+
 		if (StringUtils.isBlank(secret)) {
 			resetSecret();
 		}
-		if (create || update || delete || createAll || updateAll || deleteAll) {
-			this.active = true;
+		if (create || update || delete || createAll || updateAll || deleteAll || !getCustomEvents().isEmpty()) {
+			active = true;
 		}
+		triggeredEvent = null; // not used
+		customPayload = null; // not used
 		return super.create();
 	}
 
+	/**
+	 * Builds the JSON payload object.
+	 * @param event Para.DAO method name or custom event name
+	 * @param payload payload object to convert to JSON
+	 * @return the payload + metadata object as JSON string
+	 */
+	public String buildPayloadAsJSON(String event, Object payload) {
+		Map<String, Object> data = new HashMap<>();
+		data.put(Config._ID, getId());
+		data.put(Config._APPID, getAppid());
+		data.put(Config._TYPE, "webhookpayload");
+		data.put("targetUrl", getTargetUrl());
+		data.put("urlEncoded", getUrlEncoded());
+		data.put("event", event);
 
+		Map<String, Object> payloadObject = new HashMap<>();
+		payloadObject.put(Config._TIMESTAMP, System.currentTimeMillis());
+		payloadObject.put(Config._APPID, getAppid());
+		payloadObject.put("event", event);
+		if (payload instanceof List) {
+			payloadObject.put("items", payload);
+		} else {
+			payloadObject.put("items", Collections.singletonList(payload));
+		}
+		try {
+			String payloadString = ParaObjectUtils.getJsonWriterNoIdent().writeValueAsString(payloadObject);
+			data.put("payload", payloadString);
+			data.put("signature", Utils.hmacSHA256(payloadString, getSecret()));
+			return ParaObjectUtils.getJsonWriterNoIdent().writeValueAsString(data);
+		} catch (Exception e) {
+			LoggerFactory.getLogger(Webhook.class).error(null, e);
+		}
+		return "";
+	}
+
+	/**
+	 * Sends out the payload object for an event to the queue for processing.
+	 * @param appid appid
+	 * @param eventName event name like "create", "delete" or "customEvents"
+	 * @param eventValue event value - for custom events this is the name of the custom event
+	 * @param payload the payload
+	 */
+	public static void sendEventPayloadToQueue(String appid, String eventName, Object eventValue, Object payload) {
+		if (StringUtils.isBlank(appid)) {
+			return;
+		}
+		Pager p = new Pager(10);
+		p.setSortby("_docid");
+		List<Webhook> webhooks;
+		do {
+			Map<String, Object> terms = new HashMap<>();
+			terms.put(eventName, eventValue);
+			terms.put("active", true);
+			webhooks = Para.getSearch().findTerms(appid, Utils.type(Webhook.class), terms, true, p);
+				webhooks.stream().filter(webhook -> typeFilterMatches(webhook, payload)).
+					forEach(webhook -> Para.getQueue().push(webhook.buildPayloadAsJSON(
+							(eventValue instanceof String) ? (String) eventValue : eventName, payload)));
+		} while (!webhooks.isEmpty());
+	}
+
+	private static boolean typeFilterMatches(Webhook webhook, Object paraObjects) {
+		if (StringUtils.isBlank(webhook.getTypeFilter()) || App.ALLOW_ALL.equals(webhook.getTypeFilter())) {
+			return true;
+		}
+		if (paraObjects instanceof ParaObject) {
+			return webhook.getTypeFilter().equalsIgnoreCase(((ParaObject) paraObjects).getType());
+		} else if (paraObjects instanceof List) {
+			List<?> list = (List) paraObjects;
+			if (!list.isEmpty() && list.get(0) instanceof ParaObject) {
+				return webhook.getTypeFilter().equalsIgnoreCase(((ParaObject) list.get(0)).getType());
+			}
+		}
+		return false;
+	}
 }

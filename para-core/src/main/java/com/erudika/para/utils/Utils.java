@@ -56,6 +56,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.regex.Pattern;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.text.StringEscapeUtils;
@@ -173,6 +175,22 @@ public final class Utils {
 			}
 			return sb.toString();
 		} catch (NoSuchAlgorithmException ex) {
+			return "";
+		}
+	}
+
+	/**
+	 * Computes the HmacSHA256 hash of a message.
+	 * @param message a message as UTF-8 encoded string
+	 * @param secret a secret key
+	 * @return base64(hmacSHA256(message, secret))
+	 */
+	public static String hmacSHA256(String message, String secret) {
+		try {
+			Mac hmac = Mac.getInstance("HmacSHA256");
+			hmac.init(new SecretKeySpec(secret.getBytes(Config.DEFAULT_ENCODING), "HmacSHA256"));
+			return Utils.base64enc(hmac.doFinal(message.getBytes(Config.DEFAULT_ENCODING)));
+		} catch (Exception e) {
 			return "";
 		}
 	}
