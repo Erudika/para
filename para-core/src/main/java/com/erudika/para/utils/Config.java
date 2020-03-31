@@ -106,6 +106,8 @@ public final class Config {
 	public static final String SLACK_PREFIX = "sl" + SEPARATOR;
 	/** Mattermost prefix - defaults to 'mm:'. */
 	public static final String MATTERMOST_PREFIX = "mm" + Config.SEPARATOR;
+	/** Amazon prefix - defaults to 'az:'. */
+	public static final String AMAZON_PREFIX = "az" + Config.SEPARATOR;
 	/** OAuth2 generic prefix - defaults to 'oa2:'. */
 	public static final String OAUTH2_PREFIX = "oa2" + SEPARATOR;
 	/** OAuth2 second generic prefix - defaults to 'oa2second:'. */
@@ -218,6 +220,14 @@ public final class Config {
 	 * Mattermost app secret (for authentication).
 	 */
 	public static final String MATTERMOST_SECRET = getConfigParam("mm_secret", "");
+	/**
+	 * Amazon app id (for authentication).
+	 */
+	public static final String AMAZON_APP_ID = getConfigParam("az_app_id", "");
+	/**
+	 * Amazon app secret (for authentication).
+	 */
+	public static final String AMAZON_SECRET = getConfigParam("az_secret", "");
 	/**
 	 * The identifier of the first administrator (can be email, OpenID, or Facebook user id).
 	 */

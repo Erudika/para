@@ -30,6 +30,7 @@ import com.erudika.para.core.App;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.rest.RestUtils;
+import com.erudika.para.security.filters.AmazonAuthFilter;
 import com.erudika.para.security.filters.LdapAuthFilter;
 import com.erudika.para.security.filters.PasswordlessAuthFilter;
 import com.erudika.para.security.filters.SlackAuthFilter;
@@ -77,6 +78,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	private TwitterAuthFilter twitterAuth;
 	private MicrosoftAuthFilter microsoftAuth;
 	private SlackAuthFilter slackAuth;
+	private AmazonAuthFilter amazonAuth;
 	private GenericOAuth2Filter oauth2Auth;
 	private LdapAuthFilter ldapAuth;
 	private PasswordAuthFilter passwordAuth;
@@ -296,6 +298,8 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			return microsoftAuth.getOrCreateUser(app, accessToken);
 		} else if ("slack".equalsIgnoreCase(identityProvider)) {
 			return slackAuth.getOrCreateUser(app, accessToken);
+		} else if ("amazon".equalsIgnoreCase(identityProvider)) {
+			return amazonAuth.getOrCreateUser(app, accessToken);
 		} else if ("oauth2".equalsIgnoreCase(identityProvider)) {
 			return oauth2Auth.getOrCreateUser(app, accessToken);
 		} else if ("oauth2second".equalsIgnoreCase(identityProvider)) {
@@ -423,6 +427,36 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	@Inject
 	public void setMicrosoftAuth(MicrosoftAuthFilter microsoftAuth) {
 		this.microsoftAuth = microsoftAuth;
+	}
+
+	/**
+	 * @return auth filter
+	 */
+	public SlackAuthFilter getSlackAuth() {
+		return slackAuth;
+	}
+
+	/**
+	 * @param slackAuth auth filter
+	 */
+	@Inject
+	public void setSlackAuth(SlackAuthFilter slackAuth) {
+		this.slackAuth = slackAuth;
+	}
+
+	/**
+	 * @return auth filter
+	 */
+	public AmazonAuthFilter getAmazonAuth() {
+		return amazonAuth;
+	}
+
+	/**
+	 * @param amazonAuth auth filter
+	 */
+	@Inject
+	public void setAmazonAuth(AmazonAuthFilter amazonAuth) {
+		this.amazonAuth = amazonAuth;
 	}
 
 	/**

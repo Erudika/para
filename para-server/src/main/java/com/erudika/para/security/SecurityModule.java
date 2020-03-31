@@ -27,6 +27,7 @@ import com.erudika.para.security.filters.LinkedInAuthFilter;
 import com.erudika.para.security.filters.GenericOAuth2Filter;
 import com.erudika.para.security.filters.FacebookAuthFilter;
 import com.erudika.para.cache.Cache;
+import com.erudika.para.security.filters.AmazonAuthFilter;
 import com.erudika.para.security.filters.LdapAuthFilter;
 import com.erudika.para.security.filters.PasswordlessAuthFilter;
 import com.erudika.para.security.filters.SAMLAuthFilter;
@@ -60,6 +61,7 @@ public class SecurityModule extends AbstractModule {
 	private GitHubAuthFilter githubFilter;
 	private MicrosoftAuthFilter microsoftFilter;
 	private SlackAuthFilter slackFilter;
+	private AmazonAuthFilter amazonFilter;
 	private GenericOAuth2Filter oauth2Filter;
 	private LdapAuthFilter ldapFilter;
 	private SAMLAuthFilter samlFilter;
@@ -365,8 +367,29 @@ public class SecurityModule extends AbstractModule {
 	/**
 	 * @param slackFilter filter
 	 */
-	public void setMicrosoftFilter(SlackAuthFilter slackFilter) {
+	public void setSlackFilter(SlackAuthFilter slackFilter) {
 		this.slackFilter = slackFilter;
+	}
+
+	/**
+	 * @return filter
+	 */
+	@Provides
+	public AmazonAuthFilter getAmazonFilter() {
+		if (amazonFilter == null) {
+			amazonFilter = new AmazonAuthFilter("/" + AmazonAuthFilter.AMAZON_ACTION);
+			amazonFilter.setAuthenticationSuccessHandler(getSuccessHandler());
+			amazonFilter.setAuthenticationFailureHandler(getFailureHandler());
+			amazonFilter.setRememberMeServices(getRemembeMeServices());
+		}
+		return amazonFilter;
+	}
+
+	/**
+	 * @param amazonFilter filter
+	 */
+	public void setAmazonFilter(AmazonAuthFilter amazonFilter) {
+		this.amazonFilter = amazonFilter;
 	}
 
 	/**
@@ -457,6 +480,8 @@ public class SecurityModule extends AbstractModule {
 	 * @param liAuth filter
 	 * @param twAuth filter
 	 * @param msAuth filter
+	 * @param slAuth filter
+	 * @param azAuth filter
 	 * @param oAuth2 filter
 	 * @param ldAuth filter
 	 * @param pwAuth filter
@@ -466,7 +491,8 @@ public class SecurityModule extends AbstractModule {
 	@Provides
 	public JWTRestfulAuthFilter getJWTAuthFilter(FacebookAuthFilter fbAuth, GoogleAuthFilter gpAuth,
 			GitHubAuthFilter ghAuth, LinkedInAuthFilter liAuth, TwitterAuthFilter twAuth,
-			MicrosoftAuthFilter msAuth, GenericOAuth2Filter oAuth2, LdapAuthFilter ldAuth,
+			MicrosoftAuthFilter msAuth, SlackAuthFilter slAuth, AmazonAuthFilter azAuth,
+			GenericOAuth2Filter oAuth2, LdapAuthFilter ldAuth,
 			PasswordAuthFilter pwAuth, PasswordlessAuthFilter plAuth) {
 		if (jwtFilter == null) {
 			jwtFilter = new JWTRestfulAuthFilter("/" + JWTRestfulAuthFilter.JWT_ACTION);
@@ -476,6 +502,8 @@ public class SecurityModule extends AbstractModule {
 			jwtFilter.setLinkedinAuth(liAuth);
 			jwtFilter.setTwitterAuth(twAuth);
 			jwtFilter.setMicrosoftAuth(msAuth);
+			jwtFilter.setSlackAuth(slAuth);
+			jwtFilter.setAmazonAuth(azAuth);
 			jwtFilter.setGenericOAuth2Auth(oAuth2);
 			jwtFilter.setLdapAuth(ldAuth);
 			jwtFilter.setPasswordAuth(pwAuth);

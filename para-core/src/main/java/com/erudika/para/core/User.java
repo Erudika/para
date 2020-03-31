@@ -466,6 +466,15 @@ public class User implements ParaObject {
 	}
 
 	/**
+	 * Is the main identifier a Amazon account id.
+	 * @return true if user is signed in with a Amazon account
+	 */
+	@JsonIgnore
+	public boolean isAmazonUser() {
+		return StringUtils.startsWithIgnoreCase(identifier, Config.AMAZON_PREFIX);
+	}
+
+	/**
 	 * Is the main identifier a LDAP account.
 	 * @return true if user is signed in with a LDAP account
 	 */
@@ -533,6 +542,8 @@ public class User implements ParaObject {
 			return "slack";
 		} else if (isMattermostUser()) {
 			return "mattermost";
+		} else if (isAmazonUser()) {
+			return "amazon";
 		} else if (isLDAPUser()) {
 			return "ldap";
 		} else if (isSAMLUser()) {
