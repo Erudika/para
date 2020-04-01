@@ -8,7 +8,7 @@ RUN apk --update add git openssh maven && \
 
 ENV BOOT_SLEEP=0 \
     JAVA_OPTS="" \
-    PARA_VERSION="1.36.1"
+    PARA_VERSION="1.37.0"
 
 RUN addgroup -S para && adduser -S -G para para && \
 	mkdir -p /para/lib && \
