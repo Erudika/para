@@ -12,7 +12,7 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>5.2.2.RELEASE</springSecVer>
+		<springSecVer>5.3.0.RELEASE</springSecVer>
 		<springLdapVer>2.3.2.RELEASE</springLdapVer>
 	</properties>
 
@@ -92,7 +92,7 @@
 		<dependency>
 			<groupId>com.unboundid</groupId>
 			<artifactId>unboundid-ldapsdk</artifactId>
-			<version>4.0.14</version>
+			<version>5.0.1</version>
 		</dependency>
 
 		<!-- SAML -->
@@ -163,7 +163,7 @@
 		<dependency>
 			<groupId>com.google.inject</groupId>
 			<artifactId>guice</artifactId>
-			<version>4.2.2</version>
+			<version>4.2.3</version>
 		</dependency>
 
 		<!-- METRICS -->
@@ -196,7 +196,7 @@
 		<dependency>
 			<groupId>org.yaml</groupId>
 			<artifactId>snakeyaml</artifactId>
-			<version>1.25</version>
+			<version>1.26</version>
 		</dependency>
 		<dependency>
 			<groupId>javax.servlet</groupId>
@@ -207,7 +207,7 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>8.4</version>
+			<version>8.10</version>
 		</dependency>
 		<dependency>
 			<groupId>com.microsoft.azure.iothub-java-client</groupId>
