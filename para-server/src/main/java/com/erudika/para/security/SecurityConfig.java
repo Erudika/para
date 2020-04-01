@@ -271,9 +271,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 			http.addFilterAfter(samlFilter, BasicAuthenticationFilter.class);
 		}
 
-		if (samlMetaFilter != null) {
-			http.addFilterAfter(samlMetaFilter, BasicAuthenticationFilter.class);
-		}
+		http.addFilterAfter(samlMetaFilter, BasicAuthenticationFilter.class);
 	}
 
 	private void parseProtectedResources(HttpSecurity http, ConfigObject protectedResources) throws Exception {
