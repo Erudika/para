@@ -70,7 +70,7 @@ public class Webhook extends Sysprop {
 	 */
 	public Webhook(String targetUrl) {
 		this.targetUrl = targetUrl;
-		this.urlEncoded = true;
+		this.urlEncoded = false;
 		this.create = false;
 		this.update = false;
 		this.delete = false;
