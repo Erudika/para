@@ -340,7 +340,7 @@ public final class Config {
 				}
 			}
 		} catch (Exception ex) {
-			logger.warn("Para configuration file 'application.(conf|json|properties)' is missing from classpath.");
+			logger.warn("Para configuration file 'application.(conf|json|properties)' is invalid or missing from classpath.");
 			config = com.typesafe.config.ConfigFactory.empty();
 		}
 	}
