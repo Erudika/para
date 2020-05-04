@@ -29,6 +29,7 @@ import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -226,19 +227,21 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 		try (CloseableHttpResponse resp = httpclient.execute(emailsGet)) {
 			HttpEntity respEntity = resp.getEntity();
 			if (respEntity != null) {
-				MappingIterator<Map<String, Object>> emails = jreader.readValues(respEntity.getContent());
-				EntityUtils.consumeQuietly(respEntity);
-				if (emails != null) {
-					String email = null;
-					while (emails.hasNext()) {
-						Map<String, Object> next = emails.next();
-						email = (String) next.get("email");
-						if (next.containsKey("primary") && (Boolean) next.get("primary")) {
-							break;
+				try (InputStream is = respEntity.getContent()) {
+					MappingIterator<Map<String, Object>> emails = jreader.readValues(is);
+					if (emails != null) {
+						String email = null;
+						while (emails.hasNext()) {
+							Map<String, Object> next = emails.next();
+							email = (String) next.get("email");
+							if (next.containsKey("primary") && (Boolean) next.get("primary")) {
+								break;
+							}
 						}
+						return email;
 					}
-					return email;
 				}
+				EntityUtils.consumeQuietly(respEntity);
 			}
 		} catch (IOException e) {
 			logger.warn("Failed to fetch user email from GitHub, using default: " + defaultEmail);
