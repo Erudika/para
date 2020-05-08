@@ -310,7 +310,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			return ldapAuth.getOrCreateUser(app, accessToken);
 		} else if ("passwordless".equalsIgnoreCase(identityProvider)) {
 			return passwordlessAuth.getOrCreateUser(app, accessToken);
-		} else if ("password".equalsIgnoreCase(identityProvider) || "generic".equalsIgnoreCase(identityProvider)) {
+		} else if (StringUtils.equalsAnyIgnoreCase(identityProvider, "password", "generic")) {
 			return passwordAuth.getOrCreateUser(app, accessToken);
 		}
 		return null;
