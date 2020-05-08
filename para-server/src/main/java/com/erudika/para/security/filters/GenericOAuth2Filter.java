@@ -180,7 +180,9 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 				String name = (String) profile.get(nameParam);
 
 				if (StringUtils.isBlank(email)) {
-					if (!StringUtils.isBlank(emailDomain)) {
+					if (Utils.isValidEmail(oauthAccountId)) {
+						email = oauthAccountId;
+					} else if (!StringUtils.isBlank(emailDomain)) {
 						email = oauthAccountId.concat("@").concat(emailDomain);
 					} else {
 						LOG.warn("Blank email attribute for OAuth2 user '{}'.", oauthAccountId);

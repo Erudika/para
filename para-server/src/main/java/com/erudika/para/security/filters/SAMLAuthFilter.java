@@ -171,7 +171,9 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 			String emailDomain = userData.get("domain");
 
 			if (StringUtils.isBlank(email)) {
-				if (!StringUtils.isBlank(emailDomain)) {
+				if (Utils.isValidEmail(samlUserId)) {
+					email = samlUserId;
+				} else if (!StringUtils.isBlank(emailDomain)) {
 					email = samlUserId.concat("@").concat(emailDomain);
 				} else {
 					LOG.warn("Blank email attribute for SAML user '{}'.", samlUserId);

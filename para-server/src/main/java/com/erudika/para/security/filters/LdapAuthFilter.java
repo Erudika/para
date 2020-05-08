@@ -121,7 +121,9 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 			String groups = getGroupsFromDN(profile.getDn(), app);
 
 			if (StringUtils.isBlank(email)) {
-				if (!StringUtils.isBlank(adDomain)) {
+				if (Utils.isValidEmail(ldapAccountId)) {
+					email = ldapAccountId;
+				} else if (!StringUtils.isBlank(adDomain)) {
 					LOG.warn("The AD doesn't have email attribute. Instead, it uses domain name for email address: "
 							+ "{}@{}.", ldapAccountId, adDomain);
 					email = ldapAccountId.concat("@").concat(adDomain);
