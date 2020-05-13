@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchGetItemResponse;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemResponse;
@@ -44,9 +45,11 @@ import software.amazon.awssdk.services.dynamodb.model.CreateTableResponse;
 import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
 import software.amazon.awssdk.services.dynamodb.model.GlobalSecondaryIndex;
 import software.amazon.awssdk.services.dynamodb.model.GlobalSecondaryIndexDescription;
+import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
 import software.amazon.awssdk.services.dynamodb.model.KeyType;
 import software.amazon.awssdk.services.dynamodb.model.KeysAndAttributes;
 import software.amazon.awssdk.services.dynamodb.model.ListTablesResponse;
+import software.amazon.awssdk.services.dynamodb.model.Projection;
 import software.amazon.awssdk.services.dynamodb.model.ProjectionType;
 import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughputExceededException;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
@@ -173,10 +176,11 @@ public final class AWSDynamoUtils {
 		try {
 			String table = getTableNameForAppid(appid);
 			CreateTableResponse tbl = getClient().createTable(b -> b.tableName(table).
-					keySchema(b1 -> b1.attributeName(Config._KEY).keyType(KeyType.HASH)).
 					sseSpecification(b2 -> b2.enabled(ENCRYPTION_AT_REST_ENABLED)).
-					attributeDefinitions(b3 -> b3.attributeName(Config._KEY).attributeType(ScalarAttributeType.S)).
-					provisionedThroughput(b4 -> b4.readCapacityUnits(readCapacity).writeCapacityUnits(writeCapacity)));
+					provisionedThroughput(b4 -> b4.readCapacityUnits(readCapacity).writeCapacityUnits(writeCapacity)).
+					keySchema(KeySchemaElement.builder().attributeName(Config._KEY).keyType(KeyType.HASH).build()).
+					attributeDefinitions(AttributeDefinition.builder().
+							attributeName(Config._KEY).attributeType(ScalarAttributeType.S).build()));
 
 			logger.info("Waiting for DynamoDB table to become ACTIVE...");
 			waitForActive(table);
@@ -250,16 +254,20 @@ public final class AWSDynamoUtils {
 			GlobalSecondaryIndex secIndex = GlobalSecondaryIndex.builder().
 					indexName(getSharedIndexName()).
 					provisionedThroughput(b -> b.readCapacityUnits(1L).writeCapacityUnits(1L)).
-					projection(b1 -> b1.projectionType(ProjectionType.ALL)).
-					keySchema(b2 -> b2.attributeName(Config._APPID).keyType(KeyType.HASH),
-							b3 -> b3.attributeName(Config._ID).keyType(KeyType.RANGE)).build();
+					projection(Projection.builder().projectionType(ProjectionType.ALL).build()).
+					keySchema(KeySchemaElement.builder().attributeName(Config._APPID).keyType(KeyType.HASH).build(),
+							KeySchemaElement.builder().attributeName(Config._ID).keyType(KeyType.RANGE).build()).build();
+
+			AttributeDefinition[] attributes = new AttributeDefinition[] {
+				AttributeDefinition.builder().attributeName(Config._KEY).attributeType(ScalarAttributeType.S).build(),
+				AttributeDefinition.builder().attributeName(Config._APPID).attributeType(ScalarAttributeType.S).build(),
+				AttributeDefinition.builder().attributeName(Config._ID).attributeType(ScalarAttributeType.S).build()
+			};
 
 			CreateTableResponse tbl = getClient().createTable(b -> b.tableName(table).
-					keySchema(b1 -> b1.attributeName(Config._KEY).keyType(KeyType.HASH)).
+					keySchema(KeySchemaElement.builder().attributeName(Config._KEY).keyType(KeyType.HASH).build()).
 					sseSpecification(b2 -> b2.enabled(ENCRYPTION_AT_REST_ENABLED)).
-					attributeDefinitions(b3 -> b3.attributeName(Config._KEY).attributeType(ScalarAttributeType.S),
-							b4 ->  b4.attributeName(Config._APPID).attributeType(ScalarAttributeType.S),
-							b5 -> b5.attributeName(Config._ID).attributeType(ScalarAttributeType.S)).
+					attributeDefinitions(attributes).
 					globalSecondaryIndexes(secIndex).
 					provisionedThroughput(b6 -> b6.readCapacityUnits(readCapacity).writeCapacityUnits(writeCapacity)));
 			logger.info("Waiting for DynamoDB table to become ACTIVE...");
