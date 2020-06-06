@@ -12,7 +12,7 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>5.3.2.RELEASE</springSecVer>
+		<springSecVer>5.3.3.RELEASE</springSecVer>
 		<springLdapVer>2.3.3.RELEASE</springLdapVer>
 	</properties>
 
