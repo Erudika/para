@@ -82,8 +82,8 @@
 		<slf4jVer>1.7.30</slf4jVer>
 		<logbackVer>1.2.3</logbackVer>
 		<awsJdkVer>2.13.8</awsJdkVer>
-		<jerseyVer>2.30.1</jerseyVer>
-		<springBootVer>2.2.7.RELEASE</springBootVer>
+		<jerseyVer>2.31</jerseyVer>
+		<springBootVer>2.3.1.RELEASE</springBootVer>
 		<metricsVer>4.1.5</metricsVer>
 		<commonsCodecVer>1.14</commonsCodecVer>
 	</properties>
@@ -122,6 +122,8 @@
 					<skipTests>${skipTests}</skipTests>
 					<skipITs>${skipITs}</skipITs>
 					<encoding>UTF-8</encoding>
+<!--					<threadCount>2</threadCount>
+					<forkCount>2C</forkCount>-->
 				</configuration>
 			</plugin>
 
@@ -132,6 +134,8 @@
 				<configuration>
 					<!--<argLine>-Xmx256m  ${surefireArgLine}</argLine>-->
 					<skipTests>${skipUTs}</skipTests>
+<!--					<threadCount>2</threadCount>
+					<forkCount>2C</forkCount>-->
 					<!--					<parallel>methods</parallel>
 					<threadCount>10</threadCount>
 					<forkCount>2C</forkCount>-->
@@ -191,7 +195,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>sonar-maven-plugin</artifactId>
-				<version>3.6.0.1398</version>
+				<version>3.7.0.1746</version>
 			</plugin>
 		</plugins>
 	</build>
