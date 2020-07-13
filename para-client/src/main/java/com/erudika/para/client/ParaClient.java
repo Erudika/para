@@ -57,8 +57,8 @@ import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.SslConfigurator;
+import org.glassfish.jersey.apache.connector.ApacheConnectorProvider;
 import org.glassfish.jersey.client.ClientConfig;
-import org.glassfish.jersey.client.HttpUrlConnectorProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,7 +100,7 @@ public final class ParaClient {
 		ClientConfig clientConfig = new ClientConfig();
 		clientConfig.register(GenericExceptionMapper.class);
 		clientConfig.register(new JacksonJsonProvider(mapper));
-		clientConfig.connectorProvider(new HttpUrlConnectorProvider().useSetMethodWorkaround());
+		clientConfig.connectorProvider(new ApacheConnectorProvider());
 		SSLContext sslContext = SslConfigurator.newInstance().createSSLContext();
 		apiClient = ClientBuilder.newBuilder().
 				sslContext(sslContext).
