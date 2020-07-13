@@ -29,6 +29,7 @@ import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Collections;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -58,7 +59,7 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 	private final CloseableHttpClient httpclient;
 	private final ObjectReader jreader;
 	private static final String PROFILE_URL = "https://slack.com/api/users.identity?token={0}";
-	private static final String TOKEN_URL = "https://slack.com/api/oauth.access";
+	private static final String TOKEN_URL = "https://slack.com/api/oauth.v2.access";
 	private static final String PAYLOAD = "code={0}&redirect_uri={1}&client_id={2}&client_secret={3}";
 
 	/**
@@ -113,9 +114,11 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 				tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
 				try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
 					if (resp1 != null && resp1.getEntity() != null) {
-						Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
-						if (token != null && token.containsKey("access_token")) {
-							userAuth = getOrCreateUser(app, (String) token.get("access_token"));
+						Map<String, Object> data = jreader.readValue(resp1.getEntity().getContent());
+						if (data != null && data.containsKey("authed_user")) {
+							Map<String, Object> authedUser = (Map<String, Object>) data.
+									getOrDefault("authed_user", Collections.emptyMap());
+							userAuth = getOrCreateUser(app, (String) authedUser.get("access_token"));
 						}
 						EntityUtils.consumeQuietly(resp1.getEntity());
 					}
