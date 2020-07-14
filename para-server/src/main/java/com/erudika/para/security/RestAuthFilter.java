@@ -53,11 +53,21 @@ import org.springframework.web.filter.GenericFilterBean;
 public class RestAuthFilter extends GenericFilterBean implements InitializingBean {
 
 	private static final Logger LOG = LoggerFactory.getLogger(SecurityUtils.class);
+	private final boolean apiSecurityEnabled;
 
 	/**
 	 * Default constructor.
 	 */
-	public RestAuthFilter() { }
+	public RestAuthFilter() {
+		this.apiSecurityEnabled = true;
+	}
+
+	/**
+	 * @param apiSecurityEnabled true if API security is enabled
+	 */
+	public RestAuthFilter(boolean apiSecurityEnabled) {
+		this.apiSecurityEnabled = apiSecurityEnabled;
+	}
 
 	/**
 	 * Authenticates an application or user or guest.
@@ -93,7 +103,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 			LOG.error("Failed to authorize request.", e);
 		}
 
-		if (proceed) {
+		if (proceed || !apiSecurityEnabled) {
 			chain.doFilter(request, res);
 		}
 	}
@@ -168,7 +178,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		boolean requestExpired = (d != null) && (System.currentTimeMillis()
 				> (d.getTime() + (Config.REQUEST_EXPIRES_AFTER_SEC * 1000)));
 
-		if (StringUtils.isBlank(date) || requestExpired) {
+		if (apiSecurityEnabled && (StringUtils.isBlank(date) || requestExpired)) {
 			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Request has expired.");
 			return false;
 		}
@@ -177,7 +187,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		Object[] failures = doAppChecks(app, request);
 
 		if (failures == null) {
-			if (SecurityUtils.isValidSignature(request, app.getSecret())) {
+			if (!apiSecurityEnabled || SecurityUtils.isValidSignature(request, app.getSecret())) {
 				SecurityContextHolder.getContext().setAuthentication(new AppAuthentication(app));
 				return true;
 			}

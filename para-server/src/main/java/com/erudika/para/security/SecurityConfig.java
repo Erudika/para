@@ -190,14 +190,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 		registerAuthFilters(http);
 
-		if (enableRestFilter) {
-			if (jwtFilter != null) {
-				jwtFilter.setAuthenticationManager(authenticationManager());
-				http.addFilterBefore(jwtFilter, RememberMeAuthenticationFilter.class);
-			}
-			RestAuthFilter restFilter = new RestAuthFilter();
-			http.addFilterAfter(restFilter, JWTRestfulAuthFilter.class);
+		if (jwtFilter != null) {
+			jwtFilter.setAuthenticationManager(authenticationManager());
+			http.addFilterBefore(jwtFilter, RememberMeAuthenticationFilter.class);
 		}
+		RestAuthFilter restFilter = new RestAuthFilter(enableRestFilter);
+		http.addFilterAfter(restFilter, JWTRestfulAuthFilter.class);
 	}
 
 	private void registerAuthFilters(HttpSecurity http) throws Exception {
