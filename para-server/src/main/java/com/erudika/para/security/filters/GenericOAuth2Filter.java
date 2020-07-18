@@ -174,7 +174,8 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			String nameParam = SecurityUtils.getSettingForApp(app, configKey("parameters.name", alias), "name");
 
 			if (profile != null && profile.containsKey(accountIdParam)) {
-				String oauthAccountId = (String) profile.get(accountIdParam);
+				Object accid = profile.get(accountIdParam);
+				String oauthAccountId = accid instanceof String ? (String) accid : String.valueOf(accid);
 				String pic = (String) profile.get(pictureParam);
 				String email = (String) profile.get(emailParam);
 				String name = (String) profile.get(nameParam);
