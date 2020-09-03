@@ -2,7 +2,6 @@ language: java
 sudo: false
 install: true
 jdk:
-  - openjdk8
   - openjdk11
 script:
   - mvn -q clean package
