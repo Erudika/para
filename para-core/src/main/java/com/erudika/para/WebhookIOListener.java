@@ -20,6 +20,7 @@ package com.erudika.para;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Webhook;
+import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -49,7 +50,8 @@ public class WebhookIOListener implements IOListener {
 			}
 			Para.asyncExecute(new Runnable() {
 				public void run() {
-					String appid = (String) args[0];
+					String appid = args.length > 0 && args[0] instanceof String ? (String) args[0] :
+							Config.getRootAppIdentifier();
 					Webhook.sendEventPayloadToQueue(appid, method.getName(), true, paraObjects);
 				}
 			});
