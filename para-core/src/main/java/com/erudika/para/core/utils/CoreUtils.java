@@ -224,12 +224,20 @@ public enum CoreUtils implements InitializeListener {
 
 		@Override
 		public String link(ParaObject obj, String id2) {
+			return link(obj, id2, null);
+		}
+
+		@Override
+		public String link(ParaObject obj, String id2, String metadata) {
 			ParaObject second = getDao().read(obj.getAppid(), id2);
 			if (second == null || obj.getId() == null) {
 				return null;
 			}
 			// auto correct the second type
 			Linker link = new Linker(obj.getType(), second.getType(), obj.getId(), id2);
+			if (metadata != null) {
+				link.setMetadata(metadata);
+			}
 			link.addNestedObject(obj);
 			link.addNestedObject(second);
 			return getDao().create(obj.getAppid(), link);
@@ -672,7 +680,7 @@ public enum CoreUtils implements InitializeListener {
 	public abstract boolean isLinked(ParaObject obj, ParaObject toObj);
 
 	/**
-	 * Links an object to this one in a many-to-many relationship. Only a link is created. Objects are left untouched.
+	 * Links two objects in a many-to-many relationship. Only a link is created. Objects are left untouched.
 	 * The type of the second object is automatically determined on read.
 	 *
 	 * @param id2 link to the object with this id
@@ -680,6 +688,17 @@ public enum CoreUtils implements InitializeListener {
 	 * @return the id of the {@link com.erudika.para.core.Linker} object that is created
 	 */
 	public abstract String link(ParaObject obj, String id2);
+
+	/**
+	 * Links two objects in a many-to-many relationship. Only a link is created. Objects are left untouched.
+	 * The type of the second object is automatically determined on read.
+	 *
+	 * @param id2 link to the object with this id
+	 * @param obj the object to execute this method on
+	 * @param metadata some string of metadata to be attached to the link object
+	 * @return the id of the {@link com.erudika.para.core.Linker} object that is created
+	 */
+	public abstract String link(ParaObject obj, String id2, String metadata);
 
 	/**
 	 * Creates the object again (use with caution!). Same as
