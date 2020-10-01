@@ -167,7 +167,8 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 					}
 				} else {
 					RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST,
-							"User belongs to an app that does not exist.");
+							"User belongs to app '" + appid + "' which does not exist. " +
+									(App.isRoot(appid) ? "Make sure you have initialized Para." : ""));
 					return false;
 				}
 			} else {
