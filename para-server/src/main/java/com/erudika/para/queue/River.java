@@ -172,7 +172,7 @@ public abstract class River implements Runnable {
 	 * @return number of processed webhooks 1 or 0
 	 */
 	protected int processWebhookPayload(String appid, String id, Map<String, Object> parsed) {
-		if (!parsed.containsKey("targetUrl") || StringUtils.isBlank(id) || parsed.isEmpty()) {
+		if (!Config.WEBHOOKS_ENABLED || !parsed.containsKey("targetUrl") || StringUtils.isBlank(id) || parsed.isEmpty()) {
 			return 0;
 		}
 		try {
