@@ -182,15 +182,6 @@ public final class SecurityUtils {
 	}
 
 	/**
-	 * @param type some type
-	 */
-	public static void warnIfUserTypeDetected(String type) {
-		if (Utils.type(User.class).equals(type)) {
-			logger.warn("Users should be created through /jwt_auth or through an authentication filter.");
-		}
-	}
-
-	/**
 	 * Check if a user can modify an object. If there's no user principal found, this returns true.
 	 *
 	 * @param app app in context

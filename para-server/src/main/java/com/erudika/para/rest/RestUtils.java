@@ -31,7 +31,6 @@ import static com.erudika.para.security.SecurityUtils.checkImplicitAppPermission
 import static com.erudika.para.security.SecurityUtils.getAuthenticatedUser;
 import static com.erudika.para.security.SecurityUtils.getPrincipalApp;
 import static com.erudika.para.security.SecurityUtils.isNotAnApp;
-import static com.erudika.para.security.SecurityUtils.warnIfUserTypeDetected;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -346,7 +345,6 @@ public final class RestUtils {
 				}
 				content = ParaObjectUtils.setAnnotatedFields(newContent);
 				if (app != null && content != null && isNotAnApp(type)) {
-					warnIfUserTypeDetected(type);
 					content.setAppid(app.getAppIdentifier());
 					setCreatorid(app, content);
 					int typesCount = app.getDatatypes().size();
@@ -396,7 +394,6 @@ public final class RestUtils {
 				}
 				content = ParaObjectUtils.setAnnotatedFields(newContent);
 				if (app != null && content != null && !StringUtils.isBlank(id) && isNotAnApp(type)) {
-					warnIfUserTypeDetected(type);
 					content.setType(type);
 					content.setAppid(app.getAppIdentifier());
 					content.setId(id);
@@ -534,7 +531,6 @@ public final class RestUtils {
 						// can't create multiple apps in batch
 						String type = (String) object.get(Config._TYPE);
 						if (isNotAnApp(type)) {
-							warnIfUserTypeDetected(type);
 							ParaObject pobj = ParaObjectUtils.setAnnotatedFields(object);
 							if (pobj != null && isValidObject(app, pobj)) {
 								pobj.setAppid(app.getAppIdentifier());
