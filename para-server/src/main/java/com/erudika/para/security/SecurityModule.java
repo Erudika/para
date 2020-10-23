@@ -17,7 +17,6 @@
  */
 package com.erudika.para.security;
 
-import com.erudika.para.security.filters.OpenIDAuthFilter;
 import com.erudika.para.security.filters.GoogleAuthFilter;
 import com.erudika.para.security.filters.PasswordAuthFilter;
 import com.erudika.para.security.filters.TwitterAuthFilter;
@@ -36,10 +35,6 @@ import com.erudika.para.security.filters.SlackAuthFilter;
 import com.erudika.para.utils.Config;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import java.util.Collections;
-import org.openid4java.consumer.ConsumerException;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.openid.OpenID4JavaConsumer;
 
 /**
  * The default security module.
@@ -53,7 +48,6 @@ public class SecurityModule extends AbstractModule {
 	private SimpleRememberMeServices rememberMeServices;
 	private PasswordAuthFilter passwordFilter;
 	private PasswordlessAuthFilter passwordlessFilter;
-	private OpenIDAuthFilter openidFilter;
 	private FacebookAuthFilter facebookFilter;
 	private GoogleAuthFilter googleFilter;
 	private LinkedInAuthFilter linkedinFilter;
@@ -195,33 +189,6 @@ public class SecurityModule extends AbstractModule {
 	 */
 	public void setPasswordlessFilter(PasswordlessAuthFilter passwordlessFilter) {
 		this.passwordlessFilter = passwordlessFilter;
-	}
-
-	/**
-	 * @return filter
-	 */
-	@Provides
-	public OpenIDAuthFilter getOpenIDFilter() {
-		if (openidFilter == null) {
-			openidFilter = new OpenIDAuthFilter("/" + OpenIDAuthFilter.OPENID_ACTION);
-			try {
-				openidFilter.setConsumer(new OpenID4JavaConsumer(new SimpleAxFetchListFactory()));
-			} catch (ConsumerException ex) {
-				LoggerFactory.getLogger(SecurityModule.class).error(null, ex);
-			}
-			openidFilter.setReturnToUrlParameters(Collections.singleton(Config.getConfigParam("security.returnto", "/")));
-			openidFilter.setAuthenticationSuccessHandler(getSuccessHandler());
-			openidFilter.setAuthenticationFailureHandler(getFailureHandler());
-			openidFilter.setRememberMeServices(getRemembeMeServices());
-		}
-		return openidFilter;
-	}
-
-	/**
-	 * @param openidFilter filter
-	 */
-	public void setOpenidFilter(OpenIDAuthFilter openidFilter) {
-		this.openidFilter = openidFilter;
 	}
 
 	/**

@@ -17,7 +17,6 @@
  */
 package com.erudika.para.security;
 
-import com.erudika.para.security.filters.OpenIDAuthFilter;
 import com.erudika.para.security.filters.GoogleAuthFilter;
 import com.erudika.para.security.filters.PasswordAuthFilter;
 import com.erudika.para.security.filters.TwitterAuthFilter;
@@ -51,7 +50,6 @@ import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.openid.OpenIDAuthenticationProvider;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
@@ -73,7 +71,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	private final SimpleRememberMeServices rememberMeServices;
 	private final PasswordAuthFilter passwordFilter;
 	private final PasswordlessAuthFilter passwordlessFilter;
-	private final OpenIDAuthFilter openidFilter;
 	private final FacebookAuthFilter facebookFilter;
 	private final GoogleAuthFilter googleFilter;
 	private final LinkedInAuthFilter linkedinFilter;
@@ -96,7 +93,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		rememberMeServices = getInstance(SimpleRememberMeServices.class);
 		passwordFilter = getInstance(PasswordAuthFilter.class);
 		passwordlessFilter = getInstance(PasswordlessAuthFilter.class);
-		openidFilter = getInstance(OpenIDAuthFilter.class);
 		facebookFilter = getInstance(FacebookAuthFilter.class);
 		googleFilter = getInstance(GoogleAuthFilter.class);
 		linkedinFilter = getInstance(LinkedInAuthFilter.class);
@@ -120,10 +116,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	 */
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-		OpenIDAuthenticationProvider openidProvider = new OpenIDAuthenticationProvider();
-		openidProvider.setAuthenticationUserDetailsService(new SimpleUserService());
-		auth.authenticationProvider(openidProvider);
-
 		RememberMeAuthenticationProvider rmeProvider = new RememberMeAuthenticationProvider(Config.APP_SECRET_KEY);
 		auth.authenticationProvider(rmeProvider);
 
@@ -207,11 +199,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		if (passwordlessFilter != null) {
 			passwordlessFilter.setAuthenticationManager(authenticationManager());
 			http.addFilterAfter(passwordlessFilter, BasicAuthenticationFilter.class);
-		}
-
-		if (openidFilter != null) {
-			openidFilter.setAuthenticationManager(authenticationManager());
-			http.addFilterAfter(openidFilter, BasicAuthenticationFilter.class);
 		}
 
 		if (facebookFilter != null) {
