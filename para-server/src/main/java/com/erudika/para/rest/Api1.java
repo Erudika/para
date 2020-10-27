@@ -76,9 +76,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.erudika.para.Para.newApp;
 import static com.erudika.para.Para.setup;
+import com.erudika.para.core.Sysprop;
 import com.erudika.para.metrics.Metrics;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.StreamingOutput;
 
 /**
  * This is the main REST API configuration class which defines all endpoints for all resources
@@ -194,6 +210,16 @@ public final class Api1 extends ResourceConfig {
 		Resource.Builder reindexRes = Resource.builder("_reindex");
 		reindexRes.addMethod(POST).produces(JSON).handledBy(reindexHandler());
 		registerResources(reindexRes.build());
+
+		// backup
+		Resource.Builder backupRes = Resource.builder("_export");
+		backupRes.addMethod(GET).produces("application/zip").handledBy(backupHandler(null));
+		registerResources(backupRes.build());
+
+		// restore
+		Resource.Builder restoreRes = Resource.builder("_import");
+		restoreRes.addMethod(PUT).produces(JSON).consumes("application/zip").handledBy(restoreHandler(null));
+		registerResources(restoreRes.build());
 
 		// register custom resources
 		for (final CustomResourceHandler handler : getCustomResourceHandlers()) {
@@ -932,6 +958,104 @@ public final class Api1 extends ResourceConfig {
 					response.put("reindexed", pager.getCount());
 					response.put("tookMillis", tookMillis);
 					return Response.ok(response, JSON).build();
+				}
+				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+			}
+		};
+	}
+
+	/**
+	 * @param a {@link App}
+	 * @return response
+	 */
+	public static Inflector<ContainerRequestContext, Response> backupHandler(final App a) {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				App app = (a != null) ? a : getPrincipalApp();
+				if (app != null) {
+					String fileName = app.getAppIdentifier() + "_" + Utils.formatDate("YYYYMMdd_HHmmss", Locale.US);
+					StreamingOutput stream = new StreamingOutput() {
+						@Override
+						public void write(OutputStream os) throws IOException, WebApplicationException {
+							ObjectWriter writer = ParaObjectUtils.getJsonWriterNoIdent().without(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
+							try (ZipOutputStream zipOut = new ZipOutputStream(os)) {
+								long count = 0;
+								int partNum = 0;
+								// find all objects even if there are more than 10000 users in the system
+								Pager pager = new Pager(1, "_docid", false, Config.MAX_ITEMS_PER_PAGE);
+								List<ParaObject> objects;
+								do {
+									objects = getSearch().findQuery(app.getAppIdentifier(), "", "*", pager);
+									ZipEntry zipEntry = new ZipEntry(fileName + "_part" + (++partNum) + ".json");
+									zipOut.putNextEntry(zipEntry);
+									writer.writeValue(zipOut, objects);
+									count += objects.size();
+								} while (!objects.isEmpty());
+								logger.info("Exported {} objects from app '{}'. (pager.count={})",
+										count, app.getId(), pager.getCount());
+							} catch (final IOException e) {
+								logger.error("Failed to export data.", e);
+							}
+						}
+					};
+					return Response.ok(stream, "application/zip").
+							header("Content-Disposition", "attachment;filename=" + fileName + ".zip").build();
+				}
+				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+			}
+		};
+	}
+
+	/**
+	 * @param a {@link App}
+	 * @return response
+	 */
+	public static Inflector<ContainerRequestContext, Response> restoreHandler(final App a) {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				App app = (a != null) ? a : getPrincipalApp();
+				if (app != null) {
+					ObjectReader reader = ParaObjectUtils.getJsonMapper().readerFor(new TypeReference<List<Sysprop>>() { });
+					int count = 0;
+					int importBatchSize = Config.getConfigInt("import_batch_size", 100);
+					String filename = Optional.ofNullable(ctx.getUriInfo().getQueryParameters().getFirst("filename")).
+							orElse(app.getAppIdentifier() + "_backup.zip");
+					Sysprop s = new Sysprop();
+					s.setType("paraimport");
+					try (InputStream inputStream = ctx.getEntityStream()) {
+						try (ZipInputStream zipIn = new ZipInputStream(inputStream)) {
+							ZipEntry zipEntry;
+							List<ParaObject> toCreate = new LinkedList<ParaObject>();
+							while ((zipEntry = zipIn.getNextEntry()) != null) {
+								List<ParaObject> objects = reader.readValue(new FilterInputStream(zipIn) {
+									public void close() throws IOException {
+										zipIn.closeEntry();
+									}
+								});
+								toCreate.addAll(objects);
+								if (toCreate.size() >= importBatchSize) {
+									getDAO().createAll(app.getAppIdentifier(), toCreate);
+									toCreate.clear();
+								}
+								count += objects.size();
+							}
+							if (!toCreate.isEmpty()) {
+								getDAO().createAll(app.getAppIdentifier(), toCreate);
+							}
+						}
+						s.setCreatorid(app.getAppIdentifier());
+						s.setName(filename);
+						s.addProperty("count", count);
+						logger.info("Imported {} objects to app '{}'", count, app.getId());
+
+						if (count > 0) {
+							getDAO().create(app.getAppIdentifier(), s);
+						}
+					} catch (Exception e) {
+						logger.error("Failed to import " + filename, e);
+						return getStatusResponse(Response.Status.BAD_REQUEST, "Import failed - " + e.getMessage());
+					}
+					return Response.ok(s).build();
 				}
 				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
