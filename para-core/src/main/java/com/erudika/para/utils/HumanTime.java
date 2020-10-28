@@ -33,27 +33,27 @@ import org.slf4j.LoggerFactory;
 /**
  * HumanTime parses and formats time deltas for easier reading by humans. It can format time information without losing
  * information but its main purpose is to generate more easily understood approximations.
- * <h3>Using HumanTime</h3>
+ * <b>Using HumanTime</b>
  * <p>
  * Use HumanTime by creating an instance that contains the time delta ({@link HumanTime#HumanTime(long)}), create an
  * empty instance through ({@link HumanTime#HumanTime()}) and set the delta using the {@link #y()}, {@link #d()},
  * {@link #h()}, {@link #s()} and {@link #ms()} methods or parse a {@link CharSequence} representation
  * ({@link #eval(CharSequence)}). Parsing ignores whitespace and is case insensitive.
  * </p>
- * <h3>HumanTime format</h3>
+ * <b>HumanTime format</b>
  * <p>
  * HumanTime will format time deltas in years ("y"), days ("d"), hours ("h"), minutes ("m"), seconds ("s") and
  * milliseconds ("ms"), separated by a blank character. For approximate representations, the time delta will be round up
  * or down if necessary.
  * </p>
- * <h3>HumanTime examples</h3>
+ * <b>HumanTime examples</b>
  * <ul>
  * <li>HumanTime.eval("1 d 1d 2m 3m").getExactly() = "2 d 5 m"</li>
  * <li>HumanTime.eval("2m8d2h4m").getExactly() = "8 d 2 h 6 m"</li>
  * <li>HumanTime.approximately("2 d 8 h 20 m 50 s") = "2 d 8 h"</li>
  * <li>HumanTime.approximately("55m") = "1 h"</li>
  * </ul>
- * <h3>Implementation details</h3>
+ * <b>Implementation details</b>
  * <ul>
  * <li>The time delta can only be increased.</li>
  * <li>Instances of this class are thread safe.</li>

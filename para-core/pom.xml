@@ -346,7 +346,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.1.0</version>
+				<version>3.2.0</version>
 				<executions>
 					<execution>
 						<id>javadocs</id>
@@ -356,6 +356,7 @@
 					</execution>
 				</executions>
 				<configuration>
+					<source>1.8</source>
 					<stylesheetfile>src/main/javadoc/stylesheet.css</stylesheetfile>
 					<show>public</show>
 					<aggregate>true</aggregate>
