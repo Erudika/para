@@ -100,18 +100,26 @@ public final class ParaClient {
 		ClientConfig clientConfig = new ClientConfig();
 		clientConfig.register(GenericExceptionMapper.class);
 		clientConfig.register(new JacksonJsonProvider(mapper));
-		clientConfig.connectorProvider(new GrizzlyConnectorProvider());
+		clientConfig.connectorProvider(new GrizzlyConnectorProvider((client, c, bldr) -> {
+			return bldr.setRequestTimeout(5 * 60 * 1000); // 5 min request timeout
+		}));
 		SSLContext sslContext = SslConfigurator.newInstance().createSSLContext();
 		apiClient = ClientBuilder.newBuilder().
 				sslContext(sslContext).
 				withConfig(clientConfig).build();
 	}
 
-	protected Client getApiClient() {
+	/**
+	 * @return api client
+	 */
+	public Client getApiClient() {
 		return apiClient;
 	}
 
-	protected void setApiClient(Client apiClient) {
+	/**
+	 * @param apiClient set new api client
+	 */
+	public void setApiClient(Client apiClient) {
 		this.apiClient = apiClient;
 	}
 
