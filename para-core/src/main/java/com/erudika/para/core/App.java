@@ -153,9 +153,11 @@ public class App implements ParaObject, Serializable {
 	 */
 	public static final String id(String id) {
 		if (StringUtils.startsWith(id, PREFIX)) {
-			return PREFIX.concat(Utils.noSpaces(Utils.stripAndTrim(id.replaceAll(PREFIX, ""), " "), "-"));
+			String identifier = Utils.noSpaces(Utils.stripAndTrim(id.replaceAll(PREFIX, ""), " ", true), "-");
+			return StringUtils.isBlank(identifier) ? null : PREFIX.concat(identifier);
 		} else if (id != null) {
-			return PREFIX.concat(Utils.noSpaces(Utils.stripAndTrim(id, " "), "-"));
+			String identifier = Utils.noSpaces(Utils.stripAndTrim(id, " ", true), "-");
+			return StringUtils.isBlank(identifier) ? null : PREFIX.concat(identifier);
 		} else {
 			return null;
 		}

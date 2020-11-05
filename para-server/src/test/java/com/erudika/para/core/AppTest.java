@@ -93,6 +93,13 @@ public class AppTest {
 		app.setId("  test-app  ");
 		assertEquals("app:test-app", app.getId());
 		assertEquals("test-app", app.getAppIdentifier());
+
+		app.setId(App.id("Тест 123"));
+		assertEquals("app:123", app.getId());
+		app.setId(App.id("leones de león"));
+		assertEquals("app:leones-de-len", app.getId());
+		app.setId("ה");
+		assertNull(app.getId());
 	}
 
 	@Test
