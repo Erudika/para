@@ -27,6 +27,7 @@ import com.vladsch.flexmark.ext.gfm.tasklist.TaskListExtension;
 import com.vladsch.flexmark.ext.tables.TablesExtension;
 import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
+import com.vladsch.flexmark.util.ast.Document;
 import com.vladsch.flexmark.util.data.MutableDataHolder;
 import com.vladsch.flexmark.util.data.MutableDataSet;
 import java.io.IOException;
@@ -65,6 +66,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.jsoup.Jsoup;
+import org.jsoup.safety.Whitelist;
 import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,9 +82,13 @@ public final class Utils {
 	// maps lowercase simple names to class objects
 	private static final Pattern EMAIL_PATTERN = Pattern.compile(Email.EMAIL_PATTERN);
 	private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance();
+	private static final Whitelist SAFE_HTML_TAGS = getHTMLTagsWhitelist();
 	private static final MutableDataHolder MD_OPTIONS = getMarkdownOptions();
 	private static final Parser MD_PARSER = Parser.builder(MD_OPTIONS).build();
-	private static final HtmlRenderer HTML_RENDERER = HtmlRenderer.builder(MD_OPTIONS).build();
+	private static final HtmlRenderer HTML_RENDERER_STRICT = HtmlRenderer.builder(MD_OPTIONS).build();
+	private static final HtmlRenderer HTML_RENDERER_LOOSE = HtmlRenderer.
+			builder(MD_OPTIONS.set(HtmlRenderer.ESCAPE_HTML, false)).build();
+
 	private static HumanTime humantime;
 	private static Utils instance;
 
@@ -287,10 +293,25 @@ public final class Utils {
 	 * @return HTML
 	 */
 	public static String markdownToHtml(String markdownString) {
+		return markdownToHtml(markdownString, false);
+	}
+
+	/**
+	 * Converts Markdown to HTML.
+	 * @param markdownString Markdown
+	 * @param htmlTagsRenderingEnabled if true, basic HTML tags will be rendered instead of escaped
+	 * @return HTML
+	 */
+	public static String markdownToHtml(String markdownString, boolean htmlTagsRenderingEnabled) {
 		if (StringUtils.isBlank(markdownString)) {
 			return "";
 		}
-		return HTML_RENDERER.render(MD_PARSER.parse(markdownString));
+		Document parsed = MD_PARSER.parse(markdownString);
+		if (htmlTagsRenderingEnabled) {
+			return Jsoup.clean(HTML_RENDERER_LOOSE.render(parsed), SAFE_HTML_TAGS);
+		} else {
+			return HTML_RENDERER_STRICT.render(parsed);
+		}
 	}
 
 	/**
@@ -452,6 +473,29 @@ public final class Utils {
 				.set(TablesExtension.HEADER_SEPARATOR_COLUMN_MATCH, true)
 				.set(Parser.EXTENSIONS, Arrays.asList(TablesExtension.create(), EmojiExtension.create(),
 						StrikethroughExtension.create(), TaskListExtension.create()));
+	}
+
+	private static Whitelist getHTMLTagsWhitelist() {
+		Whitelist whitelist = Whitelist.relaxed();
+		whitelist.addTags("abbr", "hr", "del", "details", "summary", "center");
+		whitelist.addProtocols("a", "href", "#");
+		whitelist.addEnforcedAttribute("a", "rel", "nofollow");
+		whitelist.addAttributes("abbr", "title");
+		whitelist.addAttributes("th", "align");
+		whitelist.addAttributes("td", "align");
+		whitelist.addAttributes("code", "class");
+		whitelist.addAttributes("div", "class");
+		whitelist.addAttributes("a", "rel");
+		whitelist.addAttributes("details", "class");
+		whitelist.addAttributes("details", "open");
+		whitelist.addAttributes("h1", "id");
+		whitelist.addAttributes("h2", "id");
+		whitelist.addAttributes("h3", "id");
+		whitelist.addAttributes("h4", "id");
+		whitelist.addAttributes("h5", "id");
+		whitelist.addAttributes("h6", "id");
+		whitelist.addAttributes("h7", "id");
+		return whitelist;
 	}
 
 	/////////////////////////////////////////////

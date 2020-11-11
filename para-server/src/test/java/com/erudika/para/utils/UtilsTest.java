@@ -101,6 +101,8 @@ public class UtilsTest {
 		assertNotNull(markdownToHtml(null));
 		assertNotNull(markdownToHtml(""));
 		assertFalse(markdownToHtml("*bold*").isEmpty());
+		assertTrue(markdownToHtml("<center/>", false).startsWith("<p>&lt;center"));
+		assertEquals("<center></center>", markdownToHtml("<center/>", true));
 	}
 
 	@Test
