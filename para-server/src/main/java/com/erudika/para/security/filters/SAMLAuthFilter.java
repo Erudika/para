@@ -144,6 +144,8 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 				}
 			} catch (SettingsException ex) {
 				LOG.error("Failed to authenticate app '{}' with SAML: {}", appid, ex.getMessage());
+			} catch (IOException ex) {
+				LOG.error("Failed to load certificate from properties for app '{}': {}", appid, ex.getMessage());
 			} catch (Exception ex) {
 				LOG.error(null, ex);
 			}
