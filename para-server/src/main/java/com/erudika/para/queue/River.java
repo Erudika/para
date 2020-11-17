@@ -19,6 +19,7 @@ package com.erudika.para.queue;
 
 import com.erudika.para.Para;
 import com.erudika.para.annotations.Locked;
+import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Thing;
@@ -27,6 +28,7 @@ import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectReader;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -89,19 +91,24 @@ public abstract class River implements Runnable {
 		ObjectReader jreader = ParaObjectUtils.getJsonReader(Map.class);
 		int idleCount = 0;
 
-		while (true) {
-			logger.debug("Waiting {}s for messages...", POLLING_INTERVAL);
-			List<String> msgs = pullMessages();
-			logger.debug("Pulled {} messages from queue.", msgs.size());
-
-			try {
+		try {
+			while (!Thread.interrupted()) {
+				logger.debug("Waiting {}s for messages...", POLLING_INTERVAL);
 				int processedHooks = 0;
-				for (final String msg : msgs) {
-					logger.debug("Message from queue: {}", msg);
-					if (StringUtils.contains(msg, Config._APPID) && StringUtils.contains(msg, Config._TYPE)) {
-						processedHooks += parseAndCategorizeMessage(jreader.readValue(msg),
-								createList, updateList, deleteList);
+				List<String> msgs = Collections.emptyList();
+				try {
+					msgs = pullMessages();
+					logger.debug("Pulled {} messages from queue.", msgs.size());
+
+					for (final String msg : msgs) {
+						logger.debug("Message from queue: {}", msg);
+						if (StringUtils.contains(msg, Config._APPID) && StringUtils.contains(msg, Config._TYPE)) {
+							processedHooks += parseAndCategorizeMessage(jreader.readValue(msg),
+									createList, updateList, deleteList);
+						}
 					}
+				} catch (Exception e) {
+					logger.error("Batch processing operation failed:", e);
 				}
 
 				if (!createList.isEmpty() || !updateList.isEmpty() || !deleteList.isEmpty() || processedHooks > 0) {
@@ -113,22 +120,13 @@ public abstract class River implements Runnable {
 					idleCount++;
 					// no tasks in queue => throttle down pull requests
 					if (SLEEP > 0 && idleCount >= 3) {
-						try {
-							logger.debug("Queue is empty. Sleeping for {}s...", SLEEP);
-							Thread.sleep((long) SLEEP * 1000);
-						} catch (InterruptedException e) {
-							logger.warn("River interrupted: ", e);
-							Thread.currentThread().interrupt();
-							break;
-						}
+						logger.debug("Queue is empty. Sleeping for {}s...", SLEEP);
+						Thread.sleep(SLEEP * 1000L);
 					}
 				}
-			} catch (Exception e) {
-				logger.error("Batch processing operation failed:", e);
 			}
-			if (Thread.interrupted()) {
-				break;
-			}
+		} catch (InterruptedException ex) {
+			logger.warn("River interrupted: ", ex.getMessage());
 		}
 	}
 
@@ -143,6 +141,9 @@ public abstract class River implements Runnable {
 		if (!StringUtils.isBlank(appid) && isWhitelistedType) {
 			if ("webhookpayload".equals(type)) {
 				return processWebhookPayload(appid, id, parsed);
+			}
+			if ("indexpayload".equals(type)) {
+				return processIndexPayload(appid, id, parsed);
 			}
 
 			if (parsed.containsKey("_delete") && "true".equals(parsed.get("_delete")) && id != null) {
@@ -228,6 +229,55 @@ public abstract class River implements Runnable {
 			return 1;
 		} catch (Exception e) {
 			logger.error("Webhook payload was not delivered:", e);
+		}
+		return 0;
+	}
+
+	/**
+	 * Processes the incoming payload pulled from queue.
+	 * @param appid appid
+	 * @param opId indexing operation id
+	 * @param parsed payload with metadata
+	 * @return number of processed requests 1 or 0
+	 */
+	@SuppressWarnings("unchecked")
+	protected int processIndexPayload(String appid, String opId, Map<String, Object> parsed) {
+		if (!Config.isSearchEnabled() || StringUtils.isBlank(opId) || parsed.isEmpty()) {
+			return 0;
+		}
+		Object payload = parsed.get("payload");
+		try {
+			switch (opId) {
+				case "index_op":
+					Para.getSearch().index(appid, (ParaObject) payload);
+					break;
+				case "index_all_op":
+					Para.getSearch().indexAll(appid, (List<ParaObject>) payload);
+					break;
+				case "unindex_op":
+					Para.getSearch().unindex(appid, (ParaObject) payload);
+					break;
+				case "unindex_all_op":
+					Para.getSearch().unindexAll(appid, (List<ParaObject>) payload);
+					break;
+				case "rebuild_index_op":
+					App app = Para.getDAO().read(appid);
+					Para.getSearch().rebuildIndex(Para.getDAO(), app, "");
+					break;
+				case "create_index_op":
+					app = Para.getDAO().read(appid);
+					Para.getSearch().createIndex(app);
+					break;
+				case "delete_index_op":
+					app = Para.getDAO().read(appid);
+					Para.getSearch().deleteIndex(app);
+					break;
+				default:
+					break;
+			}
+			return 1;
+		} catch (Exception e) {
+			logger.error("Indexing operation " + opId + " failed!", e);
 		}
 		return 0;
 	}

@@ -456,4 +456,17 @@ public interface Search {
 	 */
 	boolean isValidQueryString(String queryString);
 
+	/**
+	 * Creates a new search index for the given app.
+	 * @param app an {@link App} object
+	 */
+	@Measured
+	default void createIndex(App app) { }
+
+	/**
+	 * Deletes the search index for a given app.
+	 * @param app an {@link App} object
+	 */
+	@Measured
+	default void deleteIndex(App app) { }
 }
