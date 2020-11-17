@@ -317,7 +317,7 @@ public class Webhook extends Sysprop {
 
 	@Override
 	public String create() {
-		// check if this is a trigger request for a custom event using PUT /webhooks/trigger:custom.event
+		// check if this is a trigger request for a custom event using POST /webhooks
 		if (!StringUtils.isBlank(triggeredEvent) && customPayload != null) {
 			sendEventPayloadToQueue(getAppid(), "customEvents", triggeredEvent, customPayload);
 			setId("triggered" + Config.SEPARATOR + triggeredEvent);
@@ -393,9 +393,9 @@ public class Webhook extends Sysprop {
 			terms.put(eventName, eventValue);
 			terms.put("active", true);
 			webhooks = Para.getSearch().findTerms(appid, Utils.type(Webhook.class), terms, true, p);
-				webhooks.stream().filter(webhook -> typeFilterMatches(webhook, payload)).
+			webhooks.stream().filter(webhook -> typeFilterMatches(webhook, payload)).
 					forEach(webhook -> Para.getQueue().push(webhook.buildPayloadAsJSON(
-							(eventValue instanceof String) ? (String) eventValue : eventName, payload)));
+					(eventValue instanceof String) ? (String) eventValue : eventName, payload)));
 		} while (!webhooks.isEmpty());
 	}
 

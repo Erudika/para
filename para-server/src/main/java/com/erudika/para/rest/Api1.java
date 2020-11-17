@@ -952,7 +952,9 @@ public final class Api1 extends ResourceConfig {
 					MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
 					Pager pager = RestUtils.getPagerFromParams(params);
 					String destinationIndex = params.getFirst("destinationIndex");
-					getSearch().rebuildIndex(getDAO(), app, destinationIndex, pager);
+					try (Metrics.Context context = Metrics.time(app.getAppIdentifier(), Api1.class, "rebuildIndex")) {
+						getSearch().rebuildIndex(getDAO(), app, destinationIndex, pager);
+					}
 					long tookMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
 					Map<String, Object> response = new HashMap<>(2);
 					response.put("reindexed", pager.getCount());
