@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.waiters.WaiterResponse;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -58,8 +59,8 @@ import software.amazon.awssdk.services.dynamodb.model.ReturnConsumedCapacity;
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
+import software.amazon.awssdk.services.dynamodb.model.StreamViewType;
 import software.amazon.awssdk.services.dynamodb.model.TableDescription;
-import software.amazon.awssdk.services.dynamodb.model.TableStatus;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 /**
@@ -82,6 +83,10 @@ public final class AWSDynamoUtils {
 	 * Toggles SSE (encryption-at-rest) for all newly created DynamoDB tables. Default is {@code false}.
 	 */
 	public static final boolean ENCRYPTION_AT_REST_ENABLED = Config.getConfigBoolean("dynamodb.sse_enabled", false);
+	/**
+	 * Toggles global tables settings for the specified regions.
+	 */
+	public static final String REPLICA_REGIONS = Config.getConfigParam("dynamodb.replica_regions", "");
 
 	private AWSDynamoUtils() { }
 
@@ -184,9 +189,18 @@ public final class AWSDynamoUtils {
 
 			logger.info("Waiting for DynamoDB table to become ACTIVE...");
 			waitForActive(table);
-			// NOT IMPLEMENTED in SDK v2:
-			// String status = tbl.waitForActive().getTableStatus();
 			logger.info("Created DynamoDB table '{}', status {}.", table, tbl.tableDescription().tableStatus());
+
+			if (!StringUtils.isBlank(REPLICA_REGIONS) && !App.isRoot(appid)) {
+				String[] regions = REPLICA_REGIONS.split("\\s*,\\s*");
+				if (regions != null && regions.length > 0) {
+					for (String region : regions) {
+						if (!StringUtils.isBlank(region)) {
+							replicateTable(appid, readCapacity, region);
+						}
+					}
+				}
+			}
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;
@@ -278,6 +292,30 @@ public final class AWSDynamoUtils {
 			return false;
 		}
 		return true;
+	}
+
+	/**
+	 * Enables streams on the table and creates a new global table replica in another region.
+	 * @param appid app id
+	 * @param readCapacity read capacity
+	 * @param toRegion replica destination region
+	 */
+	public static void replicateTable(String appid, long readCapacity, String toRegion) {
+		if (StringUtils.isBlank(appid)) {
+			return;
+		}
+		try {
+			String table = getTableNameForAppid(appid);
+			logger.info("Replicating DynamoDB table '{}' in region {}...", table, toRegion);
+			getClient().updateTable(b -> b.tableName(table).
+					streamSpecification(s -> s.streamViewType(StreamViewType.NEW_AND_OLD_IMAGES).streamEnabled(true)).
+					replicaUpdates(r -> r.create(c -> c.
+									kmsMasterKeyId(null).
+									regionName(toRegion).
+									provisionedThroughputOverride(t -> t.readCapacityUnits(readCapacity)))));
+		} catch (Exception e) {
+			logger.error(null, e);
+		}
 	}
 
 	/**
@@ -659,21 +697,10 @@ public final class AWSDynamoUtils {
 	}
 
 	private static void waitForActive(String table) throws InterruptedException {
-		int attempts = 0;
-		boolean active = false;
-		int	tries = 30;
-		int sleep = 2000;
-		while (attempts < tries) {
-			DescribeTableResponse result = getClient().describeTable(b -> b.tableName(table));
-			if (result.table().tableStatus().equals(TableStatus.ACTIVE)) {
-				active = true;
-				break;
-			}
-			Thread.sleep(sleep);
-			attempts++;
-		}
-		if (!active) {
-			logger.warn("DynamoDB table {} did not become active within {}s!", table, ((tries * sleep) / 1000));
+		WaiterResponse<DescribeTableResponse> waiterResponse = getClient().waiter().
+				waitUntilTableExists(r -> r.tableName(table));
+		if (!waiterResponse.matched().response().isPresent()) {
+			logger.warn("DynamoDB table {} did not become active!", table);
 		}
 	}
 
