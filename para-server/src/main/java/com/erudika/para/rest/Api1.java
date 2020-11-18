@@ -975,7 +975,7 @@ public final class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : getPrincipalApp();
 				if (app != null) {
-					String fileName = app.getAppIdentifier() + "_" + Utils.formatDate("YYYYMMdd_HHmmss", Locale.US);
+					String fileName = app.getAppIdentifier().trim() + "_" + Utils.formatDate("YYYYMMdd_HHmmss", Locale.US);
 					StreamingOutput stream = new StreamingOutput() {
 						@Override
 						public void write(OutputStream os) throws IOException, WebApplicationException {
@@ -1021,7 +1021,7 @@ public final class Api1 extends ResourceConfig {
 					int count = 0;
 					int importBatchSize = Config.getConfigInt("import_batch_size", 100);
 					String filename = Optional.ofNullable(ctx.getUriInfo().getQueryParameters().getFirst("filename")).
-							orElse(app.getAppIdentifier() + "_backup.zip");
+							orElse(app.getAppIdentifier().trim() + "_backup.zip");
 					Sysprop s = new Sysprop();
 					s.setType("paraimport");
 					try (InputStream inputStream = ctx.getEntityStream()) {
