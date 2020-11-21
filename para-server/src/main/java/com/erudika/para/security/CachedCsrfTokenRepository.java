@@ -124,10 +124,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 				}
 			}
 		}
-		if (token != null && !StringUtils.isBlank(token.getToken()) && StringUtils.isBlank(getTokenFromCookie(request))) {
-			token = null;
-		}
-		return token;
+		return isValidButNotInCookie(token, request) ? null : token;
 	}
 
 	private void storeTokenInCache(String key, CsrfToken token) {
