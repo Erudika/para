@@ -126,7 +126,7 @@ public abstract class River implements Runnable {
 				}
 			}
 		} catch (InterruptedException ex) {
-			logger.warn("River interrupted: ", ex.getMessage());
+			logger.info("River interrupted: {}", ex.getMessage());
 			Thread.currentThread().interrupt();
 		}
 	}

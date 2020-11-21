@@ -23,9 +23,6 @@ import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.codahale.metrics.jmx.JmxReporter;
-import com.erudika.para.AppCreatedListener;
-import com.erudika.para.AppSettingAddedListener;
-import com.erudika.para.AppSettingRemovedListener;
 import com.erudika.para.InitializeListener;
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
@@ -125,27 +122,21 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 			}
 
 			// setup initialization/cleanup for all new apps
-			App.addAppCreatedListener(new AppCreatedListener() {
-				public void onAppCreated(App app) {
-					if (app != null) {
-						initializeMetrics(app.getAppIdentifier());
-					}
+			App.addAppCreatedListener((App app) -> {
+				if (app != null) {
+					initializeMetrics(app.getAppIdentifier());
 				}
 			});
 
 			// setup listeners for push metrics settings
-			App.addAppSettingAddedListener(new AppSettingAddedListener() {
-				public void onSettingAdded(App app, String settingKey, Object settingValue) {
-					if (app != null) {
-						addAppSetting(app, settingKey, settingValue);
-					}
+			App.addAppSettingAddedListener((App app, String settingKey, Object settingValue) -> {
+				if (app != null) {
+					addAppSetting(app, settingKey, settingValue);
 				}
 			});
-			App.addAppSettingRemovedListener(new AppSettingRemovedListener() {
-				public void onSettingRemoved(App app, String settingKey) {
-					if (app != null) {
-						removeAppSetting(app, settingKey);
-					}
+			App.addAppSettingRemovedListener((App app, String settingKey) -> {
+				if (app != null) {
+					removeAppSetting(app, settingKey);
 				}
 			});
 		}

@@ -18,8 +18,6 @@
 package com.erudika.para.persistence;
 
 import com.erudika.para.annotations.Locked;
-import com.erudika.para.AppCreatedListener;
-import com.erudika.para.AppDeletedListener;
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
@@ -72,36 +70,36 @@ public class AWSDynamoDAO implements DAO {
 	private static final int MAX_ITEMS_PER_WRITE = 25;
 	private static final int MAX_KEYS_PER_READ = 100;
 
+	static {
+		// set up automatic table creation and deletion
+		App.addAppCreatedListener((App app) -> {
+			if (app != null && !app.isSharingTable()) {
+				AWSDynamoUtils.createTable(app.getAppIdentifier(), 1, 1);
+			}
+		});
+		App.addAppDeletedListener((App app) -> {
+			if (app != null) {
+				if (app.isSharingTable()) {
+					final String appid = app.getAppIdentifier();
+					Para.asyncExecute(new Runnable() {
+						public void run() {
+							logger.info("Async deleteAllFromSharedTable({}) started.", appid);
+							AWSDynamoUtils.deleteAllFromSharedTable(appid);
+							logger.info("Finished deleteAllFromSharedTable({}).", appid);
+						}
+					});
+				} else {
+					AWSDynamoUtils.deleteTable(app.getAppIdentifier());
+				}
+			}
+		});
+	}
+
+
 	/**
 	 * No-args constructor.
 	 */
 	public AWSDynamoDAO() {
-		// set up automatic table creation and deletion
-		App.addAppCreatedListener(new AppCreatedListener() {
-			public void onAppCreated(App app) {
-				if (app != null && !app.isSharingTable()) {
-					AWSDynamoUtils.createTable(app.getAppIdentifier(), 1, 1);
-				}
-			}
-		});
-		App.addAppDeletedListener(new AppDeletedListener() {
-			public void onAppDeleted(App app) {
-				if (app != null) {
-					if (app.isSharingTable()) {
-						final String appid = app.getAppIdentifier();
-						Para.asyncExecute(new Runnable() {
-							public void run() {
-								logger.info("Async deleteAllFromSharedTable({}) started.", appid);
-								AWSDynamoUtils.deleteAllFromSharedTable(appid);
-								logger.info("Finished deleteAllFromSharedTable({}).", appid);
-							}
-						});
-					} else {
-						AWSDynamoUtils.deleteTable(app.getAppIdentifier());
-					}
-				}
-			}
-		});
 	}
 
 	DynamoDbClient client() {

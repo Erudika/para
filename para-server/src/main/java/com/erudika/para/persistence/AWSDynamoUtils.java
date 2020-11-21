@@ -192,14 +192,16 @@ public final class AWSDynamoUtils {
 			logger.info("Created DynamoDB table '{}', status {}.", table, tbl.tableDescription().tableStatus());
 
 			if (!StringUtils.isBlank(REPLICA_REGIONS) && !App.isRoot(appid)) {
-				String[] regions = REPLICA_REGIONS.split("\\s*,\\s*");
-				if (regions != null && regions.length > 0) {
-					for (String region : regions) {
-						if (!StringUtils.isBlank(region)) {
-							replicateTable(appid, readCapacity, region);
+				Para.asyncExecute(() -> {
+					String[] regions = REPLICA_REGIONS.split("\\s*,\\s*");
+					if (regions != null && regions.length > 0) {
+						for (String region : regions) {
+							if (!StringUtils.isBlank(region)) {
+								replicateTable(appid, readCapacity, region);
+							}
 						}
 					}
-				}
+				});
 			}
 		} catch (Exception e) {
 			logger.error(null, e);
@@ -306,6 +308,10 @@ public final class AWSDynamoUtils {
 		}
 		try {
 			String table = getTableNameForAppid(appid);
+			logger.info("Enabling streams for DynamoDB table '{}'...", table);
+			getClient().updateTable(b -> b.tableName(table).
+					streamSpecification(s -> s.streamViewType(StreamViewType.NEW_AND_OLD_IMAGES).streamEnabled(true)));
+			waitForActive(table);
 			logger.info("Replicating DynamoDB table '{}' in region {}...", table, toRegion);
 			getClient().updateTable(b -> b.tableName(table).
 					streamSpecification(s -> s.streamViewType(StreamViewType.NEW_AND_OLD_IMAGES).streamEnabled(true)).
