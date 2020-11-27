@@ -68,6 +68,7 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.ApplicationContextFactory;
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
@@ -400,7 +401,8 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 			application.initializers(new ParentContextApplicationContextInitializer(parent));
 		}
 		application.initializers(new ServletContextApplicationContextInitializer(sc));
-		application.contextClass(AnnotationConfigServletWebServerApplicationContext.class);
+		application.contextFactory(ApplicationContextFactory.
+				ofContextClass(AnnotationConfigServletWebServerApplicationContext.class));
 
 		// entry point (WAR)
 		application.profiles(Config.ENVIRONMENT);

@@ -36,7 +36,6 @@ import com.erudika.para.utils.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -98,21 +97,20 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 				// find all app objects even if there are more than 10000 apps in the system
 				// apps will be added in chronological order, root app first, followed by child apps
 				Pager pager = new Pager(1, "_docid", false, Config.DEFAULT_LIMIT);
-				List<App> apps = new LinkedList<>();
+				long appCount = 0;
 				List<App> appsPage;
 				do {
 					appsPage = Para.getSearch().findQuery(Utils.type(App.class), "*", pager);
-					apps.addAll(appsPage);
+//					apps.addAll(appsPage);
+					appsPage.forEach((app) -> {
+						logger.debug("   {}{}", app.getAppIdentifier(), app.isRootApp() ? " (root app)" : "");
+						initializeMetrics(app.getAppIdentifier());
+					});
 					logger.debug("Found a page of {} apps.", appsPage.size());
 				} while (!appsPage.isEmpty());
 
 				logger.info("Found root app '{}' and {} existing child app(s){}", Config.getRootAppIdentifier(),
-						apps.isEmpty() ? 0 : apps.size() - 1, apps.isEmpty() || !logger.isDebugEnabled() ? "." : ":");
-
-				for (App app : apps) {
-					logger.debug("   {}{}", app.getAppIdentifier(), app.isRootApp() ? " (root app)" : "");
-					initializeMetrics(app.getAppIdentifier());
-				}
+						appCount == 0 ? 0 : appCount - 1, appCount == 0 || !logger.isDebugEnabled() ? "." : ":");
 			}
 
 			// schedule the regular check on metrics settings registries to establish app-specific reporting
@@ -129,16 +127,8 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 			});
 
 			// setup listeners for push metrics settings
-			App.addAppSettingAddedListener((App app, String settingKey, Object settingValue) -> {
-				if (app != null) {
-					addAppSetting(app, settingKey, settingValue);
-				}
-			});
-			App.addAppSettingRemovedListener((App app, String settingKey) -> {
-				if (app != null) {
-					removeAppSetting(app, settingKey);
-				}
-			});
+			App.addAppSettingAddedListener((app, key, value) -> addAppSetting(app, key, value));
+			App.addAppSettingRemovedListener((app, key) -> removeAppSetting(app, key));
 		}
 
 		@Override
@@ -356,7 +346,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 	 * @param value the value of the setting
 	 */
 	private static void addAppSetting(App app, String key, Object value) {
-		if (GRAPHITE_APP_SETTINGS_NAME.equals(key)) {
+		if (app != null && GRAPHITE_APP_SETTINGS_NAME.equals(key)) {
 			// validate the graphite reporter settings and, if valid, save them to the registry
 			if (Map.class.isAssignableFrom(value.getClass())) {
 				Map graphiteSettings = (Map) value;
@@ -378,7 +368,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 	 * @param key the name of the setting
 	 */
 	public static void removeAppSetting(App app, String key) {
-		if (GRAPHITE_APP_SETTINGS_NAME.equals(key)) {
+		if (app != null && GRAPHITE_APP_SETTINGS_NAME.equals(key)) {
 			RegistryUtils.removeValue(GRAPHITE_REGISTRY_NAME, app.getAppIdentifier());
 		}
 	}
