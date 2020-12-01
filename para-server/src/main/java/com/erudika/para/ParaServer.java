@@ -305,6 +305,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	@Bean
 	public ServletWebServerFactory jettyConfigBean() {
 		JettyServletWebServerFactory jef = new JettyServletWebServerFactory();
+		jef.setRegisterDefaultServlet(true);
 		jef.addServerCustomizers((JettyServerCustomizer) (Server server) -> {
 			if (Config.getConfigBoolean("access_log_enabled", true)) {
 				// enable access log via Logback
