@@ -60,7 +60,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 	private final ObjectReader jreader;
 	private static final String PROFILE_URL = "https://graph.microsoft.com/v1.0/me";
 	private static final String PHOTO_URL = "https://graph.microsoft.com/v1.0/me/photo/$value";
-	private static final String TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
+	private static final String TOKEN_URL = "https://login.microsoftonline.com/{0}/oauth2/v2.0/token";
 	private static final String PAYLOAD = "code={0}&redirect_uri={1}"
 			+ "&scope=https%3A%2F%2Fgraph.microsoft.com%2Fuser.read&client_id={2}"
 			+ "&client_secret={3}&grant_type=authorization_code";
@@ -110,7 +110,8 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.MICROSOFT_PREFIX);
 				String entity = Utils.formatMessage(PAYLOAD, authCode, Utils.urlEncode(redirectURI), keys[0], keys[1]);
 
-				HttpPost tokenPost = new HttpPost(TOKEN_URL);
+				HttpPost tokenPost = new HttpPost(Utils.formatMessage(TOKEN_URL,
+						SecurityUtils.getSettingForApp(app, "ms_tenant_id", "common")));
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 				tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
 				try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
