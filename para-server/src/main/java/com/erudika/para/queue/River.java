@@ -179,7 +179,7 @@ public abstract class River implements Runnable {
 		}
 		try {
 			boolean urlEncoded = (boolean) parsed.get("urlEncoded");
-			String targetUrl = (String) parsed.get("targetUrl");
+			String targetUrl = StringUtils.trimToEmpty((String) parsed.get("targetUrl"));
 			HttpPost postToTarget = new HttpPost(targetUrl);
 			postToTarget.addHeader("User-Agent", "Para Webhook Dispacher " + Para.getVersion());
 			postToTarget.setHeader(HttpHeaders.CONTENT_TYPE, urlEncoded ?
