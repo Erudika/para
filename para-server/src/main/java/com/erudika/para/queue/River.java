@@ -250,16 +250,16 @@ public abstract class River implements Runnable {
 		try {
 			switch (opId) {
 				case "index_op":
-					Para.getSearch().index(appid, (ParaObject) payload);
+					Para.getSearch().index(appid, ParaObjectUtils.setAnnotatedFields((Map) payload));
 					break;
 				case "index_all_op":
-					Para.getSearch().indexAll(appid, (List<ParaObject>) payload);
+					Para.getSearch().indexAll(appid, getPayloadObjects(payload));
 					break;
 				case "unindex_op":
-					Para.getSearch().unindex(appid, (ParaObject) payload);
+					Para.getSearch().unindex(appid, ParaObjectUtils.setAnnotatedFields((Map) payload));
 					break;
 				case "unindex_all_op":
-					Para.getSearch().unindexAll(appid, (List<ParaObject>) payload);
+					Para.getSearch().unindexAll(appid, getPayloadObjects(payload));
 					break;
 				case "rebuild_index_op":
 					App app = Para.getDAO().read(appid);
@@ -296,5 +296,14 @@ public abstract class River implements Runnable {
 		createList.clear();
 		updateList.clear();
 		deleteList.clear();
+	}
+
+	@SuppressWarnings("unchecked")
+	private List<ParaObject> getPayloadObjects(Object payload) {
+		List<ParaObject> list = new LinkedList<>();
+		for (Map<String, Object> props : (List<Map<String, Object>>) payload) {
+			list.add(ParaObjectUtils.setAnnotatedFields(props));
+		}
+		return list;
 	}
 }
