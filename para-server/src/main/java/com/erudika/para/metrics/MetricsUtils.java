@@ -101,7 +101,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 				List<App> appsPage;
 				do {
 					appsPage = Para.getSearch().findQuery(Utils.type(App.class), "*", pager);
-//					apps.addAll(appsPage);
+					appCount += appsPage.size();
 					appsPage.forEach((app) -> {
 						logger.debug("   {}{}", app.getAppIdentifier(), app.isRootApp() ? " (root app)" : "");
 						initializeMetrics(app.getAppIdentifier());
