@@ -28,10 +28,14 @@ import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectReader;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.config.CookieSpecs;
@@ -56,6 +60,7 @@ public abstract class River implements Runnable {
 	private static final int SLEEP = Config.getConfigInt("queue.polling_sleep_seconds", 60);
 	private static final int MAX_FAILED_WEBHOOK_ATTEMPTS = Config.getConfigInt("max_failed_webhook_attempts", 10);
 	private static final CloseableHttpClient HTTP;
+	private static ConcurrentHashMap<String, Integer> pendingIds;
 
 	static {
 		int timeout = 10 * 1000;
@@ -249,28 +254,23 @@ public abstract class River implements Runnable {
 		Object payload = parsed.get("payload");
 		try {
 			switch (opId) {
-				case "index_op":
-					Para.getSearch().index(appid, ParaObjectUtils.setAnnotatedFields((Map) payload));
-					break;
 				case "index_all_op":
-					Para.getSearch().indexAll(appid, getPayloadObjects(payload));
-					break;
-				case "unindex_op":
-					Para.getSearch().unindex(appid, ParaObjectUtils.setAnnotatedFields((Map) payload));
+					indexAllWithRetry(appid, payload);
 					break;
 				case "unindex_all_op":
-					Para.getSearch().unindexAll(appid, getPayloadObjects(payload));
+					Para.getSearch().unindexAll(appid, getPayloadObjects(appid, payload));
 					break;
 				case "rebuild_index_op":
-					App app = Para.getDAO().read(appid);
+					// we can't be sure if the app object exists in DB or not, so use the payload to construct the app
+					App app = (App) ParaObjectUtils.setAnnotatedFields((Map) payload);
 					Para.getSearch().rebuildIndex(Para.getDAO(), app, "");
 					break;
 				case "create_index_op":
-					app = Para.getDAO().read(appid);
+					app = (App) ParaObjectUtils.setAnnotatedFields((Map) payload);
 					Para.getSearch().createIndex(app);
 					break;
 				case "delete_index_op":
-					app = Para.getDAO().read(appid);
+					app = (App) ParaObjectUtils.setAnnotatedFields((Map) payload);
 					Para.getSearch().deleteIndex(app);
 					break;
 				default:
@@ -299,11 +299,52 @@ public abstract class River implements Runnable {
 	}
 
 	@SuppressWarnings("unchecked")
-	private List<ParaObject> getPayloadObjects(Object payload) {
-		List<ParaObject> list = new LinkedList<>();
-		for (Map<String, Object> props : (List<Map<String, Object>>) payload) {
-			list.add(ParaObjectUtils.setAnnotatedFields(props));
+	private void indexAllWithRetry(String appid, Object payload) {
+		List<String> ids = (List<String>) Optional.ofNullable(payload).orElse(Collections.emptyList());
+		Para.getCache().removeAll(appid, ids);
+		Map<String, ParaObject> objs = Para.getDAO().readAll(appid, ids, true);
+		Para.getSearch().indexAll(appid, objs.values().stream().filter(v -> v != null).collect(Collectors.toList()));
+
+		if (objs.keySet().stream().anyMatch(k -> objs.get(k) == null)) {
+			if (pendingIds == null) {
+				pendingIds = new ConcurrentHashMap<>();
+			}
+			objs.keySet().stream().filter(k -> objs.get(k) == null).forEach(k -> pendingIds.putIfAbsent(k, 1));
+			logger.debug("Some objects are missing from local database while performing 'index_all_op': {}", pendingIds);
+			Para.asyncExecute(() -> {
+				try {
+					for (int i = 0; i < 30; i++) {
+						Thread.sleep(1000);
+						Map<String, ParaObject> pending = Para.getDAO().readAll(appid,
+								new ArrayList<>(pendingIds.keySet()), true);
+						pending.keySet().stream().filter(k -> pending.get(k) != null).forEach(k -> pendingIds.remove(k));
+						if (pendingIds.isEmpty()) {
+							break;
+						}
+					}
+				} catch (InterruptedException ex) {
+					logger.info("Retry indexing operation interrupted: {}", ex.getMessage());
+					Thread.currentThread().interrupt();
+				} finally {
+					if (!pendingIds.isEmpty()) {
+						logger.warn("Indexing operation 'index_all_op' failed for objects {} as they "
+								+ "were not found in the database for app '{}'. This will cause the index "
+								+ "to become out of sync or corrupted.", pendingIds, appid);
+						pendingIds.clear();
+					}
+				}
+			});
 		}
-		return list;
+	}
+
+	@SuppressWarnings("unchecked")
+	private List<ParaObject> getPayloadObjects(String appid, Object payload) {
+		List<String> ids = (List<String>) Optional.ofNullable(payload).orElse(Collections.emptyList());
+		Para.getCache().removeAll(appid, ids);
+		return ids.stream().map(id -> {
+			Sysprop s = new Sysprop(id);
+			s.setAppid(appid);
+			return s;
+		}).collect(Collectors.toList());
 	}
 }
