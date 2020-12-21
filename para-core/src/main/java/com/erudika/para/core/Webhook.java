@@ -391,6 +391,7 @@ public class Webhook extends Sysprop {
 		do {
 			Map<String, Object> terms = new HashMap<>();
 			terms.put(eventName, eventValue);
+			terms.put(Config._APPID, appid);
 			terms.put("active", true);
 			webhooks = Para.getSearch().findTerms(appid, Utils.type(Webhook.class), terms, true, p);
 			webhooks.stream().filter(webhook -> typeFilterMatches(webhook, payload)).

@@ -48,12 +48,10 @@ public class WebhookIOListener implements IOListener {
 					Utils.type(Webhook.class).equals(((Sysprop) paraObjects).getType()))) {
 				return;
 			}
-			Para.asyncExecute(new Runnable() {
-				public void run() {
-					String appid = args.length > 0 && args[0] instanceof String ? (String) args[0] :
-							Config.getRootAppIdentifier();
-					Webhook.sendEventPayloadToQueue(appid, method.getName(), true, paraObjects);
-				}
+			Para.asyncExecute(() -> {
+				String appid = args.length > 0 && args[0] instanceof String ? (String) args[0] :
+						Config.getRootAppIdentifier();
+				Webhook.sendEventPayloadToQueue(appid, method.getName(), true, paraObjects);
 			});
 		}
 	}
