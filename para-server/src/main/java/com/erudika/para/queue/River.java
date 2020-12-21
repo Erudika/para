@@ -328,7 +328,7 @@ public abstract class River implements Runnable {
 				} finally {
 					if (!pendingIds.isEmpty()) {
 						logger.warn("Indexing operation 'index_all_op' failed for objects {} as they "
-								+ "were not found in the database for app '{}'. This will cause the index "
+								+ "were not found in the database for app '{}'. This may cause the index "
 								+ "to become out of sync or corrupted.", pendingIds, appid);
 						pendingIds.clear();
 					}

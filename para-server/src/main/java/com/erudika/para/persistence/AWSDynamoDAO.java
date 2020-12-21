@@ -74,7 +74,7 @@ public class AWSDynamoDAO implements DAO {
 		// set up automatic table creation and deletion
 		App.addAppCreatedListener((App app) -> {
 			if (app != null && !app.isSharingTable()) {
-				AWSDynamoUtils.createTable(app.getAppIdentifier(), 1, 1);
+				AWSDynamoUtils.createTable(app.getAppIdentifier());
 			}
 		});
 		App.addAppDeletedListener((App app) -> {
@@ -95,11 +95,13 @@ public class AWSDynamoDAO implements DAO {
 		});
 	}
 
-
 	/**
 	 * No-args constructor.
 	 */
 	public AWSDynamoDAO() {
+		if (!AWSDynamoUtils.existsTable(Config.getRootAppIdentifier())) {
+			AWSDynamoUtils.createTable(Config.getRootAppIdentifier());
+		}
 	}
 
 	DynamoDbClient client() {

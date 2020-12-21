@@ -139,6 +139,11 @@
 		</dependency>
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>applicationautoscaling</artifactId>
+			<version>${awsJdkVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
 			<artifactId>iot</artifactId>
 			<version>${awsJdkVer}</version>
 		</dependency>
