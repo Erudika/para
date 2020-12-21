@@ -20,6 +20,7 @@ package com.erudika.para.utils;
 import com.erudika.para.annotations.Email;
 import com.erudika.para.core.ParaObject;
 import com.samskivert.mustache.Mustache;
+import com.vladsch.flexmark.ext.autolink.AutolinkExtension;
 import com.vladsch.flexmark.ext.emoji.EmojiExtension;
 import com.vladsch.flexmark.ext.emoji.EmojiImageType;
 import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension;
@@ -465,6 +466,7 @@ public final class Utils {
 	private static MutableDataHolder getMarkdownOptions() {
 		return new MutableDataSet()
 				.set(HtmlRenderer.ESCAPE_HTML, true)
+				.set(HtmlRenderer.AUTOLINK_WWW_PREFIX, "https://")
 				.set(EmojiExtension.USE_IMAGE_TYPE, EmojiImageType.UNICODE_FALLBACK_TO_IMAGE)
 				// for full GFM table compatibility add the following table extension options:
 				.set(TablesExtension.COLUMN_SPANS, false)
@@ -472,7 +474,7 @@ public final class Utils {
 				.set(TablesExtension.DISCARD_EXTRA_COLUMNS, true)
 				.set(TablesExtension.HEADER_SEPARATOR_COLUMN_MATCH, true)
 				.set(Parser.EXTENSIONS, Arrays.asList(TablesExtension.create(), EmojiExtension.create(),
-						StrikethroughExtension.create(), TaskListExtension.create()));
+						StrikethroughExtension.create(), TaskListExtension.create(), AutolinkExtension.create()));
 	}
 
 	private static Whitelist getHTMLTagsWhitelist() {
