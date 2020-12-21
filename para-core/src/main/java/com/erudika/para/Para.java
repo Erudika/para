@@ -112,7 +112,6 @@ public final class Para {
 					logger.debug("Executed {}.onInitialize().", initListener.getClass().getName());
 				}
 			}
-			logger.info("Instance #{} initialized.", Config.WORKER_ID);
 		} catch (Exception e) {
 			logger.error("Failed to initialize Para.", e);
 		}

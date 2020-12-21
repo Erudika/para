@@ -357,7 +357,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 			jef.setContextPath(contextPath);
 		}
 		jef.setPort(getServerPort());
-		logger.info("Listening on port {}...", jef.getPort());
+		logger.info("Instance #{} initalized and listening on http://localhost:{}", Config.WORKER_ID, jef.getPort());
 		return jef;
 	}
 
