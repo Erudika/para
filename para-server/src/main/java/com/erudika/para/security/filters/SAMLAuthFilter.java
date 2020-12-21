@@ -51,6 +51,7 @@ import static com.onelogin.saml2.settings.SettingsBuilder.STRICT_PROPERTY_KEY;
 import com.onelogin.saml2.util.Constants;
 import java.io.IOException;
 import java.net.URL;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -146,8 +147,10 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 				LOG.error("Failed to authenticate app '{}' with SAML: {}", appid, ex.getMessage());
 			} catch (IOException ex) {
 				LOG.error("Failed to load certificate from properties for app '{}': {}", appid, ex.getMessage());
+			} catch (InvalidKeySpecException ex) {
+				LOG.error("Invalid SAML certificate key for app '{}': {}", appid, ex.getMessage());
 			} catch (Exception ex) {
-				LOG.error(null, ex);
+				LOG.error("Failed to authenticate app '" + appid + "' with SAML: ", ex);
 			}
 		}
 
