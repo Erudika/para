@@ -59,6 +59,7 @@ public abstract class River implements Runnable {
 	private static final Logger logger = LoggerFactory.getLogger(River.class);
 	private static final int SLEEP = Config.getConfigInt("queue.polling_sleep_seconds", 60);
 	private static final int MAX_FAILED_WEBHOOK_ATTEMPTS = Config.getConfigInt("max_failed_webhook_attempts", 10);
+	private static final int MAX_INDEXING_RETRIES = Config.getConfigInt("river.max_indexing_retries", 5);
 	private static final CloseableHttpClient HTTP;
 	private static ConcurrentHashMap<String, Integer> pendingIds;
 
@@ -313,7 +314,7 @@ public abstract class River implements Runnable {
 			logger.debug("Some objects are missing from local database while performing 'index_all_op': {}", pendingIds);
 			Para.asyncExecute(() -> {
 				try {
-					for (int i = 0; i < 30; i++) {
+					for (int i = 0; i < MAX_INDEXING_RETRIES; i++) {
 						Thread.sleep(1000);
 						Map<String, ParaObject> pending = Para.getDAO().readAll(appid,
 								new ArrayList<>(pendingIds.keySet()), true);
