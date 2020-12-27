@@ -279,7 +279,7 @@ public abstract class River implements Runnable {
 			}
 			return 1;
 		} catch (Exception e) {
-			logger.error("Indexing operation " + opId + " failed!", e);
+			logger.error("Indexing operation " + opId + " failed for app '" + appid + "'!", e);
 		}
 		return 0;
 	}
@@ -306,7 +306,7 @@ public abstract class River implements Runnable {
 		Map<String, ParaObject> objs = Para.getDAO().readAll(appid, ids, true);
 		Para.getSearch().indexAll(appid, objs.values().stream().filter(v -> v != null).collect(Collectors.toList()));
 
-		if (objs.keySet().stream().anyMatch(k -> objs.get(k) == null)) {
+		if (objs.containsValue(null)) {
 			if (pendingIds == null) {
 				pendingIds = new ConcurrentHashMap<>();
 			}
