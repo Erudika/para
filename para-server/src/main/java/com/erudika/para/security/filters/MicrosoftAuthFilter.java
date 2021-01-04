@@ -119,6 +119,8 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 						Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
 						if (token != null && token.containsKey("access_token")) {
 							userAuth = getOrCreateUser(app, (String) token.get("access_token"));
+						} else {
+							logger.warn("Authentication request failed - " + token);
 						}
 						EntityUtils.consumeQuietly(resp1.getEntity());
 					}
