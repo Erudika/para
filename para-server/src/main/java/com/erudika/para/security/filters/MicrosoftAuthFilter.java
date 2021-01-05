@@ -189,6 +189,8 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 					}
 				}
 				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+			} else {
+				logger.info("Authentication request failed because user profile doesn't contain the expected attributes");
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);
