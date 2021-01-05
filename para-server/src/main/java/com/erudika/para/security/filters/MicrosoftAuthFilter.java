@@ -120,9 +120,14 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 						if (token != null && token.containsKey("access_token")) {
 							userAuth = getOrCreateUser(app, (String) token.get("access_token"));
 						} else {
-							logger.warn("Authentication request failed - " + token);
+							logger.info("Authentication request failed with status '" +
+									resp1.getStatusLine().getReasonPhrase() + "' - " + token);
 						}
 						EntityUtils.consumeQuietly(resp1.getEntity());
+					} else {
+						logger.info("Authentication request failed with status '" +
+								(resp1 != null ? resp1.getStatusLine().getReasonPhrase() : "null") +
+								"' and empty response body.");
 					}
 				}
 			}
