@@ -117,8 +117,15 @@ public class AmazonAuthFilter extends AbstractAuthenticationProcessingFilter {
 						Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
 						if (token != null && token.containsKey("access_token")) {
 							userAuth = getOrCreateUser(app, (String) token.get("access_token"));
+						} else {
+							logger.info("Authentication request failed with status '" +
+									resp1.getStatusLine().getReasonPhrase() + "' - " + token);
 						}
 						EntityUtils.consumeQuietly(resp1.getEntity());
+					} else {
+						logger.info("Authentication request failed with status '"
+								+ (resp1 != null ? resp1.getStatusLine().getReasonPhrase() : "null")
+								+ "' and empty response body.");
 					}
 				}
 			}
@@ -181,6 +188,8 @@ public class AmazonAuthFilter extends AbstractAuthenticationProcessingFilter {
 					}
 				}
 				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+			} else {
+				logger.info("Authentication request failed because user profile doesn't contain the expected attributes");
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);

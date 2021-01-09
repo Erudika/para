@@ -111,6 +111,9 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 					String accessToken = parseAccessToken(token);
 					if (accessToken != null) {
 						userAuth = getOrCreateUser(app, accessToken);
+					} else {
+						logger.info("Authentication request failed with status '"
+								+ resp1.getStatusLine().getReasonPhrase() + "' - " + token);
 					}
 				} catch (Exception e) {
 					logger.warn("Facebook auth request failed: GET " + url, e);
@@ -170,7 +173,11 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 							}
 						}
 						userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+					} else {
+						logger.info("Authentication request failed because user profile doesn't contain the expected attributes");
 					}
+				} else {
+					logger.info("Authentication request failed because response was missing or contained invalid JSON.");
 				}
 			} catch (Exception e) {
 				logger.warn("Facebook auth request failed: GET " + PROFILE_URL + accessToken, e);

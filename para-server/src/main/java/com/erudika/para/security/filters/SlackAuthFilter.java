@@ -94,6 +94,7 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * @throws IOException ex
 	 */
 	@Override
+	@SuppressWarnings("unchecked")
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws IOException {
 		final String requestURI = request.getRequestURI();
@@ -114,13 +115,20 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 				tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
 				try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
 					if (resp1 != null && resp1.getEntity() != null) {
-						Map<String, Object> data = jreader.readValue(resp1.getEntity().getContent());
-						if (data != null && data.containsKey("authed_user")) {
-							Map<String, Object> authedUser = (Map<String, Object>) data.
+						Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
+						if (token != null && token.containsKey("authed_user")) {
+							Map<String, Object> authedUser = (Map<String, Object>) token.
 									getOrDefault("authed_user", Collections.emptyMap());
 							userAuth = getOrCreateUser(app, (String) authedUser.get("access_token"));
+						} else {
+							logger.info("Authentication request failed with status '" +
+									resp1.getStatusLine().getReasonPhrase() + "' - " + token);
 						}
 						EntityUtils.consumeQuietly(resp1.getEntity());
+					} else {
+						logger.info("Authentication request failed with status '" +
+								(resp1 != null ? resp1.getStatusLine().getReasonPhrase() : "null") +
+								"' and empty response body.");
 					}
 				}
 			}
@@ -195,6 +203,8 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 					}
 				}
 				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+			} else {
+				logger.info("Authentication request failed because user profile doesn't contain the expected attributes");
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);

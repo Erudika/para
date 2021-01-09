@@ -141,8 +141,14 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 					if (pair.startsWith("oauth_token")) {
 						response.sendRedirect(FLOW_URL2 + pair);
 						return true;
+					} else {
+						logger.info("Authentication request failed, token not found in response - " + decoded);
 					}
 				}
+			} else {
+				logger.info("Authentication request failed with status '"
+						+ (resp1 != null ? resp1.getStatusLine().getReasonPhrase() : "null")
+						+ "' and empty response body.");
 			}
 		}
 		return false;
@@ -238,6 +244,8 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 					}
 				}
 				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+			} else {
+				logger.info("Authentication request failed because user profile doesn't contain the expected attributes");
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);

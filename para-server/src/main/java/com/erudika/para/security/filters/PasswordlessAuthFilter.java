@@ -130,6 +130,9 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 					}
 				}
 				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+			} else {
+				logger.info("Authentication request failed because the provided JWT token is invalid. appid: '" +
+						(app != null ? app.getAppIdentifier() : "null") + "'");
 			}
 		} catch (ParseException e) {
 			logger.warn("Invalid token: " + e.getMessage());

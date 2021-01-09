@@ -125,7 +125,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 						userAuth = getOrCreateUser(app, token.get("access_token") +
 								Config.SEPARATOR + token.get("refresh_token"));
 					} else {
-						LOG.error("OAuth 2.0 token request failed with response " + token);
+						LOG.info("OAuth 2.0 token request failed with response " + token);
 					}
 				}
 			}
@@ -359,6 +359,10 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			if (resp1 != null && resp1.getEntity() != null) {
 				tokens = jreader.readValue(resp1.getEntity().getContent());
 				EntityUtils.consumeQuietly(resp1.getEntity());
+			} else {
+				LOG.info("Authentication request failed with status '"
+						+ (resp1 != null ? resp1.getStatusLine().getReasonPhrase() : "null")
+						+ "' and empty response body.");
 			}
 		}
 		return tokens;
