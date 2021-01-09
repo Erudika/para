@@ -38,7 +38,6 @@ import static com.erudika.para.validation.ValidationUtils.isValidObject;
 import static com.erudika.para.validation.ValidationUtils.validateObject;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -229,39 +228,6 @@ public final class RestUtils {
 		}
 
 		return Response.ok(entity).build();
-	}
-
-	/**
-	 * Reads the bytes from an InputStream.
-	 * @param in an InputStream
-	 * @return byte[]
-	 */
-	public static byte[] readEntityBytes(InputStream in) {
-		byte[] jsonEntity = null;
-		try {
-			if (in != null && in.available() > 0) {
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				byte[] buf = new byte[1024];
-				int length;
-				while ((length = in.read(buf)) > 0) {
-					baos.write(buf, 0, length);
-				}
-				jsonEntity = baos.toByteArray();
-			} else {
-				jsonEntity = new byte[0];
-			}
-		} catch (IOException ex) {
-			logger.error(null, ex);
-		} finally {
-			try {
-				if (in != null) {
-					in.close();
-				}
-			} catch (IOException ex) {
-				logger.error(null, ex);
-			}
-		}
-		return jsonEntity;
 	}
 
 	/**

@@ -442,9 +442,10 @@ public final class SecurityUtils {
 		String httpMethod = incoming.getMethod();
 		InputStream entity;
 		try {
-			entity = new BufferedRequestWrapper(incoming).getInputStream();
-			if (entity.available() <= 0) {
-				entity = null;
+			if (incoming instanceof BufferedRequestWrapper) {
+				entity = incoming.getInputStream();
+			} else {
+				entity = new BufferedRequestWrapper(incoming).getInputStream();
 			}
 		} catch (IOException ex) {
 			logger.error(null, ex);

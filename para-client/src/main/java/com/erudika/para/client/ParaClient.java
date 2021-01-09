@@ -58,7 +58,7 @@ import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.SslConfigurator;
 import org.glassfish.jersey.client.ClientConfig;
-import org.glassfish.jersey.grizzly.connector.GrizzlyConnectorProvider;
+import org.glassfish.jersey.client.HttpUrlConnectorProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,9 +100,7 @@ public final class ParaClient {
 		ClientConfig clientConfig = new ClientConfig();
 		clientConfig.register(GenericExceptionMapper.class);
 		clientConfig.register(new JacksonJsonProvider(mapper));
-		clientConfig.connectorProvider(new GrizzlyConnectorProvider((client, c, bldr) -> {
-			return bldr.setRequestTimeout(5 * 60 * 1000); // 5 min request timeout
-		}));
+		clientConfig.connectorProvider(new HttpUrlConnectorProvider().useSetMethodWorkaround());
 		SSLContext sslContext = SslConfigurator.newInstance().createSSLContext();
 		apiClient = ClientBuilder.newBuilder().
 				sslContext(sslContext).

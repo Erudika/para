@@ -301,7 +301,9 @@ public final class Signer extends BaseAws4Signer {
 	public Map<String, String> signRequest(String accessKey, String secretKey,
 			String httpMethod, String endpointURL, String reqPath,
 			Map<String, String> headers, MultivaluedMap<String, String> params, byte[] jsonEntity) {
-
+		if (headers == null) {
+			headers = new HashMap<>();
+		}
 		if (StringUtils.isBlank(accessKey)) {
 			logger.error("Blank access key: {} {}", httpMethod, reqPath);
 			return headers;
@@ -309,9 +311,6 @@ public final class Signer extends BaseAws4Signer {
 
 		if (StringUtils.isBlank(secretKey)) {
 			logger.debug("Anonymous request: {} {}", httpMethod, reqPath);
-			if (headers == null) {
-				headers = new HashMap<>();
-			}
 			headers.put(HttpHeaders.AUTHORIZATION, "Anonymous " + accessKey);
 			return headers;
 		}
