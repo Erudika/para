@@ -5,7 +5,7 @@ FROM openjdk:8-jdk-alpine
 ENV BOOT_SLEEP=0 \
     JAVA_OPTS="" \
     REPO_URL="https://oss.sonatype.org/service/local/repositories/releases/content/com/erudika" \
-    PARA_VERSION="1.38.2"
+    PARA_VERSION="1.38.3"
 
 RUN addgroup -S para && adduser -S -G para para && \
 	mkdir -p /para/lib && \
