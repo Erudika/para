@@ -20,7 +20,7 @@ package com.erudika.para.queue;
 import com.erudika.para.DestroyListener;
 import com.erudika.para.Para;
 import com.erudika.para.utils.Config;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
@@ -39,6 +39,7 @@ public class LocalQueue implements Queue {
 	private static final Logger logger = LoggerFactory.getLogger(MockQueue.class);
 	private static final int SLEEP = Config.getConfigInt("queue.polling_sleep_seconds", 60);
 	private static Future<?> pollingTask;
+	private static final int MAX_MESSAGES = 10;  //max in bulk
 	private static final int POLLING_INTERVAL = Config.getConfigInt("queue.polling_interval_seconds",
 			Config.IN_PRODUCTION ? 20 : 5);
 
@@ -101,7 +102,13 @@ public class LocalQueue implements Queue {
 			logger.info("Starting local river (polling interval: {}s)", POLLING_INTERVAL);
 			pollingTask = Para.getExecutorService().submit(new River() {
 				List<String> pullMessages() {
-					return Collections.singletonList(queue.pull());
+					String msg;
+					int	count = 0;
+					ArrayList<String> msgs = new ArrayList<String>(MAX_MESSAGES);
+					while (!(msg = queue.pull()).isEmpty() && count <= MAX_MESSAGES) {
+						msgs.add(msg);
+					}
+					return msgs;
 				}
 			});
 			Para.addDestroyListener(new DestroyListener() {
