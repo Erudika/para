@@ -103,11 +103,13 @@ public class LocalQueue implements Queue {
 			pollingTask = Para.getExecutorService().submit(new River() {
 				List<String> pullMessages() {
 					String msg;
-					int	count = 0;
 					ArrayList<String> msgs = new ArrayList<String>(MAX_MESSAGES);
-					while (!(msg = queue.pull()).isEmpty() && count <= MAX_MESSAGES) {
-						msgs.add(msg);
-					}
+					do {
+						msg = queue.pull();
+						if (!StringUtils.isBlank(msg)) {
+							msgs.add(msg);
+						}
+					} while (!StringUtils.isBlank(msg) && msgs.size() <= MAX_MESSAGES);
 					return msgs;
 				}
 			});
