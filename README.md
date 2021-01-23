@@ -1,13 +1,13 @@
 ![Logo](https://s3-eu-west-1.amazonaws.com/org.paraio/para.png)
 
-## A general-purpose backend framework for the cloud.
+## A scalable, multitenant backend for the cloud.
 
 [![Build Status](https://travis-ci.org/Erudika/para.svg?branch=master)](https://travis-ci.org/Erudika/para)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-core)
 [![Join the chat at https://gitter.im/Erudika/para](https://badges.gitter.im/Erudika/para.svg)](https://gitter.im/Erudika/para?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 
-**Para** is a simple and modular backend framework for object persistence and retrieval.
+**Para** is a scalable, multitenant backend server/framework for object persistence and retrieval.
 It helps you build and prototype applications faster by taking care of backend operations.
 It can be a part of your JVM-based application or it can be deployed as standalone, multitenant API server with
 multiple applications and clients connecting to it.
