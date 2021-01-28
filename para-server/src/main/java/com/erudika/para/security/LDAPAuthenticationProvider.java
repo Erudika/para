@@ -47,12 +47,11 @@ public class LDAPAuthenticationProvider implements AuthenticationProvider {
 			Map<String, String> ldapSettings = auth.getLdapSettings();
 			if (!ldapSettings.isEmpty()) {
 				String adDomain = ldapSettings.get("security.ldap.active_directory_domain"); // set this to enable AD
+				String adEnabled = ldapSettings.get("security.ldap.ad_mode_enabled"); // set this to enable AD explicitly
 				String ldapServerURL = ldapSettings.get("security.ldap.server_url");
 				String searchFilter = ldapSettings.get("security.ldap.user_search_filter");
 				AbstractLdapAuthenticationProvider ldapProvider;
-				if (StringUtils.isBlank(adDomain)) {
-					ldapProvider = new LdapAuthenticationProvider(new LDAPAuthenticator(ldapSettings));
-				} else {
+				if ("true".equals(adEnabled) || !StringUtils.isBlank(adDomain)) {
 					// Fix for https://github.com/Erudika/scoold/issues/67
 					authentication = new LDAPAuthentication(StringUtils.substringBefore(auth.getName(), "@"), auth.getCredentials());
 					String rootDn = ldapSettings.get("security.ldap.base_dn");
@@ -63,6 +62,8 @@ public class LDAPAuthenticationProvider implements AuthenticationProvider {
 					if (!StringUtils.isBlank(searchFilter)) {
 						((ActiveDirectoryLdapAuthenticationProvider) ldapProvider).setSearchFilter(searchFilter);
 					}
+				} else {
+					ldapProvider = new LdapAuthenticationProvider(new LDAPAuthenticator(ldapSettings));
 				}
 				ldapProvider.setUserDetailsContextMapper(new InetOrgPersonContextMapper());
 				return ldapProvider.authenticate(authentication);
