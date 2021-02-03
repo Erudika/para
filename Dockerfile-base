@@ -23,4 +23,4 @@ COPY --from=build /para/para-*.jar /para/para.jar
 EXPOSE 8080
 
 CMD sleep $BOOT_SLEEP && \
-    java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar /para/para.jar
+    java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar para.jar
