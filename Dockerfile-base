@@ -14,6 +14,8 @@ ENV BOOT_SLEEP=0 \
 
 RUN mkdir -p /para/lib &&	mkdir -p /para/data
 
+WORKDIR /para
+
 VOLUME ["/para/data"]
 
 COPY --from=build /para/para-*.jar /para/para.jar
