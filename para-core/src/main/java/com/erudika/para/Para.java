@@ -369,7 +369,7 @@ public final class Para {
 		}
 		App app = new App(appid);
 		if (!app.exists()) {
-			app.setName(name);
+			app.setName(StringUtils.isBlank(name) ? appid : name);
 			app.setSharingTable(sharedTable);
 			app.setSharingIndex(sharedIndex);
 			app.setActive(true);
