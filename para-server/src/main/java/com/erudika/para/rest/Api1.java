@@ -725,7 +725,14 @@ public final class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = getPrincipalApp();
 				if (app != null) {
-					return Response.ok(ParaObjectUtils.getAllTypes(app)).build();
+					Map<String, String> types = ParaObjectUtils.getAllTypes(app);
+					if ("true".equalsIgnoreCase(queryParam("count", ctx))) {
+						Map<String, Long> typesCount = new HashMap<String, Long>(types.size());
+						types.values().forEach(v -> typesCount.put(v, getSearch().getCount(app.getAppIdentifier(), v)));
+						return Response.ok(typesCount).build();
+					} else {
+						return Response.ok(types).build();
+					}
 				}
 				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}

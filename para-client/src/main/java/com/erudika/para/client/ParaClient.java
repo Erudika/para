@@ -1282,6 +1282,16 @@ public final class ParaClient {
 	}
 
 	/**
+	 * Returns the number of objects for each existing type in this App.
+	 * @return a map of singular object type to object count.
+	 */
+	public Map<String, Number> typesCount() {
+		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
+		params.putSingle("count", "true");
+		return getEntity(invokeGet("_types", params), Map.class);
+	}
+
+	/**
 	 * Returns a {@link com.erudika.para.core.User} or an
 	 * {@link com.erudika.para.core.App} that is currently authenticated.
 	 * @param <P> an App or User
