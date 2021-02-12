@@ -362,6 +362,20 @@ public final class Para {
 	 * @return credentials for the root app
 	 */
 	public static Map<String, String> newApp(String appid, String name, boolean sharedTable, boolean sharedIndex) {
+		return newApp(appid, name, null, sharedTable, sharedIndex);
+	}
+
+	/**
+	 * Creates a new application and returns the credentials for it.
+	 * @param appid the app identifier
+	 * @param name the full name of the app
+	 * @param creatorid the id of the {@link com.erudika.para.core.User} who owns this app
+	 * @param sharedTable false if the app should have its own table
+	 * @param sharedIndex false if the app should have its own index
+	 * @return credentials for the root app
+	 */
+	public static Map<String, String> newApp(String appid, String name, String creatorid,
+			boolean sharedTable, boolean sharedIndex) {
 		Map<String, String> creds = new TreeMap<>();
 		creds.put("message", "All set!");
 		if (StringUtils.isBlank(appid)) {
@@ -372,6 +386,7 @@ public final class Para {
 			app.setName(StringUtils.isBlank(name) ? appid : name);
 			app.setSharingTable(sharedTable);
 			app.setSharingIndex(sharedIndex);
+			app.setCreatorid(creatorid);
 			app.setActive(true);
 			String id = app.create();
 			if (id != null) {

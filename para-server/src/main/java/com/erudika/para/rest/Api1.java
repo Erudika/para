@@ -764,7 +764,8 @@ public final class Api1 extends ResourceConfig {
 					if (app != null && app.isRootApp()) {
 						boolean sharedIndex = "true".equals(queryParam("sharedIndex", ctx));
 						boolean sharedTable = "true".equals(queryParam("sharedTable", ctx));
-						return Response.ok(newApp(appid, queryParam("name", ctx), sharedIndex, sharedTable)).build();
+						return Response.ok(newApp(appid, queryParam(Config._NAME, ctx),
+								queryParam(Config._CREATORID, ctx), sharedIndex, sharedTable)).build();
 					} else {
 						return getStatusResponse(Response.Status.FORBIDDEN,
 								"Only root app can create and initialize other apps.");
