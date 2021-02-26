@@ -1025,7 +1025,8 @@ public final class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : getPrincipalApp();
 				if (app != null) {
-					ObjectReader reader = ParaObjectUtils.getJsonMapper().readerFor(new TypeReference<List<Sysprop>>() { });
+					ObjectReader reader = ParaObjectUtils.getJsonMapper().
+							readerFor(new TypeReference<List<Map<String, Object>>>() { });
 					int count = 0;
 					int importBatchSize = Config.getConfigInt("import_batch_size", 100);
 					String filename = Optional.ofNullable(ctx.getUriInfo().getQueryParameters().getFirst("filename")).
@@ -1037,12 +1038,12 @@ public final class Api1 extends ResourceConfig {
 							ZipEntry zipEntry;
 							List<ParaObject> toCreate = new LinkedList<ParaObject>();
 							while ((zipEntry = zipIn.getNextEntry()) != null) {
-								List<ParaObject> objects = reader.readValue(new FilterInputStream(zipIn) {
+								List<Map<String, Object>> objects = reader.readValue(new FilterInputStream(zipIn) {
 									public void close() throws IOException {
 										zipIn.closeEntry();
 									}
 								});
-								toCreate.addAll(objects);
+								objects.forEach(o -> toCreate.add(ParaObjectUtils.setAnnotatedFields(o)));
 								if (toCreate.size() >= importBatchSize) {
 									getDAO().createAll(app.getAppIdentifier(), toCreate);
 									toCreate.clear();
