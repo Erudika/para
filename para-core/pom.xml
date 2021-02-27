@@ -12,8 +12,8 @@
 	<name>para-core</name>
 
 	<properties>
-		<jacksonVer>2.11.3</jacksonVer>
-		<springVer>5.3.1</springVer>
+		<jacksonVer>2.12.1</jacksonVer>
+		<springVer>5.3.4</springVer>
 		<flexmarkVer>0.62.2</flexmarkVer>
 	</properties>
 

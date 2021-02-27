@@ -12,7 +12,7 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>5.4.2</springSecVer>
+		<springSecVer>5.4.5</springSecVer>
 		<springLdapVer>2.3.3.RELEASE</springLdapVer>
 	</properties>
 
@@ -81,7 +81,7 @@
 		<dependency>
 			<groupId>com.unboundid</groupId>
 			<artifactId>unboundid-ldapsdk</artifactId>
-			<version>5.1.1</version>
+			<version>5.1.3</version>
 		</dependency>
 
 		<!-- SAML -->
@@ -206,7 +206,7 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>9.2</version>
+			<version>9.5</version>
 		</dependency>
 		<dependency>
 			<groupId>com.microsoft.azure.iothub-java-client</groupId>
