@@ -1038,17 +1038,19 @@ public final class Api1 extends ResourceConfig {
 							ZipEntry zipEntry;
 							List<ParaObject> toCreate = new LinkedList<ParaObject>();
 							while ((zipEntry = zipIn.getNextEntry()) != null) {
-								List<Map<String, Object>> objects = reader.readValue(new FilterInputStream(zipIn) {
-									public void close() throws IOException {
-										zipIn.closeEntry();
+								if (zipEntry.getName().endsWith(".json")) {
+									List<Map<String, Object>> objects = reader.readValue(new FilterInputStream(zipIn) {
+										public void close() throws IOException {
+											zipIn.closeEntry();
+										}
+									});
+									objects.forEach(o -> toCreate.add(ParaObjectUtils.setAnnotatedFields(o)));
+									if (toCreate.size() >= importBatchSize) {
+										getDAO().createAll(app.getAppIdentifier(), toCreate);
+										toCreate.clear();
 									}
-								});
-								objects.forEach(o -> toCreate.add(ParaObjectUtils.setAnnotatedFields(o)));
-								if (toCreate.size() >= importBatchSize) {
-									getDAO().createAll(app.getAppIdentifier(), toCreate);
-									toCreate.clear();
+									count += objects.size();
 								}
-								count += objects.size();
 							}
 							if (!toCreate.isEmpty()) {
 								getDAO().createAll(app.getAppIdentifier(), toCreate);
