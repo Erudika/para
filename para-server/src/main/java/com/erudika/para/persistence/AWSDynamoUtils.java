@@ -65,6 +65,7 @@ import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughputExcee
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.Replica;
+import software.amazon.awssdk.services.dynamodb.model.ReplicaUpdate;
 import software.amazon.awssdk.services.dynamodb.model.ReturnConsumedCapacity;
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
@@ -241,6 +242,11 @@ public final class AWSDynamoUtils {
 				getClient().createGlobalTable(b -> b.globalTableName(table).replicationGroup(replicas));
 			});
 		}
+		if (BACKUPS_ENABLED) {
+			logger.info("Enabling backups for table '{}'...", table);
+			getClient().updateContinuousBackups((t) -> t.tableName(table).
+					pointInTimeRecoverySpecification((p) -> p.pointInTimeRecoveryEnabled(true)));
+		}
 		return created;
 	}
 
@@ -266,16 +272,9 @@ public final class AWSDynamoUtils {
 			}
 
 			CreateTableResponse tbl = getClient(region).createTable(ctr.build());
-
-			logger.info("Waiting for DynamoDB table to become ACTIVE...");
 			waitForActive(table, region);
 			logger.info("Created DynamoDB table '{}', status {}.", table, tbl.tableDescription().tableStatus());
 
-			if (BACKUPS_ENABLED) {
-				logger.info("Enabling backups for table '{}'...", table);
-				getClient(region).updateContinuousBackups((t) -> t.tableName(table).
-						pointInTimeRecoverySpecification((p) -> p.pointInTimeRecoveryEnabled(true)));
-			}
 			if (replicate && PROVISIONED_MODE) {
 				logger.info("Enabling autoscaling for DynamoDB table '{}'...", table);
 				ApplicationAutoScalingClient aasClient = getAutoScalingClient(region);
@@ -305,8 +304,8 @@ public final class AWSDynamoUtils {
 								-> t.predefinedMetricSpecification(p -> p.
 						predefinedMetricType(MetricType.DYNAMO_DB_WRITE_CAPACITY_UTILIZATION)).
 								targetValue(70.0).scaleInCooldown(60).scaleOutCooldown(60)));
+				waitForActive(table, region);
 			}
-			waitForActive(table, region);
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;
@@ -350,17 +349,25 @@ public final class AWSDynamoUtils {
 		try {
 			String table = getTableNameForAppid(appid);
 			if (!getReplicaRegions().isEmpty() && !App.isRoot(appid)) {
-				getReplicaRegions().stream().forEach(region -> {
+				getReplicaRegions().stream().filter(r -> !r.equals(AWS_REGION)).forEach(region -> {
 					try {
-						logger.info("Deleting replica in region {} for table {}", region, table);
+						logger.info("Removing replica from global table '{}' in region {}...", table, region);
+						getClient().updateGlobalTable(b -> b.globalTableName(table).replicaUpdates(ReplicaUpdate.
+								builder().delete(d -> d.regionName(region)).build()));
+						waitForActive(table, AWS_REGION);
+						logger.info("Deleting replica table in region {} for table {}", region, table);
 						getClient(region).deleteTable(b -> b.tableName(table));
-					} catch (Exception e) {
-						logger.error(null, e);
+					} catch (Exception ex) {
+						logger.error(null, ex);
 					}
 				});
-			} else {
-				getClient().deleteTable(b -> b.tableName(table));
+				try {
+					waitForActive(table, AWS_REGION);
+				} catch (InterruptedException ex) {
+					logger.error(null, ex);
+				}
 			}
+			getClient().deleteTable(b -> b.tableName(table));
 			logger.info("Deleted DynamoDB table '{}'.", table);
 		} catch (Exception e) {
 			logger.error(null, e);
