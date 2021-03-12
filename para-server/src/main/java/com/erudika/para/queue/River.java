@@ -310,15 +310,26 @@ public abstract class River implements Runnable {
 			if (pendingIds == null) {
 				pendingIds = new ConcurrentHashMap<>();
 			}
-			objs.keySet().stream().filter(k -> objs.get(k) == null).forEach(k -> pendingIds.putIfAbsent(k, 1));
+			objs.entrySet().stream().filter(entry -> (entry.getValue() == null)).forEachOrdered(entry -> {
+				pendingIds.putIfAbsent(entry.getKey(), 1);
+			});
+//			This line below throws error, possibly ConcurrentModificationException
+//			objs.keySet().stream().filter(k -> objs.get(k) == null).forEach(k -> pendingIds.putIfAbsent(k, 1));
 			logger.debug("Some objects are missing from local database while performing 'index_all_op': {}", pendingIds);
 			Para.asyncExecute(() -> {
 				try {
 					for (int i = 0; i < MAX_INDEXING_RETRIES; i++) {
-						Thread.sleep(1000);
+						Thread.sleep(1000 * (i + 1));
 						Map<String, ParaObject> pending = Para.getDAO().readAll(appid,
 								new ArrayList<>(pendingIds.keySet()), true);
-						pending.keySet().stream().filter(k -> pending.get(k) != null).forEach(k -> pendingIds.remove(k));
+						int pendingCount = pendingIds.size();
+						pending.entrySet().stream().filter(entry -> (entry.getValue() != null)).forEachOrdered(entry -> {
+							pendingIds.remove(entry.getKey());
+						});
+//						pending.keySet().stream().filter(k -> pending.get(k) != null).forEach(k -> pendingIds.remove(k));
+						if (pendingCount != pendingIds.size()) {
+							Para.getSearch().indexAll(appid, pending.values().stream().collect(Collectors.toList()));
+						}
 						if (pendingIds.isEmpty()) {
 							break;
 						}
