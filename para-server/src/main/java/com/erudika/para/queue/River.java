@@ -210,15 +210,16 @@ public abstract class River implements Runnable {
 					ok = true;
 				}
 			} catch (Exception e) {
-				logger.info("Webhook not delivered! {} isn't responding. {}", targetUrl, status);
+				logger.info("Webhook {} not delivered! {} isn't responding. {}", id, targetUrl, status);
 			} finally {
 				if (!ok) {
 					// count failed delivieries and disable that webhook object after X failed attempts
 					String countId = "failed_webhook_count" + Config.SEPARATOR + id;
 					Integer count = Para.getCache().get(appid, countId);
 					if (count == null) {
-						Para.getCache().put(appid, countId, 1);
-					} else if (count >= (MAX_FAILED_WEBHOOK_ATTEMPTS - 1)) {
+						count = 0;
+					}
+					if (count >= (MAX_FAILED_WEBHOOK_ATTEMPTS - 1)) {
 						Webhook hook = Para.getDAO().read(appid, id);
 						if (hook != null) {
 							hook.setActive(false);
