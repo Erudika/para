@@ -365,6 +365,7 @@ public final class AWSDynamoUtils {
 					waitForActive(table, AWS_REGION);
 				} catch (InterruptedException ex) {
 					logger.error(null, ex);
+					Thread.currentThread().interrupt();
 				}
 			}
 			getClient().deleteTable(b -> b.tableName(table));

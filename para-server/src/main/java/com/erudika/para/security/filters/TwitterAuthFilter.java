@@ -147,8 +147,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 				}
 			} else {
 				logger.info("Authentication request failed with status '"
-						+ (resp1 != null ? resp1.getStatusLine().getReasonPhrase() : "null")
-						+ "' and empty response body.");
+						+ resp1.getStatusLine().getReasonPhrase() + "' and empty response body.");
 			}
 		}
 		return false;
