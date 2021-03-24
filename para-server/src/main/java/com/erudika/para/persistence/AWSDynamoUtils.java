@@ -25,12 +25,14 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import java.lang.annotation.Annotation;
 import java.net.URI;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -581,7 +583,9 @@ public final class AWSDynamoUtils {
 
 			if (result.unprocessedKeys() != null && !result.unprocessedKeys().isEmpty()) {
 				Thread.sleep((long) backoff * 1000L);
-				logger.warn("{} UNPROCESSED read requests!", result.unprocessedKeys().size());
+				logger.warn("{} UNPROCESSED read requests for keys {}!", result.unprocessedKeys().size(),
+						result.unprocessedKeys().values().stream().flatMap(k -> k.keys().stream()).
+								flatMap(r -> r.keySet().stream()).collect(Collectors.joining(",")));
 				batchGet(result.unprocessedKeys(), results, backoff * 2);
 			}
 		} catch (ProvisionedThroughputExceededException ex) {
@@ -620,7 +624,10 @@ public final class AWSDynamoUtils {
 
 			if (result.unprocessedItems() != null && !result.unprocessedItems().isEmpty()) {
 				Thread.sleep((long) backoff * 1000L);
-				logger.warn("{} UNPROCESSED write requests!", result.unprocessedItems().size());
+				logger.warn("{} UNPROCESSED write requests for keys {}!", result.unprocessedItems().size(),
+						result.unprocessedItems().values().stream().flatMap(Collection::stream).
+								map(r -> r.getValueForField(Config._KEY, String.class).orElse("")).
+								collect(Collectors.joining(",")));
 				batchWrite(result.unprocessedItems(), backoff * 2);
 			}
 		} catch (ProvisionedThroughputExceededException ex) {
@@ -831,7 +838,7 @@ public final class AWSDynamoUtils {
 
 	protected static void throwIfNecessary(Throwable t) {
 		if (t != null && Config.getConfigBoolean("fail_on_write_errors", true)) {
-			throw new RuntimeException("DAO write operation failed!", t);
+			throw new RuntimeException("DAO write operation failed! - " + t.getMessage(), t);
 		}
 	}
 
