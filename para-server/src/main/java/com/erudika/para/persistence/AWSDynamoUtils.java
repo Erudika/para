@@ -583,9 +583,11 @@ public final class AWSDynamoUtils {
 
 			if (result.unprocessedKeys() != null && !result.unprocessedKeys().isEmpty()) {
 				Thread.sleep((long) backoff * 1000L);
-				logger.warn("{} UNPROCESSED read requests for keys {}!", result.unprocessedKeys().size(),
-						result.unprocessedKeys().values().stream().flatMap(k -> k.keys().stream()).
-								flatMap(r -> r.keySet().stream()).collect(Collectors.joining(",")));
+				for (Map.Entry<String, KeysAndAttributes> entry : result.unprocessedKeys().entrySet()) {
+					logger.warn("UNPROCESSED DynamoDB read requests for keys {} in table {}!",
+							entry.getValue().keys().stream().flatMap(r -> r.values().stream().map(v -> v.s())).
+									collect(Collectors.joining(",")), entry.getKey());
+				}
 				batchGet(result.unprocessedKeys(), results, backoff * 2);
 			}
 		} catch (ProvisionedThroughputExceededException ex) {
@@ -624,10 +626,10 @@ public final class AWSDynamoUtils {
 
 			if (result.unprocessedItems() != null && !result.unprocessedItems().isEmpty()) {
 				Thread.sleep((long) backoff * 1000L);
-				logger.warn("{} UNPROCESSED write requests for keys {}!", result.unprocessedItems().size(),
+				logger.warn("{} UNPROCESSED DynamoDB write requests for keys {} in table {}!", result.unprocessedItems().size(),
 						result.unprocessedItems().values().stream().flatMap(Collection::stream).
 								map(r -> r.getValueForField(Config._KEY, String.class).orElse("")).
-								collect(Collectors.joining(",")));
+								collect(Collectors.joining(",")), result.unprocessedItems().keySet().iterator().next());
 				batchWrite(result.unprocessedItems(), backoff * 2);
 			}
 		} catch (ProvisionedThroughputExceededException ex) {
