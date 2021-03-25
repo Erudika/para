@@ -177,7 +177,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 					user.setEmail(StringUtils.isBlank(email) ? Utils.getNewId() + "@windowslive.com" : email);
 					user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 					user.setPassword(Utils.generateSecurityToken());
-					user.setPicture(getPicture(accessToken));
+					user.setPicture(getPicture(accessToken, email));
 					user.setIdentifier(Config.MICROSOFT_PREFIX + microsoftId);
 					String id = user.create();
 					if (id == null) {
@@ -197,7 +197,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 	}
 
 	private boolean updateUserInfo(User user, String email, String name, String accessToken) throws IOException {
-		String picture = getPicture(accessToken);
+		String picture = getPicture(accessToken, email);
 		boolean update = false;
 		if (!StringUtils.equals(user.getPicture(), picture)) {
 			user.setPicture(picture);
@@ -214,7 +214,8 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 		return update;
 	}
 
-	private String getPicture(String accessToken) throws IOException {
+	private String getPicture(String accessToken, String email) throws IOException {
+		String pic = "";
 		if (accessToken != null) {
 			HttpGet profileGet = new HttpGet(PHOTO_URL);
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
@@ -224,14 +225,26 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 				if (respEntity != null && respEntity.getContentType().getValue().startsWith("image")) {
 					byte[] bytes = IOUtils.toByteArray(respEntity.getContent());
 					if (bytes != null && bytes.length > 0) {
-						byte[] bytes64 = Base64.encodeBase64(bytes);
-						return "data:" + respEntity.getContentType().getValue() + ";base64," + new String(bytes64);
+						if (bytes.length < (200 * 1024)) {
+							byte[] bytes64 = Base64.encodeBase64(bytes);
+							pic = "data:" + respEntity.getContentType().getValue() + ";base64," + new String(bytes64);
+						} else {
+							logger.info("Profile picture too large for user " + email + " - " +
+									bytes.length / 1024 + "KB, switching to Gravatar.");
+							pic = getGravatar(email);
+						}
+					} else {
+						pic = getGravatar(email);
 					}
 				}
 				EntityUtils.consumeQuietly(respEntity);
 			}
 		}
-		return null;
+		return pic;
+	}
+
+	private String getGravatar(String email) {
+		return "https://www.gravatar.com/avatar/" + Utils.md5(email.toLowerCase()) + "?size=400&d=mm&r=pg";
 	}
 
 	private String getEmail(Map<String, Object> profile) {
