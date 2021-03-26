@@ -231,6 +231,8 @@ public final class AWSQueueUtils {
 			} catch (InterruptedException ex) {
 				logger.error("Interrupted while pulling messages from queue!", ex);
 				Thread.currentThread().interrupt();
+			} catch (Exception e) {
+				logger.error("Error while pulling from queue {}", e.getMessage());
 			}
 		}
 		return messages;

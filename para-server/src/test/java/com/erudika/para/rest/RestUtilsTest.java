@@ -32,6 +32,7 @@ import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.queue.Queue;
 import static com.erudika.para.rest.RestUtils.*;
 import com.erudika.para.search.Search;
+import com.erudika.para.storage.FileStore;
 import com.erudika.para.utils.Config;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.inject.Binder;
@@ -70,6 +71,7 @@ public class RestUtilsTest {
 				binder.bind(Cache.class).toInstance(new MockCache());
 				binder.bind(Search.class).toInstance(Mockito.mock(Search.class));
 				binder.bind(Queue.class).toInstance(Mockito.mock(Queue.class));
+				binder.bind(FileStore.class).toInstance(Mockito.mock(FileStore.class));
 				binder.bind(IoTServiceFactory.class).toInstance(Mockito.mock(IoTServiceFactory.class));
 			}
 		});
