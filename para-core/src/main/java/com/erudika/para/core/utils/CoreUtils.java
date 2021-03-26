@@ -32,6 +32,8 @@ import com.erudika.para.queue.MockQueue;
 import com.erudika.para.queue.Queue;
 import com.erudika.para.search.MockSearch;
 import com.erudika.para.search.Search;
+import com.erudika.para.storage.FileStore;
+import com.erudika.para.storage.MockFileStore;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
@@ -67,6 +69,7 @@ public enum CoreUtils implements InitializeListener {
 		private transient Search search;
 		private transient Cache cache;
 		private transient Queue queue;
+		private transient FileStore fileStore;
 		private transient IoTServiceFactory iotFactory;
 
 		{
@@ -74,6 +77,7 @@ public enum CoreUtils implements InitializeListener {
 			search = new MockSearch();
 			cache = new MockCache();
 			queue = new MockQueue();
+			fileStore = new MockFileStore();
 			logger.debug("Using default impementations - {}, {} and {}.",
 					dao.getClass().getSimpleName(),
 					search.getClass().getSimpleName(),
@@ -141,6 +145,17 @@ public enum CoreUtils implements InitializeListener {
 		@Override
 		public void setQueue(Queue queue) {
 			this.queue = queue;
+		}
+
+		@Override
+		public FileStore getFileStore() {
+			return fileStore;
+		}
+
+		@Inject
+		@Override
+		public void setFileStore(FileStore fileStore) {
+			this.fileStore = fileStore;
 		}
 
 		@Override
@@ -487,6 +502,18 @@ public enum CoreUtils implements InitializeListener {
 	 * @param queue {@link Queue}
 	 */
 	public abstract void setQueue(Queue queue);
+
+	/**
+	 * Returns the FileStore object.
+	 * @return {@link FileStore} object
+	 */
+	public abstract FileStore getFileStore();
+
+	/**
+	 * Sets the FileStore object.
+	 * @param fileStore {@link FileStore}
+	 */
+	public abstract void setFileStore(FileStore fileStore);
 
 	/**
 	 * Returns the default IoT factory.

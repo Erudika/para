@@ -17,7 +17,11 @@
  */
 package com.erudika.para.storage;
 
+import com.erudika.para.Para;
+import com.erudika.para.utils.Config;
 import com.google.inject.AbstractModule;
+import java.util.ServiceLoader;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * The default storage module.
@@ -26,7 +30,47 @@ import com.google.inject.AbstractModule;
 public class StorageModule extends AbstractModule {
 
 	protected void configure() {
-		bind(FileStore.class).to(AWSFileStore.class);
+		String selectedFileStore = Config.getConfigParam("fs", "");
+		if (StringUtils.isBlank(selectedFileStore)) {
+			if ("embedded".equals(Config.ENVIRONMENT)) {
+				bindToDefault();
+			} else {
+				bind(FileStore.class).to(AWSFileStore.class).asEagerSingleton();
+			}
+		} else {
+			if ("s3".equalsIgnoreCase(selectedFileStore) ||
+					AWSFileStore.class.getSimpleName().equalsIgnoreCase(selectedFileStore)) {
+				bind(FileStore.class).to(AWSFileStore.class).asEagerSingleton();
+			} else {
+				FileStore fsPlugin = loadExternalFileStore(selectedFileStore);
+				if (fsPlugin != null) {
+					bind(FileStore.class).to(fsPlugin.getClass()).asEagerSingleton();
+				} else {
+					// default fallback - not implemented!
+					bindToDefault();
+				}
+			}
+		}
+	}
+
+	void bindToDefault() {
+		bind(FileStore.class).to(LocalFileStore.class).asEagerSingleton();
+	}
+
+	/**
+	 * Scans the classpath for FileStore implementations, through the
+	 * {@link ServiceLoader} mechanism and returns one.
+	 * @param classSimpleName the name of the class name to look for and load
+	 * @return a FileStore instance if found, or null
+	 */
+	final FileStore loadExternalFileStore(String classSimpleName) {
+		ServiceLoader<FileStore> fsLoader = ServiceLoader.load(FileStore.class, Para.getParaClassLoader());
+		for (FileStore fs : fsLoader) {
+			if (fs != null && classSimpleName.equalsIgnoreCase(fs.getClass().getSimpleName())) {
+				return fs;
+			}
+		}
+		return null;
 	}
 
 }

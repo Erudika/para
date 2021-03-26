@@ -67,7 +67,7 @@ public class LocalFileStore implements FileStore {
 		if (!StringUtils.isBlank(path)) {
 			FileInputStream fis = null;
 			try {
-				File f = new File(folder + File.separator + path);
+				File f = new File(folder + path);
 				fis = new FileInputStream(f);
 				return f.canRead() ? new BufferedInputStream(fis) : null;
 			} catch (FileNotFoundException ex) {
@@ -96,7 +96,7 @@ public class LocalFileStore implements FileStore {
 		int maxFileSizeMBytes = Config.getConfigInt("para.localstorage.max_filesize_mb", 10);
 		try {
 			if (data.available() > 0 && data.available() <= (maxFileSizeMBytes * 1024 * 1024)) {
-				File f = new File(folder + File.separator + path);
+				File f = new File(folder + path);
 				if (f.canWrite()) {
 					try (FileOutputStream fos = new FileOutputStream(f)) {
 						try	(BufferedOutputStream bos = new BufferedOutputStream(fos)) {
@@ -128,7 +128,7 @@ public class LocalFileStore implements FileStore {
 			path = path.substring(1);
 		}
 		if (!StringUtils.isBlank(path)) {
-			File f = new File(folder + File.separator + path);
+			File f = new File(folder + path);
 			return f.canWrite() && f.delete();
 		}
 		return false;

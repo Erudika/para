@@ -24,6 +24,7 @@ import com.erudika.para.persistence.DAO;
 import com.erudika.para.queue.Queue;
 import com.erudika.para.rest.CustomResourceHandler;
 import com.erudika.para.search.Search;
+import com.erudika.para.storage.FileStore;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.VersionInfo;
 import java.io.File;
@@ -172,6 +173,14 @@ public final class Para {
 	 */
 	public static Queue getQueue() {
 		return CoreUtils.getInstance().getQueue();
+	}
+
+	/**
+	 * @return an instance of the core FileStore class.
+	 * @see FileStore
+	 */
+	public static FileStore getFileStore() {
+		return CoreUtils.getInstance().getFileStore();
 	}
 
 	/**

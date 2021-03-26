@@ -18,7 +18,7 @@
 package com.erudika.para.storage;
 
 import com.erudika.para.utils.Config;
-import com.erudika.para.utils.Utils;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -32,7 +32,6 @@ import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.StorageClass;
 
 /**
  * An implementation of the {@link FileStore} interface using AWS S3.
@@ -41,7 +40,6 @@ import software.amazon.awssdk.services.s3.model.StorageClass;
 public class AWSFileStore implements FileStore {
 
 	private static final Logger logger = LoggerFactory.getLogger(AWSFileStore.class);
-	private static final String S3_URL = "https://s3-{0}.amazonaws.com/{1}/{2}";
 	private S3Client s3;
 	private String bucket;
 
@@ -49,7 +47,8 @@ public class AWSFileStore implements FileStore {
 	 * No-args constructor.
 	 */
 	public AWSFileStore() {
-		this(Config.getConfigParam("para.s3.bucket", "org.paraio"));
+		this(Config.getConfigParam("para.s3.bucket", "org.paraio." +
+				new DefaultAwsRegionProviderChain().getRegion().id()));
 	}
 
 	/**
@@ -93,10 +92,18 @@ public class AWSFileStore implements FileStore {
 				PutObjectRequest por = PutObjectRequest.builder().
 						bucket(bucket).key(path).
 						metadata(om).
-						acl(ObjectCannedACL.PUBLIC_READ).
-						storageClass(StorageClass.REDUCED_REDUNDANCY).build();
-				s3.putObject(por, RequestBody.fromInputStream(data, data.available())); //.bucket, path, data, om
-				return Utils.formatMessage(S3_URL, new DefaultAwsRegionProviderChain().getRegion().id(), bucket, path);
+						acl(ObjectCannedACL.PUBLIC_READ).build();
+
+				try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+					byte[] buf = new byte[1024];
+					int length;
+					while ((length = data.read(buf)) > 0) {
+						baos.write(buf, 0, length);
+					}
+					s3.putObject(por, RequestBody.fromBytes(baos.toByteArray()));
+				}
+				final String key = path;
+				return s3.utilities().getUrl(b -> b.bucket(bucket).key(key)).toExternalForm();
 			}
 		} catch (IOException e) {
 			logger.error(null, e);

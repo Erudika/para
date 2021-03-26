@@ -29,6 +29,7 @@ import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.codec.binary.Base64;
@@ -171,20 +172,20 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 				user = User.readUserForIdentifier(user);
 				if (user == null) {
 					//user is new
-					user = new User();
+					user = new User(Utils.getNewId());
 					user.setActive(true);
 					user.setAppid(getAppid(app));
 					user.setEmail(StringUtils.isBlank(email) ? Utils.getNewId() + "@windowslive.com" : email);
 					user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 					user.setPassword(Utils.generateSecurityToken());
-					user.setPicture(getPicture(accessToken, email));
+					user.setPicture(getPicture(getAppid(app), user.getId(), accessToken, email));
 					user.setIdentifier(Config.MICROSOFT_PREFIX + microsoftId);
 					String id = user.create();
 					if (id == null) {
 						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 					}
 				} else {
-					if (updateUserInfo(user, email, name, accessToken)) {
+					if (updateUserInfo(user, email, name, accessToken, getAppid(app))) {
 						user.update();
 					}
 				}
@@ -196,8 +197,8 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 		return SecurityUtils.checkIfActive(userAuth, user, false);
 	}
 
-	private boolean updateUserInfo(User user, String email, String name, String accessToken) throws IOException {
-		String picture = getPicture(accessToken, email);
+	private boolean updateUserInfo(User user, String email, String name, String accessToken, String appid) throws IOException {
+		String picture = getPicture(appid, user.getId(), accessToken, email);
 		boolean update = false;
 		if (!StringUtils.equals(user.getPicture(), picture)) {
 			user.setPicture(picture);
@@ -214,8 +215,8 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 		return update;
 	}
 
-	private String getPicture(String accessToken, String email) throws IOException {
-		String pic = "";
+	private String getPicture(String appid, String userid, String accessToken, String email) throws IOException {
+		String pic = getGravatar(email);
 		if (accessToken != null) {
 			HttpGet profileGet = new HttpGet(PHOTO_URL);
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
@@ -223,18 +224,17 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 			try (CloseableHttpResponse resp = httpclient.execute(profileGet)) {
 				HttpEntity respEntity = resp.getEntity();
 				if (respEntity != null && respEntity.getContentType().getValue().startsWith("image")) {
-					byte[] bytes = IOUtils.toByteArray(respEntity.getContent());
-					if (bytes != null && bytes.length > 0) {
-						if (bytes.length < (200 * 1024)) {
+					String ctype = respEntity.getContentType().getValue();
+					if (Config.getConfigBoolean("ms_inline_avatars", true)) {
+						byte[] bytes = IOUtils.toByteArray(respEntity.getContent());
+						if (bytes != null && bytes.length > 0) {
 							byte[] bytes64 = Base64.encodeBase64(bytes);
-							pic = "data:" + respEntity.getContentType().getValue() + ";base64," + new String(bytes64);
-						} else {
-							logger.info("Profile picture too large for user " + email + " - " +
-									bytes.length / 1024 + "KB, switching to Gravatar.");
-							pic = getGravatar(email);
+							pic = "data:" + ctype + ";base64," + new String(bytes64);
 						}
 					} else {
-						pic = getGravatar(email);
+						pic = Para.getFileStore().store(Optional.
+								ofNullable(appid).orElse(Config.PARA) + "/" + userid + "." +
+										StringUtils.substringAfter(ctype, "/"), respEntity.getContent());
 					}
 				}
 				EntityUtils.consumeQuietly(respEntity);
