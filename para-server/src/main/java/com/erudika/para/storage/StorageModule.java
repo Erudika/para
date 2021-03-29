@@ -32,11 +32,7 @@ public class StorageModule extends AbstractModule {
 	protected void configure() {
 		String selectedFileStore = Config.getConfigParam("fs", "");
 		if (StringUtils.isBlank(selectedFileStore)) {
-			if ("embedded".equals(Config.ENVIRONMENT)) {
-				bindToDefault();
-			} else {
-				bind(FileStore.class).to(AWSFileStore.class).asEagerSingleton();
-			}
+			bindToDefault();
 		} else {
 			if ("s3".equalsIgnoreCase(selectedFileStore) ||
 					AWSFileStore.class.getSimpleName().equalsIgnoreCase(selectedFileStore)) {
