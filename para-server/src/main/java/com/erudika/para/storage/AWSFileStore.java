@@ -105,6 +105,7 @@ public class AWSFileStore implements FileStore {
 				final String key = path;
 				return s3.utilities().getUrl(b -> b.bucket(bucket).key(key)).toExternalForm();
 			}
+			logger.warn("Failed to store file on S3 because it's too large - {}, {} bytes", path, data.available());
 		} catch (IOException e) {
 			logger.error(null, e);
 		} finally {
