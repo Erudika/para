@@ -82,30 +82,31 @@ public class AWSFileStore implements FileStore {
 		}
 		int maxFileSizeMBytes = Config.getConfigInt("para.s3.max_filesize_mb", 10);
 		try {
-			if (data.available() > 0 && data.available() <= (maxFileSizeMBytes * 1024 * 1024)) {
-				Map<String, String> om = new HashMap<String, String>(3);
-				om.put(HttpHeaders.CACHE_CONTROL, "max-age=15552000, must-revalidate");	// 180 days
-				if (path.endsWith(".gz")) {
-					om.put(HttpHeaders.CONTENT_ENCODING, "gzip");
-					path = path.substring(0, path.length() - 3);
-				}
-				PutObjectRequest por = PutObjectRequest.builder().
-						bucket(bucket).key(path).
-						metadata(om).
-						acl(ObjectCannedACL.PUBLIC_READ).build();
-
-				try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-					byte[] buf = new byte[1024];
-					int length;
-					while ((length = data.read(buf)) > 0) {
-						baos.write(buf, 0, length);
-					}
-					s3.putObject(por, RequestBody.fromBytes(baos.toByteArray()));
-				}
-				final String key = path;
-				return s3.utilities().getUrl(b -> b.bucket(bucket).key(key)).toExternalForm();
+			Map<String, String> om = new HashMap<String, String>(3);
+			om.put(HttpHeaders.CACHE_CONTROL, "max-age=15552000, must-revalidate");	// 180 days
+			if (path.endsWith(".gz")) {
+				om.put(HttpHeaders.CONTENT_ENCODING, "gzip");
+				path = path.substring(0, path.length() - 3);
 			}
-			logger.warn("Failed to store file on S3 because it's too large - {}, {} bytes", path, data.available());
+			PutObjectRequest por = PutObjectRequest.builder().
+					bucket(bucket).key(path).
+					metadata(om).
+					acl(ObjectCannedACL.PUBLIC_READ).build();
+
+			try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+				byte[] buf = new byte[1024];
+				int length;
+				while ((length = data.read(buf)) > 0) {
+					baos.write(buf, 0, length);
+					if (baos.size() > (maxFileSizeMBytes * 1024 * 1024)) {
+						logger.warn("Failed to store file on S3 because it's too large - {}, {} bytes", path, baos.size());
+						return null;
+					}
+				}
+				s3.putObject(por, RequestBody.fromBytes(baos.toByteArray()));
+			}
+			final String key = path;
+			return s3.utilities().getUrl(b -> b.bucket(bucket).key(key)).toExternalForm();
 		} catch (IOException e) {
 			logger.error(null, e);
 		} finally {

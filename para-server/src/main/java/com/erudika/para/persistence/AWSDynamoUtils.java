@@ -596,6 +596,9 @@ public final class AWSDynamoUtils {
 				logger.error(null, ie);
 				Thread.currentThread().interrupt();
 			}
+		} catch (InterruptedException ie) {
+			logger.error(null, ie);
+			Thread.currentThread().interrupt();
 		} catch (Exception e) {
 			logger.error("Failed to execute batch read operation on table '{}'", kna.keySet().iterator().next(), e);
 		}
@@ -638,6 +641,9 @@ public final class AWSDynamoUtils {
 				logger.error(null, ie);
 				Thread.currentThread().interrupt();
 			}
+		} catch (InterruptedException ie) {
+			logger.error(null, ie);
+			Thread.currentThread().interrupt();
 		} catch (Exception e) {
 			logger.error("Failed to execute batch write operation on table '{}'", items.keySet().iterator().next(), e);
 			throwIfNecessary(e);

@@ -204,7 +204,7 @@ public final class RestUtils {
 	public static Response getEntity(InputStream is, Class<?> type) {
 		Object entity;
 		try {
-			if (is != null && is.available() > 0) {
+			if (is != null) {
 				if (is.available() > Config.MAX_ENTITY_SIZE_BYTES) {
 					return getStatusResponse(Response.Status.BAD_REQUEST,
 							"Request is too large - the maximum is " +
