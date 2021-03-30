@@ -32,7 +32,7 @@ public class MockFileStore implements FileStore {
 	@Override
 	public InputStream load(String path) {
 		if (!StringUtils.isBlank(path)) {
-			fs.get(path);
+			return fs.get(path);
 		}
 		return null;
 	}

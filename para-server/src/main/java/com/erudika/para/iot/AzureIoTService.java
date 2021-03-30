@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -279,7 +280,9 @@ public class AzureIoTService implements IoTService {
 						}
 					}
 					logger.debug("Received {} messages from Azure for partition {}.", batchSize, partitionId);
-				} catch (Exception e) {
+				} catch (InterruptedException ex) {
+					Thread.currentThread().interrupt();
+				} catch (ExecutionException e) {
 					logger.warn("Failed to receive messages: {}", e.getMessage());
 				}
 			}

@@ -138,8 +138,9 @@ public final class Para {
 				SCHEDULER.shutdown();
 				SCHEDULER.awaitTermination(60, TimeUnit.SECONDS);
 			}
-		} catch (Exception e) {
-			logger.error("Failed to destroy Para.", e);
+		} catch (InterruptedException e) {
+			logger.error("Interrupted while shutting down Para.", e);
+			Thread.currentThread().interrupt();
 		}
 	}
 

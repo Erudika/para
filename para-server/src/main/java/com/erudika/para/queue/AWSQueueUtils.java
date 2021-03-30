@@ -129,10 +129,12 @@ public final class AWSQueueUtils {
 	protected static String getQueueURL(String name) {
 		try {
 			return getClient().getQueueUrl(b -> b.queueName(name)).get().queueUrl();
-		} catch (Exception e) {
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		} catch (ExecutionException e) {
 			logger.info("Queue '{}' could not be found: {}", name, e.getMessage());
-			return null;
 		}
+		return null;
 	}
 
 	/**

@@ -363,12 +363,7 @@ public final class AWSDynamoUtils {
 						logger.error(null, ex);
 					}
 				});
-				try {
-					waitForActive(table, AWS_REGION);
-				} catch (InterruptedException ex) {
-					logger.error(null, ex);
-					Thread.currentThread().interrupt();
-				}
+				waitForActive(table, AWS_REGION);
 			}
 			getClient().deleteTable(b -> b.tableName(table));
 			logger.info("Deleted DynamoDB table '{}'.", table);
@@ -830,7 +825,7 @@ public final class AWSDynamoUtils {
 		return StringUtils.join(StringUtils.trim(appIdentifier), "_");
 	}
 
-	private static void waitForActive(String table, String region) throws InterruptedException {
+	private static void waitForActive(String table, String region) {
 		WaiterResponse<DescribeTableResponse> waiterResponse = getClient(region).waiter().
 				waitUntilTableExists(r -> r.tableName(table));
 		if (!waiterResponse.matched().response().isPresent()) {
