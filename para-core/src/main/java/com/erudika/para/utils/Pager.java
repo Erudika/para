@@ -17,6 +17,10 @@
  */
 package com.erudika.para.utils;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
 /**
  * This class stores pagination data. It limits the results for queries in the {@link com.erudika.para.persistence.DAO}
  * and {@link com.erudika.para.search.Search} objects and also counts the total number of results that are returned.
@@ -31,6 +35,7 @@ public class Pager {
 	private int limit;
 	private String name;
 	private String lastKey;
+	private List<String> select;
 
 	/**
 	 * No-args constructor.
@@ -183,6 +188,22 @@ public class Pager {
 	 */
 	public void setPage(long page) {
 		this.page = page;
+	}
+
+	/**
+	 * Selects the field names to be returned.
+	 * @return a set of field names
+	 */
+	public List<String> getSelect() {
+		return Optional.ofNullable(select).orElse(Collections.emptyList());
+	}
+
+	/**
+	 * Sets the fields that are selected to appear in the response from the API.
+	 * @param select a set of field names
+	 */
+	public void setSelect(List<String> select) {
+		this.select = select;
 	}
 
 	@Override
