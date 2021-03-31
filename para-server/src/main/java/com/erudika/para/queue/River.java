@@ -201,9 +201,9 @@ public abstract class River implements Runnable {
 			boolean ok = false;
 			String status = "";
 			try (CloseableHttpResponse resp1 = HTTP.execute(postToTarget)) {
-				if (resp1 != null && resp1.getStatusLine().getStatusCode() != 200) {
+				if (resp1 != null && Math.abs(resp1.getStatusLine().getStatusCode() - 200) <= 10) {
 					status = resp1.getStatusLine().getReasonPhrase();
-					logger.info("Webhook {} delivery failed! {} responded with {} {} instead of 200 OK.", id,
+					logger.info("Webhook {} delivery failed! {} responded with code {} {} instead of 2xx.", id,
 							targetUrl, resp1.getStatusLine().getStatusCode(), resp1.getStatusLine().getReasonPhrase());
 				} else {
 					logger.debug("Webhook {} delivered to {} successfully.", id, targetUrl);
