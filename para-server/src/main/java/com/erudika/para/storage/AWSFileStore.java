@@ -67,7 +67,11 @@ public class AWSFileStore implements FileStore {
 		}
 		if (!StringUtils.isBlank(path)) {
 			final String key = path;
-			return s3.getObject(b -> b.bucket(bucket).key(key));
+			try {
+				return s3.getObject(b -> b.bucket(bucket).key(key));
+			} catch (Exception e) {
+				logger.error("Failed to load file from S3: {}", e.getMessage());
+			}
 		}
 		return null;
 	}
