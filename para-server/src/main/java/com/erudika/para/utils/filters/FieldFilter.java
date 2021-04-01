@@ -62,11 +62,12 @@ public class FieldFilter implements ContainerResponseFilter {
 					newEntity = getFilteredProperties(entity, fields);
 				} else if (entity instanceof Map) {
 					if (((Map) entity).containsKey("items")) {
-						newEntity = new ArrayList<Map<String, Object>>();
+						List<Map<String, Object>> items = new ArrayList<>();
 						for (ParaObject item : (List<ParaObject>) ((Map) entity).get("items")) {
-							((List) newEntity).add(getFilteredProperties(item, fields));
+							items.add(getFilteredProperties(item, fields));
 						}
-						((Map) entity).put("items", newEntity);
+						((Map) entity).put("items", items);
+						newEntity = entity;
 					}
 				} else if (entity instanceof List) {
 					newEntity = new ArrayList<Map<String, Object>>();
