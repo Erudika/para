@@ -25,7 +25,6 @@ import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import java.lang.annotation.Annotation;
 import java.net.URI;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -624,10 +623,11 @@ public final class AWSDynamoUtils {
 
 			if (result.unprocessedItems() != null && !result.unprocessedItems().isEmpty()) {
 				Thread.sleep((long) backoff * 1000L);
-				logger.warn("{} UNPROCESSED DynamoDB write requests for keys {} in table {}!", result.unprocessedItems().size(),
-						result.unprocessedItems().values().stream().flatMap(Collection::stream).
-								map(r -> r.getValueForField(Config._KEY, String.class).orElse("")).
-								collect(Collectors.joining(",")), result.unprocessedItems().keySet().iterator().next());
+				for (Map.Entry<String, List<WriteRequest>> entry : result.unprocessedItems().entrySet()) {
+					logger.warn("UNPROCESSED DynamoDB write requests for keys {} in table {}!",
+							entry.getValue().stream().map(r -> r.getValueForField(Config._KEY, String.class).orElse("")).
+								collect(Collectors.joining(",")), entry.getKey());
+				}
 				batchWrite(result.unprocessedItems(), backoff * 2);
 			}
 		} catch (ProvisionedThroughputExceededException ex) {
