@@ -44,7 +44,7 @@ public interface ParaObject extends Serializable, Linkable, Votable {
 	 * The name of the object. Can be anything.
 	 * @return the name. default: [type id]
 	 */
-	@NotBlank @Size(min = 2, max = 255)
+	@NotBlank @Size(min = 1, max = 255)
 	String getName();
 
 	/**
