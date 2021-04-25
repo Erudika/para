@@ -25,7 +25,6 @@ import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Votable;
 import com.erudika.para.core.Votable.VoteValue;
 import com.erudika.para.core.Vote;
-import com.erudika.para.iot.IoTServiceFactory;
 import com.erudika.para.persistence.DAO;
 import com.erudika.para.persistence.MockDAO;
 import com.erudika.para.queue.MockQueue;
@@ -70,7 +69,6 @@ public enum CoreUtils implements InitializeListener {
 		private transient Cache cache;
 		private transient Queue queue;
 		private transient FileStore fileStore;
-		private transient IoTServiceFactory iotFactory;
 
 		{
 			dao = new MockDAO();
@@ -92,7 +90,6 @@ public enum CoreUtils implements InitializeListener {
 						stripGuiceMarkerFromClassname(dao.getClass()),
 						stripGuiceMarkerFromClassname(search.getClass()),
 						stripGuiceMarkerFromClassname(cache.getClass()));
-				setIotFactory(iotFactory);
 			}
 		}
 
@@ -156,17 +153,6 @@ public enum CoreUtils implements InitializeListener {
 		@Override
 		public void setFileStore(FileStore fileStore) {
 			this.fileStore = fileStore;
-		}
-
-		@Override
-		public IoTServiceFactory getIotFactory() {
-			return iotFactory;
-		}
-
-		@Inject
-		@Override
-		public void setIotFactory(IoTServiceFactory iotFactory) {
-			this.iotFactory = iotFactory;
 		}
 
 		@Override
@@ -514,18 +500,6 @@ public enum CoreUtils implements InitializeListener {
 	 * @param fileStore {@link FileStore}
 	 */
 	public abstract void setFileStore(FileStore fileStore);
-
-	/**
-	 * Returns the default IoT factory.
-	 * @return factory instance
-	 */
-	public abstract IoTServiceFactory getIotFactory();
-
-	/**
-	 * Sets the IoT factory.
-	 * @param iotFactory factory instance
-	 */
-	public abstract void setIotFactory(IoTServiceFactory iotFactory);
 
 	///////////////////////////////////////
 	//	    	TAGGING METHODS

@@ -142,22 +142,12 @@
 			<artifactId>applicationautoscaling</artifactId>
 			<version>${awsJdkVer}</version>
 		</dependency>
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>iot</artifactId>
-			<version>${awsJdkVer}</version>
-		</dependency>
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>iotdataplane</artifactId>
-			<version>${awsJdkVer}</version>
-		</dependency>
 
 		<!-- GUICE -->
 		<dependency>
 			<groupId>com.google.inject</groupId>
 			<artifactId>guice</artifactId>
-			<version>5.0.0-BETA-1</version>
+			<version>5.0.1</version>
 		</dependency>
 
 		<!-- METRICS -->
@@ -207,27 +197,6 @@
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
 			<version>9.5</version>
-		</dependency>
-		<dependency>
-			<groupId>com.microsoft.azure.iothub-java-client</groupId>
-			<artifactId>iothub-java-service-client</artifactId>
-			<version>1.0.11</version>
-			<exclusions>
-				<exclusion>
-					<groupId>commons-codec</groupId>
-					<artifactId>commons-codec</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>com.microsoft.azure</groupId>
-			<artifactId>azure-eventhubs</artifactId>
-			<version>1.2.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.qpid</groupId>
-			<artifactId>proton-j</artifactId>
-			<version>0.30.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>

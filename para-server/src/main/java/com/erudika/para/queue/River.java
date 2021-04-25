@@ -22,7 +22,6 @@ import com.erudika.para.annotations.Locked;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
-import com.erudika.para.core.Thing;
 import com.erudika.para.core.Webhook;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.utils.Config;
@@ -143,7 +142,7 @@ public abstract class River implements Runnable {
 		String type = (String) parsed.get(Config._TYPE);
 		String appid = (String) parsed.get(Config._APPID);
 		Class<?> clazz = ParaObjectUtils.toClass(type);
-		boolean isWhitelistedType = clazz.equals(Thing.class) || clazz.equals(Sysprop.class);
+		boolean isWhitelistedType = clazz.equals(Sysprop.class);
 
 		if (!StringUtils.isBlank(appid) && isWhitelistedType) {
 			if ("webhookpayload".equals(type)) {
