@@ -81,8 +81,8 @@
 		<deployPluginVer>2.8.2</deployPluginVer>
 		<slf4jVer>1.7.30</slf4jVer>
 		<logbackVer>1.2.3</logbackVer>
-		<awsJdkVer>2.15.23</awsJdkVer>
-		<jerseyVer>2.32</jerseyVer>
+		<awsJdkVer>2.16.46</awsJdkVer>
+		<jerseyVer>2.34</jerseyVer>
 		<springBootVer>2.4.3</springBootVer>
 		<metricsVer>4.1.16</metricsVer>
 		<commonsCodecVer>1.15</commonsCodecVer>
