@@ -5,7 +5,7 @@ echo "---"
 read -e -p "New version: " ver
 read -e -p "New dev version: " devver
 #sed -i -e "s/PARA_VERSION=.*/PARA_VERSION="\"$ver\""/g" Dockerfile Dockerfile-base && \
-git add -A && git commit -m "Release v$ver." && git push origin master && \
+git add -A && git commit -m "Release v$ver." && git push origin master
 
 mvn --batch-mode -Dtag=v${ver} release:prepare -DreleaseVersion=${ver} -DdevelopmentVersion=${devver}-SNAPSHOT && \
 mvn release:perform && \
