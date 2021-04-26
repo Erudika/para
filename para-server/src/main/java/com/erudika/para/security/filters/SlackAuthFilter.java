@@ -58,7 +58,7 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private final CloseableHttpClient httpclient;
 	private final ObjectReader jreader;
-	private static final String PROFILE_URL = "https://slack.com/api/users.identity?token={0}";
+	private static final String PROFILE_URL = "https://slack.com/api/users.identity";
 	private static final String TOKEN_URL = "https://slack.com/api/oauth.v2.access";
 	private static final String PAYLOAD = "code={0}&redirect_uri={1}&client_id={2}&client_secret={3}";
 
@@ -149,7 +149,8 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 		UserAuthentication userAuth = null;
 		User user = new User();
 		if (accessToken != null) {
-			HttpGet profileGet = new HttpGet(Utils.formatMessage(PROFILE_URL, accessToken));
+			HttpGet profileGet = new HttpGet(PROFILE_URL);
+			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 			profileGet.setHeader(HttpHeaders.ACCEPT, "application/json");
 			Map<String, Object> profile = null;
 
