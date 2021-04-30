@@ -172,6 +172,8 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			String emailDomain = SecurityUtils.getSettingForApp(app, configKey("domain", alias), "paraio.com");
 			String emailParam = SecurityUtils.getSettingForApp(app, configKey("parameters.email", alias), "email");
 			String nameParam = SecurityUtils.getSettingForApp(app, configKey("parameters.name", alias), "name");
+			String gnParam = SecurityUtils.getSettingForApp(app, configKey("parameters.given_name", alias), "given_name");
+			String fnParam = SecurityUtils.getSettingForApp(app, configKey("parameters.family_name", alias), "family_name");
 
 			if (profile != null && profile.containsKey(accountIdParam)) {
 				Object accid = profile.get(accountIdParam);
@@ -179,6 +181,8 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 				String pic = (String) profile.get(pictureParam);
 				String email = (String) profile.get(emailParam);
 				String name = (String) profile.get(nameParam);
+				String gname = (String) profile.get(gnParam);
+				String fname = (String) profile.get(fnParam);
 
 				if (StringUtils.isBlank(email)) {
 					if (Utils.isValidEmail(oauthAccountId)) {
@@ -201,7 +205,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 					user.setActive(true);
 					user.setAppid(getAppid(app));
 					user.setEmail(email);
-					user.setName(StringUtils.isBlank(name) ? "No Name" : name);
+					user.setName(StringUtils.isBlank(name) ? getFullName(gname, fname) : name);
 					user.setPassword(Utils.generateSecurityToken());
 					if (tokenDelegationEnabled) {
 						user.setIdpAccessToken(accessToken);
@@ -409,5 +413,14 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 
 	private String getAppid(App app) {
 		return (app == null) ? null : app.getAppIdentifier();
+	}
+
+	private String getFullName(String gname, String fname) {
+		if (StringUtils.isBlank(fname)) {
+			return StringUtils.isBlank(gname) ? "No Name" : gname;
+		} else if (StringUtils.isBlank(gname)) {
+			return StringUtils.isBlank(fname) ? "No Name" : fname;
+		}
+		return gname + " " + fname;
 	}
 }
