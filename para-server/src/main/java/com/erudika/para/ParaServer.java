@@ -21,7 +21,6 @@ import ch.qos.logback.access.jetty.RequestLogImpl;
 import com.erudika.para.aop.AOPModule;
 import com.erudika.para.cache.CacheModule;
 import com.erudika.para.email.EmailModule;
-import com.erudika.para.i18n.I18nModule;
 import com.erudika.para.metrics.MetricsUtils;
 import com.erudika.para.persistence.PersistenceModule;
 import com.erudika.para.queue.QueueModule;
@@ -115,7 +114,6 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 			new QueueModule(),
 			new AOPModule(),
 			new EmailModule(),
-			new I18nModule(),
 			new StorageModule(),
 			new SecurityModule()
 		};
