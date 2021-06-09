@@ -84,6 +84,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	private final SAMLAuthFilter samlFilter;
 	private final SAMLMetadataFilter samlMetaFilter;
 	private final JWTRestfulAuthFilter jwtFilter;
+	private final RestAuthFilter restAuthFilter;
 
 	/**
 	 * No-args constructor.
@@ -106,6 +107,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		samlFilter = getInstance(SAMLAuthFilter.class);
 		samlMetaFilter = getInstance(SAMLMetadataFilter.class);
 		jwtFilter = getInstance(JWTRestfulAuthFilter.class);
+		restAuthFilter = getInstance(RestAuthFilter.class);
 	}
 
 	/**
@@ -186,8 +188,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 			jwtFilter.setAuthenticationManager(authenticationManager());
 			http.addFilterBefore(jwtFilter, RememberMeAuthenticationFilter.class);
 		}
-		RestAuthFilter restFilter = new RestAuthFilter(enableRestFilter);
-		http.addFilterAfter(restFilter, JWTRestfulAuthFilter.class);
+		if (restAuthFilter != null) {
+			http.addFilterBefore(restAuthFilter, RememberMeAuthenticationFilter.class);
+		}
 	}
 
 	private void registerAuthFilters(HttpSecurity http) throws Exception {
