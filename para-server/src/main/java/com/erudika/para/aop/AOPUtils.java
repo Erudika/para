@@ -42,8 +42,12 @@ public final class AOPUtils {
 			for (Object arg : args) {
 				if (arg != null && arg instanceof List) {
 					List<T> list = (List) arg;
-					if (!list.isEmpty() && type.isAssignableFrom(list.get(0).getClass())) {
-						return list;
+					if (!list.isEmpty()) {
+						for (T item : list) {
+							if (item != null && type.isAssignableFrom(item.getClass())) {
+								return list;
+							}
+						}
 					}
 				}
 			}

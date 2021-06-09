@@ -63,12 +63,18 @@ public class AOPUtilsTest {
 		list2.add(new Tag("tagzz3"));
 		List<String> badList = new ArrayList<>();
 		badList.add("XXXtagXXX");
+		List<Sysprop> badList2 = new ArrayList<>();
+		badList2.add(null);
+		badList2.add(null);
+		badList2.add(null);
+		badList2.add(new Sysprop());
 
 		assertSame(tag, getArgOfParaObject(new Object[]{tag, "string"}));
 		assertNull(getArgOfParaObject(new Object[]{"string"}));
 		assertEquals(list1, getArgOfListOfType(new Object[]{list1}, ParaObject.class));
 		assertEquals(list2, getArgOfListOfType(new Object[]{list2}, ParaObject.class));
 		assertNull(getArgOfListOfType(new Object[]{badList}, ParaObject.class));
+		assertEquals(badList2, getArgOfListOfType(new Object[]{badList2}, ParaObject.class));
 
 		assertNull(getFirstArgOfString(new Object[]{list1}));
 		assertNotNull(getFirstArgOfString(new Object[]{Integer.valueOf(123), "asd"}));
