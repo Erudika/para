@@ -316,8 +316,8 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 				profile = jreader.readValue(respEntity.getContent());
 			}
 			if (profile == null || profile.isEmpty()) {
-				LOG.error("OAuth 2 provider did not return any valid user information - response code {} {}",
-						resp2.getStatusLine().getStatusCode(), resp2.getStatusLine().getReasonPhrase());
+				LOG.error("OAuth 2 provider did not return any valid user information - response code {} {}, app '{}'",
+						resp2.getStatusLine().getStatusCode(), resp2.getStatusLine().getReasonPhrase(), app.getId());
 			}
 			EntityUtils.consumeQuietly(respEntity);
 		}

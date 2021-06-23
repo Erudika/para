@@ -110,6 +110,7 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 					appid = Config.getRootAppIdentifier();
 				}
 			}
+			boolean samlSettingsLoaded = false;
 			try {
 				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
 				if (app != null) {
@@ -128,6 +129,7 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 					Auth auth = new Auth(settings, request, response);
 
+					samlSettingsLoaded = true;
 					if (request.getParameter("SAMLResponse") != null) {
 						auth.processResponse();
 						if (auth.isAuthenticated()) {
@@ -151,6 +153,10 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 				LOG.error("Invalid SAML certificate key for app '{}': {}", appid, ex.getMessage());
 			} catch (Exception ex) {
 				LOG.error("Failed to authenticate app '" + appid + "' with SAML: ", ex);
+			} finally {
+				if (!samlSettingsLoaded) {
+					LOG.error("Failed to load SAML certificate for app '{}', check the format and encoding.");
+				}
 			}
 		}
 
