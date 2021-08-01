@@ -155,7 +155,7 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 				LOG.error("Failed to authenticate app '" + appid + "' with SAML: ", ex);
 			} finally {
 				if (!samlSettingsLoaded) {
-					LOG.error("Failed to load SAML certificate for app '{}', check the format and encoding.");
+					LOG.error("Failed to load SAML certificate for app '{}', check the format and encoding.", appid);
 				}
 			}
 		}
