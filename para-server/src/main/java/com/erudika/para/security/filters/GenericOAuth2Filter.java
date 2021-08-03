@@ -312,12 +312,18 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 
 		try (CloseableHttpResponse resp2 = httpclient.execute(profileGet)) {
 			HttpEntity respEntity = resp2.getEntity();
-			if (respEntity != null && resp2.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
-				profile = jreader.readValue(respEntity.getContent());
+			Map<String, Object> error = null;
+			if (respEntity != null) {
+				if (resp2.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
+					profile = jreader.readValue(respEntity.getContent());
+				} else {
+					error = jreader.readValue(respEntity.getContent());
+				}
 			}
-			if (profile == null || profile.isEmpty()) {
-				LOG.error("OAuth 2 provider did not return any valid user information - response code {} {}, app '{}'",
-						resp2.getStatusLine().getStatusCode(), resp2.getStatusLine().getReasonPhrase(), app.getId());
+			if (profile == null || profile.isEmpty() || error != null) {
+				LOG.error("OAuth 2 provider did not return any valid user information - "
+						+ "response code {} {}, app '{}', payload {}",
+						resp2.getStatusLine().getStatusCode(), resp2.getStatusLine().getReasonPhrase(), app.getId(), error);
 			}
 			EntityUtils.consumeQuietly(respEntity);
 		}
