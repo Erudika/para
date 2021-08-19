@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
@@ -232,6 +233,18 @@ public final class Signer extends BaseAws4Signer {
 
 		boolean isJWT = StringUtils.startsWithIgnoreCase(secretKey, "Bearer");
 
+		// strip URI template param brackets - https://stackoverflow.com/questions/57011188
+		reqPath = reqPath.replaceAll("[{}]", "");
+		if (params != null) {
+			for (Map.Entry<String, List<String>> param : params.entrySet()) {
+				String key = param.getKey();
+				List<String> value = param.getValue();
+				if (value != null && !value.isEmpty()) {
+					params.put(key, value.stream().filter(v -> !StringUtils.isBlank(v)).
+							map(v -> v.replaceAll("[{}]", "")).collect(Collectors.toList()));
+				}
+			}
+		}
 		WebTarget target = apiClient.target(endpointURL).path(reqPath);
 		Map<String, String> signedHeaders = new HashMap<>();
 		if (!isJWT) {
