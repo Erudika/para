@@ -83,7 +83,8 @@
 		<logbackVer>1.2.3</logbackVer>
 		<awsJdkVer>2.16.46</awsJdkVer>
 		<jerseyVer>2.34</jerseyVer>
-		<springBootVer>2.5.0</springBootVer>
+		<jettyVer>9.4.42.v20210604</jettyVer>
+		<springBootVer>2.5.4</springBootVer>
 		<metricsVer>4.1.16</metricsVer>
 		<commonsCodecVer>1.15</commonsCodecVer>
 	</properties>

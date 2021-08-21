@@ -40,17 +40,17 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Stage;
 import com.google.inject.util.Modules;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -66,39 +66,30 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.ApplicationContextFactory;
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.builder.ParentContextApplicationContextInitializer;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.ApplicationPidFileWriter;
 import org.springframework.boot.web.embedded.jetty.JettyServerCustomizer;
 import org.springframework.boot.web.embedded.jetty.JettyServletWebServerFactory;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
-import org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext;
 import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
-import org.springframework.boot.web.servlet.support.ServletContextApplicationContextInitializer;
-import org.springframework.context.ApplicationContext;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
-import org.springframework.web.WebApplicationInitializer;
-import org.springframework.web.context.ContextLoaderListener;
-import org.springframework.web.context.WebApplicationContext;
 
 /**
  * Para modules are initialized and destroyed from here.
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@Configuration
-@ComponentScan
-public class ParaServer implements WebApplicationInitializer, Ordered {
+@SpringBootApplication
+public class ParaServer extends SpringBootServletInitializer implements Ordered {
 
-	private static final Logger logger = LoggerFactory.getLogger(ParaServer.class);
+	private static final Logger LOG = LoggerFactory.getLogger(ParaServer.class);
 	private static LinkedList<CustomResourceHandler> customResourceHandlers;
 	private static Injector injector;
 
@@ -131,7 +122,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		List<Module> externalModules = getExternalModules();
 
 		if (coreModules.isEmpty() && externalModules.isEmpty()) {
-			logger.warn("No implementing modules found. Aborting...");
+			LOG.warn("No implementing modules found. Aborting...");
 			destroy();
 			return;
 		}
@@ -249,7 +240,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	public ServletRegistrationBean<?> apiV1RegistrationBean() {
 		String path = Api1.PATH + "*";
 		ServletRegistrationBean<?> reg = new ServletRegistrationBean<>(new ServletContainer(new Api1()), path);
-		logger.debug("Initializing Para API v1 [{}]...", path);
+		LOG.debug("Initializing Para API v1 [{}]...", path);
 		reg.setName(Api1.class.getSimpleName());
 		reg.setAsyncSupported(true);
 		reg.setEnabled(true);
@@ -264,7 +255,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	public FilterRegistrationBean<?> gzipFilterRegistrationBean() {
 		String path = Api1.PATH + "*";
 		FilterRegistrationBean<?> frb = new FilterRegistrationBean<>(new GZipServletFilter());
-		logger.debug("Initializing GZip filter [{}]...", path);
+		LOG.debug("Initializing GZip filter [{}]...", path);
 		frb.addUrlPatterns(path);
 		frb.setAsyncSupported(true);
 		frb.setEnabled(Config.GZIP_ENABLED);
@@ -279,7 +270,7 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	@Bean
 	public FilterRegistrationBean<?> corsFilterRegistrationBean() {
 		String path = Api1.PATH + "*";
-		logger.debug("Initializing CORS filter [{}]...", path);
+		LOG.debug("Initializing CORS filter [{}]...", path);
 		FilterRegistrationBean<?> frb = new FilterRegistrationBean<>(new CORSFilter());
 		frb.addInitParameter("cors.support.credentials", "true");
 		frb.addInitParameter("cors.allowed.methods", "GET,POST,PATCH,PUT,DELETE,HEAD,OPTIONS");
@@ -331,6 +322,9 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 								public void customize(Connector connector, HttpConfiguration config, Request request) {
 									super.customize(connector, config, request);
 									String cfProto = request.getHeader("CloudFront-Forwarded-Proto");
+									if (StringUtils.isBlank(cfProto)) {
+										cfProto = request.getHeader("X-Forwarded-Proto");
+									}
 									if (StringUtils.equalsIgnoreCase(cfProto, config.getSecureScheme())) {
 										request.setScheme(cfProto);
 										request.setSecure(true);
@@ -352,8 +346,19 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		if (StringUtils.length(contextPath) > 1 && contextPath.charAt(0) == '/') {
 			jef.setContextPath(contextPath);
 		}
+		for (String k : jef.getInitParameters().keySet()) {
+			System.out.println(">> " + k + "=" + jef.getInitParameters().get(k));
+		}
+		Map<String, String> params = new HashMap<>(jef.getInitParameters());
+		params.put("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
+		jef.setInitParameters(params);
+		jef.getSession().getCookie().setName("sess");
+		jef.getSession().getCookie().setMaxAge(Duration.ofSeconds(1));
+		jef.getSession().getCookie().setHttpOnly(true);
 		jef.setPort(getServerPort());
-		logger.info("Instance #{} initalized and listening on http://localhost:{}", Config.WORKER_ID, jef.getPort());
+		boolean ssl = Boolean.parseBoolean(System.getProperty("server.ssl.enabled", System.getenv("SERVER_SSL_ENABLED")));
+		LOG.info("Instance #{} initalized and listening on http{}://localhost:{}",
+				Config.WORKER_ID, (ssl ? "s" : ""), jef.getPort());
 		return jef;
 	}
 
@@ -373,10 +378,10 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 		destroy();
 	}
 
-	@Override
-	public void onStartup(ServletContext sc) throws ServletException {
-		runAsWAR(sc, ParaServer.class);
-	}
+//	@Override
+//	public void onStartup(ServletContext sc) throws ServletException {
+//		runAsWAR(sc, ParaServer.class);
+//	}
 
 	/**
 	 * This is the initializing method when running ParaServer as WAR,
@@ -385,45 +390,59 @@ public class ParaServer implements WebApplicationInitializer, Ordered {
 	 * @param sources the application classes that will be scanned
 	 * @return the application context
 	 */
-	public static WebApplicationContext runAsWAR(ServletContext sc, Class<?>... sources) {
-		ApplicationContext parent = null;
-		Object object = sc.getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
-		if (object instanceof ApplicationContext) {
-			logger.info("Root context already created (using as parent).");
-			parent = (ApplicationContext) object;
-			sc.setAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE, null);
-		}
-		SpringApplicationBuilder application = new SpringApplicationBuilder(sources);
-		if (parent != null) {
-			application.initializers(new ParentContextApplicationContextInitializer(parent));
-		}
-		application.initializers(new ServletContextApplicationContextInitializer(sc));
-		application.contextFactory(ApplicationContextFactory.
-				ofContextClass(AnnotationConfigServletWebServerApplicationContext.class));
-
-		// entry point (WAR)
-		application.profiles(Config.ENVIRONMENT);
-		application.web(WebApplicationType.SERVLET);
-		application.bannerMode(Banner.Mode.OFF);
+	public static SpringApplicationBuilder runAsWAR(SpringApplicationBuilder app, Class<?>... sources) {
+		// runAsWAR() - entry point (WAR)
+		app.profiles(Config.ENVIRONMENT);
+		app.web(WebApplicationType.SERVLET);
+		app.bannerMode(Banner.Mode.OFF);
 		initialize(getCoreModules());
+		app.sources(ErrorFilter.class, ParaServer.class);
 		// Ensure error pages are registered
-		application.sources(ErrorFilter.class);
+		return app.sources(sources);
+//		ApplicationContext parent = null;
+//		Object object = sc.getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
+//		if (object instanceof ApplicationContext) {
+//			logger.info("Root context already created (using as parent).");
+//			parent = (ApplicationContext) object;
+//			sc.setAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE, null);
+//		}
+//		SpringApplicationBuilder application = new SpringApplicationBuilder(sources);
+//		if (parent != null) {
+//			application.initializers(new ParentContextApplicationContextInitializer(parent));
+//		}
+//		application.initializers(new ServletContextApplicationContextInitializer(sc));
+//		application.contextFactory(ApplicationContextFactory.
+//				ofContextClass(AnnotationConfigServletWebServerApplicationContext.class));
+//
+//		// entry point (WAR)
+//		application.profiles(Config.ENVIRONMENT);
+//		application.web(WebApplicationType.SERVLET);
+//		application.bannerMode(Banner.Mode.OFF);
+//		initialize(getCoreModules());
+//		// Ensure error pages are registered
+//		application.sources(ErrorFilter.class);
+//
+//		WebApplicationContext rootAppContext = (WebApplicationContext) application.run();
+//
+//		if (rootAppContext != null) {
+//			sc.addListener(new ContextLoaderListener(rootAppContext) {
+//				@Override
+//				public void contextInitialized(ServletContextEvent event) {
+//					// no-op because the application context is already initialized
+//				}
+//			});
+//			sc.getSessionCookieConfig().setName("sess");
+//			sc.getSessionCookieConfig().setMaxAge(1);
+//			sc.getSessionCookieConfig().setHttpOnly(true);
+//			sc.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
+//		}
+//		return rootAppContext;
+	}
 
-		WebApplicationContext rootAppContext = (WebApplicationContext) application.run();
-
-		if (rootAppContext != null) {
-			sc.addListener(new ContextLoaderListener(rootAppContext) {
-				@Override
-				public void contextInitialized(ServletContextEvent event) {
-					// no-op because the application context is already initialized
-				}
-			});
-			sc.getSessionCookieConfig().setName("sess");
-			sc.getSessionCookieConfig().setMaxAge(1);
-			sc.getSessionCookieConfig().setHttpOnly(true);
-			sc.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
-		}
-		return rootAppContext;
+	@Override
+	protected SpringApplicationBuilder configure(SpringApplicationBuilder app) {
+		// runAsWAR() - entry point (WAR)
+		return runAsWAR(app);
 	}
 
 	/**

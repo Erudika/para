@@ -13,7 +13,7 @@
 
 	<properties>
 		<jacksonVer>2.12.3</jacksonVer>
-		<springVer>5.3.8</springVer>
+		<springVer>5.3.9</springVer>
 		<flexmarkVer>0.62.2</flexmarkVer>
 	</properties>
 
