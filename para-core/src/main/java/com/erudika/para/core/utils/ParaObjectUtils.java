@@ -32,9 +32,11 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfoList;
+import io.github.classgraph.ScanResult;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -48,10 +50,6 @@ import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.core.type.filter.AssignableTypeFilter;
-import org.springframework.util.ClassUtils;
 
 /**
  * Contains methods for object/grid mapping, JSON serialization, class scanning and resolution.
@@ -67,7 +65,6 @@ public final class ParaObjectUtils {
 	// maps lowercase simple names to class objects
 	private static final Map<String, Class<? extends ParaObject>> CORE_CLASSES = new DualHashBidiMap();
 	private static final Map<String, Class<? extends ParaObject>> CORE_PARA_CLASSES = new DualHashBidiMap();
-	private static final CoreClassScanner SCANNER = new CoreClassScanner();
 	private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
 	static {
@@ -501,13 +498,33 @@ public final class ParaObjectUtils {
 	 *
 	 * @return a map of simple class names (lowercase) to class objects
 	 */
+	@SuppressWarnings("unchecked")
 	public static Map<String, Class<? extends ParaObject>> getCoreClassesMap() {
 		if (CORE_CLASSES.isEmpty()) {
 			try {
-				CORE_PARA_CLASSES.putAll(SCANNER.getComponentClasses(ParaObject.class.getPackage().getName()));
+				String corePackage = ParaObject.class.getPackage().getName();
+				ClassGraph cg1 = new ClassGraph().enableClassInfo().acceptPackages(corePackage);
+				try (ScanResult scanResult = cg1.scan()) {
+					ClassInfoList classes = scanResult.getClassesImplementing(ParaObject.class.getName()).
+							filter(ci -> !ci.isInterface() && !ci.isAbstract());
+					for (io.github.classgraph.ClassInfo clazz : classes) {
+						CORE_PARA_CLASSES.put(clazz.getSimpleName().toLowerCase(),
+								(Class<? extends ParaObject>) clazz.loadClass(true));
+					}
+				}
+
 				CORE_CLASSES.putAll(CORE_PARA_CLASSES);
+
 				if (!Config.CORE_PACKAGE_NAME.isEmpty()) {
-					CORE_CLASSES.putAll(SCANNER.getComponentClasses(Config.CORE_PACKAGE_NAME));
+					ClassGraph cg2 = new ClassGraph().enableClassInfo().acceptPackages(Config.CORE_PACKAGE_NAME);
+					try (ScanResult scanResult = cg2.scan()) {
+						ClassInfoList classes = scanResult.getClassesImplementing(ParaObject.class.getName()).
+								filter(ci -> !ci.isInterface() && !ci.isAbstract());
+						for (io.github.classgraph.ClassInfo clazz : classes) {
+							CORE_CLASSES.putIfAbsent(clazz.getSimpleName().toLowerCase(),
+									(Class<? extends ParaObject>) clazz.loadClass(true));
+						}
+					}
 				}
 				logger.debug("Found {} ParaObject classes: {}", CORE_CLASSES.size(), CORE_CLASSES);
 			} catch (Exception ex) {
@@ -515,40 +532,6 @@ public final class ParaObjectUtils {
 			}
 		}
 		return Collections.unmodifiableMap(CORE_CLASSES);
-	}
-
-	/**
-	 * Helper class that lists all classes contained in a given package.
-	 */
-	private static class CoreClassScanner extends ClassPathScanningCandidateComponentProvider {
-
-		private static final Logger LOG = LoggerFactory.getLogger(CoreClassScanner.class);
-
-		CoreClassScanner() {
-			super(false);
-			addIncludeFilter(new AssignableTypeFilter(ParaObject.class));
-		}
-
-		final Map<String, Class<? extends ParaObject>> getComponentClasses(String basePackage) {
-			basePackage = (basePackage == null) ? "" : basePackage;
-			Map<String, Class<? extends ParaObject>> classes = new LinkedHashMap<>();
-			for (BeanDefinition candidate : findCandidateComponents(basePackage)) {
-				try {
-					Class<? extends ParaObject> clazz = (Class<? extends ParaObject>)
-							ClassUtils.resolveClassName(candidate.getBeanClassName(),
-									Thread.currentThread().getContextClassLoader());
-					boolean isAbstract = Modifier.isAbstract(clazz.getModifiers());
-					boolean isInterface = Modifier.isInterface(clazz.getModifiers());
-					boolean isCoreObject = ParaObject.class.isAssignableFrom(clazz);
-					if (isCoreObject && !isAbstract && !isInterface) {
-						classes.put(clazz.getSimpleName().toLowerCase(), clazz);
-					}
-				} catch (Exception ex) {
-					LOG.error(null, ex);
-				}
-			}
-			return classes;
-		}
 	}
 
 	/**

@@ -13,7 +13,6 @@
 
 	<properties>
 		<jacksonVer>2.12.3</jacksonVer>
-		<springVer>5.3.9</springVer>
 		<flexmarkVer>0.62.2</flexmarkVer>
 	</properties>
 
@@ -25,27 +24,11 @@
 			<version>${awsJdkVer}</version>
 		</dependency>
 
-		<!-- SPRING -->
+		<!-- CLASSGRAPH -->
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-core</artifactId>
-			<version>${springVer}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>commons-logging</groupId>
-					<artifactId>commons-logging</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-context</artifactId>
-			<version>${springVer}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-beans</artifactId>
-			<version>${springVer}</version>
+			<groupId>io.github.classgraph</groupId>
+			<artifactId>classgraph</artifactId>
+			<version>4.8.114</version>
 		</dependency>
 
 		<!--	 INJECT & JAX-RS -->

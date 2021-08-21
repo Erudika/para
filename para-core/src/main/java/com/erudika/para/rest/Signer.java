@@ -235,16 +235,8 @@ public final class Signer extends BaseAws4Signer {
 
 		// strip URI template param brackets - https://stackoverflow.com/questions/57011188
 		reqPath = reqPath.replaceAll("[{}]", "");
-		if (params != null) {
-			for (Map.Entry<String, List<String>> param : params.entrySet()) {
-				String key = param.getKey();
-				List<String> value = param.getValue();
-				if (value != null && !value.isEmpty()) {
-					params.put(key, value.stream().filter(v -> !StringUtils.isBlank(v)).
-							map(v -> v.replaceAll("[{}]", "")).collect(Collectors.toList()));
-				}
-			}
-		}
+		cleanUpParams(params);
+
 		WebTarget target = apiClient.target(endpointURL).path(reqPath);
 		Map<String, String> signedHeaders = new HashMap<>();
 		if (!isJWT) {
@@ -350,5 +342,18 @@ public final class Signer extends BaseAws4Signer {
 		}
 
 		return sign(httpMethod, endpointURL, reqPath, headers, sigParams, in, accessKey, secretKey);
+	}
+
+	private void cleanUpParams(MultivaluedMap<String, String> params) {
+		if (params != null) {
+			for (Map.Entry<String, List<String>> param : params.entrySet()) {
+				String key = param.getKey();
+				List<String> value = param.getValue();
+				if (value != null && !value.isEmpty()) {
+					params.put(key, value.stream().filter(v -> !StringUtils.isBlank(v)).
+							map(v -> v.replaceAll("[{}]", "")).collect(Collectors.toList()));
+				}
+			}
+		}
 	}
 }
