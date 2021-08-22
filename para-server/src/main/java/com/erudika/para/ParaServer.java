@@ -66,6 +66,7 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
@@ -92,6 +93,9 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	private static final Logger LOG = LoggerFactory.getLogger(ParaServer.class);
 	private static LinkedList<CustomResourceHandler> customResourceHandlers;
 	private static Injector injector;
+
+	@Value("${server.ssl.enabled:false}")
+	private boolean sslEnabled;
 
 	/**
 	 * Returns the list of core modules.
@@ -356,9 +360,8 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 		jef.getSession().getCookie().setMaxAge(Duration.ofSeconds(1));
 		jef.getSession().getCookie().setHttpOnly(true);
 		jef.setPort(getServerPort());
-		boolean ssl = Boolean.parseBoolean(System.getProperty("server.ssl.enabled", System.getenv("SERVER_SSL_ENABLED")));
 		LOG.info("Instance #{} initalized and listening on http{}://localhost:{}",
-				Config.WORKER_ID, (ssl ? "s" : ""), jef.getPort());
+				Config.WORKER_ID, (sslEnabled ? "s" : ""), jef.getPort());
 		return jef;
 	}
 

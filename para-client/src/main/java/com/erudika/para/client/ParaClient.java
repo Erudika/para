@@ -31,6 +31,7 @@ import com.erudika.para.validation.Constraint;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -42,6 +43,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
@@ -54,7 +57,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-
+import nl.altindag.ssl.SSLFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.SslConfigurator;
 import org.glassfish.jersey.client.ClientConfig;
@@ -72,6 +75,13 @@ public final class ParaClient {
 	private static final String DEFAULT_ENDPOINT = "https://paraio.com";
 	private static final String DEFAULT_PATH = "/v1/";
 	private static final String JWT_PATH = "/jwt_auth";
+
+	private final String protocols = Config.getConfigParam("client.ssl_protocols", "TLSv1.3");
+	private final String keystorePath = Config.getConfigParam("client.ssl_keystore", "");
+	private final String keystorePass = Config.getConfigParam("client.ssl_keystore_password", "");
+	private final String truststorePath = Config.getConfigParam("client.ssl_truststore", "");
+	private final String truststorePass = Config.getConfigParam("client.ssl_truststore_password", "");
+
 	private String endpoint;
 	private String path;
 	private String accessKey;
@@ -101,9 +111,25 @@ public final class ParaClient {
 		clientConfig.register(GenericExceptionMapper.class);
 		clientConfig.register(new JacksonJsonProvider(mapper));
 		clientConfig.connectorProvider(new HttpUrlConnectorProvider().useSetMethodWorkaround());
-		SSLContext sslContext = SslConfigurator.newInstance().createSSLContext();
+		SSLFactory sslFactory = null;
+		if (!StringUtils.isBlank(truststorePath)) {
+            sslFactory = SSLFactory.builder()
+                    .withTrustMaterial(Paths.get(truststorePath), truststorePass.toCharArray())
+                    .withProtocols(protocols).build();
+        }
+        if (!StringUtils.isBlank(keystorePath)) {
+            sslFactory = SSLFactory.builder()
+                    .withIdentityMaterial(Paths.get(keystorePath), keystorePass.toCharArray())
+                    .withTrustMaterial(Paths.get(truststorePath), truststorePass.toCharArray())
+                    .withProtocols(protocols).build();
+        }
+		SSLContext sslContext = (sslFactory != null) ? sslFactory.getSslContext() :
+				SslConfigurator.newInstance().createSSLContext();
+		HostnameVerifier verifier = (sslFactory != null) ? sslFactory.getHostnameVerifier() :
+				HttpsURLConnection.getDefaultHostnameVerifier();
 		apiClient = ClientBuilder.newBuilder().
 				sslContext(sslContext).
+				hostnameVerifier(verifier).
 				withConfig(clientConfig).build();
 	}
 
