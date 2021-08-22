@@ -263,6 +263,11 @@
 			<artifactId>stax2-api</artifactId>
 			<version>4.2.1</version>
 		</dependency>
+		<dependency>
+			<groupId>io.github.hakky54</groupId>
+			<artifactId>sslcontext-kickstart</artifactId>
+			<version>6.8.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>
