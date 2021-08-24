@@ -67,7 +67,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.jsoup.Jsoup;
-import org.jsoup.safety.Whitelist;
+import org.jsoup.safety.Safelist;
 import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,7 +83,7 @@ public final class Utils {
 	// maps lowercase simple names to class objects
 	private static final Pattern EMAIL_PATTERN = Pattern.compile(Email.EMAIL_PATTERN);
 	private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance();
-	private static final Whitelist SAFE_HTML_TAGS = getHTMLTagsWhitelist();
+	private static final Safelist SAFE_HTML_TAGS = getHTMLTagsWhitelist();
 	private static final MutableDataHolder MD_OPTIONS = getMarkdownOptions();
 	private static final Parser MD_PARSER = Parser.builder(MD_OPTIONS).build();
 	private static final HtmlRenderer HTML_RENDERER_STRICT = HtmlRenderer.builder(MD_OPTIONS).build();
@@ -477,8 +477,8 @@ public final class Utils {
 						StrikethroughExtension.create(), TaskListExtension.create(), AutolinkExtension.create()));
 	}
 
-	private static Whitelist getHTMLTagsWhitelist() {
-		Whitelist whitelist = Whitelist.relaxed();
+	private static Safelist getHTMLTagsWhitelist() {
+		Safelist whitelist = Safelist.relaxed();
 		whitelist.addTags("abbr", "hr", "del", "details", "summary", "center");
 		whitelist.addProtocols("a", "href", "#");
 		whitelist.addEnforcedAttribute("a", "rel", "nofollow");
