@@ -248,9 +248,9 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 	}
 
 	private String getEmail(Map<String, Object> profile) {
-		String email = (String) profile.get("userPrincipalName");
+		String email = (String) profile.get("mail");
 		if (StringUtils.isBlank(email) || !StringUtils.contains(email, "@")) {
-			email = (String) profile.get("mail");
+			email = (String) profile.get("userPrincipalName");
 		}
 		return email;
 	}
