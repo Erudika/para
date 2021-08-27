@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.Map;
+import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
@@ -123,7 +124,8 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 				if (token != null) {
 					if (token.containsKey("access_token")) {
 						userAuth = getOrCreateUser(app, token.get("access_token") +
-								Config.SEPARATOR + token.get("refresh_token"));
+								Config.SEPARATOR + token.get("refresh_token") +
+								Config.SEPARATOR + token.get("id_token"));
 					} else {
 						LOG.info("OAuth 2.0 token request failed with response " + token);
 					}
@@ -159,9 +161,15 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		if (accessToken != null) {
 			String[] tokens = accessToken.split(Config.SEPARATOR);
 			String refreshToken = null;
-			if (tokens.length > 1) {
+			String idToken = null;
+			if (tokens.length > 0) {
 				accessToken = tokens[0];
+			}
+			if (tokens.length > 1) {
 				refreshToken = tokens[1];
+			}
+			if (tokens.length > 2) {
+				idToken = tokens[2];
 			}
 
 			boolean tokenDelegationEnabled = isAccessTokenDelegationEnabled(app, alias);
@@ -210,15 +218,17 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 					if (tokenDelegationEnabled) {
 						user.setIdpAccessToken(accessToken);
 						user.setIdpRefreshToken(refreshToken);
+						user.setIdpIdToken(idToken);
 					}
-					user.setPicture(getPicture(pic));
+					user.setPicture(getPicture(app, user, accessToken, alias, pic));
 					user.setIdentifier(oauthPrefix(alias).concat(oauthAccountId));
 					String id = user.create();
 					if (id == null) {
 						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 					}
 				} else {
-					if (updateUserInfo(user, pic, email, name, accessToken, refreshToken, tokenDelegationEnabled)) {
+					if (updateUserInfo(app, user, pic, email, name, accessToken,
+							refreshToken, idToken, alias, tokenDelegationEnabled)) {
 						user.update();
 					}
 				}
@@ -232,9 +242,9 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		return SecurityUtils.checkIfActive(userAuth, user, false);
 	}
 
-	private boolean updateUserInfo(User user, String pic, String email, String name,
-			String accessToken, String refreshToken, boolean tokenDelegationEnabled) {
-		String picture = getPicture(pic);
+	private boolean updateUserInfo(App app, User user, String pic, String email, String name,
+			String accessToken, String refreshToken, String idToken, String alias, boolean tokenDelegationEnabled) {
+		String picture = getPicture(app, user, accessToken, alias, pic);
 		boolean update = false;
 		if (!StringUtils.equals(user.getPicture(), picture)) {
 			user.setPicture(picture);
@@ -251,6 +261,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		if (tokenDelegationEnabled) {
 			user.setIdpAccessToken(accessToken);
 			user.setIdpRefreshToken(refreshToken);
+			user.setIdpIdToken(idToken);
 			update = true;
 		}
 		return update;
@@ -334,6 +345,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		Map<String, Object> token = tokenRequest(app, user.getIdpRefreshToken(), null, oauthAlias(user.getIdentifier()));
 		if (token != null && token.containsKey("access_token")) {
 			user.setIdpAccessToken((String) token.get("access_token"));
+			user.setIdpIdToken((String) token.get("id_token"));
 			String newRefresh = (String) token.get("refresh_token");
 			if (!StringUtils.equals(newRefresh, user.getIdpRefreshToken())) {
 				user.setIdpRefreshToken(newRefresh);
@@ -398,23 +410,43 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		}
 	}
 
-	private String configKey(String key, String alias) {
+	private static String configKey(String key, String alias) {
 		if (StringUtils.isBlank(alias)) {
 			return "security.oauth." + key;
 		}
 		return "security.oauth" + alias + "." + key;
 	}
 
-	private static String getPicture(String pic) {
+	private static String getPicture(App app, User user, String accessToken, String alias, String pic) {
 		if (pic != null) {
-			if (pic.contains("?")) {
+			String avatar = pic;
+			if ("true".equals(SecurityUtils.getSettingForApp(app, configKey("download_avatars", alias), "false"))) {
+				avatar = fetchAvatar(app.getAppIdentifier().trim(), user.getId(), accessToken, pic);
+			} else if (pic.contains("?")) {
 				// user picture migth contain size parameters - remove them
-				return pic.substring(0, pic.indexOf('?'));
-			} else {
-				return pic;
+				avatar = pic.substring(0, pic.indexOf('?'));
 			}
+			return avatar;
 		}
 		return null;
+	}
+
+	private static String fetchAvatar(String appid, String userid, String accessToken, String avatarUrl) {
+		if (accessToken != null) {
+			HttpGet avatarGet = new HttpGet(avatarUrl);
+			avatarGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+			try (CloseableHttpResponse resp = HttpClientBuilder.create().build().execute(avatarGet)) {
+				HttpEntity respEntity = resp.getEntity();
+				if (respEntity != null && respEntity.getContentType().getValue().startsWith("image")) {
+					String ctype = respEntity.getContentType().getValue();
+					return Para.getFileStore().store(Optional.ofNullable(appid).orElse(Config.PARA) + "/" + userid + "."
+							+ StringUtils.substringAfter(ctype, "/"), respEntity.getContent());
+				}
+			} catch (Exception e) {
+				LOG.error(null, e);
+			}
+		}
+		return avatarUrl;
 	}
 
 	private String getAppid(App app) {
