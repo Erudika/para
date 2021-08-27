@@ -116,14 +116,14 @@
 		<dependency>
 			<groupId>com.onelogin</groupId>
 			<artifactId>java-saml</artifactId>
-			<version>2.6.0</version>
+			<version>2.7.0</version>
 		</dependency>
 
 		<!--	 CAFFEINE -->
 		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
 			<artifactId>caffeine</artifactId>
-			<version>2.9.1</version>
+			<version>2.9.2</version>
 		</dependency>
 
 		<!-- JERSEY -->
@@ -208,7 +208,7 @@
 		<dependency>
 			<groupId>org.yaml</groupId>
 			<artifactId>snakeyaml</artifactId>
-			<version>1.28</version>
+			<version>1.29</version>
 		</dependency>
 		<dependency>
 			<groupId>javax.servlet</groupId>
@@ -242,7 +242,7 @@
 		<dependency>
 			<groupId>com.erudika</groupId>
 			<artifactId>para-search-lucene</artifactId>
-			<version>1.34.1</version>
+			<version>1.39.1</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

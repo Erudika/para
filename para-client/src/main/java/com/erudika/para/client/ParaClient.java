@@ -113,20 +113,20 @@ public final class ParaClient {
 		clientConfig.connectorProvider(new HttpUrlConnectorProvider().useSetMethodWorkaround());
 		SSLFactory sslFactory = null;
 		if (!StringUtils.isBlank(truststorePath)) {
-            sslFactory = SSLFactory.builder()
-                    .withTrustMaterial(Paths.get(truststorePath), truststorePass.toCharArray())
-                    .withProtocols(protocols).build();
-        }
-        if (!StringUtils.isBlank(keystorePath)) {
-            sslFactory = SSLFactory.builder()
-                    .withIdentityMaterial(Paths.get(keystorePath), keystorePass.toCharArray())
-                    .withTrustMaterial(Paths.get(truststorePath), truststorePass.toCharArray())
-                    .withProtocols(protocols).build();
-        }
-		SSLContext sslContext = (sslFactory != null) ? sslFactory.getSslContext() :
-				SslConfigurator.newInstance().createSSLContext();
-		HostnameVerifier verifier = (sslFactory != null) ? sslFactory.getHostnameVerifier() :
-				HttpsURLConnection.getDefaultHostnameVerifier();
+			sslFactory = SSLFactory.builder()
+					.withTrustMaterial(Paths.get(truststorePath), truststorePass.toCharArray())
+					.withProtocols(protocols).build();
+		}
+		if (!StringUtils.isBlank(keystorePath)) {
+			sslFactory = SSLFactory.builder()
+					.withIdentityMaterial(Paths.get(keystorePath), keystorePass.toCharArray())
+					.withTrustMaterial(Paths.get(truststorePath), truststorePass.toCharArray())
+					.withProtocols(protocols).build();
+		}
+		SSLContext sslContext = (sslFactory != null) ? sslFactory.getSslContext()
+				: SslConfigurator.newInstance().createSSLContext();
+		HostnameVerifier verifier = (sslFactory != null) ? sslFactory.getHostnameVerifier()
+				: HttpsURLConnection.getDefaultHostnameVerifier();
 		apiClient = ClientBuilder.newBuilder().
 				sslContext(sslContext).
 				hostnameVerifier(verifier).

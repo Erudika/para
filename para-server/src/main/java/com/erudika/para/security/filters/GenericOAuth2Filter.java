@@ -186,22 +186,11 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			if (profile != null && profile.containsKey(accountIdParam)) {
 				Object accid = profile.get(accountIdParam);
 				String oauthAccountId = accid instanceof String ? (String) accid : String.valueOf(accid);
+				String email = getEmail((String) profile.get(emailParam), oauthAccountId, emailDomain);
 				String pic = (String) profile.get(pictureParam);
-				String email = (String) profile.get(emailParam);
 				String name = (String) profile.get(nameParam);
 				String gname = (String) profile.get(gnParam);
 				String fname = (String) profile.get(fnParam);
-
-				if (StringUtils.isBlank(email)) {
-					if (Utils.isValidEmail(oauthAccountId)) {
-						email = oauthAccountId;
-					} else if (!StringUtils.isBlank(emailDomain)) {
-						email = oauthAccountId.concat("@").concat(emailDomain);
-					} else {
-						LOG.warn("Blank email attribute for OAuth2 user '{}'.", oauthAccountId);
-						email = oauthAccountId + "@scoold.com";
-					}
-				}
 
 				user.setAppid(getAppid(app));
 				user.setIdentifier(oauthPrefix(alias).concat(oauthAccountId));
@@ -460,5 +449,20 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			return StringUtils.isBlank(fname) ? "No Name" : fname;
 		}
 		return gname + " " + fname;
+	}
+
+	private String getEmail(String e, String oauthAccountId, String emailDomain) {
+		String email = e;
+		if (StringUtils.isBlank(email)) {
+			if (Utils.isValidEmail(oauthAccountId)) {
+				email = oauthAccountId;
+			} else if (!StringUtils.isBlank(emailDomain)) {
+				email = oauthAccountId.concat("@").concat(emailDomain);
+			} else {
+				LOG.warn("Blank email attribute for OAuth2 user '{}'.", oauthAccountId);
+				email = oauthAccountId + "@scoold.com";
+			}
+		}
+		return email;
 	}
 }

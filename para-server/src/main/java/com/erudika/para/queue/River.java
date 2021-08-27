@@ -319,7 +319,7 @@ public abstract class River implements Runnable {
 			Para.asyncExecute(() -> {
 				try {
 					for (int i = 0; i < MAX_INDEXING_RETRIES; i++) {
-						Thread.sleep(1000 * (i + 1));
+						Thread.sleep(1000L * (i + 1));
 						Map<String, ParaObject> pending = Para.getDAO().readAll(appid,
 								new ArrayList<>(pendingIds.keySet()), true);
 						int pendingCount = pendingIds.size();

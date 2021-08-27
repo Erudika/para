@@ -381,15 +381,10 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 		destroy();
 	}
 
-//	@Override
-//	public void onStartup(ServletContext sc) throws ServletException {
-//		runAsWAR(sc, ParaServer.class);
-//	}
-
 	/**
 	 * This is the initializing method when running ParaServer as WAR,
 	 * deployed to a servlet container.
-	 * @param sc the ServletContext instance
+	 * @param app the Spring app builder instance
 	 * @param sources the application classes that will be scanned
 	 * @return the application context
 	 */
@@ -402,44 +397,6 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 		app.sources(ErrorFilter.class, ParaServer.class);
 		// Ensure error pages are registered
 		return app.sources(sources);
-//		ApplicationContext parent = null;
-//		Object object = sc.getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
-//		if (object instanceof ApplicationContext) {
-//			logger.info("Root context already created (using as parent).");
-//			parent = (ApplicationContext) object;
-//			sc.setAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE, null);
-//		}
-//		SpringApplicationBuilder application = new SpringApplicationBuilder(sources);
-//		if (parent != null) {
-//			application.initializers(new ParentContextApplicationContextInitializer(parent));
-//		}
-//		application.initializers(new ServletContextApplicationContextInitializer(sc));
-//		application.contextFactory(ApplicationContextFactory.
-//				ofContextClass(AnnotationConfigServletWebServerApplicationContext.class));
-//
-//		// entry point (WAR)
-//		application.profiles(Config.ENVIRONMENT);
-//		application.web(WebApplicationType.SERVLET);
-//		application.bannerMode(Banner.Mode.OFF);
-//		initialize(getCoreModules());
-//		// Ensure error pages are registered
-//		application.sources(ErrorFilter.class);
-//
-//		WebApplicationContext rootAppContext = (WebApplicationContext) application.run();
-//
-//		if (rootAppContext != null) {
-//			sc.addListener(new ContextLoaderListener(rootAppContext) {
-//				@Override
-//				public void contextInitialized(ServletContextEvent event) {
-//					// no-op because the application context is already initialized
-//				}
-//			});
-//			sc.getSessionCookieConfig().setName("sess");
-//			sc.getSessionCookieConfig().setMaxAge(1);
-//			sc.getSessionCookieConfig().setHttpOnly(true);
-//			sc.setInitParameter("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
-//		}
-//		return rootAppContext;
 	}
 
 	@Override
