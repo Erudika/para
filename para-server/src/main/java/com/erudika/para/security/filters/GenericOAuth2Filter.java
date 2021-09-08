@@ -288,7 +288,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			return profile != null && profile.containsKey(SecurityUtils.getSettingForApp(app,
 					configKey("parameters.id", alias), "sub"));
 		} catch (Exception e) {
-			LOG.error(null, e);
+			LOG.debug("Invalid access token {}", e);
 			return false;
 		}
 	}
@@ -326,6 +326,8 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 						resp2.getStatusLine().getStatusCode(), resp2.getStatusLine().getReasonPhrase(), app.getId(), error);
 			}
 			EntityUtils.consumeQuietly(respEntity);
+		} catch (Exception e) {
+			LOG.error("Failed to fetch profile form IDP for app {} - {}", app.getId(), e.getMessage());
 		}
 		return profile;
 	}
