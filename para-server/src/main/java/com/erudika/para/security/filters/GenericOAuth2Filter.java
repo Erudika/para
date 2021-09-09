@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -312,18 +313,19 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 
 		try (CloseableHttpResponse resp2 = httpclient.execute(profileGet)) {
 			HttpEntity respEntity = resp2.getEntity();
-			Map<String, Object> error = null;
+			String error = null;
 			if (respEntity != null) {
 				if (resp2.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
 					profile = jreader.readValue(respEntity.getContent());
 				} else {
-					error = jreader.readValue(respEntity.getContent());
+					error = IOUtils.toString(respEntity.getContent(), Config.DEFAULT_ENCODING);
 				}
 			}
 			if (profile == null || profile.isEmpty() || error != null) {
 				LOG.error("OAuth 2 provider did not return any valid user information - "
 						+ "response code {} {}, app '{}', payload {}",
-						resp2.getStatusLine().getStatusCode(), resp2.getStatusLine().getReasonPhrase(), app.getId(), error);
+						resp2.getStatusLine().getStatusCode(), resp2.getStatusLine().getReasonPhrase(), app.getId(),
+						Utils.abbreviate(error, 1000));
 			}
 			EntityUtils.consumeQuietly(respEntity);
 		} catch (Exception e) {
