@@ -25,6 +25,7 @@ import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Webhook;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.HealthUtils;
 import com.erudika.para.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.util.ArrayList;
@@ -101,19 +102,21 @@ public abstract class River implements Runnable {
 				logger.debug("Waiting {}s for messages...", POLLING_INTERVAL);
 				int processedHooks = 0;
 				List<String> msgs = Collections.emptyList();
-				try {
-					msgs = pullMessages();
-					logger.debug("Pulled {} messages from queue.", msgs.size());
+				if (HealthUtils.getInstance().isHealthy()) {
+					try {
+						msgs = pullMessages();
+						logger.debug("Pulled {} messages from queue.", msgs.size());
 
-					for (final String msg : msgs) {
-						logger.debug("Message from queue: {}", msg);
-						if (StringUtils.contains(msg, Config._APPID) && StringUtils.contains(msg, Config._TYPE)) {
-							processedHooks += parseAndCategorizeMessage(jreader.readValue(msg),
-									createList, updateList, deleteList);
+						for (final String msg : msgs) {
+							logger.debug("Message from queue: {}", msg);
+							if (StringUtils.contains(msg, Config._APPID) && StringUtils.contains(msg, Config._TYPE)) {
+								processedHooks += parseAndCategorizeMessage(jreader.readValue(msg),
+										createList, updateList, deleteList);
+							}
 						}
+					} catch (Exception e) {
+						logger.error("Batch processing operation failed:", e);
 					}
-				} catch (Exception e) {
-					logger.error("Batch processing operation failed:", e);
 				}
 
 				if (!createList.isEmpty() || !updateList.isEmpty() || !deleteList.isEmpty() || processedHooks > 0) {

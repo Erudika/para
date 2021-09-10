@@ -152,8 +152,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 
 		// this enables the "river" feature - polls the default queue for objects and imports them into Para
 		// additionally, the polling feature is used for implementing a webhooks worker node
-		if ((Config.getConfigBoolean("queue_link_enabled", false) || Config.WEBHOOKS_ENABLED) &&
-				HealthUtils.getInstance().isHealthy()) {
+		if ((Config.getConfigBoolean("queue_link_enabled", false) || Config.WEBHOOKS_ENABLED)) {
 			Para.getQueue().startPolling();
 		}
 	}
