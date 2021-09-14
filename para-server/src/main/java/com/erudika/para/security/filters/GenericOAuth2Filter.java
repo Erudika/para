@@ -26,9 +26,11 @@ import com.erudika.para.security.SecurityUtils;
 import com.erudika.para.security.UserAuthentication;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Utils;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
@@ -174,7 +176,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			}
 
 			boolean tokenDelegationEnabled = isAccessTokenDelegationEnabled(app, alias);
-			Map<String, Object> profile = fetchProfileFromIDP(app, accessToken, alias);
+			Map<String, Object> profile = fetchProfileFromIDP(app, accessToken, idToken, alias);
 
 			String accountIdParam = SecurityUtils.getSettingForApp(app, configKey("parameters.id", alias), "sub");
 			String pictureParam = SecurityUtils.getSettingForApp(app, configKey("parameters.picture", alias), "picture");
@@ -187,11 +189,11 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			if (profile != null && profile.containsKey(accountIdParam)) {
 				Object accid = profile.get(accountIdParam);
 				String oauthAccountId = accid instanceof String ? (String) accid : String.valueOf(accid);
-				String email = getEmail((String) profile.get(emailParam), oauthAccountId, emailDomain);
-				String pic = (String) profile.get(pictureParam);
-				String name = (String) profile.get(nameParam);
-				String gname = (String) profile.get(gnParam);
-				String fname = (String) profile.get(fnParam);
+				String email = getEmailFromProfile(profile, emailParam, oauthAccountId, emailDomain);
+				String pic = getPictureFromProfile(profile, pictureParam);
+				String name = getNameFromProfile(profile, nameParam);
+				String gname = getGivenNameFromProfile(profile, gnParam);
+				String fname = getFirstNameFromProfile(profile, fnParam);
 
 				user.setAppid(getAppid(app));
 				user.setIdentifier(oauthPrefix(alias).concat(oauthAccountId));
@@ -281,10 +283,10 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	public boolean isValidAccessToken(App app, User user) {
 		try {
 			String alias = oauthAlias(user.getIdentifier());
-			Map<String, Object> profile = fetchProfileFromIDP(app, user.getIdpAccessToken(), alias);
+			Map<String, Object> profile = fetchProfileFromIDP(app, user.getIdpAccessToken(), null, alias);
 			if (profile == null && user.getIdpRefreshToken() != null) {
 				refreshTokens(app, user);
-				profile = fetchProfileFromIDP(app, user.getIdpAccessToken(), alias);
+				profile = fetchProfileFromIDP(app, user.getIdpAccessToken(), null, alias);
 			}
 			return profile != null && profile.containsKey(SecurityUtils.getSettingForApp(app,
 					configKey("parameters.id", alias), "sub"));
@@ -298,11 +300,16 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	 * Sends a profile request to the IDP server with a given access token.
 	 * @param app an app object
 	 * @param accessToken access token
+	 * @param idToken ID token
 	 * @return null if the token was invalid or a map containing user information
 	 * @throws IOException if connection fails
 	 */
-	private Map<String, Object> fetchProfileFromIDP(App app, String accessToken, String alias) throws IOException {
-		Map<String, Object> profile = null;
+	private Map<String, Object> fetchProfileFromIDP(App app, String accessToken, String idToken, String alias) throws IOException {
+		Map<String, Object> profile = new HashMap<>();
+		if (StringUtils.contains(idToken, ".")) {
+			String idTokenDecoded = Utils.base64dec(StringUtils.substringBetween(idToken, "."));
+			profile.putAll(jreader.readValue(idTokenDecoded));
+		}
 		String acceptHeader = SecurityUtils.getSettingForApp(app, configKey("accept_header", alias), "");
 		HttpGet profileGet = new HttpGet(SecurityUtils.getSettingForApp(app, configKey("profile_url", alias), ""));
 		profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
@@ -316,12 +323,12 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			String error = null;
 			if (respEntity != null) {
 				if (resp2.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
-					profile = jreader.readValue(respEntity.getContent());
+					profile.putAll(jreader.readValue(respEntity.getContent()));
 				} else {
 					error = IOUtils.toString(respEntity.getContent(), Config.DEFAULT_ENCODING);
 				}
 			}
-			if (profile == null || profile.isEmpty() || error != null) {
+			if (profile.isEmpty() || error != null) {
 				LOG.error("OAuth 2 provider did not return any valid user information - "
 						+ "response code {} {}, app '{}', payload {}",
 						resp2.getStatusLine().getStatusCode(), resp2.getStatusLine().getReasonPhrase(), app.getId(),
@@ -455,18 +462,80 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		return gname + " " + fname;
 	}
 
-	private String getEmail(String e, String oauthAccountId, String emailDomain) {
-		String email = e;
+	private String getEmailFromProfile(Map<String, Object> profile, String emailParam, String oauthAccountId, String emailDomain) {
+		String email = (String) profile.get(emailParam);
 		if (StringUtils.isBlank(email)) {
-			if (Utils.isValidEmail(oauthAccountId)) {
-				email = oauthAccountId;
-			} else if (!StringUtils.isBlank(emailDomain)) {
-				email = oauthAccountId.concat("@").concat(emailDomain);
-			} else {
-				LOG.warn("Blank email attribute for OAuth2 user '{}'.", oauthAccountId);
-				email = oauthAccountId + "@scoold.com";
+			if (emailParam.startsWith("/")) {
+				// support for JSON pointers to get data from sub fields like {"attributes": { data }}
+				JsonNode profileTree = ParaObjectUtils.getJsonMapper().valueToTree(profile);
+				JsonNode nodeAtPath = profileTree.at(emailParam);
+				if (!nodeAtPath.isMissingNode()) {
+					email = nodeAtPath.asText(email);
+				}
+			}
+			if (StringUtils.isBlank(email)) {
+				if (Utils.isValidEmail(oauthAccountId)) {
+					email = oauthAccountId;
+				} else if (!StringUtils.isBlank(emailDomain)) {
+					email = oauthAccountId.concat("@").concat(emailDomain);
+				} else {
+					LOG.warn("Blank email attribute for OAuth2 user '{}'.", oauthAccountId);
+					email = oauthAccountId + "@scoold.com";
+				}
 			}
 		}
 		return email;
+	}
+
+	private String getPictureFromProfile(Map<String, Object> profile, String pictureParam) {
+		String pic = (String) profile.get(pictureParam);
+		if (StringUtils.isBlank(pic) && pictureParam.startsWith("/")) {
+			// support for JSON pointers to get data from sub fields like {"attributes": { data }}
+			JsonNode profileTree = ParaObjectUtils.getJsonMapper().valueToTree(profile);
+			JsonNode nodeAtPath = profileTree.at(pictureParam);
+			if (!nodeAtPath.isMissingNode()) {
+				pic = nodeAtPath.asText(pic);
+			}
+		}
+		return pic;
+	}
+
+	private String getNameFromProfile(Map<String, Object> profile, String nameParam) {
+		String name = (String) profile.get(nameParam);
+		if (StringUtils.isBlank(name) && nameParam.startsWith("/")) {
+			// support for JSON pointers to get data from sub fields like {"attributes": { data }}
+			JsonNode profileTree = ParaObjectUtils.getJsonMapper().valueToTree(profile);
+			JsonNode nodeAtPath = profileTree.at(nameParam);
+			if (!nodeAtPath.isMissingNode()) {
+				name = nodeAtPath.asText(name);
+			}
+		}
+		return name;
+	}
+
+	private String getGivenNameFromProfile(Map<String, Object> profile, String gnParam) {
+		String gname = (String) profile.get(gnParam);
+		if (StringUtils.isBlank(gname) && gnParam.startsWith("/")) {
+			// support for JSON pointers to get data from sub fields like {"attributes": { data }}
+			JsonNode profileTree = ParaObjectUtils.getJsonMapper().valueToTree(profile);
+			JsonNode nodeAtPath = profileTree.at(gnParam);
+			if (!nodeAtPath.isMissingNode()) {
+				gname = nodeAtPath.asText(gname);
+			}
+		}
+		return gname;
+	}
+
+	private String getFirstNameFromProfile(Map<String, Object> profile, String fnParam) {
+		String fname = (String) profile.get(fnParam);
+		if (StringUtils.isBlank(fname) && fnParam.startsWith("/")) {
+			// support for JSON pointers to get data from sub fields like {"attributes": { data }}
+			JsonNode profileTree = ParaObjectUtils.getJsonMapper().valueToTree(profile);
+			JsonNode nodeAtPath = profileTree.at(fnParam);
+			if (!nodeAtPath.isMissingNode()) {
+				fname = nodeAtPath.asText(fname);
+			}
+		}
+		return fname;
 	}
 }
