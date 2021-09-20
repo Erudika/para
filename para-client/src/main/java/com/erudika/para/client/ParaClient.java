@@ -17,20 +17,24 @@
  */
 package com.erudika.para.client;
 
+import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.Tag;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
-import com.erudika.para.rest.GenericExceptionMapper;
 import com.erudika.para.rest.Signer;
 import com.erudika.para.utils.Config;
 import com.erudika.para.utils.Pager;
 import com.erudika.para.utils.Utils;
 import com.erudika.para.validation.Constraint;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,17 +55,27 @@ import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.HttpMethod.PUT;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 import nl.altindag.ssl.SSLFactory;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.glassfish.jersey.SslConfigurator;
-import org.glassfish.jersey.client.ClientConfig;
-import org.glassfish.jersey.client.HttpUrlConnectorProvider;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.config.CookieSpecs;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPatch;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +83,7 @@ import org.slf4j.LoggerFactory;
  * The Java REST client for communicating with a Para API server.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public final class ParaClient {
+public final class ParaClient implements Closeable {
 
 	private static final Logger logger = LoggerFactory.getLogger(ParaClient.class);
 	private static final String DEFAULT_ENDPOINT = "https://paraio.com";
@@ -89,9 +103,10 @@ public final class ParaClient {
 	private String tokenKey;
 	private Long tokenKeyExpires;
 	private Long tokenKeyNextRefresh;
-	private Client apiClient;
 	private int chunkSize = 0;
 	private boolean throwExceptionOnHTTPError;
+	private final CloseableHttpClient httpclient;
+	private final ObjectMapper mapper;
 
 	/**
 	 * Default constructor.
@@ -105,12 +120,9 @@ public final class ParaClient {
 			logger.warn("Secret key appears to be invalid. Make sure you call 'signIn()' first.");
 		}
 		this.throwExceptionOnHTTPError = false;
-		ObjectMapper mapper = ParaObjectUtils.getJsonMapper();
+		mapper = ParaObjectUtils.getJsonMapper();
 		mapper.setSerializationInclusion(JsonInclude.Include.USE_DEFAULTS);
-		ClientConfig clientConfig = new ClientConfig();
-		clientConfig.register(GenericExceptionMapper.class);
-		clientConfig.register(new JacksonJsonProvider(mapper));
-		clientConfig.connectorProvider(new HttpUrlConnectorProvider().useSetMethodWorkaround());
+
 		SSLFactory sslFactory = null;
 		if (!StringUtils.isBlank(truststorePath)) {
 			sslFactory = SSLFactory.builder()
@@ -124,28 +136,22 @@ public final class ParaClient {
 					.withProtocols(protocols).build();
 		}
 		SSLContext sslContext = (sslFactory != null) ? sslFactory.getSslContext()
-				: SslConfigurator.newInstance().createSSLContext();
+				: SSLFactory.builder().withDefaultTrustMaterial().build().getSslContext();
 		HostnameVerifier verifier = (sslFactory != null) ? sslFactory.getHostnameVerifier()
 				: HttpsURLConnection.getDefaultHostnameVerifier();
-		apiClient = ClientBuilder.newBuilder().
-				sslContext(sslContext).
-				hostnameVerifier(verifier).
-				withConfig(clientConfig).build();
+
+		int timeout = 30 * 1000;
+		this.httpclient = HttpClientBuilder.create().
+				setSSLContext(sslContext).
+				setSSLHostnameVerifier(verifier).
+				setDefaultRequestConfig(RequestConfig.custom().
+						setConnectTimeout(timeout).
+						setConnectionRequestTimeout(timeout).
+						setCookieSpec(CookieSpecs.IGNORE_COOKIES).
+						build()).
+				build();
 	}
 
-	/**
-	 * @return api client
-	 */
-	public Client getApiClient() {
-		return apiClient;
-	}
-
-	/**
-	 * @param apiClient set new api client
-	 */
-	public void setApiClient(Client apiClient) {
-		this.apiClient = apiClient;
-	}
 
 	/**
 	 * Sets the host URL of the Para server.
@@ -159,8 +165,12 @@ public final class ParaClient {
 	 * Closes the underlying Jersey client and releases resources.
 	 */
 	public void close() {
-		if (apiClient != null) {
-			apiClient.close();
+		if (httpclient != null) {
+			try {
+				httpclient.close();
+			} catch (IOException ex) {
+				logger.error(null, ex);
+			}
 		}
 	}
 
@@ -218,7 +228,7 @@ public final class ParaClient {
 	 * @return the version of Para server
 	 */
 	public String getServerVersion() {
-		Map<String, Object> res = getEntity(invokeGet("", null), Map.class);
+		Map<?, ?> res = invokeGet("", null, Map.class);
 		if (res == null || StringUtils.isBlank((String) res.get("version"))) {
 			return "unknown";
 		} else {
@@ -230,12 +240,11 @@ public final class ParaClient {
 	 * Sets the JWT access token.
 	 * @param token a valid token
 	 */
-	@SuppressWarnings("unchecked")
 	public void setAccessToken(String token) {
 		if (!StringUtils.isBlank(token)) {
 			try {
 				String payload = Utils.base64dec(StringUtils.substringBetween(token, ".", "."));
-				Map<String, Object> decoded = ParaObjectUtils.getJsonMapper().readValue(payload, Map.class);
+				Map<?, ?> decoded = mapper.readValue(payload, Map.class);
 				if (decoded != null && decoded.containsKey("exp")) {
 					this.tokenKeyExpires = (Long) decoded.get("exp");
 					this.tokenKeyNextRefresh = (Long) decoded.get("refresh");
@@ -294,24 +303,24 @@ public final class ParaClient {
 	}
 
 	/**
-	 * Deserializes a {@link Response} object to POJO of some type.
-	 * @param <T> type
-	 * @param res response
-	 * @param type the type to convert to
-	 * @return a POJO
-	 * @throws WebApplicationException exception on HTTP error response
+	 * Deserializes a JSON response to POJO of some type.
+	 * @param respBuilder response builder
+	 * @param respEntity entity
+	 * @param returnType return type
+	 * @param statusCode status code
+	 * @param reason reason phrase
+	 * @throws IOException
 	 */
-	@SuppressWarnings("unchecked")
-	public <T> T getEntity(Response res, Class<?> type) throws WebApplicationException {
-		if (res != null) {
-			if (res.getStatus() == Response.Status.OK.getStatusCode()
-					|| res.getStatus() == Response.Status.CREATED.getStatusCode()
-					|| res.getStatus() == Response.Status.NOT_MODIFIED.getStatusCode()) {
-					return res.hasEntity() ? res.readEntity((Class<T>) type) : null;
-			} else if (res.getStatus() != Response.Status.NOT_FOUND.getStatusCode()
-					&& res.getStatus() != Response.Status.NOT_MODIFIED.getStatusCode()
-					&& res.getStatus() != Response.Status.NO_CONTENT.getStatusCode()) {
-				Map<String, Object> error = res.hasEntity() ? res.readEntity(Map.class) : null;
+	private <T> T readEntity(HttpEntity respEntity, Class<?> returnType, int statusCode, String reason) throws IOException {
+		if (respEntity != null) {
+			if (statusCode == HttpStatus.SC_OK
+					|| statusCode == HttpStatus.SC_CREATED
+					|| statusCode == HttpStatus.SC_NOT_MODIFIED) {
+				return readEntity(respEntity, returnType);
+			} else if (statusCode != HttpStatus.SC_NOT_FOUND
+					&& statusCode != HttpStatus.SC_NOT_MODIFIED
+					&& statusCode != HttpStatus.SC_NO_CONTENT) {
+				Map<String, Object> error = readEntity(respEntity, Map.class);
 				if (error != null && error.containsKey("code")) {
 					String msg = error.containsKey("message") ? (String) error.get("message") : "error";
 					WebApplicationException e = new WebApplicationException(msg, (Integer) error.get("code"));
@@ -320,12 +329,37 @@ public final class ParaClient {
 						throw e;
 					}
 				} else {
-					logger.error("{} - {}", res.getStatus(), res.getStatusInfo().getReasonPhrase());
+					logger.error("{} - {}", statusCode, reason);
 					if (throwExceptionOnHTTPError) {
-						throw new WebApplicationException(res.getStatusInfo().getReasonPhrase(), res.getStatus());
+						throw new WebApplicationException(reason, statusCode);
 					}
 				}
 			}
+		}
+		return null;
+	}
+
+	/**
+	 * Deserializes a JSON response to POJO.
+	 * @param <T> type
+	 * @param entity entity
+	 * @param type class type
+	 * @return a POJO or String
+	 */
+	@SuppressWarnings("unchecked")
+	private <T> T readEntity(HttpEntity entity, Class<?> type) {
+		try (InputStream in = entity.getContent()) {
+			if (in != null && type != null) {
+				if (type.isAssignableFrom(String.class)) {
+					return (T) new String(IOUtils.toByteArray(in), Config.DEFAULT_ENCODING);
+				} else {
+					return mapper.readerFor(type).readValue(in);
+				}
+			}
+		} catch (Exception ex) {
+			logger.debug(null, ex);
+		} finally {
+			EntityUtils.consumeQuietly(entity);
 		}
 		return null;
 	}
@@ -348,76 +382,189 @@ public final class ParaClient {
 
 	/**
 	 * Invoke a GET request to the Para API.
+	 * @param <T> return type
 	 * @param resourcePath the subpath after '/v1/', should not start with '/'
 	 * @param params query parameters
-	 * @return a {@link Response} object
+	 * @param returnType the type of object to return
+	 * @return a POJO
 	 */
-	public Response invokeGet(String resourcePath, MultivaluedMap<String, String> params) {
+	public <T> T invokeGet(String resourcePath, MultivaluedMap<String, String> params, Class<?> returnType) {
 		logger.debug("GET {}, params: {}", getFullPath(resourcePath), params);
-		return invokeSignedRequest(getApiClient(), accessKey, key(!JWT_PATH.equals(resourcePath)), GET,
-				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
+		return invokeSignedRequest(accessKey, key(!JWT_PATH.equals(resourcePath)), GET,
+				getEndpoint(), getFullPath(resourcePath), null, params, null, returnType);
 	}
 
 	/**
 	 * Invoke a POST request to the Para API.
+	 * @param <T> return type
 	 * @param resourcePath the subpath after '/v1/', should not start with '/'
 	 * @param entity request body
-	 * @return a {@link Response} object
+	 * @param returnType the type of object to return
+	 * @return a POJO
 	 */
-	public Response invokePost(String resourcePath, Entity<?> entity) {
-		logger.debug("POST {}, entity: {}", getFullPath(resourcePath), entity);
-		return invokeSignedRequest(getApiClient(), accessKey, key(true), POST,
-				getEndpoint(), getFullPath(resourcePath), null, null, entity);
+	public <T> T invokePost(String resourcePath, Object entity, Class<?> returnType) {
+		logger.debug("POST {}, entity: {}", getFullPath(resourcePath), entity, returnType);
+		return invokeSignedRequest(accessKey, key(true), POST,
+				getEndpoint(), getFullPath(resourcePath), null, null, entity, returnType);
 	}
 
 	/**
 	 * Invoke a PUT request to the Para API.
+	 * @param <T> return type
 	 * @param resourcePath the subpath after '/v1/', should not start with '/'
 	 * @param entity request body
-	 * @return a {@link Response} object
+	 * @param returnType the type of object to return
+	 * @return a POJO
 	 */
-	public Response invokePut(String resourcePath, Entity<?> entity) {
+	public <T> T invokePut(String resourcePath, Object entity, Class<?> returnType) {
 		logger.debug("PUT {}, entity: {}", getFullPath(resourcePath), entity);
-		return invokeSignedRequest(getApiClient(), accessKey, key(true), PUT,
-				getEndpoint(), getFullPath(resourcePath), null, null, entity);
+		return invokeSignedRequest(accessKey, key(true), PUT,
+				getEndpoint(), getFullPath(resourcePath), null, null, entity, returnType);
 	}
 
 	/**
 	 * Invoke a PATCH request to the Para API.
+	 * @param <T> return type
 	 * @param resourcePath the subpath after '/v1/', should not start with '/'
 	 * @param entity request body
-	 * @return a {@link Response} object
+	 * @param returnType the type of object to return
+	 * @return a POJO
 	 */
-	public Response invokePatch(String resourcePath, Entity<?> entity) {
+	public <T> T invokePatch(String resourcePath, Object entity, Class<?> returnType) {
 		logger.debug("PATCH {}, entity: {}", getFullPath(resourcePath), entity);
-		return invokeSignedRequest(getApiClient(), accessKey, key(true), "PATCH",
-				getEndpoint(), getFullPath(resourcePath), null, null, entity);
+		return invokeSignedRequest(accessKey, key(true), "PATCH",
+				getEndpoint(), getFullPath(resourcePath), null, null, entity, returnType);
 	}
 
 	/**
 	 * Invoke a DELETE request to the Para API.
+	 * @param <T> return type
 	 * @param resourcePath the subpath after '/v1/', should not start with '/'
 	 * @param params query parameters
-	 * @return a {@link Response} object
+	 * @param returnType the type of object to return
+	 * @return a POJO
 	 */
-	public Response invokeDelete(String resourcePath, MultivaluedMap<String, String> params) {
+	public <T> T invokeDelete(String resourcePath, MultivaluedMap<String, String> params, Class<?> returnType) {
 		logger.debug("DELETE {}, params: {}", getFullPath(resourcePath), params);
-		return invokeSignedRequest(getApiClient(), accessKey, key(true), DELETE,
-				getEndpoint(), getFullPath(resourcePath), null, params, new byte[0]);
+		return invokeSignedRequest(accessKey, key(true), DELETE,
+				getEndpoint(), getFullPath(resourcePath), null, params, null, returnType);
 	}
 
-	protected Response invokeSignedRequest(Client apiClient, String accessKey, String secretKey,
+	<T> T invokeSignedRequest(String accessKey, String secretKey,
 			String method, String apiURL, String path,
-			Map<String, String> headers, MultivaluedMap<String, String> params, Entity<?> body) {
-		Signer signer = new Signer();
-		return signer.invokeSignedRequest(apiClient, accessKey, secretKey, method, apiURL, path, headers, params, body);
+			Map<String, String> headers, MultivaluedMap<String, String> params, Object entity, Class<?> returnType) {
+
+		boolean isJWT = StringUtils.startsWithIgnoreCase(secretKey, "Bearer");
+
+		try {
+			String uri = getEndpoint() + path;
+			Map<String, String> signedHeaders = new HashMap<>();
+			byte[] jsonEntity = getJsonEntityAsBytes(entity);
+
+			Signer signer = new Signer();
+			if (!isJWT) {
+				signedHeaders = signer.signRequest(accessKey, secretKey, method, getEndpoint(), path,
+						headers, params, jsonEntity);
+			}
+
+			uri = setQueryParameters(uri, params);
+
+			HttpUriRequest req = getHttpUriRequest(uri, method, jsonEntity);
+
+			if (headers != null) {
+				for (Map.Entry<String, String> header : headers.entrySet()) {
+					req.addHeader(header.getKey(), header.getValue());
+				}
+			}
+
+			if (isJWT) {
+				req.setHeader(HttpHeaders.AUTHORIZATION, secretKey);
+			} else {
+				req.setHeader(HttpHeaders.AUTHORIZATION, signedHeaders.get(HttpHeaders.AUTHORIZATION));
+				req.setHeader("X-Amz-Date", signedHeaders.get("X-Amz-Date"));
+			}
+
+			if (Config.getConfigBoolean("user_agent_id_enabled", true)) {
+				String userAgent = new StringBuilder("Para client ").append(Para.getVersion()).append(" ").append(accessKey).
+						append(" (Java ").append(System.getProperty("java.runtime.version")).append(")").toString();
+				req.setHeader(HttpHeaders.USER_AGENT, userAgent);
+			}
+
+			try (CloseableHttpResponse resp = httpclient.execute(req)) {
+				HttpEntity respEntity = resp.getEntity();
+				int statusCode = resp.getStatusLine().getStatusCode();
+				String reason = resp.getStatusLine().getReasonPhrase();
+				return readEntity(respEntity, returnType, statusCode, reason);
+			} catch (IOException ex) {
+				logger.error(null, ex);
+			}
+		} catch (URISyntaxException ex) {
+			logger.error(null, ex);
+		}
+		return null;
 	}
 
-	protected Response invokeSignedRequest(Client apiClient, String accessKey, String secretKey,
-			String method, String apiURL, String path,
-			Map<String, String> headers, MultivaluedMap<String, String> params, byte[] body) {
-		Signer signer = new Signer();
-		return signer.invokeSignedRequest(apiClient, accessKey, secretKey, method, apiURL, path, headers, params, body);
+	private byte[] getJsonEntityAsBytes(Object entity) {
+		if (entity != null) {
+			try {
+				return ParaObjectUtils.getJsonWriterNoIdent().writeValueAsBytes(entity);
+			} catch (JsonProcessingException ex) {
+				logger.error(null, ex);
+			}
+		}
+		return null;
+	}
+
+	private String setQueryParameters(String uri, MultivaluedMap<String, String> params) {
+		if (params != null) {
+			List<String> paramz = new LinkedList<>();
+			for (Map.Entry<String, List<String>> param : params.entrySet()) {
+				String key = param.getKey();
+				List<String> value = param.getValue();
+				if (value != null && !value.isEmpty() && value.get(0) != null) {
+					for (String pv : value) {
+						paramz.add(key + "=" + Utils.urlEncode(pv));
+					}
+				}
+			}
+			if (!paramz.isEmpty()) {
+				uri = uri + "?" + String.join("&", paramz);
+			}
+		}
+		return uri;
+	}
+
+	private HttpUriRequest getHttpUriRequest(String uri, String method, byte[] jsonEntity) throws URISyntaxException {
+		HttpUriRequest req;
+		switch (method) {
+			case "GET":
+				req = new HttpGet(uri);
+				break;
+			case "POST":
+				req = new HttpPost(uri);
+				if (jsonEntity != null) {
+					((HttpPost) req).setEntity(new ByteArrayEntity(jsonEntity));
+				}
+				break;
+			case "PUT":
+				req = new HttpPut(uri);
+				if (jsonEntity != null) {
+					((HttpPut) req).setEntity(new ByteArrayEntity(jsonEntity));
+				}
+				break;
+			case "PATCH":
+				req = new HttpPatch(uri);
+				if (jsonEntity != null) {
+					((HttpPatch) req).setEntity(new ByteArrayEntity(jsonEntity));
+				}
+				break;
+			case "DELETE":
+				req = new HttpDelete(uri);
+				break;
+			default:
+				throw new UnsupportedOperationException();
+		}
+		return req;
 	}
 
 	/**
@@ -521,10 +668,9 @@ public final class ParaClient {
 			return null;
 		}
 		if (StringUtils.isBlank(obj.getId()) || StringUtils.isBlank(obj.getType())) {
-			return getEntity(invokePost(Utils.urlEncode(obj.getType()), Entity.json(obj)), obj.getClass());
+			return invokePost(Utils.urlEncode(obj.getType()), obj, obj.getClass());
 		} else {
-			return getEntity(invokePut(obj.getObjectURI(),
-					Entity.json(obj)), obj.getClass());
+			return invokePut(obj.getObjectURI(), obj, obj.getClass());
 		}
 	}
 
@@ -540,7 +686,7 @@ public final class ParaClient {
 			return null;
 		}
 
-		return getEntity(invokeGet(Utils.urlEncode(type).concat("/").concat(Utils.urlEncode(id)), null),
+		return invokeGet(Utils.urlEncode(type).concat("/").concat(Utils.urlEncode(id)), null,
 				ParaObjectUtils.toClass(type));
 	}
 
@@ -554,7 +700,7 @@ public final class ParaClient {
 		if (StringUtils.isBlank(id)) {
 			return null;
 		}
-		Map<String, Object> data = getEntity(invokeGet("_id/".concat(Utils.urlEncode(id)), null), Map.class);
+		Map<String, Object> data = invokeGet("_id/".concat(Utils.urlEncode(id)), null, Map.class);
 		return ParaObjectUtils.setAnnotatedFields(data);
 	}
 
@@ -568,7 +714,7 @@ public final class ParaClient {
 		if (obj == null) {
 			return null;
 		}
-		return getEntity(invokePatch(obj.getObjectURI(), Entity.json(obj)), obj.getClass());
+		return invokePatch(obj.getObjectURI(), obj, obj.getClass());
 	}
 
 	/**
@@ -580,7 +726,7 @@ public final class ParaClient {
 		if (obj == null || obj.getId() == null) {
 			return;
 		}
-		invokeDelete(obj.getObjectURI(), null);
+		invokeDelete(obj.getObjectURI(), null, null);
 	}
 
 	/**
@@ -589,6 +735,7 @@ public final class ParaClient {
 	 * @param objects the list of objects to save
 	 * @return a list of objects
 	 */
+	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> createAll(List<P> objects) {
 		if (objects == null || objects.isEmpty() || objects.get(0) == null) {
 			return Collections.emptyList();
@@ -596,8 +743,8 @@ public final class ParaClient {
 		final int size = this.chunkSize;
 		return IntStream.range(0, getNumChunks(objects, size))
 				.mapToObj(i -> (List<P>) partitionList(objects, i, size))
-				.map(chunk -> invokePost("_batch", Entity.json(chunk)))
-				.map(response -> (List<P>) this.getEntity(response, List.class))
+				.map(chunk -> invokePost("_batch", chunk, List.class))
+				.map(response -> (List<P>) response)
 				.map(entity -> (List<P>) getItemsFromList(entity))
 				.flatMap(List::stream)
 				.collect(Collectors.toList());
@@ -609,6 +756,7 @@ public final class ParaClient {
 	 * @param keys a list of object ids
 	 * @return a list of objects
 	 */
+	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> readAll(List<String> keys) {
 		if (keys == null || keys.isEmpty()) {
 			return Collections.emptyList();
@@ -619,9 +767,9 @@ public final class ParaClient {
 				.map(chunk -> {
 					MultivaluedMap<String, String> ids = new MultivaluedHashMap<>();
 					ids.put("ids", chunk);
-					return invokeGet("_batch", ids);
+					return invokeGet("_batch", ids, List.class);
 				})
-				.map(response -> (List<P>) this.getEntity(response, List.class))
+				.map(response -> (List<P>) response)
 				.map(entity -> (List<P>) getItemsFromList(entity))
 				.flatMap(List::stream)
 				.collect(Collectors.toList());
@@ -633,6 +781,7 @@ public final class ParaClient {
 	 * @param objects the objects to update
 	 * @return a list of objects
 	 */
+	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> updateAll(List<P> objects) {
 		if (objects == null || objects.isEmpty()) {
 			return Collections.emptyList();
@@ -640,8 +789,8 @@ public final class ParaClient {
 		final int size = this.chunkSize;
 		return IntStream.range(0, getNumChunks(objects, size))
 				.mapToObj(i -> (List<P>) partitionList(objects, i, size))
-				.map(chunk -> invokePatch("_batch", Entity.json(chunk)))
-				.map(response -> (List<P>) this.getEntity(response, List.class))
+				.map(chunk -> invokePatch("_batch", chunk, List.class))
+				.map(response -> (List<P>) response)
 				.map(entity -> (List<P>) getItemsFromList(entity))
 				.flatMap(List::stream)
 				.collect(Collectors.toList());
@@ -651,6 +800,7 @@ public final class ParaClient {
 	 * Deletes multiple objects.
 	 * @param keys the ids of the objects to delete
 	 */
+	@SuppressWarnings("unchecked")
 	public void deleteAll(List<String> keys) {
 		if (keys == null || keys.isEmpty()) {
 			return;
@@ -661,7 +811,7 @@ public final class ParaClient {
 			.forEach(chunk -> {
 				MultivaluedMap<String, String> ids = new MultivaluedHashMap<>();
 				ids.put("ids", chunk);
-				invokeDelete("_batch", ids);
+				invokeDelete("_batch", ids, null);
 			});
 	}
 
@@ -673,13 +823,11 @@ public final class ParaClient {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of objects
 	 */
-	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> list(String type, Pager... pager) {
 		if (StringUtils.isBlank(type)) {
 			return Collections.emptyList();
 		}
-		return getItems((Map<String, Object>) getEntity(invokeGet(Utils.urlEncode(type),
-				pagerToParams(pager)), Map.class), pager);
+		return getItems(invokeGet(Utils.urlEncode(type), pagerToParams(pager), Map.class), pager);
 	}
 
 	/////////////////////////////////////////////
@@ -950,9 +1098,9 @@ public final class ParaClient {
 		if (params != null && !params.isEmpty()) {
 			String qType = StringUtils.isBlank(queryType) ? "/default" : "/".concat(queryType);
 			if (StringUtils.isBlank(params.getFirst(Config._TYPE))) {
-				return getEntity(invokeGet("search" + qType, params), Map.class);
+				return invokeGet("search" + qType, params, Map.class);
 			} else {
-				return getEntity(invokeGet(params.getFirst(Config._TYPE) + "/search" + qType, params), Map.class);
+				return invokeGet(params.getFirst(Config._TYPE) + "/search" + qType, params, Map.class);
 			}
 		} else {
 			map.put("items", Collections.emptyList());
@@ -971,7 +1119,6 @@ public final class ParaClient {
 	 * @param obj the object to execute this method on
 	 * @return the number of links for the given object
 	 */
-	@SuppressWarnings("unchecked")
 	public Long countLinks(ParaObject obj, String type2) {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return 0L;
@@ -980,7 +1127,7 @@ public final class ParaClient {
 		params.putSingle("count", "true");
 		Pager pager = new Pager();
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
-		getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
+		getItems(invokeGet(url, params, Map.class), pager);
 		return pager.getCount();
 	}
 
@@ -992,13 +1139,12 @@ public final class ParaClient {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of linked objects
 	 */
-	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> getLinkedObjects(ParaObject obj, String type2, Pager... pager) {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return Collections.emptyList();
 		}
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
-		return getItems((Map<String, Object>) getEntity(invokeGet(url, pagerToParams(pager)), Map.class), pager);
+		return getItems(invokeGet(url, pagerToParams(pager), Map.class), pager);
 	}
 
 	/**
@@ -1011,7 +1157,6 @@ public final class ParaClient {
 	 * @param query a query string
 	 * @return a list of linked objects matching the search query
 	 */
-	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> findLinkedObjects(ParaObject obj, String type2, String field,
 			String query, Pager... pager) {
 		if (obj == null || obj.getId() == null || type2 == null) {
@@ -1022,7 +1167,7 @@ public final class ParaClient {
 		params.putSingle("q", (query == null) ? "*" : query);
 		params.putAll(pagerToParams(pager));
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
-		return getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
+		return getItems(invokeGet(url, params, Map.class), pager);
 	}
 
 	/**
@@ -1038,7 +1183,7 @@ public final class ParaClient {
 		}
 		String url = Utils.formatMessage("{0}/links/{1}/{2}", obj.getObjectURI(),
 				Utils.urlEncode(type2), Utils.urlEncode(id2));
-		Boolean result = getEntity(invokeGet(url, null), Boolean.class);
+		Boolean result = (Boolean) invokeGet(url, null, Boolean.class);
 		return result != null && result;
 	}
 
@@ -1068,7 +1213,7 @@ public final class ParaClient {
 			return null;
 		}
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(id2));
-		return getEntity(invokePost(url, null), String.class);
+		return (String) invokePost(url, null, String.class);
 	}
 
 	/**
@@ -1084,7 +1229,7 @@ public final class ParaClient {
 		}
 		String url = Utils.formatMessage("{0}/links/{1}/{2}", obj.getObjectURI(),
 				Utils.urlEncode(type2), Utils.urlEncode(id2));
-		invokeDelete(url, null);
+		invokeDelete(url, null, null);
 	}
 
 	/**
@@ -1098,7 +1243,7 @@ public final class ParaClient {
 			return;
 		}
 		String url = Utils.formatMessage("{0}/links", obj.getObjectURI());
-		invokeDelete(url, null);
+		invokeDelete(url, null, null);
 	}
 
 	/**
@@ -1107,7 +1252,6 @@ public final class ParaClient {
 	 * @param obj the object to execute this method on
 	 * @return the number of links
 	 */
-	@SuppressWarnings("unchecked")
 	public Long countChildren(ParaObject obj, String type2) {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return 0L;
@@ -1117,7 +1261,7 @@ public final class ParaClient {
 		params.putSingle("childrenonly", "true");
 		Pager pager = new Pager();
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
-		getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
+		getItems(invokeGet(url, params, Map.class), pager);
 		return pager.getCount();
 	}
 
@@ -1129,7 +1273,6 @@ public final class ParaClient {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
-	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, Pager... pager) {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return Collections.emptyList();
@@ -1138,7 +1281,7 @@ public final class ParaClient {
 		params.putSingle("childrenonly", "true");
 		params.putAll(pagerToParams(pager));
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
-		return getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
+		return getItems(invokeGet(url, params, Map.class), pager);
 	}
 
 	/**
@@ -1151,7 +1294,6 @@ public final class ParaClient {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
-	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, String field, String term,
 			Pager... pager) {
 		if (obj == null || obj.getId() == null || type2 == null) {
@@ -1163,7 +1305,7 @@ public final class ParaClient {
 		params.putSingle("term", term);
 		params.putAll(pagerToParams(pager));
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
-		return getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
+		return getItems(invokeGet(url, params, Map.class), pager);
 	}
 
 	/**
@@ -1176,7 +1318,6 @@ public final class ParaClient {
 	 * @param pager a {@link com.erudika.para.utils.Pager}
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
-	@SuppressWarnings("unchecked")
 	public <P extends ParaObject> List<P> findChildren(ParaObject obj, String type2, String query, Pager... pager) {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return Collections.emptyList();
@@ -1186,7 +1327,7 @@ public final class ParaClient {
 		params.putSingle("q", (query == null) ? "*" : query);
 		params.putAll(pagerToParams(pager));
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
-		return getItems((Map<String, Object>) getEntity(invokeGet(url, params), Map.class), pager);
+		return getItems(invokeGet(url, params, Map.class), pager);
 	}
 
 	/**
@@ -1201,7 +1342,7 @@ public final class ParaClient {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("childrenonly", "true");
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
-		invokeDelete(url, params);
+		invokeDelete(url, params, null);
 	}
 
 	/////////////////////////////////////////////
@@ -1213,7 +1354,7 @@ public final class ParaClient {
 	 * @return a new id
 	 */
 	public String newId() {
-		String res = getEntity(invokeGet("utils/newid", null), String.class);
+		String res = (String) invokeGet("utils/newid", null, String.class);
 		return res != null ? res : "";
 	}
 
@@ -1222,7 +1363,7 @@ public final class ParaClient {
 	 * @return a long number
 	 */
 	public long getTimestamp() {
-		Long res = getEntity(invokeGet("utils/timestamp", null), Long.class);
+		Long res = (Long) invokeGet("utils/timestamp", null, Long.class);
 		return res != null ? res : 0L;
 	}
 
@@ -1236,7 +1377,7 @@ public final class ParaClient {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("format", format);
 		params.putSingle("locale", loc == null ? null : loc.toString());
-		return getEntity(invokeGet("utils/formatdate", params), String.class);
+		return (String) invokeGet("utils/formatdate", params, String.class);
 	}
 
 	/**
@@ -1249,7 +1390,7 @@ public final class ParaClient {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("string", str);
 		params.putSingle("replacement", replaceWith);
-		return getEntity(invokeGet("utils/nospaces", params), String.class);
+		return (String) invokeGet("utils/nospaces", params, String.class);
 	}
 
 	/**
@@ -1260,7 +1401,7 @@ public final class ParaClient {
 	public String stripAndTrim(String str) {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("string", str);
-		return getEntity(invokeGet("utils/nosymbols", params), String.class);
+		return (String) invokeGet("utils/nosymbols", params, String.class);
 	}
 
 	/**
@@ -1271,7 +1412,7 @@ public final class ParaClient {
 	public String markdownToHtml(String markdownString) {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("md", markdownString);
-		return getEntity(invokeGet("utils/md2html", params), String.class);
+		return (String) invokeGet("utils/md2html", params, String.class);
 	}
 
 	/**
@@ -1282,7 +1423,7 @@ public final class ParaClient {
 	public String approximately(long delta) {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("delta", Long.toString(delta));
-		return getEntity(invokeGet("utils/timeago", params), String.class);
+		return (String) invokeGet("utils/timeago", params, String.class);
 	}
 
 	/////////////////////////////////////////////
@@ -1295,7 +1436,7 @@ public final class ParaClient {
 	 * @return a map of new credentials
 	 */
 	public Map<String, String> newKeys() {
-		Map<String, String> keys = getEntity(invokePost("_newkeys", null), Map.class);
+		Map<String, String> keys = invokePost("_newkeys", null, Map.class);
 		if (keys != null && keys.containsKey("secretKey")) {
 			this.secretKey = keys.get("secretKey");
 		}
@@ -1307,7 +1448,7 @@ public final class ParaClient {
 	 * @return a map of plural-singular form of all the registered types.
 	 */
 	public Map<String, String> types() {
-		return getEntity(invokeGet("_types", null), Map.class);
+		return invokeGet("_types", null, Map.class);
 	}
 
 	/**
@@ -1317,7 +1458,7 @@ public final class ParaClient {
 	public Map<String, Number> typesCount() {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("count", "true");
-		return getEntity(invokeGet("_types", params), Map.class);
+		return invokeGet("_types", params, Map.class);
 	}
 
 	/**
@@ -1327,7 +1468,7 @@ public final class ParaClient {
 	 * @return a {@link com.erudika.para.core.User} or an {@link com.erudika.para.core.App}
 	 */
 	public <P extends ParaObject> P me() {
-		Map<String, Object> data = getEntity(invokeGet("_me", null), Map.class);
+		Map<String, Object> data = invokeGet("_me", null, Map.class);
 		return ParaObjectUtils.setAnnotatedFields(data);
 	}
 
@@ -1340,9 +1481,8 @@ public final class ParaClient {
 	public <P extends ParaObject> P me(String accessToken) {
 		if (!StringUtils.isBlank(accessToken)) {
 			String auth = accessToken.startsWith("Bearer") ? accessToken : "Bearer " + accessToken;
-			Response res = invokeSignedRequest(getApiClient(), accessKey, auth, GET,
-					getEndpoint(), getFullPath("_me"), null, null, new byte[0]);
-			Map<String, Object> data = getEntity(res, Map.class);
+			Map<String, Object> data = invokeSignedRequest(accessKey, auth, GET,
+					getEndpoint(), getFullPath("_me"), null, null, null, Map.class);
 			return ParaObjectUtils.setAnnotatedFields(data);
 		}
 		return me();
@@ -1371,14 +1511,13 @@ public final class ParaClient {
 			return false;
 		}
 		if (expiresAfter == null && lockedAfter == null) {
-			return getEntity(invokePatch(obj.getObjectURI(),
-					Entity.json(Collections.singletonMap("_voteup", voterid))), Boolean.class);
+			return (boolean) invokePatch(obj.getObjectURI(), Collections.singletonMap("_voteup", voterid), Boolean.class);
 		}
 		Map<String, Object> vote = new HashMap<>();
 		vote.put("_voteup", voterid);
 		vote.put("_vote_locked_after", lockedAfter);
 		vote.put("_vote_expires_after", expiresAfter);
-		return getEntity(invokePatch(obj.getObjectURI(), Entity.json(vote)), Boolean.class);
+		return (boolean) invokePatch(obj.getObjectURI(), vote, Boolean.class);
 	}
 
 	/**
@@ -1404,14 +1543,13 @@ public final class ParaClient {
 			return false;
 		}
 		if (expiresAfter == null && lockedAfter == null) {
-			return getEntity(invokePatch(obj.getObjectURI(),
-					Entity.json(Collections.singletonMap("_votedown", voterid))), Boolean.class);
+			return (boolean) invokePatch(obj.getObjectURI(), Collections.singletonMap("_votedown", voterid), Boolean.class);
 		}
 		Map<String, Object> vote = new HashMap<>();
 		vote.put("_votedown", voterid);
 		vote.put("_vote_locked_after", lockedAfter);
 		vote.put("_vote_expires_after", expiresAfter);
-		return getEntity(invokePatch(obj.getObjectURI(), Entity.json(vote)), Boolean.class);
+		return (boolean) invokePatch(obj.getObjectURI(), vote, Boolean.class);
 	}
 
 	/**
@@ -1419,7 +1557,7 @@ public final class ParaClient {
 	 * @return a response object with properties "tookMillis" and "reindexed"
 	 */
 	public Map<String, Object> rebuildIndex() {
-		return getEntity(invokePost("_reindex", null), Map.class);
+		return invokePost("_reindex", null, Map.class);
 	}
 
 	/**
@@ -1430,8 +1568,8 @@ public final class ParaClient {
 	public Map<String, Object> rebuildIndex(String destinationIndex) {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("destinationIndex", destinationIndex);
-		return getEntity(invokeSignedRequest(getApiClient(), accessKey, key(true), POST,
-				getEndpoint(), getFullPath("_reindex"), null, params, new byte[0]), Map.class);
+		return invokeSignedRequest(accessKey, key(true), POST,
+				getEndpoint(), getFullPath("_reindex"), null, params, null, Map.class);
 	}
 
 	/////////////////////////////////////////////
@@ -1443,7 +1581,7 @@ public final class ParaClient {
 	 * @return a map containing all validation constraints.
 	 */
 	public Map<String, Map<String, Map<String, Map<String, ?>>>> validationConstraints() {
-		return getEntity(invokeGet("_constraints", null), Map.class);
+		return invokeGet("_constraints", null, Map.class);
 	}
 
 	/**
@@ -1452,7 +1590,7 @@ public final class ParaClient {
 	 * @return a map containing all validation constraints for this type.
 	 */
 	public Map<String, Map<String, Map<String, Map<String, ?>>>> validationConstraints(String type) {
-		return getEntity(invokeGet(Utils.formatMessage("_constraints/{0}", Utils.urlEncode(type)), null), Map.class);
+		return invokeGet(Utils.formatMessage("_constraints/{0}", Utils.urlEncode(type)), null, Map.class);
 	}
 
 	/**
@@ -1467,8 +1605,8 @@ public final class ParaClient {
 		if (StringUtils.isBlank(type) || StringUtils.isBlank(field) || c == null) {
 			return Collections.emptyMap();
 		}
-		return getEntity(invokePut(Utils.formatMessage("_constraints/{0}/{1}/{2}", Utils.urlEncode(type),
-				field, c.getName()), Entity.json(c.getPayload())), Map.class);
+		return invokePut(Utils.formatMessage("_constraints/{0}/{1}/{2}", Utils.urlEncode(type),
+				field, c.getName()), c.getPayload(), Map.class);
 	}
 
 	/**
@@ -1483,8 +1621,8 @@ public final class ParaClient {
 		if (StringUtils.isBlank(type) || StringUtils.isBlank(field) || StringUtils.isBlank(constraintName)) {
 			return Collections.emptyMap();
 		}
-		return getEntity(invokeDelete(Utils.formatMessage("_constraints/{0}/{1}/{2}", Utils.urlEncode(type),
-				field, constraintName), null), Map.class);
+		return invokeDelete(Utils.formatMessage("_constraints/{0}/{1}/{2}", Utils.urlEncode(type),
+				field, constraintName), null, Map.class);
 	}
 
 	/////////////////////////////////////////////
@@ -1496,7 +1634,7 @@ public final class ParaClient {
 	 * @return a map of subject ids to resource names to a list of allowed methods
 	 */
 	public Map<String, Map<String, List<String>>> resourcePermissions() {
-		return getEntity(invokeGet("_permissions", null), Map.class);
+		return invokeGet("_permissions", null, Map.class);
 	}
 
 	/**
@@ -1506,7 +1644,7 @@ public final class ParaClient {
 	 */
 	public Map<String, Map<String, List<String>>> resourcePermissions(String subjectid) {
 		subjectid = Utils.urlEncode(subjectid);
-		return getEntity(invokeGet(Utils.formatMessage("_permissions/{0}", subjectid), null), Map.class);
+		return invokeGet(Utils.formatMessage("_permissions/{0}", subjectid), null, Map.class);
 	}
 
 	/**
@@ -1539,8 +1677,7 @@ public final class ParaClient {
 		}
 		subjectid = Utils.urlEncode(subjectid);
 		resourcePath = Utils.urlEncode(resourcePath);
-		return getEntity(invokePut(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourcePath),
-				Entity.json(permission)), Map.class);
+		return invokePut(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourcePath), permission, Map.class);
 	}
 
 	/**
@@ -1555,8 +1692,7 @@ public final class ParaClient {
 		}
 		subjectid = Utils.urlEncode(subjectid);
 		resourcePath = Utils.urlEncode(resourcePath);
-		return getEntity(invokeDelete(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourcePath),
-				null), Map.class);
+		return invokeDelete(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourcePath), null, Map.class);
 	}
 
 	/**
@@ -1569,7 +1705,7 @@ public final class ParaClient {
 			return Collections.emptyMap();
 		}
 		subjectid = Utils.urlEncode(subjectid);
-		return getEntity(invokeDelete(Utils.formatMessage("_permissions/{0}", subjectid), null), Map.class);
+		return invokeDelete(Utils.formatMessage("_permissions/{0}", subjectid), null, Map.class);
 	}
 
 	/**
@@ -1586,7 +1722,7 @@ public final class ParaClient {
 		subjectid = Utils.urlEncode(subjectid);
 		resourcePath = Utils.urlEncode(resourcePath);
 		String url = Utils.formatMessage("_permissions/{0}/{1}/{2}", subjectid, resourcePath, httpMethod);
-		Boolean result = getEntity(invokeGet(url, null), Boolean.class);
+		Boolean result = invokeGet(url, null, Boolean.class);
 		return result != null && result;
 	}
 
@@ -1599,7 +1735,7 @@ public final class ParaClient {
 	 * @return a map
 	 */
 	public Map<String, Object> appSettings() {
-		return getEntity(invokeGet("_settings", null), Map.class);
+		return invokeGet("_settings", null, Map.class);
 	}
 
 	/**
@@ -1611,7 +1747,7 @@ public final class ParaClient {
 		if (StringUtils.isBlank(key)) {
 			return appSettings();
 		}
-		return getEntity(invokeGet(Utils.formatMessage("_settings/{0}", key), null), Map.class);
+		return invokeGet(Utils.formatMessage("_settings/{0}", key), null, Map.class);
 	}
 
 	/**
@@ -1621,7 +1757,7 @@ public final class ParaClient {
 	 */
 	public void addAppSetting(String key, Object value) {
 		if (!StringUtils.isBlank(key) && value != null) {
-			invokePut(Utils.formatMessage("_settings/{0}", key), Entity.json(Collections.singletonMap("value", value)));
+			invokePut(Utils.formatMessage("_settings/{0}", key), Collections.singletonMap("value", value), Map.class);
 		}
 	}
 
@@ -1631,7 +1767,7 @@ public final class ParaClient {
 	 */
 	public void setAppSettings(Map<?, ?> settings) {
 		if (settings != null) {
-			invokePut("_settings", Entity.json(settings));
+			invokePut("_settings", settings, Map.class);
 		}
 	}
 
@@ -1641,7 +1777,7 @@ public final class ParaClient {
 	 */
 	public void removeAppSetting(String key) {
 		if (!StringUtils.isBlank(key)) {
-			invokeDelete(Utils.formatMessage("_settings/{0}", key), null);
+			invokeDelete(Utils.formatMessage("_settings/{0}", key), null, null);
 		}
 	}
 
@@ -1671,7 +1807,7 @@ public final class ParaClient {
 			credentials.put(Config._APPID, accessKey);
 			credentials.put("provider", provider);
 			credentials.put("token", providerToken);
-			Map<String, Object> result = getEntity(invokePost(JWT_PATH, Entity.json(credentials)), Map.class);
+			Map<String, Object> result = invokePost(JWT_PATH, credentials, Map.class);
 			if (result != null && result.containsKey("user") && result.containsKey("jwt")) {
 				Map<?, ?> jwtData = (Map<?, ?>) result.get("jwt");
 				if (rememberJWT) {
@@ -1719,7 +1855,7 @@ public final class ParaClient {
 				(tokenKeyNextRefresh < now || tokenKeyNextRefresh > tokenKeyExpires);
 		// token present and NOT expired
 		if (tokenKey != null && notExpired && canRefresh) {
-			Map<String, Object> result = getEntity(invokeGet(JWT_PATH, null), Map.class);
+			Map<String, Object> result = invokeGet(JWT_PATH, null, Map.class);
 			if (result != null && result.containsKey("user") && result.containsKey("jwt")) {
 				Map<?, ?> jwtData = (Map<?, ?>) result.get("jwt");
 				tokenKey = (String) jwtData.get("access_token");
@@ -1741,7 +1877,7 @@ public final class ParaClient {
 	 * @return true if successful
 	 */
 	public boolean revokeAllTokens() {
-		return getEntity(invokeDelete(JWT_PATH, null), Map.class) != null;
+		return invokeDelete(JWT_PATH, null, Map.class) != null;
 	}
 
 }
