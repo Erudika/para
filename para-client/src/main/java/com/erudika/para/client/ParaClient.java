@@ -48,9 +48,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
 import static javax.ws.rs.HttpMethod.DELETE;
 import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.POST;
@@ -139,15 +136,13 @@ public final class ParaClient implements Closeable {
 					.withTrustMaterial(Paths.get(truststorePath), truststorePass.toCharArray())
 					.withProtocols(protocols).build();
 		}
-		SSLContext sslContext = (sslFactory != null) ? sslFactory.getSslContext()
-				: SSLFactory.builder().withDefaultTrustMaterial().build().getSslContext();
-		HostnameVerifier verifier = (sslFactory != null) ? sslFactory.getHostnameVerifier()
-				: HttpsURLConnection.getDefaultHostnameVerifier();
-
+		if (sslFactory == null) {
+			sslFactory = SSLFactory.builder().withDefaultTrustMaterial().build();
+		}
 		HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create().
 				setSSLSocketFactory(SSLConnectionSocketFactoryBuilder.create().
-						setHostnameVerifier(verifier).
-						setSslContext(sslContext).
+						setHostnameVerifier(sslFactory.getHostnameVerifier()).
+						setSslContext(sslFactory.getSslContext()).
 						build()).build();
 
 		int timeout = 30;
