@@ -30,23 +30,22 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.HttpHeaders;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHeaders;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.NoConnectionReuseStrategy;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
@@ -77,14 +76,11 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 	public MicrosoftAuthFilter(final String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
 		this.jreader = ParaObjectUtils.getJsonReader(Map.class);
-		int timeout = 30 * 1000;
+		int timeout = 30;
 		this.httpclient = HttpClientBuilder.create().
-				setConnectionReuseStrategy(new NoConnectionReuseStrategy()).
 				setDefaultRequestConfig(RequestConfig.custom().
-						setConnectTimeout(timeout).
-						setConnectionRequestTimeout(timeout).
-						setCookieSpec(CookieSpecs.STANDARD).
-						setSocketTimeout(timeout).
+						setConnectTimeout(timeout, TimeUnit.SECONDS).
+						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).
 						build()).
 				build();
 	}
@@ -114,7 +110,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 				HttpPost tokenPost = new HttpPost(Utils.formatMessage(TOKEN_URL,
 						SecurityUtils.getSettingForApp(app, "ms_tenant_id", "common")));
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
-				tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
+				tokenPost.setEntity(new StringEntity(entity));
 				try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
 					if (resp1 != null && resp1.getEntity() != null) {
 						Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
@@ -122,12 +118,12 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 							userAuth = getOrCreateUser(app, (String) token.get("access_token"));
 						} else {
 							logger.info("Authentication request failed with status '" +
-									resp1.getStatusLine().getReasonPhrase() + "' - " + token);
+									resp1.getReasonPhrase() + "' - " + token);
 						}
 						EntityUtils.consumeQuietly(resp1.getEntity());
 					} else {
 						logger.info("Authentication request failed with status '" +
-								(resp1 != null ? resp1.getStatusLine().getReasonPhrase() : "null") +
+								(resp1 != null ? resp1.getReasonPhrase() : "null") +
 								"' and empty response body.");
 					}
 				}
@@ -223,8 +219,8 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 			profileGet.setHeader(HttpHeaders.ACCEPT, "application/json");
 			try (CloseableHttpResponse resp = httpclient.execute(profileGet)) {
 				HttpEntity respEntity = resp.getEntity();
-				if (respEntity != null && respEntity.getContentType().getValue().startsWith("image")) {
-					String ctype = respEntity.getContentType().getValue();
+				if (respEntity != null && respEntity.getContentType().startsWith("image")) {
+					String ctype = respEntity.getContentType();
 					if (Config.getConfigBoolean("ms_inline_avatars", true)) {
 						byte[] bytes = IOUtils.toByteArray(respEntity.getContent());
 						if (bytes != null && bytes.length > 0) {

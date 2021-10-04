@@ -45,6 +45,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.net.ssl.HostnameVerifier;
@@ -61,21 +62,24 @@ import javax.ws.rs.core.MultivaluedMap;
 import nl.altindag.ssl.SSLFactory;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPatch;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.classic.methods.HttpDelete;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPatch;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.classic.methods.HttpPut;
+import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.io.HttpClientConnectionManager;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.HttpStatus;
+import org.apache.hc.core5.http.io.entity.ByteArrayEntity;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -140,14 +144,18 @@ public final class ParaClient implements Closeable {
 		HostnameVerifier verifier = (sslFactory != null) ? sslFactory.getHostnameVerifier()
 				: HttpsURLConnection.getDefaultHostnameVerifier();
 
-		int timeout = 30 * 1000;
+		HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create().
+				setSSLSocketFactory(SSLConnectionSocketFactoryBuilder.create().
+						setHostnameVerifier(verifier).
+						setSslContext(sslContext).
+						build()).build();
+
+		int timeout = 30;
 		this.httpclient = HttpClientBuilder.create().
-				setSSLContext(sslContext).
-				setSSLHostnameVerifier(verifier).
+				setConnectionManager(cm).
 				setDefaultRequestConfig(RequestConfig.custom().
-						setConnectTimeout(timeout).
-						setConnectionRequestTimeout(timeout).
-						setCookieSpec(CookieSpecs.IGNORE_COOKIES).
+						setConnectTimeout(timeout, TimeUnit.SECONDS).
+						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).
 						build()).
 				build();
 	}
@@ -492,8 +500,8 @@ public final class ParaClient implements Closeable {
 
 			try (CloseableHttpResponse resp = httpclient.execute(req)) {
 				HttpEntity respEntity = resp.getEntity();
-				int statusCode = resp.getStatusLine().getStatusCode();
-				String reason = resp.getStatusLine().getReasonPhrase();
+				int statusCode = resp.getCode();
+				String reason = resp.getReasonPhrase();
 				return readEntity(respEntity, returnType, statusCode, reason);
 			} catch (IOException ex) {
 				logger.error(null, ex);
@@ -543,19 +551,19 @@ public final class ParaClient implements Closeable {
 			case "POST":
 				req = new HttpPost(uri);
 				if (jsonEntity != null) {
-					((HttpPost) req).setEntity(new ByteArrayEntity(jsonEntity));
+					((HttpPost) req).setEntity(new ByteArrayEntity(jsonEntity, ContentType.APPLICATION_JSON));
 				}
 				break;
 			case "PUT":
 				req = new HttpPut(uri);
 				if (jsonEntity != null) {
-					((HttpPut) req).setEntity(new ByteArrayEntity(jsonEntity));
+					((HttpPut) req).setEntity(new ByteArrayEntity(jsonEntity, ContentType.APPLICATION_JSON));
 				}
 				break;
 			case "PATCH":
 				req = new HttpPatch(uri);
 				if (jsonEntity != null) {
-					((HttpPatch) req).setEntity(new ByteArrayEntity(jsonEntity));
+					((HttpPatch) req).setEntity(new ByteArrayEntity(jsonEntity, ContentType.APPLICATION_JSON));
 				}
 				break;
 			case "DELETE":

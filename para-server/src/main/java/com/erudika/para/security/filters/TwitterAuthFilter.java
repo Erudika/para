@@ -32,21 +32,20 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.HttpHeaders;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpHeaders;
-import org.apache.http.ParseException;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.NoConnectionReuseStrategy;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -77,14 +76,11 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 	public TwitterAuthFilter(final String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
 		this.jreader = ParaObjectUtils.getJsonReader(Map.class);
-		int timeout = 30 * 1000;
+		int timeout = 30;
 		this.httpclient = HttpClientBuilder.create().
-				setConnectionReuseStrategy(new NoConnectionReuseStrategy()).
 				setDefaultRequestConfig(RequestConfig.custom().
-						setConnectTimeout(timeout).
-						setConnectionRequestTimeout(timeout).
-						setCookieSpec(CookieSpecs.STANDARD).
-						setSocketTimeout(timeout).
+						setConnectTimeout(timeout, TimeUnit.SECONDS).
+						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).
 						build()).
 				build();
 	}
@@ -124,7 +120,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 	}
 
 	private boolean stepOne(HttpServletResponse response, String redirectURI, String[] keys)
-			throws ParseException, IOException {
+			throws IOException {
 		String callback = Utils.urlEncode(redirectURI);
 		Map<String, String[]> params = new HashMap<>();
 		params.put("oauth_callback", new String[]{callback});
@@ -134,7 +130,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 		tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 
 		try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
-			if (resp1.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
+			if (resp1.getCode() == HttpServletResponse.SC_OK) {
 				String decoded = EntityUtils.toString(resp1.getEntity());
 				EntityUtils.consumeQuietly(resp1.getEntity());
 				for (String pair : decoded.split("&")) {
@@ -147,14 +143,16 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 				}
 			} else {
 				logger.info("Authentication request failed with status '"
-						+ resp1.getStatusLine().getReasonPhrase() + "' and empty response body.");
+						+ resp1.getReasonPhrase() + "' and empty response body.");
 			}
+		} catch (ParseException e) {
+			logger.error(null, e);
 		}
 		return false;
 	}
 
 	private UserAuthentication stepTwo(HttpServletRequest request, String verifier, String[] keys, App app)
-			throws ParseException, UnsupportedEncodingException, IOException {
+			throws UnsupportedEncodingException, IOException {
 		String token = request.getParameter("oauth_token");
 		Map<String, String[]> params = new HashMap<>();
 		params.put("oauth_verifier", new String[]{verifier});
@@ -165,7 +163,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 		tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 
 		try (CloseableHttpResponse resp2 = httpclient.execute(tokenPost)) {
-			if (resp2.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
+			if (resp2.getCode() == HttpServletResponse.SC_OK) {
 				String decoded = EntityUtils.toString(resp2.getEntity());
 				EntityUtils.consumeQuietly(resp2.getEntity());
 				String oauthToken = null;
@@ -179,6 +177,8 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 				}
 				return getOrCreateUser(app, oauthToken + Config.SEPARATOR + oauthSecret);
 			}
+		} catch (ParseException e) {
+			logger.error(null, e);
 		}
 		return null;
 	}
@@ -206,7 +206,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 			Map<String, Object> profile = null;
 
 			try (CloseableHttpResponse resp3 = httpclient.execute(profileGet)) {
-				if (resp3.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
+				if (resp3.getCode() == HttpServletResponse.SC_OK) {
 					profile = jreader.readValue(resp3.getEntity().getContent());
 					EntityUtils.consumeQuietly(resp3.getEntity());
 				}

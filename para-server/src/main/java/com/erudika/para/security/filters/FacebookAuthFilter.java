@@ -30,19 +30,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.HttpHeaders;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHeaders;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.NoConnectionReuseStrategy;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
@@ -71,14 +70,11 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 	public FacebookAuthFilter(String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
 		this.jreader = ParaObjectUtils.getJsonReader(Map.class);
-		int timeout = 30 * 1000;
+		int timeout = 30;
 		this.httpclient = HttpClientBuilder.create().
-				setConnectionReuseStrategy(new NoConnectionReuseStrategy()).
 				setDefaultRequestConfig(RequestConfig.custom().
-						setConnectTimeout(timeout).
-						setConnectionRequestTimeout(timeout).
-						setCookieSpec(CookieSpecs.STANDARD).
-						setSocketTimeout(timeout).
+						setConnectTimeout(timeout, TimeUnit.SECONDS).
+						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).
 						build()).
 				build();
 	}
@@ -113,7 +109,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 						userAuth = getOrCreateUser(app, accessToken);
 					} else {
 						logger.info("Authentication request failed with status '"
-								+ resp1.getStatusLine().getReasonPhrase() + "' - " + token);
+								+ resp1.getReasonPhrase() + "' - " + token);
 					}
 				} catch (Exception e) {
 					logger.warn("Facebook auth request failed: GET " + url, e);

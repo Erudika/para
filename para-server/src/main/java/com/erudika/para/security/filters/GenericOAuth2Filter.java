@@ -33,22 +33,21 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.HttpHeaders;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHeaders;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.NoConnectionReuseStrategy;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationServiceException;
@@ -89,14 +88,11 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	public GenericOAuth2Filter(final String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
 		this.jreader = ParaObjectUtils.getJsonReader(Map.class);
-		int timeout = 30 * 1000;
+		int timeout = 30;
 		this.httpclient = HttpClientBuilder.create().
-				setConnectionReuseStrategy(new NoConnectionReuseStrategy()).
 				setDefaultRequestConfig(RequestConfig.custom().
-						setConnectTimeout(timeout).
-						setConnectionRequestTimeout(timeout).
-						setCookieSpec(CookieSpecs.STANDARD).
-						setSocketTimeout(timeout).
+						setConnectTimeout(timeout, TimeUnit.SECONDS).
+						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).
 						build()).
 				build();
 	}
@@ -322,7 +318,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			HttpEntity respEntity = resp2.getEntity();
 			String error = null;
 			if (respEntity != null) {
-				if (resp2.getStatusLine().getStatusCode() == HttpServletResponse.SC_OK) {
+				if (resp2.getCode() == HttpServletResponse.SC_OK) {
 					profile.putAll(jreader.readValue(respEntity.getContent()));
 				} else {
 					error = IOUtils.toString(respEntity.getContent(), Config.DEFAULT_ENCODING);
@@ -331,7 +327,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			if (profile.isEmpty() || error != null) {
 				LOG.error("OAuth 2 provider did not return any valid user information - "
 						+ "response code {} {}, app '{}', payload {}",
-						resp2.getStatusLine().getStatusCode(), resp2.getStatusLine().getReasonPhrase(), app.getId(),
+						resp2.getCode(), resp2.getReasonPhrase(), app.getId(),
 						Utils.abbreviate(error, 1000));
 			}
 			EntityUtils.consumeQuietly(respEntity);
@@ -371,7 +367,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		String acceptHeader = SecurityUtils.getSettingForApp(app, configKey("accept_header", alias), "");
 		HttpPost tokenPost = new HttpPost(SecurityUtils.getSettingForApp(app, configKey("token_url", alias), ""));
 		tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
-		tokenPost.setEntity(new StringEntity(entity, "UTF-8"));
+		tokenPost.setEntity(new StringEntity(entity));
 		if (!StringUtils.isBlank(acceptHeader)) {
 			tokenPost.setHeader(HttpHeaders.ACCEPT, acceptHeader);
 		}
@@ -383,7 +379,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 				EntityUtils.consumeQuietly(resp1.getEntity());
 			} else {
 				LOG.info("Authentication request failed with status '"
-						+ (resp1 != null ? resp1.getStatusLine().getReasonPhrase() : "null")
+						+ (resp1 != null ? resp1.getReasonPhrase() : "null")
 						+ "' and empty response body.");
 			}
 		}
@@ -437,8 +433,8 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			avatarGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 			try (CloseableHttpResponse resp = HttpClientBuilder.create().build().execute(avatarGet)) {
 				HttpEntity respEntity = resp.getEntity();
-				if (respEntity != null && respEntity.getContentType().getValue().startsWith("image")) {
-					String ctype = respEntity.getContentType().getValue();
+				if (respEntity != null && respEntity.getContentType().startsWith("image")) {
+					String ctype = respEntity.getContentType();
 					return Para.getFileStore().store(Optional.ofNullable(appid).orElse(Config.PARA) + "/" + userid + "."
 							+ StringUtils.substringAfter(ctype, "/"), respEntity.getContent());
 				}

@@ -35,17 +35,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.ws.rs.core.HttpHeaders;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpHeaders;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.NoConnectionReuseStrategy;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,14 +63,11 @@ public abstract class River implements Runnable {
 	private static ConcurrentHashMap<String, Integer> pendingIds;
 
 	static {
-		int timeout = 10 * 1000;
+		int timeout = 10;
 		HTTP = HttpClientBuilder.create().
-				setConnectionReuseStrategy(new NoConnectionReuseStrategy()).
 				setDefaultRequestConfig(RequestConfig.custom().
-						setConnectTimeout(timeout).
-						setConnectionRequestTimeout(timeout).
-						setCookieSpec(CookieSpecs.STANDARD).
-						setSocketTimeout(timeout).
+						setConnectTimeout(timeout, TimeUnit.SECONDS).
+						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).
 						build()).
 				build();
 	}
@@ -196,17 +192,17 @@ public abstract class River implements Runnable {
 			postToTarget.setHeader("X-Para-Event", (String) parsed.get("event"));
 			if (urlEncoded) {
 				postToTarget.setEntity(new StringEntity("payload=".
-						concat(Utils.urlEncode((String) parsed.get("payload"))), "UTF-8"));
+						concat(Utils.urlEncode((String) parsed.get("payload")))));
 			} else {
-				postToTarget.setEntity(new StringEntity((String) parsed.get("payload"), "UTF-8"));
+				postToTarget.setEntity(new StringEntity((String) parsed.get("payload")));
 			}
 			boolean ok = false;
 			String status = "";
 			try (CloseableHttpResponse resp1 = HTTP.execute(postToTarget)) {
-				if (resp1 != null && Math.abs(resp1.getStatusLine().getStatusCode() - 200) > 10) {
-					status = resp1.getStatusLine().getReasonPhrase();
+				if (resp1 != null && Math.abs(resp1.getCode() - 200) > 10) {
+					status = resp1.getReasonPhrase();
 					logger.info("Webhook {} delivery failed! {} responded with code {} {} instead of 2xx.", id,
-							targetUrl, resp1.getStatusLine().getStatusCode(), resp1.getStatusLine().getReasonPhrase());
+							targetUrl, resp1.getCode(), resp1.getReasonPhrase());
 				} else {
 					logger.debug("Webhook {} delivered to {} successfully.", id, targetUrl);
 					ok = true;
