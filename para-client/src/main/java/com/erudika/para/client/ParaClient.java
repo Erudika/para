@@ -19,6 +19,11 @@ package com.erudika.para.client;
 
 import com.erudika.para.Para;
 import com.erudika.para.core.App;
+import static com.erudika.para.core.App.AllowedMethods.DELETE;
+import static com.erudika.para.core.App.AllowedMethods.GET;
+import static com.erudika.para.core.App.AllowedMethods.PATCH;
+import static com.erudika.para.core.App.AllowedMethods.POST;
+import static com.erudika.para.core.App.AllowedMethods.PUT;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.utils.ParaObjectUtils;
@@ -48,12 +53,12 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import static javax.ws.rs.HttpMethod.DELETE;
-import static javax.ws.rs.HttpMethod.GET;
-import static javax.ws.rs.HttpMethod.POST;
-import static javax.ws.rs.HttpMethod.PUT;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
+//import static javax.ws.rs.HttpMethod.DELETE;
+//import static javax.ws.rs.HttpMethod.GET;
+//import static javax.ws.rs.HttpMethod.POST;
+//import static javax.ws.rs.HttpMethod.PUT;
+//import javax.ws.rs.WebApplicationException;
+//import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import nl.altindag.ssl.SSLFactory;
@@ -74,6 +79,7 @@ import org.apache.hc.client5.http.io.HttpClientConnectionManager;
 import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.http.io.entity.ByteArrayEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
@@ -326,7 +332,7 @@ public final class ParaClient implements Closeable {
 				Map<String, Object> error = readEntity(respEntity, Map.class);
 				if (error != null && error.containsKey("code")) {
 					String msg = error.containsKey("message") ? (String) error.get("message") : "error";
-					WebApplicationException e = new WebApplicationException(msg, (Integer) error.get("code"));
+					RuntimeException e = new RuntimeException((Integer) error.get("code") + " - " + msg);
 					logger.error("{} - {}", error.get("code"), e.getMessage());
 					if (throwExceptionOnHTTPError) {
 						throw e;
@@ -334,7 +340,7 @@ public final class ParaClient implements Closeable {
 				} else {
 					logger.error("{} - {}", statusCode, reason);
 					if (throwExceptionOnHTTPError) {
-						throw new WebApplicationException(reason, statusCode);
+						throw new RuntimeException(statusCode + " - " + reason);
 					}
 				}
 			}
@@ -393,7 +399,7 @@ public final class ParaClient implements Closeable {
 	 */
 	public <T> T invokeGet(String resourcePath, MultivaluedMap<String, String> params, Class<?> returnType) {
 		logger.debug("GET {}, params: {}", getFullPath(resourcePath), params);
-		return invokeSignedRequest(accessKey, key(!JWT_PATH.equals(resourcePath)), GET,
+		return invokeSignedRequest(accessKey, key(!JWT_PATH.equals(resourcePath)), GET.toString(),
 				getEndpoint(), getFullPath(resourcePath), null, params, null, returnType);
 	}
 
@@ -407,7 +413,7 @@ public final class ParaClient implements Closeable {
 	 */
 	public <T> T invokePost(String resourcePath, Object entity, Class<?> returnType) {
 		logger.debug("POST {}, entity: {}", getFullPath(resourcePath), entity, returnType);
-		return invokeSignedRequest(accessKey, key(true), POST,
+		return invokeSignedRequest(accessKey, key(true), POST.toString(),
 				getEndpoint(), getFullPath(resourcePath), null, null, entity, returnType);
 	}
 
@@ -421,7 +427,7 @@ public final class ParaClient implements Closeable {
 	 */
 	public <T> T invokePut(String resourcePath, Object entity, Class<?> returnType) {
 		logger.debug("PUT {}, entity: {}", getFullPath(resourcePath), entity);
-		return invokeSignedRequest(accessKey, key(true), PUT,
+		return invokeSignedRequest(accessKey, key(true), PUT.toString(),
 				getEndpoint(), getFullPath(resourcePath), null, null, entity, returnType);
 	}
 
@@ -435,7 +441,7 @@ public final class ParaClient implements Closeable {
 	 */
 	public <T> T invokePatch(String resourcePath, Object entity, Class<?> returnType) {
 		logger.debug("PATCH {}, entity: {}", getFullPath(resourcePath), entity);
-		return invokeSignedRequest(accessKey, key(true), "PATCH",
+		return invokeSignedRequest(accessKey, key(true), PATCH.toString(),
 				getEndpoint(), getFullPath(resourcePath), null, null, entity, returnType);
 	}
 
@@ -449,7 +455,7 @@ public final class ParaClient implements Closeable {
 	 */
 	public <T> T invokeDelete(String resourcePath, MultivaluedMap<String, String> params, Class<?> returnType) {
 		logger.debug("DELETE {}, params: {}", getFullPath(resourcePath), params);
-		return invokeSignedRequest(accessKey, key(true), DELETE,
+		return invokeSignedRequest(accessKey, key(true), DELETE.toString(),
 				getEndpoint(), getFullPath(resourcePath), null, params, null, returnType);
 	}
 
@@ -1484,7 +1490,7 @@ public final class ParaClient implements Closeable {
 	public <P extends ParaObject> P me(String accessToken) {
 		if (!StringUtils.isBlank(accessToken)) {
 			String auth = accessToken.startsWith("Bearer") ? accessToken : "Bearer " + accessToken;
-			Map<String, Object> data = invokeSignedRequest(accessKey, auth, GET,
+			Map<String, Object> data = invokeSignedRequest(accessKey, auth, GET.toString(),
 					getEndpoint(), getFullPath("_me"), null, null, null, Map.class);
 			return ParaObjectUtils.setAnnotatedFields(data);
 		}
@@ -1571,7 +1577,7 @@ public final class ParaClient implements Closeable {
 	public Map<String, Object> rebuildIndex(String destinationIndex) {
 		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
 		params.putSingle("destinationIndex", destinationIndex);
-		return invokeSignedRequest(accessKey, key(true), POST,
+		return invokeSignedRequest(accessKey, key(true), POST.toString(),
 				getEndpoint(), getFullPath("_reindex"), null, params, null, Map.class);
 	}
 

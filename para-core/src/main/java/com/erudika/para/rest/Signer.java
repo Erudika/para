@@ -17,12 +17,8 @@
  */
 package com.erudika.para.rest;
 
-import com.erudika.para.Para;
-import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.utils.Config;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.time.Clock;
 import java.time.Instant;
@@ -36,16 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -184,114 +171,6 @@ public final class Signer extends BaseAws4Signer {
 	}
 
 	/**
-	 * Builds, signs and executes a request to an API endpoint using the provided credentials.
-	 * Signs the request using the Amazon Signature 4 algorithm and returns the response.
-	 * @param apiClient Jersey Client object
-	 * @param accessKey access key
-	 * @param secretKey secret key
-	 * @param httpMethod the method (GET, POST...)
-	 * @param endpointURL protocol://host:port
-	 * @param reqPath the API resource path relative to the endpointURL
-	 * @param headers headers map
-	 * @param params parameters map
-	 * @param entity an entity containing any Java object (payload), could be null
-	 * @return a response object
-	 */
-	public Response invokeSignedRequest(Client apiClient, String accessKey, String secretKey,
-			String httpMethod, String endpointURL, String reqPath, Map<String, String> headers,
-			MultivaluedMap<String, String> params, Entity<?> entity) {
-		byte[] jsonEntity = null;
-		if (entity != null) {
-			try {
-				jsonEntity = ParaObjectUtils.getJsonWriterNoIdent().writeValueAsBytes(entity.getEntity());
-			} catch (JsonProcessingException ex) {
-				jsonEntity = null;
-				logger.error(null, ex);
-			}
-		}
-		return invokeSignedRequest(apiClient, accessKey, secretKey, httpMethod,
-				endpointURL, reqPath, headers, params, jsonEntity);
-	}
-
-	/**
-	 * Builds, signs and executes a request to an API endpoint using the provided credentials.
-	 * Signs the request using the Amazon Signature 4 algorithm and returns the response.
-	 * @param apiClient Jersey Client object
-	 * @param accessKey access key
-	 * @param secretKey secret key
-	 * @param httpMethod the method (GET, POST...)
-	 * @param endpointURL protocol://host:port
-	 * @param reqPath the API resource path relative to the endpointURL
-	 * @param headers headers map
-	 * @param params parameters map
-	 * @param jsonEntity an object serialized to JSON byte array (payload), could be null
-	 * @return a response object
-	 */
-	public Response invokeSignedRequest(Client apiClient, String accessKey, String secretKey,
-			String httpMethod, String endpointURL, String reqPath,
-			Map<String, String> headers, MultivaluedMap<String, String> params, byte[] jsonEntity) {
-
-		boolean isJWT = StringUtils.startsWithIgnoreCase(secretKey, "Bearer");
-
-		// strip URI template param brackets - https://stackoverflow.com/questions/57011188
-		reqPath = reqPath.replaceAll("[{}]", "");
-		cleanUpParams(params);
-
-		WebTarget target = apiClient.target(endpointURL).path(reqPath);
-		Map<String, String> signedHeaders = new HashMap<>();
-		if (!isJWT) {
-			signedHeaders = signRequest(accessKey, secretKey, httpMethod, endpointURL, reqPath,
-					headers, params, jsonEntity);
-		}
-
-		if (params != null) {
-			for (Map.Entry<String, List<String>> param : params.entrySet()) {
-				String key = param.getKey();
-				List<String> value = param.getValue();
-				if (value != null && !value.isEmpty() && value.get(0) != null) {
-					target = target.queryParam(key, value.toArray());
-				}
-			}
-		}
-
-		Invocation.Builder builder = target.request(MediaType.APPLICATION_JSON);
-
-		if (headers != null) {
-			for (Map.Entry<String, String> header : headers.entrySet()) {
-				builder.header(header.getKey(), header.getValue());
-			}
-		}
-
-		Entity<?> jsonPayload = null;
-		if (jsonEntity != null && jsonEntity.length > 0) {
-			try {
-				jsonPayload = Entity.json(new String(jsonEntity, Config.DEFAULT_ENCODING));
-			} catch (IOException ex) {
-				logger.error(null, ex);
-			}
-		}
-
-		if (isJWT) {
-			builder.header(HttpHeaders.AUTHORIZATION, secretKey);
-		} else {
-			builder.header(HttpHeaders.AUTHORIZATION, signedHeaders.get(HttpHeaders.AUTHORIZATION)).
-					header("X-Amz-Date", signedHeaders.get("X-Amz-Date"));
-		}
-
-		if (Config.getConfigBoolean("user_agent_id_enabled", true)) {
-			String userAgent = new StringBuilder("Para client ").append(Para.getVersion()).append(" ").append(accessKey).
-					append(" (Java ").append(System.getProperty("java.runtime.version")).append(")").toString();
-			builder.header(HttpHeaders.USER_AGENT, userAgent);
-		}
-
-		if (jsonPayload != null) {
-			return builder.method(httpMethod, jsonPayload);
-		} else {
-			return builder.method(httpMethod);
-		}
-	}
-
-	/**
 	 * Builds and signs a request to an API endpoint using the provided credentials.
 	 * @param accessKey access key
 	 * @param secretKey secret key
@@ -316,12 +195,12 @@ public final class Signer extends BaseAws4Signer {
 
 		if (StringUtils.isBlank(secretKey)) {
 			logger.debug("Anonymous request: {} {}", httpMethod, reqPath);
-			headers.put(HttpHeaders.AUTHORIZATION, "Anonymous " + accessKey);
+			headers.put("Authorization", "Anonymous " + accessKey);
 			return headers;
 		}
 
 		if (httpMethod == null) {
-			httpMethod = HttpMethod.GET;
+			httpMethod = "GET";
 		}
 
 		InputStream in = null;
@@ -342,18 +221,5 @@ public final class Signer extends BaseAws4Signer {
 		}
 
 		return sign(httpMethod, endpointURL, reqPath, headers, sigParams, in, accessKey, secretKey);
-	}
-
-	private void cleanUpParams(MultivaluedMap<String, String> params) {
-		if (params != null) {
-			for (Map.Entry<String, List<String>> param : params.entrySet()) {
-				String key = param.getKey();
-				List<String> value = param.getValue();
-				if (value != null && !value.isEmpty()) {
-					params.put(key, value.stream().filter(v -> !StringUtils.isBlank(v)).
-							map(v -> v.replaceAll("[{}]", "")).collect(Collectors.toList()));
-				}
-			}
-		}
 	}
 }
