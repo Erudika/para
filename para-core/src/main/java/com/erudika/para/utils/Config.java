@@ -432,6 +432,7 @@ public final class Config {
 	 * @return The name of the default application without any spaces.
 	 */
 	public static String getRootAppIdentifier() {
-		return Utils.noSpaces(Utils.stripAndTrim(Config.getConfigParam("app_name", PARA).replaceAll("app:", ""), " "), "-");
+		String id = Config.getConfigParam("app_key", Config.getConfigParam("app_name", PARA));
+		return Utils.noSpaces(Utils.stripAndTrim(id.replaceAll("app:", ""), " "), "-");
 	}
 }
