@@ -498,8 +498,13 @@ public final class ParaClient implements Closeable {
 				int statusCode = resp.getCode();
 				String reason = resp.getReasonPhrase();
 				return readEntity(respEntity, returnType, statusCode, reason);
-			} catch (IOException ex) {
-				logger.error(null, ex);
+			} catch (Exception ex) {
+				String msg = "Failed to execute signed " + method + " request to " + path + ": " + ex.getMessage();
+				if (throwExceptionOnHTTPError) {
+					throw new RuntimeException(msg);
+				} else {
+					logger.error(msg);
+				}
 			}
 		} catch (URISyntaxException ex) {
 			logger.error(null, ex);
