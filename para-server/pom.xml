@@ -301,6 +301,12 @@
 			<artifactId>concurrent-junit</artifactId>
 			<version>1.0.2</version>
 			<scope>test</scope>
+		 <exclusions>
+		  <exclusion>
+		   <groupId>org.apache.commons</groupId>
+		   <artifactId>commons-lang3</artifactId>
+		  </exclusion>
+		 </exclusions>
 		</dependency>
 		<!--		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -427,6 +433,19 @@
 					<aggregate>true</aggregate>
 					<quiet>true</quiet>
 					<docfilessubdirs>true</docfilessubdirs>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.2.0</version>
+				<configuration>
+					<archive>
+						<manifestEntries>
+							<Automatic-Module-Name>com.erudika.para.server</Automatic-Module-Name>
+						</manifestEntries>
+					</archive>
 				</configuration>
 			</plugin>
 		</plugins>
