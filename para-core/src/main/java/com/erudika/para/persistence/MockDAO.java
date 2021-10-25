@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
@@ -121,7 +122,8 @@ public class MockDAO implements DAO {
 		String lastKey = pager.getLastKey();
 		boolean found = false;
 		int	i = 0;
-		for (String key : getMap(appid).keySet()) {
+		Map<String, ParaObject> ordered_MAPS = new TreeMap<String, ParaObject>(getMap(appid));
+		for (String key : ordered_MAPS.keySet()) {
 			if (lastKey != null && !found) {
 				found = key.equals(lastKey);
 			} else {
