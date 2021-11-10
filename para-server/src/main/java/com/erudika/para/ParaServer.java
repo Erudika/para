@@ -285,7 +285,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 		frb.setAsyncSupported(true);
 		frb.setEnabled(Config.CORS_ENABLED);
 		frb.setMatchAfter(false);
-		frb.setOrder(2);
+		frb.setOrder(HIGHEST_PRECEDENCE);
 		return frb;
 	}
 
