@@ -45,6 +45,7 @@ import software.amazon.awssdk.services.applicationautoscaling.model.MetricType;
 import software.amazon.awssdk.services.applicationautoscaling.model.PolicyType;
 import software.amazon.awssdk.services.applicationautoscaling.model.ScalableDimension;
 import software.amazon.awssdk.services.applicationautoscaling.model.ServiceNamespace;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -350,22 +351,26 @@ public final class AWSDynamoUtils {
 		try {
 			String table = getTableNameForAppid(appid);
 			if (!getReplicaRegions().isEmpty() && !App.isRoot(appid)) {
-				getReplicaRegions().stream().filter(r -> !r.equals(AWS_REGION)).forEach(region -> {
-					try {
-						logger.info("Removing replica from global table '{}' in region {}...", table, region);
-						getClient().updateGlobalTable(b -> b.globalTableName(table).replicaUpdates(ReplicaUpdate.
-								builder().delete(d -> d.regionName(region)).build()));
-						waitForActive(table, AWS_REGION);
-						logger.info("Deleting replica table in region {} for table {}", region, table);
-						getClient(region).deleteTable(b -> b.tableName(table));
-					} catch (Exception ex) {
-						logger.error(null, ex);
-					}
+				List<ReplicaUpdate> replicaUpdates = new LinkedList<>();
+				getReplicaRegions().stream().forEach(region -> {
+					logger.info("Removing replica from global table '{}' in region {}...", table, region);
+					replicaUpdates.add(ReplicaUpdate.builder().delete(d -> d.regionName(region)).build());
 				});
-				waitForActive(table, AWS_REGION);
+				try {
+					// this only removes the replicas for each region - it DOES NOT delete the actual replica tables
+					getClient().updateGlobalTable(b -> b.globalTableName(table).replicaUpdates(replicaUpdates));
+					getReplicaRegions().stream().forEach(region -> {
+						DynamoDbAsyncClient asyncdb = DynamoDbAsyncClient.builder().region(Region.of(region)).build();
+						asyncdb.deleteTable(b -> b.tableName(table));
+						logger.info("Deleted DynamoDB table '{}' in region {}.", table, region);
+					});
+				} catch (Exception ex) {
+					logger.error(null, ex);
+				}
+			} else {
+				getClient().deleteTable(b -> b.tableName(table));
+				logger.info("Deleted DynamoDB table '{}'.", table);
 			}
-			getClient().deleteTable(b -> b.tableName(table));
-			logger.info("Deleted DynamoDB table '{}'.", table);
 		} catch (Exception e) {
 			logger.error(null, e);
 			return false;
