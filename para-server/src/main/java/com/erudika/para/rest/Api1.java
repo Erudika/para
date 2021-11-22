@@ -998,10 +998,10 @@ public final class Api1 extends ResourceConfig {
 								long count = 0;
 								int partNum = 0;
 								// find all objects even if there are more than 10000 users in the system
-								Pager pager = new Pager(1, "_docid", false, Config.MAX_ITEMS_PER_PAGE);
+								Pager pager = new Pager();
 								List<ParaObject> objects;
 								do {
-									objects = getSearch().findQuery(app.getAppIdentifier(), "", "*", pager);
+									objects = getDAO().readPage(app.getAppIdentifier(), pager);
 									ZipEntry zipEntry = new ZipEntry(fileName + "_part" + (++partNum) + ".json");
 									zipOut.putNextEntry(zipEntry);
 									writer.writeValue(zipOut, objects);
