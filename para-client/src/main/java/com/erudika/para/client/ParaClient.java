@@ -74,9 +74,12 @@ import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpHeaders;
+import org.apache.hc.core5.http.HttpRequest;
+import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.http.io.entity.ByteArrayEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -148,6 +151,7 @@ public final class ParaClient implements Closeable {
 		int timeout = 30;
 		this.httpclient = HttpClientBuilder.create().
 				setConnectionManager(cm).
+				setConnectionReuseStrategy((HttpRequest hr, HttpResponse hr1, HttpContext hc) -> false).
 				setDefaultRequestConfig(RequestConfig.custom().
 						setConnectTimeout(timeout, TimeUnit.SECONDS).
 						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).
