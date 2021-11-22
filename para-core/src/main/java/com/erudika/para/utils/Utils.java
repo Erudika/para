@@ -25,6 +25,7 @@ import com.vladsch.flexmark.ext.emoji.EmojiExtension;
 import com.vladsch.flexmark.ext.emoji.EmojiImageType;
 import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension;
 import com.vladsch.flexmark.ext.gfm.tasklist.TaskListExtension;
+import com.vladsch.flexmark.ext.media.tags.MediaTagsExtension;
 import com.vladsch.flexmark.ext.tables.TablesExtension;
 import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
@@ -475,12 +476,13 @@ public final class Utils {
 				.set(TablesExtension.DISCARD_EXTRA_COLUMNS, true)
 				.set(TablesExtension.HEADER_SEPARATOR_COLUMN_MATCH, true)
 				.set(Parser.EXTENSIONS, Arrays.asList(TablesExtension.create(), EmojiExtension.create(),
-						StrikethroughExtension.create(), TaskListExtension.create(), AutolinkExtension.create()));
+						StrikethroughExtension.create(), TaskListExtension.create(), AutolinkExtension.create(),
+						MediaTagsExtension.create()));
 	}
 
 	private static Safelist getHTMLTagsWhitelist() {
 		Safelist whitelist = Safelist.relaxed();
-		whitelist.addTags("abbr", "hr", "del", "details", "summary", "center");
+		whitelist.addTags("abbr", "hr", "del", "details", "summary", "center", "audio", "video", "source");
 		whitelist.addProtocols("a", "href", "#");
 		whitelist.addEnforcedAttribute("a", "rel", "nofollow");
 		whitelist.addAttributes("abbr", "title");
@@ -489,8 +491,10 @@ public final class Utils {
 		whitelist.addAttributes("code", "class");
 		whitelist.addAttributes("div", "class");
 		whitelist.addAttributes("a", "rel");
-		whitelist.addAttributes("details", "class");
-		whitelist.addAttributes("details", "open");
+		whitelist.addAttributes("audio", "controls", "autoplay", "muted", "loop");
+		whitelist.addAttributes("video", "controls", "autoplay", "muted", "playsinline", "loop");
+		whitelist.addAttributes("source", "src", "type");
+		whitelist.addAttributes("details", "class", "open");
 		whitelist.addAttributes("h1", "id");
 		whitelist.addAttributes("h2", "id");
 		whitelist.addAttributes("h3", "id");
