@@ -44,7 +44,10 @@ import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.HttpRequest;
+import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +68,7 @@ public abstract class River implements Runnable {
 	static {
 		int timeout = 10;
 		HTTP = HttpClientBuilder.create().
+				setConnectionReuseStrategy((HttpRequest hr, HttpResponse hr1, HttpContext hc) -> false).
 				setDefaultRequestConfig(RequestConfig.custom().
 						setConnectTimeout(timeout, TimeUnit.SECONDS).
 						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).

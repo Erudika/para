@@ -122,8 +122,8 @@ public class MockDAO implements DAO {
 		String lastKey = pager.getLastKey();
 		boolean found = false;
 		int	i = 0;
-		Map<String, ParaObject> ordered_MAPS = new TreeMap<String, ParaObject>(getMap(appid));
-		for (String key : ordered_MAPS.keySet()) {
+		Map<String, ParaObject> orderedMAPS = new TreeMap<String, ParaObject>(getMap(appid));
+		for (String key : orderedMAPS.keySet()) {
 			if (lastKey != null && !found) {
 				found = key.equals(lastKey);
 			} else {
