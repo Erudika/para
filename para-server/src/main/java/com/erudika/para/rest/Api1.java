@@ -80,8 +80,11 @@ import com.erudika.para.core.Sysprop;
 import com.erudika.para.metrics.Metrics;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -987,7 +990,10 @@ public final class Api1 extends ResourceConfig {
 					StreamingOutput stream = new StreamingOutput() {
 						@Override
 						public void write(OutputStream os) throws IOException, WebApplicationException {
-							ObjectWriter writer = ParaObjectUtils.getJsonWriterNoIdent().without(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
+							// export all fields, even those which are JSON-ignored
+							ObjectWriter writer = JsonMapper.builder().disable(MapperFeature.USE_ANNOTATIONS).build().writer().
+									without(SerializationFeature.INDENT_OUTPUT).
+									without(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
 							try (ZipOutputStream zipOut = new ZipOutputStream(os)) {
 								long count = 0;
 								int partNum = 0;
