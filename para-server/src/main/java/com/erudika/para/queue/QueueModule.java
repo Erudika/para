@@ -32,11 +32,7 @@ public class QueueModule extends AbstractModule {
 	protected void configure() {
 		String selectedQueue = Config.getConfigParam("q", "");
 		if (StringUtils.isBlank(selectedQueue)) {
-			if ("embedded".equals(Config.ENVIRONMENT)) {
-				bindToDefault();
-			} else {
-				bind(Queue.class).to(AWSQueue.class).asEagerSingleton();
-			}
+			bindToDefault();
 		} else {
 			if ("sqs".equalsIgnoreCase(selectedQueue) ||
 					AWSQueue.class.getSimpleName().equalsIgnoreCase(selectedQueue)) {
