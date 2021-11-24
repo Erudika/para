@@ -269,6 +269,10 @@ public final class SecurityUtils {
 				claimsSet.claim("refresh", getNextRefresh(app.getTokenValiditySec()));
 				claimsSet.claim(Config._APPID, app.getId());
 				if (user != null) {
+					if ("true".equals(SecurityUtils.getSettingForApp(app, "security.one_session_per_user", "true"))) {
+						user.resetTokenSecret();
+						Para.getDAO().update(user);
+					}
 					claimsSet.subject(user.getId());
 					claimsSet.claim("idp", user.getIdentityProvider());
 					userSecret = user.getTokenSecret();

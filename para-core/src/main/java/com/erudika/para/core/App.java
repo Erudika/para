@@ -362,6 +362,9 @@ public class App implements ParaObject, Serializable {
 	 * @return period in seconds
 	 */
 	public Long getTokenValiditySec() {
+		if (getSettings().get("session_timeout") instanceof Number) {
+			tokenValiditySec = Math.abs(((Number) getSettings().get("session_timeout")).longValue());
+		}
 		if (tokenValiditySec == null || tokenValiditySec <= 0) {
 			tokenValiditySec = (long) Config.JWT_EXPIRES_AFTER_SEC;
 		}

@@ -17,10 +17,12 @@
  */
 package com.erudika.para.utils;
 
+import java.util.TimeZone;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
 
 /**
  * Various utilities for HTTP stuff - cookies, AJAX, etc.
@@ -135,5 +137,21 @@ public final class HttpUtils {
 			}
 		}
 		return null;
+	}
+
+	public static void setAuthCookie(String name, String value, int maxAge,
+			HttpServletRequest request, HttpServletResponse response) {
+		String expires = DateFormatUtils.format(System.currentTimeMillis() + (maxAge * 1000),
+				"EEE, dd-MMM-yyyy HH:mm:ss z", TimeZone.getTimeZone("GMT"));
+		String contextPath = request.getContextPath();
+		String path = contextPath.length() > 0 ? contextPath : "/";
+		StringBuilder sb = new StringBuilder();
+		sb.append(name).append("=").append(value).append(";");
+		sb.append("Path=").append(path).append(";");
+		sb.append("Expires=").append(expires).append(";");
+		sb.append("Max-Age=").append(maxAge).append(";");
+		sb.append("HttpOnly;");
+		sb.append("SameSite=Lax");
+		response.addHeader(javax.ws.rs.core.HttpHeaders.SET_COOKIE, sb.toString());
 	}
 }

@@ -21,11 +21,10 @@ package com.erudika.para.security;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
 import com.erudika.para.utils.Config;
+import com.erudika.para.utils.HttpUtils;
 import com.erudika.para.utils.Utils;
-import java.util.TimeZone;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.lang3.time.DateFormatUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -91,20 +90,8 @@ public class SimpleRememberMeServices extends TokenBasedRememberMeServices {
 
 	@Override
 	protected void setCookie(String[] tokens, int maxAge, HttpServletRequest request, HttpServletResponse response) {
-		String cookieValue = encodeCookie(tokens);
-		String authCookie = Config.getConfigParam("auth_cookie", Config.PARA.concat("-auth"));
-		String expires = DateFormatUtils.format(System.currentTimeMillis() + (maxAge * 1000),
-				"EEE, dd-MMM-yyyy HH:mm:ss z", TimeZone.getTimeZone("GMT"));
-		String contextPath = request.getContextPath();
-		String path = contextPath.length() > 0 ? contextPath : "/";
-		StringBuilder sb = new StringBuilder();
-		sb.append(authCookie).append("=").append(cookieValue).append(";");
-		sb.append("Path=").append(path).append(";");
-		sb.append("Expires=").append(expires).append(";");
-		sb.append("Max-Age=").append(maxAge).append(";");
-		sb.append("HttpOnly;");
-		sb.append("SameSite=Lax");
-		response.addHeader(javax.ws.rs.core.HttpHeaders.SET_COOKIE, sb.toString());
+		HttpUtils.setAuthCookie(Config.getConfigParam("auth_cookie", Config.PARA.concat("-auth")),
+				encodeCookie(tokens), maxAge, request, response);
 	}
 
 
