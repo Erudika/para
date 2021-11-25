@@ -21,6 +21,7 @@ import com.erudika.para.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.User;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.rest.Signer;
 import com.erudika.para.security.filters.SAMLAuthFilter;
 import com.erudika.para.utils.BufferedRequestWrapper;
@@ -271,7 +272,7 @@ public final class SecurityUtils {
 				if (user != null) {
 					if ("true".equals(SecurityUtils.getSettingForApp(app, "security.one_session_per_user", "true"))) {
 						user.resetTokenSecret();
-						Para.getDAO().update(user);
+						CoreUtils.getInstance().overwrite(app.getAppIdentifier(), user);
 					}
 					claimsSet.subject(user.getId());
 					claimsSet.claim("idp", user.getIdentityProvider());

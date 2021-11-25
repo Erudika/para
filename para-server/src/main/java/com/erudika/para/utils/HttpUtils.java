@@ -139,6 +139,14 @@ public final class HttpUtils {
 		return null;
 	}
 
+	/**
+	 * Sets the auth cookie.
+	 * @param name name
+	 * @param value value
+	 * @param maxAge maxAge
+	 * @param request request
+	 * @param response response
+	 */
 	public static void setAuthCookie(String name, String value, int maxAge,
 			HttpServletRequest request, HttpServletResponse response) {
 		String expires = DateFormatUtils.format(System.currentTimeMillis() + (maxAge * 1000),
