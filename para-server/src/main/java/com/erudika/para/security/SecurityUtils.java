@@ -290,6 +290,38 @@ public final class SecurityUtils {
 	}
 
 	/**
+	 * Short-lived identity token, proving that a Para user has been successfully authenticated against an IDP.
+	 * Works with the passwordless auth filter.
+	 * @param user user object
+	 * @param app app object
+	 * @return a signed JWT or null
+	 */
+	public static SignedJWT generateIdToken(User user, App app) {
+		if (app != null && user != null) {
+			try {
+				Date now = new Date();
+				JWTClaimsSet.Builder claimsSet = new JWTClaimsSet.Builder();
+				claimsSet.issueTime(now);
+				claimsSet.expirationTime(new Date(now.getTime() + (Config.ID_TOKEN_EXPIRES_AFTER_SEC * 1000)));
+				claimsSet.notBeforeTime(now);
+				claimsSet.claim(Config._APPID, app.getId());
+				claimsSet.claim(Config._NAME, user.getName());
+				claimsSet.claim(Config._EMAIL, user.getEmail());
+				claimsSet.claim(Config._IDENTIFIER, user.getIdentifier());
+				claimsSet.claim("picture", user.getPicture());
+				claimsSet.subject(user.getId());
+				JWSSigner signer = new MACSigner(app.getSecret() + user.getTokenSecret());
+				SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet.build());
+				signedJWT.sign(signer);
+				return signedJWT;
+			} catch (JOSEException e) {
+				logger.warn("Unable to sign JWT: {}.", e.getMessage());
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Decides when the next token refresh should be.
 	 * @param tokenValiditySec token validity period
 	 * @return a refresh timestamp to be used by API clients

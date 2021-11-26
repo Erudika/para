@@ -95,24 +95,26 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 	public UserAuthentication getOrCreateUser(App app, String accessToken) {
 		UserAuthentication userAuth = null;
 		User user = new User();
-		String secret = SecurityUtils.getSettingForApp(app, "app_secret_key", "");
+		String secret = SecurityUtils.getSettingForApp(app, "app_secret_key", app.getSecret());
 		try {
 			SignedJWT jwt = SignedJWT.parse(accessToken);
-			if (SecurityUtils.isValidJWToken(secret, jwt) && app != null) {
-				String email = jwt.getJWTClaimsSet().getStringClaim(Config._EMAIL);
-				String name = jwt.getJWTClaimsSet().getStringClaim(Config._NAME);
-				String identifier = jwt.getJWTClaimsSet().getStringClaim(Config._IDENTIFIER);
-				String groups = jwt.getJWTClaimsSet().getStringClaim(Config._GROUPS);
-				String picture = jwt.getJWTClaimsSet().getStringClaim("picture");
-				String appid = app.getAppIdentifier();
+			String email = jwt.getJWTClaimsSet().getStringClaim(Config._EMAIL);
+			String name = jwt.getJWTClaimsSet().getStringClaim(Config._NAME);
+			String identifier = jwt.getJWTClaimsSet().getStringClaim(Config._IDENTIFIER);
+			String groups = jwt.getJWTClaimsSet().getStringClaim(Config._GROUPS);
+			String picture = jwt.getJWTClaimsSet().getStringClaim("picture");
+			String appid = app.getAppIdentifier();
 
-				User u = new User();
-				u.setAppid(appid);
-				u.setIdentifier(identifier);
-				u.setEmail(email);
+			User u = new User();
+			u.setAppid(appid);
+			u.setIdentifier(identifier);
+			u.setEmail(email);
+			user = User.readUserForIdentifier(u);
+			String userSecret = user != null ? user.getTokenSecret() : "";
+
+			if (SecurityUtils.isValidJWToken(secret, jwt) || SecurityUtils.isValidJWToken(app.getSecret() + userSecret, jwt)) {
 				// NOTE TO SELF:
 				// do not overwrite 'u' here - overwrites the password hash!
-				user = User.readUserForIdentifier(u);
 				if (user == null) {
 					user = new User();
 					user.setActive(true);
@@ -132,7 +134,7 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 			} else {
 				logger.info("Authentication request failed because the provided JWT token is invalid. appid: '" +
-						(app != null ? app.getAppIdentifier() : "null") + "'");
+						app.getAppIdentifier() + "'");
 			}
 		} catch (ParseException e) {
 			logger.warn("Invalid token: " + e.getMessage());

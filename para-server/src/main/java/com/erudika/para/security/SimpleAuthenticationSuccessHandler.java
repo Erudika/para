@@ -66,6 +66,10 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 					SignedJWT newJWT = SecurityUtils.generateJWToken(u, app);
 					customURI = customURI.replace("jwt=?", "jwt=" + newJWT.serialize());
 				}
+				if (StringUtils.contains(customURI, "jwt=id")) {
+					SignedJWT newJWT = SecurityUtils.generateIdToken(u, app);
+					customURI = customURI.replace("jwt=id", "jwt=" + newJWT.serialize());
+				}
 				if (!StringUtils.isBlank(customURI)) {
 					redirectStrategy.sendRedirect(request, response, customURI);
 					return;

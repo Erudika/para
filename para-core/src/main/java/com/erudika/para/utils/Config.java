@@ -17,6 +17,7 @@
  */
 package com.erudika.para.utils;
 
+import com.erudika.para.core.App;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueType;
@@ -277,6 +278,10 @@ public final class Config {
 	 */
 	public static final int JWT_REFRESH_INTERVAL_SEC = NumberUtils.toInt(getConfigParam("jwt_refresh_interval", ""), 60 * 60);
 	/**
+	 * ID token expiration in seconds. Default: 60 seconds
+	 */
+	public static final int ID_TOKEN_EXPIRES_AFTER_SEC = NumberUtils.toInt(getConfigParam("id_token_expires_after", ""), 60);
+	/**
 	 * Session timeout in seconds. Default: 24 hours
 	 */
 	public static final int SESSION_TIMEOUT_SEC = NumberUtils.toInt(getConfigParam("session_timeout", ""), 24 * 60 * 60);
@@ -432,7 +437,6 @@ public final class Config {
 	 * @return The name of the default application without any spaces.
 	 */
 	public static String getRootAppIdentifier() {
-		String id = Config.getConfigParam("app_key", Config.getConfigParam("app_name", PARA));
-		return Utils.noSpaces(Utils.stripAndTrim(id.replaceAll("app:", ""), " "), "-");
+		return App.identifier(App.id(Config.getConfigParam("app_name", PARA)));
 	}
 }
