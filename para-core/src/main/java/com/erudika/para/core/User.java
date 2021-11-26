@@ -366,8 +366,7 @@ public class User implements ParaObject {
 	 * Returns a list of identifiers for this user (can have many).
 	 * @return a list of {@link Sysprop} objects
 	 */
-	@JsonIgnore
-	public List<Sysprop> getIdentifiers() {
+	private List<Sysprop> getIdentifiers() {
 		return CoreUtils.getInstance().getSearch().findTerms(getAppid(), Utils.type(Sysprop.class),
 				Collections.singletonMap(Config._CREATORID, getId()), true);
 	}
