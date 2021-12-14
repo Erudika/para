@@ -86,7 +86,7 @@
 		<jettyVer>9.4.44.v20210927</jettyVer>
 		<springBootVer>2.6.0</springBootVer>
 		<metricsVer>4.1.16</metricsVer>
-		<httpClientVer>5.1</httpClientVer>
+		<httpClientVer>5.1.2</httpClientVer>
 		<httpCoreVer>5.1.2</httpCoreVer>
 		<commonsCodecVer>1.15</commonsCodecVer>
 	</properties>
