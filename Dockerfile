@@ -1,13 +1,13 @@
 # Default Para docker image bundled with H2 and Lucene plugins
 
-FROM maven:3.6-jdk-11-slim AS build
+FROM maven:3.8-jdk-11-slim AS build
 
 RUN mkdir -p /para
 RUN curl -Ls https://github.com/Erudika/para/archive/master.tar.gz | tar -xz -C /para
 RUN cd /para/para-master && mvn -q install -DskipTests=true -DskipITs=true && \
 	cd /para/para-master/para-jar && mv target/para-[0-9]*.jar /para/
 
-FROM openjdk:11-jre-slim
+FROM adoptopenjdk/openjdk11:ubi-minimal-jre
 
 ENV BOOT_SLEEP=0 \
     JAVA_OPTS=""
