@@ -160,7 +160,7 @@
 		<dependency>
 			<groupId>org.hibernate.validator</groupId>
 			<artifactId>hibernate-validator</artifactId>
-			<!-- WARN: Breaking changes in 7.x! -->
+			<!-- WARN: Breaking changes in 7.x! Wait until Spring Boot 6, javax=>jakarta -->
 			<version>6.2.0.Final</version>
 		</dependency>
 		<dependency>
@@ -267,7 +267,7 @@
 		<dependency>
 			<groupId>io.github.hakky54</groupId>
 			<artifactId>sslcontext-kickstart</artifactId>
-			<version>6.8.0</version>
+			<version>7.1.0</version>
 		</dependency>
 	</dependencies>
 
@@ -316,7 +316,14 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-checkstyle-plugin</artifactId>
-				<version>3.1.0</version>
+				<version>3.1.2</version>
+				<dependencies>
+					<dependency>
+						<groupId>com.puppycrawl.tools</groupId>
+						<artifactId>checkstyle</artifactId>
+						<version>9.2</version>
+					</dependency>
+				</dependencies>
 				<executions>
 					<execution>
 						<id>validate-core</id>
@@ -340,7 +347,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.2.0</version>
+				<version>3.3.1</version>
 				<executions>
 					<execution>
 						<id>javadocs</id>
@@ -350,7 +357,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<source>1.8</source>
+					<release>11</release>
 					<stylesheetfile>src/main/javadoc/stylesheet.css</stylesheetfile>
 					<show>public</show>
 					<aggregate>true</aggregate>

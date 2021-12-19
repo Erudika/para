@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Run this script from inside the Para ./data folder, or wherever para.mv.db is located
+
 OLD_H2_VERSION="1.4.200"
 NEW_H2_VERSION="2.0.202"
 PARA_USER="para"
