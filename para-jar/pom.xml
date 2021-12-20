@@ -20,7 +20,7 @@
 	</dependencies>
 
 	<properties>
-		<start-class>com.erudika.para.Run</start-class>
+		<start-class>com.erudika.para.jar.Run</start-class>
 	</properties>
 
 	<build>
@@ -87,12 +87,12 @@
 				<dependency>
 					<groupId>com.erudika</groupId>
 					<artifactId>para-dao-sql</artifactId>
-					<version>1.42.1</version>
+					<version>1.43.0</version>
 				</dependency>
 				<dependency>
 					<groupId>com.erudika</groupId>
 					<artifactId>para-search-lucene</artifactId>
-					<version>1.42.1</version>
+					<version>1.43.0</version>
 				</dependency>
 			</dependencies>
 		</profile>

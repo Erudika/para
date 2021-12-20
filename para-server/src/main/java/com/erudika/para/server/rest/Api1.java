@@ -100,6 +100,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.StreamingOutput;
+import org.glassfish.jersey.server.ServerProperties;
 
 /**
  * This is the main REST API configuration class which defines all endpoints for all resources
@@ -130,6 +131,7 @@ public final class Api1 extends ResourceConfig {
 			return;
 		}
 
+		property(ServerProperties.WADL_FEATURE_DISABLE, true);
 		setApplicationName(Config.getRootAppIdentifier());
 		register(GenericExceptionMapper.class);
 		register(new JacksonJsonProvider(ParaObjectUtils.getJsonMapper()));
