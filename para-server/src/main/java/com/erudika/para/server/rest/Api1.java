@@ -130,7 +130,6 @@ public final class Api1 extends ResourceConfig {
 		if (!Config.API_ENABLED) {
 			return;
 		}
-
 		property(ServerProperties.WADL_FEATURE_DISABLE, true);
 		setApplicationName(Config.getRootAppIdentifier());
 		register(GenericExceptionMapper.class);
