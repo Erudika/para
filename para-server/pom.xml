@@ -67,6 +67,10 @@
 					<groupId>org.hibernate</groupId>
 					<artifactId>hibernate-validator</artifactId>
 				</exclusion>
+				<exclusion>
+					<groupId>org.apache.logging.log4j</groupId>
+					<artifactId>log4j-to-slf4j</artifactId>
+				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
@@ -211,9 +215,9 @@
 			<version>1.29</version>
 		</dependency>
 		<dependency>
-			<groupId>jakarta.servlet</groupId>
-			<artifactId>jakarta.servlet-api</artifactId>
-			<version>5.0.0</version>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<version>4.0.1</version>
 			<!--<scope>provided</scope>-->
 		</dependency>
 		<dependency>
