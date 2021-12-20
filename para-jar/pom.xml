@@ -45,7 +45,7 @@
 						</goals>
 						<configuration>
 							<finalName>para-${project.version}</finalName>
-							<mainClass>com.erudika.para.Run</mainClass>
+							<mainClass>com.erudika.para.jar.Run</mainClass>
 							<layout>ZIP</layout>
 						</configuration>
 					</execution>
@@ -87,12 +87,12 @@
 				<dependency>
 					<groupId>com.erudika</groupId>
 					<artifactId>para-dao-sql</artifactId>
-					<version>1.43.0</version>
+					<version>1.43.1</version>
 				</dependency>
 				<dependency>
 					<groupId>com.erudika</groupId>
 					<artifactId>para-search-lucene</artifactId>
-					<version>1.43.0</version>
+					<version>1.43.1</version>
 				</dependency>
 			</dependencies>
 		</profile>
@@ -111,7 +111,7 @@
 									<goal>repackage</goal>
 								</goals>
 								<configuration>
-									<mainClass>com.erudika.para.Run</mainClass>
+									<mainClass>com.erudika.para.jar.Run</mainClass>
 									<layout>ZIP</layout>
 								</configuration>
 							</execution>
