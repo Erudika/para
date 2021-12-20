@@ -111,7 +111,7 @@ public interface ParaObject extends Serializable, Linkable, Votable {
 	/**
 	 * The URI of this object. For example: /users/123
 	 * @return the URI
-	 * @see com.erudika.para.utils.Utils#getObjectURI(com.erudika.para.core.ParaObject, boolean, boolean)
+	 * @see com.erudika.para.core.utils.Utils#getObjectURI(com.erudika.para.core.ParaObject, boolean, boolean)
 	 */
 	String getObjectURI();
 
@@ -206,28 +206,28 @@ public interface ParaObject extends Serializable, Linkable, Votable {
 	/**
 	 * Stores this object in the data store.
 	 * @return the id of the object (a new id if object is new)
-	 * @see com.erudika.para.annotations.Stored
-	 * @see com.erudika.para.persistence.DAO#create(com.erudika.para.core.ParaObject)
+	 * @see com.erudika.para.core.annotations.Stored
+	 * @see com.erudika.para.core.persistence.DAO#create(com.erudika.para.core.ParaObject)
 	 */
 	String create();
 
 	/**
-	 * Updates the object permanently. Changes to {@link com.erudika.para.annotations.Locked} fields are ignored.
-	 * @see com.erudika.para.annotations.Locked
-	 * @see com.erudika.para.persistence.DAO#update(com.erudika.para.core.ParaObject)
+	 * Updates the object permanently. Changes to {@link com.erudika.para.core.annotations.Locked} fields are ignored.
+	 * @see com.erudika.para.core.annotations.Locked
+	 * @see com.erudika.para.core.persistence.DAO#update(com.erudika.para.core.ParaObject)
 	 */
 	void update();
 
 	/**
 	 * Deletes the object permanently by removing it from the data store.
-	 * @see com.erudika.para.persistence.DAO#delete(com.erudika.para.core.ParaObject)
+	 * @see com.erudika.para.core.persistence.DAO#delete(com.erudika.para.core.ParaObject)
 	 */
 	void delete();
 
 	/**
 	 * Checks if an object is stored in the data store.
 	 * @return true if the object is persisted to the data store.
-	 * @see com.erudika.para.persistence.DAO#read(java.lang.String)
+	 * @see com.erudika.para.core.persistence.DAO#read(java.lang.String)
 	 */
 	boolean exists();
 

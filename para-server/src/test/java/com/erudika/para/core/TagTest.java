@@ -17,8 +17,8 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.persistence.DAO;
-import com.erudika.para.persistence.MockDAO;
+import com.erudika.para.core.persistence.DAO;
+import com.erudika.para.core.persistence.MockDAO;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Before;

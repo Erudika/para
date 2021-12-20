@@ -17,6 +17,7 @@
  */
 package com.erudika.para.email;
 
+import com.erudika.para.core.email.Emailer;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 

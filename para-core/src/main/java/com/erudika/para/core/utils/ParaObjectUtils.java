@@ -17,13 +17,11 @@
  */
 package com.erudika.para.core.utils;
 
-import com.erudika.para.annotations.Stored;
+import com.erudika.para.core.annotations.Stored;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
-import com.erudika.para.utils.Config;
-import com.erudika.para.utils.Utils;
-import static com.erudika.para.utils.Utils.getAllDeclaredFields;
+import static com.erudika.para.core.utils.Utils.getAllDeclaredFields;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;

@@ -17,6 +17,7 @@
  */
 package com.erudika.para.email;
 
+import com.erudika.para.core.email.Emailer;
 import java.util.ArrayList;
 import java.util.Collections;
 import static org.junit.Assert.*;

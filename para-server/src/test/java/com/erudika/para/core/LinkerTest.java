@@ -17,7 +17,7 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.utils.Utils;
+import com.erudika.para.core.utils.Utils;
 import org.junit.Test;
 import static org.junit.Assert.*;
 

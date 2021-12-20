@@ -17,22 +17,23 @@
  */
 package com.erudika.para.rest;
 
-import com.erudika.para.Para;
-import com.erudika.para.ParaServer;
-import com.erudika.para.cache.Cache;
-import com.erudika.para.cache.MockCache;
+import com.erudika.para.core.rest.GenericExceptionMapper;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.server.ParaServer;
+import com.erudika.para.core.cache.Cache;
+import com.erudika.para.core.cache.MockCache;
 import com.erudika.para.core.App;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.utils.CoreUtils;
-import com.erudika.para.persistence.DAO;
-import com.erudika.para.persistence.MockDAO;
-import com.erudika.para.queue.Queue;
-import static com.erudika.para.rest.RestUtils.*;
-import com.erudika.para.search.Search;
-import com.erudika.para.storage.FileStore;
-import com.erudika.para.utils.Config;
+import com.erudika.para.core.persistence.DAO;
+import com.erudika.para.core.persistence.MockDAO;
+import com.erudika.para.core.queue.Queue;
+import static com.erudika.para.server.rest.RestUtils.*;
+import com.erudika.para.core.search.Search;
+import com.erudika.para.core.storage.FileStore;
+import com.erudika.para.core.utils.Config;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.inject.Binder;
 import com.google.inject.Module;

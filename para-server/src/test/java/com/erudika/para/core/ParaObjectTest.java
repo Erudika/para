@@ -18,10 +18,10 @@
 package com.erudika.para.core;
 
 import com.erudika.para.core.utils.CoreUtils;
-import com.erudika.para.persistence.DAO;
-import com.erudika.para.persistence.MockDAO;
-import com.erudika.para.search.Search;
-import com.erudika.para.utils.Utils;
+import com.erudika.para.core.persistence.DAO;
+import com.erudika.para.core.persistence.MockDAO;
+import com.erudika.para.core.search.Search;
+import com.erudika.para.core.utils.Utils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

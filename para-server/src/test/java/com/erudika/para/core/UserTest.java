@@ -19,12 +19,12 @@ package com.erudika.para.core;
 
 import com.erudika.para.core.User.Groups;
 import com.erudika.para.core.utils.CoreUtils;
-import com.erudika.para.persistence.DAO;
-import com.erudika.para.search.Search;
-import com.erudika.para.utils.Config;
-import com.erudika.para.utils.Pager;
-import com.erudika.para.utils.Utils;
-import com.erudika.para.validation.ValidationUtils;
+import com.erudika.para.core.persistence.DAO;
+import com.erudika.para.core.search.Search;
+import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Utils;
+import com.erudika.para.core.validation.ValidationUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;

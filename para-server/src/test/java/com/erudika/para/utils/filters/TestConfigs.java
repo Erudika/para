@@ -15,6 +15,7 @@
  */
 package com.erudika.para.utils.filters;
 
+import com.erudika.para.server.utils.filters.CORSFilter;
 import java.util.Enumeration;
 
 import javax.servlet.FilterConfig;

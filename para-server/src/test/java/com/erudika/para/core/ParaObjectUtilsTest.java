@@ -17,14 +17,14 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.annotations.Stored;
+import com.erudika.para.core.annotations.Stored;
 import static com.erudika.para.core.utils.ParaObjectUtils.getAnnotatedFields;
 import static com.erudika.para.core.utils.ParaObjectUtils.getAppidFromAuthHeader;
 import static com.erudika.para.core.utils.ParaObjectUtils.getCoreTypes;
 import static com.erudika.para.core.utils.ParaObjectUtils.setAnnotatedFields;
-import com.erudika.para.utils.Cat;
-import com.erudika.para.utils.CatDeserializer;
-import com.erudika.para.utils.CatSerializer;
+import com.erudika.para.core.utils.Cat;
+import com.erudika.para.core.utils.CatDeserializer;
+import com.erudika.para.core.utils.CatSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;

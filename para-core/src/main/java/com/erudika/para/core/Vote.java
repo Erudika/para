@@ -19,13 +19,13 @@ package com.erudika.para.core;
 
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.ParaObjectUtils;
-import com.erudika.para.annotations.Locked;
-import com.erudika.para.annotations.Stored;
+import com.erudika.para.core.annotations.Locked;
+import com.erudika.para.core.annotations.Stored;
 import static com.erudika.para.core.Votable.VoteValue.DOWN;
 import static com.erudika.para.core.Votable.VoteValue.UP;
-import com.erudika.para.utils.Config;
-import com.erudika.para.utils.Pager;
-import com.erudika.para.utils.Utils;
+import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Utils;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;

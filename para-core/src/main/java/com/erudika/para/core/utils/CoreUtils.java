@@ -17,25 +17,22 @@
  */
 package com.erudika.para.core.utils;
 
-import com.erudika.para.InitializeListener;
-import com.erudika.para.cache.Cache;
-import com.erudika.para.cache.MockCache;
+import com.erudika.para.core.listeners.InitializeListener;
+import com.erudika.para.core.cache.Cache;
+import com.erudika.para.core.cache.MockCache;
 import com.erudika.para.core.Linker;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Votable;
 import com.erudika.para.core.Votable.VoteValue;
 import com.erudika.para.core.Vote;
-import com.erudika.para.persistence.DAO;
-import com.erudika.para.persistence.MockDAO;
-import com.erudika.para.queue.MockQueue;
-import com.erudika.para.queue.Queue;
-import com.erudika.para.search.MockSearch;
-import com.erudika.para.search.Search;
-import com.erudika.para.storage.FileStore;
-import com.erudika.para.storage.MockFileStore;
-import com.erudika.para.utils.Config;
-import com.erudika.para.utils.Pager;
-import com.erudika.para.utils.Utils;
+import com.erudika.para.core.persistence.DAO;
+import com.erudika.para.core.persistence.MockDAO;
+import com.erudika.para.core.queue.MockQueue;
+import com.erudika.para.core.queue.Queue;
+import com.erudika.para.core.search.MockSearch;
+import com.erudika.para.core.search.Search;
+import com.erudika.para.core.storage.FileStore;
+import com.erudika.para.core.storage.MockFileStore;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -560,7 +557,7 @@ public enum CoreUtils implements InitializeListener {
 	 * @param type2 the type of children to look for
 	 * @param obj the object to execute this method on
 	 * @param query a query string
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
 	public abstract <P extends ParaObject> List<P> findChildren(ParaObject obj, String type2, String query, Pager... pager);
@@ -571,7 +568,7 @@ public enum CoreUtils implements InitializeListener {
 	 * @param <P> type of linked objects
 	 * @param type2 type of linked objects to search for
 	 * @param obj the object to execute this method on
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @param field the name of the field to target (within a nested field "nstd")
 	 * @param query a query string
 	 * @return a list of linked objects matching the search query
@@ -585,7 +582,7 @@ public enum CoreUtils implements InitializeListener {
 	 * @param <P> the type of children
 	 * @param type2 the type of children to look for
 	 * @param obj the object to execute this method on
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
 	public abstract <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, Pager... pager);
@@ -598,7 +595,7 @@ public enum CoreUtils implements InitializeListener {
 	 * @param field the field name to use as filter
 	 * @param term the field value to use as filter
 	 * @param obj the object to execute this method on
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
 	public abstract <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, String field,
@@ -620,7 +617,7 @@ public enum CoreUtils implements InitializeListener {
 	 * @param <P> type of linked objects
 	 * @param type2 type of linked objects to search for
 	 * @param obj the object to execute this method on
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of linked objects
 	 */
 	public abstract <P extends ParaObject> List<P> getLinkedObjects(ParaObject obj, String type2, Pager... pager);
@@ -630,7 +627,7 @@ public enum CoreUtils implements InitializeListener {
 	 *
 	 * @param obj the object to execute this method on
 	 * @param type2 the other type
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of Linker objects
 	 */
 	public abstract List<Linker> getLinks(ParaObject obj, String type2, Pager... pager);
@@ -703,7 +700,7 @@ public enum CoreUtils implements InitializeListener {
 
 	/**
 	 * Creates the object again (use with caution!). Same as
-	 * {@link com.erudika.para.persistence.DAO#create(com.erudika.para.core.ParaObject)}.
+	 * {@link com.erudika.para.core.persistence.DAO#create(com.erudika.para.core.ParaObject)}.
 	 *
 	 * @param obj an object
 	 * @return the object id or null
@@ -712,7 +709,7 @@ public enum CoreUtils implements InitializeListener {
 
 	/**
 	 * Creates the object again (use with caution!). Same as
-	 * {@link com.erudika.para.persistence.DAO#create(java.lang.String, com.erudika.para.core.ParaObject)}.
+	 * {@link com.erudika.para.core.persistence.DAO#create(java.lang.String, com.erudika.para.core.ParaObject)}.
 	 *
 	 * @param appid the app id
 	 * @param obj an object

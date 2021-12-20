@@ -17,7 +17,7 @@
  */
 package com.erudika.para.client;
 
-import com.erudika.para.Para;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
 import static com.erudika.para.core.App.AllowedMethods.DELETE;
 import static com.erudika.para.core.App.AllowedMethods.GET;
@@ -28,11 +28,11 @@ import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
-import com.erudika.para.rest.Signer;
-import com.erudika.para.utils.Config;
-import com.erudika.para.utils.Pager;
-import com.erudika.para.utils.Utils;
-import com.erudika.para.validation.Constraint;
+import com.erudika.para.core.rest.Signer;
+import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Utils;
+import com.erudika.para.core.validation.Constraint;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -832,7 +832,7 @@ public final class ParaClient implements Closeable {
 	 * The result is paginated so only one page of items is returned, at a time.
 	 * @param <P> the type of object
 	 * @param type the type of objects to search for
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects
 	 */
 	public <P extends ParaObject> List<P> list(String type, Pager... pager) {
@@ -879,7 +879,7 @@ public final class ParaClient implements Closeable {
 	 * @param radius the radius of the search circle
 	 * @param lat latitude
 	 * @param lng longitude
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findNearby(String type, String query, int radius, double lat, double lng,
@@ -899,7 +899,7 @@ public final class ParaClient implements Closeable {
 	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param field the property name of an object
 	 * @param prefix the prefix
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findPrefix(String type, String field, String prefix, Pager... pager) {
@@ -916,7 +916,7 @@ public final class ParaClient implements Closeable {
 	 * @param <P> type of the object
 	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param query the query string
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findQuery(String type, String query, Pager... pager) {
@@ -933,7 +933,7 @@ public final class ParaClient implements Closeable {
 	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param field the name of the field to target (within a nested field "nstd")
 	 * @param query the query string
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findNestedQuery(String type, String field, String query, Pager... pager) {
@@ -952,7 +952,7 @@ public final class ParaClient implements Closeable {
 	 * @param filterKey exclude an object with this key from the results (optional)
 	 * @param fields a list of property names
 	 * @param liketext text to compare to
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findSimilar(String type, String filterKey, String[] fields, String liketext,
@@ -971,7 +971,7 @@ public final class ParaClient implements Closeable {
 	 * @param <P> type of the object
 	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param tags the list of tags
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findTagged(String type, String[] tags, Pager... pager) {
@@ -987,7 +987,7 @@ public final class ParaClient implements Closeable {
 	 * This method might be deprecated in the future.
 	 * @param <P> type of the object
 	 * @param keyword the tag keyword to search for
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findTags(String keyword, Pager... pager) {
@@ -1001,7 +1001,7 @@ public final class ParaClient implements Closeable {
 	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param field the property name of an object
 	 * @param terms a list of terms (property values)
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findTermInList(String type, String field, List<String> terms, Pager... pager) {
@@ -1019,7 +1019,7 @@ public final class ParaClient implements Closeable {
 	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param terms a map of fields (property names) to terms (property values)
 	 * @param matchAll match all terms. If true - AND search, if false - OR search
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findTerms(String type, Map<String, ?> terms, boolean matchAll,
@@ -1051,7 +1051,7 @@ public final class ParaClient implements Closeable {
 	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param field the property name of an object
 	 * @param wildcard wildcard query string. For example "cat*".
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findWildcard(String type, String field, String wildcard, Pager... pager) {
@@ -1148,7 +1148,7 @@ public final class ParaClient implements Closeable {
 	 * @param <P> type of linked objects
 	 * @param type2 type of linked objects to search for
 	 * @param obj the object to execute this method on
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of linked objects
 	 */
 	public <P extends ParaObject> List<P> getLinkedObjects(ParaObject obj, String type2, Pager... pager) {
@@ -1164,7 +1164,7 @@ public final class ParaClient implements Closeable {
 	 * @param <P> type of linked objects
 	 * @param type2 type of linked objects to search for
 	 * @param obj the object to execute this method on
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @param field the name of the field to target (within a nested field "nstd")
 	 * @param query a query string
 	 * @return a list of linked objects matching the search query
@@ -1282,7 +1282,7 @@ public final class ParaClient implements Closeable {
 	 * @param <P> the type of children
 	 * @param type2 the type of children to look for
 	 * @param obj the object to execute this method on
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
 	public <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, Pager... pager) {
@@ -1303,7 +1303,7 @@ public final class ParaClient implements Closeable {
 	 * @param field the field name to use as filter
 	 * @param term the field value to use as filter
 	 * @param obj the object to execute this method on
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
 	public <P extends ParaObject> List<P> getChildren(ParaObject obj, String type2, String field, String term,
@@ -1327,7 +1327,7 @@ public final class ParaClient implements Closeable {
 	 * @param type2 the type of children to look for
 	 * @param query a query string
 	 * @param obj the object to execute this method on
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
 	public <P extends ParaObject> List<P> findChildren(ParaObject obj, String type2, String query, Pager... pager) {

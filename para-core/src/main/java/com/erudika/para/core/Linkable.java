@@ -17,7 +17,7 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.utils.Pager;
+import com.erudika.para.core.utils.Pager;
 import java.util.List;
 
 /**
@@ -39,28 +39,28 @@ public interface Linkable {
 	/**
 	 * Returns all links between this type object and another type of object.
 	 * @param type2 the other type of object
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of {@code Linker} objects in a many-to-many relationship with this object.
 	 */
 	List<Linker> getLinks(String type2, Pager... pager);
 
 	/**
-	 * Similar to {@link #getChildren(java.lang.String, com.erudika.para.utils.Pager...) }
+	 * Similar to {@link #getChildren(java.lang.String, com.erudika.para.core.utils.Pager...) }
 	 * but for many-to-many relationships.
 	 * @param <P> type of linked objects
 	 * @param type type of linked objects to look for
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of linked objects
 	 */
 	<P extends ParaObject> List<P> getLinkedObjects(String type, Pager... pager);
 
 	/**
-	 * Similar to {@link #findChildren(java.lang.String, java.lang.String, com.erudika.para.utils.Pager...)}
+	 * Similar to {@link #findChildren(java.lang.String, java.lang.String, com.erudika.para.core.utils.Pager...)}
 	 * but for many-to-many relationships. Searches through all linked objects connected to this via
 	 * a {@link Linker} object.
 	 * @param <P> type of linked objects
 	 * @param type type of linked objects to look for
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @param field the name of the field to target (within a nested field "nstd")
 	 * @param query a query string
 	 * @return a list of linked objects matching the search query
@@ -116,7 +116,7 @@ public interface Linkable {
 	 * Returns all child objects linked to this object.
 	 * @param <P> the type of children
 	 * @param type the type of children to look for
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
 	<P extends ParaObject> List<P> getChildren(String type, Pager... pager);
@@ -126,7 +126,7 @@ public interface Linkable {
 	 * connected to this parent via the {@code parentid} field.
 	 * @param <P> the type of children
 	 * @param type the type of children to look for
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @param query a query string
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
@@ -138,7 +138,7 @@ public interface Linkable {
 	 * @param type the type of children to look for
 	 * @param field the field name to use as filter
 	 * @param term the field value to use as filter
-	 * @param pager a {@link com.erudika.para.utils.Pager}
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of {@link ParaObject} in a one-to-many relationship with this object
 	 */
 	<P extends ParaObject> List<P> getChildren(String type, String field, String term, Pager... pager);

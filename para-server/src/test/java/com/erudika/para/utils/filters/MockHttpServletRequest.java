@@ -15,6 +15,7 @@
  */
 package com.erudika.para.utils.filters;
 
+import com.erudika.para.server.utils.filters.CORSFilter;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;

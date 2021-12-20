@@ -17,12 +17,12 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.Para;
-import com.erudika.para.annotations.Stored;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.annotations.Stored;
 import com.erudika.para.core.utils.ParaObjectUtils;
-import com.erudika.para.utils.Config;
-import com.erudika.para.utils.Pager;
-import com.erudika.para.utils.Utils;
+import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Utils;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;

@@ -67,6 +67,7 @@
 				<configuration>
 					<release>11</release>
 					<stylesheetfile>../para-core/src/main/javadoc/stylesheet.css</stylesheetfile>
+					<failOnError>false</failOnError>
 					<show>public</show>
 					<aggregate>true</aggregate>
 					<quiet>true</quiet>
@@ -86,12 +87,12 @@
 				<dependency>
 					<groupId>com.erudika</groupId>
 					<artifactId>para-dao-sql</artifactId>
-					<version>1.41.0</version>
+					<version>1.42.1</version>
 				</dependency>
 				<dependency>
 					<groupId>com.erudika</groupId>
 					<artifactId>para-search-lucene</artifactId>
-					<version>1.41.0</version>
+					<version>1.42.1</version>
 				</dependency>
 			</dependencies>
 		</profile>

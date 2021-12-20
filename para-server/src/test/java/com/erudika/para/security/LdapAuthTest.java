@@ -17,6 +17,8 @@
  */
 package com.erudika.para.security;
 
+import com.erudika.para.server.security.SecurityUtils;
+import com.erudika.para.server.security.LDAPAuthenticator;
 import com.erudika.para.core.App;
 import com.unboundid.ldap.listener.InMemoryDirectoryServer;
 import com.unboundid.ldap.listener.InMemoryDirectoryServerConfig;

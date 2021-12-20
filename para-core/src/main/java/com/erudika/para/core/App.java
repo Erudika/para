@@ -17,14 +17,14 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.AppCreatedListener;
-import com.erudika.para.AppDeletedListener;
-import com.erudika.para.AppSettingAddedListener;
-import com.erudika.para.AppSettingRemovedListener;
+import com.erudika.para.core.listeners.AppCreatedListener;
+import com.erudika.para.core.listeners.AppDeletedListener;
+import com.erudika.para.core.listeners.AppSettingAddedListener;
+import com.erudika.para.core.listeners.AppSettingRemovedListener;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.ParaObjectUtils;
-import com.erudika.para.annotations.Locked;
-import com.erudika.para.annotations.Stored;
+import com.erudika.para.core.annotations.Locked;
+import com.erudika.para.core.annotations.Stored;
 import static com.erudika.para.core.App.AllowedMethods.ALL;
 import static com.erudika.para.core.App.AllowedMethods.GET;
 import static com.erudika.para.core.App.AllowedMethods.GUEST;
@@ -36,11 +36,11 @@ import static com.erudika.para.core.App.AllowedMethods.READ_WRITE;
 import static com.erudika.para.core.App.AllowedMethods.WRITE;
 import static com.erudika.para.core.App.AllowedMethods.WRITE_ONLY;
 import static com.erudika.para.core.App.AllowedMethods.fromString;
-import com.erudika.para.utils.Config;
-import com.erudika.para.utils.Pager;
-import com.erudika.para.utils.Utils;
-import com.erudika.para.validation.Constraint;
-import com.erudika.para.validation.ValidationUtils;
+import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Utils;
+import com.erudika.para.core.validation.Constraint;
+import com.erudika.para.core.validation.ValidationUtils;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
