@@ -32,6 +32,9 @@ import javax.inject.Singleton;
 @Singleton
 public class MockSearch implements Search {
 
+	public MockSearch() {
+	}
+
 	@Override
 	public void index(ParaObject po) {
 		throw new UnsupportedOperationException("Not implemented.");

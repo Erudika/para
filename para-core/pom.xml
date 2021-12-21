@@ -39,9 +39,9 @@
 			<!--<scope>provided</scope>-->
 		</dependency>
 		<dependency>
-			<groupId>javax.inject</groupId>
-			<artifactId>javax.inject</artifactId>
-			<version>1</version>
+			<groupId>jakarta.inject</groupId>
+			<artifactId>jakarta.inject-api</artifactId>
+			<version>1.0.5</version>
 		</dependency>
 
 		<!-- JACKSON -->
@@ -341,7 +341,7 @@
 							<consoleOutput>true</consoleOutput>
 							<failsOnError>true</failsOnError>
 							<linkXRef>false</linkXRef>
-							<!--<excludes>**/module-info.java</excludes>-->
+							<excludes>**/module-info.java</excludes>
 						</configuration>
 						<goals>
 							<goal>check</goal>

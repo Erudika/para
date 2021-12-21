@@ -39,6 +39,9 @@ public class MockCache implements Cache {
 	private static final Logger logger = LoggerFactory.getLogger(MockCache.class);
 	private Map<String, Map<String, Object>> maps = new ConcurrentHashMap<>();
 
+	public MockCache() {
+	}
+
 	@Override
 	public boolean contains(String appid, String id) {
 		if (StringUtils.isBlank(id) || StringUtils.isBlank(appid)) {

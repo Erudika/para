@@ -47,6 +47,9 @@ public class MockDAO implements DAO {
 	private static final Map<String, Map<String, ParaObject>> MAPS =
 			new ConcurrentHashMap<String, Map<String, ParaObject>>();
 
+	public MockDAO() {
+	}
+
 	@Override
 	public <P extends ParaObject> String create(String appid, P so) {
 		if (so == null) {
