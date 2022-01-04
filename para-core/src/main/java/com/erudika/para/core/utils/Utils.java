@@ -467,6 +467,7 @@ public final class Utils {
 	private static MutableDataHolder getMarkdownOptions() {
 		return new MutableDataSet()
 				.set(HtmlRenderer.ESCAPE_HTML, true)
+				.set(HtmlRenderer.SUPPRESSED_LINKS, "(?i)javascript:.*")
 				.set(HtmlRenderer.SOFT_BREAK, Config.getConfigParam("markdown_soft_break", "<br>"))
 				.set(HtmlRenderer.AUTOLINK_WWW_PREFIX, "https://")
 				.set(EmojiExtension.USE_IMAGE_TYPE, EmojiImageType.UNICODE_FALLBACK_TO_IMAGE)
