@@ -214,7 +214,7 @@ public final class Para {
 	}
 
 	/**
-	 * @return a list of {@link DestroyListener
+	 * @return a list of {@link DestroyListener}
 	 */
 	public static Set<DestroyListener> getDestroyListeners() {
 		return Collections.unmodifiableSet(DESTROY_LISTENERS);
