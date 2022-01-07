@@ -167,7 +167,7 @@
 			<groupId>org.hibernate.validator</groupId>
 			<artifactId>hibernate-validator</artifactId>
 			<!-- WARN: Breaking changes in 7.x! Wait until Spring Boot 6, javax=>jakarta -->
-			<version>6.2.0.Final</version>
+			<version>6.2.1.Final</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
