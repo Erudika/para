@@ -308,7 +308,12 @@ public final class SecurityUtils {
 				claimsSet.claim(Config._NAME, user.getName());
 				claimsSet.claim(Config._EMAIL, user.getEmail());
 				claimsSet.claim(Config._IDENTIFIER, user.getIdentifier());
-				claimsSet.claim("picture", user.getPicture());
+				if (StringUtils.startsWithIgnoreCase(user.getPicture(), "http")) {
+					claimsSet.claim("picture", user.getPicture());
+				} else {
+					claimsSet.claim("picture", "https://gravatar.com/avatar/" + Utils.md5(user.getEmail()) +
+							"?size=400&d=retro&r=pg");
+				}
 				claimsSet.subject(user.getId());
 				JWSSigner signer = new MACSigner(app.getSecret() + user.getTokenSecret());
 				SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet.build());
