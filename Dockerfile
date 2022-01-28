@@ -7,7 +7,7 @@ RUN curl -Ls https://github.com/Erudika/para/archive/master.tar.gz | tar -xz -C 
 RUN cd /para/para-master && mvn -q install -DskipTests=true -DskipITs=true && \
 	cd /para/para-master/para-jar && mv target/para-[0-9]*.jar /para/
 
-FROM adoptopenjdk/openjdk11:ubi-minimal-jre
+FROM adoptopenjdk/openjdk11:alpine-jre
 
 ENV BOOT_SLEEP=0 \
     JAVA_OPTS=""
