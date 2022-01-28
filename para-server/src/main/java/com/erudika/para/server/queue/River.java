@@ -28,6 +28,7 @@ import com.erudika.para.core.utils.Config;
 import com.erudika.para.server.utils.HealthUtils;
 import com.erudika.para.core.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectReader;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -188,6 +189,7 @@ public abstract class River implements Runnable {
 		try {
 			boolean urlEncoded = (boolean) parsed.get("urlEncoded");
 			String targetUrl = StringUtils.trimToEmpty((String) parsed.get("targetUrl"));
+			String payload = (String) parsed.get("payload");
 			HttpPost postToTarget = new HttpPost(targetUrl);
 			postToTarget.addHeader("User-Agent", "Para Webhook Dispacher " + Para.getVersion());
 			postToTarget.setHeader(HttpHeaders.CONTENT_TYPE, urlEncoded ?
@@ -195,10 +197,10 @@ public abstract class River implements Runnable {
 			postToTarget.setHeader("X-Webhook-Signature", (String) parsed.get("signature"));
 			postToTarget.setHeader("X-Para-Event", (String) parsed.get("event"));
 			if (urlEncoded) {
-				postToTarget.setEntity(new StringEntity("payload=".
-						concat(Utils.urlEncode((String) parsed.get("payload")))));
+				postToTarget.setEntity(new StringEntity("payload=".concat(Utils.urlEncode(payload)),
+						Charset.forName(Config.DEFAULT_ENCODING)));
 			} else {
-				postToTarget.setEntity(new StringEntity((String) parsed.get("payload")));
+				postToTarget.setEntity(new StringEntity(payload, Charset.forName(Config.DEFAULT_ENCODING)));
 			}
 			boolean ok = false;
 			String status = "";
