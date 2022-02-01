@@ -101,7 +101,7 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = SecurityUtils.getAppidFromAuthRequest(request);
 				String redirectURI = SecurityUtils.getRedirectUrl(request);
-				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
+				App app = Para.getDAO().read(App.id(appid == null ? Para.getConfig().getRootAppIdentifier() : appid));
 				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.SLACK_PREFIX);
 				String entity = Utils.formatMessage(PAYLOAD, authCode, Utils.urlEncode(redirectURI), keys[0], keys[1]);
 
@@ -169,13 +169,13 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 				if (teamData != null && teamData.containsKey("id")) {
 					team = (String) teamData.get("id");
 					if (teamData.containsKey("name")) {
-						team = team.concat(Config.SEPARATOR).concat(Utils.base64enc(((String)
-								teamData.get("name")).getBytes(Config.DEFAULT_ENCODING)));
+						team = team.concat(Para.getConfig().separator()).concat(Utils.base64enc(((String)
+								teamData.get("name")).getBytes(Para.getConfig().defaultEncoding())));
 					}
 				}
 
 				user.setAppid(getAppid(app));
-				user.setIdentifier(Config.SLACK_PREFIX + slackId + Config.SEPARATOR + team);
+				user.setIdentifier(Config.SLACK_PREFIX + slackId + Para.getConfig().separator() + team);
 				user.setEmail(email);
 				user = User.readUserForIdentifier(user);
 				if (user == null) {
@@ -189,7 +189,7 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 					user.setPicture(getPicture(pic));
 					user.setIdentifier(Config.SLACK_PREFIX + slackId);
 					String payload = "{\"access_token\":\"" + accessToken + "\"}";
-					user.setIdpAccessTokenPayload(Utils.base64enc(payload.getBytes(Config.DEFAULT_ENCODING)));
+					user.setIdpAccessTokenPayload(Utils.base64enc(payload.getBytes(Para.getConfig().defaultEncoding())));
 					String id = user.create();
 					if (id == null) {
 						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
@@ -225,7 +225,7 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 		}
 		String payload = "{\"access_token\":\"" + accessToken + "\"}";
 		if (!payload.equals(Utils.base64dec(user.getIdpAccessTokenPayload()))) {
-			user.setIdpAccessTokenPayload(Utils.base64enc(payload.getBytes(Config.DEFAULT_ENCODING)));
+			user.setIdpAccessTokenPayload(Utils.base64enc(payload.getBytes(Para.getConfig().defaultEncoding())));
 			update = true;
 		}
 		return update;

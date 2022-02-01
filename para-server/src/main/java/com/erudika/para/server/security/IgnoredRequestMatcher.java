@@ -17,7 +17,7 @@
  */
 package com.erudika.para.server.security;
 
-import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Para;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigValue;
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ public final class IgnoredRequestMatcher implements RequestMatcher {
 	private final OrRequestMatcher orMatcher;
 
 	private IgnoredRequestMatcher() {
-		ConfigList c = Config.getConfig().getList("security.ignored");
+		ConfigList c = Para.getConfig().getConfig().getList("security.ignored");
 		List<RequestMatcher> list = new ArrayList<>(c.size());
 		for (ConfigValue configValue : c) {
 			list.add(new AntPathRequestMatcher((String) configValue.unwrapped()));

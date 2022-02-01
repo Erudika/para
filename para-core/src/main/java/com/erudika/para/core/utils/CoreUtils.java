@@ -167,7 +167,7 @@ public enum CoreUtils implements InitializeListener {
 
 		@Override
 		public String overwrite(ParaObject obj) {
-			return overwrite(Config.getRootAppIdentifier(), obj);
+			return overwrite(Para.getConfig().getRootAppIdentifier(), obj);
 		}
 
 		@Override

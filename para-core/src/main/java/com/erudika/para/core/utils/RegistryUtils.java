@@ -30,7 +30,7 @@ import java.util.Map;
 public final class RegistryUtils {
 
 	private static final String REGISTRY_PREFIX = "Registry:";
-	private static final String REGISTRY_APP_ID = Config.getRootAppIdentifier();
+	private static final String REGISTRY_APP_ID = Para.getConfig().getRootAppIdentifier();
 
 	private RegistryUtils() { }
 

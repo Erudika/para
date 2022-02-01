@@ -98,7 +98,7 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = SecurityUtils.getAppidFromAuthRequest(request);
 				String redirectURI = SecurityUtils.getRedirectUrl(request);
-				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
+				App app = Para.getDAO().read(App.id(appid == null ? Para.getConfig().getRootAppIdentifier() : appid));
 				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.GPLUS_PREFIX);
 				String entity = Utils.formatMessage(PAYLOAD, authCode, Utils.urlEncode(redirectURI), keys[0], keys[1]);
 

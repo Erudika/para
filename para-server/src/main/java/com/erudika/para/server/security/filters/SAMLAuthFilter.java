@@ -101,18 +101,18 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 		String appid;
 		if (requestURI.startsWith(SAML_ACTION)) {
-			appid = Config.getRootAppIdentifier();
+			appid = Para.getConfig().getRootAppIdentifier();
 			if (requestURI.startsWith(SAML_ACTION + "/")) {
 				String id = Utils.urlDecode(StringUtils.removeStart(requestURI, SAML_ACTION + "/"));
 				if (!id.isEmpty()) {
 					appid = id;
 				} else {
-					appid = Config.getRootAppIdentifier();
+					appid = Para.getConfig().getRootAppIdentifier();
 				}
 			}
 			boolean samlSettingsLoaded = false;
 			try {
-				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
+				App app = Para.getDAO().read(App.id(appid == null ? Para.getConfig().getRootAppIdentifier() : appid));
 				if (app != null) {
 					SettingsBuilder builder = new SettingsBuilder();
 					Map<String, Object> samlSettings;
@@ -299,7 +299,7 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 		}
 		Map<String, Object> conf = new HashMap<>();
 		conf.put(STRICT_PROPERTY_KEY, true);
-		conf.put(DEBUG_PROPERTY_KEY, !Config.IN_PRODUCTION);
+		conf.put(DEBUG_PROPERTY_KEY, !Para.getConfig().inProduction());
 
 		// SP
 		String spEntityId = getConfigProp(app, SP_ENTITYID_PROPERTY_KEY, "");

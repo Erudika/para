@@ -17,7 +17,7 @@
  */
 package com.erudika.para.server.utils;
 
-import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Para;
 import java.util.TimeZone;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -111,7 +111,7 @@ public final class HttpUtils {
 		}
 		Cookie cookie = new Cookie(name, value);
 		cookie.setHttpOnly(httpOnly);
-		cookie.setMaxAge(maxAge < 0 ? Config.SESSION_TIMEOUT_SEC : maxAge);
+		cookie.setMaxAge(maxAge < 0 ? Para.getConfig().sessionTimeoutSec() : maxAge);
 		cookie.setPath("/");
 		cookie.setSecure(req.isSecure());
 		res.addCookie(cookie);

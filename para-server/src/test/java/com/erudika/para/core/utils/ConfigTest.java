@@ -29,18 +29,18 @@ public class ConfigTest {
 
 	@Test
 	public void testGetConfigParam() {
-		assertNull(Config.getConfigParam(null, null));
-		assertNull(Config.getConfigParam("", null));
-		assertNull(Config.getConfigParam("null", null));
-		assertEquals("test", Config.getConfigParam("null", "test"));
+		assertNull(Para.getConfig().getConfigParam(null, null));
+		assertNull(Para.getConfig().getConfigParam("", null));
+		assertNull(Para.getConfig().getConfigParam("null", null));
+		assertEquals("test", Para.getConfig().getConfigParam("null", "test"));
 
-		assertEquals("embedded", Config.getConfigParam("env", ""));
+		assertEquals("embedded", Para.getConfig().getConfigParam("env", ""));
 		System.setProperty("para.env", "production");
-		assertEquals("production", Config.getConfigParam("env", ""));
+		assertEquals("production", Para.getConfig().getConfigParam("env", ""));
 	}
 
 	@Test
 	public void testGetConfig() {
-		assertNotNull(Config.getConfig());
+		assertNotNull(Para.getConfig().getConfig());
 	}
 }

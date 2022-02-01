@@ -21,6 +21,7 @@ package com.erudika.para.server.security;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
 import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.server.utils.HttpUtils;
 import com.erudika.para.core.utils.Utils;
 import javax.servlet.http.HttpServletRequest;
@@ -90,7 +91,7 @@ public class SimpleRememberMeServices extends TokenBasedRememberMeServices {
 
 	@Override
 	protected void setCookie(String[] tokens, int maxAge, HttpServletRequest request, HttpServletResponse response) {
-		HttpUtils.setAuthCookie(Config.getConfigParam("auth_cookie", Config.PARA.concat("-auth")),
+		HttpUtils.setAuthCookie(Para.getConfig().getConfigParam("auth_cookie", Config.PARA.concat("-auth")),
 				encodeCookie(tokens), maxAge, request, response);
 	}
 

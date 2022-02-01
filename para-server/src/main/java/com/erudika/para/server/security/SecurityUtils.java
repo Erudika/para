@@ -153,7 +153,7 @@ public final class SecurityUtils {
 		}
 		User user = SecurityUtils.getAuthenticatedUser();
 		if (user != null) {
-			return Para.getDAO().read(Config.getRootAppIdentifier(), App.id(user.getAppid()));
+			return Para.getDAO().read(Para.getConfig().getRootAppIdentifier(), App.id(user.getAppid()));
 		}
 		logger.warn("Unauthenticated request - app not found in security context.");
 		return null;
@@ -302,7 +302,7 @@ public final class SecurityUtils {
 				Date now = new Date();
 				JWTClaimsSet.Builder claimsSet = new JWTClaimsSet.Builder();
 				claimsSet.issueTime(now);
-				claimsSet.expirationTime(new Date(now.getTime() + (Config.ID_TOKEN_EXPIRES_AFTER_SEC * 1000)));
+				claimsSet.expirationTime(new Date(now.getTime() + (Para.getConfig().idTokenExpiresAfterSec() * 1000)));
 				claimsSet.notBeforeTime(now);
 				claimsSet.claim(Config._APPID, app.getId());
 				claimsSet.claim(Config._NAME, user.getName());
@@ -332,7 +332,7 @@ public final class SecurityUtils {
 	 * @return a refresh timestamp to be used by API clients
 	 */
 	private static long getNextRefresh(long tokenValiditySec) {
-		long interval = Config.JWT_REFRESH_INTERVAL_SEC;
+		long interval = Para.getConfig().jwtRefreshIntervalSec();
 		// estimate when the next token refresh should be
 		// usually every hour, or halfway until the time it expires
 		if (tokenValiditySec < (2 * interval)) {
@@ -348,7 +348,7 @@ public final class SecurityUtils {
 	 * @return an array ["app_id", "secret_key"] or ["", ""]
 	 */
 	public static String[] getOAuthKeysForApp(App app, String prefix) {
-		prefix = StringUtils.removeEnd(prefix + "", Config.SEPARATOR);
+		prefix = StringUtils.removeEnd(prefix + "", Para.getConfig().separator());
 		String appIdKey = prefix + "_app_id";
 		String secretKey = prefix + "_secret";
 		String[] keys = new String[]{"", ""};
@@ -359,8 +359,8 @@ public final class SecurityUtils {
 				keys[0] = settings.get(appIdKey) + "";
 				keys[1] = settings.get(secretKey) + "";
 			} else if (app.isRootApp()) {
-				keys[0] = Config.getConfigParam(appIdKey, "");
-				keys[1] = Config.getConfigParam(secretKey, "");
+				keys[0] = Para.getConfig().getConfigParam(appIdKey, "");
+				keys[1] = Para.getConfig().getConfigParam(secretKey, "");
 			}
 		}
 		return keys;
@@ -389,7 +389,7 @@ public final class SecurityUtils {
 				if (settings.containsKey(entry.getKey())) {
 					entry.setValue(settings.get(entry.getKey()) + "");
 				} else if (app.isRootApp()) {
-					entry.setValue(Config.getConfigParam(entry.getKey(), entry.getValue()));
+					entry.setValue(Para.getConfig().getConfigParam(entry.getKey(), entry.getValue()));
 				}
 			}
 		}
@@ -409,7 +409,7 @@ public final class SecurityUtils {
 			if (settings.containsKey(key)) {
 				return String.valueOf(settings.getOrDefault(key, defaultValue));
 			} else if (app.isRootApp()) {
-				return Config.getConfigParam(key, defaultValue);
+				return Para.getConfig().getConfigParam(key, defaultValue);
 			}
 		}
 		return defaultValue;
@@ -501,7 +501,7 @@ public final class SecurityUtils {
 		String recreatedSig = StringUtils.substringAfter(auth2, "Signature=");
 
 		boolean signaturesMatch = StringUtils.equals(givenSig, recreatedSig);
-		if (Config.getConfigBoolean("debug_request_signatures", false)) {
+		if (Para.getConfig().getConfigBoolean("debug_request_signatures", false)) {
 			logger.info("Incoming client signature for request {} {}: {} == {} calculated by server, matching: {}",
 					httpMethod, path, givenSig, recreatedSig, signaturesMatch);
 		}

@@ -21,8 +21,8 @@ import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.annotations.Locked;
 import com.erudika.para.core.annotations.Stored;
-import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -88,8 +88,9 @@ public final class Linker implements ParaObject, Serializable {
 			this.id1 = id1;
 			this.id2 = id2;
 		}
-		setName(this.type1 + Config.SEPARATOR + this.type2);
-		setId(this.type1 + Config.SEPARATOR + this.id1 + Config.SEPARATOR + this.type2 + Config.SEPARATOR + this.id2);
+		String separator = Para.getConfig().separator();
+		setName(this.type1 + separator + this.type2);
+		setId(this.type1 + separator + this.id1 + separator + this.type2 + separator + this.id2);
 	}
 
 	/**
@@ -260,7 +261,7 @@ public final class Linker implements ParaObject, Serializable {
 
 	@Override
 	public String getAppid() {
-		appid = (appid == null) ? Config.getRootAppIdentifier() : appid;
+		appid = (appid == null) ? Para.getConfig().getRootAppIdentifier() : appid;
 		return appid;
 	}
 

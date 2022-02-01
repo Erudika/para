@@ -17,7 +17,7 @@
  */
 package com.erudika.para.server.security;
 
-import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.server.utils.HttpUtils;
 import com.erudika.para.core.utils.Utils;
 import javax.servlet.http.HttpServletRequest;
@@ -49,7 +49,7 @@ public class SimpleRequestCache implements RequestCache {
 	public void saveRequest(HttpServletRequest request, HttpServletResponse response) {
 		if (anyRequestMatcher.matches(request) && !ajaxRequestMatcher.matches(request)) {
 			DefaultSavedRequest savedRequest = new DefaultSavedRequest(request, portResolver);
-			HttpUtils.setStateParam(Config.RETURNTO_COOKIE,
+			HttpUtils.setStateParam(Para.getConfig().returnToCookieName(),
 					Utils.base64enc(savedRequest.getRedirectUrl().getBytes()), request, response);
 		}
 	}
@@ -83,7 +83,7 @@ public class SimpleRequestCache implements RequestCache {
 	 */
 	@Override
 	public void removeRequest(HttpServletRequest request, HttpServletResponse response) {
-		HttpUtils.removeStateParam(Config.RETURNTO_COOKIE, request, response);
+		HttpUtils.removeStateParam(Para.getConfig().returnToCookieName(), request, response);
 	}
 
 }

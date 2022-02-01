@@ -103,7 +103,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = SecurityUtils.getAppidFromAuthRequest(request);
 				String redirectURI = SecurityUtils.getRedirectUrl(request);
-				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
+				App app = Para.getDAO().read(App.id(appid == null ? Para.getConfig().getRootAppIdentifier() : appid));
 				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.MICROSOFT_PREFIX);
 				String entity = Utils.formatMessage(PAYLOAD, authCode, Utils.urlEncode(redirectURI), keys[0], keys[1]);
 
@@ -221,7 +221,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 				HttpEntity respEntity = resp.getEntity();
 				if (respEntity != null && respEntity.getContentType().startsWith("image")) {
 					String ctype = respEntity.getContentType();
-					if (Config.getConfigBoolean("ms_inline_avatars", true)) {
+					if (Para.getConfig().getConfigBoolean("ms_inline_avatars", true)) {
 						byte[] bytes = IOUtils.toByteArray(respEntity.getContent());
 						if (bytes != null && bytes.length > 0) {
 							byte[] bytes64 = Base64.encodeBase64(bytes);

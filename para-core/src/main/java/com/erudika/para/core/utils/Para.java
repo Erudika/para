@@ -56,12 +56,13 @@ import org.slf4j.LoggerFactory;
  */
 public final class Para {
 
+	private static final ParaConfig CONF = new ParaConfig();
 	/**
 	 * The ASCII logo.
 	 */
 	public static final String LOGO;
 	static {
-		boolean printVer = Config.getConfigBoolean("print_version", true);
+		boolean printVer = CONF.getConfigBoolean("print_version", true);
 		String[] logo = {"",
 			"      ____  ___ _ ____ ___ _ ",
 			"     / __ \\/ __` / ___/ __` /",
@@ -81,8 +82,8 @@ public final class Para {
 	private static final Set<InitializeListener> INIT_LISTENERS = new LinkedHashSet<InitializeListener>();
 	private static final Set<IOListener> IO_LISTENERS = new LinkedHashSet<IOListener>();
 	private static final Set<IOListener> SEARCH_LISTENERS = new LinkedHashSet<IOListener>();
-	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(Config.EXECUTOR_THREADS);
-	private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(Config.EXECUTOR_THREADS);
+	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(CONF.executorThreads());
+	private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(CONF.executorThreads());
 	private static ClassLoader paraClassLoader;
 	private static volatile boolean isInitialized = false;
 
@@ -105,7 +106,7 @@ public final class Para {
 		isInitialized = true;
 		printLogo();
 		try {
-			logger.info("--- Para.initialize() [{}] ---", Config.ENVIRONMENT);
+			logger.info("--- Para.initialize() [{}] ---", CONF.environment());
 
 			for (InitializeListener initListener : INIT_LISTENERS) {
 				if (initListener != null) {
@@ -340,7 +341,7 @@ public final class Para {
 			try {
 				ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
 				List<URL> jars = new ArrayList<>();
-				File lib = new File(Config.getConfigParam("plugin_folder", "lib/"));
+				File lib = new File(CONF.getConfigParam("plugin_folder", "lib/"));
 				if (lib.exists() && lib.isDirectory()) {
 					for (File file : FileUtils.listFiles(lib, new String[]{"jar"}, false)) {
 						jars.add(file.toURI().toURL());
@@ -360,7 +361,7 @@ public final class Para {
 	 * @return credentials for the root app
 	 */
 	public static Map<String, String> setup() {
-		return newApp(Config.getRootAppIdentifier(), Config.APP_NAME, false, false);
+		return newApp(Para.getConfig().getRootAppIdentifier(), CONF.appName(), false, false);
 	}
 
 	/**
@@ -416,7 +417,7 @@ public final class Para {
 	 * Prints the Para logo to System.out.
 	 */
 	public static void printLogo() {
-		if (Config.getConfigBoolean("print_logo", true)) {
+		if (CONF.getConfigBoolean("print_logo", true)) {
 			System.out.print(LOGO);
 		}
 	}
@@ -429,4 +430,10 @@ public final class Para {
 		return VersionInfo.getVersion();
 	}
 
+	/**
+	 * @return the default Para CONF instance.
+	 */
+	public static ParaConfig getConfig() {
+		return CONF;
+	}
 }

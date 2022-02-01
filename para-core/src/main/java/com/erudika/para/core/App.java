@@ -36,8 +36,8 @@ import static com.erudika.para.core.App.AllowedMethods.READ_WRITE;
 import static com.erudika.para.core.App.AllowedMethods.WRITE;
 import static com.erudika.para.core.App.AllowedMethods.WRITE_ONLY;
 import static com.erudika.para.core.App.AllowedMethods.fromString;
-import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.core.validation.Constraint;
 import com.erudika.para.core.validation.ValidationUtils;
@@ -88,7 +88,7 @@ public class App implements ParaObject, Serializable {
 	public static final String ALLOW_ALL = "*";
 
 	private static final long serialVersionUID = 1L;
-	private static final String PREFIX = Utils.type(App.class).concat(Config.SEPARATOR);
+	private static final String PREFIX = Utils.type(App.class).concat(Para.getConfig().separator());
 	private static final Set<AppCreatedListener> CREATE_LISTENERS = new LinkedHashSet<AppCreatedListener>();
 	private static final Set<AppDeletedListener> DELETE_LISTENERS = new LinkedHashSet<AppDeletedListener>();
 	private static final Set<AppSettingAddedListener> ADD_SETTING_LISTENERS = new LinkedHashSet<>();
@@ -318,7 +318,7 @@ public class App implements ParaObject, Serializable {
 	 * @return the identifier (appid)
 	 */
 	public String getAppIdentifier() {
-		String pre = isSharingTable() && Config.getConfigBoolean("prepend_shared_appids_with_space", false) ? " " : "";
+		String pre = isSharingTable() && Para.getConfig().getConfigBoolean("prepend_shared_appids_with_space", false) ? " " : "";
 		return (getId() != null) ? getId().replaceFirst(PREFIX, pre) : "";
 	}
 
@@ -366,7 +366,7 @@ public class App implements ParaObject, Serializable {
 			tokenValiditySec = Math.abs(((Number) getSettings().get("session_timeout")).longValue());
 		}
 		if (tokenValiditySec == null || tokenValiditySec <= 0) {
-			tokenValiditySec = (long) Config.JWT_EXPIRES_AFTER_SEC;
+			tokenValiditySec = (long) Para.getConfig().jwtExpiresAfterSec();
 		}
 		return tokenValiditySec;
 	}
@@ -474,7 +474,7 @@ public class App implements ParaObject, Serializable {
 	 */
 	@JsonIgnore
 	public boolean isRootApp() {
-		return StringUtils.equals(id(Config.getRootAppIdentifier()), getId());
+		return StringUtils.equals(id(Para.getConfig().getRootAppIdentifier()), getId());
 	}
 	/**
 	 * Return true if the app is the root app (the first one created).
@@ -482,7 +482,7 @@ public class App implements ParaObject, Serializable {
 	 * @return true if root
 	 */
 	public static boolean isRoot(String appid) {
-		return StringUtils.equals(id(Config.getRootAppIdentifier()), id(appid));
+		return StringUtils.equals(id(Para.getConfig().getRootAppIdentifier()), id(appid));
 	}
 
 	/**
@@ -744,7 +744,7 @@ public class App implements ParaObject, Serializable {
 			}
 		}
 		if (allow) {
-			if (isRootApp() && !Config.getConfigBoolean("clients_can_access_root_app", false)) {
+			if (isRootApp() && !Para.getConfig().getConfigBoolean("clients_can_access_root_app", false)) {
 				return false;
 			}
 			if (StringUtils.isBlank(subjectid)) {
@@ -896,9 +896,9 @@ public class App implements ParaObject, Serializable {
 		if (StringUtils.isBlank(pluralDatatype) || StringUtils.isBlank(datatype)) {
 			return;
 		}
-		if (getDatatypes().size() >= Config.MAX_DATATYPES_PER_APP) {
+		if (getDatatypes().size() >= Para.getConfig().maxDatatypesPerApp()) {
 			LoggerFactory.getLogger(App.class).warn("Maximum number of types per app reached - {}.",
-					Config.MAX_DATATYPES_PER_APP);
+					Para.getConfig().maxDatatypesPerApp());
 			return;
 		}
 		if (!getDatatypes().containsKey(pluralDatatype) && !getDatatypes().containsValue(datatype) &&
@@ -1052,7 +1052,7 @@ public class App implements ParaObject, Serializable {
 
 	@Override
 	public String getAppid() {
-		appid = (appid == null) ? Config.getRootAppIdentifier() : appid;
+		appid = (appid == null) ? Para.getConfig().getRootAppIdentifier() : appid;
 		return appid;
 	}
 

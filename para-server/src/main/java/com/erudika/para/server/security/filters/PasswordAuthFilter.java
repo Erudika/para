@@ -23,7 +23,6 @@ import com.erudika.para.core.User;
 import com.erudika.para.server.security.AuthenticatedUserDetails;
 import com.erudika.para.server.security.SecurityUtils;
 import com.erudika.para.server.security.UserAuthentication;
-import com.erudika.para.core.utils.Config;
 import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -99,8 +98,8 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 	public UserAuthentication getOrCreateUser(App app, String accessToken) {
 		UserAuthentication userAuth = null;
 		User user = new User();
-		if (accessToken != null && accessToken.contains(Config.SEPARATOR)) {
-			String[] parts = accessToken.split(Config.SEPARATOR, 3);
+		if (accessToken != null && accessToken.contains(Para.getConfig().separator())) {
+			String[] parts = accessToken.split(Para.getConfig().separator(), 3);
 			String email = parts[0];
 			String name = StringUtils.trimToEmpty(parts[1]);
 			String pass = (parts.length > 2) ? parts[2] : "";
@@ -117,7 +116,7 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 			if (user == null) {
 				user = new User();
 				user.setActive(Boolean.parseBoolean(SecurityUtils.getSettingForApp(app, "security.allow_unverified_emails",
-						Config.getConfigParam("security.allow_unverified_emails", "false"))));
+						Para.getConfig().getConfigParam("security.allow_unverified_emails", "false"))));
 				user.setAppid(appid);
 				user.setName(name);
 				user.setIdentifier(email);

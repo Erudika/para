@@ -100,7 +100,7 @@ public class AmazonAuthFilter extends AbstractAuthenticationProcessingFilter {
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = SecurityUtils.getAppidFromAuthRequest(request);
 				String redirectURI = SecurityUtils.getRedirectUrl(request);
-				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
+				App app = Para.getDAO().read(App.id(appid == null ? Para.getConfig().getRootAppIdentifier() : appid));
 				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.AMAZON_PREFIX);
 				String entity = Utils.formatMessage(PAYLOAD, authCode, Utils.urlEncode(redirectURI), keys[0], keys[1]);
 
@@ -204,7 +204,7 @@ public class AmazonAuthFilter extends AbstractAuthenticationProcessingFilter {
 		}
 		String payload = "{\"access_token\":\"" + accessToken + "\"}";
 		if (!payload.equals(Utils.base64dec(user.getIdpAccessTokenPayload()))) {
-			user.setIdpAccessTokenPayload(Utils.base64enc(payload.getBytes(Config.DEFAULT_ENCODING)));
+			user.setIdpAccessTokenPayload(Utils.base64enc(payload.getBytes(Para.getConfig().defaultEncoding())));
 			update = true;
 		}
 		return update;

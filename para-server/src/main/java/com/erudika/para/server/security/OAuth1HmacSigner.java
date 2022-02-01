@@ -17,7 +17,7 @@
  */
 package com.erudika.para.server.security;
 
-import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -69,7 +69,7 @@ public final class OAuth1HmacSigner {
 			if (httpMethod != null && url != null && !url.trim().isEmpty() && params != null && apiSecret != null) {
 				Map<String, String[]> paramMap = new TreeMap<>(params);
 				String keyString = percentEncode(apiSecret) + "&" + percentEncode(tokenSecret);
-				byte[] keyBytes = keyString.getBytes(Config.DEFAULT_ENCODING);
+				byte[] keyBytes = keyString.getBytes(Para.getConfig().defaultEncoding());
 
 				SecretKey key = new SecretKeySpec(keyBytes, "HmacSHA1");
 				Mac mac = Mac.getInstance("HmacSHA1");
@@ -81,7 +81,7 @@ public final class OAuth1HmacSigner {
 						+ "&" + percentEncode(normalizeRequestParameters(paramMap));
 				logger.debug("Oatuh1 base string: {}", sbs);
 
-				byte[] text = sbs.getBytes(Config.DEFAULT_ENCODING);
+				byte[] text = sbs.getBytes(Para.getConfig().defaultEncoding());
 				String sig = Utils.base64enc(mac.doFinal(text)).trim();
 				logger.debug("Oauth1 Signature: {}", sig);
 
@@ -185,7 +185,7 @@ public final class OAuth1HmacSigner {
 			return "";
 		}
 		try {
-			return URLEncoder.encode(s, Config.DEFAULT_ENCODING)
+			return URLEncoder.encode(s, Para.getConfig().defaultEncoding())
 					.replaceAll("\\+", "%20").replaceAll("\\*", "%2A")
 					.replaceAll("%7E", "~");
 		} catch (UnsupportedEncodingException ex) {

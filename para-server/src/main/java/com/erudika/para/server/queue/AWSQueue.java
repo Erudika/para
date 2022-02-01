@@ -18,7 +18,7 @@
 package com.erudika.para.server.queue;
 
 import com.erudika.para.core.queue.Queue;
-import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Para;
 import java.util.Collections;
 import java.util.List;
 import javax.inject.Singleton;
@@ -38,7 +38,7 @@ public class AWSQueue implements Queue {
 	 * No-args constructor.
 	 */
 	public AWSQueue() {
-		this(Config.DEFAULT_QUEUE_NAME);
+		this(Para.getConfig().defaultQueueName());
 	}
 
 	/**

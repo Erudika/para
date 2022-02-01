@@ -71,7 +71,7 @@ public class AspectsIT {
 			}
 		}));
 
-//		ElasticSearchUtils.createIndex(Config.getRootAppIdentifier());
+//		ElasticSearchUtils.createIndex(Para.getConfig().getRootAppIdentifier());
 
 		s0 = new Sysprop("s111");
 		s0.setName("John Doe");
@@ -118,6 +118,7 @@ public class AspectsIT {
 		assertNull(c.get(uB.getId()));
 
 		uB.setEmail("tes1@test.com");
+		uB.setPassword("goodpass123");
 		uB.setIdentifier(uB.getEmail());
 		uB.create();
 		assertNotNull(d.read(uB.getId()));

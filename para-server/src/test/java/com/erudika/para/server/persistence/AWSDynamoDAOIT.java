@@ -17,12 +17,10 @@
  */
 package com.erudika.para.server.persistence;
 
-import com.erudika.para.server.persistence.AWSDynamoUtils;
-import com.erudika.para.server.persistence.AWSDynamoDAO;
 import com.erudika.para.core.App;
 import com.erudika.para.core.Sysprop;
-import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,7 +50,7 @@ public class AWSDynamoDAOIT extends DAOTest {
 	public static void setUpClass() throws InterruptedException {
 		System.setProperty("para.prepend_shared_appids_with_space", "true");
 		System.setProperty("para.app_name", ROOT_APP_NAME);
-		AWSDynamoUtils.createTable(Config.getRootAppIdentifier());
+		AWSDynamoUtils.createTable(Para.getConfig().getRootAppIdentifier());
 		AWSDynamoUtils.createTable(appid1);
 		AWSDynamoUtils.createTable(appid2);
 		AWSDynamoUtils.createTable(appid3);
@@ -61,7 +59,7 @@ public class AWSDynamoDAOIT extends DAOTest {
 
 	@AfterClass
 	public static void tearDownClass() {
-		AWSDynamoUtils.deleteTable(Config.getRootAppIdentifier());
+		AWSDynamoUtils.deleteTable(Para.getConfig().getRootAppIdentifier());
 		AWSDynamoUtils.deleteTable(appid1);
 		AWSDynamoUtils.deleteTable(appid2);
 		AWSDynamoUtils.deleteTable(appid3);

@@ -80,6 +80,7 @@ import static com.erudika.para.core.utils.Para.newApp;
 import static com.erudika.para.core.utils.Para.setup;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.metrics.Metrics;
+import com.erudika.para.core.utils.Para;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MapperFeature;
@@ -127,11 +128,11 @@ public final class Api1 extends ResourceConfig {
 	 * Initializes all of the API resources.
 	 */
 	public Api1() {
-		if (!Config.API_ENABLED) {
+		if (!Para.getConfig().apiEnabled()) {
 			return;
 		}
 		property(ServerProperties.WADL_FEATURE_DISABLE, true);
-		setApplicationName(Config.getRootAppIdentifier());
+		setApplicationName(Para.getConfig().getRootAppIdentifier());
 		register(GenericExceptionMapper.class);
 		register(new JacksonJsonProvider(ParaObjectUtils.getJsonMapper()));
 		register(FieldFilter.class);
@@ -354,7 +355,7 @@ public final class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				Map<String, String> info = new TreeMap<>();
 				info.put("info", "Para - the backend for busy developers.");
-				if (Config.getConfigBoolean("print_version", true)) {
+				if (Para.getConfig().getConfigBoolean("print_version", true)) {
 					info.put("version", StringUtils.replace(getVersion(), "-SNAPSHOT", ""));
 				}
 				return Response.ok(info).build();
@@ -1037,7 +1038,7 @@ public final class Api1 extends ResourceConfig {
 					ObjectReader reader = ParaObjectUtils.getJsonMapper().
 							readerFor(new TypeReference<List<Map<String, Object>>>() { });
 					int count = 0;
-					int importBatchSize = Config.getConfigInt("import_batch_size", 100);
+					int importBatchSize = Para.getConfig().getConfigInt("import_batch_size", 100);
 					String filename = Optional.ofNullable(ctx.getUriInfo().getQueryParameters().getFirst("filename")).
 							orElse(app.getAppIdentifier().trim() + "_backup.zip");
 					Sysprop s = new Sysprop();

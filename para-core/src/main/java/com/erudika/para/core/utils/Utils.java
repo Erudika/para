@@ -145,7 +145,7 @@ public final class Utils {
 	/////////////////////////////////////////////
 
 	private static void initIdGenerator() {
-		String workerID = Config.WORKER_ID;
+		String workerID = Para.getConfig().workerId();
 		workerId = NumberUtils.toLong(workerID, 1);
 
 		if (workerId > MAX_WORKER_ID || workerId < 0) {
@@ -196,8 +196,8 @@ public final class Utils {
 	public static String hmacSHA256(String message, String secret) {
 		try {
 			Mac hmac = Mac.getInstance("HmacSHA256");
-			hmac.init(new SecretKeySpec(secret.getBytes(Config.DEFAULT_ENCODING), "HmacSHA256"));
-			return Utils.base64enc(hmac.doFinal(message.getBytes(Config.DEFAULT_ENCODING)));
+			hmac.init(new SecretKeySpec(secret.getBytes(Para.getConfig().defaultEncoding()), "HmacSHA256"));
+			return Utils.base64enc(hmac.doFinal(message.getBytes(Para.getConfig().defaultEncoding())));
 		} catch (Exception e) {
 			return "";
 		}
@@ -457,7 +457,7 @@ public final class Utils {
 			return "";
 		}
 		try {
-			return new String(Base64.decodeBase64(str), Config.DEFAULT_ENCODING);
+			return new String(Base64.decodeBase64(str), Para.getConfig().defaultEncoding());
 		} catch (Exception ex) {
 			logger.error("Failed to decode base64 string '{}'.", str, ex);
 		}
@@ -468,7 +468,7 @@ public final class Utils {
 		return new MutableDataSet()
 				.set(HtmlRenderer.ESCAPE_HTML, true)
 				.set(HtmlRenderer.SUPPRESSED_LINKS, "(?i)javascript:.*")
-				.set(HtmlRenderer.SOFT_BREAK, Config.getConfigParam("markdown_soft_break", "<br>"))
+				.set(HtmlRenderer.SOFT_BREAK, Para.getConfig().getConfigParam("markdown_soft_break", "<br>"))
 				.set(HtmlRenderer.AUTOLINK_WWW_PREFIX, "https://")
 				.set(EmojiExtension.USE_IMAGE_TYPE, EmojiImageType.UNICODE_FALLBACK_TO_IMAGE)
 				// for full GFM table compatibility add the following table extension options:
@@ -672,7 +672,7 @@ public final class Utils {
 		}
 		String decoded = s;
 		try {
-			decoded = URLDecoder.decode(s, Config.DEFAULT_ENCODING);
+			decoded = URLDecoder.decode(s, Para.getConfig().defaultEncoding());
 		} catch (UnsupportedEncodingException ex) {
 			logger.error(null, ex);
 		}
@@ -690,7 +690,7 @@ public final class Utils {
 		}
 		String encoded = s;
 		try {
-			encoded = URLEncoder.encode(s, Config.DEFAULT_ENCODING);
+			encoded = URLEncoder.encode(s, Para.getConfig().defaultEncoding());
 		} catch (UnsupportedEncodingException ex) {
 			logger.error(null, ex);
 		}
@@ -788,32 +788,6 @@ public final class Utils {
 	 */
 	public static String getSystemProperty(String name) {
 		return StringUtils.isBlank(name) ? "" : System.getProperty(name);
-	}
-
-	/**
-	 * Returns the adjusted size of an image (doesn't do any resizing).
-	 * @param h an image height
-	 * @param w an image width
-	 * @return the adjusted width and height if they are larger than {@link Config#MAX_IMG_SIZE_PX}.
-	 * @see Config#MAX_IMG_SIZE_PX
-	 */
-	public static int[] getMaxImgSize(int h, int w) {
-		int[] size = {h, w};
-		int max = Config.MAX_IMG_SIZE_PX;
-		if (w == h) {
-			size[0] = Math.min(h, max);
-			size[1] = Math.min(w, max);
-		} else if (Math.max(h, w) > max) {
-			int ratio = (100 * max) / Math.max(h, w);
-			if (h > w) {
-				size[0] = max;
-				size[1] = (w * ratio) / 100;
-			} else {
-				size[0] = (h * ratio) / 100;
-				size[1] = max;
-			}
-		}
-		return size;
 	}
 
 	/**

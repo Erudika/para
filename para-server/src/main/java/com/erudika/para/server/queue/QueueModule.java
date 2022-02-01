@@ -19,7 +19,6 @@ package com.erudika.para.server.queue;
 
 import com.erudika.para.core.queue.Queue;
 import com.erudika.para.core.utils.Para;
-import com.erudika.para.core.utils.Config;
 import com.google.inject.AbstractModule;
 import java.util.ServiceLoader;
 import org.apache.commons.lang3.StringUtils;
@@ -31,7 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 public class QueueModule extends AbstractModule {
 
 	protected void configure() {
-		String selectedQueue = Config.getConfigParam("q", "");
+		String selectedQueue = Para.getConfig().getConfigParam("q", "");
 		if (StringUtils.isBlank(selectedQueue)) {
 			bindToDefault();
 		} else {

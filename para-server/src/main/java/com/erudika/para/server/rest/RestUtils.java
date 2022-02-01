@@ -206,10 +206,10 @@ public final class RestUtils {
 		Object entity;
 		try {
 			if (is != null) {
-				if (is.available() > Config.MAX_ENTITY_SIZE_BYTES) {
+				if (is.available() > Para.getConfig().maxEntitySizeBytes()) {
 					return getStatusResponse(Response.Status.BAD_REQUEST,
 							"Request is too large - the maximum is " +
-							(Config.MAX_ENTITY_SIZE_BYTES / 1024) + " KB.");
+							(Para.getConfig().maxEntitySizeBytes() / 1024) + " KB.");
 				}
 				if (type == null) {
 					entity = is;
@@ -759,8 +759,8 @@ public final class RestUtils {
 		if (termsList != null) {
 			Map<String, String> terms = new HashMap<>(termsList.size());
 			for (String termTuple : termsList) {
-				if (!StringUtils.isBlank(termTuple) && termTuple.contains(Config.SEPARATOR)) {
-					String[] split = termTuple.split(Config.SEPARATOR, 2);
+				if (!StringUtils.isBlank(termTuple) && termTuple.contains(Para.getConfig().separator())) {
+					String[] split = termTuple.split(Para.getConfig().separator(), 2);
 					terms.put(split[0], split[1]);
 				}
 			}
@@ -900,12 +900,12 @@ public final class RestUtils {
 	public static Pager getPagerFromParams(MultivaluedMap<String, String> params) {
 		Pager pager = new Pager();
 		pager.setPage(NumberUtils.toLong(paramOrDefault(params, "page", ""), 0));
-		if (pager.getPage() > Config.MAX_PAGES) {
-			pager.setPage(Config.MAX_PAGES);
+		if (pager.getPage() > Para.getConfig().maxPages()) {
+			pager.setPage(Para.getConfig().maxPages());
 		}
 		pager.setLimit(NumberUtils.toInt(paramOrDefault(params, "limit", ""), pager.getLimit()));
-		if (pager.getLimit() > Config.MAX_PAGE_LIMIT) {
-			pager.setLimit(Config.MAX_PAGE_LIMIT);
+		if (pager.getLimit() > Para.getConfig().maxPageLimit()) {
+			pager.setLimit(Para.getConfig().maxPageLimit());
 		}
 		pager.setSortby(paramOrDefault(params, "sort", pager.getSortby()));
 		pager.setDesc(Boolean.parseBoolean(paramOrDefault(params, "desc", "true")));
@@ -948,7 +948,7 @@ public final class RestUtils {
 		try (ServletOutputStream out = response.getOutputStream()) {
 			response.setStatus(status);
 			response.setContentType(MediaType.APPLICATION_JSON);
-			response.setCharacterEncoding(Config.DEFAULT_ENCODING);
+			response.setCharacterEncoding(Para.getConfig().defaultEncoding());
 			ParaObjectUtils.getJsonWriter().writeValue(out, getStatusResponse(Response.Status.
 					fromStatusCode(status), message).getEntity());
 		} catch (Exception ex) {
@@ -968,7 +968,7 @@ public final class RestUtils {
 		try (ServletOutputStream out = response.getOutputStream()) {
 			response.setStatus(HttpServletResponse.SC_OK);
 			response.setContentType(MediaType.APPLICATION_JSON);
-			response.setCharacterEncoding(Config.DEFAULT_ENCODING);
+			response.setCharacterEncoding(Para.getConfig().defaultEncoding());
 			ParaObjectUtils.getJsonWriter().writeValue(out, obj);
 		} catch (Exception ex) {
 			logger.error(null, ex);

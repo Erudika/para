@@ -19,7 +19,6 @@ package com.erudika.para.server.queue;
 
 import com.erudika.para.core.listeners.DestroyListener;
 import com.erudika.para.core.utils.Para;
-import com.erudika.para.core.utils.Config;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +64,7 @@ public final class AWSQueueUtils {
 		if (sqsClient != null) {
 			return sqsClient;
 		}
-		if (Config.getConfigBoolean("aws_sqs_local", false)) {
+		if (Para.getConfig().getConfigBoolean("aws_sqs_local", false)) {
 			sqsClient = SqsAsyncClient.builder().endpointOverride(URI.create(LOCAL_ENDPOINT)).
 					credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x"))).build();
 		} else {

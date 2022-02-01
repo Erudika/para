@@ -513,8 +513,8 @@ public final class ParaObjectUtils {
 
 				CORE_CLASSES.putAll(CORE_PARA_CLASSES);
 
-				if (!Config.CORE_PACKAGE_NAME.isEmpty()) {
-					ClassGraph cg2 = new ClassGraph().enableClassInfo().acceptPackages(Config.CORE_PACKAGE_NAME);
+				if (!Para.getConfig().corePackageName().isEmpty()) {
+					ClassGraph cg2 = new ClassGraph().enableClassInfo().acceptPackages(Para.getConfig().corePackageName());
 					try (ScanResult scanResult = cg2.scan()) {
 						ClassInfoList classes = scanResult.getClassesImplementing(ParaObject.class.getName()).
 								filter(ci -> !ci.isInterface() && !ci.isAbstract());

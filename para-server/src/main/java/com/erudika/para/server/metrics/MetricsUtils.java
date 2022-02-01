@@ -62,7 +62,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 
 		@Override
 		public void onInitialize() {
-			if (!Config.getConfigBoolean("metrics_enabled", true)) {
+			if (!Para.getConfig().getConfigBoolean("metrics_enabled", true)) {
 				return;
 			}
 			// setup metrics log file reporting
@@ -71,7 +71,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 				systemRegistry = SharedMetricRegistries.setDefault(SYSTEM_METRICS_NAME);
 			}
 			Logger metricsLogger = LoggerFactory.getLogger("paraMetrics");
-			int loggingRate = Config.getConfigInt("metrics.logging_rate", 60);
+			int loggingRate = Para.getConfig().getConfigInt("metrics.logging_rate", 60);
 			if (loggingRate > 0) {
 				Slf4jReporter.forRegistry(systemRegistry).outputTo(metricsLogger).build().
 						start(loggingRate, TimeUnit.SECONDS);
@@ -81,9 +81,9 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 			initializeMetrics(SYSTEM_METRICS_NAME);
 
 			// setup graphite reporting for the system
-			String host = Config.getConfigParam("metrics.graphite.host", null);
+			String host = Para.getConfig().getConfigParam("metrics.graphite.host", null);
 			if (GRAPHITE_PERIOD > 0 && !StringUtils.isBlank(host)) {
-				int port = Config.getConfigInt("metrics.graphite.port", 2003);
+				int port = Para.getConfig().getConfigInt("metrics.graphite.port", 2003);
 				String prefixSystem = MetricsUtils.GRAPHITE_SYS_PREFIX_TEMPLATE;
 				if (INSTANCE_ID != null) {
 					HashMap<String, Object> prefixContext = new HashMap<>();
@@ -110,7 +110,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 					logger.debug("Found a page of {} apps.", appsPage.size());
 				} while (!appsPage.isEmpty());
 
-				logger.info("Found root app '{}' and {} existing child app(s){}", Config.getRootAppIdentifier(),
+				logger.info("Found root app '{}' and {} existing child app(s){}", Para.getConfig().getRootAppIdentifier(),
 						appCount == 0 ? 0 : appCount - 1, appCount == 0 || !logger.isDebugEnabled() ? "." : ":");
 			}
 
@@ -139,13 +139,13 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 	};
 
 	private static final Logger logger = LoggerFactory.getLogger(MetricsUtils.class);
-	private static final String INSTANCE_ID = Config.getConfigParam("instance_id", null);
+	private static final String INSTANCE_ID = Para.getConfig().getConfigParam("instance_id", null);
 
 	private static final Map<String, GraphiteReporter> GRAPHITE_REPORTERS = new HashMap<>();
 	private static final Map<String, GraphiteSettings> GRAPHITE_SETTINGS = new HashMap<>();
-	private static final String GRAPHITE_SYS_PREFIX_TEMPLATE = Config.getConfigParam("metrics.graphite.prefix_system", null);
-	private static final String GRAPHITE_APP_PREFIX_TEMPLATE = Config.getConfigParam("metrics.graphite.prefix_apps", null);
-	private static final int GRAPHITE_PERIOD = Config.getConfigInt("metrics.graphite.period", 0);
+	private static final String GRAPHITE_SYS_PREFIX_TEMPLATE = Para.getConfig().getConfigParam("metrics.graphite.prefix_system", null);
+	private static final String GRAPHITE_APP_PREFIX_TEMPLATE = Para.getConfig().getConfigParam("metrics.graphite.prefix_apps", null);
+	private static final int GRAPHITE_PERIOD = Para.getConfig().getConfigInt("metrics.graphite.period", 0);
 
 	/**
 	 * The name of the registry holding app-specific settings for reporting metrics to Graphite.
@@ -229,7 +229,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 		}
 
 		// register the search timers
-		if (Config.isSearchEnabled()) {
+		if (Para.getConfig().isSearchEnabled()) {
 			String searchClassName = Metrics.getClassName(Para.getSearch().getClass());
 			registry.timer(MetricRegistry.name(searchClassName, "index"));
 			registry.timer(MetricRegistry.name(searchClassName, "unindex"));
@@ -252,7 +252,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 		}
 
 		// register the cache timers
-		if (Config.isCacheEnabled()) {
+		if (Para.getConfig().isCacheEnabled()) {
 			String cacheClassName = Metrics.getClassName(Para.getCache().getClass());
 			registry.timer(MetricRegistry.name(cacheClassName, "contains"));
 			registry.timer(MetricRegistry.name(cacheClassName, "put"));
@@ -264,7 +264,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 		}
 
 		// register timers on the REST endpoints
-		if (Config.API_ENABLED) {
+		if (Para.getConfig().apiEnabled()) {
 			String restUtilsClassName = Metrics.getClassName(RestUtils.class);
 			registry.timer(MetricRegistry.name(restUtilsClassName, "crud", "read"));
 			registry.timer(MetricRegistry.name(restUtilsClassName, "crud", "create"));
@@ -302,7 +302,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 			registry.timer(MetricRegistry.name(resourceHandlerClassName, "handleDelete"));
 		}
 
-		if (Config.getConfigBoolean("metrics.jmx_enabled", false)) {
+		if (Para.getConfig().getConfigBoolean("metrics.jmx_enabled", false)) {
 			JmxReporter.forRegistry(registry).inDomain(registryName).build().start();
 		}
 	}

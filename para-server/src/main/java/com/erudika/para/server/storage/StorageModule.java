@@ -19,7 +19,6 @@ package com.erudika.para.server.storage;
 
 import com.erudika.para.core.storage.FileStore;
 import com.erudika.para.core.utils.Para;
-import com.erudika.para.core.utils.Config;
 import com.google.inject.AbstractModule;
 import java.util.ServiceLoader;
 import org.apache.commons.lang3.StringUtils;
@@ -31,7 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 public class StorageModule extends AbstractModule {
 
 	protected void configure() {
-		String selectedFileStore = Config.getConfigParam("fs", "");
+		String selectedFileStore = Para.getConfig().getConfigParam("fs", "");
 		if (StringUtils.isBlank(selectedFileStore)) {
 			bindToDefault();
 		} else {

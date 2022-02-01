@@ -26,7 +26,6 @@ import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.metrics.Metrics;
 import com.erudika.para.core.persistence.DAO;
 import com.erudika.para.core.search.Search;
-import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.core.validation.ValidationUtils;
 import java.lang.reflect.Method;
@@ -113,8 +112,8 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 
 		try {
 			superMethod = DAO.class.getMethod(daoMethod.getName(), daoMethod.getParameterTypes());
-			indexedAnno = Config.isSearchEnabled() ? superMethod.getAnnotation(Indexed.class) : null;
-			cachedAnno = Config.isCacheEnabled() ? superMethod.getAnnotation(Cached.class) : null;
+			indexedAnno = Para.getConfig().isSearchEnabled() ? superMethod.getAnnotation(Indexed.class) : null;
+			cachedAnno = Para.getConfig().isCacheEnabled() ? superMethod.getAnnotation(Cached.class) : null;
 			detectNestedInvocations(daoMethod);
 		} catch (Exception e) {
 			logger.error("Error in AOP layer!", e);
@@ -393,7 +392,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	 * @param daoMethod invoked dao method
 	 */
 	private void detectNestedInvocations(Method daoMethod) {
-		if (!Config.IN_PRODUCTION && !daoMethod.getName().startsWith("read")) {
+		if (!Para.getConfig().inProduction() && !daoMethod.getName().startsWith("read")) {
 			StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
 			for (StackTraceElement stackTraceElement : stackTraceElements) {
 				if (daoMethod.getDeclaringClass().getName().equals(stackTraceElement.getClassName()) &&

@@ -18,7 +18,7 @@
 package com.erudika.para.server.storage;
 
 import com.erudika.para.core.storage.FileStore;
-import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Para;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -45,7 +45,7 @@ public class LocalFileStore implements FileStore {
 	 * No-args constructor.
 	 */
 	public LocalFileStore() {
-		this(Config.getConfigParam("para.localstorage.folder", ""));
+		this(Para.getConfig().getConfigParam("para.localstorage.folder", ""));
 	}
 
 	/**
@@ -72,7 +72,7 @@ public class LocalFileStore implements FileStore {
 				fis = new FileInputStream(f);
 				return f.canRead() ? new BufferedInputStream(fis) : null;
 			} catch (FileNotFoundException ex) {
-				logger.error(null, ex);
+				logger.debug(null, ex);
 			} finally {
 				if (fis != null) {
 					try {
@@ -94,10 +94,10 @@ public class LocalFileStore implements FileStore {
 		if (StringUtils.isBlank(path)) {
 			return null;
 		}
-		int maxFileSizeMBytes = Config.getConfigInt("para.localstorage.max_filesize_mb", 10);
+		int maxFileSizeMBytes = Para.getConfig().getConfigInt("para.localstorage.max_filesize_mb", 10);
 		try {
 			File f = new File(folder + path);
-			if (f.canWrite()) {
+			if (!f.exists() || f.canWrite()) {
 				long bytesWritten = 0;
 				try (FileOutputStream fos = new FileOutputStream(f)) {
 					try	(BufferedOutputStream bos = new BufferedOutputStream(fos)) {
@@ -119,6 +119,8 @@ public class LocalFileStore implements FileStore {
 					return null;
 				}
 				return f.getAbsolutePath();
+			} else {
+				logger.warn("Failed to write file {} to disk - no permissions.", folder + path);
 			}
 		} catch (IOException e) {
 			logger.error(null, e);

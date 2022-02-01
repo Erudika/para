@@ -18,7 +18,7 @@
 package com.erudika.para.server.email;
 
 import com.erudika.para.core.email.Emailer;
-import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Para;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -39,7 +39,7 @@ import org.springframework.mail.javamail.MimeMessagePreparator;
 public class JavaMailEmailer implements Emailer {
 
 	private static final Logger logger = LoggerFactory.getLogger(JavaMailEmailer.class);
-	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(Config.EXECUTOR_THREADS);
+	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(Para.getConfig().executorThreads());
 	private JavaMailSender mailSender;
 
 	/**
@@ -65,7 +65,7 @@ public class JavaMailEmailer implements Emailer {
 							msg.addBcc(emailz.next());
 						}
 						msg.setSubject(subject);
-						msg.setFrom(Config.SUPPORT_EMAIL);
+						msg.setFrom(Para.getConfig().supportEmail());
 						msg.setText(body, true); // body is assumed to be HTML
 					}
 				};

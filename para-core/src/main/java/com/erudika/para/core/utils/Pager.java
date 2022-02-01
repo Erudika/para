@@ -41,7 +41,7 @@ public class Pager {
 	 * No-args constructor.
 	 */
 	public Pager() {
-		this(1, null, true, Config.MAX_ITEMS_PER_PAGE);
+		this(1, null, true, Para.getConfig().maxItemsPerPage());
 	}
 
 	/**

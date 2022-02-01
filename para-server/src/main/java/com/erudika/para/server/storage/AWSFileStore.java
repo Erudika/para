@@ -18,7 +18,7 @@
 package com.erudika.para.server.storage;
 
 import com.erudika.para.core.storage.FileStore;
-import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Para;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,7 +48,7 @@ public class AWSFileStore implements FileStore {
 	 * No-args constructor.
 	 */
 	public AWSFileStore() {
-		this(Config.getConfigParam("para.s3.bucket", "org.paraio." +
+		this(Para.getConfig().getConfigParam("para.s3.bucket", "org.paraio." +
 				new DefaultAwsRegionProviderChain().getRegion().id()));
 	}
 
@@ -85,7 +85,7 @@ public class AWSFileStore implements FileStore {
 		if (StringUtils.isBlank(path) || data == null) {
 			return null;
 		}
-		int maxFileSizeMBytes = Config.getConfigInt("para.s3.max_filesize_mb", 10);
+		int maxFileSizeMBytes = Para.getConfig().getConfigInt("para.s3.max_filesize_mb", 10);
 		try {
 			Map<String, String> om = new HashMap<String, String>(3);
 			om.put(HttpHeaders.CACHE_CONTROL, "max-age=15552000, must-revalidate");	// 180 days

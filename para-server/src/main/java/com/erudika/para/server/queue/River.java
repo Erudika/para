@@ -60,9 +60,9 @@ import org.slf4j.LoggerFactory;
 public abstract class River implements Runnable {
 
 	private static final Logger logger = LoggerFactory.getLogger(River.class);
-	private static final int SLEEP = Config.getConfigInt("queue.polling_sleep_seconds", 60);
-	private static final int MAX_FAILED_WEBHOOK_ATTEMPTS = Config.getConfigInt("max_failed_webhook_attempts", 10);
-	private static final int MAX_INDEXING_RETRIES = Config.getConfigInt("river.max_indexing_retries", 5);
+	private static final int SLEEP = Para.getConfig().getConfigInt("queue.polling_sleep_seconds", 60);
+	private static final int MAX_FAILED_WEBHOOK_ATTEMPTS = Para.getConfig().getConfigInt("max_failed_webhook_attempts", 10);
+	private static final int MAX_INDEXING_RETRIES = Para.getConfig().getConfigInt("river.max_indexing_retries", 5);
 	private static final CloseableHttpClient HTTP;
 	private static ConcurrentHashMap<String, Integer> pendingIds;
 
@@ -80,8 +80,8 @@ public abstract class River implements Runnable {
 	/**
 	 * The polling interval in seconds for this river. Polls queue ever X seconds.
 	 */
-	public static final int POLLING_INTERVAL = Config.getConfigInt("queue.polling_interval_seconds",
-			Config.IN_PRODUCTION ? 20 : 5);
+	public static final int POLLING_INTERVAL = Para.getConfig().getConfigInt("queue.polling_interval_seconds",
+			Para.getConfig().inProduction() ? 20 : 5);
 
 	/**
 	 * @return a list of messages pulled from queue
@@ -183,7 +183,7 @@ public abstract class River implements Runnable {
 	 * @return number of processed webhooks 1 or 0
 	 */
 	protected int processWebhookPayload(String appid, String id, Map<String, Object> parsed) {
-		if (!Config.WEBHOOKS_ENABLED || !parsed.containsKey("targetUrl") || StringUtils.isBlank(id) || parsed.isEmpty()) {
+		if (!Para.getConfig().webhooksEnabled() || !parsed.containsKey("targetUrl") || StringUtils.isBlank(id) || parsed.isEmpty()) {
 			return 0;
 		}
 		try {
@@ -198,9 +198,9 @@ public abstract class River implements Runnable {
 			postToTarget.setHeader("X-Para-Event", (String) parsed.get("event"));
 			if (urlEncoded) {
 				postToTarget.setEntity(new StringEntity("payload=".concat(Utils.urlEncode(payload)),
-						Charset.forName(Config.DEFAULT_ENCODING)));
+						Charset.forName(Para.getConfig().defaultEncoding())));
 			} else {
-				postToTarget.setEntity(new StringEntity(payload, Charset.forName(Config.DEFAULT_ENCODING)));
+				postToTarget.setEntity(new StringEntity(payload, Charset.forName(Para.getConfig().defaultEncoding())));
 			}
 			boolean ok = false;
 			String status = "";
@@ -218,7 +218,7 @@ public abstract class River implements Runnable {
 			} finally {
 				if (!ok) {
 					// count failed delivieries and disable that webhook object after X failed attempts
-					String countId = "failed_webhook_count" + Config.SEPARATOR + id;
+					String countId = "failed_webhook_count" + Para.getConfig().separator() + id;
 					Integer count = Para.getCache().get(appid, countId);
 					if (count == null) {
 						count = 0;
@@ -254,7 +254,7 @@ public abstract class River implements Runnable {
 	 */
 	@SuppressWarnings("unchecked")
 	protected int processIndexPayload(String appid, String opId, Map<String, Object> parsed) {
-		if (!Config.isSearchEnabled() || StringUtils.isBlank(opId) || parsed.isEmpty()) {
+		if (!Para.getConfig().isSearchEnabled() || StringUtils.isBlank(opId) || parsed.isEmpty()) {
 			return 0;
 		}
 		Object payload = parsed.get("payload");

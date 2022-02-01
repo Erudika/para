@@ -20,7 +20,6 @@ package com.erudika.para.server.persistence;
 import com.erudika.para.core.persistence.MockDAO;
 import com.erudika.para.core.persistence.DAO;
 import com.erudika.para.core.utils.Para;
-import com.erudika.para.core.utils.Config;
 import com.google.inject.AbstractModule;
 import java.util.ServiceLoader;
 import org.apache.commons.lang3.StringUtils;
@@ -32,9 +31,9 @@ import org.apache.commons.lang3.StringUtils;
 public class PersistenceModule extends AbstractModule {
 
 	protected void configure() {
-		String selectedDAO = Config.getConfigParam("dao", "");
+		String selectedDAO = Para.getConfig().getConfigParam("dao", "");
 		if (StringUtils.isBlank(selectedDAO)) {
-			if ("embedded".equals(Config.ENVIRONMENT)) {
+			if ("embedded".equals(Para.getConfig().environment())) {
 				bindToDefault();
 			} else {
 				bind(DAO.class).to(AWSDynamoDAO.class).asEagerSingleton();

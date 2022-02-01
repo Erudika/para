@@ -19,7 +19,6 @@ package com.erudika.para.server.email;
 
 import com.erudika.para.core.email.Emailer;
 import com.erudika.para.core.utils.Para;
-import com.erudika.para.core.utils.Config;
 import java.util.Iterator;
 import java.util.List;
 import javax.inject.Singleton;
@@ -48,14 +47,14 @@ public class AWSEmailer implements Emailer {
 	public AWSEmailer() {
 		sesclient = SesClient.builder().
 				// AWS SES is not available in all regions and it's best if we set it manually
-				region(Region.of(Config.getConfigParam("aws_ses_region", "eu-west-1"))).build();
+				region(Region.of(Para.getConfig().getConfigParam("aws_ses_region", "eu-west-1"))).build();
 	}
 
 	@Override
 	public boolean sendEmail(List<String> emails, String subject, String body) {
 		if (emails != null && !emails.isEmpty() && !StringUtils.isBlank(body)) {
 			SendEmailRequest.Builder request = SendEmailRequest.builder();
-			request.source(Config.SUPPORT_EMAIL).build();
+			request.source(Para.getConfig().supportEmail()).build();
 			Iterator<String> emailz = emails.iterator();
 			Destination.Builder dest = Destination.builder();
 			dest.toAddresses(emailz.next());
@@ -68,7 +67,7 @@ public class AWSEmailer implements Emailer {
 			msg.subject(Content.builder().data(subject).build());
 
 			// Include a body in both text and HTML formats
-			msg.body(Body.builder().html(Content.builder().data(body).charset(Config.DEFAULT_ENCODING).build()).build());
+			msg.body(Body.builder().html(Content.builder().data(body).charset(Para.getConfig().defaultEncoding()).build()).build());
 
 			request.message(msg.build());
 

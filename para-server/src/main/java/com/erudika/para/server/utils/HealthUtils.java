@@ -1,7 +1,6 @@
 package com.erudika.para.server.utils;
 
 import com.erudika.para.core.utils.Para;
-import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.listeners.InitializeListener;
 import com.erudika.para.server.ParaServer;
 import com.erudika.para.core.App;
@@ -30,7 +29,7 @@ public enum HealthUtils implements InitializeListener, Runnable {
 		private boolean rootAppExists = false;
 		private ScheduledFuture<?> scheduledHealthCheck;
 		private final List<String> failedServices = new ArrayList<>(3);
-		private final int healthCheckInterval = Config.getConfigInt("health.check_interval", 60);
+		private final int healthCheckInterval = Para.getConfig().getConfigInt("health.check_interval", 60);
 
 		{
 			App.addAppCreatedListener((App app) -> {
@@ -47,7 +46,7 @@ public enum HealthUtils implements InitializeListener, Runnable {
 
 		@Override
 		public synchronized void performHealthCheck() {
-			String rootAppId = App.id(Config.getRootAppIdentifier());
+			String rootAppId = App.id(Para.getConfig().getRootAppIdentifier());
 			if (!StringUtils.isBlank(rootAppId)) {
 				healthy = true;
 				failedServices.clear();
@@ -64,13 +63,13 @@ public enum HealthUtils implements InitializeListener, Runnable {
 					}
 				}
 				// read the root app from the search, if enabled
-				if (healthy && Config.isSearchEnabled() && Para.getSearch().findById(rootAppId) == null) {
+				if (healthy && Para.getConfig().isSearchEnabled() && Para.getSearch().findById(rootAppId) == null) {
 					healthy = false;
 					failedServices.add("Search");
 				}
 				// test the cache by putting a dummy object in, then remove it
 				// DO NOT assume that the root app object is still cached here from the last read() call above
-				if (healthy && Config.isCacheEnabled()) {
+				if (healthy && Para.getConfig().isCacheEnabled()) {
 					String cacheTestId = UUID.randomUUID().toString();
 					Para.getCache().put(cacheTestId, "ok");
 					healthy = Para.getCache().contains(cacheTestId);
@@ -98,8 +97,8 @@ public enum HealthUtils implements InitializeListener, Runnable {
 						"the search index may be corrupted and may have to be rebuilt." :
 						"root app not found. Open http://localhost:" + ParaServer.getServerPort() +
 								"/v1/_setup in the browser to initialize Para."));
-			}
-			if (Config.getConfigBoolean("health_check_enabled", true) && scheduledHealthCheck == null) {
+							}
+			if (Para.getConfig().getConfigBoolean("health_check_enabled", true) && scheduledHealthCheck == null) {
 				scheduledHealthCheck = Para.getScheduledExecutorService().
 						scheduleAtFixedRate(this, 30, healthCheckInterval, TimeUnit.SECONDS);
 			}

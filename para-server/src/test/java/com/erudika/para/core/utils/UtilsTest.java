@@ -249,13 +249,6 @@ public class UtilsTest {
 	}
 
 	@Test
-	public void testGetMaxImgSize() {
-		int max = Config.MAX_IMG_SIZE_PX;
-		assertTrue(Arrays.equals(new int[]{200, 200}, getMaxImgSize(200, 200)));
-		assertTrue(Arrays.equals(new int[]{max, max}, getMaxImgSize(max+100, max+100)));
-	}
-
-	@Test
 	public void testGetObjectURI() {
 		User u = new User("123");
 		assertNotNull(getObjectURI(null, false, false));

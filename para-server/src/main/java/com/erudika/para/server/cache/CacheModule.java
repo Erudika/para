@@ -19,7 +19,6 @@ package com.erudika.para.server.cache;
 
 import com.erudika.para.core.cache.Cache;
 import com.erudika.para.core.utils.Para;
-import com.erudika.para.core.utils.Config;
 import com.google.inject.AbstractModule;
 import java.util.ServiceLoader;
 import org.apache.commons.lang3.StringUtils;
@@ -31,7 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 public class CacheModule extends AbstractModule {
 
 	protected void configure() {
-		String selectedCache = Config.getConfigParam("cache", "");
+		String selectedCache = Para.getConfig().getConfigParam("cache", "");
 		if (StringUtils.isBlank(selectedCache) || "inmemory".equalsIgnoreCase(selectedCache)) {
 			bindToDefault();
 		} else {

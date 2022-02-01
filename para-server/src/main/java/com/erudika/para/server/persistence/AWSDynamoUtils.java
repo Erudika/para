@@ -99,28 +99,28 @@ public final class AWSDynamoUtils {
 	/**
 	 * The name of the shared table. Default is {@code 0}.
 	 */
-	public static final String SHARED_TABLE = Config.getConfigParam("shared_table_name", "0");
+	public static final String SHARED_TABLE = Para.getConfig().getConfigParam("shared_table_name", "0");
 
 	/**
 	 * Toggles SSE (encryption-at-rest) using own KMS, instead of AWS-owned CMK for all newly created DynamoDB tables.
 	 * Default is {@code false}.
 	 */
-	public static final boolean ENCRYPTION_AT_REST_ENABLED = Config.getConfigBoolean("dynamodb.sse_enabled", false);
+	public static final boolean ENCRYPTION_AT_REST_ENABLED = Para.getConfig().getConfigBoolean("dynamodb.sse_enabled", false);
 
 	/**
 	 * Toggles global tables settings for the specified regions.
 	 */
-	public static final String REPLICA_REGIONS = Config.getConfigParam("dynamodb.replica_regions", "");
+	public static final String REPLICA_REGIONS = Para.getConfig().getConfigParam("dynamodb.replica_regions", "");
 
 	/**
 	 * Toggles point-in-time backups. Default is {@code true}.
 	 */
-	public static final boolean BACKUPS_ENABLED = Config.getConfigBoolean("dynamodb.backups_enabled", Config.IN_PRODUCTION);
+	public static final boolean BACKUPS_ENABLED = Para.getConfig().getConfigBoolean("dynamodb.backups_enabled", Para.getConfig().inProduction());
 
 	/**
 	 * Toggles between provisioned billing and on-demand billing.
 	 */
-	public static final boolean PROVISIONED_MODE = Config.getConfigBoolean("dynamodb.provisioned_mode_enabled", true);
+	public static final boolean PROVISIONED_MODE = Para.getConfig().getConfigBoolean("dynamodb.provisioned_mode_enabled", true);
 
 	private AWSDynamoUtils() { }
 
@@ -137,7 +137,7 @@ public final class AWSDynamoUtils {
 			return ddbClients.get(region);
 		}
 		DynamoDbClient ddbClient;
-		if (Config.IN_PRODUCTION) {
+		if (Para.getConfig().inProduction()) {
 			ddbClient = DynamoDbClient.create();
 		} else {
 			ddbClient = DynamoDbClient.builder().
@@ -205,8 +205,8 @@ public final class AWSDynamoUtils {
 	 * @return true if created
 	 */
 	public static boolean createTable(String appid) {
-		return createTable(appid, Config.getConfigInt("dynamodb.max_read_capacity", 10),
-				Config.getConfigInt("dynamodb.max_write_capacity", 5));
+		return createTable(appid, Para.getConfig().getConfigInt("dynamodb.max_read_capacity", 10),
+				Para.getConfig().getConfigInt("dynamodb.max_write_capacity", 5));
 	}
 
 	/**
@@ -845,7 +845,7 @@ public final class AWSDynamoUtils {
 	}
 
 	protected static void throwIfNecessary(Throwable t) {
-		if (t != null && Config.getConfigBoolean("fail_on_write_errors", true)) {
+		if (t != null && Para.getConfig().getConfigBoolean("fail_on_write_errors", true)) {
 			throw new RuntimeException("DAO write operation failed! - " + t.getMessage(), t);
 		}
 	}

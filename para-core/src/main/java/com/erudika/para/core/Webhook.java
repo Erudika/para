@@ -320,7 +320,7 @@ public class Webhook extends Sysprop {
 		// check if this is a trigger request for a custom event using POST /webhooks
 		if (!StringUtils.isBlank(triggeredEvent) && customPayload != null) {
 			sendEventPayloadToQueue(getAppid(), "customEvents", triggeredEvent, customPayload);
-			setId("triggered" + Config.SEPARATOR + triggeredEvent);
+			setId("triggered" + Para.getConfig().separator() + triggeredEvent);
 			setName("This webhook object is not persisted and should be discarded.");
 			setStored(false);
 			setIndexed(false);

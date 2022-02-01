@@ -117,14 +117,14 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			String authCode = request.getParameter("code");
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = SecurityUtils.getAppidFromAuthRequest(request);
-				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
+				App app = Para.getDAO().read(App.id(appid == null ? Para.getConfig().getRootAppIdentifier() : appid));
 
 				Map<String, Object> token = tokenRequest(app, authCode, SecurityUtils.getRedirectUrl(request), alias);
 				if (token != null) {
 					if (token.containsKey("access_token")) {
 						userAuth = getOrCreateUser(app, token.get("access_token") +
-								Config.SEPARATOR + token.get("refresh_token") +
-								Config.SEPARATOR + token.get("id_token"));
+								Para.getConfig().separator() + token.get("refresh_token") +
+								Para.getConfig().separator() + token.get("id_token"));
 					} else {
 						LOG.info("OAuth 2.0 token request failed with response " + token);
 					}
@@ -158,7 +158,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		UserAuthentication userAuth = null;
 		User user = new User();
 		if (accessToken != null) {
-			String[] tokens = accessToken.split(Config.SEPARATOR);
+			String[] tokens = accessToken.split(Para.getConfig().separator());
 			String refreshToken = null;
 			String idToken = null;
 			if (tokens.length > 0) {
@@ -321,7 +321,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 				if (resp2.getCode() == HttpServletResponse.SC_OK) {
 					profile.putAll(jreader.readValue(respEntity.getContent()));
 				} else {
-					error = IOUtils.toString(respEntity.getContent(), Config.DEFAULT_ENCODING);
+					error = IOUtils.toString(respEntity.getContent(), Para.getConfig().defaultEncoding());
 				}
 			}
 			if (profile.isEmpty() || error != null) {

@@ -23,8 +23,8 @@ import com.erudika.para.core.annotations.Locked;
 import com.erudika.para.core.annotations.Stored;
 import static com.erudika.para.core.Votable.VoteValue.DOWN;
 import static com.erudika.para.core.Votable.VoteValue.UP;
-import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import java.util.Collections;
 import java.util.List;
@@ -79,15 +79,15 @@ public class Vote implements ParaObject {
 		timestamp = Utils.timestamp();
 		setName(getType());
 		this.value = value != null ? value.toString() : null;
-		this.expiresAfter = Config.VOTE_EXPIRES_AFTER_SEC;
-		this.lockedAfter = Config.VOTE_LOCKED_AFTER_SEC;
+		this.expiresAfter = Para.getConfig().voteExpiresAfterSec();
+		this.lockedAfter = Para.getConfig().voteLockedAfterSec();
 	}
 
 	@Override
 	public final String getId() {
 		if (getCreatorid() != null && getParentid() != null && this.id == null) {
-			this.id = getType().concat(Config.SEPARATOR).concat(getCreatorid()).
-					concat(Config.SEPARATOR).concat(getParentid());
+			this.id = getType().concat(Para.getConfig().separator()).concat(getCreatorid()).
+					concat(Para.getConfig().separator()).concat(getParentid());
 		}
 		return this.id;
 	}
@@ -146,7 +146,7 @@ public class Vote implements ParaObject {
 	 */
 	public Integer getExpiresAfter() {
 		if (expiresAfter == null) {
-			expiresAfter = Config.VOTE_EXPIRES_AFTER_SEC;
+			expiresAfter = Para.getConfig().voteExpiresAfterSec();
 		}
 		return expiresAfter;
 	}
@@ -165,7 +165,7 @@ public class Vote implements ParaObject {
 	 */
 	public Integer getLockedAfter() {
 		if (lockedAfter == null) {
-			lockedAfter = Config.VOTE_LOCKED_AFTER_SEC;
+			lockedAfter = Para.getConfig().voteLockedAfterSec();
 		}
 		return lockedAfter;
 	}
@@ -223,7 +223,7 @@ public class Vote implements ParaObject {
 
 	@Override
 	public String getAppid() {
-		appid = (appid == null) ? Config.getRootAppIdentifier() : appid;
+		appid = (appid == null) ? Para.getConfig().getRootAppIdentifier() : appid;
 		return appid;
 	}
 

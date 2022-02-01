@@ -58,6 +58,7 @@ public class UserTest {
 
 	@Before
 	public void setUp() {
+		System.setProperty("para.min_password_length", "6");
 		CoreUtils.getInstance().setSearch(mock(Search.class));
 	}
 

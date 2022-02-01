@@ -103,7 +103,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 			String appid = SecurityUtils.getAppidFromAuthRequest(request);
 			String denied = request.getParameter("denied");
 			String redirectURI = SecurityUtils.getRedirectUrl(request) + (appid == null ? "" : "?appid=" + appid);
-			App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
+			App app = Para.getDAO().read(App.id(appid == null ? Para.getConfig().getRootAppIdentifier() : appid));
 			String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.TWITTER_PREFIX);
 			if (denied != null) {
 				throw new BadCredentialsException("Cancelled.");
@@ -175,7 +175,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 						oauthToken = pair.substring(12);
 					}
 				}
-				return getOrCreateUser(app, oauthToken + Config.SEPARATOR + oauthSecret);
+				return getOrCreateUser(app, oauthToken + Para.getConfig().separator() + oauthSecret);
 			}
 		} catch (ParseException e) {
 			logger.error(null, e);
@@ -193,8 +193,8 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
 		UserAuthentication userAuth = null;
 		User user = new User();
-		if (accessToken != null && accessToken.contains(Config.SEPARATOR)) {
-			String[] tokens = accessToken.split(Config.SEPARATOR);
+		if (accessToken != null && accessToken.contains(Para.getConfig().separator())) {
+			String[] tokens = accessToken.split(Para.getConfig().separator());
 			String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.TWITTER_PREFIX);
 
 			Map<String, String[]> params2 = new HashMap<>();

@@ -18,7 +18,7 @@
 package com.erudika.para.server.cache;
 
 import com.erudika.para.core.cache.Cache;
-import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 public class CaffeineCache implements Cache {
 
 	private static final Logger logger = LoggerFactory.getLogger(CaffeineCache.class);
-	private static final int DEFAULT_EXPIRATION_MIN = Config.getConfigInt("caffeine.evict_after_minutes", 10);
+	private static final int DEFAULT_EXPIRATION_MIN = Para.getConfig().getConfigInt("caffeine.evict_after_minutes", 10);
 	private final com.github.benmanes.caffeine.cache.Cache<String, Object> cache;
 
 	/**
@@ -49,7 +49,7 @@ public class CaffeineCache implements Cache {
 	 */
 	public CaffeineCache() {
 		cache = Caffeine.newBuilder()
-			.maximumSize(Config.getConfigInt("caffeine.cache_size", 10000))
+			.maximumSize(Para.getConfig().getConfigInt("caffeine.cache_size", 10000))
 			.expireAfter(new Expiry<String, Object>() {
 				public long expireAfterCreate(String key, Object value, long currentTime) {
 					return TimeUnit.MINUTES.toNanos(DEFAULT_EXPIRATION_MIN);
@@ -183,42 +183,42 @@ public class CaffeineCache implements Cache {
 
 	@Override
 	public boolean contains(String id) {
-		return contains(Config.getRootAppIdentifier(), id);
+		return contains(Para.getConfig().getRootAppIdentifier(), id);
 	}
 
 	@Override
 	public <T> void put(String id, T object) {
-		put(Config.getRootAppIdentifier(), id, object);
+		put(Para.getConfig().getRootAppIdentifier(), id, object);
 	}
 
 	@Override
 	public <T> void putAll(Map<String, T> objects) {
-		putAll(Config.getRootAppIdentifier(), objects);
+		putAll(Para.getConfig().getRootAppIdentifier(), objects);
 	}
 
 	@Override
 	public <T> T get(String id) {
-		return get(Config.getRootAppIdentifier(), id);
+		return get(Para.getConfig().getRootAppIdentifier(), id);
 	}
 
 	@Override
 	public <T> Map<String, T> getAll(List<String> ids) {
-		return getAll(Config.getRootAppIdentifier(), ids);
+		return getAll(Para.getConfig().getRootAppIdentifier(), ids);
 	}
 
 	@Override
 	public void remove(String id) {
-		remove(Config.getRootAppIdentifier(), id);
+		remove(Para.getConfig().getRootAppIdentifier(), id);
 	}
 
 	@Override
 	public void removeAll() {
-		removeAll(Config.getRootAppIdentifier());
+		removeAll(Para.getConfig().getRootAppIdentifier());
 	}
 
 	@Override
 	public void removeAll(List<String> ids) {
-		removeAll(Config.getRootAppIdentifier(), ids);
+		removeAll(Para.getConfig().getRootAppIdentifier(), ids);
 	}
 
 }

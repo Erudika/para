@@ -25,6 +25,7 @@ import com.erudika.para.core.annotations.Stored;
 import com.erudika.para.core.i18n.CurrencyUtils;
 import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Collections;
@@ -308,7 +309,7 @@ public class User implements ParaObject {
 			return false;
 		} else {
 			boolean isCreatedByMe = obj.getCreatorid() != null &&
-					(obj.getCreatorid().startsWith(id + Config.SEPARATOR) || id.equals(obj.getCreatorid()));
+					(obj.getCreatorid().startsWith(id + Para.getConfig().separator()) || id.equals(obj.getCreatorid()));
 			boolean mine = isCreatedByMe || id.equals(obj.getId()) || id.equals(obj.getParentid());
 			return (mine || isAdmin());
 		}
@@ -320,7 +321,7 @@ public class User implements ParaObject {
 			logger.warn("Failed to create user - identifier not set.");
 			return null;
 		}
-		if (!StringUtils.isBlank(getPassword()) && getPassword().length() < Config.MIN_PASS_LENGTH) {
+		if (!StringUtils.isBlank(getPassword()) && getPassword().length() < Para.getConfig().minPasswordLength()) {
 			logger.warn("Failed to create user - password too short.");
 			return null;
 		}
@@ -330,7 +331,7 @@ public class User implements ParaObject {
 		}
 
 		// admin detected
-		if (!Config.ADMIN_IDENT.isEmpty() && Config.ADMIN_IDENT.equals(getIdentifier())) {
+		if (!Para.getConfig().adminIdentifier().isEmpty() && Para.getConfig().adminIdentifier().equals(getIdentifier())) {
 			logger.info("Creating new user '{}' ({}) with admin privileges.", getName(), getIdentifier());
 			setGroups(User.Groups.ADMINS.toString());
 		}
@@ -773,7 +774,7 @@ public class User implements ParaObject {
 	 * @return true if successful
 	 */
 	public final boolean resetPassword(String token, String newpass) {
-		if (StringUtils.isBlank(newpass) || StringUtils.isBlank(token) || newpass.length() < Config.MIN_PASS_LENGTH) {
+		if (StringUtils.isBlank(newpass) || StringUtils.isBlank(token) || newpass.length() < Para.getConfig().minPasswordLength()) {
 			return false;
 		}
 		Sysprop s = CoreUtils.getInstance().getDao().read(getAppid(), identifier);
@@ -883,7 +884,7 @@ public class User implements ParaObject {
 		if (s != null && s.hasProperty(key)) {
 			String storedToken = (String) s.getProperty(key);
 			// tokens expire afer a reasonably short period ~ 30 mins
-			long timeout = (long) Config.PASSRESET_TIMEOUT_SEC * 1000L;
+			long timeout = (long) Para.getConfig().passwordResetTimeoutSec() * 1000L;
 			if (StringUtils.equals(storedToken, token) && (s.getUpdated() + timeout) > Utils.timestamp()) {
 				return true;
 			}
@@ -976,7 +977,7 @@ public class User implements ParaObject {
 
 	@Override
 	public String getAppid() {
-		appid = (appid == null) ? Config.getRootAppIdentifier() : appid;
+		appid = (appid == null) ? Para.getConfig().getRootAppIdentifier() : appid;
 		return appid;
 	}
 

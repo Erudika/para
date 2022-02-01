@@ -94,11 +94,11 @@ public final class ParaClient implements Closeable {
 	private static final String DEFAULT_PATH = "/v1/";
 	private static final String JWT_PATH = "/jwt_auth";
 
-	private final String protocols = Config.getConfigParam("client.ssl_protocols", "TLSv1.3");
-	private final String keystorePath = Config.getConfigParam("client.ssl_keystore", "");
-	private final String keystorePass = Config.getConfigParam("client.ssl_keystore_password", "");
-	private final String truststorePath = Config.getConfigParam("client.ssl_truststore", "");
-	private final String truststorePass = Config.getConfigParam("client.ssl_truststore_password", "");
+	private final String protocols = Para.getConfig().getConfigParam("client.ssl_protocols", "TLSv1.3");
+	private final String keystorePath = Para.getConfig().getConfigParam("client.ssl_keystore", "");
+	private final String keystorePass = Para.getConfig().getConfigParam("client.ssl_keystore_password", "");
+	private final String truststorePath = Para.getConfig().getConfigParam("client.ssl_truststore", "");
+	private final String truststorePass = Para.getConfig().getConfigParam("client.ssl_truststore_password", "");
 
 	private String endpoint;
 	private String path;
@@ -358,7 +358,7 @@ public final class ParaClient implements Closeable {
 		try (InputStream in = entity.getContent()) {
 			if (in != null && type != null) {
 				if (type.isAssignableFrom(String.class)) {
-					return (T) new String(IOUtils.toByteArray(in), Config.DEFAULT_ENCODING);
+					return (T) new String(IOUtils.toByteArray(in), Para.getConfig().defaultEncoding());
 				} else {
 					return mapper.readerFor(type).readValue(in);
 				}
@@ -491,7 +491,7 @@ public final class ParaClient implements Closeable {
 				req.setHeader("X-Amz-Date", signedHeaders.get("X-Amz-Date"));
 			}
 
-			if (Config.getConfigBoolean("user_agent_id_enabled", true)) {
+			if (Para.getConfig().getConfigBoolean("user_agent_id_enabled", true)) {
 				String userAgent = new StringBuilder("Para client ").append(Para.getVersion()).append(" ").append(accessKey).
 						append(" (Java ").append(System.getProperty("java.runtime.version")).append(")").toString();
 				req.setHeader(HttpHeaders.USER_AGENT, userAgent);
@@ -1034,7 +1034,7 @@ public final class ParaClient implements Closeable {
 			String key = term.getKey();
 			Object value = term.getValue();
 			if (value != null) {
-				list.add(key.concat(Config.SEPARATOR).concat(value.toString()));
+				list.add(key.concat(Para.getConfig().separator()).concat(value.toString()));
 			}
 		}
 		if (!terms.isEmpty()) {
@@ -1092,7 +1092,7 @@ public final class ParaClient implements Closeable {
 			String key = term.getKey();
 			Object value = term.getValue();
 			if (value != null) {
-				list.add(key.concat(Config.SEPARATOR).concat(value.toString()));
+				list.add(key.concat(Para.getConfig().separator()).concat(value.toString()));
 			}
 		}
 		if (!terms.isEmpty()) {

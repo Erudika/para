@@ -100,8 +100,8 @@ public class AWSDynamoDAO implements DAO {
 	 * No-args constructor.
 	 */
 	public AWSDynamoDAO() {
-		if (!AWSDynamoUtils.existsTable(Config.getRootAppIdentifier())) {
-			AWSDynamoUtils.createTable(Config.getRootAppIdentifier());
+		if (!AWSDynamoUtils.existsTable(Para.getConfig().getRootAppIdentifier())) {
+			AWSDynamoUtils.createTable(Para.getConfig().getRootAppIdentifier());
 		}
 	}
 
@@ -453,47 +453,47 @@ public class AWSDynamoDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> String create(P so) {
-		return create(Config.getRootAppIdentifier(), so);
+		return create(Para.getConfig().getRootAppIdentifier(), so);
 	}
 
 	@Override
 	public <P extends ParaObject> P read(String key) {
-		return read(Config.getRootAppIdentifier(), key);
+		return read(Para.getConfig().getRootAppIdentifier(), key);
 	}
 
 	@Override
 	public <P extends ParaObject> void update(P so) {
-		update(Config.getRootAppIdentifier(), so);
+		update(Para.getConfig().getRootAppIdentifier(), so);
 	}
 
 	@Override
 	public <P extends ParaObject> void delete(P so) {
-		delete(Config.getRootAppIdentifier(), so);
+		delete(Para.getConfig().getRootAppIdentifier(), so);
 	}
 
 	@Override
 	public <P extends ParaObject> void createAll(List<P> objects) {
-		createAll(Config.getRootAppIdentifier(), objects);
+		createAll(Para.getConfig().getRootAppIdentifier(), objects);
 	}
 
 	@Override
 	public <P extends ParaObject> Map<String, P> readAll(List<String> keys, boolean getAllColumns) {
-		return readAll(Config.getRootAppIdentifier(), keys, getAllColumns);
+		return readAll(Para.getConfig().getRootAppIdentifier(), keys, getAllColumns);
 	}
 
 	@Override
 	public <P extends ParaObject> List<P> readPage(Pager pager) {
-		return readPage(Config.getRootAppIdentifier(), pager);
+		return readPage(Para.getConfig().getRootAppIdentifier(), pager);
 	}
 
 	@Override
 	public <P extends ParaObject> void updateAll(List<P> objects) {
-		updateAll(Config.getRootAppIdentifier(), objects);
+		updateAll(Para.getConfig().getRootAppIdentifier(), objects);
 	}
 
 	@Override
 	public <P extends ParaObject> void deleteAll(List<P> objects) {
-		deleteAll(Config.getRootAppIdentifier(), objects);
+		deleteAll(Para.getConfig().getRootAppIdentifier(), objects);
 	}
 
 }

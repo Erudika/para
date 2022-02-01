@@ -19,7 +19,6 @@ package com.erudika.para.server.security.filters;
 
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
-import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Utils;
 import com.onelogin.saml2.exception.SettingsException;
 import com.onelogin.saml2.settings.Saml2Settings;
@@ -63,13 +62,13 @@ public class SAMLMetadataFilter extends GenericFilterBean {
 		String appid;
 
 		if (requestURI.startsWith(SAML_ACTION)) {
-			appid = Config.getRootAppIdentifier();
+			appid = Para.getConfig().getRootAppIdentifier();
 			if (requestURI.startsWith(SAML_ACTION + "/")) {
 				String id = Utils.urlDecode(StringUtils.removeStart(requestURI, SAML_ACTION + "/"));
 				if (!id.isEmpty()) {
 					appid = id;
 				} else {
-					appid = Config.getRootAppIdentifier();
+					appid = Para.getConfig().getRootAppIdentifier();
 				}
 			}
 
@@ -83,7 +82,7 @@ public class SAMLMetadataFilter extends GenericFilterBean {
 					List<String> errors = Saml2Settings.validateMetadata(metadata);
 					if (errors.isEmpty()) {
 						response.setContentType(MediaType.TEXT_XML);
-						response.setCharacterEncoding(Config.DEFAULT_ENCODING);
+						response.setCharacterEncoding(Para.getConfig().defaultEncoding());
 						response.getOutputStream().println(metadata);
 						response.setStatus(SC_OK);
 						return;

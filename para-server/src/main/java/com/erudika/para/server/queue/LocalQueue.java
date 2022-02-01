@@ -21,7 +21,6 @@ import com.erudika.para.core.queue.MockQueue;
 import com.erudika.para.core.queue.Queue;
 import com.erudika.para.core.listeners.DestroyListener;
 import com.erudika.para.core.utils.Para;
-import com.erudika.para.core.utils.Config;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -39,11 +38,11 @@ import org.slf4j.LoggerFactory;
 public class LocalQueue implements Queue {
 
 	private static final Logger logger = LoggerFactory.getLogger(MockQueue.class);
-	private static final int SLEEP = Config.getConfigInt("queue.polling_sleep_seconds", 60);
+	private static final int SLEEP = Para.getConfig().getConfigInt("queue.polling_sleep_seconds", 60);
 	private static Future<?> pollingTask;
 	private static final int MAX_MESSAGES = 10;  //max in bulk
-	private static final int POLLING_INTERVAL = Config.getConfigInt("queue.polling_interval_seconds",
-			Config.IN_PRODUCTION ? 20 : 5);
+	private static final int POLLING_INTERVAL = Para.getConfig().getConfigInt("queue.polling_interval_seconds",
+			Para.getConfig().inProduction() ? 20 : 5);
 
 	private ConcurrentLinkedQueue<String> q = new ConcurrentLinkedQueue<>();
 	private String name;

@@ -21,7 +21,6 @@ import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
 import com.erudika.para.server.rest.RestUtils;
-import com.erudika.para.core.utils.Config;
 import com.erudika.para.server.utils.HttpUtils;
 import com.erudika.para.core.utils.Utils;
 import com.nimbusds.jwt.SignedJWT;
@@ -60,7 +59,7 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 			if (app != null) {
 				String customURI = (String) app.getSetting("signin_success");
 				if (app.isRootApp() && StringUtils.isBlank(customURI)) {
-					customURI = Config.getConfigParam("security.signin_success", "/");
+					customURI = Para.getConfig().getConfigParam("security.signin_success", "/");
 				}
 				if (StringUtils.contains(customURI, "jwt=?")) {
 					SignedJWT newJWT = SecurityUtils.generateJWToken(u, app);
@@ -86,10 +85,10 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
 	@Override
 	protected String determineTargetUrl(HttpServletRequest request, HttpServletResponse response) {
-		String cookie = HttpUtils.getStateParam(Config.RETURNTO_COOKIE, request);
+		String cookie = HttpUtils.getStateParam(Para.getConfig().returnToCookieName(), request);
 		if (cookie != null) {
 			cookie = Utils.base64dec(cookie);
-			HttpUtils.removeStateParam(Config.RETURNTO_COOKIE, request, response);
+			HttpUtils.removeStateParam(Para.getConfig().returnToCookieName(), request, response);
 			return cookie;
 		} else {
 			return super.determineTargetUrl(request, response);

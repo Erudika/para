@@ -49,8 +49,8 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(LdapAuthFilter.class);
 
-	private static final String PASSWORD = Config.getConfigParam("security.ldap.password_param", "password");
-	private static final String USERNAME = Config.getConfigParam("security.ldap.username_param", "username");
+	private static final String PASSWORD = Para.getConfig().getConfigParam("security.ldap.password_param", "password");
+	private static final String USERNAME = Para.getConfig().getConfigParam("security.ldap.username_param", "username");
 
 	/**
 	 * The default filter mapping.
@@ -83,7 +83,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 		if (requestURI.endsWith(LDAP_ACTION) && !StringUtils.isBlank(username) && !StringUtils.isBlank(password)) {
 			try	{
-				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
+				App app = Para.getDAO().read(App.id(appid == null ? Para.getConfig().getRootAppIdentifier() : appid));
 				Authentication auth = new LDAPAuthentication(username, password).withApp(app);
 				// set authentication in context to avoid warning message from SpringSecurityAuthenticationSource
 				SecurityContextHolder.getContext().setAuthentication(new AnonymousAuthenticationToken("key",
@@ -194,8 +194,8 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 */
 	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
 		UserAuthentication userAuth = null;
-		if (accessToken != null && accessToken.contains(Config.SEPARATOR)) {
-			String[] parts = accessToken.split(Config.SEPARATOR, 2);
+		if (accessToken != null && accessToken.contains(Para.getConfig().separator())) {
+			String[] parts = accessToken.split(Para.getConfig().separator(), 2);
 			String username = parts[0];
 			String password = parts[1];
 			try {

@@ -21,8 +21,8 @@ import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.annotations.Locked;
 import com.erudika.para.core.annotations.Stored;
-import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
@@ -34,7 +34,7 @@ import javax.validation.constraints.NotBlank;
  */
 public class Tag implements ParaObject {
 	private static final long serialVersionUID = 1L;
-	private static final String PREFIX = Utils.type(Tag.class).concat(Config.SEPARATOR);
+	private static final String PREFIX = Utils.type(Tag.class).concat(Para.getConfig().separator());
 
 	@Stored @Locked private String id;
 	@Stored @Locked private Long timestamp;
@@ -179,7 +179,7 @@ public class Tag implements ParaObject {
 
 	@Override
 	public String getAppid() {
-		appid = (appid == null) ? Config.getRootAppIdentifier() : appid;
+		appid = (appid == null) ? Para.getConfig().getRootAppIdentifier() : appid;
 		return appid;
 	}
 

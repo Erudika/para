@@ -148,7 +148,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 
 		if (provider != null && appid != null && token != null) {
 			// don't allow clients to create users on root app unless this is explicitly configured
-			if (!App.isRoot(appid) || Config.getConfigBoolean("clients_can_access_root_app", false)) {
+			if (!App.isRoot(appid) || Para.getConfig().getConfigBoolean("clients_can_access_root_app", false)) {
 				App app = Para.getDAO().read(App.id(appid));
 				if (app != null) {
 					UserAuthentication userAuth = getOrCreateUser(app, provider, token);

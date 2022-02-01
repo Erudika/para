@@ -18,7 +18,7 @@
 package com.erudika.para.server.email;
 
 import com.erudika.para.core.email.Emailer;
-import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Para;
 import com.google.inject.AbstractModule;
 
 /**
@@ -28,7 +28,7 @@ import com.google.inject.AbstractModule;
 public class EmailModule extends AbstractModule {
 
 	protected void configure() {
-		String selectedEmailer = Config.getConfigParam("emailer", "");
+		String selectedEmailer = Para.getConfig().getConfigParam("emailer", "");
 		if ("aws".equals(selectedEmailer)) {
 			bind(Emailer.class).to(AWSEmailer.class);
 		} else if ("javamail".equals(selectedEmailer)) {

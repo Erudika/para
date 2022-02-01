@@ -97,13 +97,13 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 			if (!StringUtils.isBlank(authCode)) {
 				String appid = SecurityUtils.getAppidFromAuthRequest(request);
 				String redirectURI = SecurityUtils.getRedirectUrl(request);
-				App app = Para.getDAO().read(App.id(appid == null ? Config.getRootAppIdentifier() : appid));
+				App app = Para.getDAO().read(App.id(appid == null ? Para.getConfig().getRootAppIdentifier() : appid));
 				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.FB_PREFIX);
 				String url = Utils.formatMessage(TOKEN_URL, authCode, redirectURI, keys[0], keys[1]);
 				HttpGet tokenPost = new HttpGet(url);
 				try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
 					// Facebook keep changing their API so we try to read the access_token by the old and new ways
-					String token = EntityUtils.toString(resp1.getEntity(), Config.DEFAULT_ENCODING);
+					String token = EntityUtils.toString(resp1.getEntity(), Para.getConfig().defaultEncoding());
 					String accessToken = parseAccessToken(token);
 					if (accessToken != null) {
 						userAuth = getOrCreateUser(app, accessToken);

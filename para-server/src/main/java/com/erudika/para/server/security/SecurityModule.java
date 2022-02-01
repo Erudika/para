@@ -33,6 +33,7 @@ import com.erudika.para.server.security.filters.SAMLAuthFilter;
 import com.erudika.para.server.security.filters.SAMLMetadataFilter;
 import com.erudika.para.server.security.filters.SlackAuthFilter;
 import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Para;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 
@@ -92,8 +93,8 @@ public class SecurityModule extends AbstractModule {
 	public SimpleAuthenticationSuccessHandler getSuccessHandler() {
 		if (successHandler == null) {
 			successHandler = new SimpleAuthenticationSuccessHandler();
-			successHandler.setDefaultTargetUrl(Config.getConfigParam("security.signin_success", "/"));
-			successHandler.setTargetUrlParameter(Config.getConfigParam("security.returnto", "returnto"));
+			successHandler.setDefaultTargetUrl(Para.getConfig().getConfigParam("security.signin_success", "/"));
+			successHandler.setTargetUrlParameter(Para.getConfig().getConfigParam("security.returnto", "returnto"));
 			successHandler.setUseReferer(false);
 		}
 		return successHandler;
@@ -113,7 +114,7 @@ public class SecurityModule extends AbstractModule {
 	public SimpleAuthenticationFailureHandler getFailureHandler() {
 		if (failureHandler == null) {
 			failureHandler = new SimpleAuthenticationFailureHandler();
-			failureHandler.setDefaultFailureUrl(Config.getConfigParam("security.signin_failure", "/signin?error"));
+			failureHandler.setDefaultFailureUrl(Para.getConfig().getConfigParam("security.signin_failure", "/signin?error"));
 		}
 		return failureHandler;
 	}
@@ -131,10 +132,10 @@ public class SecurityModule extends AbstractModule {
 	@Provides
 	public SimpleRememberMeServices getRemembeMeServices() {
 		if (rememberMeServices == null) {
-			String authCookie = Config.getConfigParam("auth_cookie", Config.PARA.concat("-auth"));
-			rememberMeServices = new SimpleRememberMeServices(Config.APP_SECRET_KEY, new SimpleUserService());
-			rememberMeServices.setAlwaysRemember(Config.getConfigBoolean("security.remember_me", true));
-			rememberMeServices.setTokenValiditySeconds(Config.SESSION_TIMEOUT_SEC);
+			String authCookie = Para.getConfig().getConfigParam("auth_cookie", Config.PARA.concat("-auth"));
+			rememberMeServices = new SimpleRememberMeServices(Para.getConfig().appSecretKey(), new SimpleUserService());
+			rememberMeServices.setAlwaysRemember(Para.getConfig().getConfigBoolean("security.remember_me", true));
+			rememberMeServices.setTokenValiditySeconds(Para.getConfig().sessionTimeoutSec());
 			rememberMeServices.setCookieName(authCookie);
 			rememberMeServices.setParameter(authCookie.concat("-remember-me"));
 

@@ -122,7 +122,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	 * @param modules a list of modules that override the main modules
 	 */
 	public static void initialize(Module... modules) {
-		Stage stage = Config.IN_PRODUCTION ? Stage.PRODUCTION : Stage.DEVELOPMENT;
+		Stage stage = Para.getConfig().inProduction() ? Stage.PRODUCTION : Stage.DEVELOPMENT;
 
 		List<Module> coreModules = Arrays.asList(modules);
 		List<Module> externalModules = getExternalModules();
@@ -146,7 +146,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 			injectInto(initListener);
 		});
 
-		if (Config.WEBHOOKS_ENABLED) {
+		if (Para.getConfig().webhooksEnabled()) {
 			Para.addIOListener(new WebhookIOListener());
 		}
 
@@ -154,7 +154,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 
 		// this enables the "river" feature - polls the default queue for objects and imports them into Para
 		// additionally, the polling feature is used for implementing a webhooks worker node
-		if ((Config.getConfigBoolean("queue_link_enabled", false) || Config.WEBHOOKS_ENABLED)) {
+		if ((Para.getConfig().getConfigBoolean("queue_link_enabled", false) || Para.getConfig().webhooksEnabled())) {
 			Para.getQueue().startPolling();
 		}
 	}
@@ -263,7 +263,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 		LOG.debug("Initializing GZip filter [{}]...", path);
 		frb.addUrlPatterns(path);
 		frb.setAsyncSupported(true);
-		frb.setEnabled(Config.GZIP_ENABLED);
+		frb.setEnabled(Para.getConfig().gzipEnabled());
 		frb.setMatchAfter(true);
 		frb.setOrder(20);
 		return frb;
@@ -285,7 +285,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 				+ "X-Amz-Date,Authorization");
 		frb.addUrlPatterns(path, "/" + JWTRestfulAuthFilter.JWT_ACTION);
 		frb.setAsyncSupported(true);
-		frb.setEnabled(Config.CORS_ENABLED);
+		frb.setEnabled(Para.getConfig().corsEnabled());
 		frb.setMatchAfter(false);
 		frb.setOrder(HIGHEST_PRECEDENCE);
 		return frb;
@@ -299,7 +299,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 		JettyServletWebServerFactory jef = new JettyServletWebServerFactory();
 		jef.setRegisterDefaultServlet(true);
 		jef.addServerCustomizers((JettyServerCustomizer) (Server server) -> {
-			if (Config.getConfigBoolean("access_log_enabled", true)) {
+			if (Para.getConfig().getConfigBoolean("access_log_enabled", true)) {
 				// enable access log via Logback
 				HandlerCollection handlers = new HandlerCollection();
 				for (Handler handler : server.getHandlers()) {
@@ -322,7 +322,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 						HttpConnectionFactory dcf = (HttpConnectionFactory) cf;
 						// support for X-Forwarded-Proto
 						// redirect back to https if original request uses it
-						if (Config.IN_PRODUCTION) {
+						if (Para.getConfig().inProduction()) {
 							ForwardedRequestCustomizer frc = new ForwardedRequestCustomizer() {
 								public void customize(Connector connector, HttpConfiguration config, Request request) {
 									super.customize(connector, config, request);
@@ -347,7 +347,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 				}
 			}
 		});
-		String contextPath = Config.getConfigParam("context_path", "");
+		String contextPath = Para.getConfig().getConfigParam("context_path", "");
 		if (StringUtils.length(contextPath) > 1 && contextPath.charAt(0) == '/') {
 			jef.setContextPath(contextPath);
 		}
@@ -362,7 +362,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 		jef.getSession().getCookie().setHttpOnly(true);
 		jef.setPort(getServerPort());
 		LOG.info("Instance #{} initialized and listening on http{}://localhost:{}",
-				Config.WORKER_ID, (sslEnabled ? "s" : ""), jef.getPort());
+				Para.getConfig().workerId(), (sslEnabled ? "s" : ""), jef.getPort());
 		return jef;
 	}
 
@@ -370,7 +370,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	 * @return the server port
 	 */
 	public static int getServerPort() {
-		int defaultPort = NumberUtils.toInt(System.getProperty("jetty.http.port"), Config.getConfigInt("port", 8080));
+		int defaultPort = NumberUtils.toInt(System.getProperty("jetty.http.port"), Para.getConfig().getConfigInt("port", 8080));
 		return NumberUtils.toInt(System.getProperty("server.port"), defaultPort);
 	}
 
@@ -391,7 +391,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	 */
 	public static SpringApplicationBuilder runAsWAR(SpringApplicationBuilder app, Class<?>... sources) {
 		// runAsWAR() - entry point (WAR)
-		app.profiles(Config.ENVIRONMENT);
+		app.profiles(Para.getConfig().environment());
 		app.web(WebApplicationType.SERVLET);
 		app.bannerMode(Banner.Mode.OFF);
 		initialize(getCoreModules());
@@ -415,10 +415,10 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	public static void runAsJAR(String[] args, Class<?>... sources) {
 		// entry point (JAR)
 		SpringApplication app = new SpringApplication(sources);
-		app.setAdditionalProfiles(Config.ENVIRONMENT);
+		app.setAdditionalProfiles(Para.getConfig().environment());
 		app.setWebApplicationType(WebApplicationType.SERVLET);
 		app.setBannerMode(Banner.Mode.OFF);
-		if (Config.getConfigBoolean("pidfile_enabled", true)) {
+		if (Para.getConfig().getConfigBoolean("pidfile_enabled", true)) {
 			app.addListeners(new ApplicationPidFileWriter(Config.PARA + "_" + getServerPort() + ".pid"));
 		}
 		initialize(getCoreModules());

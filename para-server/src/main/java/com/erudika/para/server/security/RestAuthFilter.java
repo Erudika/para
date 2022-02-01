@@ -23,7 +23,6 @@ import com.erudika.para.core.User;
 import com.erudika.para.server.rest.RestUtils;
 import com.erudika.para.core.rest.Signer;
 import com.erudika.para.server.utils.BufferedRequestWrapper;
-import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Utils;
 import java.io.IOException;
 import java.util.Date;
@@ -111,8 +110,8 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 	private boolean guestAuthRequestHandler(String appid, HttpServletRequest request, HttpServletResponse response) {
 		String reqUri = request.getRequestURI();
 		String method = request.getMethod();
-		if (StringUtils.isBlank(appid) && Config.getConfigBoolean("clients_can_access_root_app", false)) {
-			appid = App.id(Config.getRootAppIdentifier());
+		if (StringUtils.isBlank(appid) && Para.getConfig().getConfigBoolean("clients_can_access_root_app", false)) {
+			appid = App.id(Para.getConfig().getRootAppIdentifier());
 		}
 		if (!StringUtils.isBlank(appid)) {
 			App parentApp = Para.getDAO().read(App.id(appid));
@@ -176,7 +175,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		String date = RestUtils.extractDate(request);
 		Date d = Signer.parseAWSDate(date);
 		boolean requestExpired = (d != null) && (System.currentTimeMillis()
-				> (d.getTime() + (Config.REQUEST_EXPIRES_AFTER_SEC * 1000)));
+				> (d.getTime() + (Para.getConfig().requestExpiresAfterSec() * 1000)));
 
 		if (apiSecurityEnabled && (StringUtils.isBlank(date) || requestExpired)) {
 			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_BAD_REQUEST, "Request has expired.");
@@ -209,7 +208,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		}
 		// App admin should have unlimited access
 		if (user != null && user.isAdmin()) {
-			return Config.getConfigBoolean("admins_have_full_api_access", true);
+			return Para.getConfig().getConfigBoolean("admins_have_full_api_access", true);
 		}
 		String resourcePath = RestUtils.extractResourcePath(request);
 		if (resourcePath.matches("^_permissions/.+") && request.getMethod().equals(GET)) {

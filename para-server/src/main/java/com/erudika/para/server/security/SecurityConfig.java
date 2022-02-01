@@ -32,7 +32,7 @@ import com.erudika.para.server.security.filters.PasswordlessAuthFilter;
 import com.erudika.para.server.security.filters.SAMLAuthFilter;
 import com.erudika.para.server.security.filters.SAMLMetadataFilter;
 import com.erudika.para.server.security.filters.SlackAuthFilter;
-import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Para;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigValue;
@@ -118,7 +118,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	 */
 	@Override
 	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-		RememberMeAuthenticationProvider rmeProvider = new RememberMeAuthenticationProvider(Config.APP_SECRET_KEY);
+		RememberMeAuthenticationProvider rmeProvider = new RememberMeAuthenticationProvider(Para.getConfig().appSecretKey());
 		auth.authenticationProvider(rmeProvider);
 
 		JWTAuthenticationProvider jwtProvider = new JWTAuthenticationProvider();
@@ -151,13 +151,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	 */
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-		ConfigObject protectedResources = Config.getConfig().getObject("security.protected");
-		ConfigValue apiSec = Config.getConfig().getValue("security.api_security");
+		ConfigObject protectedResources = Para.getConfig().getConfig().getObject("security.protected");
+		ConfigValue apiSec = Para.getConfig().getConfig().getValue("security.api_security");
 		boolean enableRestFilter = apiSec != null && Boolean.TRUE.equals(apiSec.unwrapped());
-		String signinPath = Config.getConfigParam("security.signin", "/signin");
-		String signoutPath = Config.getConfigParam("security.signout", "/signout");
-		String accessDeniedPath = Config.getConfigParam("security.access_denied", "/403");
-		String signoutSuccessPath = Config.getConfigParam("security.signout_success", signinPath);
+		String signinPath = Para.getConfig().getConfigParam("security.signin", "/signin");
+		String signoutPath = Para.getConfig().getConfigParam("security.signout", "/signout");
+		String accessDeniedPath = Para.getConfig().getConfigParam("security.access_denied", "/403");
+		String signoutSuccessPath = Para.getConfig().getConfigParam("security.signout_success", signinPath);
 
 		// If API security is disabled don't add the API endpoint to the list of protected resources
 		if (enableRestFilter) {
@@ -166,7 +166,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 		parseProtectedResources(http, protectedResources);
 
-		if (Config.getConfigBoolean("security.csrf_protection", true)) {
+		if (Para.getConfig().getConfigBoolean("security.csrf_protection", true)) {
 			http.csrf().requireCsrfProtectionMatcher(CsrfProtectionRequestMatcher.INSTANCE).
 					csrfTokenRepository(csrfTokenRepository);
 		} else {

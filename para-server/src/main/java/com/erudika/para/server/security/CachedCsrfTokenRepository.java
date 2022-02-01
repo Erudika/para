@@ -19,6 +19,7 @@ package com.erudika.para.server.security;
 
 import com.erudika.para.core.cache.Cache;
 import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.server.utils.HttpUtils;
 import com.erudika.para.core.utils.Utils;
 import java.util.Map;
@@ -45,8 +46,8 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 
 	private String parameterName = "_csrf";
 	private final String headerName = "X-CSRF-TOKEN";
-	private final String cookieName = Config.getConfigParam("security.csrf_cookie", "para-csrf-token");
-	private final String authCookie = Config.getConfigParam("auth_cookie", Config.PARA.concat("-auth"));
+	private final String cookieName = Para.getConfig().getConfigParam("security.csrf_cookie", "para-csrf-token");
+	private final String authCookie = Para.getConfig().getConfigParam("auth_cookie", Config.PARA.concat("-auth"));
 	private final String anonIdentCookieName = cookieName + "-anonid";
 	private final Map<String, Object[]> localCache = new ConcurrentHashMap<>();
 
@@ -131,8 +132,8 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 		if (!key.endsWith(parameterName)) {
 			key = key.concat(parameterName);
 		}
-		if (Config.isCacheEnabled()) {
-			cache.put(Config.getRootAppIdentifier(), key, token, (long) Config.SESSION_TIMEOUT_SEC);
+		if (Para.getConfig().isCacheEnabled()) {
+			cache.put(Para.getConfig().getRootAppIdentifier(), key, token, (long) Para.getConfig().sessionTimeoutSec());
 		} else {
 			localCache.put(key, new Object[]{token, System.currentTimeMillis()});
 		}
@@ -143,12 +144,12 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 			key = key.concat(parameterName);
 		}
 		CsrfToken token = null;
-		if (Config.isCacheEnabled()) {
-			token = cache.get(Config.getRootAppIdentifier(), key);
+		if (Para.getConfig().isCacheEnabled()) {
+			token = cache.get(Para.getConfig().getRootAppIdentifier(), key);
 		} else {
 			Object[] arr = localCache.get(key);
 			if (arr != null && arr.length == 2) {
-				boolean expired = (((Long) arr[1]) + Config.SESSION_TIMEOUT_SEC * 1000) < System.currentTimeMillis();
+				boolean expired = (((Long) arr[1]) + Para.getConfig().sessionTimeoutSec() * 1000) < System.currentTimeMillis();
 				if (expired) {
 					removeTokenFromCache(key);
 				} else {
@@ -163,7 +164,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 		if (!key.endsWith(parameterName)) {
 			key = key.concat(parameterName);
 		}
-		if (Config.isCacheEnabled()) {
+		if (Para.getConfig().isCacheEnabled()) {
 			cache.remove(key);
 		} else {
 			localCache.remove(key);
@@ -194,7 +195,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	private void storeTokenAsCookie(CsrfToken token, HttpServletRequest request, HttpServletResponse response) {
 		if (isValidButNotInCookie(token, request)) {
 			Cookie c = new Cookie(cookieName, token.getToken());
-			c.setMaxAge(Config.SESSION_TIMEOUT_SEC);
+			c.setMaxAge(Para.getConfig().sessionTimeoutSec());
 			// don't enable HttpOnly - javascript can't access the cookie if enabled
 			c.setHttpOnly(false);
 			c.setSecure("https".equalsIgnoreCase(request.getScheme()));
@@ -205,7 +206,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 
 	private void storeAnonIdentCookie(String anonid, HttpServletRequest request, HttpServletResponse response) {
 		Cookie c = new Cookie(anonIdentCookieName, anonid);
-		c.setMaxAge(Config.SESSION_TIMEOUT_SEC);
+		c.setMaxAge(Para.getConfig().sessionTimeoutSec());
 		// don't enable HttpOnly - javascript can't access the cookie if enabled
 		c.setHttpOnly(false);
 		c.setSecure("https".equalsIgnoreCase(request.getScheme()));

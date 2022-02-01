@@ -92,7 +92,7 @@ public class RestUtilsTest {
 	@Test
 	public void testGetReadResponse() {
 		App app = new App("test");
-		App root = new App(Config.getConfigParam("app_name", ""));
+		App root = new App(Para.getConfig().getConfigParam("app_name", ""));
 		assertEquals(Status.NOT_FOUND.getStatusCode(), getReadResponse(null, null).getStatus());
 		assertEquals(Status.OK.getStatusCode(), getReadResponse(app, new Tag("tag")).getStatus());
 		assertEquals(Status.OK.getStatusCode(), getReadResponse(root, new App("test1")).getStatus());
@@ -101,7 +101,7 @@ public class RestUtilsTest {
 	@Test
 	public void testGetCreateUpdateDeleteResponse() throws JsonProcessingException {
 		Tag t = new Tag("tag");
-		App rootApp = new App(Config.getConfigParam("app_name", ""));
+		App rootApp = new App(Para.getConfig().getConfigParam("app_name", ""));
 		App notRootApp = new App("anotherApp");
 		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(null, null, null).getStatus());
 		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(rootApp, rootApp.getType(),
