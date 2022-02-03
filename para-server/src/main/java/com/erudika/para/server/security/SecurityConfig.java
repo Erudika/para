@@ -152,8 +152,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
 		ConfigObject protectedResources = Para.getConfig().getConfig().getObject("security.protected");
-		ConfigValue apiSec = Para.getConfig().getConfig().getValue("security.api_security");
-		boolean enableRestFilter = apiSec != null && Boolean.TRUE.equals(apiSec.unwrapped());
+		boolean enableRestFilter = Para.getConfig().getConfigBoolean("security.api_security", true);
 		String signinPath = Para.getConfig().getConfigParam("security.signin", "/signin");
 		String signoutPath = Para.getConfig().getConfigParam("security.signout", "/signout");
 		String accessDeniedPath = Para.getConfig().getConfigParam("security.access_denied", "/403");

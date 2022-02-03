@@ -19,14 +19,14 @@ package com.erudika.para.server.storage;
 
 import com.erudika.para.core.storage.FileStore;
 import com.erudika.para.core.utils.Para;
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,21 +66,17 @@ public class LocalFileStore implements FileStore {
 			path = path.substring(1);
 		}
 		if (!StringUtils.isBlank(path)) {
-			FileInputStream fis = null;
 			try {
 				File f = new File(folder + path);
-				fis = new FileInputStream(f);
-				return f.canRead() ? new BufferedInputStream(fis) : null;
-			} catch (FileNotFoundException ex) {
-				logger.debug(null, ex);
-			} finally {
-				if (fis != null) {
-					try {
-						fis.close();
-					} catch (IOException ex) {
-						logger.error(null, ex);
+				if (f.exists() && f.canRead()) {
+					try	(InputStream fin = new FileInputStream(f)) {
+						byte[] buf = new byte[(int) f.length()];
+						IOUtils.readFully(fin, buf);
+						return new ByteArrayInputStream(buf);
 					}
 				}
+			} catch (Exception ex) {
+				logger.debug(null, ex);
 			}
 		}
 		return null;

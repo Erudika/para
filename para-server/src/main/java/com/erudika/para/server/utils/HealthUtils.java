@@ -4,8 +4,16 @@ import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.listeners.InitializeListener;
 import com.erudika.para.server.ParaServer;
 import com.erudika.para.core.App;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.SequenceInputStream;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -93,11 +101,31 @@ public enum HealthUtils implements InitializeListener, Runnable {
 		public void onInitialize() {
 			performHealthCheck();
 			if (!isHealthy()) {
-				logger.warn("Server is unhealthy - " + (rootAppExists ?
-						"the search index may be corrupted and may have to be rebuilt." :
-						"root app not found. Open http://localhost:" + ParaServer.getServerPort() +
-								"/v1/_setup in the browser to initialize Para."));
-							}
+				if (rootAppExists) {
+					logger.warn("Server is unhealthy - the search index may be corrupted and may have to be rebuilt.");
+				} else {
+					Map<String, String> rootAppCredentials = Para.setup();
+					String confFile = Paths.get("application.conf").toAbsolutePath().toString();
+					if (rootAppCredentials.containsKey("secretKey")) {
+						try (InputStream ref = getClass().getClassLoader().getResourceAsStream("reference.conf")) {
+							InputStream config = Optional.ofNullable(Para.getFileStore().load(confFile)).orElse(ref);
+							ByteArrayInputStream bais = new ByteArrayInputStream(("# Root app access key: " +
+									rootAppCredentials.get("accessKey") + "\n# Root app secret Key: " +
+									rootAppCredentials.get("secretKey") + "\n").getBytes("utf-8"));
+							Para.getFileStore().store(confFile, new SequenceInputStream(Collections.
+									enumeration(Arrays.asList(bais, config))));
+							logger.info("Saved root app credentials to application.conf.");
+						} catch (Exception e) {
+							logger.info("Initialized root app with access key '{}' and secret '{}', "
+									+ "but could not write these to file.",
+									rootAppCredentials.get("accessKey"), rootAppCredentials.get("secretKey"));
+						}
+					} else {
+						logger.warn("Server is unhealthy - failed to initialize root app. Open http://localhost:" +
+								ParaServer.getServerPort() + "/v1/_setup in the browser to initialize Para manually.");
+					}
+				}
+			}
 			if (Para.getConfig().getConfigBoolean("health_check_enabled", true) && scheduledHealthCheck == null) {
 				scheduledHealthCheck = Para.getScheduledExecutorService().
 						scheduleAtFixedRate(this, 30, healthCheckInterval, TimeUnit.SECONDS);
