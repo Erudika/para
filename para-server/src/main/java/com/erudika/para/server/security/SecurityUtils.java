@@ -221,7 +221,7 @@ public final class SecurityUtils {
 	 */
 	public static boolean isValidJWToken(String secret, SignedJWT jwt) {
 		try {
-			if (secret != null && jwt != null) {
+			if (!StringUtils.isBlank(secret) && jwt != null) {
 				JWSVerifier verifier = new MACVerifier(secret);
 				if (jwt.verify(verifier)) {
 					Date referenceTime = new Date();
