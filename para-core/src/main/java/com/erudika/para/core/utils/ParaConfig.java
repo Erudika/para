@@ -17,7 +17,6 @@
  */
 package com.erudika.para.core.utils;
 
-import com.erudika.para.core.App;
 import org.apache.commons.lang3.math.NumberUtils;
 
 /**
@@ -411,6 +410,6 @@ public class ParaConfig extends Config {
 	 * @return The name of the root Para app, without any spaces.
 	 */
 	public String getRootAppIdentifier() {
-		return App.identifier(App.id(getConfigParam("app_name", PARA)));
+		return PARA;
 	}
 }
