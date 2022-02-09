@@ -88,6 +88,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.nimbusds.jwt.SignedJWT;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -470,6 +471,24 @@ public final class Api1 extends ResourceConfig {
 					if (user != null) {
 						return Response.ok(user).build();
 					} else if (app != null) {
+						String bearer = ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+						if (app.isRootApp() && !StringUtils.isBlank(bearer)) {
+							try {
+								String token = bearer.substring(6).trim();
+								SignedJWT jwt = SignedJWT.parse(token);
+								if (jwt != null && jwt.getJWTClaimsSet().getClaim("getCredentials") != null) {
+									App a = getDAO().read(App.id((String) jwt.getJWTClaimsSet().getClaim("getCredentials")));
+									if (a != null) {
+										Map<String, Object> obj = ParaObjectUtils.getJsonReader(Map.class).
+												readValue(ParaObjectUtils.toJSON(a));
+										obj.put("credentials", a.getCredentials());
+										return Response.ok(obj).build();
+									}
+								}
+							} catch (Exception ex) {
+								logger.error("Operation failed: {}", ex.getMessage());
+							}
+						}
 						return Response.ok(app).build();
 					}
 				}
