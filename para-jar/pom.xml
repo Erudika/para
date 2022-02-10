@@ -87,12 +87,12 @@
 				<dependency>
 					<groupId>com.erudika</groupId>
 					<artifactId>para-dao-sql</artifactId>
-					<version>1.43.5-SNAPSHOT</version>
+					<version>1.44.0</version>
 				</dependency>
 				<dependency>
 					<groupId>com.erudika</groupId>
 					<artifactId>para-search-lucene</artifactId>
-					<version>1.43.4-SNAPSHOT</version>
+					<version>1.44.0</version>
 				</dependency>
 			</dependencies>
 		</profile>
