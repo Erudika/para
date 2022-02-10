@@ -207,6 +207,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 						user.setIdpAccessToken(accessToken);
 						user.setIdpRefreshToken(refreshToken);
 						user.setIdpIdToken(idToken);
+						printTokenDebugInfo(user);
 					}
 					user.setPicture(getPicture(app, user, accessToken, alias, pic));
 					user.setIdentifier(oauthPrefix(alias).concat(oauthAccountId));
@@ -250,6 +251,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			user.setIdpAccessToken(accessToken);
 			user.setIdpRefreshToken(refreshToken);
 			user.setIdpIdToken(idToken);
+			printTokenDebugInfo(user);
 			update = true;
 		}
 		return update;
@@ -346,6 +348,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			if (!StringUtils.equals(newRefresh, user.getIdpRefreshToken())) {
 				user.setIdpRefreshToken(newRefresh);
 			}
+			printTokenDebugInfo(user);
 			user.update();
 		}
 	}
@@ -533,5 +536,16 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			}
 		}
 		return fname;
+	}
+
+	private void printTokenDebugInfo(User user) {
+		try {
+			LOG.debug("Updated OAuth2 tokens for user " + user.getId() + ":" +
+					"\nidpAccessTokenPayload: " + Utils.base64dec(user.getIdpAccessTokenPayload()) +
+					"\nidpIdTokenPayload: " + Utils.base64dec(user.getIdpIdTokenPayload()) +
+					"\nidpRefreshToken: " + user.getIdpRefreshToken());
+		} catch (Exception e) {
+			LOG.debug(null, e);
+		}
 	}
 }
