@@ -33,7 +33,6 @@ import com.erudika.para.core.queue.Queue;
 import static com.erudika.para.server.rest.RestUtils.*;
 import com.erudika.para.core.search.Search;
 import com.erudika.para.core.storage.FileStore;
-import com.erudika.para.core.utils.Config;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.inject.Binder;
 import com.google.inject.Module;
