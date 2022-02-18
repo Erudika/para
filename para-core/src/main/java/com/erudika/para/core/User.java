@@ -74,8 +74,6 @@ public class User implements ParaObject {
 	@Stored private String idpIdToken;
 	@Stored private String idpAccessToken;
 	@Stored private String idpRefreshToken;
-	@Stored private String idpIdTokenPayload;
-	@Stored private String idpAccessTokenPayload;
 
 	private transient String password;
 
@@ -580,9 +578,6 @@ public class User implements ParaObject {
 	 */
 	@JsonIgnore
 	public String getIdpIdToken() {
-		if (!StringUtils.isBlank(idpIdToken)) {
-			setIdpIdTokenPayload(StringUtils.substringBetween(idpIdToken, "."));
-		}
 		return idpIdToken;
 	}
 
@@ -608,9 +603,6 @@ public class User implements ParaObject {
 	 * @param idpAccessToken a token
 	 */
 	public void setIdpAccessToken(String idpAccessToken) {
-		if (!StringUtils.isBlank(idpAccessToken)) {
-			setIdpAccessTokenPayload(StringUtils.substringBetween(idpAccessToken, "."));
-		}
 		this.idpAccessToken = idpAccessToken;
 	}
 
@@ -637,15 +629,7 @@ public class User implements ParaObject {
 	 * @return the payload part in Base64
 	 */
 	public String getIdpIdTokenPayload() {
-		return idpIdTokenPayload;
-	}
-
-	/**
-	 * Sets the ID token payload. This must be a Base64-encoded JSON string.
-	 * @param idpIdTokenPayload Base64 encoded payload
-	 */
-	public void setIdpIdTokenPayload(String idpIdTokenPayload) {
-		this.idpIdTokenPayload = idpIdTokenPayload;
+		return StringUtils.substringBetween(idpIdToken, ".");
 	}
 
 	/**
@@ -654,15 +638,7 @@ public class User implements ParaObject {
 	 * @return the payload part in Base64
 	 */
 	public String getIdpAccessTokenPayload() {
-		return idpAccessTokenPayload;
-	}
-
-	/**
-	 * Sets the access token payload. This must be a Base64-encoded JSON string.
-	 * @param idpAccessTokenPayload Base64 encoded payload
-	 */
-	public void setIdpAccessTokenPayload(String idpAccessTokenPayload) {
-		this.idpAccessTokenPayload = idpAccessTokenPayload;
+		return StringUtils.substringBetween(idpAccessToken, ".");
 	}
 
 	/**
