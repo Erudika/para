@@ -174,6 +174,7 @@ public class AmazonAuthFilter extends AbstractAuthenticationProcessingFilter {
 					user.setPassword(Utils.generateSecurityToken());
 					user.setPicture("https://www.gravatar.com/avatar/" + Utils.md5(email) + "?d=mm&size=400");
 					user.setIdentifier(Config.AMAZON_PREFIX + amazonId);
+					updateIdpAccessToken(user, accessToken);
 					String id = user.create();
 					if (id == null) {
 						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
@@ -202,12 +203,17 @@ public class AmazonAuthFilter extends AbstractAuthenticationProcessingFilter {
 			user.setName(name);
 			update = true;
 		}
+		return updateIdpAccessToken(user, accessToken) || update;
+	}
+
+	private boolean updateIdpAccessToken(User user, String accessToken) throws UnsupportedEncodingException {
 		String payload = "{\"access_token\":\"" + accessToken + "\"}";
 		if (!payload.equals(Utils.base64dec(user.getIdpAccessTokenPayload()))) {
-			user.setIdpAccessTokenPayload(Utils.base64enc(payload.getBytes(Para.getConfig().defaultEncoding())));
-			update = true;
+			user.setIdpAccessToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+					+ Utils.base64enc(payload.getBytes(Para.getConfig().defaultEncoding())) + ".Ss");
+			return true;
 		}
-		return update;
+		return false;
 	}
 
 	private String getAppid(App app) {

@@ -188,8 +188,7 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 					user.setPassword(Utils.generateSecurityToken());
 					user.setPicture(getPicture(pic));
 					user.setIdentifier(Config.SLACK_PREFIX + slackId);
-					String payload = "{\"access_token\":\"" + accessToken + "\"}";
-					user.setIdpAccessTokenPayload(Utils.base64enc(payload.getBytes(Para.getConfig().defaultEncoding())));
+					updateIdpAccessToken(user, accessToken);
 					String id = user.create();
 					if (id == null) {
 						throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
@@ -223,12 +222,17 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 			user.setName(name);
 			update = true;
 		}
+		return updateIdpAccessToken(user, accessToken) || update;
+	}
+
+	private boolean updateIdpAccessToken(User user, String accessToken) throws UnsupportedEncodingException {
 		String payload = "{\"access_token\":\"" + accessToken + "\"}";
 		if (!payload.equals(Utils.base64dec(user.getIdpAccessTokenPayload()))) {
-			user.setIdpAccessTokenPayload(Utils.base64enc(payload.getBytes(Para.getConfig().defaultEncoding())));
-			update = true;
+			user.setIdpAccessToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+					+ Utils.base64enc(payload.getBytes(Para.getConfig().defaultEncoding())) + ".Ss");
+			return true;
 		}
-		return update;
+		return false;
 	}
 
 	private static String getPicture(String pic) {
