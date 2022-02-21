@@ -137,6 +137,7 @@
 				<configuration>
 					<!--<argLine>-Xmx256m  ${surefireArgLine}</argLine>-->
 					<skipTests>${skipUTs}</skipTests>
+					<forkCount>1.5C</forkCount>
 <!--					<threadCount>2</threadCount>
 					<forkCount>2C</forkCount>-->
 					<!--					<parallel>methods</parallel>
