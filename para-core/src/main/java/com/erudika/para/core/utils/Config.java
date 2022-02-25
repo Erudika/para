@@ -18,10 +18,6 @@
 package com.erudika.para.core.utils;
 
 import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.ConfigValue;
-import com.typesafe.config.ConfigValueType;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -34,8 +30,7 @@ import org.slf4j.LoggerFactory;
 public abstract class Config {
 
 	private static final Logger logger = LoggerFactory.getLogger(Config.class);
-	private static com.typesafe.config.Config config;
-	private static Map<String, String> configMap;
+	private com.typesafe.config.Config config;
 
 	// GLOBAL SETTINGS
 	/** {@value #PARA}. */
@@ -112,39 +107,33 @@ public abstract class Config {
 	public static final String SAML_PREFIX = "saml:";
 
 	/**
-	 * Default constructor.
-	 */
-	public Config() {
-		init(null);
-	}
-
-	/**
 	 * The root prefix of the configuration property names, e.g. "para".
 	 * @return the root prefix for all config property keys.
 	 */
 	public abstract String getConfigRootPrefix();
 
 	/**
+	 * The fallback configuration, which will be used if the default cannot be loaded.
+	 * @return a config object.
+	 */
+	public com.typesafe.config.Config getFallbackConfig() {
+		return com.typesafe.config.ConfigFactory.empty();
+	}
+
+	/**
 	 * Initializes the configuration class by loading the configuration file.
 	 * @param conf overrides the default configuration
 	 */
-	final void init(com.typesafe.config.Config conf) {
+	protected final void init(com.typesafe.config.Config conf) {
 		try {
-			config = ConfigFactory.load().getConfig(getConfigRootPrefix());
-
+			config = ConfigFactory.load().getConfig(getConfigRootPrefix()).withFallback(getFallbackConfig());
 			if (conf != null) {
 				config = conf.withFallback(config);
 			}
-
-			configMap = new HashMap<>();
-			for (Map.Entry<String, ConfigValue> con : config.entrySet()) {
-				if (con.getValue().valueType() != ConfigValueType.LIST) {
-					configMap.put(con.getKey(), config.getString(con.getKey()));
-				}
-			}
 		} catch (Exception ex) {
-			logger.warn("Para configuration file 'application.(conf|json|properties)' is invalid or missing from classpath.");
-			config = com.typesafe.config.ConfigFactory.empty();
+			logger.warn("Failed to load configuration file 'application.(conf|json|properties)' for namespace '{}' - {}",
+					getConfigRootPrefix(), ex.getMessage());
+			config = getFallbackConfig();
 		}
 	}
 
