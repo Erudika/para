@@ -44,7 +44,7 @@ public @interface Documented {
 	/**
 	 * @return the data type of the config value.
 	 */
-	String type() default "string";
+	Class<?> type() default String.class;
 
 	/**
 	 * @return a default or suggested value.
@@ -55,5 +55,15 @@ public @interface Documented {
 	 * @return the config property key (identifier).
 	 */
 	String identifier() default "";
+
+	/**
+	 * @return position number for sorting.
+	 */
+	int position() default Integer.MAX_VALUE;
+
+	/**
+	 * @return additional tags.
+	 */
+	String[] tags() default {};
 
 }
