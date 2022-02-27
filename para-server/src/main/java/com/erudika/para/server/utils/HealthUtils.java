@@ -1,9 +1,9 @@
 package com.erudika.para.server.utils;
 
-import com.erudika.para.core.utils.Para;
-import com.erudika.para.core.listeners.InitializeListener;
-import com.erudika.para.server.ParaServer;
 import com.erudika.para.core.App;
+import com.erudika.para.core.listeners.InitializeListener;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.server.ParaServer;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.SequenceInputStream;
@@ -107,18 +107,20 @@ public enum HealthUtils implements InitializeListener, Runnable {
 					Map<String, String> rootAppCredentials = Para.setup();
 					String confFile = Paths.get("application.conf").toAbsolutePath().toString();
 					if (rootAppCredentials.containsKey("secretKey")) {
-						try (InputStream ref = getClass().getClassLoader().getResourceAsStream("reference.conf")) {
-							InputStream config = Optional.ofNullable(Para.getFileStore().load(confFile)).orElse(ref);
-							ByteArrayInputStream bais = new ByteArrayInputStream(("# Root app access key: " +
-									rootAppCredentials.get("accessKey") + "\n# Root app secret Key: " +
-									rootAppCredentials.get("secretKey") + "\n").getBytes("utf-8"));
-							Para.getFileStore().store(confFile, new SequenceInputStream(Collections.
-									enumeration(Arrays.asList(bais, config))));
-							logger.info("Saved root app credentials to application.conf.");
+						try (
+								InputStream ref = getClass().getClassLoader().getResourceAsStream("reference.conf");
+								InputStream config = Optional.ofNullable(Para.getFileStore().load(confFile)).orElse(ref);
+								ByteArrayInputStream bais = new ByteArrayInputStream(("# Root app access key: " +
+										rootAppCredentials.get("accessKey") + "\n# Root app secret Key: " +
+										rootAppCredentials.get("secretKey") + "\n").getBytes("utf-8"))) {
+
+								Para.getFileStore().store(confFile, new SequenceInputStream(Collections.
+										enumeration(Arrays.asList(bais, config))));
+								logger.info("Saved root app credentials to application.conf.");
 						} catch (Exception e) {
 							logger.info("Initialized root app with access key '{}' and secret '{}', "
-									+ "but could not write these to file.",
-									rootAppCredentials.get("accessKey"), rootAppCredentials.get("secretKey"));
+									+ "but could not write these to {}.",
+									rootAppCredentials.get("accessKey"), rootAppCredentials.get("secretKey"), confFile);
 						}
 					} else {
 						logger.warn("Server is unhealthy - failed to initialize root app. Open http://localhost:" +

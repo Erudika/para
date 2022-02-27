@@ -17,18 +17,27 @@
  */
 package com.erudika.para.server.rest;
 
-import com.erudika.para.core.rest.GenericExceptionMapper;
+import com.erudika.para.core.App;
+import com.erudika.para.core.ParaObject;
+import com.erudika.para.core.Sysprop;
+import com.erudika.para.core.User;
+import com.erudika.para.core.metrics.Metrics;
 import com.erudika.para.core.rest.CustomResourceHandler;
+import com.erudika.para.core.rest.GenericExceptionMapper;
+import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.CoreUtils;
+import com.erudika.para.core.utils.HumanTime;
+import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Para;
 import static com.erudika.para.core.utils.Para.getCustomResourceHandlers;
 import static com.erudika.para.core.utils.Para.getDAO;
 import static com.erudika.para.core.utils.Para.getSearch;
 import static com.erudika.para.core.utils.Para.getVersion;
-
-import com.erudika.para.core.App;
-import com.erudika.para.core.utils.CoreUtils;
-import com.erudika.para.core.ParaObject;
+import static com.erudika.para.core.utils.Para.newApp;
+import static com.erudika.para.core.utils.Para.setup;
 import com.erudika.para.core.utils.ParaObjectUtils;
-import com.erudika.para.core.User;
+import com.erudika.para.core.utils.Utils;
+import com.erudika.para.core.validation.Constraint;
 import static com.erudika.para.server.rest.RestUtils.getBatchCreateResponse;
 import static com.erudika.para.server.rest.RestUtils.getBatchDeleteResponse;
 import static com.erudika.para.server.rest.RestUtils.getBatchReadResponse;
@@ -43,44 +52,10 @@ import static com.erudika.para.server.rest.RestUtils.getUpdateResponse;
 import static com.erudika.para.server.rest.RestUtils.pathParam;
 import static com.erudika.para.server.rest.RestUtils.queryParam;
 import static com.erudika.para.server.rest.RestUtils.queryParams;
-
 import com.erudika.para.server.security.SecurityUtils;
 import static com.erudika.para.server.security.SecurityUtils.getPrincipalApp;
-import com.erudika.para.core.utils.Config;
 import com.erudika.para.server.utils.HealthUtils;
-import com.erudika.para.core.utils.HumanTime;
-import com.erudika.para.core.utils.Pager;
-import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.utils.filters.FieldFilter;
-import com.erudika.para.core.validation.Constraint;
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
-import org.glassfish.jersey.process.Inflector;
-import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.server.model.Resource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import static com.erudika.para.core.utils.Para.newApp;
-import static com.erudika.para.core.utils.Para.setup;
-import com.erudika.para.core.Sysprop;
-import com.erudika.para.core.metrics.Metrics;
-import com.erudika.para.core.utils.Para;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MapperFeature;
@@ -88,21 +63,44 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.nimbusds.jwt.SignedJWT;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
+import javax.ws.rs.HttpMethod;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
+import org.glassfish.jersey.process.Inflector;
+import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.ServerProperties;
+import org.glassfish.jersey.server.model.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This is the main REST API configuration class which defines all endpoints for all resources
@@ -472,7 +470,7 @@ public final class Api1 extends ResourceConfig {
 						return Response.ok(user).build();
 					} else if (app != null) {
 						String bearer = ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-						if (app.isRootApp() && !StringUtils.isBlank(bearer)) {
+						if (app.isRootApp() && StringUtils.startsWith(bearer, "Bearer")) {
 							try {
 								String token = bearer.substring(6).trim();
 								SignedJWT jwt = SignedJWT.parse(token);
