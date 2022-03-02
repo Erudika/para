@@ -105,7 +105,8 @@ public enum HealthUtils implements InitializeListener, Runnable {
 					logger.warn("Server is unhealthy - the search index may be corrupted and may have to be rebuilt.");
 				} else {
 					Map<String, String> rootAppCredentials = Para.setup();
-					String confFile = Paths.get("application.conf").toAbsolutePath().toString();
+					String confFile = Paths.get(System.getProperty("config.file", "application.conf")).
+							toAbsolutePath().toString();
 					if (rootAppCredentials.containsKey("secretKey")) {
 						try (
 								InputStream ref = getClass().getClassLoader().getResourceAsStream("reference.conf");

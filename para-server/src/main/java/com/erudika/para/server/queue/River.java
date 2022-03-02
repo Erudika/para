@@ -17,16 +17,16 @@
  */
 package com.erudika.para.server.queue;
 
-import com.erudika.para.core.utils.Para;
-import com.erudika.para.core.annotations.Locked;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Webhook;
-import com.erudika.para.core.utils.ParaObjectUtils;
+import com.erudika.para.core.annotations.Locked;
 import com.erudika.para.core.utils.Config;
-import com.erudika.para.server.utils.HealthUtils;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
+import com.erudika.para.server.utils.HealthUtils;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -38,8 +38,10 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.ws.rs.core.HttpHeaders;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -190,6 +192,7 @@ public abstract class River implements Runnable {
 			boolean urlEncoded = (boolean) parsed.get("urlEncoded");
 			String targetUrl = StringUtils.trimToEmpty((String) parsed.get("targetUrl"));
 			String payload = (String) parsed.get("payload");
+			Integer repeatDelivery = Math.abs(NumberUtils.toInt(parsed.get("repeatedDeliveryAttempts") + "", 1));
 			HttpPost postToTarget = new HttpPost(targetUrl);
 			postToTarget.addHeader("User-Agent", "Para Webhook Dispacher " + Para.getVersion());
 			postToTarget.setHeader(HttpHeaders.CONTENT_TYPE, urlEncoded ?
@@ -202,42 +205,26 @@ public abstract class River implements Runnable {
 			} else {
 				postToTarget.setEntity(new StringEntity(payload, Charset.forName(Para.getConfig().defaultEncoding())));
 			}
-			boolean ok = false;
-			String status = "";
-			try (CloseableHttpResponse resp1 = HTTP.execute(postToTarget)) {
-				if (resp1 != null && Math.abs(resp1.getCode() - 200) > 10) {
-					status = resp1.getReasonPhrase();
-					logger.info("Webhook {} delivery failed! {} responded with code {} {} instead of 2xx.", id,
-							targetUrl, resp1.getCode(), resp1.getReasonPhrase());
-				} else {
-					logger.debug("Webhook {} delivered to {} successfully.", id, targetUrl);
-					ok = true;
-				}
-			} catch (Exception e) {
-				logger.info("Webhook {} not delivered! {} isn't responding. {}", id, targetUrl, status);
-			} finally {
-				if (!ok) {
-					// count failed delivieries and disable that webhook object after X failed attempts
-					String countId = "failed_webhook_count" + Para.getConfig().separator() + id;
-					Integer count = Para.getCache().get(appid, countId);
-					if (count == null) {
-						count = 0;
-					}
-					if (count >= (MAX_FAILED_WEBHOOK_ATTEMPTS - 1)) {
-						Webhook hook = Para.getDAO().read(appid, id);
-						if (hook != null) {
-							hook.setActive(false);
-							hook.setTooManyFailures(true);
-							Para.getDAO().update(appid, hook);
-							Para.getCache().remove(appid, countId);
-							logger.info("Webhook {} was disabled - a maximum of {} failed deliveries was reached.",
-									id, MAX_FAILED_WEBHOOK_ATTEMPTS);
-						}
+			IntStream.range(0, Math.max(repeatDelivery, 100)).parallel().forEach(repeat -> {
+				boolean ok = false;
+				String status = "";
+				try (CloseableHttpResponse resp1 = HTTP.execute(postToTarget)) {
+					if (resp1 != null && Math.abs(resp1.getCode() - 200) > 10) {
+						status = resp1.getReasonPhrase();
+						logger.info("Webhook {} delivery failed! {} responded with code {} {} instead of 2xx.", id,
+								targetUrl, resp1.getCode(), resp1.getReasonPhrase());
 					} else {
-						Para.getCache().put(appid, countId, ++count);
+						logger.debug("Webhook {} delivered to {} successfully.", id, targetUrl);
+						ok = true;
+					}
+				} catch (Exception e) {
+					logger.info("Webhook {} not delivered! {} isn't responding. {}", id, targetUrl, status);
+				} finally {
+					if (!ok) {
+						updateFailureCount(appid, id);
 					}
 				}
-			}
+			});
 			return 1;
 		} catch (Exception e) {
 			logger.error("Webhook payload was not delivered:", e);
@@ -363,5 +350,27 @@ public abstract class River implements Runnable {
 			s.setAppid(appid);
 			return s;
 		}).collect(Collectors.toList());
+	}
+
+	private void updateFailureCount(String appid, String id) {
+		// count failed delivieries and disable that webhook object after X failed attempts
+		String countId = "failed_webhook_count" + Para.getConfig().separator() + id;
+		Integer count = Para.getCache().get(appid, countId);
+		if (count == null) {
+			count = 0;
+		}
+		if (count >= (MAX_FAILED_WEBHOOK_ATTEMPTS - 1)) {
+			Webhook hook = Para.getDAO().read(appid, id);
+			if (hook != null) {
+				hook.setActive(false);
+				hook.setTooManyFailures(true);
+				Para.getDAO().update(appid, hook);
+				Para.getCache().remove(appid, countId);
+				logger.info("Webhook {} was disabled - a maximum of {} failed deliveries was reached.",
+						id, MAX_FAILED_WEBHOOK_ATTEMPTS);
+			}
+		} else {
+			Para.getCache().put(appid, countId, ++count);
+		}
 	}
 }

@@ -17,11 +17,11 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.annotations.Stored;
-import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
 import java.util.Collections;
 import java.util.HashMap;
@@ -56,6 +56,7 @@ public class Webhook extends Sysprop {
 	@Stored private List<String> customEvents;
 	@Stored private String triggeredEvent;
 	@Stored private Object customPayload;
+	@Stored private Integer repeatedDeliveryAttempts; // send the same payload X times
 
 	/**
 	 * No-args constructor.
@@ -79,6 +80,7 @@ public class Webhook extends Sysprop {
 		this.deleteAll = false;
 		this.active = false;
 		this.tooManyFailures = false;
+		this.repeatedDeliveryAttempts = 1;
 	}
 
 	/**
@@ -299,6 +301,23 @@ public class Webhook extends Sysprop {
 	}
 
 	/**
+	 * @return the number of times to deliver the same payload to target.
+	 */
+	public Integer getRepeatedDeliveryAttempts() {
+		if (repeatedDeliveryAttempts == null) {
+			return 1;
+		}
+		return Math.abs(repeatedDeliveryAttempts);
+	}
+
+	/**
+	 * @param repeatedDeliveryAttempts the number of times to deliver the same payload to target.
+	 */
+	public void setRepeatedDeliveryAttempts(Integer repeatedDeliveryAttempts) {
+		this.repeatedDeliveryAttempts = repeatedDeliveryAttempts;
+	}
+
+	/**
 	 * Resets the secret key by generating a new one.
 	 */
 	public void resetSecret() {
@@ -352,6 +371,7 @@ public class Webhook extends Sysprop {
 		data.put(Config._TYPE, "webhookpayload");
 		data.put("targetUrl", getTargetUrl());
 		data.put("urlEncoded", getUrlEncoded());
+		data.put("repeatedDeliveryAttempts", getRepeatedDeliveryAttempts());
 		data.put("event", event);
 
 		Map<String, Object> payloadObject = new HashMap<>();
