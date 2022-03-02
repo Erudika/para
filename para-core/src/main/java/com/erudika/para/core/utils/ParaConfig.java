@@ -293,10 +293,10 @@ public class ParaConfig extends Config {
 	}
 
 	/**
-	 * @return JWT (access token) expiration in seconds. Default: 1 week
+	 * @return JWT (access token) expiration in seconds. Default: 24 hours.
 	 */
 	public int jwtExpiresAfterSec() {
-		return NumberUtils.toInt(getConfigParam("jwt_expires_after", ""), 7 * 24 * 60 * 60);
+		return NumberUtils.toInt(getConfigParam("jwt_expires_after", ""), 24 * 60 * 60);
 	}
 
 	/**
