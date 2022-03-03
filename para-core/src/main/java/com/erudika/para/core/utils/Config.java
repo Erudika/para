@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
@@ -424,14 +425,14 @@ public abstract class Config {
 		Map<String, Map<String, String>> jsonMap = new LinkedHashMap<>();
 
 		if (!groupByCategory && "markdown".equalsIgnoreCase(format)) {
-			sb.append("| Property key | Description | Default value | Type |\n");
-			sb.append("| ---          | ---         | ---           | ---  |\n");
+			sb.append("| Property key & Description | Default Value | Type |\n");
+			sb.append("|  ---                       | ---           | ---  |\n");
 		}
 
 		for (Map.Entry<String, Documented> entry : configMap.entrySet()) {
 			if (!getKeysExcludedFromRendering().contains(entry.getKey())) {
 				if (groupByCategory) {
-					renderCategoryHeader(format, category, entry, jsonMapByCat, sb);
+					category = renderCategoryHeader(format, category, entry, jsonMapByCat, sb);
 				}
 				renderConfigDescription(format, category, entry, jsonMapByCat, jsonMap, groupByCategory, sb);
 			}
@@ -447,19 +448,19 @@ public abstract class Config {
 		return sb.toString();
 	}
 
-	private void renderCategoryHeader(String format, String category, Map.Entry<String, Documented> entry,
+	private String renderCategoryHeader(String format, String category, Map.Entry<String, Documented> entry,
 			Map<String, Map<String, Map<String, String>>> jsonMapByCat, StringBuilder sb) {
 		String cat = getSortedConfigKeys().get(entry.getKey());
 		if (!StringUtils.isBlank(cat) && !category.equalsIgnoreCase(cat)) {
-			category = getSortedConfigKeys().get(entry.getKey());
-			switch (format) {
+			category = getSortedConfigKeys().getOrDefault(entry.getKey(), "");
+			switch (StringUtils.trimToEmpty(format)) {
 				case "markdown":
 					if (!category.isEmpty()) {
 						sb.append("\n");
 					}
 					sb.append("## ").append(StringUtils.capitalize(category)).append("\n\n");
-					sb.append("| Property key | Description | Default value | Type |\n");
-					sb.append("| ---          | ---         | ---           | ---  |\n");
+					sb.append("| Property key & Description | Default Value | Type |\n");
+					sb.append("|  ---                       | ---           | ---  |\n");
 					break;
 				case "hocon":
 					if (!category.isEmpty()) {
@@ -471,17 +472,20 @@ public abstract class Config {
 					jsonMapByCat.put(category, new LinkedHashMap<>());
 			}
 		}
+		return category;
 	}
 
 	private void renderConfigDescription(String format, String category, Map.Entry<String, Documented> entry,
 			Map<String, Map<String, Map<String, String>>> jsonMapByCat, Map<String, Map<String, String>> jsonMap,
 			boolean groupByCategory, StringBuilder sb) {
-		switch (format) {
+		switch (StringUtils.trimToEmpty(format)) {
 			case "markdown":
-				sb.append("|`").append(getConfigRootPrefix()).append(".").append(entry.getKey()).append("` | ").
-						append(entry.getValue().description()).append(" | `").
-						append(entry.getValue().value()).append("` | `").
-						append(entry.getValue().type().getSimpleName()).append("`|\n");
+				String tags = Arrays.stream(entry.getValue().tags()).
+						map(t -> " <kbd>" + t + "</kbd>").collect(Collectors.joining());
+				sb.append("|`").append(getConfigRootPrefix()).append(".").append(entry.getKey()).append("`").
+						append(tags).append("<br>").append(entry.getValue().description()).append(" | `").
+						append(Optional.ofNullable(StringUtils.trimToNull(entry.getValue().value())).orElse(" ")).
+						append("` | `").append(entry.getValue().type().getSimpleName()).append("`|\n");
 				break;
 			case "hocon":
 				sb.append("# ").append(entry.getValue().description());
