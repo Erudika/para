@@ -488,8 +488,10 @@ public abstract class Config {
 						append("` | `").append(entry.getValue().type().getSimpleName()).append("`|\n");
 				break;
 			case "hocon":
+				tags = Arrays.stream(entry.getValue().tags()).
+						map(t -> "[" + t + "] ").collect(Collectors.joining());
 				sb.append("# ").append(entry.getValue().description());
-				sb.append("[type: ").append(entry.getValue().type().getSimpleName()).append("]\n");
+				sb.append("[type: ").append(entry.getValue().type().getSimpleName()).append("] ").append(tags).append("\n");
 				sb.append(getConfigRootPrefix()).append(".").append(entry.getKey()).append(" = ").
 						append(entry.getValue().value()).append("\n");
 				break;
@@ -498,6 +500,7 @@ public abstract class Config {
 				description.put("description", entry.getValue().description());
 				description.put("defaultValue", entry.getValue().value());
 				description.put("type", entry.getValue().type().getSimpleName());
+				description.put("tags", StringUtils.join(entry.getValue().tags(), ","));
 				if (groupByCategory) {
 					jsonMapByCat.get(category).put(getConfigRootPrefix() + "." + entry.getKey(), description);
 				} else {
