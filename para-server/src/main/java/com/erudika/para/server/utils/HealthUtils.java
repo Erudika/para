@@ -6,11 +6,9 @@ import com.erudika.para.core.utils.Para;
 import com.erudika.para.server.ParaServer;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.io.SequenceInputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -108,16 +106,25 @@ public enum HealthUtils implements InitializeListener, Runnable {
 					String confFile = Paths.get(System.getProperty("config.file", "application.conf")).
 							toAbsolutePath().toString();
 					if (rootAppCredentials.containsKey("secretKey")) {
-						try (
-								InputStream ref = getClass().getClassLoader().getResourceAsStream("reference.conf");
-								InputStream config = Optional.ofNullable(Para.getFileStore().load(confFile)).orElse(ref);
-								ByteArrayInputStream bais = new ByteArrayInputStream(("# Root app access key: " +
-										rootAppCredentials.get("accessKey") + "\n# Root app secret Key: " +
-										rootAppCredentials.get("secretKey") + "\n").getBytes("utf-8"))) {
+						try (InputStream ref = getClass().getClassLoader().getResourceAsStream("reference.conf");
+								InputStream config = Optional.ofNullable(Para.getFileStore().load(confFile)).orElse(ref)) {
 
-								Para.getFileStore().store(confFile, new SequenceInputStream(Collections.
-										enumeration(Arrays.asList(bais, config))));
-								logger.info("Saved root app credentials to application.conf.");
+							String confString = new String(config.readAllBytes(), StandardCharsets.UTF_8);
+							String accessKey = "para.root_access_key = \"" + rootAppCredentials.get("accessKey") + "\"";
+							String secretKey = "para.root_secret_key = \"" + rootAppCredentials.get("secretKey") + "\"";
+							if (confString.contains("para.root_access_key")) {
+								confString = confString.replaceAll("para\\.root_access_key\\s*=\\s*\".*?\"", accessKey);
+							} else {
+								confString += "\n" + accessKey;
+							}
+							if (confString.contains("para.root_secret_key")) {
+								confString = confString.replaceAll("para\\.root_secret_key\\s*=\\s*\".*?\"", secretKey);
+							} else {
+								confString += "\n" + secretKey;
+							}
+							Para.getFileStore().store(confFile, new ByteArrayInputStream(confString.
+									getBytes(StandardCharsets.UTF_8)));
+							logger.info("Saved root app credentials to application.conf.");
 						} catch (Exception e) {
 							logger.info("Initialized root app with access key '{}' and secret '{}', "
 									+ "but could not write these to {}.",
