@@ -17,15 +17,15 @@
  */
 package com.erudika.para.server.security.filters;
 
-import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
-import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
+import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.ParaObjectUtils;
+import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.security.AuthenticatedUserDetails;
 import com.erudika.para.server.security.SecurityUtils;
 import com.erudika.para.server.security.UserAuthentication;
-import com.erudika.para.core.utils.Config;
-import com.erudika.para.core.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
@@ -182,7 +182,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			String gnParam = SecurityUtils.getSettingForApp(app, configKey("parameters.given_name", alias), "given_name");
 			String fnParam = SecurityUtils.getSettingForApp(app, configKey("parameters.family_name", alias), "family_name");
 
-			if (profile != null && profile.containsKey(accountIdParam)) {
+			if (profile.containsKey(accountIdParam)) {
 				Object accid = profile.get(accountIdParam);
 				String oauthAccountId = accid instanceof String ? (String) accid : String.valueOf(accid);
 				String email = getEmailFromProfile(profile, emailParam, oauthAccountId, emailDomain);
@@ -282,7 +282,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		try {
 			String alias = oauthAlias(user.getIdentifier());
 			Map<String, Object> profile = fetchProfileFromIDP(app, user.getIdpAccessToken(), null, alias);
-			if (profile == null && user.getIdpRefreshToken() != null) {
+			if (user.getIdpRefreshToken() != null) {
 				refreshTokens(app, user);
 				profile = fetchProfileFromIDP(app, user.getIdpAccessToken(), null, alias);
 			}

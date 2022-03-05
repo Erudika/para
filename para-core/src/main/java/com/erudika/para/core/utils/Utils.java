@@ -57,7 +57,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -149,11 +149,11 @@ public final class Utils {
 		workerId = NumberUtils.toLong(workerID, 1);
 
 		if (workerId > MAX_WORKER_ID || workerId < 0) {
-			workerId = new Random().nextInt((int) MAX_WORKER_ID + 1);
+			workerId = ThreadLocalRandom.current().nextInt((int) MAX_WORKER_ID + 1);
 		}
 
 		if (dataCenterId > MAX_DATACENTER_ID || dataCenterId < 0) {
-			dataCenterId =  new Random().nextInt((int) MAX_DATACENTER_ID + 1);
+			dataCenterId =  ThreadLocalRandom.current().nextInt((int) MAX_DATACENTER_ID + 1);
 		}
 	}
 

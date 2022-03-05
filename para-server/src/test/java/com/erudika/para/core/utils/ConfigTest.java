@@ -17,7 +17,6 @@
  */
 package com.erudika.para.core.utils;
 
-import com.erudika.para.core.utils.Config;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -34,9 +33,9 @@ public class ConfigTest {
 		assertNull(Para.getConfig().getConfigParam("null", null));
 		assertEquals("test", Para.getConfig().getConfigParam("null", "test"));
 
-		assertEquals("embedded", Para.getConfig().getConfigParam("env", ""));
+		assertEquals("embedded", Para.getConfig().environment());
 		System.setProperty("para.env", "production");
-		assertEquals("production", Para.getConfig().getConfigParam("env", ""));
+		assertEquals("production", Para.getConfig().environment());
 	}
 
 	@Test
