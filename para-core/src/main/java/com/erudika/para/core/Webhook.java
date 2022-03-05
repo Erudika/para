@@ -339,6 +339,10 @@ public class Webhook extends Sysprop {
 		// check if this is a trigger request for a custom event using POST /webhooks
 		if (!StringUtils.isBlank(triggeredEvent) && customPayload != null) {
 			sendEventPayloadToQueue(getAppid(), "customEvents", triggeredEvent, customPayload);
+			if (!StringUtils.isBlank(secret) && Utils.isValidURL(targetUrl) && !"https://para".equals(targetUrl)) {
+				// support for triggering and delivering the custom event directly without having to register a webhook
+				Para.getQueue().push(buildPayloadAsJSON(triggeredEvent, customPayload));
+			}
 			setId("triggered" + Para.getConfig().separator() + triggeredEvent);
 			setName("This webhook object is not persisted and should be discarded.");
 			setStored(false);
@@ -386,7 +390,7 @@ public class Webhook extends Sysprop {
 		try {
 			String payloadString = ParaObjectUtils.getJsonWriterNoIdent().writeValueAsString(payloadObject);
 			data.put("payload", payloadString);
-			data.put("signature", Utils.hmacSHA256(payloadString, getSecret()));
+			data.put("signature", Utils.hmacSHA256(payloadString, secret()));
 			return ParaObjectUtils.getJsonWriterNoIdent().writeValueAsString(data);
 		} catch (Exception e) {
 			LoggerFactory.getLogger(Webhook.class).error(null, e);
@@ -433,5 +437,16 @@ public class Webhook extends Sysprop {
 			}
 		}
 		return false;
+	}
+
+	private String secret() {
+		if ("{{secretKey}}".equals(getSecret())) {
+			// fetch the secret key for that app
+			App app = Para.getDAO().read(App.id(getAppid()));
+			if (app != null) {
+				return app.getSecret();
+			}
+		}
+		return getSecret();
 	}
 }

@@ -361,25 +361,16 @@ public abstract class Config {
 	 * @return config as string
 	 */
 	public String render(boolean asJson, String hoconHeader, String hoconFooter) {
-		Map<String, Object> configMap = new LinkedHashMap<>();
 		if (asJson) {
-			for (String key : getSortedConfigKeys().keySet()) {
-				configMap.put(getConfigRootPrefix() + "." + key, null);
-			}
-			for (Map.Entry<String, ConfigValue> entry : getConfig().entrySet()) {
-				if (!getKeysExcludedFromRendering().contains(entry.getKey())) {
-					configMap.put(getConfigRootPrefix() + "." + entry.getKey(), ConfigValueFactory.
-							fromAnyRef(getConfigParam(entry.getKey(), "", entry.getValue().valueType())).unwrapped());
-				}
-			}
 			String conf = "{}";
 			try {
-				conf = ParaObjectUtils.getJsonWriter().writeValueAsString(configMap);
+				conf = ParaObjectUtils.getJsonWriter().writeValueAsString(getConfigMap());
 			} catch (JsonProcessingException ex) {
 				logger.error(null, ex);
 			}
 			return conf;
 		} else {
+			Map<String, Object> configMap = new LinkedHashMap<>();
 			for (String key : getSortedConfigKeys().keySet()) {
 				configMap.put(key, null);
 			}
@@ -415,6 +406,12 @@ public abstract class Config {
 		}
 	}
 
+	/**
+	 * Renders all configuration options along with their documentation and default values.
+	 * @param format one of "hocon", "json" or "markdown"
+	 * @param groupByCategory if true, will group properties by category
+	 * @return a HOCON, JSON or MD string
+	 */
 	public String renderConfigDocumentation(String format, boolean groupByCategory) {
 		Map<String, Documented> configMap = annotatedMethods.stream().
 					collect(Collectors.toMap(a -> a.identifier(), a -> a, (u, v) -> u, LinkedHashMap::new));
@@ -446,6 +443,23 @@ public abstract class Config {
 			}
 		}
 		return sb.toString();
+	}
+
+	/**
+	 * @return returns the configuration as a map of keys and values.
+	 */
+	public Map<String, Object> getConfigMap() {
+		Map<String, Object> configMap = new LinkedHashMap<>();
+		for (String key : getSortedConfigKeys().keySet()) {
+			configMap.put(getConfigRootPrefix() + "." + key, null);
+		}
+		for (Map.Entry<String, ConfigValue> entry : getConfig().entrySet()) {
+			if (!getKeysExcludedFromRendering().contains(entry.getKey())) {
+				configMap.put(getConfigRootPrefix() + "." + entry.getKey(), ConfigValueFactory.
+						fromAnyRef(getConfigParam(entry.getKey(), "", entry.getValue().valueType())).unwrapped());
+			}
+		}
+		return configMap;
 	}
 
 	private String renderCategoryHeader(String format, String category, Map.Entry<String, Documented> entry,
