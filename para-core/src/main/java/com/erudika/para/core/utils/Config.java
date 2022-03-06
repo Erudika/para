@@ -23,14 +23,11 @@ import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigRenderOptions;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueFactory;
-import com.typesafe.config.ConfigValueType;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Paths;
-import java.text.NumberFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -217,7 +214,7 @@ public abstract class Config {
 	}
 
 	/**
-	 * Returns the value of a configuration parameter or its default value.
+	 * Returns the string value of a configuration parameter or its default value.
 	 * {@link System#getProperty(java.lang.String)} has precedence.
 	 * @param key the param key
 	 * @param defaultValue the default param value
@@ -243,44 +240,19 @@ public abstract class Config {
 	}
 
 	/**
-	 * @see #getConfigParam(java.lang.String, java.lang.String)
-	 * @param key key
-	 * @param defaultValue value
-	 * @param type type
-	 * @return object
+	 * Returns the unwrapped value of a configuration parameter or its default value.
+	 * @param key the param key
+	 * @param defaultValue the default value
+	 * @return object a raw unwrapped value
 	 */
-	public Object getConfigParam(String key, String defaultValue, ConfigValueType type) {
+	public Object getConfigValue(String key, String defaultValue) {
+		String valString = getConfigParam(key, defaultValue);
 		try {
-			switch (type) {
-				case STRING:
-					return getConfigParam(key, defaultValue);
-				case BOOLEAN:
-					return Boolean.parseBoolean(getConfigParam(key, defaultValue));
-				case NUMBER:
-					return NumberFormat.getInstance().parse(getConfigParam(key, defaultValue));
-				case LIST:
-					String arr = getConfigParam(key, defaultValue);
-					arr = StringUtils.remove(arr, "]");
-					arr = StringUtils.remove(arr, "[");
-					arr = StringUtils.remove(arr, "\"");
-					arr = StringUtils.remove(arr, "\"");
-					List<Object> list = new ArrayList<>();
-					for (String str : arr.split("\\s,\\s")) {
-						if (NumberUtils.isParsable(str)) {
-							list.add(NumberFormat.getInstance().parse(str));
-						} else {
-							list.add(str);
-						}
-					}
-					return list;
-				default:
-					return getConfigParam(key, defaultValue);
-				//case OBJECT:
-			}
+			Map<String, Object> v = ParaObjectUtils.getJsonReader(Map.class).readValue("{\"v\":" + valString + "}");
+			return v.getOrDefault("v", defaultValue);
 		} catch (Exception ex) {
-			logger.error(null, ex);
+			return valString;
 		}
-		return getConfigParam(key, defaultValue);
 	}
 
 	/**
@@ -334,7 +306,7 @@ public abstract class Config {
 				while ((read = data.read(bytes)) != -1) {
 					bos.write(bytes, 0, read);
 				}
-				logger.info("Configuration stored successfully in {}", confFile);
+				logger.debug("Configuration stored successfully in {}", confFile);
 			} catch (Exception e) {
 				logger.error(null, e);
 			}
@@ -353,7 +325,6 @@ public abstract class Config {
 	}
 
 	/**
-	 *
 	 * Renders the current configuration as a String, taking into account system properties and ENV precedence ordering.
 	 * @param asJson if true, a JSON object will be rendered, otherwise the HOCON format is used
 	 * @param hoconHeader file header
@@ -370,35 +341,28 @@ public abstract class Config {
 			}
 			return conf;
 		} else {
-			Map<String, Object> configMap = new LinkedHashMap<>();
-			for (String key : getSortedConfigKeys().keySet()) {
-				configMap.put(key, null);
-			}
-			for (Map.Entry<String, ConfigValue> entry : getConfig().entrySet()) {
-				if (!getKeysExcludedFromRendering().contains(entry.getKey())) {
-					configMap.put(entry.getKey(), ConfigValueFactory.
-							fromAnyRef(getConfigParam(entry.getKey(), "", entry.getValue().valueType())).
-							render(ConfigRenderOptions.concise().setComments(false).setOriginComments(false)));
-				}
-			}
 			String category = "";
 			StringBuilder sb = new StringBuilder(hoconHeader);
-			if (!StringUtils.endsWith(hoconHeader, "\n")) {
+			if (!StringUtils.isBlank(hoconHeader) && !StringUtils.endsWith(hoconHeader, "\n")) {
 				sb.append("\n");
 			}
-			for (Map.Entry<String, Object> entry : configMap.entrySet()) {
-				if (entry.getValue() != null) {
-					String cat = getSortedConfigKeys().get(entry.getKey());
+			for (Map.Entry<String, Object> entry : getConfigMap().entrySet()) {
+				String keyPrefixed = entry.getKey();
+				String keyNoPrefix = StringUtils.removeStart(keyPrefixed, getConfigRootPrefix() + ".");
+				Object val = entry.getValue();
+				Object valRendered = ConfigValueFactory.fromAnyRef(val).render(ConfigRenderOptions.concise().
+						setComments(false).setOriginComments(false));
+				if (val != null) {
+					String cat = getSortedConfigKeys().get(keyNoPrefix);
 					if (!StringUtils.isBlank(cat) && !category.equalsIgnoreCase(cat)) {
 						// print category header
 						if (!category.isEmpty()) {
 							sb.append("\n");
 						}
-						category = getSortedConfigKeys().get(entry.getKey());
+						category = getSortedConfigKeys().get(keyNoPrefix);
 						sb.append("#############  ").append(category.toUpperCase()).append("  #############\n\n");
 					}
-					sb.append(getConfigRootPrefix()).append(".").append(entry.getKey()).
-							append(" = ").append(entry.getValue()).append("\n");
+					sb.append(keyPrefixed).append(" = ").append(valRendered).append("\n");
 				}
 			}
 			sb.append("\n").append(hoconFooter).append("\n");
@@ -450,13 +414,19 @@ public abstract class Config {
 	 */
 	public Map<String, Object> getConfigMap() {
 		Map<String, Object> configMap = new LinkedHashMap<>();
-		for (String key : getSortedConfigKeys().keySet()) {
-			configMap.put(getConfigRootPrefix() + "." + key, null);
+		for (String keyNoPrefix : getSortedConfigKeys().keySet()) {
+			Object value = getConfigValue(keyNoPrefix, null);
+			if (value != null) {
+				configMap.put(getConfigRootPrefix() + "." + keyNoPrefix, value);
+			}
 		}
 		for (Map.Entry<String, ConfigValue> entry : getConfig().entrySet()) {
-			if (!getKeysExcludedFromRendering().contains(entry.getKey())) {
-				configMap.put(getConfigRootPrefix() + "." + entry.getKey(), ConfigValueFactory.
-						fromAnyRef(getConfigParam(entry.getKey(), "", entry.getValue().valueType())).unwrapped());
+			String keyNoPrefix = entry.getKey();
+			String keyPrefixed = getConfigRootPrefix() + "." + entry.getKey();
+			Object value = getConfigValue(keyNoPrefix, "");
+			Object valueUnwrapped = ConfigValueFactory.fromAnyRef(value).unwrapped();
+			if (!getKeysExcludedFromRendering().contains(keyNoPrefix)) {
+				configMap.put(keyPrefixed, valueUnwrapped);
 			}
 		}
 		return configMap;
