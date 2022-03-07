@@ -280,7 +280,7 @@ public class Webhook extends Sysprop {
 	 */
 	public void setTriggeredEvent(String triggeredEvent) {
 		this.triggeredEvent = triggeredEvent;
-		if (!StringUtils.isBlank(triggeredEvent)) {
+		if (!StringUtils.isBlank(triggeredEvent) && StringUtils.isBlank(targetUrl)) {
 			// get around the validation
 			setTargetUrl("https://para");
 		}
