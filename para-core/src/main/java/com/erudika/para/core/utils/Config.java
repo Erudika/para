@@ -52,6 +52,7 @@ public abstract class Config {
 	private com.typesafe.config.Config config;
 	private Map<String, String> sortedConfigKeys; // config key => category
 	private List<Documented> annotatedMethods;
+	private Map<String, Documented> annotatedMethodsMap; // config key => Documented
 
 	// GLOBAL SETTINGS
 	/** {@value #PARA}. */
@@ -248,6 +249,13 @@ public abstract class Config {
 	public Object getConfigValue(String key, String defaultValue) {
 		String valString = getConfigParam(key, defaultValue);
 		try {
+			if (getConfig().hasPath(key) && getConfig().getValue(key).unwrapped() != null) {
+				return getConfig().getValue(key).unwrapped();
+			}
+			Documented doc = annotatedMethodsMap.get(key);
+			if (doc != null && doc.type().equals(String.class)) {
+				return valString; // special case where we have a string containing numbers
+			}
 			Map<String, Object> v = ParaObjectUtils.getJsonReader(Map.class).readValue("{\"v\":" + valString + "}");
 			return v.getOrDefault("v", defaultValue);
 		} catch (Exception ex) {
@@ -281,6 +289,8 @@ public abstract class Config {
 					collect(Collectors.toList());
 			sortedConfigKeys = annotatedMethods.stream().
 					collect(Collectors.toMap(a -> a.identifier(), a -> a.category(), (u, v) -> u, LinkedHashMap::new));
+			annotatedMethodsMap = annotatedMethods.stream().
+					collect(Collectors.toMap(a -> a.identifier(), a -> a, (u, v) -> u, LinkedHashMap::new));
 		}
 		return sortedConfigKeys;
 	}
@@ -377,9 +387,6 @@ public abstract class Config {
 	 * @return a HOCON, JSON or MD string
 	 */
 	public String renderConfigDocumentation(String format, boolean groupByCategory) {
-		Map<String, Documented> configMap = annotatedMethods.stream().
-					collect(Collectors.toMap(a -> a.identifier(), a -> a, (u, v) -> u, LinkedHashMap::new));
-
 		String category = "";
 		StringBuilder sb = new StringBuilder();
 		Map<String, Map<String, Map<String, String>>> jsonMapByCat = new LinkedHashMap<>();
@@ -390,7 +397,7 @@ public abstract class Config {
 			sb.append("|  ---                       | ---           | ---  |\n");
 		}
 
-		for (Map.Entry<String, Documented> entry : configMap.entrySet()) {
+		for (Map.Entry<String, Documented> entry : annotatedMethodsMap.entrySet()) {
 			if (!getKeysExcludedFromRendering().contains(entry.getKey())) {
 				if (groupByCategory) {
 					category = renderCategoryHeader(format, category, entry, jsonMapByCat, sb);
