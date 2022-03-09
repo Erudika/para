@@ -59,7 +59,7 @@ See how **Para** [compares to other open source backend frameworks](https://erud
 +----+---------^----+  +-----------------+   +-------------+
      |         |
 +----v---------+-------------------------------------------+
-|  Clients : JavaScript, PHP, Java, C#, Android, iOS, etc. |
+| Clients: JavaScript, PHP, Java, C#, Android, iOS, et al. |
 +----------------------------------------------------------+
 </pre>
 
@@ -80,62 +80,32 @@ manage multiple apps.
 
 ## Quick Start
 
-Create a configuration file `application.conf` file in the same directory as the Para package.
-Here's an example default configuration:
-```ini
-# the name of the root app
-para.app_name = "Para"
-# or set it to 'production'
-para.env = "embedded"
-# if true, users can be created without verifying their emails
-para.security.allow_unverified_emails = false
-# if hosting multiple apps on Para, set this to false
-para.clients_can_access_root_app = true
-# if false caching is disabled
-para.cache_enabled = true
-# root app secret, used for token generation, should be a random string
-para.app_secret_key = "b8db69a24a43f2ce134909f164a45263"
-# enable API request signature verification
-para.security.api_security = true
-# the node number from 1 to 1024, used for distributed ID generation
-para.worker_id = 1
-```
-
 1. [Download the latest executable JAR](https://github.com/Erudika/para/releases)
-2. Execute it with `java -jar -Dconfig.file=./application.conf para-*.jar`
-3. Call `curl localhost:8080/v1/_setup` to get the access and secret keys for the root app (required)
-4. Install `para-cli` tool for easy access `npm install -g para-cli` (optional)
-5. Create a new "child" app for regular use (optional):
+2. Create a configuration file `application.conf` file in the same directory as the JAR package.
+3. Start Para with `java -jar -Dconfig.file=./application.conf para-*.jar`
+4. Install [Para CLI](https://github.com/Erudika/para-cli) with `npm install -g para-cli`
+5. Create a new dedicated app for your project and save the access keys:
 ```
 # run setup and set endpoint to either 'http://localhost:8080' or 'https://paraio.com'
+# the keys for the root app are inside application.conf
 $ para-cli setup
 $ para-cli new-app "myapp" --name "My App"
 ```
-6. Open [Para Web Console](https://console.paraio.org) or integrate with one of the API clients below.
-
-
-The quickest way to interact with Para is through the [command-line tool](https://github.com/Erudika/para-cli) (CLI):
-```
-$ npm install -g para-cli
-$ para-cli setup
-$ para-cli ping
-$ echo "{\"type\":\"todo\", \"name\": \"buy milk\"}" > todo.json
-$ para-cli create todo.json --id todo1 --encodeId false
-$ para-cli read --id todo1
-$ para-cli search "type:todo"
-```
+Alternatively, you can use the [Para Web Console](https://console.paraio.org) to manage data,
+or integrate Para directly into your project with one of the API clients below.
 
 ## Docker
 
 Tagged Docker images for Para are located at `erudikaltd/para` on Docker Hub.
-**It's highly recommended that you pull only release images like `:1.39.0` or `:latest_stable`
+**It's highly recommended that you pull only release images like `:1.45.1` or `:latest_stable`
 because the `:latest` tag can be broken or unstable.**
-First, create an `application.conf` file in a directory and run this command:
+First, create an `application.conf` file and a `data` folder and start the Para container:
 
 ```
-$ docker run -ti -p 8080:8080 --rm -v para-data:/para/data \
+$ touch application.conf && mkdir data
+$ docker run -ti -p 8080:8080 --rm -v $(pwd)/data:/para/data \
   -v $(pwd)/application.conf:/para/application.conf \
-  -e JAVA_OPTS="-Dconfig.file=/para/application.conf -Dloader.path=lib" erudikaltd/para:latest_stable
+  -e JAVA_OPTS="-Dconfig.file=/para/application.conf" erudikaltd/para:latest_stable
 ```
 
 **Environment variables**
