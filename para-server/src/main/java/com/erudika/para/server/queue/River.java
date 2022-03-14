@@ -205,7 +205,10 @@ public abstract class River implements Runnable {
 			} else {
 				postToTarget.setEntity(new StringEntity(payload, Charset.forName(Para.getConfig().defaultEncoding())));
 			}
-			IntStream.range(0, Math.max(repeatDelivery, 100)).parallel().forEach(repeat -> {
+			if (repeatDelivery > 100) {
+				repeatDelivery = 100;
+			}
+			IntStream.range(0, Math.max(1, repeatDelivery)).parallel().forEach(r -> {
 				boolean ok = false;
 				String status = "";
 				try (CloseableHttpResponse resp1 = HTTP.execute(postToTarget)) {

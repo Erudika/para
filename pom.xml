@@ -79,7 +79,7 @@
 		<skipITs>${skipTests}</skipITs>
 		<skipUTs>${skipTests}</skipUTs>
 		<deployPluginVer>2.8.2</deployPluginVer>
-		<slf4jVer>1.7.32</slf4jVer>
+		<slf4jVer>1.7.36</slf4jVer>
 		<logbackVer>1.2.9</logbackVer>
 		<awsJdkVer>2.17.113</awsJdkVer>
 		<jerseyVer>2.35</jerseyVer>
