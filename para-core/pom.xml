@@ -12,7 +12,7 @@
 	<name>para-core</name>
 
 	<properties>
-		<jacksonVer>2.13.1</jacksonVer>
+		<jacksonVer>2.13.2</jacksonVer>
 		<flexmarkVer>0.64.0</flexmarkVer>
 	</properties>
 
@@ -28,7 +28,7 @@
 		<dependency>
 			<groupId>io.github.classgraph</groupId>
 			<artifactId>classgraph</artifactId>
-			<version>4.8.138</version>
+			<version>4.8.141</version>
 		</dependency>
 
 		<!--	 INJECT & JAX-RS -->
