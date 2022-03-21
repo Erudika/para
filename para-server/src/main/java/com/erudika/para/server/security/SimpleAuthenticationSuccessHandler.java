@@ -17,12 +17,12 @@
  */
 package com.erudika.para.server.security;
 
-import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.rest.RestUtils;
 import com.erudika.para.server.utils.HttpUtils;
-import com.erudika.para.core.utils.Utils;
 import com.nimbusds.jwt.SignedJWT;
 import java.io.IOException;
 import javax.servlet.ServletException;
@@ -47,10 +47,6 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 			Authentication authentication) throws IOException, ServletException {
 
 		User u = SecurityUtils.getAuthenticatedUser(authentication);
-		if (u != null && !StringUtils.equals(request.getRemoteAddr(), u.getLastIp())) {
-			u.setLastIp(request.getRemoteAddr());
-			u.update();
-		}
 
 		String appid = SecurityUtils.getAppidFromAuthRequest(request);
 		if (!StringUtils.isBlank(appid)) {

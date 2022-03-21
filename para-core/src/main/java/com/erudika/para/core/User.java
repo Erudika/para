@@ -17,23 +17,23 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.core.utils.CoreUtils;
-import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.annotations.Email;
 import com.erudika.para.core.annotations.Locked;
 import com.erudika.para.core.annotations.Stored;
 import com.erudika.para.core.i18n.CurrencyUtils;
 import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Pager;
 import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
-import org.apache.commons.lang3.StringUtils;
 import javax.validation.constraints.NotBlank;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +69,6 @@ public class User implements ParaObject {
 	@Stored @NotBlank @Email private String email;
 	@Stored private String currency;
 	@Stored private String picture;
-	@Stored private String lastIp;
 	@Stored @Locked private String tokenSecret;
 	@Stored private String idpIdToken;
 	@Stored private String idpAccessToken;
@@ -114,23 +113,6 @@ public class User implements ParaObject {
 	 */
 	public void setTokenSecret(String tokenSecret) {
 		this.tokenSecret = tokenSecret;
-	}
-
-	/**
-	 *	The IP address of the user recorded on last login.
-	 * @return the IP or null
-	 */
-	@JsonIgnore
-	public String getLastIp() {
-		return lastIp;
-	}
-
-	/**
-	 * Sets the IP of the user.
-	 * @param lastIp last known IP address
-	 */
-	public void setLastIp(String lastIp) {
-		this.lastIp = lastIp;
 	}
 
 	/**
