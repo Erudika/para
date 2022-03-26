@@ -12,7 +12,7 @@
 	<name>para-core</name>
 
 	<properties>
-		<jacksonVer>2.13.2</jacksonVer>
+		<jacksonVer>2.13.2.1</jacksonVer>
 		<flexmarkVer>0.64.0</flexmarkVer>
 	</properties>
 
