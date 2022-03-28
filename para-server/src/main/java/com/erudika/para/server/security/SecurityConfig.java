@@ -17,22 +17,22 @@
  */
 package com.erudika.para.server.security;
 
-import com.erudika.para.server.security.filters.GoogleAuthFilter;
-import com.erudika.para.server.security.filters.PasswordAuthFilter;
-import com.erudika.para.server.security.filters.TwitterAuthFilter;
-import com.erudika.para.server.security.filters.MicrosoftAuthFilter;
-import com.erudika.para.server.security.filters.GitHubAuthFilter;
-import com.erudika.para.server.security.filters.LinkedInAuthFilter;
-import com.erudika.para.server.security.filters.GenericOAuth2Filter;
-import com.erudika.para.server.security.filters.FacebookAuthFilter;
+import com.erudika.para.core.utils.Para;
 import static com.erudika.para.server.ParaServer.getInstance;
 import com.erudika.para.server.security.filters.AmazonAuthFilter;
+import com.erudika.para.server.security.filters.FacebookAuthFilter;
+import com.erudika.para.server.security.filters.GenericOAuth2Filter;
+import com.erudika.para.server.security.filters.GitHubAuthFilter;
+import com.erudika.para.server.security.filters.GoogleAuthFilter;
 import com.erudika.para.server.security.filters.LdapAuthFilter;
+import com.erudika.para.server.security.filters.LinkedInAuthFilter;
+import com.erudika.para.server.security.filters.MicrosoftAuthFilter;
+import com.erudika.para.server.security.filters.PasswordAuthFilter;
 import com.erudika.para.server.security.filters.PasswordlessAuthFilter;
 import com.erudika.para.server.security.filters.SAMLAuthFilter;
 import com.erudika.para.server.security.filters.SAMLMetadataFilter;
 import com.erudika.para.server.security.filters.SlackAuthFilter;
-import com.erudika.para.core.utils.Para;
+import com.erudika.para.server.security.filters.TwitterAuthFilter;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigValue;
@@ -136,7 +136,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	 */
 	@Override
 	public void configure(WebSecurity web) throws Exception {
-		web.ignoring().requestMatchers(IgnoredRequestMatcher.INSTANCE);
 		DefaultHttpFirewall firewall = new DefaultHttpFirewall();
 		firewall.setAllowUrlEncodedSlash(true);
 		web.httpFirewall(firewall);
@@ -157,6 +156,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		String signoutPath = Para.getConfig().getConfigParam("security.signout", "/signout");
 		String accessDeniedPath = Para.getConfig().getConfigParam("security.access_denied", "/403");
 		String signoutSuccessPath = Para.getConfig().getConfigParam("security.signout_success", signinPath);
+
+		http.authorizeRequests(e -> e.requestMatchers(IgnoredRequestMatcher.INSTANCE).permitAll());
 
 		// If API security is disabled don't add the API endpoint to the list of protected resources
 		if (enableRestFilter) {
