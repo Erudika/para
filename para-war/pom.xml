@@ -60,7 +60,7 @@
 			<plugin>
 				<groupId>org.eclipse.jetty</groupId>
 				<artifactId>jetty-maven-plugin</artifactId>
-				<version>${jettyVer}</version>
+				<version>9.4.45.v20220203</version>
 				<configuration>
 					<war>${project.basedir}/target/para-${project.version}.war</war>
 				</configuration>
