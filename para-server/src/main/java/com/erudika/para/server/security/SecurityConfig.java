@@ -157,7 +157,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		String accessDeniedPath = Para.getConfig().getConfigParam("security.access_denied", "/403");
 		String signoutSuccessPath = Para.getConfig().getConfigParam("security.signout_success", signinPath);
 
-		http.authorizeRequests(e -> e.requestMatchers(IgnoredRequestMatcher.INSTANCE).permitAll());
+		http.authorizeRequests().requestMatchers(IgnoredRequestMatcher.INSTANCE).permitAll();
 
 		// If API security is disabled don't add the API endpoint to the list of protected resources
 		if (enableRestFilter) {

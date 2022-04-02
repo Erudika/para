@@ -51,7 +51,8 @@ public final class RestRequestMatcher implements RequestMatcher {
 	@Override
 	public boolean matches(HttpServletRequest request) {
 		// Determine if the request is RESTful.
-		return strict ? REGEX_STRICT.matches(request) : REGEX.matches(request);
+		return !IgnoredRequestMatcher.INSTANCE.matches(request) &&
+				(strict ? REGEX_STRICT.matches(request) : REGEX.matches(request));
 	}
 
 }
