@@ -95,7 +95,7 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 	public UserAuthentication getOrCreateUser(App app, String accessToken) {
 		UserAuthentication userAuth = null;
 		User user = new User();
-		String secret = SecurityUtils.getSettingForApp(app, "app_secret_key", app.getSecret());
+		String secret = Para.getConfig().getSettingForApp(app, "app_secret_key", app.getSecret());
 		try {
 			SignedJWT jwt = SignedJWT.parse(accessToken);
 			String email = jwt.getJWTClaimsSet().getStringClaim(Config._EMAIL);

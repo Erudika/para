@@ -30,7 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 public class QueueModule extends AbstractModule {
 
 	protected void configure() {
-		String selectedQueue = Para.getConfig().getConfigParam("q", "");
+		String selectedQueue = Para.getConfig().queuePlugin();
 		if (StringUtils.isBlank(selectedQueue)) {
 			bindToDefault();
 		} else {

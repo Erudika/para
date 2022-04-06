@@ -17,35 +17,35 @@
  */
 package com.erudika.para.server.metrics;
 
-import com.erudika.para.core.metrics.Metrics;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.codahale.metrics.jmx.JmxReporter;
-import com.erudika.para.core.listeners.InitializeListener;
-import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
+import com.erudika.para.core.listeners.InitializeListener;
+import com.erudika.para.core.metrics.Metrics;
+import static com.erudika.para.core.metrics.Metrics.SYSTEM_METRICS_NAME;
 import com.erudika.para.core.rest.CustomResourceHandler;
-import com.erudika.para.server.rest.RestUtils;
 import com.erudika.para.core.utils.Config;
-import com.erudika.para.server.utils.HealthUtils;
-import com.erudika.para.core.utils.RegistryUtils;
 import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Para;
+import static com.erudika.para.core.utils.Para.getCustomResourceHandlers;
+import com.erudika.para.core.utils.RegistryUtils;
 import com.erudika.para.core.utils.Utils;
+import com.erudika.para.server.rest.RestUtils;
+import com.erudika.para.server.utils.HealthUtils;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import static com.erudika.para.core.utils.Para.getCustomResourceHandlers;
-import static com.erudika.para.core.metrics.Metrics.SYSTEM_METRICS_NAME;
-import java.util.ArrayList;
-import java.util.Objects;
 
 /**
  * A centralized utility for managing and retrieving all Para performance metrics.
@@ -62,7 +62,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 
 		@Override
 		public void onInitialize() {
-			if (!Para.getConfig().getConfigBoolean("metrics_enabled", true)) {
+			if (!Para.getConfig().metricsEnabled()) {
 				return;
 			}
 			// setup metrics log file reporting
@@ -71,7 +71,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 				systemRegistry = SharedMetricRegistries.setDefault(SYSTEM_METRICS_NAME);
 			}
 			Logger metricsLogger = LoggerFactory.getLogger("paraMetrics");
-			int loggingRate = Para.getConfig().getConfigInt("metrics.logging_rate", 60);
+			int loggingRate = Para.getConfig().metricsLoggingIntervalSec();
 			if (loggingRate > 0) {
 				Slf4jReporter.forRegistry(systemRegistry).outputTo(metricsLogger).build().
 						start(loggingRate, TimeUnit.SECONDS);
@@ -81,9 +81,9 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 			initializeMetrics(SYSTEM_METRICS_NAME);
 
 			// setup graphite reporting for the system
-			String host = Para.getConfig().getConfigParam("metrics.graphite.host", null);
+			String host = Para.getConfig().metricsGraphiteHost();
 			if (GRAPHITE_PERIOD > 0 && !StringUtils.isBlank(host)) {
-				int port = Para.getConfig().getConfigInt("metrics.graphite.port", 2003);
+				int port = Para.getConfig().metricsGraphitePort();
 				String prefixSystem = MetricsUtils.GRAPHITE_SYS_PREFIX_TEMPLATE;
 				if (INSTANCE_ID != null) {
 					HashMap<String, Object> prefixContext = new HashMap<>();
@@ -139,13 +139,13 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 	};
 
 	private static final Logger logger = LoggerFactory.getLogger(MetricsUtils.class);
-	private static final String INSTANCE_ID = Para.getConfig().getConfigParam("instance_id", null);
+	private static final String INSTANCE_ID = Para.getConfig().workerId();
 
 	private static final Map<String, GraphiteReporter> GRAPHITE_REPORTERS = new HashMap<>();
 	private static final Map<String, GraphiteSettings> GRAPHITE_SETTINGS = new HashMap<>();
-	private static final String GRAPHITE_SYS_PREFIX_TEMPLATE = Para.getConfig().getConfigParam("metrics.graphite.prefix_system", null);
-	private static final String GRAPHITE_APP_PREFIX_TEMPLATE = Para.getConfig().getConfigParam("metrics.graphite.prefix_apps", null);
-	private static final int GRAPHITE_PERIOD = Para.getConfig().getConfigInt("metrics.graphite.period", 0);
+	private static final String GRAPHITE_SYS_PREFIX_TEMPLATE = Para.getConfig().metricsGraphitePrefixSystem();
+	private static final String GRAPHITE_APP_PREFIX_TEMPLATE = Para.getConfig().metricsGraphitePrefixApps();
+	private static final int GRAPHITE_PERIOD = Para.getConfig().metricsGraphitePeriodSec();
 
 	/**
 	 * The name of the registry holding app-specific settings for reporting metrics to Graphite.
@@ -302,7 +302,7 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 			registry.timer(MetricRegistry.name(resourceHandlerClassName, "handleDelete"));
 		}
 
-		if (Para.getConfig().getConfigBoolean("metrics.jmx_enabled", false)) {
+		if (Para.getConfig().metricsJmxEnabled()) {
 			JmxReporter.forRegistry(registry).inDomain(registryName).build().start();
 		}
 	}

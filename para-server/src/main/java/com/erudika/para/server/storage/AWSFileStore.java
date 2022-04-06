@@ -48,8 +48,7 @@ public class AWSFileStore implements FileStore {
 	 * No-args constructor.
 	 */
 	public AWSFileStore() {
-		this(Para.getConfig().getConfigParam("para.s3.bucket", "org.paraio." +
-				new DefaultAwsRegionProviderChain().getRegion().id()));
+		this(Para.getConfig().awsS3Bucket(new DefaultAwsRegionProviderChain().getRegion().id()));
 	}
 
 	/**
@@ -85,7 +84,7 @@ public class AWSFileStore implements FileStore {
 		if (StringUtils.isBlank(path) || data == null) {
 			return null;
 		}
-		int maxFileSizeMBytes = Para.getConfig().getConfigInt("para.s3.max_filesize_mb", 10);
+		int maxFileSizeMBytes = Para.getConfig().awsS3MaxFileSizeMb();
 		try {
 			Map<String, String> om = new HashMap<String, String>(3);
 			om.put(HttpHeaders.CACHE_CONTROL, "max-age=15552000, must-revalidate");	// 180 days

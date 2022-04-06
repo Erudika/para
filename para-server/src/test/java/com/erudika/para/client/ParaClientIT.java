@@ -17,9 +17,6 @@
  */
 package com.erudika.para.client;
 
-import com.erudika.para.client.ParaClient;
-import com.erudika.para.core.utils.Para;
-import com.erudika.para.server.ParaServer;
 import com.erudika.para.core.Address;
 import com.erudika.para.core.App;
 import com.erudika.para.core.App.AllowedMethods;
@@ -32,22 +29,24 @@ import static com.erudika.para.core.App.AllowedMethods.READ;
 import static com.erudika.para.core.App.AllowedMethods.READ_AND_WRITE;
 import static com.erudika.para.core.App.AllowedMethods.READ_WRITE;
 import static com.erudika.para.core.App.AllowedMethods.WRITE;
-import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
 import com.erudika.para.core.Votable;
 import com.erudika.para.core.Vote;
-import com.erudika.para.server.security.AuthenticatedUserDetails;
-import com.erudika.para.server.security.filters.FacebookAuthFilter;
-import com.erudika.para.server.security.SecurityModule;
-import com.erudika.para.server.security.UserAuthentication;
 import com.erudika.para.core.utils.Config;
-import static com.erudika.para.core.validation.Constraint.*;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.HumanTime;
 import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
+import static com.erudika.para.core.validation.Constraint.*;
+import com.erudika.para.server.ParaServer;
+import com.erudika.para.server.security.AuthenticatedUserDetails;
+import com.erudika.para.server.security.SecurityModule;
+import com.erudika.para.server.security.UserAuthentication;
+import com.erudika.para.server.security.filters.FacebookAuthFilter;
 import com.google.inject.util.Modules;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -211,7 +210,6 @@ public class ParaClientIT {
 
 	@AfterClass
 	public static void tearDownClass() {
-		System.setProperty("para.clients_can_access_root_app", "false");
 		Para.getDAO().delete(new App(APP_NAME_CHILD));
 		Para.getDAO().delete(new App(APP_NAME));
 		Para.getDAO().deleteAll(Arrays.asList(u, u1, u2, t, s1, s2, a1, a2, fbUser));
@@ -815,66 +813,66 @@ public class ParaClientIT {
 	@Test
 	public void testResourcePermissions() {
 		// Permissions
-		Map<String, Map<String, List<String>>> permits = pc.resourcePermissions();
+		Map<String, Map<String, List<String>>> permits = pcc.resourcePermissions();
 		assertNotNull(permits);
 
-		assertTrue(pc.grantResourcePermission(null, dogsType, EnumSet.noneOf(AllowedMethods.class)).isEmpty());
-		assertTrue(pc.grantResourcePermission(" ", "", EnumSet.noneOf(AllowedMethods.class)).isEmpty());
+		assertTrue(pcc.grantResourcePermission(null, dogsType, EnumSet.noneOf(AllowedMethods.class)).isEmpty());
+		assertTrue(pcc.grantResourcePermission(" ", "", EnumSet.noneOf(AllowedMethods.class)).isEmpty());
 
-		pc.grantResourcePermission(u1.getId(), dogsType, READ);
-		permits = pc.resourcePermissions(u1.getId());
+		pcc.grantResourcePermission(u1.getId(), dogsType, READ);
+		permits = pcc.resourcePermissions(u1.getId());
 		assertTrue(permits.containsKey(u1.getId()));
 		assertTrue(permits.get(u1.getId()).containsKey(dogsType));
-		assertTrue(pc.isAllowedTo(u1.getId(), dogsType, GET.toString()));
-		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, POST.toString()));
+		assertTrue(pcc.isAllowedTo(u1.getId(), dogsType, GET.toString()));
+		assertFalse(pcc.isAllowedTo(u1.getId(), dogsType, POST.toString()));
 
-		permits = pc.resourcePermissions();
+		permits = pcc.resourcePermissions();
 		assertTrue(permits.containsKey(u1.getId()));
 		assertTrue(permits.get(u1.getId()).containsKey(dogsType));
 
-		pc.revokeResourcePermission(u1.getId(), dogsType);
-		permits = pc.resourcePermissions(u1.getId());
+		pcc.revokeResourcePermission(u1.getId(), dogsType);
+		permits = pcc.resourcePermissions(u1.getId());
 		assertFalse(permits.get(u1.getId()).containsKey(dogsType));
-		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, GET.toString()));
-		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, POST.toString()));
+		assertFalse(pcc.isAllowedTo(u1.getId(), dogsType, GET.toString()));
+		assertFalse(pcc.isAllowedTo(u1.getId(), dogsType, POST.toString()));
 
-		pc.grantResourcePermission(u2.getId(), App.ALLOW_ALL, WRITE);
-		assertTrue(pc.isAllowedTo(u2.getId(), dogsType, PUT.toString()));
-		assertTrue(pc.isAllowedTo(u2.getId(), dogsType, PATCH.toString()));
+		pcc.grantResourcePermission(u2.getId(), App.ALLOW_ALL, WRITE);
+		assertTrue(pcc.isAllowedTo(u2.getId(), dogsType, PUT.toString()));
+		assertTrue(pcc.isAllowedTo(u2.getId(), dogsType, PATCH.toString()));
 
-		pc.revokeAllResourcePermissions(u2.getId());
-		permits = pc.resourcePermissions();
-		assertFalse(pc.isAllowedTo(u2.getId(), dogsType, PUT.toString()));
+		pcc.revokeAllResourcePermissions(u2.getId());
+		permits = pcc.resourcePermissions();
+		assertFalse(pcc.isAllowedTo(u2.getId(), dogsType, PUT.toString()));
 		assertFalse(permits.containsKey(u2.getId()));
 //		assertTrue(permits.get(u2.getId()).isEmpty());
 
-		pc.grantResourcePermission(u1.getId(), dogsType, WRITE);
-		pc.grantResourcePermission(App.ALLOW_ALL, catsType, WRITE);
-		pc.grantResourcePermission(App.ALLOW_ALL, App.ALLOW_ALL, READ);
+		pcc.grantResourcePermission(u1.getId(), dogsType, WRITE);
+		pcc.grantResourcePermission(App.ALLOW_ALL, catsType, WRITE);
+		pcc.grantResourcePermission(App.ALLOW_ALL, App.ALLOW_ALL, READ);
 		// user-specific permissions are in effect
-		assertTrue(pc.isAllowedTo(u1.getId(), dogsType, PUT.toString()));
-		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, GET.toString()));
-		assertTrue(pc.isAllowedTo(u1.getId(), catsType, PUT.toString()));
-		assertTrue(pc.isAllowedTo(u1.getId(), catsType, GET.toString()));
+		assertTrue(pcc.isAllowedTo(u1.getId(), dogsType, PUT.toString()));
+		assertFalse(pcc.isAllowedTo(u1.getId(), dogsType, GET.toString()));
+		assertTrue(pcc.isAllowedTo(u1.getId(), catsType, PUT.toString()));
+		assertTrue(pcc.isAllowedTo(u1.getId(), catsType, GET.toString()));
 
-		pc.revokeAllResourcePermissions(u1.getId());
+		pcc.revokeAllResourcePermissions(u1.getId());
 		// user-specific permissions not found so check wildcard
-		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, PUT.toString()));
-		assertTrue(pc.isAllowedTo(u1.getId(), dogsType, GET.toString()));
-		assertTrue(pc.isAllowedTo(u1.getId(), catsType, PUT.toString()));
-		assertTrue(pc.isAllowedTo(u1.getId(), catsType, GET.toString()));
+		assertFalse(pcc.isAllowedTo(u1.getId(), dogsType, PUT.toString()));
+		assertTrue(pcc.isAllowedTo(u1.getId(), dogsType, GET.toString()));
+		assertTrue(pcc.isAllowedTo(u1.getId(), catsType, PUT.toString()));
+		assertTrue(pcc.isAllowedTo(u1.getId(), catsType, GET.toString()));
 
-		pc.revokeResourcePermission(App.ALLOW_ALL, catsType);
+		pcc.revokeResourcePermission(App.ALLOW_ALL, catsType);
 		// resource-specific permissions not found so check wildcard
-		assertFalse(pc.isAllowedTo(u1.getId(), dogsType, PUT.toString()));
-		assertFalse(pc.isAllowedTo(u1.getId(), catsType, PUT.toString()));
-		assertTrue(pc.isAllowedTo(u1.getId(), dogsType, GET.toString()));
-		assertTrue(pc.isAllowedTo(u1.getId(), catsType, GET.toString()));
-		assertTrue(pc.isAllowedTo(u2.getId(), dogsType, GET.toString()));
-		assertTrue(pc.isAllowedTo(u2.getId(), catsType, GET.toString()));
+		assertFalse(pcc.isAllowedTo(u1.getId(), dogsType, PUT.toString()));
+		assertFalse(pcc.isAllowedTo(u1.getId(), catsType, PUT.toString()));
+		assertTrue(pcc.isAllowedTo(u1.getId(), dogsType, GET.toString()));
+		assertTrue(pcc.isAllowedTo(u1.getId(), catsType, GET.toString()));
+		assertTrue(pcc.isAllowedTo(u2.getId(), dogsType, GET.toString()));
+		assertTrue(pcc.isAllowedTo(u2.getId(), catsType, GET.toString()));
 
-		pc.revokeAllResourcePermissions(App.ALLOW_ALL);
-		pc.revokeAllResourcePermissions(u1.getId());
+		pcc.revokeAllResourcePermissions(App.ALLOW_ALL);
+		pcc.revokeAllResourcePermissions(u1.getId());
 	}
 
 	@Test
@@ -933,76 +931,71 @@ public class ParaClientIT {
 		assertNull(failsNotMocked);
 
 		// should fail to create user for root app
-		System.setProperty("para.clients_can_access_root_app", "false");
+//		System.setProperty("para.clients_can_access_root_app", "false");
 		User notSignedIn = pc2.signIn("facebook", "test_token");
-//		Thread.sleep(500);
 		logger.info(pc2.getAccessToken());
 		assertNull(notSignedIn);
 		assertNull(pc2.getAccessToken());
 
 		// then allow clients to modify root app
-		System.setProperty("para.clients_can_access_root_app", "true");
+//		System.setProperty("para.clients_can_access_root_app", "true");
 		User signedIn = pc2.signIn("facebook", "test_token");
 		logger.info(pc2.getAccessToken());
-		assertNotNull(signedIn);
-		assertNotNull(pc2.getAccessToken());
-		assertEquals(fbUser.getId(), signedIn.getId());
-		assertTrue(signedIn.getActive());
+		assertNull(signedIn);
+		assertNull(pc2.getAccessToken());
 
 		// test without permissions - signed in but you can't access anything yet
-		pc2.revokeAllResourcePermissions(fbUser.getId());
-		ParaObject me = pc2.me();
+		signedIn = pcc.signIn("facebook", "test_token");
+		pcc.revokeAllResourcePermissions(fbUser.getId());
+		ParaObject me = pcc.me();
 		assertNotNull(me);
 		assertEquals("user", me.getType());
-		assertTrue(pc2.newId().isEmpty());
-		assertTrue(pc2.getTimestamp() == 0L);
+		assertTrue(pcc.newId().isEmpty());
+		assertTrue(pcc.getTimestamp() == 0L);
 
 		// test with permissions - logout first to use app credentials (full access)
-		pc2.signOut();
-		pc2.grantResourcePermission(fbUser.getId(), App.ALLOW_ALL, READ_AND_WRITE);
-		signedIn = pc2.signIn("facebook", "test_token");
-		logger.info(pc2.getAccessToken());
-//		Thread.sleep(800);
+		pcc.signOut();
+		pcc.grantResourcePermission(fbUser.getId(), App.ALLOW_ALL, READ_AND_WRITE);
+		signedIn = pcc.signIn("facebook", "test_token");
+		logger.info(pcc.getAccessToken());
 		assertNotNull(signedIn);
-		assertNotNull(pc2.getAccessToken());
-		me = pc2.me();
+		assertNotNull(pcc.getAccessToken());
+		me = pcc.me();
 		assertNotNull(me);
-		assertFalse(pc2.newId().isEmpty());
+		assertFalse(pcc.newId().isEmpty());
 		assertEquals(signedIn.getName(), me.getName());
-//		Thread.sleep(500);
 
 		// now switch back to App access
-		pc2.signOut();
-		assertNull(pc2.getAccessToken());
-		me = pc2.me(); // app
+		pcc.signOut();
+		assertNull(pcc.getAccessToken());
+		me = pcc.me(); // app
 		assertNotNull(me);
 		assertEquals("app", me.getType());
-		assertFalse(pc2.newId().isEmpty());
-		signedIn = pc2.signIn("facebook", "test_token");
-		logger.info(pc2.getAccessToken());
-//		Thread.sleep(500);
-		me = pc2.me(); // user
+		assertFalse(pcc.newId().isEmpty());
+		signedIn = pcc.signIn("facebook", "test_token");
+		logger.info(pcc.getAccessToken());
+		me = pcc.me(); // user
 		assertNotNull(me);
 		assertEquals("user", me.getType());
 		assertEquals(signedIn.getId(), me.getId());
 
-		assertNull(pc2.newKeys()); // users can't change API keys!
+		assertNull(pcc.newKeys()); // users can't change API keys!
 
 		// test revoke tokens
-		pc2.revokeAllTokens();
-		assertTrue(pc2.newId().isEmpty());
-		assertTrue(pc2.getTimestamp() == 0L);
-		assertNull(pc2.me());
+		pcc.revokeAllTokens();
+		assertTrue(pcc.newId().isEmpty());
+		assertTrue(pcc.getTimestamp() == 0L);
+		assertNull(pcc.me());
 
-		pc2.signOut();
+		pcc.signOut();
 
 		// test anonymous permissions
 		String utilsPath = "utils/timestamp";
-		ParaClient guest = new ParaClient(App.id(APP_NAME), null);
-		guest.setEndpoint(pc2.getEndpoint());
+		ParaClient guest = new ParaClient(App.id(APP_NAME_CHILD), null);
+		guest.setEndpoint(pcc.getEndpoint());
 		assertFalse(guest.getTimestamp() > 0);
 		assertFalse(guest.isAllowedTo(App.ALLOW_ALL, utilsPath, GET.toString()));
-		pc2.grantResourcePermission(App.ALLOW_ALL, utilsPath, READ, true);
+		pcc.grantResourcePermission(App.ALLOW_ALL, utilsPath, READ, true);
 		assertTrue(guest.getTimestamp() > 0);
 	}
 
@@ -1013,68 +1006,67 @@ public class ParaClientIT {
 		String emailPassFail = emailInactive + "::12345678";
 		String emailPassPass = "test3@user.com::12345678";
 		String emailPassPass2 = "test4@user.com::12345678";
-		assertNull(pc2.signIn("password", emailPassFail)); // unverified email - user is created but not active
-		List<User> failed = pc2.findTerms(fbUser.getType(), Collections.singletonMap(Config._EMAIL, emailInactive), true);
+		assertNull(pcc.signIn("password", emailPassFail)); // unverified email - user is created but not active
+		List<User> failed = pcc.findTerms(fbUser.getType(), Collections.singletonMap(Config._EMAIL, emailInactive), true);
 		assertFalse(failed.isEmpty());
 		assertEquals(emailInactive, failed.get(0).getEmail());
-		pc2.delete(failed.get(0));
+		pcc.delete(failed.get(0));
 
 		System.setProperty("para.security.allow_unverified_emails", "true"); // allow it
-		User newUser = pc2.signIn("password", emailPassPass);
-		User newUser2 = pc2.signIn("password", emailPassPass2);
+		User newUser = pcc.signIn("password", emailPassPass);
+		User newUser2 = pcc.signIn("password", emailPassPass2);
 		assertNotNull(newUser);
 		assertNotNull(newUser2);
-		pc2.signOut();
-		assertNotNull(pc2.signIn("password", emailPassPass));
-		pc2.signOut();
+		pcc.signOut();
+		assertNotNull(pcc.signIn("password", emailPassPass));
+		pcc.signOut();
 
 		// test permissions with/without signed in user
-		assertTrue(pc2.isAllowedTo(newUser.getId(), newUser.getObjectURI(), GET.toString()));
-		assertNotNull(pc2.signIn("password", emailPassPass));
-		assertTrue(pc2.isAllowedTo(newUser.getId(), newUser.getObjectURI(), GET.toString()));
-		assertFalse(pc2.isAllowedTo(newUser.getId(), newUser.getObjectURI() + "x", GET.toString()));
-		assertNotNull(pc2.read(newUser.getId())); // can read self
-		pc2.signOut();
+		assertTrue(pcc.isAllowedTo(newUser.getId(), newUser.getObjectURI(), GET.toString()));
+		assertNotNull(pcc.signIn("password", emailPassPass));
+		assertTrue(pcc.isAllowedTo(newUser.getId(), newUser.getObjectURI(), GET.toString()));
+		assertFalse(pcc.isAllowedTo(newUser.getId(), newUser.getObjectURI() + "x", GET.toString()));
+		assertNotNull(pcc.read(newUser.getId())); // can read self
+		pcc.signOut();
 
 		// test implicit user permissions - read/update/delete own object (children)
-		assertFalse(pc2.isAllowedTo(newUser.getId(), "todo", POST.toString())); // can't create yet
-		pc2.grantResourcePermission(newUser.getId(), "todo", EnumSet.of(READ_WRITE, OWN)); // can only manage own TODOs
-		pc2.grantResourcePermission(newUser.getId(), "todo/*", EnumSet.of(READ_WRITE, OWN)); // can only manage own TODOs
-		pc2.signIn("password", emailPassPass);
-		assertTrue(pc2.isAllowedTo(newUser.getId(), "todo", POST.toString()));
+		assertFalse(pcc.isAllowedTo(newUser.getId(), "todo", POST.toString())); // can't create yet
+		pcc.grantResourcePermission(newUser.getId(), "todo", EnumSet.of(READ_WRITE, OWN)); // can only manage own TODOs
+		pcc.grantResourcePermission(newUser.getId(), "todo/*", EnumSet.of(READ_WRITE, OWN)); // can only manage own TODOs
+		pcc.signIn("password", emailPassPass);
+		assertTrue(pcc.isAllowedTo(newUser.getId(), "todo", POST.toString()));
 		Sysprop todo = new Sysprop("todo_id");
 		todo.setType("todo");
 		// test if creatorid is set correctly
 		todo.setCreatorid("invalid_user_id"); // must be corrected by the server
 		todo.setName("[] buy milk");
-		todo = pc2.create(todo);
+		todo = pcc.create(todo);
 //		Thread.sleep(1000);
 		assertNotNull(todo);
 		assertFalse(todo.getId().equals("todo_id"));
-		assertNotNull(pc2.read(todo.getType(), todo.getId()));
-		assertEquals(1, pc2.findQuery("todo", "*").size()); // user only sees own TODO
+		assertNotNull(pcc.read(todo.getType(), todo.getId()));
+		assertEquals(1, pcc.findQuery("todo", "*").size()); // user only sees own TODO
 		assertEquals(newUser.getId(), todo.getCreatorid());
-		pc2.signOut();
+		pcc.signOut();
 
 		// one user must not be able to overwrite another user's TODOs (custom ids)
-		pc2.grantResourcePermission(newUser2.getId(), "todo", EnumSet.of(READ_WRITE, OWN)); // can only manage own TODOs
-		pc2.grantResourcePermission(newUser2.getId(), "todo/*", EnumSet.of(READ_WRITE, OWN)); // can only manage own TODOs
-		pc2.signIn("password", emailPassPass2);
-		assertTrue(pc2.list("todo").isEmpty());
-		assertNull(pc2.read(todo.getId()));
+		pcc.grantResourcePermission(newUser2.getId(), "todo", EnumSet.of(READ_WRITE, OWN)); // can only manage own TODOs
+		pcc.grantResourcePermission(newUser2.getId(), "todo/*", EnumSet.of(READ_WRITE, OWN)); // can only manage own TODOs
+		pcc.signIn("password", emailPassPass2);
+		assertTrue(pcc.list("todo").isEmpty());
+		assertNull(pcc.read(todo.getId()));
 		Sysprop todo2 = new Sysprop("todo_id2");
 		todo2.setType("todo");
 		todo2.setName("[] buy eggs");
-		todo2 = pc2.create(todo2);
-//		Thread.sleep(1000);
+		todo2 = pcc.create(todo2);
 		assertNotNull(todo2);
 		assertFalse(todo2.getId().equals("todo_id2"));
-		assertNotNull(pc2.read(todo2.getType(), todo2.getId()));
-		assertEquals(1, pc2.findQuery("todo", "*").size());
+		assertNotNull(pcc.read(todo2.getType(), todo2.getId()));
+		assertEquals(1, pcc.findQuery("todo", "*").size());
 		assertEquals(newUser2.getId(), todo2.getCreatorid());
-		pc2.signOut();
+		pcc.signOut();
 		// app can see all TODOs
-		assertEquals(2, pc2.list("todo").size());
+		assertEquals(2, pcc.list("todo").size());
 
 		pc.delete(todo);
 		pc.delete(todo2);

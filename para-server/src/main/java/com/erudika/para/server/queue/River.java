@@ -62,9 +62,6 @@ import org.slf4j.LoggerFactory;
 public abstract class River implements Runnable {
 
 	private static final Logger logger = LoggerFactory.getLogger(River.class);
-	private static final int SLEEP = Para.getConfig().getConfigInt("queue.polling_sleep_seconds", 60);
-	private static final int MAX_FAILED_WEBHOOK_ATTEMPTS = Para.getConfig().getConfigInt("max_failed_webhook_attempts", 10);
-	private static final int MAX_INDEXING_RETRIES = Para.getConfig().getConfigInt("river.max_indexing_retries", 5);
 	private static final CloseableHttpClient HTTP;
 	private static ConcurrentHashMap<String, Integer> pendingIds;
 
@@ -78,12 +75,6 @@ public abstract class River implements Runnable {
 						build()).
 				build();
 	}
-
-	/**
-	 * The polling interval in seconds for this river. Polls queue ever X seconds.
-	 */
-	public static final int POLLING_INTERVAL = Para.getConfig().getConfigInt("queue.polling_interval_seconds",
-			Para.getConfig().inProduction() ? 20 : 5);
 
 	/**
 	 * @return a list of messages pulled from queue
@@ -102,7 +93,7 @@ public abstract class River implements Runnable {
 
 		try {
 			while (!Thread.interrupted()) {
-				logger.debug("Waiting {}s for messages...", POLLING_INTERVAL);
+				logger.debug("Waiting {}s for messages...", Para.getConfig().queuePollingIntervalSec());
 				int processedHooks = 0;
 				List<String> msgs = Collections.emptyList();
 				if (HealthUtils.getInstance().isHealthy()) {
@@ -129,10 +120,11 @@ public abstract class River implements Runnable {
 					idleCount = 0;
 				} else if (msgs.isEmpty()) {
 					idleCount++;
+					int sleep = Para.getConfig().queuePollingWaitSec();
 					// no tasks in queue => throttle down pull requests
-					if (SLEEP > 0 && idleCount >= 3) {
-						logger.debug("Queue is empty. Sleeping for {}s...", SLEEP);
-						Thread.sleep(SLEEP * 1000L);
+					if (sleep > 0 && idleCount >= 3) {
+						logger.debug("Queue is empty. Sleeping for {}s...", sleep);
+						Thread.sleep(sleep * 1000L);
 					}
 				}
 			}
@@ -313,7 +305,7 @@ public abstract class River implements Runnable {
 			logger.debug("Some objects are missing from local database while performing 'index_all_op': {}", pendingIds);
 			Para.asyncExecute(() -> {
 				try {
-					for (int i = 0; i < MAX_INDEXING_RETRIES; i++) {
+					for (int i = 0; i < Para.getConfig().riverMaxIndexingRetries(); i++) {
 						Thread.sleep(1000L * (i + 1));
 						Map<String, ParaObject> pending = Para.getDAO().readAll(appid,
 								new ArrayList<>(pendingIds.keySet()), true);
@@ -362,7 +354,7 @@ public abstract class River implements Runnable {
 		if (count == null) {
 			count = 0;
 		}
-		if (count >= (MAX_FAILED_WEBHOOK_ATTEMPTS - 1)) {
+		if (count >= (Para.getConfig().maxFailedWebhookAttempts() - 1)) {
 			Webhook hook = Para.getDAO().read(appid, id);
 			if (hook != null) {
 				hook.setActive(false);
@@ -370,7 +362,7 @@ public abstract class River implements Runnable {
 				Para.getDAO().update(appid, hook);
 				Para.getCache().remove(appid, countId);
 				logger.info("Webhook {} was disabled - a maximum of {} failed deliveries was reached.",
-						id, MAX_FAILED_WEBHOOK_ATTEMPTS);
+						id, Para.getConfig().maxFailedWebhookAttempts());
 			}
 		} else {
 			Para.getCache().put(appid, countId, ++count);

@@ -354,7 +354,7 @@ public final class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				Map<String, String> info = new TreeMap<>();
 				info.put("info", "Para - the backend for busy developers.");
-				if (Para.getConfig().getConfigBoolean("print_version", true)) {
+				if (Para.getConfig().versionBannerEnabled()) {
 					info.put("version", StringUtils.replace(getVersion(), "-SNAPSHOT", ""));
 				}
 				return Response.ok(info).build();
@@ -1055,7 +1055,7 @@ public final class Api1 extends ResourceConfig {
 					ObjectReader reader = ParaObjectUtils.getJsonMapper().
 							readerFor(new TypeReference<List<Map<String, Object>>>() { });
 					int count = 0;
-					int importBatchSize = Para.getConfig().getConfigInt("import_batch_size", 100);
+					int importBatchSize = Para.getConfig().importBatchSize();
 					String filename = Optional.ofNullable(ctx.getUriInfo().getQueryParameters().getFirst("filename")).
 							orElse(app.getAppIdentifier().trim() + "_backup.zip");
 					Sysprop s = new Sysprop();

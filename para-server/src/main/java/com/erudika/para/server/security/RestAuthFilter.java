@@ -17,13 +17,13 @@
  */
 package com.erudika.para.server.security;
 
-import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
-import com.erudika.para.server.rest.RestUtils;
 import com.erudika.para.core.rest.Signer;
-import com.erudika.para.server.utils.BufferedRequestWrapper;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
+import com.erudika.para.server.rest.RestUtils;
+import com.erudika.para.server.utils.BufferedRequestWrapper;
 import java.io.IOException;
 import java.util.Date;
 import javax.servlet.FilterChain;
@@ -110,9 +110,6 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 	private boolean guestAuthRequestHandler(String appid, HttpServletRequest request, HttpServletResponse response) {
 		String reqUri = request.getRequestURI();
 		String method = request.getMethod();
-		if (StringUtils.isBlank(appid) && Para.getConfig().getConfigBoolean("clients_can_access_root_app", false)) {
-			appid = App.id(Para.getConfig().getRootAppIdentifier());
-		}
 		if (!StringUtils.isBlank(appid)) {
 			App parentApp = Para.getDAO().read(App.id(appid));
 			if (hasPermission(parentApp, null, request)) {
@@ -208,7 +205,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		}
 		// App admin should have unlimited access
 		if (user != null && user.isAdmin()) {
-			return Para.getConfig().getConfigBoolean("admins_have_full_api_access", true);
+			return true;
 		}
 		String resourcePath = RestUtils.extractResourcePath(request);
 		if (resourcePath.matches("^_permissions/.+") && request.getMethod().equals(GET)) {

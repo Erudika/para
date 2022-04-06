@@ -36,15 +36,12 @@ import static com.erudika.para.core.App.AllowedMethods.WRITE;
 import static com.erudika.para.core.App.AllowedMethods.WRITE_ONLY;
 import com.erudika.para.core.utils.Config;
 import static com.erudika.para.core.validation.Constraint.url;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.AfterClass;
 import static org.junit.Assert.*;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -52,16 +49,6 @@ import org.junit.Test;
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class AppTest {
-
-	@BeforeClass
-	public static void setUpClass() throws InterruptedException, IOException {
-		System.setProperty("para.clients_can_access_root_app", "true");
-	}
-
-	@AfterClass
-	public static void tearDownClass() {
-		System.setProperty("para.clients_can_access_root_app", "false");
-	}
 
 	@Test
 	public void testCreate() {
@@ -180,7 +167,7 @@ public class AppTest {
 
 	@Test
 	public void testIsAllowedTo() {
-		App app = new App(Config.PARA);
+		App app = new App(Config.PARA + "-fake");
 		assertFalse(app.isAllowedTo(null, null, null));
 		assertFalse(app.isAllowedTo("", " ", ""));
 		assertFalse(app.isAllowedTo(ALLOW_ALL, ALLOW_ALL, GET.toString()));
@@ -203,7 +190,7 @@ public class AppTest {
 
 	@Test
 	public void testGrantRevokeResourcePermission() {
-		App app = new App(Config.PARA);
+		App app = new App(Config.PARA + "-fake");
 		assertFalse(app.isAllowedTo(ALLOW_ALL, ALLOW_ALL, GET.toString()));
 
 		app.grantResourcePermission(null, ALLOW_ALL, READ);

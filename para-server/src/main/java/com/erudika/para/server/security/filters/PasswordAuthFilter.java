@@ -17,9 +17,9 @@
  */
 package com.erudika.para.server.security.filters;
 
-import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.server.security.AuthenticatedUserDetails;
 import com.erudika.para.server.security.SecurityUtils;
 import com.erudika.para.server.security.UserAuthentication;
@@ -115,8 +115,8 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 			user = User.readUserForIdentifier(u);
 			if (user == null) {
 				user = new User();
-				user.setActive(Boolean.parseBoolean(SecurityUtils.getSettingForApp(app, "security.allow_unverified_emails",
-						Para.getConfig().getConfigParam("security.allow_unverified_emails", "false"))));
+				user.setActive(Boolean.parseBoolean(Para.getConfig().getSettingForApp(app, "security.allow_unverified_emails",
+						Boolean.toString(Para.getConfig().allowUnverifiedEmails()))));
 				user.setAppid(appid);
 				user.setName(name);
 				user.setIdentifier(email);

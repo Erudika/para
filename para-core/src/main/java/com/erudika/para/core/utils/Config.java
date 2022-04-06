@@ -27,6 +27,8 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
@@ -129,6 +131,14 @@ public abstract class Config {
 	public static final String SAML_PREFIX = "saml:";
 
 	/**
+	 * The name of the configuration file, usually 'app-application.conf'.
+	 * @return prefix-application.conf or the value of @{code config.file} system property.
+	 */
+	public String getConfigFilePath() {
+		return System.getProperty("config.file", getConfigRootPrefix() + "-application.conf");
+	}
+
+	/**
 	 * The root prefix of the configuration property names, e.g. "para".
 	 * @return the root prefix for all config property keys.
 	 */
@@ -172,8 +182,20 @@ public abstract class Config {
 	 */
 	protected final void init(com.typesafe.config.Config conf) {
 		try {
+			// try to parse the locally stored app-application.conf file if it exists.
+			Path localConfig = Paths.get(getConfigFilePath()).toAbsolutePath();
+			if (Files.exists(localConfig)) {
+				try {
+					logger.info("loading {}", localConfig.toString());
+					conf = ConfigFactory.parseFile(localConfig.toFile()).
+							getConfig(getConfigRootPrefix()).withFallback(getFallbackConfig());
+					logger.info("conf {}", conf.entrySet().size());
+				} catch (Exception e) {
+					logger.debug("Failed to parse local config {}", e.getMessage());
+				}
+			}
 			config = ConfigFactory.load().getConfig(getConfigRootPrefix()).withFallback(getFallbackConfig());
-			if (conf != null) {
+			if (conf != null && !conf.isEmpty()) {
 				config = conf.withFallback(config);
 			}
 			getSortedConfigKeys();
@@ -190,7 +212,7 @@ public abstract class Config {
 	 * @param defaultValue the default param value
 	 * @return the value of a param
 	 */
-	public boolean getConfigBoolean(String key, boolean defaultValue) {
+	protected boolean getConfigBoolean(String key, boolean defaultValue) {
 		return Boolean.parseBoolean(getConfigParam(key, Boolean.toString(defaultValue)));
 	}
 
@@ -200,7 +222,7 @@ public abstract class Config {
 	 * @param defaultValue the default param value
 	 * @return the value of a param
 	 */
-	public int getConfigInt(String key, int defaultValue) {
+	protected int getConfigInt(String key, int defaultValue) {
 		return NumberUtils.toInt(getConfigParam(key, Integer.toString(defaultValue)));
 	}
 
@@ -210,7 +232,7 @@ public abstract class Config {
 	 * @param defaultValue the default param value
 	 * @return the value of a param
 	 */
-	public double getConfigDouble(String key, double defaultValue) {
+	protected double getConfigDouble(String key, double defaultValue) {
 		return NumberUtils.toDouble(getConfigParam(key, Double.toString(defaultValue)));
 	}
 
@@ -221,7 +243,7 @@ public abstract class Config {
 	 * @param defaultValue the default param value
 	 * @return the value of a param
 	 */
-	public String getConfigParam(String key, String defaultValue) {
+	protected String getConfigParam(String key, String defaultValue) {
 		if (config == null) {
 			init(null);
 		}
@@ -304,7 +326,7 @@ public abstract class Config {
 		if (!getConfigBoolean("store_config_locally", true)) {
 			return;
 		}
-		String confFile = Paths.get(System.getProperty("config.file", "application.conf")).toAbsolutePath().toString();
+		String confFile = Paths.get(getConfigFilePath()).toAbsolutePath().toString();
 		boolean isJsonFile = confFile.equalsIgnoreCase(".json");
 		File conf = new File(confFile);
 		if (!conf.exists() || conf.canWrite()) {
@@ -408,7 +430,7 @@ public abstract class Config {
 
 		if (StringUtils.isBlank(format) || "json".equalsIgnoreCase(format)) {
 			try {
-				return ParaObjectUtils.getJsonWriter().writeValueAsString(jsonMapByCat);
+				return ParaObjectUtils.getJsonWriter().writeValueAsString(groupByCategory ? jsonMapByCat : jsonMap);
 			} catch (JsonProcessingException ex) {
 				logger.error(null, ex);
 			}

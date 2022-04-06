@@ -88,6 +88,8 @@
 		<httpClientVer>5.1.2</httpClientVer>
 		<httpCoreVer>5.1.2</httpCoreVer>
 		<commonsCodecVer>1.15</commonsCodecVer>
+		<lucenePluginVer>1.45.0</lucenePluginVer>
+		<sqlPluginVer>1.45.0</sqlPluginVer>
 	</properties>
 
 	<dependencies>

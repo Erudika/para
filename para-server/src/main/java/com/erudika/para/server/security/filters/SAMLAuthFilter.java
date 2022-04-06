@@ -116,7 +116,7 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 				if (app != null) {
 					SettingsBuilder builder = new SettingsBuilder();
 					Map<String, Object> samlSettings;
-					String idpMetaUrl = SecurityUtils.getSettingForApp(app, "security.saml.idp.metadata_url", "");
+					String idpMetaUrl = Para.getConfig().getSettingForApp(app, "security.saml.idp.metadata_url", "");
 
 					if (StringUtils.isBlank(idpMetaUrl)) {
 						samlSettings = getSAMLSettings(app);
@@ -240,13 +240,13 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private static Map<String, String> populateUserData(App app, Map<String, List<String>> attributes) {
 		Map<String, String> data = new HashMap<String, String>();
-		String useridIdParam = SecurityUtils.getSettingForApp(app, "security.saml.attributes.id", "UserID");
-		String pictureParam = SecurityUtils.getSettingForApp(app, "security.saml.attributes.picture", "Picture");
-		String emailParam = SecurityUtils.getSettingForApp(app, "security.saml.attributes.email", "EmailAddress");
-		String nameParam = SecurityUtils.getSettingForApp(app, "security.saml.attributes.name", "GivenName");
-		String fnameParam = SecurityUtils.getSettingForApp(app, "security.saml.attributes.firstname", "FirstName");
-		String lnameParam = SecurityUtils.getSettingForApp(app, "security.saml.attributes.lastname", "LastName");
-		String emailDomain = SecurityUtils.getSettingForApp(app, "security.saml.domain", "paraio.com");
+		String useridIdParam = Para.getConfig().getSettingForApp(app, "security.saml.attributes.id", "UserID");
+		String pictureParam = Para.getConfig().getSettingForApp(app, "security.saml.attributes.picture", "Picture");
+		String emailParam = Para.getConfig().getSettingForApp(app, "security.saml.attributes.email", "EmailAddress");
+		String nameParam = Para.getConfig().getSettingForApp(app, "security.saml.attributes.name", "GivenName");
+		String fnameParam = Para.getConfig().getSettingForApp(app, "security.saml.attributes.firstname", "FirstName");
+		String lnameParam = Para.getConfig().getSettingForApp(app, "security.saml.attributes.lastname", "LastName");
+		String emailDomain = Para.getConfig().getSettingForApp(app, "security.saml.domain", "paraio.com");
 
 		if (attributes.containsKey(useridIdParam)) {
 			data.put("uid", attributes.get(useridIdParam).get(0));
@@ -339,7 +339,7 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 	}
 
 	private static String getConfigProp(App app, String propKey, String defaultValue) {
-		return SecurityUtils.getSettingForApp(app, "security.saml" +
+		return Para.getConfig().getSettingForApp(app, "security.saml" +
 				StringUtils.removeStart(propKey, "onelogin.saml2"), defaultValue);
 	}
 

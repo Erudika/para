@@ -150,23 +150,17 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	 */
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-		ConfigObject protectedResources = Para.getConfig().getConfig().getObject("security.protected");
-		boolean enableRestFilter = Para.getConfig().getConfigBoolean("security.api_security", true);
-		String signinPath = Para.getConfig().getConfigParam("security.signin", "/signin");
-		String signoutPath = Para.getConfig().getConfigParam("security.signout", "/signout");
-		String accessDeniedPath = Para.getConfig().getConfigParam("security.access_denied", "/403");
-		String signoutSuccessPath = Para.getConfig().getConfigParam("security.signout_success", signinPath);
+		String signinPath = Para.getConfig().signinPath();
+		String signoutPath = Para.getConfig().signoutPath();
+		String accessDeniedPath = Para.getConfig().accessDeniedPath();
+		String signoutSuccessPath = Para.getConfig().signoutSuccessPath();
 
 		http.authorizeRequests().requestMatchers(IgnoredRequestMatcher.INSTANCE).permitAll();
+		http.authorizeRequests().requestMatchers(RestRequestMatcher.INSTANCE);
 
-		// If API security is disabled don't add the API endpoint to the list of protected resources
-		if (enableRestFilter) {
-			http.authorizeRequests().requestMatchers(RestRequestMatcher.INSTANCE);
-		}
+		parseProtectedResources(http, Para.getConfig().protectedPaths());
 
-		parseProtectedResources(http, protectedResources);
-
-		if (Para.getConfig().getConfigBoolean("security.csrf_protection", true)) {
+		if (Para.getConfig().csrfProtectionEnabled()) {
 			http.csrf().requireCsrfProtectionMatcher(CsrfProtectionRequestMatcher.INSTANCE).
 					csrfTokenRepository(csrfTokenRepository);
 		} else {

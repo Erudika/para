@@ -17,9 +17,11 @@
  */
 package com.erudika.para.server;
 
-import com.erudika.para.core.listeners.WebhookIOListener;
-import com.erudika.para.core.utils.Para;
 import ch.qos.logback.access.jetty.RequestLogImpl;
+import com.erudika.para.core.listeners.WebhookIOListener;
+import com.erudika.para.core.rest.CustomResourceHandler;
+import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.server.aop.AOPModule;
 import com.erudika.para.server.cache.CacheModule;
 import com.erudika.para.server.email.EmailModule;
@@ -27,12 +29,10 @@ import com.erudika.para.server.metrics.MetricsUtils;
 import com.erudika.para.server.persistence.PersistenceModule;
 import com.erudika.para.server.queue.QueueModule;
 import com.erudika.para.server.rest.Api1;
-import com.erudika.para.core.rest.CustomResourceHandler;
 import com.erudika.para.server.search.SearchModule;
 import com.erudika.para.server.security.JWTRestfulAuthFilter;
 import com.erudika.para.server.security.SecurityModule;
 import com.erudika.para.server.storage.StorageModule;
-import com.erudika.para.core.utils.Config;
 import com.erudika.para.server.utils.HealthUtils;
 import com.erudika.para.server.utils.filters.CORSFilter;
 import com.erudika.para.server.utils.filters.ErrorFilter;
@@ -54,7 +54,6 @@ import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
@@ -70,7 +69,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.Banner;
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -154,7 +152,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 
 		// this enables the "river" feature - polls the default queue for objects and imports them into Para
 		// additionally, the polling feature is used for implementing a webhooks worker node
-		if ((Para.getConfig().getConfigBoolean("queue_link_enabled", false) || Para.getConfig().webhooksEnabled())) {
+		if ((Para.getConfig().queuePollingEnabled() || Para.getConfig().webhooksEnabled())) {
 			Para.getQueue().startPolling();
 		}
 	}
@@ -299,7 +297,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 		JettyServletWebServerFactory jef = new JettyServletWebServerFactory();
 		jef.setRegisterDefaultServlet(true);
 		jef.addServerCustomizers((JettyServerCustomizer) (Server server) -> {
-			if (Para.getConfig().getConfigBoolean("access_log_enabled", true)) {
+			if (Para.getConfig().accessLogEnabled()) {
 				// enable access log via Logback
 				HandlerCollection handlers = new HandlerCollection();
 				for (Handler handler : server.getHandlers()) {
@@ -347,7 +345,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 				}
 			}
 		});
-		String contextPath = Para.getConfig().getConfigParam("context_path", "");
+		String contextPath = Para.getConfig().serverContextPath();
 		if (StringUtils.length(contextPath) > 1 && contextPath.charAt(0) == '/') {
 			jef.setContextPath(contextPath);
 		}
@@ -360,18 +358,10 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 		jef.getSession().getCookie().setName("sess");
 		jef.getSession().getCookie().setMaxAge(Duration.ofSeconds(1));
 		jef.getSession().getCookie().setHttpOnly(true);
-		jef.setPort(getServerPort());
+		jef.setPort(Para.getConfig().serverPort());
 		LOG.info("Instance #{} initialized and listening on http{}://localhost:{}",
 				Para.getConfig().workerId(), (sslEnabled ? "s" : ""), jef.getPort());
 		return jef;
-	}
-
-	/**
-	 * @return the server port
-	 */
-	public static int getServerPort() {
-		int defaultPort = NumberUtils.toInt(System.getProperty("jetty.http.port"), Para.getConfig().getConfigInt("port", 8080));
-		return NumberUtils.toInt(System.getProperty("server.port"), defaultPort);
 	}
 
 	/**
@@ -386,43 +376,36 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	 * This is the initializing method when running ParaServer as WAR,
 	 * deployed to a servlet container.
 	 * @param app the Spring app builder instance
-	 * @param sources the application classes that will be scanned
-	 * @return the application context
+	 * @return the application builder
 	 */
-	public static SpringApplicationBuilder runAsWAR(SpringApplicationBuilder app, Class<?>... sources) {
-		// runAsWAR() - entry point (WAR)
-		app.profiles(Para.getConfig().environment());
-		app.web(WebApplicationType.SERVLET);
-		app.bannerMode(Banner.Mode.OFF);
-		initialize(getCoreModules());
-		app.sources(ErrorFilter.class, ParaServer.class);
-		// Ensure error pages are registered
-		return app.sources(sources);
-	}
-
 	@Override
 	protected SpringApplicationBuilder configure(SpringApplicationBuilder app) {
-		// runAsWAR() - entry point (WAR)
-		return runAsWAR(app);
+		// entry point (WAR)
+		return builder(app, true);
 	}
 
 	/**
 	 * This is the initializing method when running ParaServer as executable JAR (or WAR),
 	 * from the command line: java -jar para.jar.
-	 * @param args command line arguments array (same as those in {@code void main(String[] args)} )
+	 * @param b Spring app builder
+	 * @param isWar is it started from a WAR file
 	 * @param sources the application classes that will be scanned
+	 * @return the application builder
 	 */
-	public static void runAsJAR(String[] args, Class<?>... sources) {
-		// entry point (JAR)
-		SpringApplication app = new SpringApplication(sources);
-		app.setAdditionalProfiles(Para.getConfig().environment());
-		app.setWebApplicationType(WebApplicationType.SERVLET);
-		app.setBannerMode(Banner.Mode.OFF);
-		if (Para.getConfig().getConfigBoolean("pidfile_enabled", true)) {
-			app.addListeners(new ApplicationPidFileWriter(Config.PARA + "_" + getServerPort() + ".pid"));
+	public static SpringApplicationBuilder builder(SpringApplicationBuilder b, boolean isWar, Class<?>... sources) {
+		b.profiles(Para.getConfig().environment());
+		b.sources(ParaServer.class);
+		b.sources(sources);
+		b.web(WebApplicationType.SERVLET);
+		b.bannerMode(Banner.Mode.OFF);
+		if (Para.getConfig().pidFileEnabled()) {
+			b.listeners(new ApplicationPidFileWriter(Config.PARA + "_" + Para.getConfig().serverPort() + ".pid"));
+		}
+		if (isWar) {
+			b.sources(ErrorFilter.class);
 		}
 		initialize(getCoreModules());
-		app.run(args);
+		return b;
 	}
 
 	/**
@@ -430,6 +413,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	 * @param args args
 	 */
 	public static void main(String[] args) {
-		runAsJAR(args, ParaServer.class);
+		// entry point (JAR)
+		builder(new SpringApplicationBuilder(), false).run(args);
 	}
 }

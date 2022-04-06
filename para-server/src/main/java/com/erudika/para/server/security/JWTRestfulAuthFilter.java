@@ -17,25 +17,25 @@
  */
 package com.erudika.para.server.security;
 
-import com.erudika.para.server.security.filters.PasswordAuthFilter;
-import com.erudika.para.server.security.filters.GoogleAuthFilter;
-import com.erudika.para.server.security.filters.TwitterAuthFilter;
-import com.erudika.para.server.security.filters.MicrosoftAuthFilter;
-import com.erudika.para.server.security.filters.GitHubAuthFilter;
-import com.erudika.para.server.security.filters.LinkedInAuthFilter;
-import com.erudika.para.server.security.filters.GenericOAuth2Filter;
-import com.erudika.para.server.security.filters.FacebookAuthFilter;
-import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
-import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.User;
+import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.CoreUtils;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.rest.RestUtils;
 import com.erudika.para.server.security.filters.AmazonAuthFilter;
+import com.erudika.para.server.security.filters.FacebookAuthFilter;
+import com.erudika.para.server.security.filters.GenericOAuth2Filter;
+import com.erudika.para.server.security.filters.GitHubAuthFilter;
+import com.erudika.para.server.security.filters.GoogleAuthFilter;
 import com.erudika.para.server.security.filters.LdapAuthFilter;
+import com.erudika.para.server.security.filters.LinkedInAuthFilter;
+import com.erudika.para.server.security.filters.MicrosoftAuthFilter;
+import com.erudika.para.server.security.filters.PasswordAuthFilter;
 import com.erudika.para.server.security.filters.PasswordlessAuthFilter;
 import com.erudika.para.server.security.filters.SlackAuthFilter;
-import com.erudika.para.core.utils.Config;
-import com.erudika.para.core.utils.Utils;
+import com.erudika.para.server.security.filters.TwitterAuthFilter;
 import com.nimbusds.jwt.SignedJWT;
 import java.io.IOException;
 import java.text.ParseException;
@@ -147,8 +147,8 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 		String token = (String) entity.get("token");
 
 		if (provider != null && appid != null && token != null) {
-			// don't allow clients to create users on root app unless this is explicitly configured
-			if (!App.isRoot(appid) || Para.getConfig().getConfigBoolean("clients_can_access_root_app", false)) {
+			// don't allow clients to create users on root app
+			if (!App.isRoot(appid)) {
 				App app = Para.getDAO().read(App.id(appid));
 				if (app != null) {
 					UserAuthentication userAuth = getOrCreateUser(app, provider, token);

@@ -17,8 +17,8 @@
  */
 package com.erudika.para.core.utils;
 
-import com.erudika.para.core.annotations.Email;
 import com.erudika.para.core.ParaObject;
+import com.erudika.para.core.annotations.Email;
 import com.samskivert.mustache.Mustache;
 import com.vladsch.flexmark.ext.autolink.AutolinkExtension;
 import com.vladsch.flexmark.ext.emoji.EmojiExtension;
@@ -63,10 +63,10 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.LocaleUtils;
-import org.apache.commons.text.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
 import org.mindrot.jbcrypt.BCrypt;
@@ -468,7 +468,7 @@ public final class Utils {
 		return new MutableDataSet()
 				.set(HtmlRenderer.ESCAPE_HTML, true)
 				.set(HtmlRenderer.SUPPRESSED_LINKS, "(?i)javascript:.*")
-				.set(HtmlRenderer.SOFT_BREAK, Para.getConfig().getConfigParam("markdown_soft_break", "<br>"))
+				.set(HtmlRenderer.SOFT_BREAK, Para.getConfig().markdownSoftBreak())
 				.set(HtmlRenderer.AUTOLINK_WWW_PREFIX, "https://")
 				.set(EmojiExtension.USE_IMAGE_TYPE, EmojiImageType.UNICODE_FALLBACK_TO_IMAGE)
 				// for full GFM table compatibility add the following table extension options:

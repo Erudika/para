@@ -17,8 +17,8 @@
  */
 package com.erudika.para.server.security;
 
-import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.server.rest.RestUtils;
 import java.io.IOException;
 import javax.servlet.ServletException;
@@ -49,7 +49,7 @@ public class SimpleAuthenticationFailureHandler extends SimpleUrlAuthenticationF
 			if (app != null) {
 				String customURI = (String) app.getSetting("signin_failure");
 				if (app.isRootApp() && StringUtils.isBlank(customURI)) {
-					customURI = Para.getConfig().getConfigParam("security.signin_failure", "/");
+					customURI = Para.getConfig().signinFailurePath();
 				}
 				if (StringUtils.contains(customURI, "cause=?")) {
 					customURI = customURI.replace("cause=?", "cause=" + exception.getMessage());

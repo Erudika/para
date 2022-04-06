@@ -17,23 +17,22 @@
  */
 package com.erudika.para.server.security;
 
-import com.erudika.para.server.security.filters.GoogleAuthFilter;
-import com.erudika.para.server.security.filters.PasswordAuthFilter;
-import com.erudika.para.server.security.filters.TwitterAuthFilter;
-import com.erudika.para.server.security.filters.MicrosoftAuthFilter;
-import com.erudika.para.server.security.filters.GitHubAuthFilter;
-import com.erudika.para.server.security.filters.LinkedInAuthFilter;
-import com.erudika.para.server.security.filters.GenericOAuth2Filter;
-import com.erudika.para.server.security.filters.FacebookAuthFilter;
 import com.erudika.para.core.cache.Cache;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.server.security.filters.AmazonAuthFilter;
+import com.erudika.para.server.security.filters.FacebookAuthFilter;
+import com.erudika.para.server.security.filters.GenericOAuth2Filter;
+import com.erudika.para.server.security.filters.GitHubAuthFilter;
+import com.erudika.para.server.security.filters.GoogleAuthFilter;
 import com.erudika.para.server.security.filters.LdapAuthFilter;
+import com.erudika.para.server.security.filters.LinkedInAuthFilter;
+import com.erudika.para.server.security.filters.MicrosoftAuthFilter;
+import com.erudika.para.server.security.filters.PasswordAuthFilter;
 import com.erudika.para.server.security.filters.PasswordlessAuthFilter;
 import com.erudika.para.server.security.filters.SAMLAuthFilter;
 import com.erudika.para.server.security.filters.SAMLMetadataFilter;
 import com.erudika.para.server.security.filters.SlackAuthFilter;
-import com.erudika.para.core.utils.Config;
-import com.erudika.para.core.utils.Para;
+import com.erudika.para.server.security.filters.TwitterAuthFilter;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 
@@ -93,8 +92,8 @@ public class SecurityModule extends AbstractModule {
 	public SimpleAuthenticationSuccessHandler getSuccessHandler() {
 		if (successHandler == null) {
 			successHandler = new SimpleAuthenticationSuccessHandler();
-			successHandler.setDefaultTargetUrl(Para.getConfig().getConfigParam("security.signin_success", "/"));
-			successHandler.setTargetUrlParameter(Para.getConfig().getConfigParam("security.returnto", "returnto"));
+			successHandler.setDefaultTargetUrl(Para.getConfig().signinSuccessPath());
+			successHandler.setTargetUrlParameter(Para.getConfig().returnToPath());
 			successHandler.setUseReferer(false);
 		}
 		return successHandler;
@@ -114,7 +113,7 @@ public class SecurityModule extends AbstractModule {
 	public SimpleAuthenticationFailureHandler getFailureHandler() {
 		if (failureHandler == null) {
 			failureHandler = new SimpleAuthenticationFailureHandler();
-			failureHandler.setDefaultFailureUrl(Para.getConfig().getConfigParam("security.signin_failure", "/signin?error"));
+			failureHandler.setDefaultFailureUrl(Para.getConfig().signinFailurePath());
 		}
 		return failureHandler;
 	}
@@ -132,9 +131,9 @@ public class SecurityModule extends AbstractModule {
 	@Provides
 	public SimpleRememberMeServices getRemembeMeServices() {
 		if (rememberMeServices == null) {
-			String authCookie = Para.getConfig().getConfigParam("auth_cookie", Config.PARA.concat("-auth"));
+			String authCookie = Para.getConfig().authCookieName();
 			rememberMeServices = new SimpleRememberMeServices(Para.getConfig().appSecretKey(), new SimpleUserService());
-			rememberMeServices.setAlwaysRemember(Para.getConfig().getConfigBoolean("security.remember_me", true));
+			rememberMeServices.setAlwaysRemember(Para.getConfig().rememberMeEnabled());
 			rememberMeServices.setTokenValiditySeconds(Para.getConfig().sessionTimeoutSec());
 			rememberMeServices.setCookieName(authCookie);
 			rememberMeServices.setParameter(authCookie.concat("-remember-me"));

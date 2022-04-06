@@ -23,9 +23,9 @@ import com.erudika.para.core.utils.Utils;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.LinkedHashMap;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 public class CaffeineCache implements Cache {
 
 	private static final Logger logger = LoggerFactory.getLogger(CaffeineCache.class);
-	private static final int DEFAULT_EXPIRATION_MIN = Para.getConfig().getConfigInt("caffeine.evict_after_minutes", 10);
+	private static final int DEFAULT_EXPIRATION_MIN = Para.getConfig().caffeineEvictAfterMin();
 	private final com.github.benmanes.caffeine.cache.Cache<String, Object> cache;
 
 	/**
@@ -49,7 +49,7 @@ public class CaffeineCache implements Cache {
 	 */
 	public CaffeineCache() {
 		cache = Caffeine.newBuilder()
-			.maximumSize(Para.getConfig().getConfigInt("caffeine.cache_size", 10000))
+			.maximumSize(Para.getConfig().caffeineCacheSize())
 			.expireAfter(new Expiry<String, Object>() {
 				public long expireAfterCreate(String key, Object value, long currentTime) {
 					return TimeUnit.MINUTES.toNanos(DEFAULT_EXPIRATION_MIN);

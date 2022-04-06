@@ -17,11 +17,14 @@
  */
 package com.erudika.para.server.persistence;
 
-import com.erudika.para.core.persistence.DAO;
-import com.erudika.para.core.annotations.Locked;
-import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
+import com.erudika.para.core.annotations.Locked;
+import com.erudika.para.core.persistence.DAO;
+import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.Utils;
 import static com.erudika.para.server.persistence.AWSDynamoUtils.batchGet;
 import static com.erudika.para.server.persistence.AWSDynamoUtils.batchWrite;
 import static com.erudika.para.server.persistence.AWSDynamoUtils.fromRow;
@@ -32,9 +35,6 @@ import static com.erudika.para.server.persistence.AWSDynamoUtils.readPageFromSha
 import static com.erudika.para.server.persistence.AWSDynamoUtils.readPageFromTable;
 import static com.erudika.para.server.persistence.AWSDynamoUtils.throwIfNecessary;
 import static com.erudika.para.server.persistence.AWSDynamoUtils.toRow;
-import com.erudika.para.core.utils.Config;
-import com.erudika.para.core.utils.Pager;
-import com.erudika.para.core.utils.Utils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,13 +45,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
@@ -336,8 +336,10 @@ public class AWSDynamoDAO implements DAO {
 				while (it.hasNext() && j < MAX_KEYS_PER_READ) {
 					String key = it.next();
 					results.put(key, null);
-					keyz.add(rowKey(key, appid));
-					j++;
+					if (!StringUtils.isBlank(key)) {
+						keyz.add(rowKey(key, appid));
+						j++;
+					}
 				}
 
 				KeysAndAttributes.Builder kna = KeysAndAttributes.builder().keys(keyz);

@@ -17,15 +17,15 @@
  */
 package com.erudika.para.server.security.filters;
 
-import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
-import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
+import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.ParaObjectUtils;
+import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.security.AuthenticatedUserDetails;
 import com.erudika.para.server.security.SecurityUtils;
 import com.erudika.para.server.security.UserAuthentication;
-import com.erudika.para.core.utils.Config;
-import com.erudika.para.core.utils.Utils;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
 import java.util.Map;
@@ -34,8 +34,6 @@ import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
@@ -104,11 +102,11 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 				String appid = SecurityUtils.getAppidFromAuthRequest(request);
 				String redirectURI = SecurityUtils.getRedirectUrl(request);
 				App app = Para.getDAO().read(App.id(appid == null ? Para.getConfig().getRootAppIdentifier() : appid));
-				String[] keys = SecurityUtils.getOAuthKeysForApp(app, Config.MICROSOFT_PREFIX);
+				String[] keys = Para.getConfig().getOAuthKeysForApp(app, Config.MICROSOFT_PREFIX);
 				String entity = Utils.formatMessage(PAYLOAD, authCode, Utils.urlEncode(redirectURI), keys[0], keys[1]);
 
 				HttpPost tokenPost = new HttpPost(Utils.formatMessage(TOKEN_URL,
-						SecurityUtils.getSettingForApp(app, "ms_tenant_id", "common")));
+						Para.getConfig().getSettingForApp(app, "ms_tenant_id", "common")));
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 				tokenPost.setEntity(new StringEntity(entity));
 				try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
@@ -221,17 +219,9 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 				HttpEntity respEntity = resp.getEntity();
 				if (respEntity != null && respEntity.getContentType().startsWith("image")) {
 					String ctype = respEntity.getContentType();
-					if (Para.getConfig().getConfigBoolean("ms_inline_avatars", true)) {
-						byte[] bytes = IOUtils.toByteArray(respEntity.getContent());
-						if (bytes != null && bytes.length > 0) {
-							byte[] bytes64 = Base64.encodeBase64(bytes);
-							pic = "data:" + ctype + ";base64," + new String(bytes64);
-						}
-					} else {
-						pic = Para.getFileStore().store(Optional.
-								ofNullable(appid).orElse(Config.PARA) + "/" + userid + "." +
-										StringUtils.substringAfter(ctype, "/"), respEntity.getContent());
-					}
+					pic = Para.getFileStore().store(Optional.
+							ofNullable(appid).orElse(Config.PARA) + "/" + userid + "." +
+									StringUtils.substringAfter(ctype, "/"), respEntity.getContent());
 				}
 				EntityUtils.consumeQuietly(respEntity);
 			}

@@ -47,7 +47,7 @@ public class AWSEmailer implements Emailer {
 	public AWSEmailer() {
 		sesclient = SesClient.builder().
 				// AWS SES is not available in all regions and it's best if we set it manually
-				region(Region.of(Para.getConfig().getConfigParam("aws_ses_region", "eu-west-1"))).build();
+				region(Region.of(Para.getConfig().awsSesRegion())).build();
 	}
 
 	@Override

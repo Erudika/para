@@ -17,11 +17,11 @@
  */
 package com.erudika.para.core.utils;
 
+import com.erudika.para.core.App;
+import com.erudika.para.core.cache.Cache;
 import com.erudika.para.core.listeners.DestroyListener;
 import com.erudika.para.core.listeners.IOListener;
 import com.erudika.para.core.listeners.InitializeListener;
-import com.erudika.para.core.cache.Cache;
-import com.erudika.para.core.App;
 import com.erudika.para.core.persistence.DAO;
 import com.erudika.para.core.queue.Queue;
 import com.erudika.para.core.rest.CustomResourceHandler;
@@ -62,7 +62,7 @@ public final class Para {
 	 */
 	public static final String LOGO;
 	static {
-		boolean printVer = CONF.getConfigBoolean("print_version", true);
+		boolean printVer = CONF.versionBannerEnabled();
 		String[] logo = {"",
 			"      ____  ___ _ ____ ___ _ ",
 			"     / __ \\/ __` / ___/ __` /",
@@ -341,7 +341,7 @@ public final class Para {
 			try {
 				ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
 				List<URL> jars = new ArrayList<>();
-				File lib = new File(CONF.getConfigParam("plugin_folder", "lib/"));
+				File lib = new File(CONF.pluginFolder());
 				if (lib.exists() && lib.isDirectory()) {
 					for (File file : FileUtils.listFiles(lib, new String[]{"jar"}, false)) {
 						jars.add(file.toURI().toURL());
@@ -417,7 +417,7 @@ public final class Para {
 	 * Prints the Para logo to System.out.
 	 */
 	public static void printLogo() {
-		if (CONF.getConfigBoolean("print_logo", true)) {
+		if (CONF.logoBannerEnabled()) {
 			System.out.print(LOGO);
 		}
 	}

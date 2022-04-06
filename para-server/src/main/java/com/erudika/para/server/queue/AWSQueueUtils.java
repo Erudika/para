@@ -64,7 +64,7 @@ public final class AWSQueueUtils {
 		if (sqsClient != null) {
 			return sqsClient;
 		}
-		if (Para.getConfig().getConfigBoolean("aws_sqs_local", false)) {
+		if (Para.getConfig().awsSqsLocalQueueEnabled()) {
 			sqsClient = SqsAsyncClient.builder().endpointOverride(URI.create(LOCAL_ENDPOINT)).
 					credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x"))).build();
 		} else {
@@ -211,7 +211,7 @@ public final class AWSQueueUtils {
 				for (int i = 0; i < batchSteps; i++) {
 					List<Message> list = getClient().receiveMessage(b -> b.queueUrl(queueURL).
 							maxNumberOfMessages(maxForBatch).
-							waitTimeSeconds(River.POLLING_INTERVAL)).get().messages();
+							waitTimeSeconds(Para.getConfig().queuePollingIntervalSec())).get().messages();
 
 					if (list != null && !list.isEmpty()) {
 						List<DeleteMessageBatchRequestEntry> del = new ArrayList<>();
@@ -226,14 +226,14 @@ public final class AWSQueueUtils {
 			} catch (AwsServiceException ase) {
 				logException(ase);
 			} catch (SdkException ace) {
-				logger.error("Could not reach SQS. {}", ace.toString());
+				logger.error("Could not reach SQS: {}", ace.getMessage());
 			} catch (ExecutionException ee) {
-				logger.error("SQS Execution exception. {}", ee.toString());
+				logger.error("SQS Execution exception: {}", ee.getMessage());
 			} catch (InterruptedException ex) {
-				logger.error("Interrupted while pulling messages from queue!", ex);
+				logger.error("Interrupted while pulling messages from queue: {}", ex.getMessage());
 				Thread.currentThread().interrupt();
 			} catch (Exception e) {
-				logger.error("Error while pulling from queue {}", e.getMessage());
+				logger.error("Error while pulling from queue: {}", e.getMessage());
 			}
 		}
 		return messages;
@@ -245,7 +245,8 @@ public final class AWSQueueUtils {
 	 */
 	protected static void startPollingForMessages(final String queueURL) {
 		if (!StringUtils.isBlank(queueURL) && !POLLING_THREADS.containsKey(queueURL)) {
-			logger.info("Starting SQS river using queue {} (polling interval: {}s)", queueURL, River.POLLING_INTERVAL);
+			logger.info("Starting SQS river using queue {} (polling interval: {}s)",
+					queueURL, Para.getConfig().queuePollingIntervalSec());
 			POLLING_THREADS.putIfAbsent(queueURL, Para.getExecutorService().submit(new River() {
 				List<String> pullMessages() {
 					return AWSQueueUtils.pullMessages(queueURL, MAX_MESSAGES);

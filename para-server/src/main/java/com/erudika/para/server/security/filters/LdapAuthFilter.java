@@ -17,16 +17,16 @@
  */
 package com.erudika.para.server.security.filters;
 
-import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
+import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.CoreUtils;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.security.AuthenticatedUserDetails;
 import com.erudika.para.server.security.LDAPAuthentication;
 import com.erudika.para.server.security.SecurityUtils;
 import com.erudika.para.server.security.UserAuthentication;
-import com.erudika.para.core.utils.Config;
-import com.erudika.para.core.utils.Utils;
 import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -48,9 +48,6 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
 public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(LdapAuthFilter.class);
-
-	private static final String PASSWORD = Para.getConfig().getConfigParam("security.ldap.password_param", "password");
-	private static final String USERNAME = Para.getConfig().getConfigParam("security.ldap.username_param", "username");
 
 	/**
 	 * The default filter mapping.
@@ -77,8 +74,8 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 			throws IOException {
 		final String requestURI = request.getRequestURI();
 		UserAuthentication userAuth = null;
-		String username = request.getParameter(USERNAME);
-		String password = request.getParameter(PASSWORD);
+		String username = request.getParameter(Para.getConfig().ldapUsernameParameter());
+		String password = request.getParameter(Para.getConfig().ldapPasswordParameter());
 		String appid = SecurityUtils.getAppidFromAuthRequest(request);
 
 		if (requestURI.endsWith(LDAP_ACTION) && !StringUtils.isBlank(username) && !StringUtils.isBlank(password)) {

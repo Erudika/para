@@ -17,9 +17,9 @@
  */
 package com.erudika.para.security;
 
-import com.erudika.para.server.security.SecurityUtils;
-import com.erudika.para.server.security.LDAPAuthenticator;
 import com.erudika.para.core.App;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.server.security.LDAPAuthenticator;
 import com.unboundid.ldap.listener.InMemoryDirectoryServer;
 import com.unboundid.ldap.listener.InMemoryDirectoryServerConfig;
 import com.unboundid.ldap.listener.InMemoryListenerConfig;
@@ -57,7 +57,7 @@ public class LdapAuthTest {
 		server.startListening();
 
 		LdapTestUtils.loadLdif(server, new ClassPathResource("test-server.ldif"));
-		Map<String, String> defaultSettings = SecurityUtils.getLdapSettingsForApp(new App("test"));
+		Map<String, String> defaultSettings = Para.getConfig().getLdapSettingsForApp(new App("test"));
 		defaultSettings.put("security.ldap.user_dn_pattern", "uid={0},ou=people");
 		bindAuthenticator = new LDAPAuthenticator(defaultSettings);
 		defaultSettings.put("security.ldap.compare_passwords", "true");

@@ -63,7 +63,7 @@ public class AWSDynamoDAOIT extends DAOTest {
 		AWSDynamoUtils.deleteTable(appid1);
 		AWSDynamoUtils.deleteTable(appid2);
 		AWSDynamoUtils.deleteTable(appid3);
-		AWSDynamoUtils.deleteTable(AWSDynamoUtils.SHARED_TABLE);
+		AWSDynamoUtils.deleteTable(Para.getConfig().sharedTableName());
 		AWSDynamoUtils.shutdownClient();
 		System.setProperty("para.prepend_shared_appids_with_space", "false");
 	}
@@ -89,7 +89,7 @@ public class AWSDynamoDAOIT extends DAOTest {
 
 	@Test
 	public void testCRUDSharedTable() {
-		assertTrue(AWSDynamoUtils.existsTable(AWSDynamoUtils.SHARED_TABLE));
+		assertTrue(AWSDynamoUtils.existsTable(Para.getConfig().sharedTableName()));
 
 		App app = new App("shared-app1");
 		App app2 = new App("shared-app2");

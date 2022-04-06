@@ -55,7 +55,7 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 			if (app != null) {
 				String customURI = (String) app.getSetting("signin_success");
 				if (app.isRootApp() && StringUtils.isBlank(customURI)) {
-					customURI = Para.getConfig().getConfigParam("security.signin_success", "/");
+					customURI = Para.getConfig().signinSuccessPath();
 				}
 				if (StringUtils.contains(customURI, "jwt=?")) {
 					SignedJWT newJWT = SecurityUtils.generateJWToken(u, app);

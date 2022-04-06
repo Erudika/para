@@ -17,16 +17,16 @@
  */
 package com.erudika.para.server.security;
 
-import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.User;
-import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.rest.Signer;
+import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.CoreUtils;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.security.filters.SAMLAuthFilter;
 import com.erudika.para.server.utils.BufferedRequestWrapper;
-import com.erudika.para.core.utils.Config;
-import com.erudika.para.core.utils.Utils;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -270,7 +270,7 @@ public final class SecurityUtils {
 				claimsSet.claim("refresh", getNextRefresh(app.getTokenValiditySec()));
 				claimsSet.claim(Config._APPID, app.getId());
 				if (user != null) {
-					if ("true".equals(SecurityUtils.getSettingForApp(app, "security.one_session_per_user", "true"))) {
+					if ("true".equals(Para.getConfig().getSettingForApp(app, "security.one_session_per_user", "true"))) {
 						user.resetTokenSecret();
 						CoreUtils.getInstance().overwrite(app.getAppIdentifier(), user);
 					}
@@ -339,80 +339,6 @@ public final class SecurityUtils {
 			interval = (tokenValiditySec / 2);
 		}
 		return System.currentTimeMillis() + (interval * 1000);
-	}
-
-	/**
-	 * Return the OAuth app ID and secret key for a given app by reading the app settings, or the config file.
-	 * @param app the app in which to look for these keys
-	 * @param prefix a service prefix: "fb" for facebook, "tw" for twitter etc. See {@link Config}
-	 * @return an array ["app_id", "secret_key"] or ["", ""]
-	 */
-	public static String[] getOAuthKeysForApp(App app, String prefix) {
-		prefix = StringUtils.removeEnd(prefix + "", Para.getConfig().separator());
-		String appIdKey = prefix + "_app_id";
-		String secretKey = prefix + "_secret";
-		String[] keys = new String[]{"", ""};
-
-		if (app != null) {
-			Map<String, Object> settings = app.getSettings();
-			if (settings.containsKey(appIdKey) && settings.containsKey(secretKey)) {
-				keys[0] = settings.get(appIdKey) + "";
-				keys[1] = settings.get(secretKey) + "";
-			} else if (app.isRootApp()) {
-				keys[0] = Para.getConfig().getConfigParam(appIdKey, "");
-				keys[1] = Para.getConfig().getConfigParam(secretKey, "");
-			}
-		}
-		return keys;
-	}
-
-	/**
-	 * Returns a map of LDAP configuration properties for a given app,  read from app.settings or config file.
-	 * @param app the app in which to look for these keys
-	 * @return a map of keys and values
-	 */
-	public static Map<String, String> getLdapSettingsForApp(App app) {
-		Map<String, String> ldapSettings = new HashMap<>();
-		if (app != null) {
-			ldapSettings.put("security.ldap.server_url", "ldap://localhost:8389/");
-			ldapSettings.put("security.ldap.active_directory_domain", "");
-			ldapSettings.put("security.ldap.base_dn", "dc=springframework,dc=org");
-			ldapSettings.put("security.ldap.bind_dn", "");
-			ldapSettings.put("security.ldap.bind_pass", "");
-			ldapSettings.put("security.ldap.user_search_base", "");
-			ldapSettings.put("security.ldap.user_search_filter", "(cn={0})");
-			ldapSettings.put("security.ldap.user_dn_pattern", "uid={0}");
-			ldapSettings.put("security.ldap.password_attribute", "userPassword");
-			//ldapSettings.put("security.ldap.compare_passwords", "false"); //don't remove comment
-			Map<String, Object> settings = app.getSettings();
-			for (Map.Entry<String, String> entry : ldapSettings.entrySet()) {
-				if (settings.containsKey(entry.getKey())) {
-					entry.setValue(settings.get(entry.getKey()) + "");
-				} else if (app.isRootApp()) {
-					entry.setValue(Para.getConfig().getConfigParam(entry.getKey(), entry.getValue()));
-				}
-			}
-		}
-		return ldapSettings;
-	}
-
-	/**
-	 * Returns the value of the app setting, read from from app.settings or from the config file if app is root.
-	 * @param app the app in which to look for these keys
-	 * @param key setting key
-	 * @param defaultValue default value
-	 * @return the value of the configuration property as string
-	 */
-	public static String getSettingForApp(App app, String key, String defaultValue) {
-		if (app != null) {
-			Map<String, Object> settings = app.getSettings();
-			if (settings.containsKey(key)) {
-				return String.valueOf(settings.getOrDefault(key, defaultValue));
-			} else if (app.isRootApp()) {
-				return Para.getConfig().getConfigParam(key, defaultValue);
-			}
-		}
-		return defaultValue;
 	}
 
 	/**
@@ -501,7 +427,7 @@ public final class SecurityUtils {
 		String recreatedSig = StringUtils.substringAfter(auth2, "Signature=");
 
 		boolean signaturesMatch = StringUtils.equals(givenSig, recreatedSig);
-		if (Para.getConfig().getConfigBoolean("debug_request_signatures", false)) {
+		if (Para.getConfig().debugRequestSignaturesEnabled()) {
 			logger.info("Incoming client signature for request {} {}: {} == {} calculated by server, matching: {}",
 					httpMethod, path, givenSig, recreatedSig, signaturesMatch);
 		}

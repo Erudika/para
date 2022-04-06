@@ -17,12 +17,12 @@
  */
 package com.erudika.para.server.persistence;
 
-import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import java.lang.annotation.Annotation;
 import java.net.URI;
 import java.util.Collections;
@@ -82,9 +82,6 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
  */
 public final class AWSDynamoUtils {
 
-//	private static DynamoDbClient ddbClient;
-//	private static ApplicationAutoScalingClient aasClient;
-//	private static DynamoDb ddb;
 	private static final String LOCAL_ENDPOINT = "http://localhost:8000";
 	private static final String AWS_REGION = new DefaultAwsRegionProviderChain().getRegion().id();
 	private static Map<String, DynamoDbClient> ddbClients;
@@ -95,32 +92,6 @@ public final class AWSDynamoUtils {
 	static {
 		Para.addDestroyListener(() -> shutdownClient());
 	}
-
-	/**
-	 * The name of the shared table. Default is {@code 0}.
-	 */
-	public static final String SHARED_TABLE = Para.getConfig().getConfigParam("shared_table_name", "0");
-
-	/**
-	 * Toggles SSE (encryption-at-rest) using own KMS, instead of AWS-owned CMK for all newly created DynamoDB tables.
-	 * Default is {@code false}.
-	 */
-	public static final boolean ENCRYPTION_AT_REST_ENABLED = Para.getConfig().getConfigBoolean("dynamodb.sse_enabled", false);
-
-	/**
-	 * Toggles global tables settings for the specified regions.
-	 */
-	public static final String REPLICA_REGIONS = Para.getConfig().getConfigParam("dynamodb.replica_regions", "");
-
-	/**
-	 * Toggles point-in-time backups. Default is {@code true}.
-	 */
-	public static final boolean BACKUPS_ENABLED = Para.getConfig().getConfigBoolean("dynamodb.backups_enabled", Para.getConfig().inProduction());
-
-	/**
-	 * Toggles between provisioned billing and on-demand billing.
-	 */
-	public static final boolean PROVISIONED_MODE = Para.getConfig().getConfigBoolean("dynamodb.provisioned_mode_enabled", true);
 
 	private AWSDynamoUtils() { }
 
@@ -205,8 +176,8 @@ public final class AWSDynamoUtils {
 	 * @return true if created
 	 */
 	public static boolean createTable(String appid) {
-		return createTable(appid, Para.getConfig().getConfigInt("dynamodb.max_read_capacity", 10),
-				Para.getConfig().getConfigInt("dynamodb.max_write_capacity", 5));
+		return createTable(appid, Para.getConfig().awsDynamoMaxInitialReadCapacity(),
+				Para.getConfig().awsDynamoMaxInitialWriteCapacity());
 	}
 
 	/**
@@ -216,7 +187,7 @@ public final class AWSDynamoUtils {
 	 * @param maxWriteCapacity max write capacity for autoscaling (only applicable in PROVISIONED billing mode)
 	 * @return true if created
 	 */
-	public static boolean createTable(String appid, long maxReadCapacity, long maxWriteCapacity) {
+	public static boolean createTable(String appid, int maxReadCapacity, int maxWriteCapacity) {
 		if (StringUtils.isBlank(appid)) {
 			return false;
 		} else if (StringUtils.containsWhitespace(appid)) {
@@ -244,7 +215,7 @@ public final class AWSDynamoUtils {
 				getClient().createGlobalTable(b -> b.globalTableName(table).replicationGroup(replicas));
 			});
 		}
-		if (BACKUPS_ENABLED) {
+		if (Para.getConfig().awsDynamoBackupsEnabled()) {
 			logger.info("Enabling backups for table '{}'...", table);
 			getClient().updateContinuousBackups((t) -> t.tableName(table).
 					pointInTimeRecoverySpecification((p) -> p.pointInTimeRecoveryEnabled(true)));
@@ -252,12 +223,12 @@ public final class AWSDynamoUtils {
 		return created;
 	}
 
-	private static boolean createTableInternal(String appid, long maxReadCapacity, long maxWriteCapacity, String region) {
+	private static boolean createTableInternal(String appid, int maxReadCapacity, int maxWriteCapacity, String region) {
 		boolean replicate = !getReplicaRegions().isEmpty() && !App.isRoot(appid);
 		try {
 			String table = getTableNameForAppid(appid);
 			CreateTableRequest.Builder ctr = CreateTableRequest.builder().tableName(table).
-					sseSpecification(b2 -> b2.enabled(ENCRYPTION_AT_REST_ENABLED)).
+					sseSpecification(b2 -> b2.enabled(Para.getConfig().awsDynamoEncryptionEnabled())).
 					keySchema(KeySchemaElement.builder().attributeName(Config._KEY).keyType(KeyType.HASH).build()).
 					attributeDefinitions(AttributeDefinition.builder().
 							attributeName(Config._KEY).attributeType(ScalarAttributeType.S).build());
@@ -266,7 +237,7 @@ public final class AWSDynamoUtils {
 				ctr.streamSpecification(s -> s.streamEnabled(replicate).streamViewType(StreamViewType.NEW_AND_OLD_IMAGES));
 			}
 
-			if (PROVISIONED_MODE) {
+			if (Para.getConfig().awsDynamoProvisionedBillingEnabled()) {
 				ctr.billingMode(BillingMode.PROVISIONED);
 				ctr.provisionedThroughput(b4 -> b4.readCapacityUnits(1L).writeCapacityUnits(1L));
 			} else {
@@ -277,7 +248,7 @@ public final class AWSDynamoUtils {
 			waitForActive(table, region);
 			logger.info("Created DynamoDB table '{}', status {}.", table, tbl.tableDescription().tableStatus());
 
-			if (replicate && PROVISIONED_MODE) {
+			if (replicate && Para.getConfig().awsDynamoProvisionedBillingEnabled()) {
 				logger.info("Enabling autoscaling for DynamoDB table '{}'...", table);
 				ApplicationAutoScalingClient aasClient = getAutoScalingClient(region);
 				aasClient.registerScalableTarget(t -> t.serviceNamespace(ServiceNamespace.DYNAMODB).
@@ -385,11 +356,12 @@ public final class AWSDynamoUtils {
 	 * @return true if created
 	 */
 	public static boolean createSharedTable(long readCapacity, long writeCapacity) {
-		if (StringUtils.isBlank(SHARED_TABLE) || StringUtils.containsWhitespace(SHARED_TABLE) ||
-				existsTable(SHARED_TABLE)) {
+		if (StringUtils.isBlank(Para.getConfig().sharedTableName()) ||
+				StringUtils.containsWhitespace(Para.getConfig().sharedTableName()) ||
+				existsTable(Para.getConfig().sharedTableName())) {
 			return false;
 		}
-		String table = getTableNameForAppid(SHARED_TABLE);
+		String table = getTableNameForAppid(Para.getConfig().sharedTableName());
 		try {
 			GlobalSecondaryIndex secIndex = GlobalSecondaryIndex.builder().
 					indexName(getSharedIndexName()).
@@ -406,14 +378,14 @@ public final class AWSDynamoUtils {
 
 			CreateTableResponse tbl = getClient().createTable(b -> b.tableName(table).
 					keySchema(KeySchemaElement.builder().attributeName(Config._KEY).keyType(KeyType.HASH).build()).
-					sseSpecification(b2 -> b2.enabled(ENCRYPTION_AT_REST_ENABLED)).
+					sseSpecification(b2 -> b2.enabled(Para.getConfig().awsDynamoEncryptionEnabled())).
 					attributeDefinitions(attributes).
 					globalSecondaryIndexes(secIndex).
 					provisionedThroughput(b6 -> b6.readCapacityUnits(readCapacity).writeCapacityUnits(writeCapacity)));
 			logger.info("Waiting for DynamoDB table to become ACTIVE...");
 			waitForActive(table, AWS_REGION);
 			logger.info("Created shared table '{}', status {}.", table, tbl.tableDescription().tableStatus());
-			if (BACKUPS_ENABLED) {
+			if (Para.getConfig().awsDynamoBackupsEnabled()) {
 				logger.info("Enabling backups for shared table '{}'...", table);
 				getClient().updateContinuousBackups((t) -> t.tableName(table).
 						pointInTimeRecoverySpecification((p) -> p.pointInTimeRecoveryEnabled(true)));
@@ -482,7 +454,7 @@ public final class AWSDynamoUtils {
 		} else {
 			if (isSharedAppid(appIdentifier)) {
 				// app is sharing a table with other apps
-				appIdentifier = SHARED_TABLE;
+				appIdentifier = Para.getConfig().sharedTableName();
 			}
 			return (App.isRoot(appIdentifier) || appIdentifier.startsWith(Config.PARA.concat("-"))) ?
 					appIdentifier : Config.PARA + "-" + appIdentifier;
@@ -744,7 +716,7 @@ public final class AWSDynamoUtils {
 		}
 
 		return index != null ? getClient().query(query.indexName(index.indexName()).
-				tableName(getTableNameForAppid(SHARED_TABLE)).build()) : null;
+				tableName(getTableNameForAppid(Para.getConfig().sharedTableName())).build()) : null;
 	}
 
 	/**
@@ -791,7 +763,8 @@ public final class AWSDynamoUtils {
 	 */
 	public static GlobalSecondaryIndexDescription getSharedGlobalIndex() {
 		try {
-			DescribeTableResponse t = getClient().describeTable(b -> b.tableName(getTableNameForAppid(SHARED_TABLE)));
+			DescribeTableResponse t = getClient().describeTable(b ->
+					b.tableName(getTableNameForAppid(Para.getConfig().sharedTableName())));
 			return t.table().globalSecondaryIndexes().stream().
 					filter(gsi -> gsi.indexName().equals(getSharedIndexName())).findFirst().orElse(null);
 		} catch (Exception e) {
@@ -814,9 +787,9 @@ public final class AWSDynamoUtils {
 	 * @return a list of regions
 	 */
 	public static List<String> getReplicaRegions() {
-		if (!StringUtils.isBlank(REPLICA_REGIONS) && replicaRegions == null) {
+		if (!StringUtils.isBlank(Para.getConfig().awsDynamoReplicaRegions()) && replicaRegions == null) {
 			replicaRegions = new LinkedList<String>();
-			String[] regions = REPLICA_REGIONS.split("\\s*,\\s*");
+			String[] regions = Para.getConfig().awsDynamoReplicaRegions().split("\\s*,\\s*");
 			if (regions != null && regions.length > 0) {
 				for (String region : regions) {
 					if (!StringUtils.isBlank(region)) {
@@ -829,7 +802,7 @@ public final class AWSDynamoUtils {
 	}
 
 	private static String getSharedIndexName() {
-		return "GSI_" + SHARED_TABLE;
+		return "GSI_" + Para.getConfig().sharedTableName();
 	}
 
 	private static String keyPrefix(String appIdentifier) {
@@ -845,7 +818,7 @@ public final class AWSDynamoUtils {
 	}
 
 	protected static void throwIfNecessary(Throwable t) {
-		if (t != null && Para.getConfig().getConfigBoolean("fail_on_write_errors", true)) {
+		if (t != null && Para.getConfig().exceptionOnWriteErrorsEnabled()) {
 			throw new RuntimeException("DAO write operation failed! - " + t.getMessage(), t);
 		}
 	}

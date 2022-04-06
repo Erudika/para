@@ -17,14 +17,6 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.core.listeners.AppCreatedListener;
-import com.erudika.para.core.listeners.AppDeletedListener;
-import com.erudika.para.core.listeners.AppSettingAddedListener;
-import com.erudika.para.core.listeners.AppSettingRemovedListener;
-import com.erudika.para.core.utils.CoreUtils;
-import com.erudika.para.core.utils.ParaObjectUtils;
-import com.erudika.para.core.annotations.Locked;
-import com.erudika.para.core.annotations.Stored;
 import static com.erudika.para.core.App.AllowedMethods.ALL;
 import static com.erudika.para.core.App.AllowedMethods.GET;
 import static com.erudika.para.core.App.AllowedMethods.GUEST;
@@ -36,8 +28,16 @@ import static com.erudika.para.core.App.AllowedMethods.READ_WRITE;
 import static com.erudika.para.core.App.AllowedMethods.WRITE;
 import static com.erudika.para.core.App.AllowedMethods.WRITE_ONLY;
 import static com.erudika.para.core.App.AllowedMethods.fromString;
+import com.erudika.para.core.annotations.Locked;
+import com.erudika.para.core.annotations.Stored;
+import com.erudika.para.core.listeners.AppCreatedListener;
+import com.erudika.para.core.listeners.AppDeletedListener;
+import com.erudika.para.core.listeners.AppSettingAddedListener;
+import com.erudika.para.core.listeners.AppSettingRemovedListener;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Pager;
 import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.core.validation.Constraint;
 import com.erudika.para.core.validation.ValidationUtils;
@@ -55,9 +55,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.validation.constraints.NotBlank;
 import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang3.StringUtils;
-import javax.validation.constraints.NotBlank;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -311,14 +311,14 @@ public class App implements ParaObject, Serializable {
 	}
 
 	/**
-	 * The App identifier (the id but without the prefix 'app:').
+	 * The App identifier (the id but without the prefix {@code app:}).
 	 * The identifier may start with a whitespace character e.g. " myapp".
 	 * This indicates that the app is sharing a table with other apps.
-	 * This is disabled by default unless 'para.prepend_shared_appids_with_space = true'
+	 * This is disabled by default unless {@code para.prepend_shared_appids_with_space = true}
 	 * @return the identifier (appid)
 	 */
 	public String getAppIdentifier() {
-		String pre = isSharingTable() && Para.getConfig().getConfigBoolean("prepend_shared_appids_with_space", false) ? " " : "";
+		String pre = isSharingTable() && Para.getConfig().appIdSpacePrefixEnabled() ? " " : "";
 		return (getId() != null) ? getId().replaceFirst(PREFIX, pre) : "";
 	}
 
@@ -744,8 +744,8 @@ public class App implements ParaObject, Serializable {
 			}
 		}
 		if (allow) {
-			if (isRootApp() && !Para.getConfig().getConfigBoolean("clients_can_access_root_app", false)) {
-				return false;
+			if (isRootApp()) {
+				return false; // removed config property `para.clients_can_access_root_app`, always false
 			}
 			if (StringUtils.isBlank(subjectid)) {
 				// guest access check

@@ -45,7 +45,7 @@ public class LocalFileStore implements FileStore {
 	 * No-args constructor.
 	 */
 	public LocalFileStore() {
-		this(Para.getConfig().getConfigParam("para.localstorage.folder", ""));
+		this(Para.getConfig().localFileStoreFolder());
 	}
 
 	/**
@@ -90,7 +90,7 @@ public class LocalFileStore implements FileStore {
 		if (StringUtils.isBlank(path)) {
 			return null;
 		}
-		int maxFileSizeMBytes = Para.getConfig().getConfigInt("para.localstorage.max_filesize_mb", 10);
+		int maxFileSizeMBytes = Para.getConfig().localFileStoreMaxFileSizeMb();
 		try {
 			File f = new File(folder + path);
 			if (!f.exists() || f.canWrite()) {

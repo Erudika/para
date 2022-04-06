@@ -3,7 +3,6 @@ package com.erudika.para.server.utils;
 import com.erudika.para.core.App;
 import com.erudika.para.core.listeners.InitializeListener;
 import com.erudika.para.core.utils.Para;
-import com.erudika.para.server.ParaServer;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -35,7 +34,6 @@ public enum HealthUtils implements InitializeListener, Runnable {
 		private boolean rootAppExists = false;
 		private ScheduledFuture<?> scheduledHealthCheck;
 		private final List<String> failedServices = new ArrayList<>(3);
-		private final int healthCheckInterval = Para.getConfig().getConfigInt("health.check_interval", 60);
 
 		{
 			App.addAppCreatedListener((App app) -> {
@@ -103,8 +101,7 @@ public enum HealthUtils implements InitializeListener, Runnable {
 					logger.warn("Server is unhealthy - the search index may be corrupted and may have to be rebuilt.");
 				} else {
 					Map<String, String> rootAppCredentials = Para.setup();
-					String confFile = Paths.get(System.getProperty("config.file", "application.conf")).
-							toAbsolutePath().toString();
+					String confFile = Paths.get(Para.getConfig().getConfigFilePath()).toAbsolutePath().toString();
 					if (rootAppCredentials.containsKey("secretKey")) {
 						try (InputStream ref = getClass().getClassLoader().getResourceAsStream("reference.conf");
 								InputStream config = Optional.ofNullable(Para.getFileStore().load(confFile)).orElse(ref)) {
@@ -124,7 +121,7 @@ public enum HealthUtils implements InitializeListener, Runnable {
 							}
 							Para.getFileStore().store(confFile, new ByteArrayInputStream(confString.
 									getBytes(StandardCharsets.UTF_8)));
-							logger.info("Saved root app credentials to application.conf.");
+							logger.info("Saved root app credentials to {}.", confFile);
 						} catch (Exception e) {
 							logger.info("Initialized root app with access key '{}' and secret '{}', "
 									+ "but could not write these to {}.",
@@ -132,13 +129,13 @@ public enum HealthUtils implements InitializeListener, Runnable {
 						}
 					} else {
 						logger.warn("Server is unhealthy - failed to initialize root app. Open http://localhost:" +
-								ParaServer.getServerPort() + "/v1/_setup in the browser to initialize Para manually.");
+								Para.getConfig().serverPort() + "/v1/_setup in the browser to initialize Para manually.");
 					}
 				}
 			}
-			if (Para.getConfig().getConfigBoolean("health_check_enabled", true) && scheduledHealthCheck == null) {
+			if (Para.getConfig().healthCheckEnabled() && scheduledHealthCheck == null) {
 				scheduledHealthCheck = Para.getScheduledExecutorService().
-						scheduleAtFixedRate(this, 30, healthCheckInterval, TimeUnit.SECONDS);
+						scheduleAtFixedRate(this, 30, Para.getConfig().healthCheckInvervalSec(), TimeUnit.SECONDS);
 			}
 		}
 

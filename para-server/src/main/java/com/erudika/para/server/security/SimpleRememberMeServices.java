@@ -20,10 +20,9 @@ package com.erudika.para.server.security;
 
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
-import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Para;
-import com.erudika.para.server.utils.HttpUtils;
 import com.erudika.para.core.utils.Utils;
+import com.erudika.para.server.utils.HttpUtils;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.core.Authentication;
@@ -91,8 +90,7 @@ public class SimpleRememberMeServices extends TokenBasedRememberMeServices {
 
 	@Override
 	protected void setCookie(String[] tokens, int maxAge, HttpServletRequest request, HttpServletResponse response) {
-		HttpUtils.setAuthCookie(Para.getConfig().getConfigParam("auth_cookie", Config.PARA.concat("-auth")),
-				encodeCookie(tokens), maxAge, request, response);
+		HttpUtils.setAuthCookie(Para.getConfig().authCookieName(), encodeCookie(tokens), maxAge, request, response);
 	}
 
 

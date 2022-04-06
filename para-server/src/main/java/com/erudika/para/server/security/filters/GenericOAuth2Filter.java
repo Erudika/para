@@ -174,13 +174,13 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			boolean tokenDelegationEnabled = isAccessTokenDelegationEnabled(app, alias);
 			Map<String, Object> profile = fetchProfileFromIDP(app, accessToken, idToken, alias);
 
-			String accountIdParam = SecurityUtils.getSettingForApp(app, configKey("parameters.id", alias), "sub");
-			String pictureParam = SecurityUtils.getSettingForApp(app, configKey("parameters.picture", alias), "picture");
-			String emailDomain = SecurityUtils.getSettingForApp(app, configKey("domain", alias), "paraio.com");
-			String emailParam = SecurityUtils.getSettingForApp(app, configKey("parameters.email", alias), "email");
-			String nameParam = SecurityUtils.getSettingForApp(app, configKey("parameters.name", alias), "name");
-			String gnParam = SecurityUtils.getSettingForApp(app, configKey("parameters.given_name", alias), "given_name");
-			String fnParam = SecurityUtils.getSettingForApp(app, configKey("parameters.family_name", alias), "family_name");
+			String accountIdParam = Para.getConfig().getSettingForApp(app, configKey("parameters.id", alias), "sub");
+			String pictureParam = Para.getConfig().getSettingForApp(app, configKey("parameters.picture", alias), "picture");
+			String emailDomain = Para.getConfig().getSettingForApp(app, configKey("domain", alias), "paraio.com");
+			String emailParam = Para.getConfig().getSettingForApp(app, configKey("parameters.email", alias), "email");
+			String nameParam = Para.getConfig().getSettingForApp(app, configKey("parameters.name", alias), "name");
+			String gnParam = Para.getConfig().getSettingForApp(app, configKey("parameters.given_name", alias), "given_name");
+			String fnParam = Para.getConfig().getSettingForApp(app, configKey("parameters.family_name", alias), "family_name");
 
 			if (profile.containsKey(accountIdParam)) {
 				Object accid = profile.get(accountIdParam);
@@ -268,7 +268,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	}
 
 	private boolean isAccessTokenDelegationEnabled(App app, String alias) {
-		return Boolean.parseBoolean(SecurityUtils.getSettingForApp(app,
+		return Boolean.parseBoolean(Para.getConfig().getSettingForApp(app,
 				configKey("token_delegation_enabled", alias), "false"));
 	}
 
@@ -286,7 +286,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 				refreshTokens(app, user);
 				profile = fetchProfileFromIDP(app, user.getIdpAccessToken(), null, alias);
 			}
-			return profile != null && profile.containsKey(SecurityUtils.getSettingForApp(app,
+			return profile != null && profile.containsKey(Para.getConfig().getSettingForApp(app,
 					configKey("parameters.id", alias), "sub"));
 		} catch (Exception e) {
 			LOG.debug("Invalid access token {}", e);
@@ -308,8 +308,8 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			String idTokenDecoded = Utils.base64dec(StringUtils.substringBetween(idToken, "."));
 			profile.putAll(jreader.readValue(idTokenDecoded));
 		}
-		String acceptHeader = SecurityUtils.getSettingForApp(app, configKey("accept_header", alias), "");
-		HttpGet profileGet = new HttpGet(SecurityUtils.getSettingForApp(app, configKey("profile_url", alias), ""));
+		String acceptHeader = Para.getConfig().getSettingForApp(app, configKey("accept_header", alias), "");
+		HttpGet profileGet = new HttpGet(Para.getConfig().getSettingForApp(app, configKey("profile_url", alias), ""));
 		profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
 		if (!StringUtils.isBlank(acceptHeader)) {
@@ -355,10 +355,10 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 
 	private Map<String, Object> tokenRequest(App app, String authCodeOrRefreshToken, String redirectURI, String alias)
 			throws IOException {
-		String[] keys = SecurityUtils.getOAuthKeysForApp(app, oauthPrefix(alias));
+		String[] keys = Para.getConfig().getOAuthKeysForApp(app, oauthPrefix(alias));
 
 		String entity;
-		String scope = SecurityUtils.getSettingForApp(app, configKey("scope", alias), "");
+		String scope = Para.getConfig().getSettingForApp(app, configKey("scope", alias), "");
 		if (redirectURI == null) {
 			entity = Utils.formatMessage(REFRESH_PAYLOAD, authCodeOrRefreshToken,
 					URLEncoder.encode(scope, "UTF-8"), keys[0], keys[1]);
@@ -367,8 +367,8 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 					URLEncoder.encode(scope, "UTF-8"), keys[0], keys[1]);
 		}
 
-		String acceptHeader = SecurityUtils.getSettingForApp(app, configKey("accept_header", alias), "");
-		HttpPost tokenPost = new HttpPost(SecurityUtils.getSettingForApp(app, configKey("token_url", alias), ""));
+		String acceptHeader = Para.getConfig().getSettingForApp(app, configKey("accept_header", alias), "");
+		HttpPost tokenPost = new HttpPost(Para.getConfig().getSettingForApp(app, configKey("token_url", alias), ""));
 		tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 		tokenPost.setEntity(new StringEntity(entity));
 		if (!StringUtils.isBlank(acceptHeader)) {
@@ -419,7 +419,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	private static String getPicture(App app, User user, String accessToken, String alias, String pic) {
 		if (pic != null) {
 			String avatar = pic;
-			if ("true".equals(SecurityUtils.getSettingForApp(app, configKey("download_avatars", alias), "false"))) {
+			if ("true".equals(Para.getConfig().getSettingForApp(app, configKey("download_avatars", alias), "false"))) {
 				avatar = fetchAvatar(app.getAppIdentifier().trim(), user.getId(), accessToken, pic);
 			} else if (pic.contains("?")) {
 				// user picture migth contain size parameters - remove them

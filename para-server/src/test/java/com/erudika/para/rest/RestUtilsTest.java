@@ -17,22 +17,22 @@
  */
 package com.erudika.para.rest;
 
-import com.erudika.para.core.rest.GenericExceptionMapper;
-import com.erudika.para.core.utils.Para;
-import com.erudika.para.server.ParaServer;
-import com.erudika.para.core.cache.Cache;
-import com.erudika.para.core.cache.MockCache;
 import com.erudika.para.core.App;
-import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
-import com.erudika.para.core.utils.CoreUtils;
+import com.erudika.para.core.cache.Cache;
+import com.erudika.para.core.cache.MockCache;
 import com.erudika.para.core.persistence.DAO;
 import com.erudika.para.core.persistence.MockDAO;
 import com.erudika.para.core.queue.Queue;
-import static com.erudika.para.server.rest.RestUtils.*;
+import com.erudika.para.core.rest.GenericExceptionMapper;
 import com.erudika.para.core.search.Search;
 import com.erudika.para.core.storage.FileStore;
+import com.erudika.para.core.utils.CoreUtils;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.ParaObjectUtils;
+import com.erudika.para.server.ParaServer;
+import static com.erudika.para.server.rest.RestUtils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -91,7 +91,7 @@ public class RestUtilsTest {
 	@Test
 	public void testGetReadResponse() {
 		App app = new App("test");
-		App root = new App(Para.getConfig().getConfigParam("app_name", ""));
+		App root = new App(Para.getConfig().appName());
 		assertEquals(Status.NOT_FOUND.getStatusCode(), getReadResponse(null, null).getStatus());
 		assertEquals(Status.OK.getStatusCode(), getReadResponse(app, new Tag("tag")).getStatus());
 		assertEquals(Status.OK.getStatusCode(), getReadResponse(root, new App("test1")).getStatus());
@@ -100,7 +100,7 @@ public class RestUtilsTest {
 	@Test
 	public void testGetCreateUpdateDeleteResponse() throws JsonProcessingException {
 		Tag t = new Tag("tag");
-		App rootApp = new App(Para.getConfig().getConfigParam("app_name", ""));
+		App rootApp = new App(Para.getConfig().appName());
 		App notRootApp = new App("anotherApp");
 		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(null, null, null).getStatus());
 		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(rootApp, rootApp.getType(),

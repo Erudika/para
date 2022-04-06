@@ -28,7 +28,7 @@ import com.google.inject.AbstractModule;
 public class EmailModule extends AbstractModule {
 
 	protected void configure() {
-		String selectedEmailer = Para.getConfig().getConfigParam("emailer", "");
+		String selectedEmailer = Para.getConfig().emailerPlugin();
 		if ("aws".equals(selectedEmailer)) {
 			bind(Emailer.class).to(AWSEmailer.class);
 		} else if ("javamail".equals(selectedEmailer)) {

@@ -30,7 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 public class CacheModule extends AbstractModule {
 
 	protected void configure() {
-		String selectedCache = Para.getConfig().getConfigParam("cache", "");
+		String selectedCache = Para.getConfig().cachePlugin();
 		if (StringUtils.isBlank(selectedCache) || "inmemory".equalsIgnoreCase(selectedCache)) {
 			bindToDefault();
 		} else {

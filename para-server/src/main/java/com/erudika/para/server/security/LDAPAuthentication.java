@@ -18,6 +18,7 @@
 package com.erudika.para.server.security;
 
 import com.erudika.para.core.App;
+import com.erudika.para.core.utils.Para;
 import java.util.Map;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
@@ -60,7 +61,7 @@ public class LDAPAuthentication extends UsernamePasswordAuthenticationToken {
 	 * @return LDAP settings map
 	 */
 	public Map<String, String> getLdapSettings() {
-		return SecurityUtils.getLdapSettingsForApp(app);
+		return Para.getConfig().getLdapSettingsForApp(app);
 	}
 
 }

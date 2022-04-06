@@ -18,10 +18,9 @@
 package com.erudika.para.server.security;
 
 import com.erudika.para.core.cache.Cache;
-import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Para;
-import com.erudika.para.server.utils.HttpUtils;
 import com.erudika.para.core.utils.Utils;
+import com.erudika.para.server.utils.HttpUtils;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
@@ -46,9 +45,6 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 
 	private String parameterName = "_csrf";
 	private final String headerName = "X-CSRF-TOKEN";
-	private final String cookieName = Para.getConfig().getConfigParam("security.csrf_cookie", "para-csrf-token");
-	private final String authCookie = Para.getConfig().getConfigParam("auth_cookie", Config.PARA.concat("-auth"));
-	private final String anonIdentCookieName = cookieName + "-anonid";
 	private final Map<String, Object[]> localCache = new ConcurrentHashMap<>();
 
 	private Cache cache;
@@ -78,19 +74,19 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	 */
 	public void saveToken(CsrfToken t, HttpServletRequest request, HttpServletResponse response) {
 		String ident = getIdentifierFromCookie(request);
-		if (StringUtils.isBlank(ident) && StringUtils.isBlank(HttpUtils.getStateParam(authCookie, request))) {
+		if (StringUtils.isBlank(ident) && StringUtils.isBlank(HttpUtils.getStateParam(Para.getConfig().authCookieName(), request))) {
 			ident = Utils.generateSecurityToken(16);
 			storeAnonIdentCookie(ident, request, response);
 		}
 		if (ident != null) {
 			CsrfToken token = loadToken(request);
 			if (token == null) {
-				String anonid = HttpUtils.getStateParam(anonIdentCookieName, request);
+				String anonid = HttpUtils.getStateParam(Para.getConfig().anonymousCsrfCookieName(), request);
 				if (anonid != null) {
 					token = loadTokenFromCache(ident);
 					if (token == null) {
-						HttpUtils.removeStateParam(cookieName, request, response);
-						HttpUtils.removeStateParam(anonIdentCookieName, request, response);
+						HttpUtils.removeStateParam(Para.getConfig().csrfCookieName(), request, response);
+						HttpUtils.removeStateParam(Para.getConfig().anonymousCsrfCookieName(), request, response);
 						removeTokenFromCache(ident);
 						return;
 					}
@@ -114,7 +110,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 		if (ident != null) {
 			String key = ident.concat(parameterName);
 			token = loadTokenFromCache(key);
-			String anonid = HttpUtils.getStateParam(anonIdentCookieName, request);
+			String anonid = HttpUtils.getStateParam(Para.getConfig().anonymousCsrfCookieName(), request);
 			if (anonid != null) {
 				CsrfToken anonToken = loadTokenFromCache(anonid);
 				if (!ident.equals(anonid) && anonToken != null && token != null) {
@@ -172,20 +168,20 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	}
 
 	private String getIdentifierFromCookie(HttpServletRequest request) {
-		String cookie = HttpUtils.getStateParam(authCookie, request);
+		String cookie = HttpUtils.getStateParam(Para.getConfig().authCookieName(), request);
 		String ident = null;
 		if (cookie != null) {
 			String[] ctokens = Utils.base64dec(cookie).split(":");
 			ident = Utils.base64dec(Utils.urlDecode(ctokens[0]));
 		}
 		if (ident == null) {
-			ident = HttpUtils.getStateParam(anonIdentCookieName, request);
+			ident = HttpUtils.getStateParam(Para.getConfig().anonymousCsrfCookieName(), request);
 		}
 		return ident;
 	}
 
 	private String getTokenFromCookie(HttpServletRequest request) {
-		String tokenInCookie = HttpUtils.getStateParam(cookieName, request);
+		String tokenInCookie = HttpUtils.getStateParam(Para.getConfig().csrfCookieName(), request);
 		if (!StringUtils.isBlank(tokenInCookie)) {
 			return tokenInCookie;
 		}
@@ -194,7 +190,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 
 	private void storeTokenAsCookie(CsrfToken token, HttpServletRequest request, HttpServletResponse response) {
 		if (isValidButNotInCookie(token, request)) {
-			Cookie c = new Cookie(cookieName, token.getToken());
+			Cookie c = new Cookie(Para.getConfig().csrfCookieName(), token.getToken());
 			c.setMaxAge(Para.getConfig().sessionTimeoutSec());
 			// don't enable HttpOnly - javascript can't access the cookie if enabled
 			c.setHttpOnly(false);
@@ -205,7 +201,7 @@ public class CachedCsrfTokenRepository implements CsrfTokenRepository {
 	}
 
 	private void storeAnonIdentCookie(String anonid, HttpServletRequest request, HttpServletResponse response) {
-		Cookie c = new Cookie(anonIdentCookieName, anonid);
+		Cookie c = new Cookie(Para.getConfig().anonymousCsrfCookieName(), anonid);
 		c.setMaxAge(Para.getConfig().sessionTimeoutSec());
 		// don't enable HttpOnly - javascript can't access the cookie if enabled
 		c.setHttpOnly(false);

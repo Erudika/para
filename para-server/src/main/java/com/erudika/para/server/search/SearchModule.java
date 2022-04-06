@@ -17,8 +17,8 @@
  */
 package com.erudika.para.server.search;
 
-import com.erudika.para.core.search.Search;
 import com.erudika.para.core.search.MockSearch;
+import com.erudika.para.core.search.Search;
 import com.erudika.para.core.utils.Para;
 import com.google.inject.AbstractModule;
 import java.util.ServiceLoader;
@@ -30,7 +30,7 @@ import java.util.ServiceLoader;
 public class SearchModule extends AbstractModule {
 
 	protected void configure() {
-		String selectedSearch = Para.getConfig().getConfigParam("search", "");
+		String selectedSearch = Para.getConfig().searchPlugin();
 		Search searchPlugin = loadExternalSearch(selectedSearch);
 		if (searchPlugin != null) {
 			bind(Search.class).to(searchPlugin.getClass()).asEagerSingleton();

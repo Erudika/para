@@ -17,7 +17,6 @@
  */
 package com.erudika.para.client;
 
-import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
 import static com.erudika.para.core.App.AllowedMethods.DELETE;
 import static com.erudika.para.core.App.AllowedMethods.GET;
@@ -26,11 +25,12 @@ import static com.erudika.para.core.App.AllowedMethods.POST;
 import static com.erudika.para.core.App.AllowedMethods.PUT;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Tag;
-import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.core.rest.Signer;
 import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.core.validation.Constraint;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -94,11 +94,11 @@ public final class ParaClient implements Closeable {
 	private static final String DEFAULT_PATH = "/v1/";
 	private static final String JWT_PATH = "/jwt_auth";
 
-	private final String protocols = Para.getConfig().getConfigParam("client.ssl_protocols", "TLSv1.3");
-	private final String keystorePath = Para.getConfig().getConfigParam("client.ssl_keystore", "");
-	private final String keystorePass = Para.getConfig().getConfigParam("client.ssl_keystore_password", "");
-	private final String truststorePath = Para.getConfig().getConfigParam("client.ssl_truststore", "");
-	private final String truststorePass = Para.getConfig().getConfigParam("client.ssl_truststore_password", "");
+	private final String protocols = Para.getConfig().clientSslProtocols();
+	private final String keystorePath = Para.getConfig().clientSslKeystore();
+	private final String keystorePass = Para.getConfig().clientSslKeystorePassword();
+	private final String truststorePath = Para.getConfig().clientSslTruststore();
+	private final String truststorePass = Para.getConfig().clientSslTruststorePassword();
 
 	private String endpoint;
 	private String path;
@@ -491,7 +491,7 @@ public final class ParaClient implements Closeable {
 				req.setHeader("X-Amz-Date", signedHeaders.get("X-Amz-Date"));
 			}
 
-			if (Para.getConfig().getConfigBoolean("user_agent_id_enabled", true)) {
+			if (Para.getConfig().clientUserAgentEnabled()) {
 				String userAgent = new StringBuilder("Para client ").append(Para.getVersion()).append(" ").append(accessKey).
 						append(" (Java ").append(System.getProperty("java.runtime.version")).append(")").toString();
 				req.setHeader(HttpHeaders.USER_AGENT, userAgent);

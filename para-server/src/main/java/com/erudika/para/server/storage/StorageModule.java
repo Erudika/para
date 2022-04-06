@@ -30,7 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 public class StorageModule extends AbstractModule {
 
 	protected void configure() {
-		String selectedFileStore = Para.getConfig().getConfigParam("fs", "");
+		String selectedFileStore = Para.getConfig().fileStoragePlugin();
 		if (StringUtils.isBlank(selectedFileStore)) {
 			bindToDefault();
 		} else {
