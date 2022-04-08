@@ -968,7 +968,7 @@ public class ParaConfig extends Config {
 	 * @return asd
 	 */
 	public boolean elasticsearchNestedModeEnabled() {
-		throw new UnsupportedOperationException("Not supported yet.");
+		return getConfigBoolean("es.use_nested_custom_fields", false);
 	}
 
 	public boolean elasticsearchAsyncModeEnabled() {

@@ -186,10 +186,8 @@ public abstract class Config {
 			Path localConfig = Paths.get(getConfigFilePath()).toAbsolutePath();
 			if (Files.exists(localConfig)) {
 				try {
-					logger.info("loading {}", localConfig.toString());
 					conf = ConfigFactory.parseFile(localConfig.toFile()).
 							getConfig(getConfigRootPrefix()).withFallback(getFallbackConfig());
-					logger.info("conf {}", conf.entrySet().size());
 				} catch (Exception e) {
 					logger.debug("Failed to parse local config {}", e.getMessage());
 				}
