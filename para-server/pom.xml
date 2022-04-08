@@ -130,7 +130,7 @@
 		<dependency>
 			<groupId>com.unboundid</groupId>
 			<artifactId>unboundid-ldapsdk</artifactId>
-			<version>6.0.3</version>
+			<version>6.0.4</version>
 		</dependency>
 
 		<!-- SAML -->
@@ -144,7 +144,7 @@
 		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
 			<artifactId>caffeine</artifactId>
-			<version>3.0.5</version>
+			<version>3.0.6</version>
 		</dependency>
 
 		<!-- JERSEY -->
