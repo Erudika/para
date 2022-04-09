@@ -558,7 +558,6 @@ public class User implements ParaObject {
 	 * Used for storing the ID token from an OpenID Connect/OAuth 2.0 identity provider.
 	 * @return an ID token (JWT is always assumed to be the format)
 	 */
-	@JsonIgnore
 	public String getIdpIdToken() {
 		return idpIdToken;
 	}
@@ -575,7 +574,6 @@ public class User implements ParaObject {
 	 * Used for storing the access token from an OpenID Connect/OAuth 2.0 identity provider.
 	 * @return a JWT access token (JWT is always assumed to be the format)
 	 */
-	@JsonIgnore
 	public String getIdpAccessToken() {
 		return idpAccessToken;
 	}
@@ -592,7 +590,6 @@ public class User implements ParaObject {
 	 * Stores the refresh token from the identity provider.
 	 * @return a JWT refresh token
 	 */
-	@JsonIgnore
 	public String getIdpRefreshToken() {
 		return idpRefreshToken;
 	}
@@ -610,6 +607,7 @@ public class User implements ParaObject {
 	 * Used for delegating user attributes data to clients. This must be a Base64-encoded JSON string.
 	 * @return the payload part in Base64
 	 */
+	@JsonIgnore
 	public String getIdpIdTokenPayload() {
 		return StringUtils.substringBetween(idpIdToken, ".");
 	}
@@ -619,6 +617,7 @@ public class User implements ParaObject {
 	 * Used for delegating user attributes data to clients. This must be a Base64-encoded JSON string.
 	 * @return the payload part in Base64
 	 */
+	@JsonIgnore
 	public String getIdpAccessTokenPayload() {
 		return StringUtils.substringBetween(idpAccessToken, ".");
 	}
