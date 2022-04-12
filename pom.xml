@@ -88,8 +88,8 @@
 		<httpClientVer>5.1.3</httpClientVer>
 		<httpCoreVer>5.1.3</httpCoreVer>
 		<commonsCodecVer>1.15</commonsCodecVer>
-		<lucenePluginVer>1.45.1</lucenePluginVer>
-		<sqlPluginVer>1.45.1</sqlPluginVer>
+		<lucenePluginVer>1.45.2</lucenePluginVer>
+		<sqlPluginVer>1.45.2</sqlPluginVer>
 	</properties>
 
 	<dependencies>
@@ -181,7 +181,7 @@
 			<plugin>
 				<groupId>org.sonatype.plugins</groupId>
 				<artifactId>nexus-staging-maven-plugin</artifactId>
-				<version>1.6.8</version>
+				<version>1.6.12</version>
 				<extensions>true</extensions>
 				<configuration>
 					<serverId>ossrh</serverId>
