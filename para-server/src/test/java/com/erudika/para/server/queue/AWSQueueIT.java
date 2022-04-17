@@ -17,8 +17,6 @@
  */
 package com.erudika.para.server.queue;
 
-import com.erudika.para.server.queue.AWSQueue;
-import com.erudika.para.server.queue.AWSQueueUtils;
 import static com.erudika.para.server.queue.QueueTest.q;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +39,6 @@ public class AWSQueueIT extends QueueTest {
 
 	@BeforeClass
 	public static void setUpClass() throws InterruptedException {
-		System.setProperty("para.aws_sqs_local", "true");
 		sqsServer = SQSRestServerBuilder.start();
 		Thread.sleep(1000);
 		q = new AWSQueue("testq");
@@ -49,7 +46,6 @@ public class AWSQueueIT extends QueueTest {
 
 	@AfterClass
 	public static void tearDownClass() {
-		System.setProperty("para.aws_sqs_local", "false");
 		sqsServer.stopAndWait();
 	}
 

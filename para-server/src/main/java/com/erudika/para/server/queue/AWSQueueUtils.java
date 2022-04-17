@@ -64,7 +64,7 @@ public final class AWSQueueUtils {
 		if (sqsClient != null) {
 			return sqsClient;
 		}
-		if (Para.getConfig().awsSqsLocalQueueEnabled()) {
+		if (Para.getConfig().environment().equals("embedded")) {
 			sqsClient = SqsAsyncClient.builder().endpointOverride(URI.create(LOCAL_ENDPOINT)).
 					credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("x", "x"))).build();
 		} else {

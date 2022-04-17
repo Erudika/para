@@ -20,6 +20,8 @@ package com.erudika.para.server.email;
 import com.erudika.para.core.email.Emailer;
 import com.erudika.para.core.utils.Para;
 import com.google.inject.AbstractModule;
+import java.util.ServiceLoader;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * The default email module.
@@ -29,13 +31,45 @@ public class EmailModule extends AbstractModule {
 
 	protected void configure() {
 		String selectedEmailer = Para.getConfig().emailerPlugin();
-		if ("aws".equals(selectedEmailer)) {
-			bind(Emailer.class).to(AWSEmailer.class);
-		} else if ("javamail".equals(selectedEmailer)) {
-			bind(Emailer.class).to(JavaMailEmailer.class);
+		if (StringUtils.isBlank(selectedEmailer)) {
+			bindToDefault();
 		} else {
-			bind(Emailer.class).to(NoopEmailer.class);
+			if ("aws".equalsIgnoreCase(selectedEmailer) ||
+					AWSEmailer.class.getSimpleName().equalsIgnoreCase(selectedEmailer)) {
+				bind(Emailer.class).to(AWSEmailer.class).asEagerSingleton();
+			} else if ("javamail".equalsIgnoreCase(selectedEmailer) ||
+					JavaMailEmailer.class.getSimpleName().equalsIgnoreCase(selectedEmailer)) {
+				bind(Emailer.class).to(JavaMailEmailer.class).asEagerSingleton();
+			} else {
+				Emailer emailerPlugin = loadExternalFileStore(selectedEmailer);
+				if (emailerPlugin != null) {
+					bind(Emailer.class).to(emailerPlugin.getClass()).asEagerSingleton();
+				} else {
+					// default fallback - not implemented!
+					bindToDefault();
+				}
+			}
 		}
+	}
+
+	void bindToDefault() {
+		bind(Emailer.class).to(NoopEmailer.class).asEagerSingleton();
+	}
+
+	/**
+	 * Scans the classpath for Emailer implementations, through the
+	 * {@link ServiceLoader} mechanism and returns one.
+	 * @param classSimpleName the name of the class name to look for and load
+	 * @return a Emailer instance if found, or null
+	 */
+	final Emailer loadExternalFileStore(String classSimpleName) {
+		ServiceLoader<Emailer> fsLoader = ServiceLoader.load(Emailer.class, Para.getParaClassLoader());
+		for (Emailer fs : fsLoader) {
+			if (fs != null && classSimpleName.equalsIgnoreCase(fs.getClass().getSimpleName())) {
+				return fs;
+			}
+		}
+		return null;
 	}
 
 }

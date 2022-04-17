@@ -9,6 +9,8 @@ keys.txt
 rebel.xml
 nbactions.xml
 application.conf
+para-application.conf
+scoold-application.conf
 Tomcat.dpf
 release.properties
 nb-configuration.xml
