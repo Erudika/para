@@ -175,6 +175,10 @@ public final class Api1 extends ResourceConfig {
 		idRes.addMethod(GET).produces(JSON).handledBy(readIdHandler());
 		registerResources(idRes.build());
 
+		Resource.Builder confRes = Resource.builder("_config");
+		confRes.addChildResource("options").addMethod(GET).produces(JSON).handledBy(configOptionsHandler());
+		registerResources(confRes.build());
+
 		// validation
 		Resource.Builder valRes = Resource.builder("_constraints");
 		valRes.addMethod(GET).produces(JSON).handledBy(getConstrHandler(null));
@@ -507,6 +511,28 @@ public final class Api1 extends ResourceConfig {
 					return getReadResponse(app, getDAO().read(app.getAppIdentifier(), id));
 				}
 				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+			}
+		};
+	}
+
+	/**
+	 * @return response
+	 */
+	public static Inflector<ContainerRequestContext, Response> configOptionsHandler() {
+		return new Inflector<ContainerRequestContext, Response>() {
+			public Response apply(ContainerRequestContext ctx) {
+				String format = queryParam("format", ctx);
+				String groupby = queryParam("groupby", ctx);
+				String type = "text/plain";
+				if ("markdown".equalsIgnoreCase(format)) {
+					type = "text/markdown";
+				} else if ("hocon".equalsIgnoreCase(format)) {
+					type = "application/hocon";
+				} else if (StringUtils.isBlank(format) || "json".equalsIgnoreCase(format)) {
+					type = "application/json";
+				}
+				return Response.ok(Para.getConfig().renderConfigDocumentation(format,
+						StringUtils.isBlank(groupby) || "category".equalsIgnoreCase(groupby)), type).build();
 			}
 		};
 	}
