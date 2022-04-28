@@ -17,26 +17,26 @@
  */
 package com.erudika.para.server.rest;
 
-import com.erudika.para.core.rest.GenericExceptionMapper;
-import com.erudika.para.core.utils.Para;
-import com.erudika.para.core.annotations.Locked;
 import com.erudika.para.core.App;
-import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.User;
 import com.erudika.para.core.Votable;
+import com.erudika.para.core.annotations.Locked;
 import com.erudika.para.core.metrics.Metrics;
+import com.erudika.para.core.rest.GenericExceptionMapper;
+import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.CoreUtils;
+import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.ParaObjectUtils;
+import com.erudika.para.core.utils.Utils;
+import static com.erudika.para.core.validation.ValidationUtils.isValidObject;
+import static com.erudika.para.core.validation.ValidationUtils.validateObject;
 import static com.erudika.para.server.security.SecurityUtils.checkIfUserCanModifyObject;
 import static com.erudika.para.server.security.SecurityUtils.checkImplicitAppPermissions;
 import static com.erudika.para.server.security.SecurityUtils.getAuthenticatedUser;
 import static com.erudika.para.server.security.SecurityUtils.getPrincipalApp;
 import static com.erudika.para.server.security.SecurityUtils.isNotAnApp;
-import com.erudika.para.core.utils.Config;
-import com.erudika.para.core.utils.Pager;
-import com.erudika.para.core.utils.Utils;
-import static com.erudika.para.core.validation.ValidationUtils.isValidObject;
-import static com.erudika.para.core.validation.ValidationUtils.validateObject;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import java.io.IOException;
@@ -240,32 +240,28 @@ public final class RestUtils {
 	public static Response getVotingResponse(ParaObject object, Map<String, Object> entity) {
 		boolean voteSuccess = false;
 		if (object != null && entity != null) {
-//			try {
-				String upvoterId = (String) entity.get("_voteup");
-				String downvoterId = (String) entity.get("_votedown");
-				Integer lockAfter = (Integer) entity.get("_vote_locked_after");
-				Integer expiresAfter = (Integer) entity.get("_vote_expires_after");
-				if (!StringUtils.isBlank(upvoterId)) {
-					if (lockAfter == null && expiresAfter == null) {
-						voteSuccess = object.voteUp(upvoterId);
-					} else {
-						voteSuccess = CoreUtils.getInstance().
-								vote(object, upvoterId, Votable.VoteValue.UP, expiresAfter, lockAfter);
-					}
-				} else if (!StringUtils.isBlank(downvoterId)) {
-					if (lockAfter == null && expiresAfter == null) {
-						voteSuccess = object.voteDown(downvoterId);
-					} else {
-						voteSuccess = CoreUtils.getInstance().
-								vote(object, upvoterId, Votable.VoteValue.DOWN, expiresAfter, lockAfter);
-					}
+			String upvoterId = (String) entity.get("_voteup");
+			String downvoterId = (String) entity.get("_votedown");
+			Integer lockAfter = (Integer) entity.get("_vote_locked_after");
+			Integer expiresAfter = (Integer) entity.get("_vote_expires_after");
+			if (!StringUtils.isBlank(upvoterId)) {
+				if (lockAfter == null && expiresAfter == null) {
+					voteSuccess = object.voteUp(upvoterId);
+				} else {
+					voteSuccess = CoreUtils.getInstance().
+							vote(object, upvoterId, Votable.VoteValue.UP, expiresAfter, lockAfter);
 				}
-				if (voteSuccess) {
-					object.update();
+			} else if (!StringUtils.isBlank(downvoterId)) {
+				if (lockAfter == null && expiresAfter == null) {
+					voteSuccess = object.voteDown(downvoterId);
+				} else {
+					voteSuccess = CoreUtils.getInstance().
+							vote(object, downvoterId, Votable.VoteValue.DOWN, expiresAfter, lockAfter);
 				}
-//			} catch (Exception e) {
-//				return Response.ok(false).build();
-//			}
+			}
+			if (voteSuccess) {
+				object.update();
+			}
 		}
 		return Response.ok(voteSuccess).build();
 	}
