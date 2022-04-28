@@ -342,8 +342,13 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	private void refreshTokens(App app, User user) throws IOException {
 		Map<String, Object> token = tokenRequest(app, user.getIdpRefreshToken(), null, oauthAlias(user.getIdentifier()));
 		if (token != null && token.containsKey("access_token")) {
-			user.setIdpAccessToken((String) token.get("access_token"));
-			user.setIdpIdToken((String) token.get("id_token"));
+			if (isAccessTokenDelegationEnabled(app, user)) {
+				user.setIdpAccessToken((String) token.get("access_token"));
+				user.setIdpIdToken((String) token.get("id_token"));
+			} else {
+				user.setIdpAccessToken("");
+				user.setIdpIdToken("");
+			}
 			String newRefresh = (String) token.get("refresh_token");
 			if (!StringUtils.equals(newRefresh, user.getIdpRefreshToken())) {
 				user.setIdpRefreshToken(newRefresh);

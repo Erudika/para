@@ -17,14 +17,14 @@
  */
 package com.erudika.para.server.security.filters;
 
-import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
+import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.CoreUtils;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.server.security.AuthenticatedUserDetails;
 import com.erudika.para.server.security.SecurityUtils;
 import com.erudika.para.server.security.UserAuthentication;
-import com.erudika.para.core.utils.Config;
 import com.nimbusds.jwt.SignedJWT;
 import java.io.IOException;
 import java.text.ParseException;
@@ -134,7 +134,8 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 			} else {
 				logger.info("Authentication request failed because the provided JWT token is invalid. appid: '" +
-						app.getAppIdentifier() + "'");
+						app.getAppIdentifier() + "', user found: " + (user == null ? "none" : user.getId()) + ", "
+								+ "user queried: " + identifier);
 			}
 		} catch (ParseException e) {
 			logger.warn("Invalid token: " + e.getMessage());
