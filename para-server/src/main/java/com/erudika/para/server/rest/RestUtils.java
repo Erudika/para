@@ -310,8 +310,6 @@ public final class RestUtils {
 				if (app != null && content != null && isNotAnApp(type)) {
 					content.setAppid(app.getAppIdentifier());
 					setCreatorid(app, content);
-					int typesCount = app.getDatatypes().size();
-					app.addDatatypes(content);
 					// The reason why we do two validation passes is because we want to return
 					// the errors through the API and notify the end user.
 					// This is the primary validation pass (validates not only core POJOS but also user defined objects).
@@ -322,8 +320,8 @@ public final class RestUtils {
 						String id = content.create();
 						if (id != null) {
 							// new type added so update app object
-							if (typesCount < app.getDatatypes().size()) {
-								app.update();
+							if (app.addDatatypes(content)) {
+								CoreUtils.getInstance().overwrite(app);
 							}
 							return Response.created(URI.create(Utils.urlEncode(content.getObjectURI()))).
 									entity(content).build();
@@ -361,8 +359,6 @@ public final class RestUtils {
 					content.setAppid(app.getAppIdentifier());
 					content.setId(id);
 					setCreatorid(app, content);
-					int typesCount = app.getDatatypes().size();
-					app.addDatatypes(content);
 					// The reason why we do two validation passes is because we want to return
 					// the errors through the API and notify the end user.
 					// This is the primary validation pass (validates not only core POJOS but also user defined objects).
@@ -372,8 +368,8 @@ public final class RestUtils {
 						// See: IndexAndCacheAspect.java
 						CoreUtils.getInstance().overwrite(app.getAppIdentifier(), content);
 						// new type added so update app object
-						if (typesCount < app.getDatatypes().size()) {
-							app.update();
+						if (app.addDatatypes(content)) {
+							CoreUtils.getInstance().overwrite(app);
 						}
 						return Response.ok(content).build();
 					}
@@ -420,6 +416,10 @@ public final class RestUtils {
 							if (object.getVersion() == -1) {
 								return getStatusResponse(Response.Status.PRECONDITION_FAILED,
 										"Update failed due to 'version' mismatch.");
+							}
+							// new type added so update app object
+							if (app.addDatatypes(object)) {
+								CoreUtils.getInstance().overwrite(app);
 							}
 							return Response.ok(object).build();
 						}
@@ -510,13 +510,9 @@ public final class RestUtils {
 
 					Para.getDAO().createAll(app.getAppIdentifier(), newObjects);
 
-					Para.asyncExecute(new Runnable() {
-						public void run() {
-							int typesCount = app.getDatatypes().size();
-							app.addDatatypes(newObjects.toArray(new ParaObject[0]));
-							if (typesCount < app.getDatatypes().size()) {
-								app.update();
-							}
+					Para.asyncExecute(() -> {
+						if (app.addDatatypes(newObjects.toArray(new ParaObject[0]))) {
+							CoreUtils.getInstance().overwrite(app);
 						}
 					});
 				} else {

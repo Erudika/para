@@ -114,7 +114,7 @@ public class App implements ParaObject, Serializable {
 	@Stored @Locked private boolean sharingTable;
 	@Stored @Locked private String secret;
 	@Stored @Locked private Boolean readOnly;
-	@Stored private Map<String, String> datatypes;
+	@Stored @Locked private Map<String, String> datatypes;
 	// type -> field -> constraint -> property -> value
 	@Stored private Map<String, Map<String, Map<String, Map<String, ?>>>> validationConstraints;
 	// subject_id -> resource_name -> [http_methods_allowed]
@@ -280,6 +280,22 @@ public class App implements ParaObject, Serializable {
 		if (validationConstraints == null) {
 			validationConstraints = new LinkedHashMap<>();
 		}
+		try {
+			// hacky, but works! perform validation here, so that even if user supplied bad map data,
+			// the serialization should not break.
+			if (validationConstraints != null && !validationConstraints.isEmpty()
+					&& !validationConstraints.values().iterator().next().isEmpty()
+					&& !validationConstraints.values().iterator().next().values().isEmpty()
+					&& !validationConstraints.values().iterator().next().values().iterator().next().isEmpty()
+					&& !validationConstraints.values().iterator().next().values().iterator().next().values().isEmpty()
+					&& !validationConstraints.values().iterator().next().values().iterator().next().values().iterator().next().isEmpty()
+					&& validationConstraints.values().iterator().next().values().iterator().next().values().iterator().
+							next().values().iterator().next() != null) {
+				return validationConstraints;
+			}
+		} catch (Exception e) {
+			validationConstraints = new LinkedHashMap<>();
+		}
 		return validationConstraints;
 	}
 
@@ -297,6 +313,19 @@ public class App implements ParaObject, Serializable {
 	 */
 	public Map<String, Map<String, List<String>>> getResourcePermissions() {
 		if (resourcePermissions == null) {
+			resourcePermissions = new LinkedHashMap<>();
+		}
+		try {
+			// hacky, but works! perform validation here, so that even if user supplied bad map data,
+			// the serialization should not break.
+			if (resourcePermissions != null && !resourcePermissions.isEmpty()
+					&& !resourcePermissions.values().iterator().next().isEmpty()
+					&& !resourcePermissions.values().iterator().next().values().isEmpty()
+					&& !resourcePermissions.values().iterator().next().values().iterator().next().isEmpty()
+					&& !resourcePermissions.values().iterator().next().values().iterator().next().iterator().next().isBlank()) {
+				return resourcePermissions;
+			}
+		} catch (Exception e) {
 			resourcePermissions = new LinkedHashMap<>();
 		}
 		return resourcePermissions;
@@ -910,8 +939,10 @@ public class App implements ParaObject, Serializable {
 	/**
 	 * Adds unknown types to this app's list of data types. Called on create().
 	 * @param objects a list of new objects
+	 * @return true if a new data type was added to the list
 	 */
-	public void addDatatypes(ParaObject... objects) {
+	public boolean addDatatypes(ParaObject... objects) {
+		int typesCount = getDatatypes().size();
 		// register a new data type
 		if (objects != null && objects.length > 0) {
 			for (ParaObject obj : objects) {
@@ -920,6 +951,7 @@ public class App implements ParaObject, Serializable {
 				}
 			}
 		}
+		return typesCount < getDatatypes().size();
 	}
 
 	/**

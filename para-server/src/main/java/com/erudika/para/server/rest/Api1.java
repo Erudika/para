@@ -242,8 +242,7 @@ public final class Api1 extends ResourceConfig {
 					}
 				}
 			});
-			custom.addMethod(POST).produces(JSON).consumes(JSON).
-					handledBy(new Inflector<ContainerRequestContext, Response>() {
+			custom.addMethod(POST).produces(JSON).consumes(JSON).handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
 					String appid = ParaObjectUtils.getAppidFromAuthHeader(ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
 					try (Metrics.Context context = Metrics.time(appid, handler.getClass(), "handlePost")) {
@@ -251,8 +250,7 @@ public final class Api1 extends ResourceConfig {
 					}
 				}
 			});
-			custom.addMethod(PATCH).produces(JSON).consumes(JSON).
-					handledBy(new Inflector<ContainerRequestContext, Response>() {
+			custom.addMethod(PATCH).produces(JSON).consumes(JSON).handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
 					String appid = ParaObjectUtils.getAppidFromAuthHeader(ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
 					try (Metrics.Context context = Metrics.time(appid, handler.getClass(), "handlePatch")) {
@@ -260,8 +258,7 @@ public final class Api1 extends ResourceConfig {
 					}
 				}
 			});
-			custom.addMethod(PUT).produces(JSON).consumes(JSON).
-					handledBy(new Inflector<ContainerRequestContext, Response>() {
+			custom.addMethod(PUT).produces(JSON).consumes(JSON).handledBy(new Inflector<ContainerRequestContext, Response>() {
 				public Response apply(ContainerRequestContext ctx) {
 					String appid = ParaObjectUtils.getAppidFromAuthHeader(ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
 					try (Metrics.Context context = Metrics.time(appid, handler.getClass(), "handlePut")) {

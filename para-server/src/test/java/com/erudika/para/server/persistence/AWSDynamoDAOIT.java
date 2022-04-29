@@ -49,6 +49,7 @@ public class AWSDynamoDAOIT extends DAOTest {
 	@BeforeClass
 	public static void setUpClass() throws InterruptedException {
 		System.setProperty("para.prepend_shared_appids_with_space", "true");
+		System.setProperty("para.dynamodb.provisioned_mode_enabled", "true");
 		System.setProperty("para.app_name", ROOT_APP_NAME);
 		AWSDynamoUtils.createTable(Para.getConfig().getRootAppIdentifier());
 		AWSDynamoUtils.createTable(appid1);
