@@ -184,7 +184,10 @@ public abstract class Config {
 		try {
 			// try to parse the locally stored app-application.conf file if it exists.
 			Path localConfig = Paths.get(getConfigFilePath()).toAbsolutePath();
-			if (Files.exists(localConfig)) {
+			if (StringUtils.isBlank(System.getProperty("config.resource")) &&
+					StringUtils.isBlank(System.getProperty("config.file")) &&
+					StringUtils.isBlank(System.getProperty("config.url")) &&
+					Files.exists(localConfig)) {
 				try {
 					conf = ConfigFactory.parseFile(localConfig.toFile()).
 							getConfig(getConfigRootPrefix()).withFallback(getFallbackConfig());
@@ -248,9 +251,8 @@ public abstract class Config {
 		if (StringUtils.isBlank(key)) {
 			return defaultValue;
 		}
-		String keyVar = key.replaceAll("\\.", "_");
-		String env = System.getenv(keyVar) == null ? System.getenv(getConfigRootPrefix() + "_" + keyVar) : System.getenv(keyVar);
-		String sys = System.getProperty(key, System.getProperty(getConfigRootPrefix() + "." + key));
+		String env = System.getenv(getConfigRootPrefix() + "_" + key.replaceAll("\\.", "_"));
+		String sys = System.getProperty(getConfigRootPrefix() + "." + key);
 		if (!StringUtils.isBlank(sys)) {
 			return sys;
 		} else if (!StringUtils.isBlank(env)) {
