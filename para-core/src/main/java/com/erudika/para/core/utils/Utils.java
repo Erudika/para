@@ -20,6 +20,7 @@ package com.erudika.para.core.utils;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.annotations.Email;
 import com.samskivert.mustache.Mustache;
+import com.vladsch.flexmark.ast.Link;
 import com.vladsch.flexmark.ext.autolink.AutolinkExtension;
 import com.vladsch.flexmark.ext.emoji.EmojiExtension;
 import com.vladsch.flexmark.ext.emoji.EmojiImageType;
@@ -27,11 +28,17 @@ import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension;
 import com.vladsch.flexmark.ext.gfm.tasklist.TaskListExtension;
 import com.vladsch.flexmark.ext.media.tags.MediaTagsExtension;
 import com.vladsch.flexmark.ext.tables.TablesExtension;
+import com.vladsch.flexmark.html.AttributeProvider;
 import com.vladsch.flexmark.html.HtmlRenderer;
+import com.vladsch.flexmark.html.IndependentAttributeProviderFactory;
+import com.vladsch.flexmark.html.renderer.AttributablePart;
+import com.vladsch.flexmark.html.renderer.LinkResolverContext;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.ast.Document;
+import com.vladsch.flexmark.util.ast.Node;
 import com.vladsch.flexmark.util.data.MutableDataHolder;
 import com.vladsch.flexmark.util.data.MutableDataSet;
+import com.vladsch.flexmark.util.html.MutableAttributes;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
@@ -61,6 +68,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import javax.validation.constraints.NotNull;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -464,6 +472,10 @@ public final class Utils {
 		return "";
 	}
 
+	/////////////////////////////////////////////
+	//	    	   MARKDOWN UTILS
+	/////////////////////////////////////////////
+
 	private static MutableDataHolder getMarkdownOptions() {
 		return new MutableDataSet()
 				.set(HtmlRenderer.ESCAPE_HTML, true)
@@ -476,8 +488,13 @@ public final class Utils {
 				.set(TablesExtension.APPEND_MISSING_COLUMNS, true)
 				.set(TablesExtension.DISCARD_EXTRA_COLUMNS, true)
 				.set(TablesExtension.HEADER_SEPARATOR_COLUMN_MATCH, true)
-				.set(Parser.EXTENSIONS, Arrays.asList(TablesExtension.create(), EmojiExtension.create(),
-						StrikethroughExtension.create(), TaskListExtension.create(), AutolinkExtension.create(),
+				.set(Parser.EXTENSIONS, Arrays.asList(
+						TablesExtension.create(),
+						EmojiExtension.create(),
+						StrikethroughExtension.create(),
+						TaskListExtension.create(),
+						AutolinkExtension.create(),
+						RelAttributeExtension.create(),
 						MediaTagsExtension.create()));
 	}
 
@@ -485,7 +502,7 @@ public final class Utils {
 		Safelist whitelist = Safelist.relaxed();
 		whitelist.addTags("abbr", "hr", "del", "details", "summary", "center", "audio", "video", "source");
 		whitelist.addProtocols("a", "href", "#");
-		whitelist.addEnforcedAttribute("a", "rel", "nofollow");
+		whitelist.addEnforcedAttribute("a", "rel", "nofollow noreferrer");
 		whitelist.addAttributes("abbr", "title");
 		whitelist.addAttributes("th", "align");
 		whitelist.addAttributes("td", "align");
@@ -504,6 +521,31 @@ public final class Utils {
 		whitelist.addAttributes("h6", "id");
 		whitelist.addAttributes("h7", "id");
 		return whitelist;
+	}
+
+	static class RelAttributeExtension implements HtmlRenderer.HtmlRendererExtension {
+
+		public void rendererOptions(@NotNull MutableDataHolder options) { }
+
+		public void extend(@NotNull HtmlRenderer.Builder htmlRendererBuilder, @NotNull String rendererType) {
+			htmlRendererBuilder.attributeProviderFactory(new IndependentAttributeProviderFactory() {
+				public AttributeProvider apply(@NotNull LinkResolverContext context) {
+					return new RelAttributeProvider();
+				}
+			});
+		}
+
+		static RelAttributeExtension create() {
+			return new RelAttributeExtension();
+		}
+	}
+
+	static class RelAttributeProvider implements AttributeProvider {
+		public void setAttributes(@NotNull Node node, @NotNull AttributablePart part, @NotNull MutableAttributes attributes) {
+			if (node instanceof Link && part == AttributablePart.LINK) {
+				attributes.replaceValue("rel", "nofollow noreferrer");
+			}
+		}
 	}
 
 	/////////////////////////////////////////////
