@@ -28,7 +28,7 @@
 		<dependency>
 			<groupId>io.github.classgraph</groupId>
 			<artifactId>classgraph</artifactId>
-			<version>4.8.143</version>
+			<version>4.8.146</version>
 		</dependency>
 
 		<!--	 INJECT & JAX-RS -->
@@ -273,7 +273,7 @@
 		<dependency>
 			<groupId>io.github.hakky54</groupId>
 			<artifactId>sslcontext-kickstart</artifactId>
-			<version>7.3.0</version>
+			<version>7.4.1</version>
 		</dependency>
 	</dependencies>
 
