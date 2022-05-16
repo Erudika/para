@@ -330,13 +330,13 @@ public final class Utils {
 	 * @param template a Mustache template
 	 * @return the compiled template string
 	 */
-	public static String compileMustache(Map<String, Object> context, String template) {
+	public static String compileMustache(Map<String, Object> context, String template, boolean escapeHtml) {
 		if (context == null || StringUtils.isBlank(template)) {
 			return "";
 		}
 		Writer writer = new StringWriter();
 		try {
-			Mustache.compiler().escapeHTML(false).emptyStringIsFalse(true).compile(template).execute(context, writer);
+			Mustache.compiler().escapeHTML(escapeHtml).emptyStringIsFalse(true).compile(template).execute(context, writer);
 		} finally {
 			try {
 				writer.close();
@@ -345,6 +345,16 @@ public final class Utils {
 			}
 		}
 		return writer.toString();
+	}
+
+	/**
+	 * @see #compileMustache(java.util.Map, java.lang.String, boolean)
+	 * @param context a map of fields and values
+	 * @param template a Mustache template
+	 * @return the compiled template string
+	 */
+	public static String compileMustache(Map<String, Object> context, String template) {
+		return compileMustache(context, template, false);
 	}
 
 	/**

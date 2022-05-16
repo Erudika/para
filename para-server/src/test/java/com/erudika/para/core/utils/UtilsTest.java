@@ -17,17 +17,15 @@
  */
 package com.erudika.para.core.utils;
 
-import com.erudika.para.core.utils.Config;
-import com.erudika.para.core.utils.Utils;
-import com.erudika.para.core.annotations.Locked;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
 import com.erudika.para.core.Votable;
-import static com.erudika.para.core.utils.Utils.*;
+import com.erudika.para.core.annotations.Locked;
 import static com.erudika.para.core.utils.ParaObjectUtils.*;
+import static com.erudika.para.core.utils.Utils.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -114,6 +112,8 @@ public class UtilsTest {
 		Map<String, Object> map = new HashMap<>();
 		map.put("test", "string");
 		assertEquals("<html>string</html>", compileMustache(map, "<html>{{test}}</html>"));
+		map.put("test", "<b>string</b>");
+		assertEquals("<html>&lt;b&gt;string&lt;/b&gt;</html>", compileMustache(map, "<html>{{test}}</html>", true));
 	}
 
 	@Test
