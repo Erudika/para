@@ -13,7 +13,7 @@
 
 	<properties>
 		<springSecVer>5.6.3</springSecVer>
-		<springLdapVer>2.3.6.RELEASE</springLdapVer>
+		<springLdapVer>2.3.7.RELEASE</springLdapVer>
 	</properties>
 
 	<dependencies>
