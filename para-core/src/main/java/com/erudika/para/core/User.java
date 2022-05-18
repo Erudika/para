@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import javax.validation.constraints.Max;
 import javax.validation.constraints.NotBlank;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -44,6 +45,11 @@ import org.slf4j.LoggerFactory;
 public class User implements ParaObject {
 	private static final long serialVersionUID = 1L;
 	private static Logger logger = LoggerFactory.getLogger(User.class);
+
+	/**
+	 * Maximum password length.
+	 */
+	public static final int MAX_PASSWORD_LENGTH = 500;
 
 	@Stored @Locked private String id;
 	@Stored @Locked private Long timestamp;
@@ -74,7 +80,7 @@ public class User implements ParaObject {
 	@Stored private String idpAccessToken;
 	@Stored private String idpRefreshToken;
 
-	private transient String password;
+	private transient @Max(MAX_PASSWORD_LENGTH) String password;
 
 	/**
 	 * No-args constructor.

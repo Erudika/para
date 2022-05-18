@@ -17,12 +17,13 @@
  */
 package com.erudika.para.core.validation;
 
-import com.erudika.para.core.annotations.Email;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.Sysprop;
+import com.erudika.para.core.User;
+import com.erudika.para.core.annotations.Email;
 import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
 import static com.erudika.para.core.validation.Constraint.digits;
 import static com.erudika.para.core.validation.Constraint.email;
@@ -260,6 +261,8 @@ public final class ValidationUtils {
 					}
 				}
 			}
+			CORE_CONSTRAINTS.get(Utils.type(User.class)).put("password",
+					Collections.singletonMap("max", Constraint.max(User.MAX_PASSWORD_LENGTH).getPayload()));
 		}
 		return Collections.unmodifiableMap(CORE_CONSTRAINTS);
 	}
