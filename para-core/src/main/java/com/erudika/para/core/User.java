@@ -49,7 +49,7 @@ public class User implements ParaObject {
 	/**
 	 * Maximum password length.
 	 */
-	public static final int MAX_PASSWORD_LENGTH = 500;
+	public static final int MAX_PASSWORD_LENGTH = 5000;
 
 	@Stored @Locked private String id;
 	@Stored @Locked private Long timestamp;
