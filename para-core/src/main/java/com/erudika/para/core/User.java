@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
-import javax.validation.constraints.Max;
 import javax.validation.constraints.NotBlank;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -80,7 +79,7 @@ public class User implements ParaObject {
 	@Stored private String idpAccessToken;
 	@Stored private String idpRefreshToken;
 
-	private transient @Max(MAX_PASSWORD_LENGTH) String password;
+	private transient String password;
 
 	/**
 	 * No-args constructor.
