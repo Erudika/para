@@ -44,6 +44,8 @@ import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
@@ -53,6 +55,8 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter {
+
+	private static final Logger logger = LoggerFactory.getLogger(MicrosoftAuthFilter.class);
 
 	private final CloseableHttpClient httpclient;
 	private final ObjectReader jreader;

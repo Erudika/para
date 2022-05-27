@@ -32,6 +32,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
@@ -41,6 +43,8 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilter {
+
+	private static final Logger logger = LoggerFactory.getLogger(PasswordlessAuthFilter.class);
 
 	/**
 	 * The default filter mapping.

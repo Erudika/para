@@ -355,7 +355,7 @@ public class ParaClientIT {
 			s.addProperty("text", "a b c");
 			articles.add(s);
 		}
-
+		pcc.signOut();
 		Para.getDAO().deleteAll(pcc.findQuery("article", "*"));
 		List<Sysprop> l1 = pcc.createAll(articles);
 		assertEquals(3, l1.size());

@@ -60,7 +60,6 @@ public class SecurityModule extends AbstractModule {
 	private LdapAuthFilter ldapFilter;
 	private SAMLAuthFilter samlFilter;
 	private SAMLMetadataFilter samlMetaFilter;
-	private JWTRestfulAuthFilter jwtFilter;
 
 	protected void configure() {
 	}
@@ -440,49 +439,4 @@ public class SecurityModule extends AbstractModule {
 		this.samlMetaFilter = samleMetaFilter;
 	}
 
-	/**
-	 * @param fbAuth filter
-	 * @param gpAuth filter
-	 * @param ghAuth filter
-	 * @param liAuth filter
-	 * @param twAuth filter
-	 * @param msAuth filter
-	 * @param slAuth filter
-	 * @param azAuth filter
-	 * @param oAuth2 filter
-	 * @param ldAuth filter
-	 * @param pwAuth filter
-	 * @param plAuth filter
-	 * @return filter
-	 */
-	@Provides
-	public JWTRestfulAuthFilter getJWTAuthFilter(FacebookAuthFilter fbAuth, GoogleAuthFilter gpAuth,
-			GitHubAuthFilter ghAuth, LinkedInAuthFilter liAuth, TwitterAuthFilter twAuth,
-			MicrosoftAuthFilter msAuth, SlackAuthFilter slAuth, AmazonAuthFilter azAuth,
-			GenericOAuth2Filter oAuth2, LdapAuthFilter ldAuth,
-			PasswordAuthFilter pwAuth, PasswordlessAuthFilter plAuth) {
-		if (jwtFilter == null) {
-			jwtFilter = new JWTRestfulAuthFilter("/" + JWTRestfulAuthFilter.JWT_ACTION);
-			jwtFilter.setFacebookAuth(fbAuth);
-			jwtFilter.setGoogleAuth(gpAuth);
-			jwtFilter.setGithubAuth(ghAuth);
-			jwtFilter.setLinkedinAuth(liAuth);
-			jwtFilter.setTwitterAuth(twAuth);
-			jwtFilter.setMicrosoftAuth(msAuth);
-			jwtFilter.setSlackAuth(slAuth);
-			jwtFilter.setAmazonAuth(azAuth);
-			jwtFilter.setGenericOAuth2Auth(oAuth2);
-			jwtFilter.setLdapAuth(ldAuth);
-			jwtFilter.setPasswordAuth(pwAuth);
-			jwtFilter.setPasswordlessAuth(plAuth);
-		}
-		return jwtFilter;
-	}
-
-	/**
-	 * @param jwtFilter filter
-	 */
-	public void setJwtFilter(JWTRestfulAuthFilter jwtFilter) {
-		this.jwtFilter = jwtFilter;
-	}
 }

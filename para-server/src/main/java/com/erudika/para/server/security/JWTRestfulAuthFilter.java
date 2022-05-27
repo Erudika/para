@@ -34,6 +34,7 @@ import com.erudika.para.server.security.filters.LinkedInAuthFilter;
 import com.erudika.para.server.security.filters.MicrosoftAuthFilter;
 import com.erudika.para.server.security.filters.PasswordAuthFilter;
 import com.erudika.para.server.security.filters.PasswordlessAuthFilter;
+import com.erudika.para.server.security.filters.SAMLAuthFilter;
 import com.erudika.para.server.security.filters.SlackAuthFilter;
 import com.erudika.para.server.security.filters.TwitterAuthFilter;
 import com.nimbusds.jwt.SignedJWT;
@@ -52,6 +53,8 @@ import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
@@ -68,6 +71,8 @@ import org.springframework.web.filter.GenericFilterBean;
  */
 public class JWTRestfulAuthFilter extends GenericFilterBean {
 
+	private static final Logger logger = LoggerFactory.getLogger(JWTRestfulAuthFilter.class);
+
 	private AuthenticationManager authenticationManager;
 	private AntPathRequestMatcher authenticationRequestMatcher;
 
@@ -83,6 +88,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	private LdapAuthFilter ldapAuth;
 	private PasswordAuthFilter passwordAuth;
 	private PasswordlessAuthFilter passwordlessAuth;
+	private SAMLAuthFilter samlAuth;
 
 	/**
 	 * The default filter mapping.
@@ -91,10 +97,11 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 
 	/**
 	 * Default constructor.
-	 * @param defaultFilterProcessesUrl filter URL
+	 * @param authenticationManager auth manager
 	 */
-	public JWTRestfulAuthFilter(String defaultFilterProcessesUrl) {
-		setFilterProcessesUrl(defaultFilterProcessesUrl);
+	public JWTRestfulAuthFilter(AuthenticationManager authenticationManager) {
+		this.authenticationManager = authenticationManager;
+		setFilterProcessesUrl("/" + JWT_ACTION);
 	}
 
 	@Override
@@ -201,7 +208,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 					}
 				}
 			} catch (Exception ex) {
-				logger.debug(ex);
+				logger.debug(null, ex);
 			}
 		}
 		response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer error=\"invalid_token\"");
@@ -226,7 +233,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 					}
 				}
 			} catch (Exception ex) {
-				logger.debug(ex);
+				logger.debug(null, ex);
 			}
 		}
 		response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
@@ -485,6 +492,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	/**
 	 * @param ldapAuth auth filter
 	 */
+	@Inject
 	public void setLdapAuth(LdapAuthFilter ldapAuth) {
 		this.ldapAuth = ldapAuth;
 	}
@@ -517,6 +525,21 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	@Inject
 	public void setPasswordlessAuth(PasswordlessAuthFilter passwordlessAuth) {
 		this.passwordlessAuth = passwordlessAuth;
+	}
+
+	/**
+	 * @return auth filter
+	 */
+	public SAMLAuthFilter getSamlAuth() {
+		return samlAuth;
+	}
+
+	/**
+	 * @param samlAuth auth filter
+	 */
+	@Inject
+	public void setSamlAuth(SAMLAuthFilter samlAuth) {
+		this.samlAuth = samlAuth;
 	}
 
 	private void validateDelegatedTokenIfNecessary(JWTAuthentication jwt) throws AuthenticationException, IOException {
