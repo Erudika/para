@@ -10,7 +10,7 @@ RUN cd /para/para-master && mvn -q install -DskipTests=true -DskipITs=true && \
 FROM adoptopenjdk/openjdk11:alpine-jre
 
 ENV BOOT_SLEEP=0 \
-    JAVA_OPTS=""
+    JAVA_OPTS="-Dloader.path=lib"
 
 RUN mkdir -p /para/lib &&	mkdir -p /para/data
 
