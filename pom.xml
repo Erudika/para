@@ -84,7 +84,7 @@
 		<awsJdkVer>2.17.160</awsJdkVer>
 		<jerseyVer>2.35</jerseyVer>
 		<springBootVer>2.7.0</springBootVer>
-		<metricsVer>4.2.5</metricsVer>
+		<metricsVer>4.2.9</metricsVer>
 		<httpClientVer>5.1.3</httpClientVer>
 		<httpCoreVer>5.1.3</httpCoreVer>
 		<commonsCodecVer>1.15</commonsCodecVer>
