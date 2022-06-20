@@ -611,6 +611,27 @@ public class ParaConfig extends Config {
 		return NumberUtils.toInt(getConfigParam("pass_reset_timeout", ""), 30 * 60);
 	}
 
+	@Documented(position = 571,
+			identifier = "max_pass_matching_attemts",
+			value = "20",
+			type = Integer.class,
+			category = "Security",
+			description = "The maximum number of passord matching attempts for user accounts per time unit. "
+					+ "After that the account is locked and user cannot login until the lock has expired.")
+	public int maxPasswordMatchingAttempts() {
+		return NumberUtils.toInt(getConfigParam("max_pass_matching_attemts", ""), 20);
+	}
+
+	@Documented(position = 572,
+			identifier = "pass_matching_lock_period_hours",
+			value = "1",
+			type = Integer.class,
+			category = "Security",
+			description = "The time to force a user to wait until they can try to log back in, in hours.")
+	public int passwordMatchingLockPeriodHours() {
+		return NumberUtils.toInt(getConfigParam("pass_matching_lock_period_hours", ""), 1);
+	}
+
 	@Documented(position = 580,
 			identifier = "returnto_cookie",
 			value = "para-returnto",

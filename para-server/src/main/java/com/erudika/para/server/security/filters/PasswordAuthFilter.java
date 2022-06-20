@@ -24,10 +24,12 @@ import com.erudika.para.server.security.AuthenticatedUserDetails;
 import com.erudika.para.server.security.SecurityUtils;
 import com.erudika.para.server.security.UserAuthentication;
 import java.io.IOException;
+import javax.naming.LimitExceededException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
@@ -79,10 +81,15 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 					user.setAppid(app.getAppIdentifier());
 				}
 			}
-			if (User.passwordMatches(user) && StringUtils.contains(user.getIdentifier(), "@")) {
-				//success!
-				user = User.readUserForIdentifier(user);
-				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+			try {
+				if (User.passwordMatches(user) && StringUtils.contains(user.getIdentifier(), "@")) {
+					//success!
+					user = User.readUserForIdentifier(user);
+					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+				}
+			} catch (LimitExceededException e) {
+				throw new LockedException("Too many attempts - account " + user.getId() + " (" + user.getAppid() + "/"
+						+ user.getIdentifier() + ") is locked.");
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, true);
@@ -113,21 +120,26 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 			// NOTE TO SELF:
 			// do not overwrite 'u' here - overwrites the password hash!
 			user = User.readUserForIdentifier(u);
-			if (user == null) {
-				user = new User();
-				user.setActive(Boolean.parseBoolean(Para.getConfig().getSettingForApp(app, "security.allow_unverified_emails",
-						Boolean.toString(Para.getConfig().allowUnverifiedEmails()))));
-				user.setAppid(appid);
-				user.setName(name);
-				user.setIdentifier(email);
-				user.setEmail(email);
-				user.setPassword(pass);
-				if (user.create() != null) {
-					// allow temporary first-time login without verifying email address
+			try {
+				if (user == null) {
+					user = new User();
+					user.setActive(Boolean.parseBoolean(Para.getConfig().getSettingForApp(app, "security.allow_unverified_emails",
+							Boolean.toString(Para.getConfig().allowUnverifiedEmails()))));
+					user.setAppid(appid);
+					user.setName(name);
+					user.setIdentifier(email);
+					user.setEmail(email);
+					user.setPassword(pass);
+					if (user.create() != null) {
+						// allow temporary first-time login without verifying email address
+						userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+					}
+				} else if (User.passwordMatches(u)) {
 					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 				}
-			} else if (User.passwordMatches(u)) {
-				userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
+			}catch (LimitExceededException e) {
+				throw new LockedException("Too many attempts - account " + user.getId() + " (" + user.getAppid() + "/"
+						+ user.getIdentifier() + ") is locked.");
 			}
 		}
 		return SecurityUtils.checkIfActive(userAuth, user, false);

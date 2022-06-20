@@ -18,11 +18,12 @@
 package com.erudika.para.core;
 
 import com.erudika.para.core.User.Groups;
-import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.persistence.DAO;
 import com.erudika.para.core.search.Search;
 import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Pager;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.core.validation.ValidationUtils;
 import java.util.ArrayList;
@@ -30,11 +31,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import javax.naming.LimitExceededException;
 import org.junit.After;
-import org.junit.Test;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 import org.junit.Before;
+import org.junit.Test;
+import static org.mockito.Mockito.*;
 
 /**
  *
@@ -268,7 +270,7 @@ public class UserTest {
 	}
 
 	@Test
-	public void testPasswordMatches() {
+	public void testPasswordMatches() throws LimitExceededException {
 		User u = u();
 		u.create();
 		u.setPassword("123456");
@@ -288,6 +290,14 @@ public class UserTest {
 		u1.setPassword(u.getPassword());
 		u1.setIdentifier(null);
 		assertFalse(User.passwordMatches(u1));
+
+		u1.setIdentifier(u.getIdentifier());
+		u1.setPassword("-----");
+		assertThrows(LimitExceededException.class, () -> {
+			for (int i = 0; i < Para.getConfig().maxPasswordMatchingAttempts(); i++) {
+				assertFalse(User.passwordMatches(u1));
+			}
+		});
 	}
 
 	@Test
@@ -313,7 +323,7 @@ public class UserTest {
 	}
 
 	@Test
-	public void testResetPassword() {
+	public void testResetPassword() throws LimitExceededException {
 		User u = u();
 		u.create();
 		String token = u.generatePasswordResetToken();

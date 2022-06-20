@@ -32,6 +32,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import javax.naming.LimitExceededException;
 import javax.validation.constraints.NotBlank;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -687,8 +689,9 @@ public class User implements ParaObject {
 	 * Compares password hashes.
 	 * @param u a user with a set password
 	 * @return true if password matches the one in the data store
+	 * @throws LimitExceededException if rate limit is exceeded when password doesn't match.
 	 */
-	public static final boolean passwordMatches(User u) {
+	public static final boolean passwordMatches(User u) throws LimitExceededException {
 		if (u == null) {
 			return false;
 		}
@@ -701,7 +704,30 @@ public class User implements ParaObject {
 		if (s != null) {
 			if (s instanceof Sysprop) {
 				String storedHash = (String) ((Sysprop) s).getProperty(Config._PASSWORD);
-				return Utils.bcryptMatches(password, storedHash);
+
+				if (((Sysprop) s).hasProperty("lockedUntil") &&
+						(long) ((Sysprop) s).getProperty("lockedUntil") > System.currentTimeMillis()) {
+					logger.warn("Too many login attempts for user {} ({}/{}), account locked.",
+							u.getId(), u.getAppid(), identifier);
+					throw new LimitExceededException("Too many login attempts!");
+				}
+
+				boolean matches = Utils.bcryptMatches(password, storedHash);
+				if (matches) {
+					((Sysprop) s).setVotes(0);
+					((Sysprop) s).removeProperty("lockedUntil");
+					CoreUtils.getInstance().getDao().update(u.getAppid(), s);
+				} else {
+					((Sysprop) s).setVotes(((Sysprop) s).getVotes() + 1);
+					if (((Sysprop) s).getVotes() >= Para.getConfig().maxPasswordMatchingAttempts()) {
+						((Sysprop) s).addProperty("lockedUntil", System.currentTimeMillis() +
+								TimeUnit.HOURS.toNanos(Para.getConfig().passwordMatchingLockPeriodHours()));
+						CoreUtils.getInstance().getDao().update(u.getAppid(), s);
+					} else {
+						CoreUtils.getInstance().getDao().update(u.getAppid(), s);
+					}
+				}
+				return matches;
 			} else {
 				LoggerFactory.getLogger(User.class).
 						warn(Utils.formatMessage("Failed to read auth object for user '{}' using identifier '{}'.",
