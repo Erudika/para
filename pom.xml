@@ -89,7 +89,7 @@
 		<httpCoreVer>5.1.3</httpCoreVer>
 		<commonsCodecVer>1.15</commonsCodecVer>
 		<lucenePluginVer>1.45.3</lucenePluginVer>
-		<sqlPluginVer>1.45.3</sqlPluginVer>
+		<sqlPluginVer>1.45.4</sqlPluginVer>
 	</properties>
 
 	<dependencies>
