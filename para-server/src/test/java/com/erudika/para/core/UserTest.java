@@ -298,6 +298,7 @@ public class UserTest {
 				assertFalse(User.passwordMatches(u1));
 			}
 		});
+		u.delete();
 	}
 
 	@Test

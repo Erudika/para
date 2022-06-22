@@ -137,7 +137,7 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 				} else if (User.passwordMatches(u)) {
 					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 				}
-			}catch (LimitExceededException e) {
+			} catch (LimitExceededException e) {
 				throw new LockedException("Too many attempts - account " + user.getId() + " (" + user.getAppid() + "/"
 						+ user.getIdentifier() + ") is locked.");
 			}

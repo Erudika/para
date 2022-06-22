@@ -704,20 +704,18 @@ public class User implements ParaObject {
 		if (s != null) {
 			if (s instanceof Sysprop) {
 				String storedHash = (String) ((Sysprop) s).getProperty(Config._PASSWORD);
-
-				if (((Sysprop) s).hasProperty("lockedUntil") &&
-						(long) ((Sysprop) s).getProperty("lockedUntil") > System.currentTimeMillis()) {
-					logger.warn("Too many login attempts for user {} ({}/{}), account locked.",
-							u.getId(), u.getAppid(), identifier);
-					throw new LimitExceededException("Too many login attempts!");
-				}
-
 				boolean matches = Utils.bcryptMatches(password, storedHash);
 				if (matches) {
 					((Sysprop) s).setVotes(0);
 					((Sysprop) s).removeProperty("lockedUntil");
 					CoreUtils.getInstance().getDao().update(u.getAppid(), s);
 				} else {
+					if (((Sysprop) s).hasProperty("lockedUntil") &&
+							(long) ((Sysprop) s).getProperty("lockedUntil") > System.currentTimeMillis()) {
+						logger.warn("Too many login attempts for user {} ({}/{}), account locked.",
+								u.getId(), u.getAppid(), identifier);
+						throw new LimitExceededException("Too many login attempts!");
+					}
 					((Sysprop) s).setVotes(((Sysprop) s).getVotes() + 1);
 					if (((Sysprop) s).getVotes() >= Para.getConfig().maxPasswordMatchingAttempts()) {
 						((Sysprop) s).addProperty("lockedUntil", System.currentTimeMillis() +
