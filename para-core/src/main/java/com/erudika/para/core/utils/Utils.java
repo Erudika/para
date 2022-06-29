@@ -20,7 +20,7 @@ package com.erudika.para.core.utils;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.annotations.Email;
 import com.samskivert.mustache.Mustache;
-import com.vladsch.flexmark.ast.Link;
+import com.vladsch.flexmark.ast.LinkNode;
 import com.vladsch.flexmark.ext.autolink.AutolinkExtension;
 import com.vladsch.flexmark.ext.emoji.EmojiExtension;
 import com.vladsch.flexmark.ext.emoji.EmojiImageType;
@@ -552,8 +552,8 @@ public final class Utils {
 
 	static class RelAttributeProvider implements AttributeProvider {
 		public void setAttributes(@NotNull Node node, @NotNull AttributablePart part, @NotNull MutableAttributes attributes) {
-			if (node instanceof Link && part == AttributablePart.LINK) {
-				attributes.replaceValue("rel", "nofollow noreferrer");
+			if (node instanceof LinkNode && part == AttributablePart.LINK) {
+				attributes.addValue("rel", "nofollow noreferrer");
 			}
 		}
 	}

@@ -106,6 +106,13 @@ public class UtilsTest {
 	}
 
 	@Test
+	public void testMarkdownToHtml_should_add_nofollow_and_noreferer_if_link() {
+		assertEquals(markdownToHtml("test [fdsdfd](https://www.example.com) test", false).trim(), "<p>test <a href=\"https://www.example.com\" rel=\"nofollow noreferrer\">fdsdfd</a> test</p>");
+		assertEquals(markdownToHtml("test https://www.example.com test", false).trim(), "<p>test <a href=\"https://www.example.com\" rel=\"nofollow noreferrer\">https://www.example.com</a> test</p>");
+		assertEquals(markdownToHtml("test www.example.com test", false).trim(), "<p>test <a href=\"https://www.example.com\" rel=\"nofollow noreferrer\">www.example.com</a> test</p>");
+	}
+
+	@Test
 	public void testCompileMustache() {
 		assertNotNull(compileMustache(null, ""));
 		assertNotNull(compileMustache(new HashMap<>(), "test"));
