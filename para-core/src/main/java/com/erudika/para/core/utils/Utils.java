@@ -565,7 +565,7 @@ public final class Utils {
 		}
 
 		public void setAttributes(@NotNull Node node, @NotNull AttributablePart part, @NotNull MutableAttributes attributes) {
-			if (!(node instanceof LinkNode) || part != AttributablePart.LINK) {
+if (!(node instanceof LinkNode) || !part.equals(AttributablePart.LINK)) {
 				return;
 			}
 
