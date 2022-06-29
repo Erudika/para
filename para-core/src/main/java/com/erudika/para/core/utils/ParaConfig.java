@@ -1969,9 +1969,9 @@ public class ParaConfig extends Config {
 
 	@Documented(position = 1871,
 			identifier = "markdown_allowed_follow_domains",
-			value = "",
 			category = "Miscellaneous",
-			description = "Not add nofollow and noreferrer for this domains (comma-separated list).")
+			description = "A whitelist of domains, links to which will be allowed to be followed by web "
+					+ "crawlers (comma-separated list).")
 	public String[] markdownAllowFollowDomains() {
 		return StringUtils.split(getConfigParam("markdown_allowed_follow_domains", ""), ',');
 	}
