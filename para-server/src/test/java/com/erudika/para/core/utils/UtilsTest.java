@@ -106,6 +106,25 @@ public class UtilsTest {
 	}
 
 	@Test
+	public void testMarkdownToHtml_should_add_nofollow_and_noreferer_if_link() {
+		assertEquals(markdownToHtml("test [fdsdfd](https://www.example.com) test", false).trim(), "<p>test <a href=\"https://www.example.com\" rel=\"nofollow noreferrer\">fdsdfd</a> test</p>");
+		assertEquals(markdownToHtml("test https://www.example.com test", false).trim(), "<p>test <a href=\"https://www.example.com\" rel=\"nofollow noreferrer\">https://www.example.com</a> test</p>");
+		assertEquals(markdownToHtml("test www.example.com test", false).trim(), "<p>test <a href=\"https://www.example.com\" rel=\"nofollow noreferrer\">www.example.com</a> test</p>");
+		assertEquals(markdownToHtml("test test@example.com test", false).trim(), "<p>test <a href=\"mailto:test@example.com\" rel=\"nofollow noreferrer\">test@example.com</a> test</p>");
+	}
+
+	@Test
+	public void testMarkdownToHtml_should_not_add_nofollow_and_noreferer_if_allowed_domain() {
+		System.setProperty("para.markdown_allowed_follow_domains", "allow.example.com,www.example2.com");
+
+		assertEquals(markdownToHtml("test https://www.example.com test", false).trim(), "<p>test <a href=\"https://www.example.com\" rel=\"nofollow noreferrer\">https://www.example.com</a> test</p>");
+		assertEquals(markdownToHtml("test https://allow.example.com test", false).trim(), "<p>test <a href=\"https://allow.example.com\">https://allow.example.com</a> test</p>");
+		assertEquals(markdownToHtml("test https://allow.example2.com test", false).trim(), "<p>test <a href=\"https://allow.example2.com\" rel=\"nofollow noreferrer\">https://allow.example2.com</a> test</p>");
+		assertEquals(markdownToHtml("test https://www.example2.com test", false).trim(), "<p>test <a href=\"https://www.example2.com\">https://www.example2.com</a> test</p>");
+		assertEquals(markdownToHtml("test https://www2.example2.com test", false).trim(), "<p>test <a href=\"https://www2.example2.com\" rel=\"nofollow noreferrer\">https://www2.example2.com</a> test</p>");
+	}
+
+	@Test
 	public void testCompileMustache() {
 		assertNotNull(compileMustache(null, ""));
 		assertNotNull(compileMustache(new HashMap<>(), "test"));

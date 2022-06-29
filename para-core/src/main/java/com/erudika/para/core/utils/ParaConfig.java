@@ -1967,6 +1967,15 @@ public class ParaConfig extends Config {
 		return getConfigParam("markdown_soft_break", "<br>");
 	}
 
+	@Documented(position = 1871,
+			identifier = "markdown_allowed_follow_domains",
+			value = "",
+			category = "Miscellaneous",
+			description = "Not add nofollow and noreferrer for this domains (comma-separated list).")
+	public String[] markdownAllowFollowDomains() {
+		return StringUtils.split(getConfigParam("markdown_allowed_follow_domains", ""), ',');
+	}
+
 	@Documented(position = 1880,
 			identifier = "aws_ses_region",
 			value = "eu-west-1",
