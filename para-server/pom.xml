@@ -12,8 +12,8 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>5.7.1</springSecVer>
-		<springLdapVer>2.4.0</springLdapVer>
+		<springSecVer>5.7.2</springSecVer>
+		<springLdapVer>2.4.1</springLdapVer>
 	</properties>
 
 	<dependencies>
