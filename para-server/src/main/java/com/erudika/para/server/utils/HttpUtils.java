@@ -18,6 +18,7 @@
 package com.erudika.para.server.utils;
 
 import com.erudika.para.core.utils.Para;
+import com.erudika.para.server.security.SecurityUtils;
 import java.util.TimeZone;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -160,6 +161,9 @@ public final class HttpUtils {
 		sb.append("Expires=").append(expires).append(";");
 		sb.append("Max-Age=").append(maxAge).append(";");
 		sb.append("HttpOnly;");
+		if (StringUtils.startsWithIgnoreCase(SecurityUtils.getRedirectUrl(request), "https://") || request.isSecure()) {
+			sb.append("Secure;");
+		}
 		sb.append("SameSite=Lax");
 		response.addHeader(javax.ws.rs.core.HttpHeaders.SET_COOKIE, sb.toString());
 	}

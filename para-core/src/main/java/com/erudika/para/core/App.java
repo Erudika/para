@@ -926,8 +926,8 @@ public class App implements ParaObject, Serializable {
 			return;
 		}
 		if (getDatatypes().size() >= Para.getConfig().maxDatatypesPerApp()) {
-			LoggerFactory.getLogger(App.class).warn("Maximum number of types per app reached - {}.",
-					Para.getConfig().maxDatatypesPerApp());
+			LoggerFactory.getLogger(App.class).warn("Maximum number of types per app reached ({}) for app {}.",
+					Para.getConfig().maxDatatypesPerApp(), getAppIdentifier());
 			return;
 		}
 		if (!getDatatypes().containsKey(pluralDatatype) && !getDatatypes().containsValue(datatype) &&
