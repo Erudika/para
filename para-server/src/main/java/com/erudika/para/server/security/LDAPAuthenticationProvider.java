@@ -51,9 +51,15 @@ public class LDAPAuthenticationProvider implements AuthenticationProvider {
 				String ldapServerURL = ldapSettings.get("security.ldap.server_url");
 				String searchFilter = ldapSettings.get("security.ldap.user_search_filter");
 				AbstractLdapAuthenticationProvider ldapProvider;
-				if ("true".equals(adEnabled) || !StringUtils.isBlank(adDomain)) {
+				if (adEnabled.equals("true") || !StringUtils.isBlank(adDomain)) {
+					// check if the ad domain is provided, if not don't strip the domain from the auth username
+					String upn = auth.getName();
+					if (!adDomain.isEmpty()) {
+						upn = StringUtils.substringBefore(upn, "@");
+					}
+
 					// Fix for https://github.com/Erudika/scoold/issues/67
-					authentication = new LDAPAuthentication(StringUtils.substringBefore(auth.getName(), "@"), auth.getCredentials());
+					authentication = new LDAPAuthentication(upn, auth.getCredentials());
 					String rootDn = ldapSettings.get("security.ldap.base_dn");
 					ldapProvider = StringUtils.isBlank(rootDn)
 							? new ActiveDirectoryLdapAuthenticationProvider(adDomain, ldapServerURL)
