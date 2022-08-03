@@ -942,6 +942,7 @@ public class ParaConfig extends Config {
 		if (app != null) {
 			ldapSettings.put("security.ldap.server_url", "ldap://localhost:8389/");
 			ldapSettings.put("security.ldap.active_directory_domain", "");
+			ldapSettings.put("security.ldap.ad_mode_enabled", "");
 			ldapSettings.put("security.ldap.base_dn", "dc=springframework,dc=org");
 			ldapSettings.put("security.ldap.bind_dn", "");
 			ldapSettings.put("security.ldap.bind_pass", "");
