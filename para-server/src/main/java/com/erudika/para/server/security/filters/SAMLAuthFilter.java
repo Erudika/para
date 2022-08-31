@@ -17,14 +17,14 @@
  */
 package com.erudika.para.server.security.filters;
 
-import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
+import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.security.AuthenticatedUserDetails;
 import com.erudika.para.server.security.SecurityUtils;
 import com.erudika.para.server.security.UserAuthentication;
-import com.erudika.para.core.utils.Config;
-import com.erudika.para.core.utils.Utils;
 import com.onelogin.saml2.Auth;
 import com.onelogin.saml2.exception.SettingsException;
 import static com.onelogin.saml2.settings.IdPMetadataParser.parseRemoteXML;
@@ -40,6 +40,7 @@ import static com.onelogin.saml2.settings.SettingsBuilder.SECURITY_SIGN_METADATA
 import static com.onelogin.saml2.settings.SettingsBuilder.SECURITY_WANT_ASSERTIONS_ENCRYPTED;
 import static com.onelogin.saml2.settings.SettingsBuilder.SECURITY_WANT_ASSERTIONS_SIGNED;
 import static com.onelogin.saml2.settings.SettingsBuilder.SECURITY_WANT_MESSAGES_SIGNED;
+import static com.onelogin.saml2.settings.SettingsBuilder.SECURITY_WANT_NAMEID;
 import static com.onelogin.saml2.settings.SettingsBuilder.SECURITY_WANT_NAMEID_ENCRYPTED;
 import static com.onelogin.saml2.settings.SettingsBuilder.SECURITY_WANT_XML_VALIDATION;
 import static com.onelogin.saml2.settings.SettingsBuilder.SP_ASSERTION_CONSUMER_SERVICE_URL_PROPERTY_KEY;
@@ -330,6 +331,7 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 		conf.put(SECURITY_WANT_MESSAGES_SIGNED, getConfigPropBool(app, SECURITY_WANT_MESSAGES_SIGNED, false));
 		conf.put(SECURITY_WANT_ASSERTIONS_SIGNED, getConfigPropBool(app, SECURITY_WANT_ASSERTIONS_SIGNED, false));
 		conf.put(SECURITY_WANT_ASSERTIONS_ENCRYPTED, getConfigPropBool(app, SECURITY_WANT_ASSERTIONS_ENCRYPTED, false));
+		conf.put(SECURITY_WANT_NAMEID, getConfigPropBool(app, SECURITY_WANT_NAMEID, true));
 		conf.put(SECURITY_WANT_NAMEID_ENCRYPTED, getConfigPropBool(app, SECURITY_WANT_NAMEID_ENCRYPTED, false));
 		conf.put(SECURITY_SIGN_METADATA, getConfigPropBool(app, SECURITY_SIGN_METADATA, false));
 		conf.put(SECURITY_WANT_XML_VALIDATION, getConfigPropBool(app, SECURITY_WANT_XML_VALIDATION, true));
