@@ -60,7 +60,6 @@ import java.text.MessageFormat;
 import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -505,7 +504,7 @@ public final class Utils {
 						StrikethroughExtension.create(),
 						TaskListExtension.create(),
 						AutolinkExtension.create(),
-						RelAttributeExtension.create(Arrays.asList(Para.getConfig().markdownAllowFollowDomains())),
+						RelAttributeExtension.create(),
 						MediaTagsExtension.create()));
 	}
 
@@ -536,33 +535,26 @@ public final class Utils {
 
 	static class RelAttributeExtension implements HtmlRenderer.HtmlRendererExtension {
 
-		private final HashSet<String> ignoredDomains;
-
-		RelAttributeExtension(List<String> ignoredDomains) {
-			this.ignoredDomains = new HashSet<>(ignoredDomains);
-		}
+		RelAttributeExtension() { }
 
 		public void rendererOptions(@NotNull MutableDataHolder options) { }
 
 		public void extend(@NotNull HtmlRenderer.Builder htmlRendererBuilder, @NotNull String rendererType) {
 			htmlRendererBuilder.attributeProviderFactory(new IndependentAttributeProviderFactory() {
 				public AttributeProvider apply(@NotNull LinkResolverContext context) {
-					return new RelAttributeProvider(ignoredDomains);
+					return new RelAttributeProvider();
 				}
 			});
 		}
 
-		static RelAttributeExtension create(List<String> ignoredDomains) {
-			return new RelAttributeExtension(ignoredDomains);
+		static RelAttributeExtension create() {
+			return new RelAttributeExtension();
 		}
 	}
 
 	static class RelAttributeProvider implements AttributeProvider {
-		private final HashSet<String> ignoredDomains;
 
-		RelAttributeProvider(HashSet<String> ignoredDomains) {
-			this.ignoredDomains = ignoredDomains;
-		}
+		RelAttributeProvider() { }
 
 		public void setAttributes(@NotNull Node node, @NotNull AttributablePart part, @NotNull MutableAttributes attributes) {
 			if (!(node instanceof LinkNode) || !part.equals(AttributablePart.LINK)) {
@@ -579,7 +571,7 @@ public final class Utils {
 		private Boolean isIgnoredDomain(String value) {
 			try {
 				var href = new URL(value);
-				return ignoredDomains.contains(href.getHost());
+				return Arrays.binarySearch(Para.getConfig().markdownAllowFollowDomains(), href.getHost()) >= 0;
 			} catch (MalformedURLException e) {
 				return false;
 			}
