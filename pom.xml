@@ -81,12 +81,12 @@
 		<deployPluginVer>2.8.2</deployPluginVer>
 		<slf4jVer>1.7.36</slf4jVer>
 		<logbackVer>1.2.11</logbackVer>
-		<awsJdkVer>2.17.214</awsJdkVer>
+		<awsJdkVer>2.17.264</awsJdkVer>
 		<jerseyVer>2.36</jerseyVer>
 		<springBootVer>2.7.3</springBootVer>
 		<metricsVer>4.2.9</metricsVer>
 		<httpClientVer>5.1.3</httpClientVer>
-		<httpCoreVer>5.1.3</httpCoreVer>
+		<httpCoreVer>5.1.4</httpCoreVer>
 		<commonsCodecVer>1.15</commonsCodecVer>
 		<lucenePluginVer>1.45.4</lucenePluginVer>
 		<sqlPluginVer>1.45.4</sqlPluginVer>
