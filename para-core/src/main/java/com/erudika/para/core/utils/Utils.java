@@ -328,6 +328,7 @@ public final class Utils {
 	 * Compiles a mustache template with a given scope (map of fields and values).
 	 * @param context a map of fields and values
 	 * @param template a Mustache template
+	 * @param escapeHtml enable/disable escaping of HTML
 	 * @return the compiled template string
 	 */
 	public static String compileMustache(Map<String, Object> context, String template, boolean escapeHtml) {
