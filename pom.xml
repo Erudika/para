@@ -80,7 +80,7 @@
 		<skipUTs>${skipTests}</skipUTs>
 		<deployPluginVer>2.8.2</deployPluginVer>
 		<slf4jVer>1.7.36</slf4jVer>
-		<logbackVer>1.2.11</logbackVer>
+		<logbackVer>1.4.1</logbackVer>
 		<awsJdkVer>[2.17.279,)</awsJdkVer>
 		<jerseyVer>2.37</jerseyVer>
 		<springBootVer>2.7.4</springBootVer>
