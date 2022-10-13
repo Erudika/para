@@ -314,6 +314,27 @@ public final class Para {
 	}
 
 	/**
+	 * Creates a simple rate limiter.
+	 * @param rateLimitPerMin rate limit per minute
+	 * @param rateLimitPerHour rate limit per hour
+	 * @return a new rate limiter instance
+	 */
+	public static RateLimiter createRateLimiter(int rateLimitPerMin, int rateLimitPerHour) {
+		return new RateLimiter(rateLimitPerMin, rateLimitPerHour);
+	}
+
+	/**
+	 * Creates a simple rate limiter.
+	 * @param rateLimitPerMin rate limit per minute
+	 * @param rateLimitPerHour rate limit per hour
+	 * @param rateLimitPerDay rate limit per day
+	 * @return a new rate limiter instance
+	 */
+	public static RateLimiter createRateLimiter(int rateLimitPerMin, int rateLimitPerHour, int rateLimitPerDay) {
+		return new RateLimiter(rateLimitPerMin, rateLimitPerHour, rateLimitPerDay);
+	}
+
+	/**
 	 * Try loading external {@link com.erudika.para.core.rest.CustomResourceHandler} classes.
 	 * These will handle custom API requests.
 	 * via {@link java.util.ServiceLoader#load(java.lang.Class)}.
