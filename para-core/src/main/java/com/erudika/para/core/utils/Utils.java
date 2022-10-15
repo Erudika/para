@@ -74,7 +74,6 @@ import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
-import org.apache.commons.text.StringEscapeUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
 import org.mindrot.jbcrypt.BCrypt;
@@ -278,15 +277,6 @@ public final class Utils {
 	/////////////////////////////////////////////
 	//	    	   STRING UTILS
 	/////////////////////////////////////////////
-
-	/**
-	 * Escapes JavaScript.
-	 * @param str a javascript string
-	 * @return the escaped javascript string
-	 */
-	public static String escapeJavascript(String str) {
-		return (str == null) ? "" : StringEscapeUtils.escapeEcmaScript(str);
-	}
 
 	/**
 	 * Strips all HTML tags from a string.

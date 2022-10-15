@@ -84,11 +84,11 @@ public class UtilsTest {
 		assertNotEquals(tok1, tok2);
 	}
 
-	@Test
-	public void testEscapeJavascript() {
-		assertNotNull(escapeJavascript(null));
-		assertNotNull(escapeJavascript(""));
-	}
+//	@Test
+//	public void testEscapeJavascript() {
+//		assertNotNull(escapeJavascript(null));
+//		assertNotNull(escapeJavascript(""));
+//	}
 
 	@Test
 	public void testStripHtml() {

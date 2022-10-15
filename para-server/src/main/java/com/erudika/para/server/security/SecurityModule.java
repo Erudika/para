@@ -45,7 +45,6 @@ public class SecurityModule extends AbstractModule {
 	private CachedCsrfTokenRepository csrfTokenRepository;
 	private SimpleAuthenticationSuccessHandler successHandler;
 	private SimpleAuthenticationFailureHandler failureHandler;
-	private SimpleRememberMeServices rememberMeServices;
 	private PasswordAuthFilter passwordFilter;
 	private PasswordlessAuthFilter passwordlessFilter;
 	private FacebookAuthFilter facebookFilter;
@@ -125,30 +124,6 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
-	 * @return service
-	 */
-	@Provides
-	public SimpleRememberMeServices getRemembeMeServices() {
-		if (rememberMeServices == null) {
-			String authCookie = Para.getConfig().authCookieName();
-			rememberMeServices = new SimpleRememberMeServices(Para.getConfig().appSecretKey(), new SimpleUserService());
-			rememberMeServices.setAlwaysRemember(Para.getConfig().rememberMeEnabled());
-			rememberMeServices.setTokenValiditySeconds(Para.getConfig().sessionTimeoutSec());
-			rememberMeServices.setCookieName(authCookie);
-			rememberMeServices.setParameter(authCookie.concat("-remember-me"));
-
-		}
-		return rememberMeServices;
-	}
-
-	/**
-	 * @param rememberMeServices service
-	 */
-	public void setRememberMeServices(SimpleRememberMeServices rememberMeServices) {
-		this.rememberMeServices = rememberMeServices;
-	}
-
-	/**
 	 * @return filter
 	 */
 	@Provides
@@ -157,7 +132,6 @@ public class SecurityModule extends AbstractModule {
 			passwordFilter = new PasswordAuthFilter("/" + PasswordAuthFilter.PASSWORD_ACTION);
 			passwordFilter.setAuthenticationSuccessHandler(getSuccessHandler());
 			passwordFilter.setAuthenticationFailureHandler(getFailureHandler());
-			passwordFilter.setRememberMeServices(getRemembeMeServices());
 		}
 		return passwordFilter;
 	}
@@ -178,7 +152,6 @@ public class SecurityModule extends AbstractModule {
 			passwordlessFilter = new PasswordlessAuthFilter("/" + PasswordlessAuthFilter.PASSWORDLESS_ACTION);
 			passwordlessFilter.setAuthenticationSuccessHandler(getSuccessHandler());
 			passwordlessFilter.setAuthenticationFailureHandler(getFailureHandler());
-			passwordlessFilter.setRememberMeServices(getRemembeMeServices());
 		}
 		return passwordlessFilter;
 	}
@@ -199,7 +172,6 @@ public class SecurityModule extends AbstractModule {
 			facebookFilter = new FacebookAuthFilter("/" + FacebookAuthFilter.FACEBOOK_ACTION);
 			facebookFilter.setAuthenticationSuccessHandler(getSuccessHandler());
 			facebookFilter.setAuthenticationFailureHandler(getFailureHandler());
-			facebookFilter.setRememberMeServices(getRemembeMeServices());
 		}
 		return facebookFilter;
 	}
@@ -220,7 +192,6 @@ public class SecurityModule extends AbstractModule {
 			googleFilter = new GoogleAuthFilter("/" + GoogleAuthFilter.GOOGLE_ACTION);
 			googleFilter.setAuthenticationSuccessHandler(getSuccessHandler());
 			googleFilter.setAuthenticationFailureHandler(getFailureHandler());
-			googleFilter.setRememberMeServices(getRemembeMeServices());
 		}
 		return googleFilter;
 	}
@@ -241,7 +212,6 @@ public class SecurityModule extends AbstractModule {
 			linkedinFilter = new LinkedInAuthFilter("/" + LinkedInAuthFilter.LINKEDIN_ACTION);
 			linkedinFilter.setAuthenticationSuccessHandler(getSuccessHandler());
 			linkedinFilter.setAuthenticationFailureHandler(getFailureHandler());
-			linkedinFilter.setRememberMeServices(getRemembeMeServices());
 		}
 		return linkedinFilter;
 	}
@@ -262,7 +232,6 @@ public class SecurityModule extends AbstractModule {
 			twitterFilter = new TwitterAuthFilter("/" + TwitterAuthFilter.TWITTER_ACTION);
 			twitterFilter.setAuthenticationSuccessHandler(getSuccessHandler());
 			twitterFilter.setAuthenticationFailureHandler(getFailureHandler());
-			twitterFilter.setRememberMeServices(getRemembeMeServices());
 		}
 		return twitterFilter;
 	}
@@ -283,7 +252,6 @@ public class SecurityModule extends AbstractModule {
 			githubFilter = new GitHubAuthFilter("/" + GitHubAuthFilter.GITHUB_ACTION);
 			githubFilter.setAuthenticationSuccessHandler(getSuccessHandler());
 			githubFilter.setAuthenticationFailureHandler(getFailureHandler());
-			githubFilter.setRememberMeServices(getRemembeMeServices());
 		}
 		return githubFilter;
 	}
@@ -304,7 +272,6 @@ public class SecurityModule extends AbstractModule {
 			microsoftFilter = new MicrosoftAuthFilter("/" + MicrosoftAuthFilter.MICROSOFT_ACTION);
 			microsoftFilter.setAuthenticationSuccessHandler(getSuccessHandler());
 			microsoftFilter.setAuthenticationFailureHandler(getFailureHandler());
-			microsoftFilter.setRememberMeServices(getRemembeMeServices());
 		}
 		return microsoftFilter;
 	}
@@ -325,7 +292,6 @@ public class SecurityModule extends AbstractModule {
 			slackFilter = new SlackAuthFilter("/" + SlackAuthFilter.SLACK_ACTION);
 			slackFilter.setAuthenticationSuccessHandler(getSuccessHandler());
 			slackFilter.setAuthenticationFailureHandler(getFailureHandler());
-			slackFilter.setRememberMeServices(getRemembeMeServices());
 		}
 		return slackFilter;
 	}
@@ -346,7 +312,6 @@ public class SecurityModule extends AbstractModule {
 			amazonFilter = new AmazonAuthFilter("/" + AmazonAuthFilter.AMAZON_ACTION);
 			amazonFilter.setAuthenticationSuccessHandler(getSuccessHandler());
 			amazonFilter.setAuthenticationFailureHandler(getFailureHandler());
-			amazonFilter.setRememberMeServices(getRemembeMeServices());
 		}
 		return amazonFilter;
 	}
@@ -367,7 +332,6 @@ public class SecurityModule extends AbstractModule {
 			oauth2Filter = new GenericOAuth2Filter("/" + GenericOAuth2Filter.OAUTH2_ACTION);
 			oauth2Filter.setAuthenticationSuccessHandler(getSuccessHandler());
 			oauth2Filter.setAuthenticationFailureHandler(getFailureHandler());
-			oauth2Filter.setRememberMeServices(getRemembeMeServices());
 		}
 		return oauth2Filter;
 	}
@@ -388,7 +352,6 @@ public class SecurityModule extends AbstractModule {
 			ldapFilter = new LdapAuthFilter("/" + LdapAuthFilter.LDAP_ACTION);
 			ldapFilter.setAuthenticationSuccessHandler(getSuccessHandler());
 			ldapFilter.setAuthenticationFailureHandler(getFailureHandler());
-			ldapFilter.setRememberMeServices(getRemembeMeServices());
 		}
 		return ldapFilter;
 	}
@@ -409,7 +372,6 @@ public class SecurityModule extends AbstractModule {
 			samlFilter = new SAMLAuthFilter(SAMLAuthFilter.SAML_ACTION + "/*");
 			samlFilter.setAuthenticationSuccessHandler(getSuccessHandler());
 			samlFilter.setAuthenticationFailureHandler(getFailureHandler());
-			samlFilter.setRememberMeServices(getRemembeMeServices());
 		}
 		return samlFilter;
 	}

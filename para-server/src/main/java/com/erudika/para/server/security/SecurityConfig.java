@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.authentication.RememberMeAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
@@ -52,14 +51,12 @@ public class SecurityConfig {
 	private static final String[] DEFAULT_ROLES = {"USER", "MOD", "ADMIN", "APP"};
 
 	private final CachedCsrfTokenRepository csrfTokenRepository;
-	private final SimpleRememberMeServices rememberMeServices;
 
 	/**
 	 * No-args constructor.
 	 */
 	public SecurityConfig() {
 		csrfTokenRepository = getInstance(CachedCsrfTokenRepository.class);
-		rememberMeServices = getInstance(SimpleRememberMeServices.class);
 	}
 
 	/**
@@ -109,9 +106,8 @@ public class SecurityConfig {
 		http.exceptionHandling().accessDeniedHandler(new SimpleAccessDeniedHandler(accessDeniedPath));
 		http.requestCache().requestCache(new SimpleRequestCache());
 		http.logout().logoutUrl(signoutPath).logoutSuccessUrl(signoutSuccessPath);
-		http.rememberMe().rememberMeServices(rememberMeServices);
+		http.rememberMe().disable();
 
-		http.authenticationProvider(new RememberMeAuthenticationProvider(Para.getConfig().appSecretKey()));
 		http.authenticationProvider(new JWTAuthenticationProvider());
 		http.authenticationProvider(new LDAPAuthenticationProvider());
 
