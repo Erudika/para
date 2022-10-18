@@ -163,7 +163,6 @@ public final class HttpUtils {
 	 * @param sameSite SameSite value
 	 * @param request request
 	 * @param response response
-	 * @
 	 */
 	public static void setAuthCookie(String name, String value, boolean httpOnly, int maxAge, String sameSite,
 			HttpServletRequest request, HttpServletResponse response) {
