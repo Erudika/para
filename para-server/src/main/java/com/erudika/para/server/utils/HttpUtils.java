@@ -151,6 +151,22 @@ public final class HttpUtils {
 	 */
 	public static void setAuthCookie(String name, String value, int maxAge,
 			HttpServletRequest request, HttpServletResponse response) {
+		setAuthCookie(name, value, true, maxAge, "Lax", request, response);
+	}
+
+	/**
+	 * Sets the auth cookie.
+	 * @param name name
+	 * @param value value
+	 * @param httpOnly HTTP only flag
+	 * @param maxAge cookie validity in seconds
+	 * @param sameSite SameSite value
+	 * @param request request
+	 * @param response response
+	 * @
+	 */
+	public static void setAuthCookie(String name, String value, boolean httpOnly, int maxAge, String sameSite,
+			HttpServletRequest request, HttpServletResponse response) {
 		String expires = DateFormatUtils.format(System.currentTimeMillis() + (maxAge * 1000),
 				"EEE, dd-MMM-yyyy HH:mm:ss z", TimeZone.getTimeZone("GMT"));
 		String contextPath = request.getContextPath();
@@ -160,11 +176,15 @@ public final class HttpUtils {
 		sb.append("Path=").append(path).append(";");
 		sb.append("Expires=").append(expires).append(";");
 		sb.append("Max-Age=").append(maxAge).append(";");
-		sb.append("HttpOnly;");
+		if (httpOnly) {
+			sb.append("HttpOnly;");
+		}
 		if (StringUtils.startsWithIgnoreCase(SecurityUtils.getRedirectUrl(request), "https://") || request.isSecure()) {
 			sb.append("Secure;");
 		}
-		sb.append("SameSite=Lax");
+		if (!StringUtils.isBlank(sameSite)) {
+			sb.append("SameSite=").append(sameSite);
+		}
 		response.addHeader(javax.ws.rs.core.HttpHeaders.SET_COOKIE, sb.toString());
 	}
 }
