@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.Instant;
 import static org.junit.Assert.*;
 import org.junit.Test;
 
@@ -514,22 +515,23 @@ public class UtilsTest {
 
 	@Test
 	public void testRateLimiter() {
+		long start = Instant.parse("2020-03-10T13:37:37Z").getMillis();
 		RateLimiter r = Para.createRateLimiter(1, 2, 3);
 		assertFalse(r.isAllowed(null, ""));
 		assertTrue(r.isAllowed("", "u1"));
 		assertFalse(r.isAllowed("", "u1"));
-		assertTrue(r.isAllowed("", "u1", Utils.timestamp() + TimeUnit.HOURS.toMillis(1)));
-		assertTrue(r.isAllowed("", "u1", Utils.timestamp() + TimeUnit.HOURS.toMillis(1) + TimeUnit.MINUTES.toMillis(5)));
-		assertFalse(r.isAllowed("", "u1", Utils.timestamp() + TimeUnit.HOURS.toMillis(1) + TimeUnit.MINUTES.toMillis(15)));
+		assertTrue(r.isAllowed("", "u1", start + TimeUnit.HOURS.toMillis(1)));
+		assertTrue(r.isAllowed("", "u1", start + TimeUnit.HOURS.toMillis(1) + TimeUnit.MINUTES.toMillis(5)));
+		assertFalse(r.isAllowed("", "u1", start + TimeUnit.HOURS.toMillis(1) + TimeUnit.MINUTES.toMillis(15)));
 
 		assertTrue(r.isAllowed("app", "u1"));
 		assertFalse(r.isAllowed("app", "u1"));
 
-		assertTrue(r.isAllowed("app", "u1", Utils.timestamp() + TimeUnit.DAYS.toMillis(1)));
-		assertTrue(r.isAllowed("app", "u1", Utils.timestamp() + TimeUnit.DAYS.toMillis(1) + TimeUnit.HOURS.toMillis(1)));
-		assertTrue(r.isAllowed("app", "u1", Utils.timestamp() + TimeUnit.DAYS.toMillis(1) + TimeUnit.HOURS.toMillis(2)));
-		assertFalse(r.isAllowed("app", "u1", Utils.timestamp() + TimeUnit.DAYS.toMillis(1) + TimeUnit.HOURS.toMillis(3)));
+		assertTrue(r.isAllowed("app", "u1", start + TimeUnit.DAYS.toMillis(1)));
+		assertTrue(r.isAllowed("app", "u1", start + TimeUnit.DAYS.toMillis(1) + TimeUnit.HOURS.toMillis(1)));
+		assertTrue(r.isAllowed("app", "u1", start + TimeUnit.DAYS.toMillis(1) + TimeUnit.HOURS.toMillis(2)));
+		assertFalse(r.isAllowed("app", "u1", start + TimeUnit.DAYS.toMillis(1) + TimeUnit.HOURS.toMillis(3)));
 
-		assertTrue(r.isAllowed("app", "u1", Utils.timestamp() + TimeUnit.DAYS.toMillis(2)));
+		assertTrue(r.isAllowed("app", "u1", start + TimeUnit.DAYS.toMillis(2)));
 	}
 }
