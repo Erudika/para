@@ -673,7 +673,7 @@ public class ParaConfig extends Config {
 					+ "authentication and the user roles that are allowed to access this particular resource. "
 					+ "No HTTP methods means that all requests to this resource require authentication.")
 	public ConfigObject protectedPaths() {
-		return getConfig().getObject("security.protected");
+		return getConfig().hasPath("security.protected") ? getConfig().getObject("security.protected") : null;
 	}
 
 	@Documented(position = 620,

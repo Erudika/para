@@ -86,11 +86,12 @@ public class SecurityConfig {
 		String signoutPath = Para.getConfig().signoutPath();
 		String accessDeniedPath = Para.getConfig().accessDeniedPath();
 		String signoutSuccessPath = Para.getConfig().signoutSuccessPath();
+		ConfigObject protectedResources = Para.getConfig().protectedPaths();
 
 		http.authorizeRequests().requestMatchers(IgnoredRequestMatcher.INSTANCE).permitAll();
-		http.authorizeRequests().requestMatchers(RestRequestMatcher.INSTANCE);
+		http.authorizeRequests().requestMatchers(RestRequestMatcher.INSTANCE).authenticated();
 
-		parseProtectedResources(http, Para.getConfig().protectedPaths());
+		parseProtectedResources(http, protectedResources);
 
 		if (Para.getConfig().csrfProtectionEnabled()) {
 			http.csrf().requireCsrfProtectionMatcher(CsrfProtectionRequestMatcher.INSTANCE).
@@ -105,7 +106,8 @@ public class SecurityConfig {
 		http.exceptionHandling().authenticationEntryPoint(new SimpleAuthenticationEntryPoint(signinPath));
 		http.exceptionHandling().accessDeniedHandler(new SimpleAccessDeniedHandler(accessDeniedPath));
 		http.requestCache().requestCache(new SimpleRequestCache());
-		http.logout().logoutUrl(signoutPath).logoutSuccessUrl(signoutSuccessPath);
+		http.logout().deleteCookies(Para.getConfig().authCookieName()).invalidateHttpSession(true).
+				logoutUrl(signoutPath).logoutSuccessUrl(signoutSuccessPath);
 		http.rememberMe().disable();
 
 		http.authenticationProvider(new JWTAuthenticationProvider());
@@ -117,6 +119,9 @@ public class SecurityConfig {
 	}
 
 	private void parseProtectedResources(HttpSecurity http, ConfigObject protectedResources) throws Exception {
+		if (protectedResources == null || protectedResources.isEmpty()) {
+			return;
+		}
 		for (ConfigValue cv : protectedResources.values()) {
 			LinkedList<String> patterns = new LinkedList<>();
 			LinkedList<String> roles = new LinkedList<>();
