@@ -17,16 +17,16 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.core.utils.CoreUtils;
-import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.annotations.Locked;
 import com.erudika.para.core.annotations.Stored;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Pager;
 import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
 import java.util.List;
-import org.apache.commons.lang3.StringUtils;
 import javax.validation.constraints.NotBlank;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * A tag. Must not be null or empty.
@@ -117,7 +117,7 @@ public class Tag implements ParaObject {
 	 * @param tag a tag. Must not be null or empty.
 	 */
 	public void setTag(String tag) {
-		this.tag = Utils.noSpaces(Utils.stripAndTrim(tag, " "), "-");
+		this.tag = Utils.noSpaces(StringUtils.trimToEmpty(tag).toLowerCase().replaceAll("[^a-z0-9\\+\\#\\-\\.]+", " ").replaceAll("\\p{Z}+", " "), "-");
 	}
 
 	/**

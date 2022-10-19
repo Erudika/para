@@ -19,9 +19,9 @@ package com.erudika.para.core;
 
 import com.erudika.para.core.persistence.DAO;
 import com.erudika.para.core.persistence.MockDAO;
-import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Before;
+import org.junit.Test;
 
 /**
  *
@@ -45,12 +45,24 @@ public class TagTest {
 		t.setId("test1");
 		assertEquals("tag:test1", t.getId());
 
-		t.setId("tag:tag:test tag ? @#$%^&>?<~`|\\;:./>-= COOL");
+		t.setId("tag:tag:test tag ? @$%^&>?<~`|\\;:/>= COOL");
 		assertEquals("tag:test-tag-cool", t.getId());
 		assertEquals("test-tag-cool", t.getTag());
-		t.setId("tag ? @#$%^&>?<~`|\\;:./>-= COOL");
+		t.setId("tag ? @$%^&>?<~`|\\;:/>= COOL");
 		assertEquals("tag:tag-cool", t.getId());
 		assertEquals("tag-cool", t.getTag());
+		t.setId("C ++");
+		assertEquals("tag:c-++", t.getId());
+		t.setId("node.js");
+		assertEquals("tag:node.js", t.getId());
+		t.setId("c#");
+		assertEquals("tag:c#", t.getId());
+		t.setId("D--");
+		assertEquals("tag:d--", t.getId());
+		t.setId("D--");
+		assertEquals("tag:d--", t.getId());
+		t.setId("A123");
+		assertEquals("tag:a123", t.getId());
 
 		t.setId("tag:tag-test1");
 		assertEquals("tag:tag-test1", t.getId());
@@ -94,7 +106,7 @@ public class TagTest {
 		assertEquals("test1", t.getTag());
 		t.setTag(null);
 		assertTrue(t.getTag().isEmpty());
-		t.setTag("tag:test tag ? @#$%^&>?<~`|\\;:./>-= COOL");
+		t.setTag("tag:test tag ? @$%^&>?<~`|\\;:/>= COOL");
 		assertEquals("tag-test-tag-cool", t.getTag());
 	}
 
