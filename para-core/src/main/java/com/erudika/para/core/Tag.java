@@ -117,7 +117,7 @@ public class Tag implements ParaObject {
 	 * @param tag a tag. Must not be null or empty.
 	 */
 	public void setTag(String tag) {
-		this.tag = Utils.noSpaces(StringUtils.trimToEmpty(tag).toLowerCase().replaceAll("[^a-z0-9\\+\\#\\-\\.]+", " ").replaceAll("\\p{Z}+", " "), "-");
+		this.tag = Utils.noSpaces(StringUtils.trimToEmpty(tag).toLowerCase().replaceAll("[^\\p{L}\\p{N}\\+\\#\\-\\.]+", " ").replaceAll("\\p{Z}+", " "), "-");
 	}
 
 	/**
