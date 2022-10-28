@@ -97,6 +97,66 @@
 			</dependencies>
 		</profile>
 		<profile>
+			<id>lucene</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-search-lucene</artifactId>
+					<version>${lucenePluginVer}</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>sql</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-dao-sql</artifactId>
+					<version>${sqlPluginVer}</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>hazelcast</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-cache-hazelcast</artifactId>
+					<version>[1.40.2,)</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>cassandra</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-dao-cassandra</artifactId>
+					<version>[1.38.3,)</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>mongodb</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-dao-mongodb</artifactId>
+					<version>[1.40.2,)</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>elasticsearch</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-search-elasticsearch</artifactId>
+					<version>[1.40.5,)</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
 			<id>base</id>
 			<build>
 				<finalName>para-base-${project.version}</finalName>
