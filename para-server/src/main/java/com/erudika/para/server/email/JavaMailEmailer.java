@@ -21,14 +21,17 @@ import com.erudika.para.core.email.Emailer;
 import com.erudika.para.core.utils.Para;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import javax.mail.internet.MimeMessage;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.mail.javamail.MimeMessagePreparator;
 
@@ -40,13 +43,25 @@ public class JavaMailEmailer implements Emailer {
 
 	private static final Logger logger = LoggerFactory.getLogger(JavaMailEmailer.class);
 	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(Para.getConfig().executorThreads());
-	private JavaMailSender mailSender;
+	private final JavaMailSender mailSender;
 
 	/**
-	 * @param mailSender mail sender provided by Spring
+	 * Default constructor.
 	 */
-	public JavaMailEmailer(JavaMailSender mailSender) {
-		this.mailSender = mailSender;
+	public JavaMailEmailer() {
+		JavaMailSenderImpl sender = new JavaMailSenderImpl();
+		sender.setHost(System.getProperty("spring.mail.host"));
+		sender.setPort(NumberUtils.toInt(System.getProperty("spring.mail.port"), 965));
+		sender.setUsername(System.getProperty("spring.mail.username"));
+		sender.setPassword(System.getProperty("spring.mail.password"));
+
+		Properties props = sender.getJavaMailProperties();
+		props.put("mail.transport.protocol", "smtp");
+		props.put("mail.smtp.auth", "true");
+		props.put("mail.smtp.starttls.enable", System.getProperty("spring.mail.properties.mail.smtp.starttls.enable", "true"));
+		props.put("mail.smtp.ssl.enable", System.getProperty("spring.mail.properties.mail.smtp.ssl.enable", "true"));
+		props.put("mail.debug", System.getProperty("spring.mail.properties.mail.debug", "false"));
+		this.mailSender = sender;
 	}
 
 	@Override
