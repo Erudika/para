@@ -222,10 +222,10 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (!StringUtils.isBlank(dn)) {
 			String modsNode = (String) app.getSetting("security.ldap.mods_group_node");
 			String adminsNode = (String) app.getSetting("security.ldap.admins_group_node");
-			if (!StringUtils.isBlank(modsNode) && StringUtils.containsIgnoreCase(dn, modsNode + ",")) {
+			if (!StringUtils.isBlank(modsNode) && StringUtils.containsIgnoreCase(dn, modsNode)) {
 				group = User.Groups.MODS.toString();
 			}
-			if (!StringUtils.isBlank(adminsNode) && StringUtils.containsIgnoreCase(dn, adminsNode + ",")) {
+			if (!StringUtils.isBlank(adminsNode) && StringUtils.containsIgnoreCase(dn, adminsNode)) {
 				group = User.Groups.ADMINS.toString();
 			}
 		}
