@@ -440,6 +440,10 @@ public final class SecurityUtils {
 	 */
 	public static String getRedirectUrl(HttpServletRequest request) {
 		String url = request.getRequestURL().toString();
+		// allow clients to use /oauth2_auth?appid={appid} as an alternative to ?state={appid}
+		if (!StringUtils.isBlank(request.getParameter(Config._APPID))) {
+			url += "?" + Config._APPID + "=" + request.getParameter(Config._APPID);
+		}
 		if (!StringUtils.isBlank(request.getHeader("X-Forwarded-Proto"))) {
 			return request.getHeader("X-Forwarded-Proto") + url.substring(url.indexOf(':'));
 		} else if (!StringUtils.isBlank(request.getHeader("CloudFront-Forwarded-Proto"))) {
