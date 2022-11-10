@@ -28,6 +28,9 @@ import com.erudika.para.server.security.LDAPAuthentication;
 import com.erudika.para.server.security.SecurityUtils;
 import com.erudika.para.server.security.UserAuthentication;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
@@ -115,7 +118,9 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 			String email = profile.getMail();
 			String name = StringUtils.join(profile.getCn(), ", ");
 			String adDomain = (String) app.getSetting("security.ldap.active_directory_domain");
-			String groups = getGroupsFromDN(profile.getDn(), app);
+			String memberOf = Optional.ofNullable(profile.getAuthorities()).orElse(Collections.emptyList()).stream().
+					map(ga -> "CN=" + ga.getAuthority()).collect(Collectors.joining(","));
+			String groups = getGroupsFromDN(profile.getDn(), memberOf, app);
 
 			if (StringUtils.isBlank(email)) {
 				if (Utils.isValidEmail(ldapAccountId)) {
@@ -217,15 +222,17 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 		return (app == null) ? null : app.getAppIdentifier();
 	}
 
-	private String getGroupsFromDN(String dn, App app) {
+	private String getGroupsFromDN(String dn, String memberOf, App app) {
 		String group = User.Groups.USERS.toString();
 		if (!StringUtils.isBlank(dn)) {
 			String modsNode = (String) app.getSetting("security.ldap.mods_group_node");
 			String adminsNode = (String) app.getSetting("security.ldap.admins_group_node");
-			if (!StringUtils.isBlank(modsNode) && StringUtils.containsIgnoreCase(dn, modsNode)) {
+			if (!StringUtils.isBlank(modsNode) && (StringUtils.containsIgnoreCase(dn, modsNode) ||
+					StringUtils.containsIgnoreCase(memberOf, modsNode))) {
 				group = User.Groups.MODS.toString();
 			}
-			if (!StringUtils.isBlank(adminsNode) && StringUtils.containsIgnoreCase(dn, adminsNode)) {
+			if (!StringUtils.isBlank(adminsNode) && (StringUtils.containsIgnoreCase(dn, adminsNode) ||
+					StringUtils.containsIgnoreCase(memberOf, adminsNode))) {
 				group = User.Groups.ADMINS.toString();
 			}
 		}
