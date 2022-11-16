@@ -268,7 +268,7 @@
 		<dependency>
 			<groupId>io.github.hakky54</groupId>
 			<artifactId>sslcontext-kickstart</artifactId>
-			<version>7.4.7</version>
+			<version>7.4.8</version>
 		</dependency>
 	</dependencies>
 
