@@ -457,18 +457,18 @@ public final class SecurityUtils {
 	 * @return the appid if it's present in either the 'state' or 'appid' query parameters
 	 */
 	public static String getAppidFromAuthRequest(HttpServletRequest request) {
-		String appid1 = request.getParameter("state");
-		String appid2 = request.getParameter(Config._APPID);
-		if (StringUtils.isBlank(appid1) && StringUtils.isBlank(appid2)) {
+		String appidFromState = request.getParameter("state");
+		String appidFromAppid = request.getParameter(Config._APPID);
+		if (StringUtils.isBlank(appidFromState) && StringUtils.isBlank(appidFromAppid)) {
 			if (StringUtils.startsWith(request.getRequestURI(), SAMLAuthFilter.SAML_ACTION + "/")) {
 				return StringUtils.trimToNull(request.getRequestURI().substring(SAMLAuthFilter.SAML_ACTION.length() + 1));
 			} else {
 				return null;
 			}
-		} else if (!StringUtils.isBlank(appid1)) {
-			return StringUtils.trimToNull(appid1);
-		} else {
-			return StringUtils.trimToNull(appid2);
+		} else if (!StringUtils.isBlank(appidFromAppid)) {
+			return StringUtils.trimToNull(appidFromAppid);
+		} else  {
+			return StringUtils.trimToNull(appidFromState);
 		}
 	}
 }
