@@ -319,7 +319,11 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 		} else if ("passwordless".equalsIgnoreCase(identityProvider)) {
 			return passwordlessAuth.getOrCreateUser(app, accessToken);
 		} else if (StringUtils.equalsAnyIgnoreCase(identityProvider, "password", "generic")) {
-			return passwordAuth.getOrCreateUser(app, accessToken);
+			try {
+				return passwordAuth.getOrCreateUser(app, accessToken);
+			} catch (Exception e) {
+				logger.error("Failed to get authenticate user with password via JWT Auth filter: " + e.getMessage());
+			}
 		}
 		return null;
 	}
