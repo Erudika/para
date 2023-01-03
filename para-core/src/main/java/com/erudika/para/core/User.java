@@ -482,6 +482,15 @@ public class User implements ParaObject {
 	}
 
 	/**
+	 * Is the main identifier a custom SSO account.
+	 * @return true if user is signed in with a custom SSO JWT token
+	 */
+	@JsonIgnore
+	public boolean isPasswordlessUser() {
+		return StringUtils.startsWithIgnoreCase(identifier, Config.PASSWORDLESS_PREFIX);
+	}
+
+	/**
 	 * Is the main identifier from a generic OAuth 2.0/OpenID Connect provider.
 	 * @return true if user is signed in with a generic OAauth 2.0 account
 	 */
@@ -539,9 +548,21 @@ public class User implements ParaObject {
 			return "saml";
 		} else if (isOAuth2User()) {
 			return "oauth2";
-		} else {
+		} else if (isPasswordlessUser()) {
+			return "custom";
+		} else if (Utils.isValidEmail(identifier)) {
 			return "generic";
+		} else {
+			return "unknown";
 		}
+	}
+
+	/**
+	 * Validates the identifier property value.
+	 * @return true if the user identifier has valid syntax.
+	 */
+	public boolean hasValidIdentifier() {
+		return !getIdentityProvider().equals("unknown");
 	}
 
 	/**

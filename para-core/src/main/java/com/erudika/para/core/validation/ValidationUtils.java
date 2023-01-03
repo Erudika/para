@@ -129,6 +129,10 @@ public final class ValidationUtils {
 			if (content instanceof User && StringUtils.length(((User) content).getPassword()) > User.MAX_PASSWORD_LENGTH) {
 				list.add(Utils.formatMessage("{0} must not be longer than {1}.", Config._PASSWORD, User.MAX_PASSWORD_LENGTH));
 			}
+			if (content instanceof User && !((User) content).hasValidIdentifier()) {
+				list.add(Utils.formatMessage("{0} is invalid - identifier field must be an email or "
+						+ "start with a valid prefix, e.g. 'oa2:abc'.", Config._IDENTIFIER));
+			}
 		} catch (Exception e) {
 			logger.error(null, e);
 		}

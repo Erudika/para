@@ -57,6 +57,20 @@ public class ValidationUtilsTest {
 		u.setId("123");
 		u.setName("asd");
 		assertFalse(isValidObject(u));
+
+		u.setEmail("alex@example.com");
+		u.setIdentifier(u.getEmail());
+		assertTrue(isValidObject(u));
+
+		u.setIdentifier("oa2:test");
+		assertTrue(isValidObject(u));
+
+		u.setIdentifier("custom:123-test");
+		assertTrue(isValidObject(u));
+
+		u.setIdentifier("abc def 123");
+		assertFalse(u.hasValidIdentifier());
+		assertFalse(isValidObject(u));
 	}
 
 	@Test

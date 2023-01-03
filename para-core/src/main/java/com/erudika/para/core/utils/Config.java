@@ -129,6 +129,8 @@ public abstract class Config {
 	public static final String LDAP_PREFIX = "ldap:";
 	/** SAML prefix - defaults to 'saml:'. */
 	public static final String SAML_PREFIX = "saml:";
+	/** Passwordless auth prefix - defaults to 'custom:'. */
+	public static final String PASSWORDLESS_PREFIX = "custom:";
 
 	/**
 	 * The name of the configuration file, usually 'app-application.conf'.
