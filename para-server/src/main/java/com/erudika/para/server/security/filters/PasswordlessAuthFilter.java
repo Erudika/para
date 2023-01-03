@@ -109,9 +109,6 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 			String picture = jwt.getJWTClaimsSet().getStringClaim("picture");
 			String appid = app.getAppIdentifier();
 
-			identifier = StringUtils.startsWith(identifier, Config.PASSWORDLESS_PREFIX) ? identifier :
-					Config.PASSWORDLESS_PREFIX + identifier;
-
 			User u = new User();
 			u.setAppid(appid);
 			u.setIdentifier(identifier);
