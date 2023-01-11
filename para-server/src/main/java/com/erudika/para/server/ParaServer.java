@@ -359,8 +359,9 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 		jef.getSession().getCookie().setMaxAge(Duration.ofSeconds(1));
 		jef.getSession().getCookie().setHttpOnly(true);
 		jef.setPort(Para.getConfig().serverPort());
-		LOG.info("Instance #{} initialized and listening on http{}://localhost:{}",
-				Para.getConfig().workerId(), (sslEnabled ? "s" : ""), jef.getPort());
+		LOG.info("Instance #{} initialized and listening on http{}://localhost:{}{}",
+				Para.getConfig().workerId(), (sslEnabled ? "s" : ""), jef.getPort(),
+				Para.getConfig().serverContextPath());
 		return jef;
 	}
 

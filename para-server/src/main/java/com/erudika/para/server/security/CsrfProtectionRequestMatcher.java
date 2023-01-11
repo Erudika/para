@@ -19,6 +19,7 @@ package com.erudika.para.server.security;
 
 import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletRequest;
+import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 /**
@@ -32,10 +33,10 @@ public final class CsrfProtectionRequestMatcher implements RequestMatcher {
 	 */
 	public static final RequestMatcher INSTANCE = new CsrfProtectionRequestMatcher();
 	private final Pattern allowedMethods = Pattern.compile("^(GET|HEAD|TRACE|OPTIONS)$");
-	private final Pattern authEndpoints = Pattern.compile("^/\\w+_auth$");
-	private final Pattern passAuthEndpoint = Pattern.compile("^/password_auth$");
-	private final Pattern samlEndpoint = Pattern.compile("^/saml_auth.*$");
-	private final Pattern samlMetaEndpoint = Pattern.compile("^/saml_metadata.*$");
+	private final RegexRequestMatcher authEndpoints = new RegexRequestMatcher("^/\\w+_auth", null, true);
+	private final RegexRequestMatcher passAuthEndpoint = new RegexRequestMatcher("^/password_auth", null, true);
+	private final RegexRequestMatcher samlEndpoint = new RegexRequestMatcher("^/saml_auth.*", null, true);
+	private final RegexRequestMatcher samlMetaEndpoint = new RegexRequestMatcher("^/saml_metadata.*", null, true);
 
 	private CsrfProtectionRequestMatcher() {
 	}
@@ -44,11 +45,11 @@ public final class CsrfProtectionRequestMatcher implements RequestMatcher {
 	public boolean matches(HttpServletRequest request) {
 		boolean matches = !RestRequestMatcher.INSTANCE.matches(request)
 				&& !IgnoredRequestMatcher.INSTANCE.matches(request)
-				&& !samlMetaEndpoint.matcher(request.getRequestURI()).matches()
-				&& !samlEndpoint.matcher(request.getRequestURI()).matches()
-				&& !authEndpoints.matcher(request.getRequestURI()).matches()
+				&& !samlMetaEndpoint.matches(request)
+				&& !samlEndpoint.matches(request)
+				&& !authEndpoints.matches(request)
 				&& !allowedMethods.matcher(request.getMethod()).matches();
-		return matches || passAuthEndpoint.matcher(request.getRequestURI()).matches();
+		return matches || passAuthEndpoint.matches(request);
 	}
 
 }

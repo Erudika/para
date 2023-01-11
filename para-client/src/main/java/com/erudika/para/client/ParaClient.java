@@ -377,6 +377,10 @@ public final class ParaClient implements Closeable {
 	 */
 	protected String getFullPath(String resourcePath) {
 		if (StringUtils.startsWith(resourcePath, JWT_PATH)) {
+			if (StringUtils.countMatches(getApiPath(), "/") > 2) {
+				String s = getApiPath().substring(0, getApiPath().indexOf("/", 1)) + resourcePath;
+				return s;
+			}
 			return resourcePath;
 		}
 		if (resourcePath == null) {
