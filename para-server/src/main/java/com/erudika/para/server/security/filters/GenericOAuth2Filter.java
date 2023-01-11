@@ -43,7 +43,6 @@ import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
@@ -91,7 +90,6 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		int timeout = 30;
 		this.httpclient = HttpClientBuilder.create().
 				setDefaultRequestConfig(RequestConfig.custom().
-						setConnectTimeout(timeout, TimeUnit.SECONDS).
 						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).
 						build()).
 				build();
@@ -316,23 +314,26 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			profileGet.setHeader(HttpHeaders.ACCEPT, acceptHeader);
 		}
 
-		try (CloseableHttpResponse resp2 = httpclient.execute(profileGet)) {
-			HttpEntity respEntity = resp2.getEntity();
-			String error = null;
-			if (respEntity != null) {
-				if (resp2.getCode() == HttpServletResponse.SC_OK) {
-					profile.putAll(jreader.readValue(respEntity.getContent()));
-				} else {
-					error = IOUtils.toString(respEntity.getContent(), Para.getConfig().defaultEncoding());
+		try {
+			httpclient.execute(profileGet, (resp2) -> {
+				HttpEntity respEntity = resp2.getEntity();
+				String error = null;
+				if (respEntity != null) {
+					if (resp2.getCode() == HttpServletResponse.SC_OK) {
+						profile.putAll(jreader.readValue(respEntity.getContent()));
+					} else {
+						error = IOUtils.toString(respEntity.getContent(), Para.getConfig().defaultEncoding());
+					}
 				}
-			}
-			if (profile.isEmpty() || error != null) {
-				LOG.error("OAuth 2 provider did not return any valid user information - "
-						+ "response code {} {}, app '{}', payload {}",
-						resp2.getCode(), resp2.getReasonPhrase(), app.getId(),
-						Utils.abbreviate(error, 1000));
-			}
-			EntityUtils.consumeQuietly(respEntity);
+				if (profile.isEmpty() || error != null) {
+					LOG.error("OAuth 2 provider did not return any valid user information - "
+							+ "response code {} {}, app '{}', payload {}",
+							resp2.getCode(), resp2.getReasonPhrase(), app.getId(),
+							Utils.abbreviate(error, 1000));
+				}
+				EntityUtils.consumeQuietly(respEntity);
+				return respEntity;
+			});
 		} catch (Exception e) {
 			LOG.error("Failed to fetch profile form IDP for app {} - {}", app.getId(), e.getMessage());
 		}
@@ -380,18 +381,16 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			tokenPost.setHeader(HttpHeaders.ACCEPT, acceptHeader);
 		}
 
-		Map<String, Object> tokens = null;
-		try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
+		return httpclient.execute(tokenPost, (resp1) -> {
 			if (resp1 != null && resp1.getEntity() != null) {
-				tokens = jreader.readValue(resp1.getEntity().getContent());
-				EntityUtils.consumeQuietly(resp1.getEntity());
+				return jreader.readValue(resp1.getEntity().getContent());
 			} else {
 				LOG.info("Authentication request failed with status '"
 						+ (resp1 != null ? resp1.getReasonPhrase() : "null")
 						+ "' and empty response body.");
 			}
-		}
-		return tokens;
+			return null;
+		});
 	}
 
 	private String oauthPrefix(String alias) {
@@ -439,13 +438,16 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 		if (accessToken != null) {
 			HttpGet avatarGet = new HttpGet(avatarUrl);
 			avatarGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-			try (CloseableHttpResponse resp = HttpClientBuilder.create().build().execute(avatarGet)) {
-				HttpEntity respEntity = resp.getEntity();
-				if (respEntity != null && respEntity.getContentType().startsWith("image")) {
-					String ctype = respEntity.getContentType();
-					return Para.getFileStore().store(Optional.ofNullable(appid).orElse(Config.PARA) + "/" + userid + "."
-							+ StringUtils.substringAfter(ctype, "/"), respEntity.getContent());
-				}
+			try {
+				return HttpClientBuilder.create().build().execute(avatarGet, (resp) -> {
+					HttpEntity respEntity = resp.getEntity();
+					if (respEntity != null && respEntity.getContentType().startsWith("image")) {
+						String ctype = respEntity.getContentType();
+						return Para.getFileStore().store(Optional.ofNullable(appid).orElse(Config.PARA) + "/" + userid + "."
+								+ StringUtils.substringAfter(ctype, "/"), respEntity.getContent());
+					}
+					return avatarUrl;
+				});
 			} catch (Exception e) {
 				LOG.error(null, e);
 			}

@@ -40,8 +40,8 @@ import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
@@ -80,7 +80,6 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 		int timeout = 30;
 		this.httpclient = HttpClientBuilder.create().
 				setDefaultRequestConfig(RequestConfig.custom().
-						setConnectTimeout(timeout, TimeUnit.SECONDS).
 						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).
 						build()).
 				build();
@@ -112,11 +111,11 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 				tokenPost.setHeader(HttpHeaders.ACCEPT, "application/json");
 				tokenPost.setEntity(new StringEntity(entity));
-				try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
+				userAuth = httpclient.execute(tokenPost, (resp1) -> {
 					if (resp1 != null && resp1.getEntity() != null) {
 						Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
 						if (token != null && token.containsKey("access_token")) {
-							userAuth = getOrCreateUser(app, (String) token.get("access_token"));
+							return getOrCreateUser(app, (String) token.get("access_token"));
 						} else {
 							logger.info("Authentication request failed with status '" +
 									resp1.getReasonPhrase() + "' - " + token);
@@ -127,7 +126,8 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 								(resp1 != null ? resp1.getReasonPhrase() : "null") +
 								"' and empty response body.");
 					}
-				}
+					return null;
+				});
 			}
 		}
 
@@ -150,12 +150,11 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 			profileGet.setHeader(HttpHeaders.ACCEPT, "application/json");
 			Map<String, Object> profile = null;
 
-			try (CloseableHttpResponse resp2 = httpclient.execute(profileGet)) {
-				HttpEntity respEntity = resp2.getEntity();
-				if (respEntity != null) {
-					profile = jreader.readValue(respEntity.getContent());
-					EntityUtils.consumeQuietly(respEntity);
-				}
+			ClassicHttpResponse resp2 = httpclient.execute(profileGet, (r) -> r);
+			HttpEntity respEntity = resp2.getEntity();
+			if (respEntity != null) {
+				profile = jreader.readValue(respEntity.getContent());
+				EntityUtils.consumeQuietly(respEntity);
 			}
 
 			if (profile != null && profile.containsKey("id")) {
@@ -233,25 +232,28 @@ public class GitHubAuthFilter extends AbstractAuthenticationProcessingFilter {
 		emailsGet.setHeader(HttpHeaders.AUTHORIZATION, "token " + accessToken);
 		emailsGet.setHeader(HttpHeaders.ACCEPT, "application/json");
 		String defaultEmail = githubId + "@github.com";
-		try (CloseableHttpResponse resp = httpclient.execute(emailsGet)) {
-			HttpEntity respEntity = resp.getEntity();
-			if (respEntity != null) {
-				try (InputStream is = respEntity.getContent()) {
-					MappingIterator<Map<String, Object>> emails = jreader.readValues(is);
-					if (emails != null) {
-						String email = null;
-						while (emails.hasNext()) {
-							Map<String, Object> next = emails.next();
-							email = (String) next.get("email");
-							if (next.containsKey("primary") && (Boolean) next.get("primary")) {
-								break;
+		try {
+			return httpclient.execute(emailsGet, (resp) -> {
+				HttpEntity respEntity = resp.getEntity();
+				if (respEntity != null) {
+					try (InputStream is = respEntity.getContent()) {
+						MappingIterator<Map<String, Object>> emails = jreader.readValues(is);
+						if (emails != null) {
+							String email = null;
+							while (emails.hasNext()) {
+								Map<String, Object> next = emails.next();
+								email = (String) next.get("email");
+								if (next.containsKey("primary") && (Boolean) next.get("primary")) {
+									break;
+								}
 							}
+							return email;
 						}
-						return email;
 					}
+					EntityUtils.consumeQuietly(respEntity);
 				}
-				EntityUtils.consumeQuietly(respEntity);
-			}
+				return defaultEmail;
+			});
 		} catch (IOException e) {
 			logger.warn("Failed to fetch user email from GitHub, using default: " + defaultEmail);
 		}

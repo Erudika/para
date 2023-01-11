@@ -40,8 +40,8 @@ import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
@@ -84,7 +84,6 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 		int timeout = 30;
 		this.httpclient = HttpClientBuilder.create().
 				setDefaultRequestConfig(RequestConfig.custom().
-						setConnectTimeout(timeout, TimeUnit.SECONDS).
 						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).
 						build()).
 				build();
@@ -115,11 +114,11 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 				HttpPost tokenPost = new HttpPost(TOKEN_URL);
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 				tokenPost.setEntity(new StringEntity(entity));
-				try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
+				userAuth = httpclient.execute(tokenPost, (resp1) -> {
 					if (resp1 != null && resp1.getEntity() != null) {
 						Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
 						if (token != null && token.containsKey("access_token")) {
-							userAuth = getOrCreateUser(app, (String) token.get("access_token"));
+							return getOrCreateUser(app, (String) token.get("access_token"));
 						} else {
 							logger.info("Authentication request failed with status '" +
 									resp1.getReasonPhrase() + "' - " + token);
@@ -130,7 +129,8 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 								(resp1 != null ? resp1.getReasonPhrase() : "null") +
 								"' and empty response body.");
 					}
-				}
+					return null;
+				});
 			}
 		}
 
@@ -153,12 +153,11 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 			profileGet.setHeader(HttpHeaders.ACCEPT, "application/json");
 			JsonNode profileNode = null;
 
-			try (CloseableHttpResponse resp2 = httpclient.execute(profileGet)) {
-				HttpEntity respEntity = resp2.getEntity();
-				if (respEntity != null) {
-					profileNode = jreader.readTree(respEntity.getContent());
-					EntityUtils.consumeQuietly(respEntity);
-				}
+			ClassicHttpResponse resp2 = httpclient.execute(profileGet, (r) -> r);
+			HttpEntity respEntity = resp2.getEntity();
+			if (respEntity != null) {
+				profileNode = jreader.readTree(respEntity.getContent());
+				EntityUtils.consumeQuietly(respEntity);
 			}
 
 			// GET email
@@ -167,16 +166,15 @@ public class LinkedInAuthFilter extends AbstractAuthenticationProcessingFilter {
 			emailGet.setHeader(HttpHeaders.ACCEPT, "application/json");
 			String email = "";
 
-			try (CloseableHttpResponse resp3 = httpclient.execute(emailGet)) {
-				HttpEntity respEntity = resp3.getEntity();
-				if (respEntity != null) {
-					JsonNode handle = jreader.readTree(respEntity.getContent());
-					EntityUtils.consumeQuietly(respEntity);
-					JsonNode emailNode = handle.at("/elements/0");
-					JsonNode emailNode2 = emailNode.at("/handle~");
-					if (!emailNode2.isMissingNode()) {
-						email = emailNode2.at("/emailAddress").asText();
-					}
+			ClassicHttpResponse resp3 = httpclient.execute(emailGet, (r) -> r);
+			HttpEntity respEntity2 = resp3.getEntity();
+			if (respEntity2 != null) {
+				JsonNode handle = jreader.readTree(respEntity2.getContent());
+				EntityUtils.consumeQuietly(respEntity2);
+				JsonNode emailNode = handle.at("/elements/0");
+				JsonNode emailNode2 = emailNode.at("/handle~");
+				if (!emailNode2.isMissingNode()) {
+					email = emailNode2.at("/emailAddress").asText();
 				}
 			}
 

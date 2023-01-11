@@ -41,8 +41,8 @@ import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
@@ -83,7 +83,6 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 		int timeout = 30;
 		this.httpclient = HttpClientBuilder.create().
 				setDefaultRequestConfig(RequestConfig.custom().
-						setConnectTimeout(timeout, TimeUnit.SECONDS).
 						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).
 						build()).
 				build();
@@ -133,7 +132,8 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 				params, keys[0], keys[1], null, null));
 		tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 
-		try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
+		try {
+			ClassicHttpResponse resp1 = httpclient.execute(tokenPost, (r) -> r);
 			if (resp1.getCode() == HttpServletResponse.SC_OK) {
 				String decoded = EntityUtils.toString(resp1.getEntity());
 				EntityUtils.consumeQuietly(resp1.getEntity());
@@ -166,7 +166,8 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 				params, keys[0], keys[1], token, null));
 		tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 
-		try (CloseableHttpResponse resp2 = httpclient.execute(tokenPost)) {
+		try {
+			ClassicHttpResponse resp2 = httpclient.execute(tokenPost, (r) -> r);
 			if (resp2.getCode() == HttpServletResponse.SC_OK) {
 				String decoded = EntityUtils.toString(resp2.getEntity());
 				EntityUtils.consumeQuietly(resp2.getEntity());
@@ -209,11 +210,10 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 			Map<String, Object> profile = null;
 
-			try (CloseableHttpResponse resp3 = httpclient.execute(profileGet)) {
-				if (resp3.getCode() == HttpServletResponse.SC_OK) {
-					profile = jreader.readValue(resp3.getEntity().getContent());
-					EntityUtils.consumeQuietly(resp3.getEntity());
-				}
+			ClassicHttpResponse resp3 = httpclient.execute(profileGet, (r) -> r);
+			if (resp3.getCode() == HttpServletResponse.SC_OK) {
+				profile = jreader.readValue(resp3.getEntity().getContent());
+				EntityUtils.consumeQuietly(resp3.getEntity());
 			}
 
 			if (profile != null && profile.containsKey("id_str")) {

@@ -39,8 +39,8 @@ import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
@@ -81,7 +81,6 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 		int timeout = 30;
 		this.httpclient = HttpClientBuilder.create().
 				setDefaultRequestConfig(RequestConfig.custom().
-						setConnectTimeout(timeout, TimeUnit.SECONDS).
 						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).
 						build()).
 				build();
@@ -113,11 +112,11 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 						Para.getConfig().getSettingForApp(app, "ms_tenant_id", "common")));
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 				tokenPost.setEntity(new StringEntity(entity));
-				try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
+				userAuth = httpclient.execute(tokenPost, (resp1) -> {
 					if (resp1 != null && resp1.getEntity() != null) {
 						Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
 						if (token != null && token.containsKey("access_token")) {
-							userAuth = getOrCreateUser(app, (String) token.get("access_token"));
+							return getOrCreateUser(app, (String) token.get("access_token"));
 						} else {
 							logger.info("Authentication request failed with status '" +
 									resp1.getReasonPhrase() + "' - " + token);
@@ -128,7 +127,8 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 								(resp1 != null ? resp1.getReasonPhrase() : "null") +
 								"' and empty response body.");
 					}
-				}
+					return null;
+				});
 			}
 		}
 
@@ -151,12 +151,11 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 			profileGet.setHeader(HttpHeaders.ACCEPT, "application/json");
 			Map<String, Object> profile = null;
 
-			try (CloseableHttpResponse resp2 = httpclient.execute(profileGet)) {
-				HttpEntity respEntity = resp2.getEntity();
-				if (respEntity != null) {
-					profile = jreader.readValue(respEntity.getContent());
-					EntityUtils.consumeQuietly(respEntity);
-				}
+			ClassicHttpResponse resp2 = httpclient.execute(profileGet, (r) -> r);
+			HttpEntity respEntity = resp2.getEntity();
+			if (respEntity != null) {
+				profile = jreader.readValue(respEntity.getContent());
+				EntityUtils.consumeQuietly(respEntity);
 			}
 
 			if (profile != null && profile.containsKey("id")) {
@@ -219,16 +218,15 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 			HttpGet profileGet = new HttpGet(PHOTO_URL);
 			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 			profileGet.setHeader(HttpHeaders.ACCEPT, "application/json");
-			try (CloseableHttpResponse resp = httpclient.execute(profileGet)) {
-				HttpEntity respEntity = resp.getEntity();
-				if (respEntity != null && respEntity.getContentType().startsWith("image")) {
-					String ctype = respEntity.getContentType();
-					pic = Para.getFileStore().store(Optional.
-							ofNullable(appid).orElse(Config.PARA) + "/" + userid + "." +
-									StringUtils.substringAfter(ctype, "/"), respEntity.getContent());
-				}
-				EntityUtils.consumeQuietly(respEntity);
+			ClassicHttpResponse resp = httpclient.execute(profileGet, (r) -> r);
+			HttpEntity respEntity = resp.getEntity();
+			if (respEntity != null && respEntity.getContentType().startsWith("image")) {
+				String ctype = respEntity.getContentType();
+				pic = Para.getFileStore().store(Optional.
+						ofNullable(appid).orElse(Config.PARA) + "/" + userid + "." +
+								StringUtils.substringAfter(ctype, "/"), respEntity.getContent());
 			}
+			EntityUtils.consumeQuietly(respEntity);
 		}
 		return pic;
 	}

@@ -66,7 +66,6 @@ import org.apache.hc.client5.http.classic.methods.HttpPut;
 import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.io.HttpClientConnectionManager;
@@ -153,7 +152,6 @@ public final class ParaClient implements Closeable {
 				setConnectionManager(cm).
 				setConnectionReuseStrategy((HttpRequest hr, HttpResponse hr1, HttpContext hc) -> false).
 				setDefaultRequestConfig(RequestConfig.custom().
-						setConnectTimeout(timeout, TimeUnit.SECONDS).
 						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).
 						build()).
 				build();
@@ -501,11 +499,13 @@ public final class ParaClient implements Closeable {
 				req.setHeader(HttpHeaders.USER_AGENT, userAgent);
 			}
 
-			try (CloseableHttpResponse resp = httpclient.execute(req)) {
-				HttpEntity respEntity = resp.getEntity();
-				int statusCode = resp.getCode();
-				String reason = resp.getReasonPhrase();
-				return readEntity(respEntity, returnType, statusCode, reason);
+			try {
+				return httpclient.execute(req, (resp) -> {
+					HttpEntity respEntity = resp.getEntity();
+					int statusCode = resp.getCode();
+					String reason = resp.getReasonPhrase();
+					return readEntity(respEntity, returnType, statusCode, reason);
+				});
 			} catch (Exception ex) {
 				String msg = "Failed to execute signed " + method + " request to " + path + ": " + ex.getMessage();
 				if (throwExceptionOnHTTPError) {

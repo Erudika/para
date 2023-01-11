@@ -45,7 +45,6 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpResponse;
@@ -70,7 +69,6 @@ public abstract class River implements Runnable {
 		HTTP = HttpClientBuilder.create().
 				setConnectionReuseStrategy((HttpRequest hr, HttpResponse hr1, HttpContext hc) -> false).
 				setDefaultRequestConfig(RequestConfig.custom().
-						setConnectTimeout(timeout, TimeUnit.SECONDS).
 						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).
 						build()).
 				build();
@@ -201,23 +199,21 @@ public abstract class River implements Runnable {
 				repeatDelivery = 100;
 			}
 			IntStream.range(0, Math.max(1, repeatDelivery)).parallel().forEach(r -> {
-				boolean ok = false;
 				String status = "";
-				try (CloseableHttpResponse resp1 = HTTP.execute(postToTarget)) {
-					if (resp1 != null && Math.abs(resp1.getCode() - 200) > 10) {
-						status = resp1.getReasonPhrase();
-						logger.info("Webhook {} delivery failed! {} responded with code {} {} instead of 2xx.", id,
-								targetUrl, resp1.getCode(), resp1.getReasonPhrase());
-					} else {
-						logger.debug("Webhook {} delivered to {} successfully.", id, targetUrl);
-						ok = true;
-					}
+				try {
+					status = HTTP.execute(postToTarget, (resp1) -> {
+						if (resp1 != null && Math.abs(resp1.getCode() - 200) > 10) {
+							updateFailureCount(appid, id);
+							logger.info("Webhook {} delivery failed! {} responded with code {} {} instead of 2xx.", id,
+									targetUrl, resp1.getCode(), resp1.getReasonPhrase());
+							return resp1.getReasonPhrase();
+						} else {
+							logger.debug("Webhook {} delivered to {} successfully.", id, targetUrl);
+						}
+						return "OK";
+					});
 				} catch (Exception e) {
 					logger.info("Webhook {} not delivered! {} isn't responding. {}", id, targetUrl, status);
-				} finally {
-					if (!ok) {
-						updateFailureCount(appid, id);
-					}
 				}
 			});
 			return 1;

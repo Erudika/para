@@ -88,8 +88,8 @@ public class SecurityConfig {
 		String signoutSuccessPath = Para.getConfig().signoutSuccessPath();
 		ConfigObject protectedResources = Para.getConfig().protectedPaths();
 
-		http.authorizeRequests().requestMatchers(IgnoredRequestMatcher.INSTANCE).permitAll();
-		http.authorizeRequests().requestMatchers(RestRequestMatcher.INSTANCE).authenticated();
+		http.authorizeHttpRequests().requestMatchers(IgnoredRequestMatcher.INSTANCE).permitAll();
+		http.authorizeHttpRequests().requestMatchers(RestRequestMatcher.INSTANCE).authenticated();
 
 		parseProtectedResources(http, protectedResources);
 
@@ -150,10 +150,10 @@ public class SecurityConfig {
 			String[] rolz = (roles.isEmpty()) ? DEFAULT_ROLES : roles.toArray(new String[0]);
 			String[] patternz = patterns.toArray(new String[0]);
 			if (methods.isEmpty()) {
-				http.authorizeRequests().antMatchers(patternz).hasAnyRole(rolz);
+				http.authorizeHttpRequests().requestMatchers(patternz).hasAnyRole(rolz);
 			} else {
 				for (HttpMethod method : methods) {
-					http.authorizeRequests().antMatchers(method, patternz).hasAnyRole(rolz);
+					http.authorizeHttpRequests().requestMatchers(method, patternz).hasAnyRole(rolz);
 				}
 			}
 		}

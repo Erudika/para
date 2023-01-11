@@ -38,8 +38,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.slf4j.Logger;
@@ -77,7 +77,6 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 		int timeout = 30;
 		this.httpclient = HttpClientBuilder.create().
 				setDefaultRequestConfig(RequestConfig.custom().
-						setConnectTimeout(timeout, TimeUnit.SECONDS).
 						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).
 						build()).
 				build();
@@ -105,16 +104,19 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 				String[] keys = Para.getConfig().getOAuthKeysForApp(app, Config.FB_PREFIX);
 				String url = Utils.formatMessage(TOKEN_URL, authCode, redirectURI, keys[0], keys[1]);
 				HttpGet tokenPost = new HttpGet(url);
-				try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
-					// Facebook keep changing their API so we try to read the access_token by the old and new ways
-					String token = EntityUtils.toString(resp1.getEntity(), Para.getConfig().defaultEncoding());
-					String accessToken = parseAccessToken(token);
-					if (accessToken != null) {
-						userAuth = getOrCreateUser(app, accessToken);
-					} else {
-						logger.info("Authentication request failed with status '"
-								+ resp1.getReasonPhrase() + "' - " + token);
-					}
+				try {
+					userAuth = httpclient.execute(tokenPost, (resp1) -> {
+						// Facebook keep changing their API so we try to read the access_token by the old and new ways
+						String token = EntityUtils.toString(resp1.getEntity(), Para.getConfig().defaultEncoding());
+						String accessToken = parseAccessToken(token);
+						if (accessToken != null) {
+							return getOrCreateUser(app, accessToken);
+						} else {
+							logger.info("Authentication request failed with status '"
+									+ resp1.getReasonPhrase() + "' - " + token);
+						}
+						return null;
+					});
 				} catch (Exception e) {
 					logger.warn("Facebook auth request failed: GET " + url, e);
 				}
@@ -137,7 +139,8 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 		User user = new User();
 		if (accessToken != null) {
 			HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
-			try (CloseableHttpResponse resp2 = httpclient.execute(profileGet)) {
+			try {
+				ClassicHttpResponse resp2 = httpclient.execute(profileGet, (r) -> r);
 				HttpEntity respEntity = resp2.getEntity();
 				String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
 

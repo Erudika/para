@@ -39,8 +39,8 @@ import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
@@ -80,7 +80,6 @@ public class AmazonAuthFilter extends AbstractAuthenticationProcessingFilter {
 		int timeout = 30;
 		this.httpclient = HttpClientBuilder.create().
 				setDefaultRequestConfig(RequestConfig.custom().
-						setConnectTimeout(timeout, TimeUnit.SECONDS).
 						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).
 						build()).
 				build();
@@ -112,11 +111,11 @@ public class AmazonAuthFilter extends AbstractAuthenticationProcessingFilter {
 				tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 				tokenPost.setHeader(HttpHeaders.ACCEPT, "application/json");
 				tokenPost.setEntity(new StringEntity(entity));
-				try (CloseableHttpResponse resp1 = httpclient.execute(tokenPost)) {
+				userAuth = httpclient.execute(tokenPost, (resp1) -> {
 					if (resp1 != null && resp1.getEntity() != null) {
 						Map<String, Object> token = jreader.readValue(resp1.getEntity().getContent());
 						if (token != null && token.containsKey("access_token")) {
-							userAuth = getOrCreateUser(app, (String) token.get("access_token"));
+							return getOrCreateUser(app, (String) token.get("access_token"));
 						} else {
 							logger.info("Authentication request failed with status '" +
 									resp1.getReasonPhrase() + "' - " + token);
@@ -127,7 +126,8 @@ public class AmazonAuthFilter extends AbstractAuthenticationProcessingFilter {
 								+ (resp1 != null ? resp1.getReasonPhrase() : "null")
 								+ "' and empty response body.");
 					}
-				}
+					return null;
+				});
 			}
 		}
 
@@ -151,12 +151,11 @@ public class AmazonAuthFilter extends AbstractAuthenticationProcessingFilter {
 			profileGet.setHeader("x-amz-access-token", accessToken);
 			Map<String, Object> profile = null;
 
-			try (CloseableHttpResponse resp2 = httpclient.execute(profileGet)) {
-				HttpEntity respEntity = resp2.getEntity();
-				if (respEntity != null) {
-					profile = jreader.readValue(respEntity.getContent());
-					EntityUtils.consumeQuietly(respEntity);
-				}
+			ClassicHttpResponse resp2 = httpclient.execute(profileGet, (r) -> r);
+			HttpEntity respEntity = resp2.getEntity();
+			if (respEntity != null) {
+				profile = jreader.readValue(respEntity.getContent());
+				EntityUtils.consumeQuietly(respEntity);
 			}
 
 			if (profile != null && profile.containsKey("user_id")) {
