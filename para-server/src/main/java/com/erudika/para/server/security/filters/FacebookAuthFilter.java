@@ -33,13 +33,11 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.HttpHeaders;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
-import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.slf4j.Logger;
@@ -135,16 +133,16 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 */
 	@SuppressWarnings("unchecked")
 	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
-		UserAuthentication userAuth = null;
-		User user = new User();
-		if (accessToken != null) {
-			HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
+		if (accessToken == null) {
+			return SecurityUtils.checkIfActive(null, null, false);
+		}
+		HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
+		return httpclient.execute(profileGet, (resp2) -> {
+			UserAuthentication userAuth = null;
+			User user = new User();
 			try {
-				ClassicHttpResponse resp2 = httpclient.execute(profileGet, (r) -> r);
 				HttpEntity respEntity = resp2.getEntity();
-				String ctype = resp2.getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue();
-
-				if (respEntity != null && Utils.isJsonType(ctype)) {
+				if (respEntity != null) {
 					Map<String, Object> profile = jreader.readValue(respEntity.getContent());
 
 					if (profile != null && profile.containsKey("id")) {
@@ -185,8 +183,8 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 			} catch (Exception e) {
 				logger.warn("Facebook auth request failed: GET " + PROFILE_URL + accessToken, e);
 			}
-		}
-		return SecurityUtils.checkIfActive(userAuth, user, false);
+			return SecurityUtils.checkIfActive(userAuth, user, false);
+		});
 	}
 
 	private boolean updateUserInfo(User user, String fbId, String email, String name) {

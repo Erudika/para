@@ -39,7 +39,6 @@ import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
-import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
@@ -139,14 +138,16 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * @throws IOException ex
 	 */
 	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
-		UserAuthentication userAuth = null;
-		User user = new User();
-		if (accessToken != null) {
-			HttpGet profileGet = new HttpGet(PROFILE_URL);
-			profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+		if (accessToken == null) {
+			return SecurityUtils.checkIfActive(null, null, false);
+		}
+		HttpGet profileGet = new HttpGet(PROFILE_URL);
+		profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+		return httpclient.execute(profileGet, (resp2) -> {
+			UserAuthentication userAuth = null;
+			User user = new User();
 			Map<String, Object> profile = null;
 
-			ClassicHttpResponse resp2 = httpclient.execute(profileGet, (r) -> r);
 			HttpEntity respEntity = resp2.getEntity();
 			if (respEntity != null) {
 				profile = jreader.readValue(respEntity.getContent());
@@ -186,8 +187,8 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 			} else {
 				logger.info("Authentication request failed because user profile doesn't contain the expected attributes");
 			}
-		}
-		return SecurityUtils.checkIfActive(userAuth, user, false);
+			return SecurityUtils.checkIfActive(userAuth, user, false);
+		});
 	}
 
 	private boolean updateUserInfo(User user, String pic, String email, String name) {

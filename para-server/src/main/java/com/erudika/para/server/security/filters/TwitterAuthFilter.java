@@ -42,7 +42,6 @@ import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
-import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
@@ -132,27 +131,28 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 				params, keys[0], keys[1], null, null));
 		tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 
-		try {
-			ClassicHttpResponse resp1 = httpclient.execute(tokenPost, (r) -> r);
-			if (resp1.getCode() == HttpServletResponse.SC_OK) {
-				String decoded = EntityUtils.toString(resp1.getEntity());
-				EntityUtils.consumeQuietly(resp1.getEntity());
-				for (String pair : decoded.split("&")) {
-					if (pair.startsWith("oauth_token")) {
-						response.sendRedirect(FLOW_URL2 + pair);
-						return true;
-					} else {
-						logger.info("Authentication request failed, token not found in response - " + decoded);
+		return httpclient.execute(tokenPost, (resp1) -> {
+			try {
+				if (resp1.getCode() == HttpServletResponse.SC_OK) {
+					String decoded = EntityUtils.toString(resp1.getEntity());
+					EntityUtils.consumeQuietly(resp1.getEntity());
+					for (String pair : decoded.split("&")) {
+						if (pair.startsWith("oauth_token")) {
+							response.sendRedirect(FLOW_URL2 + pair);
+							return true;
+						} else {
+							logger.info("Authentication request failed, token not found in response - " + decoded);
+						}
 					}
+				} else {
+					logger.info("Authentication request failed with status '"
+							+ resp1.getReasonPhrase() + "' and empty response body.");
 				}
-			} else {
-				logger.info("Authentication request failed with status '"
-						+ resp1.getReasonPhrase() + "' and empty response body.");
+			} catch (ParseException e) {
+				logger.error(null, e);
 			}
-		} catch (ParseException e) {
-			logger.error(null, e);
-		}
-		return false;
+			return false;
+		});
 	}
 
 	private UserAuthentication stepTwo(HttpServletRequest request, String verifier, String[] keys, App app)
@@ -166,26 +166,27 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 				params, keys[0], keys[1], token, null));
 		tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
 
-		try {
-			ClassicHttpResponse resp2 = httpclient.execute(tokenPost, (r) -> r);
-			if (resp2.getCode() == HttpServletResponse.SC_OK) {
-				String decoded = EntityUtils.toString(resp2.getEntity());
-				EntityUtils.consumeQuietly(resp2.getEntity());
-				String oauthToken = null;
-				String oauthSecret = null;
-				for (String pair : decoded.split("&")) {
-					if (pair.startsWith("oauth_token_secret")) {
-						oauthSecret = pair.substring(19);
-					} else if (pair.startsWith("oauth_token")) {
-						oauthToken = pair.substring(12);
+		return httpclient.execute(tokenPost, (resp2) -> {
+			try {
+				if (resp2.getCode() == HttpServletResponse.SC_OK) {
+					String decoded = EntityUtils.toString(resp2.getEntity());
+					EntityUtils.consumeQuietly(resp2.getEntity());
+					String oauthToken = null;
+					String oauthSecret = null;
+					for (String pair : decoded.split("&")) {
+						if (pair.startsWith("oauth_token_secret")) {
+							oauthSecret = pair.substring(19);
+						} else if (pair.startsWith("oauth_token")) {
+							oauthToken = pair.substring(12);
+						}
 					}
+					return getOrCreateUser(app, oauthToken + Para.getConfig().separator() + oauthSecret);
 				}
-				return getOrCreateUser(app, oauthToken + Para.getConfig().separator() + oauthSecret);
+			} catch (ParseException e) {
+				logger.error(null, e);
 			}
-		} catch (ParseException e) {
-			logger.error(null, e);
-		}
-		return null;
+			return null;
+		});
 	}
 
 	/**
@@ -196,21 +197,21 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * @throws IOException ex
 	 */
 	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
-		UserAuthentication userAuth = null;
-		User user = new User();
-		if (accessToken != null && accessToken.contains(Para.getConfig().separator())) {
-			String[] tokens = accessToken.split(Para.getConfig().separator());
-			String[] keys = Para.getConfig().getOAuthKeysForApp(app, Config.TWITTER_PREFIX);
-
-			Map<String, String[]> params2 = new HashMap<>();
-			HttpGet profileGet = new HttpGet(PROFILE_URL + "?include_email=true");
-			params2.put("include_email", new String[]{"true"});
-			profileGet.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("GET", PROFILE_URL,
-					params2, keys[0], keys[1], tokens[0], tokens[1]));
-
+		if (accessToken == null || !accessToken.contains(Para.getConfig().separator())) {
+			return SecurityUtils.checkIfActive(null, null, false);
+		}
+		String[] tokens = accessToken.split(Para.getConfig().separator());
+		String[] keys = Para.getConfig().getOAuthKeysForApp(app, Config.TWITTER_PREFIX);
+		Map<String, String[]> params2 = new HashMap<>();
+		HttpGet profileGet = new HttpGet(PROFILE_URL + "?include_email=true");
+		params2.put("include_email", new String[]{"true"});
+		profileGet.setHeader(HttpHeaders.AUTHORIZATION, OAuth1HmacSigner.sign("GET", PROFILE_URL,
+				params2, keys[0], keys[1], tokens[0], tokens[1]));
+		return httpclient.execute(profileGet, (resp3) -> {
+			UserAuthentication userAuth = null;
+			User user = new User();
 			Map<String, Object> profile = null;
 
-			ClassicHttpResponse resp3 = httpclient.execute(profileGet, (r) -> r);
 			if (resp3.getCode() == HttpServletResponse.SC_OK) {
 				profile = jreader.readValue(resp3.getEntity().getContent());
 				EntityUtils.consumeQuietly(resp3.getEntity());
@@ -250,8 +251,9 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 			} else {
 				logger.info("Authentication request failed because user profile doesn't contain the expected attributes");
 			}
-		}
-		return SecurityUtils.checkIfActive(userAuth, user, false);
+			return SecurityUtils.checkIfActive(userAuth, user, false);
+		});
+
 	}
 
 	private boolean updateUserInfo(User user, String pic, String email, String name) {
