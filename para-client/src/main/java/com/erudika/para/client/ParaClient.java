@@ -51,6 +51,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.ws.rs.core.MultivaluedHashMap;
@@ -1896,4 +1898,73 @@ public final class ParaClient implements Closeable {
 		return invokeDelete(JWT_PATH, null, Map.class) != null;
 	}
 
+	/////////////////////////////////////////////
+	//				Utilities
+	/////////////////////////////////////////////
+
+	/**
+	 * @see #readEverything(java.util.function.Function, int)
+	 * @param <T> type of object
+	 * @param paginatingFunc paginating function
+	 */
+	public <T extends ParaObject> void readEverything(Function<Pager, List<T>> paginatingFunc) {
+		readEverything(paginatingFunc, Para.getConfig().maxItemsPerPage());
+	}
+
+	/**
+	 * Paginates through all objects and executes the provided function on the results.
+	 * @param <T> type of object
+	 * @param paginatingFunc paginating function
+	 * @param pageSize page size for pager (pager.limit)
+	 */
+	public <T extends ParaObject> void readEverything(Function<Pager, List<T>> paginatingFunc, int pageSize) {
+		if (paginatingFunc != null) {
+			// find all objects even if there are more than 10000 in the system
+			Pager pager = new Pager(1, "_docid", false, pageSize);
+			List<T> results;
+			do {
+				results = paginatingFunc.apply(pager);
+			} while (!results.isEmpty());
+		}
+	}
+
+	/**
+	 * @see #partialBatchUpdate(java.util.function.Function, int, int)
+	 * @param <T> type of object
+	 * @param paginatingFunc paginating function
+	 */
+	public <T extends ParaObject> void updateAllPartially(BiFunction<List<Map<String, Object>>, Pager, List<T>> paginatingFunc) {
+		updateAllPartially(paginatingFunc, Para.getConfig().maxItemsPerPage(), 100);
+	}
+
+	/**
+	 * Performs a partial batch update on all objects of given type. This method encapsulates the specific logic for
+	 * performing the batch update safely because updating while searching for objects can lead to bugs due to the
+	 * fact that _docid values change on each update call.
+	 * @param <T> type of object
+	 * @param paginatingFunc paginating function which returns a list of object
+	 * @param pageSize page size for pager (pager.limit)
+	 * @param updateBatchSize batch size for updating objects
+	 */
+	public <T extends ParaObject> void updateAllPartially(BiFunction<List<Map<String, Object>>, Pager, List<T>> paginatingFunc,
+			int pageSize, int updateBatchSize) {
+		if (paginatingFunc != null) {
+			LinkedList<Map<String, Object>> toUpdate = new LinkedList<>();
+			readEverything((pager) -> paginatingFunc.apply(toUpdate, pager), pageSize);
+			// always patch outside the loop because _docid value changes on each update!
+			// this causes updated results to be found again and could lead to exhaution of resources
+			LinkedList<Map<String, Object>> batch = new LinkedList<>();
+			while (!toUpdate.isEmpty()) {
+				batch.add(toUpdate.pop());
+				if (batch.size() >= updateBatchSize) {
+					// partial batch update
+					invokePatch("_batch", batch, Map.class);
+					batch.clear();
+				}
+			}
+			if (!batch.isEmpty()) {
+				invokePatch("_batch", batch, Map.class);
+			}
+		}
+	}
 }
