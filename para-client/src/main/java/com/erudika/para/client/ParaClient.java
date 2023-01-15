@@ -225,6 +225,7 @@ public final class ParaClient implements Closeable {
 	}
 
 	/**
+	 * Returns the JWT access token if any.
 	 * @return the JWT access token, or null if not signed in
 	 */
 	public String getAccessToken() {
@@ -232,6 +233,7 @@ public final class ParaClient implements Closeable {
 	}
 
 	/**
+	 * Returns the Para server version.
 	 * @return the version of Para server
 	 */
 	public String getServerVersion() {
@@ -285,6 +287,7 @@ public final class ParaClient implements Closeable {
 	}
 
 	/**
+	 * Returns the batch chunk size.
 	 * @return the chunk size used for batch CRUD operations
 	 */
 	public int getChunkSize() {
@@ -292,6 +295,7 @@ public final class ParaClient implements Closeable {
 	}
 
 	/**
+	 * Enable/disable exception throwing in ParaClient.
 	 * @param enabled if true, the client will throw an exception when an error response is received.
 	 * If false, the error is only logged. Default is false.
 	 */
@@ -1844,6 +1848,7 @@ public final class ParaClient implements Closeable {
 	}
 
 	/**
+	 * Takes an identity provider access token and fetches the user data from that provider.
 	 * @see #signIn(java.lang.String, java.lang.String, boolean)
 	 * @param provider identity provider, e.g. 'facebook', 'google'...
 	 * @param providerToken access token from a provider like Facebook, Google, Twitter
@@ -1903,7 +1908,7 @@ public final class ParaClient implements Closeable {
 	/////////////////////////////////////////////
 
 	/**
-	 * @see #readEverything(java.util.function.Function, int)
+	 * Paginates through all objects and executes the provided function on the results.
 	 * @param <T> type of object
 	 * @param paginatingFunc paginating function
 	 */
@@ -1929,7 +1934,9 @@ public final class ParaClient implements Closeable {
 	}
 
 	/**
-	 * @see #partialBatchUpdate(java.util.function.Function, int, int)
+	 * Performs a partial batch update on all objects of given type. This method encapsulates the specific logic for
+	 * performing the batch update safely because updating while searching for objects can lead to bugs due to the
+	 * fact that _docid values change on each update call.
 	 * @param <T> type of object
 	 * @param paginatingFunc paginating function
 	 */
