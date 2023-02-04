@@ -17,7 +17,6 @@
  */
 package com.erudika.para.server;
 
-import ch.qos.logback.access.jetty.RequestLogImpl;
 import com.erudika.para.core.listeners.WebhookIOListener;
 import com.erudika.para.core.rest.CustomResourceHandler;
 import com.erudika.para.core.utils.Config;
@@ -42,6 +41,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Stage;
 import com.google.inject.util.Modules;
+import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,13 +57,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -294,26 +291,17 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	 */
 	@Bean
 	public ServletWebServerFactory jettyConfigBean() {
+		if (Para.getConfig().accessLogEnabled()) {
+			System.setProperty("server.jetty.accesslog.append", "true");
+			System.setProperty("server.jetty.accesslog.enabled", "true");
+			if (!System.getProperty("para.file_logger_level", "INFO").equalsIgnoreCase("OFF")) {
+				System.setProperty("server.jetty.accesslog.filename", System.getProperty("para.logs_dir", ".")
+						+ File.separator + Para.getConfig().getConfigRootPrefix() + "-access.log");
+			}
+		}
 		JettyServletWebServerFactory jef = new JettyServletWebServerFactory();
 		jef.setRegisterDefaultServlet(true);
 		jef.addServerCustomizers((JettyServerCustomizer) (Server server) -> {
-			if (Para.getConfig().accessLogEnabled()) {
-				// enable access log via Logback
-				HandlerCollection handlers = new HandlerCollection();
-				for (Handler handler : server.getHandlers()) {
-					handlers.addHandler(handler);
-				}
-				RequestLogHandler reqLogs = new RequestLogHandler();
-				reqLogs.setServer(server);
-				RequestLogImpl rli = new RequestLogImpl();
-				rli.setResource("/logback-access.xml");
-				rli.setQuiet(true);
-				rli.start();
-				reqLogs.setRequestLog(rli);
-				handlers.addHandler(reqLogs);
-				server.setHandler(handlers);
-			}
-
 			for (Connector y : server.getConnectors()) {
 				for (ConnectionFactory cf : y.getConnectionFactories()) {
 					if (cf instanceof HttpConnectionFactory) {
@@ -348,9 +336,6 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 		String contextPath = Para.getConfig().serverContextPath();
 		if (StringUtils.length(contextPath) > 1 && contextPath.charAt(0) == '/') {
 			jef.setContextPath(contextPath);
-		}
-		for (String k : jef.getInitParameters().keySet()) {
-			System.out.println(">> " + k + "=" + jef.getInitParameters().get(k));
 		}
 		Map<String, String> params = new HashMap<>(jef.getInitParameters());
 		params.put("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
