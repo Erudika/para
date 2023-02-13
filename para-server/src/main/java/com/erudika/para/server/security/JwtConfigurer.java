@@ -18,6 +18,7 @@
 package com.erudika.para.server.security;
 
 import com.erudika.para.server.ParaServer;
+import com.erudika.para.server.security.filters.SAMLMetadataFilter;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -35,6 +36,7 @@ public class JwtConfigurer extends AbstractHttpConfigurer<JwtConfigurer, HttpSec
 		AuthenticationManager authenticationManager = builder.getSharedObject(AuthenticationManager.class);
 		JWTRestfulAuthFilter jwtAuthFilter = new JWTRestfulAuthFilter(authenticationManager);
 		RestAuthFilter restAuthFilter = new RestAuthFilter();
+		SAMLMetadataFilter samlMetadataFilter = new SAMLMetadataFilter();
 		ParaServer.injectInto(jwtAuthFilter);
 
 		jwtAuthFilter.getPasswordAuth().setAuthenticationManager(authenticationManager);
@@ -75,6 +77,7 @@ public class JwtConfigurer extends AbstractHttpConfigurer<JwtConfigurer, HttpSec
 
 		jwtAuthFilter.getSamlAuth().setAuthenticationManager(authenticationManager);
 		builder.addFilterAfter(jwtAuthFilter.getSamlAuth(), BasicAuthenticationFilter.class);
+		builder.addFilterAfter(samlMetadataFilter, BasicAuthenticationFilter.class);
 
 		builder.addFilterBefore(jwtAuthFilter, RememberMeAuthenticationFilter.class);
 
