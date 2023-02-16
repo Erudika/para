@@ -142,7 +142,7 @@
 		<dependency>
 			<groupId>com.fasterxml.woodstox</groupId>
 			<artifactId>woodstox-core</artifactId>
-			<version>6.4.0</version>
+			<version>6.5.0</version>
 		</dependency>
 
 		<!--	 CAFFEINE -->
@@ -255,7 +255,7 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>9.25.6</version>
+			<version>9.30.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents.core5</groupId>
