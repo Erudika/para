@@ -78,7 +78,7 @@
 		<skipTests>false</skipTests>
 		<skipITs>${skipTests}</skipITs>
 		<skipUTs>${skipTests}</skipUTs>
-		<deployPluginVer>2.8.2</deployPluginVer>
+		<deployPluginVer>3.1.1</deployPluginVer>
 		<slf4jVer>1.7.36</slf4jVer>
 		<logbackVer>1.2.11</logbackVer>
 		<awsJdkVer>[2.20.35,)</awsJdkVer>
@@ -191,7 +191,6 @@
 					<mavenExecutorId>forked-path</mavenExecutorId>
 					<tagNameFormat>v@{project.version}</tagNameFormat>
 					<preparationGoals>clean</preparationGoals>
-					<useReleaseProfile>false</useReleaseProfile>
 					<releaseProfiles>release</releaseProfiles>
 				</configuration>
 			</plugin>
