@@ -25,6 +25,7 @@ import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
+import com.erudika.para.server.security.filters.PasswordlessAuthFilter;
 import com.erudika.para.server.security.filters.SAMLAuthFilter;
 import com.erudika.para.server.utils.BufferedRequestWrapper;
 import com.nimbusds.jose.JOSEException;
@@ -34,6 +35,7 @@ import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jose.util.Base64URL;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import java.io.IOException;
@@ -462,6 +464,18 @@ public final class SecurityUtils {
 		if (StringUtils.isBlank(appidFromState) && StringUtils.isBlank(appidFromAppid)) {
 			if (StringUtils.startsWith(request.getRequestURI(), SAMLAuthFilter.SAML_ACTION + "/")) {
 				return StringUtils.trimToNull(request.getRequestURI().substring(SAMLAuthFilter.SAML_ACTION.length() + 1));
+			} else if (StringUtils.startsWith(request.getRequestURI(), "/" + PasswordlessAuthFilter.PASSWORDLESS_ACTION)) {
+				String token = request.getParameter("token"); // JWT
+				JWTClaimsSet claims = null;
+				try {
+					SignedJWT jwt = new SignedJWT(Base64URL.from(StringUtils.substringBefore(token, ".")),
+							Base64URL.from(StringUtils.substringBetween(token, ".")),
+							Base64URL.from(StringUtils.substringAfterLast(token, ".")));
+					claims = jwt.getJWTClaimsSet();
+				} catch (ParseException ex) {
+					logger.error(null, ex);
+				}
+				return claims != null ? (String) claims.getClaim(Config._APPID) : null;
 			} else {
 				return null;
 			}

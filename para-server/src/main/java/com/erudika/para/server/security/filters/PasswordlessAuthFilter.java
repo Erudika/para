@@ -34,6 +34,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 
@@ -72,21 +74,34 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 			throws IOException, ServletException {
 		String requestURI = request.getRequestURI();
 		UserAuthentication userAuth = null;
+		boolean redirect = !"false".equals(request.getParameter("redirect"));
 		User user = null;
-
+		App app = null;
 		if (requestURI.endsWith(PASSWORDLESS_ACTION)) {
 			String appid = SecurityUtils.getAppidFromAuthRequest(request);
 			String token = request.getParameter("token"); // JWT
-			App app = Para.getDAO().read(App.id(appid));
+			app = Para.getDAO().read(App.id(appid));
 			if (app != null) {
 				userAuth = getOrCreateUser(app, token);
 				if (userAuth != null) {
-					user = (User) userAuth.getPrincipal();
+					user = ((AuthenticatedUserDetails) userAuth.getPrincipal()).getUser();
 					user.setAppid(app.getAppIdentifier());
 				}
 			}
 		}
-		return SecurityUtils.checkIfActive(userAuth, user, true);
+		UserAuthentication auth = SecurityUtils.checkIfActive(userAuth, user, redirect);
+		if (!redirect) {
+			if (auth == null) {
+				response.sendError(HttpStatus.FORBIDDEN.value());
+				response.setStatus(HttpStatus.FORBIDDEN.value());
+			} else {
+				response.setContentType(MediaType.TEXT_PLAIN_VALUE);
+				response.setStatus(HttpStatus.OK.value());
+				response.getWriter().print(SecurityUtils.generateJWToken(user, app).serialize());
+			}
+			return null;
+		}
+		return auth;
 	}
 
 	/**
