@@ -330,13 +330,14 @@ public final class AWSDynamoUtils {
 				try {
 					// this only removes the replicas for each region - it DOES NOT delete the actual replica tables
 					getClient().updateGlobalTable(b -> b.globalTableName(table).replicaUpdates(replicaUpdates));
+				} catch (Exception ex) {
+					logger.error(null, ex);
+				} finally {
 					getReplicaRegions().stream().forEach(region -> {
 						DynamoDbAsyncClient asyncdb = DynamoDbAsyncClient.builder().region(Region.of(region)).build();
 						asyncdb.deleteTable(b -> b.tableName(table));
 						logger.info("Deleted DynamoDB table '{}' in region {}.", table, region);
 					});
-				} catch (Exception ex) {
-					logger.error(null, ex);
 				}
 			} else {
 				getClient().deleteTable(b -> b.tableName(table));
