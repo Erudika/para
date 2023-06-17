@@ -1069,7 +1069,7 @@ public class User implements ParaObject {
 
 	@Override
 	public final String getName() {
-		return CoreUtils.getInstance().getName(name, id);
+		return Utils.stripAndTrim(CoreUtils.getInstance().getName(name, id));
 	}
 
 	@Override
