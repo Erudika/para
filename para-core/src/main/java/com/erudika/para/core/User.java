@@ -1069,7 +1069,7 @@ public class User implements ParaObject {
 
 	@Override
 	public final String getName() {
-			return CoreUtils.getInstance().getName(name, id).replaceAll("[\\p{S}\\p{P}\\p{C}&&[^'-]]", "").
+			return CoreUtils.getInstance().getName(name, id).replaceAll("[\\p{S}\\p{P}\\p{C}&&[^'\\-,\\.]]", "").
 					replaceAll("\\p{Z}+", " ").trim();
 	}
 
