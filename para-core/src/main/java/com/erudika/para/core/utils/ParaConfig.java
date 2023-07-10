@@ -1637,7 +1637,7 @@ public class ParaConfig extends Config {
 	 ****************************************************************************************************************/
 
 	@Documented(position = 1550,
-			identifier = "dynamodb.",
+			identifier = "dynamodb.sse_enabled",
 			value = "false",
 			type = Boolean.class,
 			category = "AWS DynamoDB DAO",
@@ -1648,7 +1648,7 @@ public class ParaConfig extends Config {
 	}
 
 	@Documented(position = 1560,
-			identifier = "dynamodb.",
+			identifier = "dynamodb.replica_regions",
 			category = "AWS DynamoDB DAO",
 			description = "Toggles global table settings for the specified regions.")
 	public String awsDynamoReplicaRegions() {
@@ -1656,7 +1656,7 @@ public class ParaConfig extends Config {
 	}
 
 	@Documented(position = 1570,
-			identifier = "dynamodb.",
+			identifier = "dynamodb.backups_enabled",
 			value = "false",
 			type = Boolean.class,
 			category = "AWS DynamoDB DAO",
@@ -1666,7 +1666,7 @@ public class ParaConfig extends Config {
 	}
 
 	@Documented(position = 1580,
-			identifier = "dynamodb.",
+			identifier = "dynamodb.provisioned_mode_enabled",
 			value = "false",
 			type = Boolean.class,
 			category = "AWS DynamoDB DAO",
@@ -1676,7 +1676,7 @@ public class ParaConfig extends Config {
 	}
 
 	@Documented(position = 1590,
-			identifier = "dynamodb.",
+			identifier = "dynamodb.max_read_capacity",
 			value = "10",
 			type = Integer.class,
 			category = "AWS DynamoDB DAO",
@@ -1686,7 +1686,7 @@ public class ParaConfig extends Config {
 	}
 
 	@Documented(position = 1600,
-			identifier = "dynamodb.",
+			identifier = "dynamodb.max_write_capacity",
 			value = "",
 			type = Integer.class,
 			category = "AWS DynamoDB DAO",
