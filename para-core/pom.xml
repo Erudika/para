@@ -13,7 +13,7 @@
 
 	<properties>
 		<jacksonVer>2.15.0</jacksonVer>
-		<flexmarkVer>0.64.0</flexmarkVer>
+		<flexmarkVer>0.64.8</flexmarkVer>
 	</properties>
 
 	<dependencies>
