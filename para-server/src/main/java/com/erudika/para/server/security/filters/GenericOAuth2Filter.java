@@ -365,6 +365,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 
 		String entity;
 		String scope = Para.getConfig().getSettingForApp(app, configKey("scope", alias), "");
+
 		if (redirectURI == null) {
 			entity = Utils.formatMessage(REFRESH_PAYLOAD, authCodeOrRefreshToken,
 					URLEncoder.encode(scope, "UTF-8"), keys[0], keys[1]);
@@ -373,10 +374,14 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 					URLEncoder.encode(scope, "UTF-8"), keys[0], keys[1]);
 		}
 
+		String payload = "true".equals(Para.getConfig().
+				getSettingForApp(app, configKey("send_scope_to_token_endpoint", alias), "true")) ?
+				entity : entity.replaceFirst("&scope=.*?&", "&");
+
 		String acceptHeader = Para.getConfig().getSettingForApp(app, configKey("accept_header", alias), "");
 		HttpPost tokenPost = new HttpPost(Para.getConfig().getSettingForApp(app, configKey("token_url", alias), ""));
 		tokenPost.setHeader(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
-		tokenPost.setEntity(new StringEntity(entity));
+		tokenPost.setEntity(new StringEntity(payload));
 		if (!StringUtils.isBlank(acceptHeader)) {
 			tokenPost.setHeader(HttpHeaders.ACCEPT, acceptHeader);
 		}
