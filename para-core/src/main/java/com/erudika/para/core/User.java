@@ -718,7 +718,7 @@ public class User implements ParaObject {
 		}
 		String password = u.getPassword();
 		String identifier = u.getIdentifier();
-		if (StringUtils.isBlank(password) || StringUtils.isBlank(identifier)) {
+		if (StringUtils.isBlank(password) || StringUtils.isBlank(identifier) || password.length() > MAX_PASSWORD_LENGTH) {
 			return false;
 		}
 		ParaObject s = CoreUtils.getInstance().getDao().read(u.getAppid(), identifier);
