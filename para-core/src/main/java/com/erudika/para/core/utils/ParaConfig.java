@@ -20,6 +20,7 @@ package com.erudika.para.core.utils;
 import com.erudika.para.core.App;
 import com.erudika.para.core.annotations.Documented;
 import static com.erudika.para.core.utils.Config.PARA;
+import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigObject;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -95,7 +96,7 @@ public class ParaConfig extends Config {
 			description = "Selects the `DAO` implementation at runtime. Can be `AWSDynamoDAO`, `MongoDBDAO`, "
 					+ "`CassandraDAO`, etc. Each implementation has its own configuration properties.")
 	public String daoPlugin() {
-		return getConfigParam("dao", "");
+		return getConfigParam("dao", "H2DAO");
 	}
 
 	@Documented(position = 60,
@@ -105,7 +106,7 @@ public class ParaConfig extends Config {
 			tags = {"requires restart"},
 			description = "Selects the `Search` implementation at runtime. Can be `LuceneSearch`, `ElasticSearch`, etc.")
 	public String searchPlugin() {
-		return getConfigParam("search", "");
+		return getConfigParam("search", "LuceneSearch");
 	}
 
 	@Documented(position = 70,
@@ -115,7 +116,7 @@ public class ParaConfig extends Config {
 			tags = {"requires restart"},
 			description = "Selects the `Cache` implementation at runtime. Can be one of `CaffeineSearch`, `HazelcastCache`.")
 	public String cachePlugin() {
-		return getConfigParam("cache", "");
+		return getConfigParam("cache", "CaffeineSearch");
 	}
 
 	@Documented(position = 80,
@@ -125,7 +126,7 @@ public class ParaConfig extends Config {
 			tags = {"requires restart"},
 			description = "Selects the `Queue` implementation at runtime. Can be one of `LocalQueue`, `AWSQueue`.")
 	public String queuePlugin() {
-		return getConfigParam("q", "");
+		return getConfigParam("q", "LocalQueue");
 	}
 
 	@Documented(position = 90,
@@ -135,7 +136,7 @@ public class ParaConfig extends Config {
 			tags = {"requires restart"},
 			description = "Selects the `FileStore` implementation at runtime. Can be one of `LocalFileStore`, `AWSFileStore`.")
 	public String fileStoragePlugin() {
-		return getConfigParam("fs", "");
+		return getConfigParam("fs", "LocalFileStore");
 	}
 
 	@Documented(position = 100,
@@ -145,7 +146,7 @@ public class ParaConfig extends Config {
 			description = "Selects the `Emailer` implementation at runtime. "
 					+ "Can be one of `AWSEmailer`, `JavaMailEmailer`, `NoopEmailer`. ")
 	public String emailerPlugin() {
-		return getConfigParam("emailer", "");
+		return getConfigParam("emailer", "NoopEmailer");
 	}
 
 	@Documented(position = 110,
@@ -674,6 +675,16 @@ public class ParaConfig extends Config {
 					+ "No HTTP methods means that all requests to this resource require authentication.")
 	public ConfigObject protectedPaths() {
 		return getConfig().hasPath("security.protected") ? getConfig().getObject("security.protected") : null;
+	}
+
+	@Documented(position = 611,
+			identifier = "security.ignored",
+			type = ConfigList.class,
+			category = "Security",
+			description = "A list of ignored paths which will not require authentication before accessing. "
+					+ "A list of paths like this `[\"/{path1}\", \"/{path2}/**\", ...]`.")
+	public ConfigList ignoredPaths() {
+		return getConfig().hasPath("security.ignored") ? getConfig().getList("security.ignored") : null;
 	}
 
 	@Documented(position = 620,

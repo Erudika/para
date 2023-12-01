@@ -39,10 +39,14 @@ public final class IgnoredRequestMatcher implements RequestMatcher {
 	private final OrRequestMatcher orMatcher;
 
 	private IgnoredRequestMatcher() {
-		ConfigList c = Para.getConfig().getConfig().getList("security.ignored");
-		List<RequestMatcher> list = new ArrayList<>(c.size());
-		for (ConfigValue configValue : c) {
-			list.add(new AntPathRequestMatcher((String) configValue.unwrapped()));
+		ConfigList c = Para.getConfig().ignoredPaths();
+		List<RequestMatcher> list = new ArrayList<>();
+		if (c != null) {
+			for (ConfigValue configValue : c) {
+				list.add(new AntPathRequestMatcher((String) configValue.unwrapped()));
+			}
+		} else {
+			list.add(new AntPathRequestMatcher("/"));
 		}
 		orMatcher = new OrRequestMatcher(list);
 	}

@@ -4,8 +4,11 @@ import com.erudika.para.core.App;
 import com.erudika.para.core.listeners.InitializeListener;
 import com.erudika.para.core.utils.Para;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -96,46 +99,65 @@ public enum HealthUtils implements InitializeListener, Runnable {
 		@Override
 		public void onInitialize() {
 			performHealthCheck();
+			String confFile = Paths.get(Para.getConfig().getConfigFilePath()).toAbsolutePath().toString();
 			if (!isHealthy()) {
 				if (rootAppExists) {
 					logger.warn("Server is unhealthy - the search index may be corrupted and may have to be rebuilt.");
 				} else {
-					Map<String, String> rootAppCredentials = Para.setup();
-					String confFile = Paths.get(Para.getConfig().getConfigFilePath()).toAbsolutePath().toString();
-					if (rootAppCredentials.containsKey("secretKey")) {
-						try (InputStream ref = getClass().getClassLoader().getResourceAsStream("reference.conf");
-								InputStream config = Optional.ofNullable(Para.getFileStore().load(confFile)).orElse(ref)) {
-
-							String confString = new String(config.readAllBytes(), StandardCharsets.UTF_8);
-							String accessKey = "para.root_access_key = \"" + rootAppCredentials.get("accessKey") + "\"";
-							String secretKey = "para.root_secret_key = \"" + rootAppCredentials.get("secretKey") + "\"";
-							if (confString.contains("para.root_access_key")) {
-								confString = confString.replaceAll("para\\.root_access_key\\s*=\\s*\".*?\"", accessKey);
-							} else {
-								confString += "\n" + accessKey;
-							}
-							if (confString.contains("para.root_secret_key")) {
-								confString = confString.replaceAll("para\\.root_secret_key\\s*=\\s*\".*?\"", secretKey);
-							} else {
-								confString += "\n" + secretKey;
-							}
-							Para.getFileStore().store(confFile, new ByteArrayInputStream(confString.
-									getBytes(StandardCharsets.UTF_8)));
-							logger.info("Saved root app credentials to {}.", confFile);
-						} catch (Exception e) {
-							logger.info("Initialized root app with access key '{}' and secret '{}', "
-									+ "but could not write these to {}.",
-									rootAppCredentials.get("accessKey"), rootAppCredentials.get("secretKey"), confFile);
-						}
-					} else {
-						logger.warn("Server is unhealthy - failed to initialize root app. Open http://localhost:" +
-								Para.getConfig().serverPort() + "/v1/_setup in the browser to initialize Para manually.");
+					saveConfigFile(confFile, Para.setup());
+				}
+			} else if (isHealthy() && !Para.getConfig().inProduction()) {
+				App root = Para.getDAO().read(App.id(Para.getConfig().getRootAppIdentifier()));
+				try {
+					if (root != null && (!Files.exists(Path.of(confFile)) || !loadConfigFile(confFile).contains(root.getSecret()))) {
+						saveConfigFile(confFile, Map.of("accessKey", root.getId(), "secretKey", root.getSecret()));
 					}
+				} catch (IOException ex) {
+					logger.error(null, ex);
 				}
 			}
+
 			if (Para.getConfig().healthCheckEnabled() && scheduledHealthCheck == null) {
 				scheduledHealthCheck = Para.getScheduledExecutorService().
 						scheduleAtFixedRate(this, 30, Para.getConfig().healthCheckInvervalSec(), TimeUnit.SECONDS);
+			}
+		}
+
+		private void saveConfigFile(String confFile, Map<String, String> rootAppCredentials) {
+			if (rootAppCredentials.containsKey("secretKey")) {
+				String confString = "";
+				try {
+					confString = loadConfigFile(confFile);
+				} catch (IOException e) {
+					logger.info("Initialized root app with access key '{}' and secret '{}', "
+							+ "but could not write these to {}.",
+							rootAppCredentials.get("accessKey"), rootAppCredentials.get("secretKey"), confFile);
+				}
+				String accessKey = "para.root_access_key = \"" + rootAppCredentials.get("accessKey") + "\"";
+				String secretKey = "para.root_secret_key = \"" + rootAppCredentials.get("secretKey") + "\"";
+				if (confString.contains("para.root_access_key")) {
+					confString = confString.replaceAll("para\\.root_access_key\\s*=\\s*\".*?\"", accessKey);
+				} else {
+					confString += "\n" + accessKey;
+				}
+				if (confString.contains("para.root_secret_key")) {
+					confString = confString.replaceAll("para\\.root_secret_key\\s*=\\s*\".*?\"", secretKey);
+				} else {
+					confString += "\n" + secretKey;
+				}
+				Para.getFileStore().store(confFile, new ByteArrayInputStream(confString.
+						getBytes(StandardCharsets.UTF_8)));
+				logger.info("Saved root app credentials to {}.", confFile);
+			} else {
+				logger.warn("Server is unhealthy - failed to initialize root app. Open http://localhost:" +
+						Para.getConfig().serverPort() + "/v1/_setup in the browser to initialize Para manually.");
+			}
+		}
+
+		private String loadConfigFile(String confFile) throws IOException {
+			try (InputStream ref = getClass().getClassLoader().getResourceAsStream("reference.conf");
+						InputStream config = Optional.ofNullable(Para.getFileStore().load(confFile)).orElse(ref)) {
+				return new String(config.readAllBytes(), StandardCharsets.UTF_8);
 			}
 		}
 
