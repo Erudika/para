@@ -273,7 +273,10 @@ public abstract class Config {
 	public Object getConfigValue(String key, String defaultValue) {
 		String valString = getConfigParam(key, defaultValue);
 		try {
-			if (getConfig().hasPath(key) && getConfig().getValue(key).unwrapped() != null) {
+			// keep existing values from config file, but if any properties were set through
+			// System.setProperty() to a new value - skip this step and use the new values
+			if (getConfig().hasPath(key) && getConfig().getValue(key).unwrapped() != null &&
+					StringUtils.equals(valString, getConfig().getAnyRef(key).toString())) {
 				return getConfig().getValue(key).unwrapped();
 			}
 			Documented doc = annotatedMethodsMap.get(key);
