@@ -12,7 +12,7 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>5.8.5</springSecVer>
+		<springSecVer>5.8.8</springSecVer>
 		<springLdapVer>2.4.1</springLdapVer>
 	</properties>
 
@@ -130,7 +130,7 @@
 		<dependency>
 			<groupId>com.unboundid</groupId>
 			<artifactId>unboundid-ldapsdk</artifactId>
-			<version>6.0.9</version>
+			<version>6.0.10</version>
 		</dependency>
 
 		<!-- SAML -->
@@ -149,7 +149,7 @@
 		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
 			<artifactId>caffeine</artifactId>
-			<version>3.1.5</version>
+			<version>3.1.8</version>
 		</dependency>
 
 		<!-- JERSEY -->
@@ -239,7 +239,7 @@
 		<dependency>
 			<groupId>org.yaml</groupId>
 			<artifactId>snakeyaml</artifactId>
-			<version>2.0</version>
+			<version>2.2</version>
 		</dependency>
 		<dependency>
 			<groupId>javax.servlet</groupId>
@@ -255,7 +255,7 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>9.31</version>
+			<version>9.37.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents.core5</groupId>
@@ -283,8 +283,8 @@
 		</dependency>
 		<dependency>
 			<groupId>org.elasticmq</groupId>
-			<artifactId>elasticmq-rest-sqs_2.11</artifactId>
-			<version>0.14.15</version>
+			<artifactId>elasticmq-rest-sqs_2.13</artifactId>
+			<version>1.5.2</version>
 			<scope>test</scope>
 			<exclusions>
 				<exclusion>

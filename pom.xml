@@ -80,16 +80,16 @@
 		<skipUTs>${skipTests}</skipUTs>
 		<deployPluginVer>3.1.1</deployPluginVer>
 		<slf4jVer>1.7.36</slf4jVer>
-		<logbackVer>1.2.11</logbackVer>
-		<awsJdkVer>[2.20.35,)</awsJdkVer>
-		<jerseyVer>2.39.1</jerseyVer>
-		<springBootVer>2.7.17</springBootVer>
+		<logbackVer>1.2.13</logbackVer>
+		<awsJdkVer>[2.21.23,)</awsJdkVer>
+		<jerseyVer>2.41</jerseyVer>
+		<springBootVer>2.7.18</springBootVer>
 		<metricsVer>4.2.19</metricsVer>
 		<httpClientVer>5.2.1</httpClientVer>
 		<httpCoreVer>5.2.2</httpCoreVer>
 		<commonsCodecVer>1.16.0</commonsCodecVer>
-		<lucenePluginVer>1.46.0</lucenePluginVer>
-		<sqlPluginVer>1.46.0</sqlPluginVer>
+		<lucenePluginVer>1.47.0</lucenePluginVer>
+		<sqlPluginVer>1.47.0</sqlPluginVer>
 	</properties>
 
 	<dependencies>
