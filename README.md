@@ -78,6 +78,10 @@ free developer account. Browse and manage your users and objects, do backups and
 the web console. By upgrading to a premium account you will be able to scale you projects up and down in seconds and
 manage multiple apps.
 
+You can also deploy a self-hosted version in one-click with [Dome](https://app.trydome.io/signup?package=para):
+
+[![Deploy to Dome](https://trydome.io/button.svg)](https://app.trydome.io/signup?package=para)
+
 ## Quick Start
 
 1. [Download the latest executable JAR](https://github.com/Erudika/para/releases)
