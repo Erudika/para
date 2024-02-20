@@ -21,6 +21,7 @@ import com.erudika.para.core.App;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.server.rest.RestUtils;
 import java.io.IOException;
+import java.util.Set;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -29,6 +30,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.DefaultRedirectStrategy;
 import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * Simple handler for successful authentication requests.
@@ -48,8 +51,19 @@ public class SimpleAuthenticationFailureHandler extends SimpleUrlAuthenticationF
 			App app = Para.getDAO().read(App.id(appid));
 			if (app != null) {
 				String customURI = (String) app.getSetting("signin_failure");
+				Set<String> hostUrlAliases = SecurityUtils.getHostUrlAliasesForReturn(app);
+				String hostUrlParam = request.getParameter("host_url");
 				if (app.isRootApp() && StringUtils.isBlank(customURI)) {
 					customURI = Para.getConfig().signinFailurePath();
+				}
+				if (!StringUtils.isBlank(hostUrlParam)) {
+					if (hostUrlAliases.contains(hostUrlParam) || StringUtils.startsWith(customURI, hostUrlParam)) {
+						UriComponents hostUrl = UriComponentsBuilder.fromHttpUrl(hostUrlParam).build();
+						customURI = UriComponentsBuilder.fromHttpUrl(customURI).host(hostUrl.getHost()).toUriString();
+					} else {
+						UriComponents customHost = UriComponentsBuilder.fromHttpUrl(customURI).build();
+						customURI = customHost.getScheme() + "://" + customHost.getHost();
+					}
 				}
 				if (StringUtils.contains(customURI, "cause=?")) {
 					customURI = customURI.replace("cause=?", "cause=" + exception.getMessage());

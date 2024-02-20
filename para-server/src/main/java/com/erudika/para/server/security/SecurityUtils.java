@@ -42,10 +42,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
@@ -442,9 +446,20 @@ public final class SecurityUtils {
 	 */
 	public static String getRedirectUrl(HttpServletRequest request) {
 		String url = request.getRequestURL().toString();
+		boolean hasQueryString = false;
+		List<String> qs = new LinkedList<>();
 		// allow clients to use /oauth2_auth?appid={appid} as an alternative to ?state={appid}
 		if (!StringUtils.isBlank(request.getParameter(Config._APPID))) {
-			url += "?" + Config._APPID + "=" + request.getParameter(Config._APPID);
+			qs.add(Config._APPID + "=" + request.getParameter(Config._APPID));
+			hasQueryString = true;
+		}
+		// allow client servers to run on multiple different public URLs and to override "signin_success/failure"
+		if (!StringUtils.isBlank(request.getParameter("host_url"))) {
+			qs.add("host_url=" + request.getParameter("host_url"));
+			hasQueryString = true;
+		}
+		if (hasQueryString) {
+			url += "?" + String.join("&", qs.toArray(String[]::new));
 		}
 		if (!StringUtils.isBlank(request.getHeader("X-Forwarded-Proto"))) {
 			return request.getHeader("X-Forwarded-Proto") + url.substring(url.indexOf(':'));
@@ -484,5 +499,22 @@ public final class SecurityUtils {
 		} else  {
 			return StringUtils.trimToNull(appidFromState);
 		}
+	}
+
+	public static Set<String> getHostUrlAliasesForReturn(App app) {
+		String hostUrlAliases = (String) app.getSetting("security.hosturl_aliases");
+		if (!StringUtils.isBlank(hostUrlAliases)) {
+			String[] domains = hostUrlAliases.split("\\s*,\\s*");
+			if (domains != null && domains.length > 0) {
+				Set<String> list = new LinkedHashSet<>();
+				for (String domain : domains) {
+					if (StringUtils.startsWithAny(domain, "http://", "https://")) {
+						list.add(domain);
+					}
+				}
+				return list;
+			}
+		}
+		return Collections.emptySet();
 	}
 }
