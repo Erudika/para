@@ -19,6 +19,7 @@ package com.erudika.para.server.email;
 
 import com.erudika.para.core.email.Emailer;
 import com.erudika.para.core.utils.Para;
+import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
@@ -26,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import javax.mail.internet.MimeMessage;
+import javax.mail.util.ByteArrayDataSource;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +68,11 @@ public class JavaMailEmailer implements Emailer {
 
 	@Override
 	public boolean sendEmail(final List<String> emails, final String subject, final String body) {
+		return sendEmail(emails, subject, body, null, null, null);
+	}
+
+	@Override
+	public boolean sendEmail(List<String> emails, String subject, String body, InputStream attachment, String mimeType, String fileName) {
 		if (emails == null || emails.isEmpty()) {
 			return false;
 		}
@@ -82,6 +89,9 @@ public class JavaMailEmailer implements Emailer {
 						msg.setSubject(subject);
 						msg.setFrom(Para.getConfig().supportEmail());
 						msg.setText(body, true); // body is assumed to be HTML
+						if (attachment != null) {
+							msg.addAttachment(fileName, new ByteArrayDataSource(attachment, mimeType));
+						}
 					}
 				};
 				try {

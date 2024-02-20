@@ -19,10 +19,25 @@ package com.erudika.para.server.email;
 
 import com.erudika.para.core.email.Emailer;
 import com.erudika.para.core.utils.Para;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Properties;
+import javax.activation.DataHandler;
 import javax.inject.Singleton;
+import javax.mail.Session;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.InternetHeaders;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMessage.RecipientType;
+import javax.mail.internet.MimeMultipart;
+import javax.mail.util.ByteArrayDataSource;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ses.SesClient;
 import software.amazon.awssdk.services.ses.model.Body;
@@ -30,6 +45,7 @@ import software.amazon.awssdk.services.ses.model.Content;
 import software.amazon.awssdk.services.ses.model.Destination;
 import software.amazon.awssdk.services.ses.model.Message;
 import software.amazon.awssdk.services.ses.model.SendEmailRequest;
+import software.amazon.awssdk.services.ses.model.SendRawEmailRequest;
 
 /**
  * An emailer that uses AWS Simple Email Service (SES).
@@ -80,4 +96,61 @@ public class AWSEmailer implements Emailer {
 		}
 		return false;
 	}
+
+	@Override
+	public boolean sendEmail(List<String> emails, String subject, String body, InputStream attachment, String mimeType, String fileName) {
+		if (emails == null || emails.isEmpty() || StringUtils.isBlank(body)) {
+			return false;
+		}
+		if (attachment == null || StringUtils.isBlank(mimeType)) {
+			return sendEmail(emails, subject, body);
+		}
+
+		try {
+			Session session = Session.getDefaultInstance(new Properties());
+			MimeMessage message = new MimeMessage(session);
+			message.setSubject(subject, "UTF-8");
+			message.setFrom(new InternetAddress(Para.getConfig().supportEmail()));
+			Iterator<String> emailz = emails.iterator();
+			message.setRecipients(RecipientType.TO, InternetAddress.parse(emailz.next()));
+			StringBuilder sb = new StringBuilder();
+			while (emailz.hasNext()) {
+				sb.append(emailz.next()).append(emailz.hasNext() ? "," : "");
+			}
+			message.setRecipients(RecipientType.BCC, InternetAddress.parse(sb.toString()));
+
+			MimeBodyPart htmlPart = new MimeBodyPart();
+			htmlPart.setContent(body, "text/html; charset=UTF-8");
+
+			byte[] fileByteArray = IOUtils.toByteArray(attachment);
+			InternetHeaders fileHeaders = new InternetHeaders();
+			fileHeaders.setHeader("Content-Type", mimeType + "; name=\"" + fileName + "\"");
+			fileHeaders.setHeader("Content-Transfer-Encoding", "base64");
+			fileHeaders.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+
+			MimeBodyPart attach = new MimeBodyPart(fileHeaders, fileByteArray);
+			ByteArrayDataSource ds = new ByteArrayDataSource(fileByteArray, mimeType);
+			attach.setDataHandler(new DataHandler(ds));
+			attach.setFileName(fileName);
+
+			MimeMultipart msg = new MimeMultipart("mixed");
+			msg.addBodyPart(htmlPart);
+			msg.addBodyPart(attach);
+
+			try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+				message.setContent(msg);
+				message.writeTo(outputStream);
+				SendRawEmailRequest rawEmailRequest = SendRawEmailRequest.builder().
+						rawMessage(r -> r.data(SdkBytes.fromByteArray(outputStream.toByteArray()))).build();
+				sesclient.sendRawEmail(rawEmailRequest);
+			}
+			return true;
+			// Display an error if something goes wrong.
+		} catch (Exception ex) {
+			LoggerFactory.getLogger(AWSEmailer.class).error(null, ex);
+		}
+		return false;
+	}
+
+
 }

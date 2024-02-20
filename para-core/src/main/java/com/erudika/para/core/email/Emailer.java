@@ -17,6 +17,7 @@
  */
 package com.erudika.para.core.email;
 
+import java.io.InputStream;
 import java.util.List;
 
 /**
@@ -33,5 +34,17 @@ public interface Emailer {
 	 * @return true if the message was sent
 	 */
 	boolean sendEmail(List<String> emails, String subject, String body);
+
+	/**
+	 * Sends an email.
+	 * @param emails a list of email addresses (recipients)
+	 * @param subject the subject of the message
+	 * @param body the body of the message
+	 * @param attachment attachment
+	 * @param mimeType attachment MIME type
+	 * @param fileName attachment file name
+	 * @return true if the message was sent
+	 */
+	boolean sendEmail(List<String> emails, String subject, String body, InputStream attachment, String mimeType, String fileName);
 
 }
