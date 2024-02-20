@@ -501,6 +501,10 @@ public final class SecurityUtils {
 		}
 	}
 
+	/**
+	 * @param app the Para app object
+	 * @return a set of host URLs if found in app settings
+	 */
 	public static Set<String> getHostUrlAliasesForReturn(App app) {
 		String hostUrlAliases = (String) app.getSetting("security.hosturl_aliases");
 		if (!StringUtils.isBlank(hostUrlAliases)) {

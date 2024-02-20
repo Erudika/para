@@ -2,7 +2,7 @@
 
 ## A scalable, multitenant backend for the cloud.
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=com.erudika%3Apara-parent&metric=alert_status)](https://sonarcloud.io/dashboard?id=com.erudika%3Apara-parent)
+[![Docker pulls](https://img.shields.io/docker/pulls/erudikaltd/para)](https://hub.docker.com/r/erudikaltd/para)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-core)
 [![Join the chat at https://gitter.im/Erudika/para](https://badges.gitter.im/Erudika/para.svg)](https://gitter.im/Erudika/para?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
