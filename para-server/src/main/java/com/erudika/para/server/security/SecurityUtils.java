@@ -56,6 +56,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.core.HttpHeaders;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -497,7 +498,8 @@ public final class SecurityUtils {
 		} else if (!StringUtils.isBlank(appidFromAppid)) {
 			return StringUtils.trimToNull(appidFromAppid);
 		} else  {
-			return StringUtils.trimToNull(appidFromState);
+			// allow state parameter to contain appid and an index of "host_url" to return to, i.e. ?state={appid}|2
+			return StringUtils.trimToNull(StringUtils.substringBefore(appidFromState, "|"));
 		}
 	}
 
@@ -520,5 +522,29 @@ public final class SecurityUtils {
 			}
 		}
 		return Collections.emptySet();
+	}
+
+	/**
+	 * @param hostUrlAliases host URL aliases
+	 * @param request request
+	 * @return a host URL or null
+	 */
+	public static String getHostUrlFromQueryStringOrStateParam(Set<String> hostUrlAliases, HttpServletRequest request) {
+		if (request != null) {
+			String hostUrlParam = request.getParameter("host_url");
+			if (StringUtils.isBlank(hostUrlParam)) {
+				String state = request.getParameter("state");
+				if (StringUtils.contains(state, "|") && NumberUtils.isDigits(StringUtils.substringAfterLast(state, "|"))) {
+					int index = Math.abs(NumberUtils.toInt(StringUtils.substringAfterLast(state, "|"), 0));
+					if (hostUrlAliases != null && index < hostUrlAliases.size() && index >= 0) {
+						return hostUrlAliases.toArray(String[]::new)[index];
+					} else {
+						return null;
+					}
+				}
+			}
+			return hostUrlParam;
+		}
+		return null;
 	}
 }

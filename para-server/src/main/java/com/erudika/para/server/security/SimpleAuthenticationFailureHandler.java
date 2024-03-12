@@ -52,7 +52,7 @@ public class SimpleAuthenticationFailureHandler extends SimpleUrlAuthenticationF
 			if (app != null) {
 				String customURI = (String) app.getSetting("signin_failure");
 				Set<String> hostUrlAliases = SecurityUtils.getHostUrlAliasesForReturn(app);
-				String hostUrlParam = request.getParameter("host_url");
+				String hostUrlParam = SecurityUtils.getHostUrlFromQueryStringOrStateParam(hostUrlAliases, request);
 				if (app.isRootApp() && StringUtils.isBlank(customURI)) {
 					customURI = Para.getConfig().signinFailurePath();
 				}
