@@ -23,6 +23,7 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -118,6 +119,8 @@ public class LocalFileStore implements FileStore {
 			} else {
 				logger.warn("Failed to write file {} to disk - no permissions.", folder + path);
 			}
+		} catch (FileNotFoundException ex) {
+			logger.error("File {} not found.", folder + path);
 		} catch (IOException e) {
 			logger.error(null, e);
 		} finally {
