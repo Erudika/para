@@ -72,6 +72,9 @@ public final class LDAPAuthenticator implements LdapAuthenticator {
 				// this is usually not required for authentication - leave blank
 				contextSource.setPassword(bindPass);
 			}
+
+			contextSource.afterPropertiesSet();
+
 			LdapUserSearch userSearch = new FilterBasedLdapUserSearch(userSearchBase, userSearchFilter, contextSource);
 
 			if (usePasswordComparison) {
