@@ -62,7 +62,6 @@ public final class LDAPAuthenticator implements LdapAuthenticator {
 
 			DefaultSpringSecurityContextSource contextSource =
 					new DefaultSpringSecurityContextSource(Arrays.asList(serverUrl), baseDN);
-			contextSource.setAuthenticationSource(new SpringSecurityAuthenticationSource());
 			contextSource.setCacheEnvironmentProperties(false);
 			if (!bindDN.isEmpty()) {
 				// this is usually not required for authentication - leave blank
