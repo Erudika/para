@@ -1,6 +1,6 @@
 # Default Para docker image bundled with H2 and Lucene plugins
 
-FROM maven:3.8-jdk-11-slim AS build
+FROM maven:3-eclipse-temurin-21-alpine AS build
 
 RUN mkdir -p /para
 RUN curl -Ls https://github.com/Erudika/para/archive/master.tar.gz | tar -xz -C /para
