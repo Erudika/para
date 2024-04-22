@@ -253,7 +253,8 @@ public abstract class Config {
 		if (StringUtils.isBlank(key)) {
 			return defaultValue;
 		}
-		String env = System.getenv(getConfigRootPrefix() + "_" + key.replaceAll("\\.", "_"));
+		String envKey = getConfigRootPrefix() + "_" + key.replaceAll("\\.", "_");
+		String env = System.getenv().getOrDefault(envKey.toUpperCase(), System.getenv(envKey)); // support uppercase ENV vars
 		String sys = System.getProperty(getConfigRootPrefix() + "." + key);
 		if (!StringUtils.isBlank(sys)) {
 			return sys;
