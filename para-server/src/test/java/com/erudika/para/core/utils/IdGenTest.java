@@ -17,41 +17,39 @@
  */
 package com.erudika.para.core.utils;
 
-import com.erudika.para.core.utils.Utils;
-import com.anarsoft.vmlens.concurrent.junit.ConcurrentTestRunner;
-import com.anarsoft.vmlens.concurrent.junit.ThreadCount;
 import java.util.ArrayList;
 import java.util.HashSet;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import static org.junit.jupiter.api.Assertions.fail;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 /**
  * Concurrency test for ID generation in Para.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@RunWith(ConcurrentTestRunner.class)
+@Execution(ExecutionMode.CONCURRENT)
 public class IdGenTest {
 	final ArrayList<String> ids = new ArrayList<String>();
 
-	@Before
+	@BeforeEach
 	public void setup() throws Exception {
 	}
 
 	@Test
-	@ThreadCount(16)
+//	@ThreadCount(16)
 	public void testGetNewId() {
 		ids.add(Utils.getNewId());
 	}
 
-	@After
+	@AfterEach
 	public void tearDown() {
 		HashSet<String> uniqueIds = new HashSet<String>(ids.size());
 		for (String id : ids) {
 			if (uniqueIds.contains(id)) {
-				Assert.fail("Duplicate ID generated: " + id);
+				fail("Duplicate ID generated: " + id);
 			}
 			uniqueIds.add(id);
 		}

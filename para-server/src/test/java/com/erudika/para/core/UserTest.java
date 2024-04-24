@@ -32,10 +32,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.naming.LimitExceededException;
-import org.junit.After;
-import static org.junit.Assert.*;
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.AfterEach;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import static org.mockito.Mockito.*;
 
 /**
@@ -58,13 +64,13 @@ public class UserTest {
 		return CoreUtils.getInstance().getDao(); //new MockDAO();
 	}
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		System.setProperty("para.min_password_length", "6");
 		CoreUtils.getInstance().setSearch(mock(Search.class));
 	}
 
-	@After
+	@AfterEach
 	public void tearDown() {
 	}
 

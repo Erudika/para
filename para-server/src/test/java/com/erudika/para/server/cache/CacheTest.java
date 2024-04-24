@@ -17,21 +17,24 @@
  */
 package com.erudika.para.server.cache;
 
-import com.erudika.para.core.cache.Cache;
 import com.erudika.para.core.User;
+import com.erudika.para.core.cache.Cache;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.Test;
-import static org.junit.Assert.*;
-import org.junit.Ignore;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@Ignore
+@Disabled
 public abstract class CacheTest {
 
 	private final Cache c;
@@ -42,7 +45,7 @@ public abstract class CacheTest {
 		this.c = c;
 	}
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		c.removeAll();
 	}

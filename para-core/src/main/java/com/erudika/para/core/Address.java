@@ -17,17 +17,17 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.core.utils.CoreUtils;
-import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.annotations.Locked;
 import com.erudika.para.core.annotations.Stored;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Pager;
 import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
 import java.util.List;
 import java.util.Objects;
-import javax.validation.constraints.Size;
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 /**
  * This class represents an address. It enables location based search queries.

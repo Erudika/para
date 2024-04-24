@@ -18,7 +18,7 @@
 package com.erudika.para.core.queue;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 

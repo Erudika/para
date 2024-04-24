@@ -17,16 +17,16 @@
  */
 package com.erudika.para.server.utils;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.zip.GZIPOutputStream;
 
 /**
- * Provides a wrapper for {@link javax.servlet.http.HttpServletResponseWrapper}.
+ * Provides a wrapper for {@link jakarta.servlet.http.HttpServletResponseWrapper}.
  * It is used to wrap the real Response so that we can modify it after
  * that the target of the request has delivered its response.
  * It uses the Wrapper pattern.

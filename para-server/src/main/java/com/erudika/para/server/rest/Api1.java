@@ -63,8 +63,16 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider;
 import com.nimbusds.jwt.SignedJWT;
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.StreamingOutput;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -85,14 +93,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.StreamingOutput;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.glassfish.jersey.process.Inflector;
@@ -354,7 +354,7 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				Map<String, String> info = new TreeMap<>();
-				info.put("info", "Para - the backend for busy developers.");
+				info.put("info", "Para - the backend for busy developers.!");
 				if (Para.getConfig().versionBannerEnabled()) {
 					info.put("version", StringUtils.replace(getVersion(), "-SNAPSHOT", ""));
 				}
@@ -634,7 +634,7 @@ public final class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : getPrincipalApp();
 				String subjectid = pathParam("subjectid", ctx);
-				String resourcePath = pathParam(Config._TYPE, ctx);
+				String resourcePath = Utils.base64dec(pathParam(Config._TYPE, ctx));
 				String httpMethod = pathParam("method", ctx);
 				if (app != null) {
 					return Response.ok(app.isAllowedTo(subjectid, resourcePath, httpMethod),
@@ -655,7 +655,7 @@ public final class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : getPrincipalApp();
 				String subjectid = pathParam("subjectid", ctx);
-				String resourcePath = pathParam(Config._TYPE, ctx);
+				String resourcePath = Utils.base64dec(pathParam(Config._TYPE, ctx));
 				if (app != null) {
 					Response resp = getEntity(ctx.getEntityStream(), List.class);
 					if (resp.getStatusInfo() == Response.Status.OK) {
@@ -695,11 +695,11 @@ public final class Api1 extends ResourceConfig {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : getPrincipalApp();
 				String subjectid = pathParam("subjectid", ctx);
-				String type = pathParam(Config._TYPE, ctx);
+				String resourcePath = Utils.base64dec(pathParam(Config._TYPE, ctx));
 				if (app != null) {
 					boolean revoked;
-					if (type != null) {
-						revoked = app.revokeResourcePermission(subjectid, type);
+					if (!StringUtils.isBlank(resourcePath)) {
+						revoked = app.revokeResourcePermission(subjectid, resourcePath);
 					} else {
 						revoked = app.revokeAllResourcePermissions(subjectid);
 					}

@@ -26,7 +26,7 @@ import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import java.util.List;
 import java.util.Objects;
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * A translation is a key/value pair which holds a single translated string.

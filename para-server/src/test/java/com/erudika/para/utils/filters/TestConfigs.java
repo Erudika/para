@@ -18,8 +18,8 @@ package com.erudika.para.utils.filters;
 import com.erudika.para.server.utils.filters.CORSFilter;
 import java.util.Enumeration;
 
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContext;
 
 @SuppressWarnings("unchecked")
 public class TestConfigs {

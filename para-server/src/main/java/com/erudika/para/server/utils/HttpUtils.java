@@ -19,10 +19,11 @@ package com.erudika.para.server.utils;
 
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.server.security.SecurityUtils;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.core.HttpHeaders;
 import java.util.TimeZone;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 
@@ -184,6 +185,6 @@ public final class HttpUtils {
 		if (!StringUtils.isBlank(sameSite)) {
 			sb.append("SameSite=").append(sameSite);
 		}
-		response.addHeader(javax.ws.rs.core.HttpHeaders.SET_COOKIE, sb.toString());
+		response.addHeader(HttpHeaders.SET_COOKIE, sb.toString());
 	}
 }

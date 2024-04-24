@@ -21,14 +21,15 @@
  */
 package com.erudika.para.core.utils;
 
-import com.erudika.para.core.utils.HumanTime;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-
-import junit.framework.TestCase;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test case for {@link HumanTime}.
@@ -38,26 +39,21 @@ import junit.framework.TestCase;
  * @see <a href="http://johannburkard.de/blog/programming/java/date-formatting-parsing-humans-humantime.html">Date
  * Formatting and Parsing for Humans in Java with HumanTime</a>
  */
-public class HumanTimeTest extends TestCase {
+public class HumanTimeTest {
 
-    public HumanTimeTest() {
-        super();
-    }
-
-    public HumanTimeTest(String name) {
-        super(name);
-    }
-
+	@Test
     public void testD() {
         assertEquals("2 d", new HumanTime().d().d().getExactly());
         assertEquals("2 d", new HumanTime().d().h(-24).getExactly());
     }
 
+	@Test
     public void testY() {
         assertEquals("1 y", HumanTime.eval("-1Y").toString());
         assertEquals("320 y", HumanTime.eval("- 4 319 y  Y").y().toString());
     }
 
+	@Test
     public void testS() {
         assertEquals("2 s", HumanTime.eval("1 s s").s().toString());
         assertEquals("4 s", HumanTime.eval("2 s s").s().s().toString());
@@ -66,6 +62,7 @@ public class HumanTimeTest extends TestCase {
     /**
      * Test method for {@link com.eaio.util.text.HumanTime#eval(java.lang.CharSequence)}.
      */
+	@Test
     public void testEval() {
         assertEquals("2 m", HumanTime.eval("2 m").getExactly());
         assertEquals("8 d 2 h 6 m", HumanTime.eval("2m8d2h4m").getExactly());
@@ -80,11 +77,13 @@ public class HumanTimeTest extends TestCase {
     /**
      * Test method for {@link com.eaio.util.text.HumanTime#exactly(long)}.
      */
+	@Test
     public void testExactlyLong() {
         assertEquals("42 ms", HumanTime.exactly(42));
         assertEquals("1 s 42 ms", HumanTime.exactly(1042));
     }
 
+	@Test
     public void testApproximately() {
         assertEquals("42ms", HumanTime.approximately(42));
         assertEquals("1s", HumanTime.approximately(1042));
@@ -114,12 +113,14 @@ public class HumanTimeTest extends TestCase {
         assertEquals("1d", HumanTime.approximately("23 h 1h 10 s"));
     }
 
+	@Test
     public void testEquals() {
         assertEquals(HumanTime.eval("4d20m1s"), HumanTime.eval(" 4 d20 m 1  s "));
         assertFalse(HumanTime.eval("4d20m2s").equals(HumanTime.eval(" 4 d20 m 1  s ")));
         assertFalse(HumanTime.eval("4d20m1s").equals(HumanTime.eval(" 4 d20 m 1  d ")));
     }
 
+	@Test
     public void testGetStateChar() {
         assertEquals(HumanTime.State.IGNORED, HumanTime.getState(' '));
         assertEquals(HumanTime.State.IGNORED, HumanTime.getState('a'));
@@ -129,11 +130,13 @@ public class HumanTimeTest extends TestCase {
         assertEquals(HumanTime.State.UNIT, HumanTime.getState('d'));
     }
 
+	@Test
     public void testHashCode() throws CloneNotSupportedException {
         assertEquals(0, new HumanTime(0L).hashCode());
         assertTrue(HumanTime.eval("42 s").hashCode() != 0);
     }
 
+	@Test
     public void testSerialization() throws IOException, ClassNotFoundException {
         ByteArrayOutputStream bOut = new ByteArrayOutputStream();
         ObjectOutputStream oOut = new ObjectOutputStream(bOut);

@@ -75,7 +75,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<release>11</release>
+					<release>17</release>
 					<stylesheetfile>../para-core/src/main/javadoc/stylesheet.css</stylesheetfile>
 					<show>public</show>
 					<aggregate>true</aggregate>

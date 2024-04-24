@@ -36,18 +36,20 @@ import static com.erudika.para.server.rest.RestUtils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response.Status;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response.Status;
-import org.junit.AfterClass;
-import static org.junit.Assert.*;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 /**
  *
@@ -58,7 +60,7 @@ public class RestUtilsTest {
 	public RestUtilsTest() {
 	}
 
-	@BeforeClass
+	@BeforeAll
 	public static void setUpClass() {
 		System.setProperty("para.env", "embedded");
 		System.setProperty("para.app_name", "para-test");
@@ -75,7 +77,7 @@ public class RestUtilsTest {
 		});
 	}
 
-	@AfterClass
+	@AfterAll
 	public static void tearDownClass() {
 		Para.destroy();
 	}

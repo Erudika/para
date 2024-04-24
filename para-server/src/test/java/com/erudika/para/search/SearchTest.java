@@ -17,16 +17,16 @@
  */
 package com.erudika.para.search;
 
-import com.erudika.para.core.search.Search;
 import com.erudika.para.core.Address;
 import com.erudika.para.core.App;
 import com.erudika.para.core.Linker;
 import com.erudika.para.core.ParaObject;
-import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
+import com.erudika.para.core.search.Search;
 import com.erudika.para.core.utils.Config;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Pager;
 import com.erudika.para.core.utils.Utils;
 import java.util.ArrayList;
@@ -35,15 +35,20 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.Test;
-import static org.junit.Assert.*;
-import org.junit.Ignore;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@Ignore
+@Disabled
 public abstract class SearchTest {
 
 	protected static Search s;

@@ -17,18 +17,18 @@
  */
 package com.erudika.para.server.aop;
 
-import com.erudika.para.core.utils.Para;
-import com.erudika.para.server.ParaServer;
-import com.erudika.para.core.cache.Cache;
-import com.erudika.para.core.cache.MockCache;
-import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
+import com.erudika.para.core.cache.Cache;
+import com.erudika.para.core.cache.MockCache;
 import com.erudika.para.core.persistence.DAO;
 import com.erudika.para.core.persistence.MockDAO;
 import com.erudika.para.core.search.Search;
+import com.erudika.para.core.utils.CoreUtils;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
+import com.erudika.para.server.ParaServer;
 import com.erudika.para.server.search.LuceneSearch;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -38,10 +38,14 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.junit.AfterClass;
-import static org.junit.Assert.*;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +60,7 @@ public class AspectsIT {
 	private static Sysprop s1;
 	private static Sysprop s2;
 
-	@BeforeClass
+	@BeforeAll
 	public static void setUpClass() throws Exception {
 		System.setProperty("para.env", "embedded");
 		System.setProperty("para.print_logo", "false");
@@ -93,7 +97,7 @@ public class AspectsIT {
 		CoreUtils.getInstance().setSearch(Para.getSearch());
 	}
 
-	@AfterClass
+	@AfterAll
 	public static void tearDownClass() throws Exception {
 		Para.getDAO().deleteAll(Arrays.asList(s0, s1, s2));
 		Para.destroy();

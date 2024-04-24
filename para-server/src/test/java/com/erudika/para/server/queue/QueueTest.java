@@ -18,15 +18,15 @@
 package com.erudika.para.server.queue;
 
 import com.erudika.para.core.queue.Queue;
-import org.junit.Test;
-import static org.junit.Assert.*;
-import org.junit.Ignore;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@Ignore
+@Disabled
 public abstract class QueueTest {
 
 	protected static Queue q;

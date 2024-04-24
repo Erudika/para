@@ -24,11 +24,11 @@ import com.unboundid.ldap.listener.InMemoryDirectoryServer;
 import com.unboundid.ldap.listener.InMemoryDirectoryServerConfig;
 import com.unboundid.ldap.listener.InMemoryListenerConfig;
 import java.util.Map;
-import org.junit.AfterClass;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.DirContextOperations;
@@ -42,30 +42,35 @@ import org.springframework.security.core.Authentication;
  */
 public class LdapAuthTest {
 
-	private static LDAPAuthenticator bindAuthenticator;
-	private static LDAPAuthenticator passComparingAuthenticator;
-	private static InMemoryDirectoryServer server;
-	private static Authentication bob  = new UsernamePasswordAuthenticationToken("bob", "bobspassword");
-	private static Authentication ben  = new UsernamePasswordAuthenticationToken("ben", "benspassword");
+	static LDAPAuthenticator bindAuthenticator;
+	static LDAPAuthenticator passComparingAuthenticator;
+	static InMemoryDirectoryServer server;
+	static Authentication bob  = new UsernamePasswordAuthenticationToken("bob", "bobspassword");
+	static Authentication ben  = new UsernamePasswordAuthenticationToken("ben", "benspassword");
 
-	@BeforeClass
-	public static void setUpClass() throws Exception {
-		InMemoryDirectoryServerConfig config = new InMemoryDirectoryServerConfig("dc=springframework,dc=org");
-		config.setListenerConfigs(InMemoryListenerConfig.createLDAPConfig("LDAP", 8389));
-		config.addAdditionalBindCredentials("uid=admin,ou=system", "secret");
-		server = new InMemoryDirectoryServer(config);
-		server.startListening();
+	@BeforeAll
+	public static void setUpClass() {
+		try {
+			System.out.println("-----------");
+			InMemoryDirectoryServerConfig config = new InMemoryDirectoryServerConfig("dc=springframework,dc=org");
+			config.setListenerConfigs(InMemoryListenerConfig.createLDAPConfig("LDAP", 8389));
+			config.addAdditionalBindCredentials("uid=admin,ou=system", "secret");
+			server = new InMemoryDirectoryServer(config);
+			server.startListening();
 
-		LdapTestUtils.loadLdif(server, new ClassPathResource("test-server.ldif"));
-		Map<String, String> defaultSettings = Para.getConfig().getLdapSettingsForApp(new App("test"));
-		defaultSettings.put("security.ldap.user_dn_pattern", "uid={0},ou=people");
-		bindAuthenticator = new LDAPAuthenticator(defaultSettings);
-		defaultSettings.put("security.ldap.compare_passwords", "true");
-		passComparingAuthenticator = new LDAPAuthenticator(defaultSettings);
+			LdapTestUtils.loadLdif(server, new ClassPathResource("test-server.ldif"));
+			Map<String, String> defaultSettings = Para.getConfig().getLdapSettingsForApp(new App("test"));
+			defaultSettings.put("security.ldap.user_dn_pattern", "uid={0},ou=people");
+			bindAuthenticator = new LDAPAuthenticator(defaultSettings);
+			defaultSettings.put("security.ldap.compare_passwords", "true");
+			passComparingAuthenticator = new LDAPAuthenticator(defaultSettings);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
-	@AfterClass
-	public static void tearDownClass() throws Exception {
+	@AfterAll
+	public static void tearDownClass() {
 		server.shutDown("LDAP", true);
 	}
 

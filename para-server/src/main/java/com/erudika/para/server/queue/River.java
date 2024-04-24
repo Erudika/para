@@ -28,6 +28,7 @@ import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.utils.HealthUtils;
 import com.fasterxml.jackson.databind.ObjectReader;
+import jakarta.ws.rs.core.HttpHeaders;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,7 +40,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import javax.ws.rs.core.HttpHeaders;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
@@ -213,11 +213,13 @@ public abstract class River implements Runnable {
 						return "OK";
 					});
 				} catch (Exception e) {
+					updateFailureCount(appid, id);
 					logger.info("Webhook {} not delivered! {} isn't responding. {}", id, targetUrl, status);
 				}
 			});
 			return 1;
 		} catch (Exception e) {
+			updateFailureCount(appid, id);
 			logger.error("Webhook payload was not delivered:", e);
 		}
 		return 0;

@@ -17,10 +17,12 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.persistence.DAO;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import com.erudika.para.core.utils.CoreUtils;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 /**
  *

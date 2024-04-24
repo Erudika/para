@@ -20,15 +20,16 @@ package com.erudika.para.email;
 import com.erudika.para.core.email.Emailer;
 import java.util.ArrayList;
 import java.util.Collections;
-import static org.junit.Assert.*;
-import org.junit.Ignore;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@Ignore
+@Disabled
 public abstract class EmailerTest {
 
 	protected Emailer e;

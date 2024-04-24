@@ -36,6 +36,8 @@ import com.erudika.para.core.validation.Constraint;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,8 +57,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
 import nl.altindag.ssl.SSLFactory;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -1698,7 +1698,7 @@ public final class ParaClient implements Closeable {
 			permission.add(App.AllowedMethods.GUEST);
 		}
 		subjectid = Utils.urlEncode(subjectid);
-		resourcePath = Utils.urlEncode(resourcePath);
+		resourcePath = Utils.base64encURL(resourcePath.getBytes());
 		return invokePut(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourcePath), permission, Map.class);
 	}
 
@@ -1713,7 +1713,7 @@ public final class ParaClient implements Closeable {
 			return Collections.emptyMap();
 		}
 		subjectid = Utils.urlEncode(subjectid);
-		resourcePath = Utils.urlEncode(resourcePath);
+		resourcePath = Utils.base64encURL(resourcePath.getBytes());
 		return invokeDelete(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourcePath), null, Map.class);
 	}
 
@@ -1742,7 +1742,7 @@ public final class ParaClient implements Closeable {
 			return false;
 		}
 		subjectid = Utils.urlEncode(subjectid);
-		resourcePath = Utils.urlEncode(resourcePath);
+		resourcePath = Utils.base64encURL(resourcePath.getBytes());
 		String url = Utils.formatMessage("_permissions/{0}/{1}/{2}", subjectid, resourcePath, httpMethod);
 		Boolean result = invokeGet(url, null, Boolean.class);
 		return result != null && result;

@@ -17,25 +17,27 @@
  */
 package com.erudika.para.client;
 
-import com.anarsoft.vmlens.concurrent.junit.ConcurrentTestRunner;
-import com.anarsoft.vmlens.concurrent.junit.ThreadCount;
-import com.erudika.para.client.ParaClient;
-import com.erudika.para.core.utils.Para;
-import com.erudika.para.server.ParaServer;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
+import com.erudika.para.core.utils.Para;
+import com.erudika.para.server.ParaServer;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-import org.junit.After;
-import org.junit.AfterClass;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +45,6 @@ import org.slf4j.LoggerFactory;
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@RunWith(ConcurrentTestRunner.class)
 public class ConcurrentParaClientIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(ConcurrentParaClientIT.class);
@@ -55,13 +56,13 @@ public class ConcurrentParaClientIT {
 	private static final int TOTAL = TOTAL_THREADS * BATCH_SIZE;
 	private static ParaClient pc;
 
-	@BeforeClass
+	@BeforeAll
 	public static void setUpClass() throws InterruptedException, IOException {
 		System.setProperty("para.env", "embedded");
 		System.setProperty("para.print_logo", "false");
 		System.setProperty("para.app_name", ROOT_APP_NAME);
 		System.setProperty("para.search", "LuceneSearch");
-		System.setProperty("server.port", "8181");
+		System.setProperty("para.port", "8181");
 		String endpoint = "http://localhost:8181";
 		ParaServer.main(new String[0]);
 
@@ -83,28 +84,34 @@ public class ConcurrentParaClientIT {
 	}
 
 	@Test
-	@ThreadCount(TOTAL_THREADS)
 	public void testBatchWrite() throws InterruptedException {
-		ArrayList<ParaObject> cats = new ArrayList<ParaObject>();
-		for (int i = 0; i < BATCH_SIZE; i++) {
-			Sysprop s = new Sysprop();
-			s.setType(catsType);
-			s.addProperty("createTime", System.currentTimeMillis());
-			cats.add(s);
+		ExecutorService executorService = Executors.newFixedThreadPool(TOTAL_THREADS);
+		List<CompletableFuture<Void>> futures = new ArrayList<>();
+		for (int j = 0; j < TOTAL_THREADS; j++) {
+			futures.add(CompletableFuture.runAsync(() -> {
+				Deque<ParaObject> cats = new ConcurrentLinkedDeque<ParaObject>();
+				for (int i = 0; i < BATCH_SIZE; i++) {
+					Sysprop s = new Sysprop();
+					s.setType(catsType);
+					s.addProperty("createTime", System.currentTimeMillis());
+					cats.add(s);
+				}
+				List<ParaObject> created = pc.createAll(cats.stream().collect(Collectors.toList()));
+				logger.info("Created {} objects from thread {}.", created.size(), Thread.currentThread().getName());
+			}, executorService));
 		}
-
-		List<ParaObject> created = pc.createAll(cats);
-		logger.info("Created {} objects from thread {}.", created.size(), Thread.currentThread().getId());
+		CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+		executorService.shutdown();
 	}
 
-	@After
+	@AfterEach
 	public void tearDown() {
 		int total = pc.getCount(catsType).intValue();
 		assertEquals(TOTAL, total);
 		logger.info("Total concurrently created objects: {}", total);
 	}
 
-	@AfterClass
+	@AfterAll
 	public static void tearDownClass() throws InterruptedException {
 		System.setProperty("server.port", "8080");
 		new App(TEST_APP_NAME).delete();

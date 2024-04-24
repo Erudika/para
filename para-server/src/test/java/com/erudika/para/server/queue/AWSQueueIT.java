@@ -22,12 +22,12 @@ import java.util.ArrayList;
 import java.util.List;
 import org.elasticmq.rest.sqs.SQSRestServer;
 import org.elasticmq.rest.sqs.SQSRestServerBuilder;
-import org.junit.AfterClass;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -37,14 +37,14 @@ public class AWSQueueIT extends QueueTest {
 
 	private static SQSRestServer sqsServer;
 
-	@BeforeClass
+	@BeforeAll
 	public static void setUpClass() throws InterruptedException {
 		sqsServer = SQSRestServerBuilder.start();
 		Thread.sleep(1000);
 		q = new AWSQueue("testq");
 	}
 
-	@AfterClass
+	@AfterAll
 	public static void tearDownClass() {
 		sqsServer.stopAndWait();
 	}

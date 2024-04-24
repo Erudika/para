@@ -19,8 +19,8 @@ package com.erudika.para.server.security;
 
 import com.erudika.para.server.utils.HttpUtils;
 import com.erudika.para.core.utils.Utils;
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.HttpHeaders;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.HttpHeaders;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 /**

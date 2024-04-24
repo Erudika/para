@@ -50,6 +50,8 @@ import static com.onelogin.saml2.settings.SettingsBuilder.SP_PRIVATEKEY_PROPERTY
 import static com.onelogin.saml2.settings.SettingsBuilder.SP_X509CERT_PROPERTY_KEY;
 import static com.onelogin.saml2.settings.SettingsBuilder.STRICT_PROPERTY_KEY;
 import com.onelogin.saml2.util.Constants;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URL;
 import java.security.spec.InvalidKeySpecException;
@@ -57,9 +59,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.felix.http.javaxwrappers.HttpServletRequestWrapper;
+import org.apache.felix.http.javaxwrappers.HttpServletResponseWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationServiceException;
@@ -128,7 +130,7 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 					Saml2Settings settings = builder.fromValues(samlSettings).build();
 
-					Auth auth = new Auth(settings, request, response);
+					Auth auth = new Auth(settings, new HttpServletRequestWrapper(request), new HttpServletResponseWrapper(response));
 
 					samlSettingsLoaded = true;
 					if (request.getParameter("SAMLResponse") != null) {

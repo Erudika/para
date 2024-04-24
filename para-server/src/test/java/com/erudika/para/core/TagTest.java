@@ -19,9 +19,11 @@ package com.erudika.para.core;
 
 import com.erudika.para.core.persistence.DAO;
 import com.erudika.para.core.persistence.MockDAO;
-import static org.junit.Assert.*;
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -32,7 +34,7 @@ public class TagTest {
 	private DAO dao;
 	private Tag t;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		dao = new MockDAO();
 		t = new Tag("test");
@@ -63,6 +65,12 @@ public class TagTest {
 		assertEquals("tag:d--", t.getId());
 		t.setId("A123");
 		assertEquals("tag:a123", t.getId());
+		t.setId("+-#-+971507107546-#abortio");
+		assertEquals("tag:971507107546-#abortio", t.getId());
+		t.setId("#-+971507107546-#abortio+");
+		assertEquals("tag:971507107546-#abortio+", t.getId());
+		t.setId("# +971507107546 #abortio+");
+		assertEquals("tag:971507107546-#abortio+", t.getId());
 
 		t.setId("tag:tag-test1");
 		assertEquals("tag:tag-test1", t.getId());

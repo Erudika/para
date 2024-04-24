@@ -23,7 +23,7 @@
 		<encoder>
 			<pattern>%-26(%d [%-5level]) %logger{35} - %msg%n</pattern>
 		</encoder>
-		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+		<filter class="ch.qos.logback.classic.filter.ThresholdFilter" >
 			<level>${para.file_logger_level:-INFO}</level>
 		</filter>
 	</appender>

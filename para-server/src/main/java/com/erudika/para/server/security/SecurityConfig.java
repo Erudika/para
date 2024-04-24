@@ -22,9 +22,9 @@ import static com.erudika.para.server.ParaServer.getInstance;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigValue;
+import jakarta.annotation.security.DeclareRoles;
 import java.util.HashSet;
 import java.util.LinkedList;
-import javax.annotation.security.DeclareRoles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -88,32 +88,33 @@ public class SecurityConfig {
 		String signoutSuccessPath = Para.getConfig().signoutSuccessPath();
 		ConfigObject protectedResources = Para.getConfig().protectedPaths();
 
-		http.authorizeHttpRequests().requestMatchers(IgnoredRequestMatcher.INSTANCE).permitAll();
-		http.authorizeHttpRequests().requestMatchers(RestRequestMatcher.INSTANCE).authenticated();
+		http.authorizeHttpRequests((authorize) -> authorize.requestMatchers("/**").permitAll());
+		http.authorizeHttpRequests((authorize) -> authorize.requestMatchers(IgnoredRequestMatcher.INSTANCE).permitAll());
+		http.authorizeHttpRequests((authorize) -> authorize.requestMatchers(RestRequestMatcher.INSTANCE).authenticated());
 
 		parseProtectedResources(http, protectedResources);
 
 		if (Para.getConfig().csrfProtectionEnabled()) {
-			http.csrf().requireCsrfProtectionMatcher(CsrfProtectionRequestMatcher.INSTANCE).
-					csrfTokenRepository(csrfTokenRepository);
+			http.csrf((csrf) -> csrf.requireCsrfProtectionMatcher(CsrfProtectionRequestMatcher.INSTANCE).
+					csrfTokenRepository(csrfTokenRepository));
 		} else {
-			http.csrf().disable();
+			http.csrf((csrf) -> csrf.disable());
 		}
 
-		http.sessionManagement().enableSessionUrlRewriting(false);
-		http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.NEVER);
-		http.sessionManagement().sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy());
-		http.exceptionHandling().authenticationEntryPoint(new SimpleAuthenticationEntryPoint(signinPath));
-		http.exceptionHandling().accessDeniedHandler(new SimpleAccessDeniedHandler(accessDeniedPath));
-		http.requestCache().requestCache(new SimpleRequestCache());
-		http.logout().deleteCookies(Para.getConfig().authCookieName()).invalidateHttpSession(true).
-				logoutUrl(signoutPath).logoutSuccessUrl(signoutSuccessPath);
-		http.rememberMe().disable();
+		http.sessionManagement((session) -> session.enableSessionUrlRewriting(false));
+		http.sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.NEVER));
+		http.sessionManagement((session) -> session.sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy()));
+		http.exceptionHandling((session) -> session.authenticationEntryPoint(new SimpleAuthenticationEntryPoint(signinPath)));
+		http.exceptionHandling((session) -> session.accessDeniedHandler(new SimpleAccessDeniedHandler(accessDeniedPath)));
+		http.requestCache((cache) -> cache.requestCache(new SimpleRequestCache()));
+		http.logout((logout) -> logout.deleteCookies(Para.getConfig().authCookieName()).invalidateHttpSession(true).
+				logoutUrl(signoutPath).logoutSuccessUrl(signoutSuccessPath));
+		http.rememberMe((rme) -> rme.disable());
 
 		http.authenticationProvider(new JWTAuthenticationProvider());
 		http.authenticationProvider(new LDAPAuthenticationProvider());
 
-		http.apply(new JwtConfigurer());
+		http.with(new JwtConfigurer(), (c) -> { });
 
 		return http.build();
 	}
@@ -133,7 +134,7 @@ public class SecurityConfig {
 						for (ConfigValue role : (ConfigList) configValue) {
 							String r = ((String) role.unwrapped()).toUpperCase().trim();
 							// check if any HTTP methods appear here
-							HttpMethod m = HttpMethod.resolve(r);
+							HttpMethod m = HttpMethod.valueOf(r);
 							if (m != null) {
 								methods.add(m);
 							} else {
@@ -147,13 +148,13 @@ public class SecurityConfig {
 					logger.error("Invalid config syntax for protected resource: {}.", configValue.render(), e);
 				}
 			}
-			String[] rolz = (roles.isEmpty()) ? DEFAULT_ROLES : roles.toArray(new String[0]);
-			String[] patternz = patterns.toArray(new String[0]);
+			String[] rolz = (roles.isEmpty()) ? DEFAULT_ROLES : roles.toArray(String[]::new);
+			String[] patternz = patterns.toArray(String[]::new);
 			if (methods.isEmpty()) {
-				http.authorizeHttpRequests().requestMatchers(patternz).hasAnyRole(rolz);
+				http.authorizeHttpRequests((authorize) -> authorize.requestMatchers(patternz).hasAnyRole(rolz));
 			} else {
 				for (HttpMethod method : methods) {
-					http.authorizeHttpRequests().requestMatchers(method, patternz).hasAnyRole(rolz);
+					http.authorizeHttpRequests((authorize) -> authorize.requestMatchers(method, patternz).hasAnyRole(rolz));
 				}
 			}
 		}

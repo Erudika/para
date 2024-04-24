@@ -36,10 +36,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.Instant;
-import static org.junit.Assert.*;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -366,7 +371,7 @@ public class UtilsTest {
 		assertEquals(map.get(Config._NAME), obj2.getName());
 		assertEquals(map.get(Config._EMAIL), obj2.getEmail());
 		assertEquals(timestamp, obj2.getTimestamp().longValue());
-		assertEquals(true, obj2.getActive());
+		assertEquals(true, obj2.getActive().booleanValue());
 
 		// complex nested objects coming from Jackson
 		Map<String, Object> map1 = new HashMap<>();

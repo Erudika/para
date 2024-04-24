@@ -12,8 +12,8 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>5.8.11</springSecVer>
-		<springLdapVer>2.4.1</springLdapVer>
+		<springSecVer>6.2.2</springSecVer>
+		<springLdapVer>3.2.2</springLdapVer>
 	</properties>
 
 	<dependencies>
@@ -104,12 +104,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jetty</artifactId>
 			<version>${springBootVer}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.eclipse.jetty.websocket</groupId>
-					<artifactId>*</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -142,8 +136,22 @@
 		<dependency>
 			<groupId>com.fasterxml.woodstox</groupId>
 			<artifactId>woodstox-core</artifactId>
-			<version>6.5.1</version>
+			<version>6.6.1</version>
 		</dependency>
+		<!--	 FOR JAKARTA WORKAROUND - REMOVE AFTER SAML LIB HAS BEEN UPDATED -->
+		<dependency>
+			<groupId>org.apache.felix</groupId>
+			<artifactId>org.apache.felix.http.wrappers</artifactId>
+			<version>1.1.2</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<version>4.0.1</version>
+			<scope>compile</scope>
+		</dependency>
+		<!--	 FOR JAKARTA WORKAROUND - REMOVE AFTER SAML LIB HAS BEEN UPDATED -->
 
 		<!--	 CAFFEINE -->
 		<dependency>
@@ -206,7 +214,7 @@
 		<dependency>
 			<groupId>com.google.inject</groupId>
 			<artifactId>guice</artifactId>
-			<version>5.1.0</version>
+			<version>7.0.0</version>
 		</dependency>
 
 		<!-- METRICS -->
@@ -242,10 +250,10 @@
 			<version>2.2</version>
 		</dependency>
 		<dependency>
-			<groupId>javax.servlet</groupId>
-			<artifactId>javax.servlet-api</artifactId>
-			<version>4.0.1</version>
-			<!--<scope>provided</scope>-->
+			<groupId>jakarta.servlet</groupId>
+			<artifactId>jakarta.servlet-api</artifactId>
+			<version>6.0.0</version>
+			<scope>provided</scope>
 		</dependency>
 <!--		<dependency>
 			<groupId>org.glassfish.jaxb</groupId>
@@ -284,7 +292,7 @@
 		<dependency>
 			<groupId>org.elasticmq</groupId>
 			<artifactId>elasticmq-rest-sqs_2.13</artifactId>
-			<version>1.5.2</version>
+			<version>1.5.7</version>
 			<scope>test</scope>
 			<exclusions>
 				<exclusion>
@@ -297,7 +305,7 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-		<dependency>
+<!--		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-mock</artifactId>
 			<version>2.0.8</version>
@@ -308,7 +316,7 @@
 					<artifactId>commons-logging</artifactId>
 				</exclusion>
 			</exclusions>
-		</dependency>
+		</dependency>-->
 		<dependency>
 			<groupId>org.glassfish.jersey.test-framework.providers</groupId>
 			<artifactId>jersey-test-framework-provider-inmemory</artifactId>
@@ -326,18 +334,6 @@
 					<artifactId>commons-codec</artifactId>
 				</exclusion>
 			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>com.vmlens</groupId>
-			<artifactId>concurrent-junit</artifactId>
-			<version>1.0.2</version>
-			<scope>test</scope>
-		 <exclusions>
-		  <exclusion>
-		   <groupId>org.apache.commons</groupId>
-		   <artifactId>commons-lang3</artifactId>
-		  </exclusion>
-		 </exclusions>
 		</dependency>
 		<!--		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -372,7 +368,15 @@
 				<configuration>
 					<fork>false</fork>
 				</configuration>
+<!--				<dependencies>
+					<dependency>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-devtools</artifactId>
+						<version>${springBootVer}</version>
+					</dependency>
+				</dependencies>-->
 			</plugin>
+
 
 			<plugin>
 				<groupId>com.jcabi</groupId>
@@ -397,7 +401,7 @@
 
 			<plugin>
 				<artifactId>maven-dependency-plugin</artifactId>
-				<version>3.1.2</version>
+				<version>3.6.1</version>
 				<executions>
 					<execution>
 						<id>unpack-dynamodb-local</id>
@@ -425,7 +429,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-checkstyle-plugin</artifactId>
-				<version>3.1.2</version>
+				<version>3.3.1</version>
 				<dependencies>
 					<dependency>
 						<groupId>com.puppycrawl.tools</groupId>
@@ -455,7 +459,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.3.1</version>
+				<version>3.6.3</version>
 				<executions>
 					<execution>
 						<id>javadocs</id>
@@ -465,7 +469,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<release>11</release>
+					<release>17</release>
 					<stylesheetfile>../para-core/src/main/javadoc/stylesheet.css</stylesheetfile>
 					<show>public</show>
 					<aggregate>true</aggregate>
@@ -477,7 +481,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.2.0</version>
+				<version>3.3.0</version>
 				<configuration>
 					<archive>
 						<manifestEntries>

@@ -23,16 +23,16 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import javax.validation.Constraint;
-import javax.validation.Payload;
-import javax.validation.constraints.Pattern;
+import jakarta.validation.Constraint;
+import jakarta.validation.Payload;
+import jakarta.validation.constraints.Pattern;
 
 /**
  * Annotation for email validation.
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@javax.validation.constraints.Email(message = "Please provide a valid email address")
+@jakarta.validation.constraints.Email(message = "Please provide a valid email address")
 @Pattern(regexp = EMAIL_PATTERN, message = "Please provide a valid email address")
 @Target({ ElementType.METHOD, ElementType.FIELD, ElementType.ANNOTATION_TYPE })
 @Retention(RetentionPolicy.RUNTIME)

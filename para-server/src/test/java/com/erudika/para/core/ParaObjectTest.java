@@ -17,18 +17,26 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.persistence.DAO;
 import com.erudika.para.core.persistence.MockDAO;
 import com.erudika.para.core.search.Search;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Utils;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.junit.Test;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  *

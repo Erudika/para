@@ -41,6 +41,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Stage;
 import com.google.inject.util.Modules;
+import jakarta.annotation.PreDestroy;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -52,7 +53,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.PreDestroy;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
@@ -311,14 +311,16 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 						if (Para.getConfig().inProduction()) {
 							ForwardedRequestCustomizer frc = new ForwardedRequestCustomizer() {
 								public void customize(Connector connector, HttpConfiguration config, Request request) {
-									super.customize(connector, config, request);
-									String cfProto = request.getHeader("CloudFront-Forwarded-Proto");
+									//super.customize(connector, config, request);
+									String cfProto = request.getHeaders().get("CloudFront-Forwarded-Proto");
 									if (StringUtils.isBlank(cfProto)) {
-										cfProto = request.getHeader("X-Forwarded-Proto");
+										cfProto = request.getHeaders().get("X-Forwarded-Proto");
 									}
 									if (StringUtils.equalsIgnoreCase(cfProto, config.getSecureScheme())) {
-										request.setScheme(cfProto);
-										request.setSecure(true);
+										setForwardedProtoHeader(cfProto);
+										setSslIsSecure(true);
+										//request.setScheme(cfProto);
+										//request.setSecure(true);
 									}
 								}
 							};

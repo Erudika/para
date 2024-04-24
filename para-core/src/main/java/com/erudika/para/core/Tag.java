@@ -24,8 +24,8 @@ import com.erudika.para.core.utils.Pager;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
+import jakarta.validation.constraints.NotBlank;
 import java.util.List;
-import javax.validation.constraints.NotBlank;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -117,7 +117,10 @@ public class Tag implements ParaObject {
 	 * @param tag a tag. Must not be null or empty.
 	 */
 	public void setTag(String tag) {
-		this.tag = Utils.noSpaces(StringUtils.trimToEmpty(tag).toLowerCase().replaceAll("[^\\p{L}\\p{N}\\+\\#\\-\\.]+", " ").replaceAll("\\p{Z}+", " "), "-");
+		this.tag = Utils.noSpaces(StringUtils.trimToEmpty(tag).toLowerCase().
+				replaceAll("^[\\p{S}|\\p{P}|\\p{C}|\\-|\\+|\\p{Z}]*", "").
+				replaceAll("[^\\p{L}\\p{N}\\+\\#\\-\\.]+", " ").
+				replaceAll("\\p{Z}+", " "), "-");
 	}
 
 	/**

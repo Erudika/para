@@ -17,18 +17,17 @@
  */
 package com.erudika.para.core.utils;
 
-import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.security.OAuth1HmacSigner;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
-import org.junit.After;
-import org.junit.AfterClass;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -36,19 +35,19 @@ import org.junit.Test;
  */
 public class OAuth1HmacSignerTest {
 
-	@BeforeClass
+	@BeforeAll
 	public static void setUpClass() {
 	}
 
-	@AfterClass
+	@AfterAll
 	public static void tearDownClass() {
 	}
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 	}
 
-	@After
+	@AfterEach
 	public void tearDown() {
 	}
 

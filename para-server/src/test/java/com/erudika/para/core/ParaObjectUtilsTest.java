@@ -18,13 +18,13 @@
 package com.erudika.para.core;
 
 import com.erudika.para.core.annotations.Stored;
+import com.erudika.para.core.utils.Cat;
+import com.erudika.para.core.utils.CatDeserializer;
+import com.erudika.para.core.utils.CatSerializer;
 import static com.erudika.para.core.utils.ParaObjectUtils.getAnnotatedFields;
 import static com.erudika.para.core.utils.ParaObjectUtils.getAppidFromAuthHeader;
 import static com.erudika.para.core.utils.ParaObjectUtils.getCoreTypes;
 import static com.erudika.para.core.utils.ParaObjectUtils.setAnnotatedFields;
-import com.erudika.para.core.utils.Cat;
-import com.erudika.para.core.utils.CatDeserializer;
-import com.erudika.para.core.utils.CatSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
@@ -34,14 +34,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.AfterClass;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * TODO!
@@ -52,11 +52,11 @@ public class ParaObjectUtilsTest {
 	public ParaObjectUtilsTest() {
 	}
 
-	@BeforeClass
+	@BeforeAll
 	public static void setUpClass() {
 	}
 
-	@AfterClass
+	@AfterAll
 	public static void tearDownClass() {
 	}
 

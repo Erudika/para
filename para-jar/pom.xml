@@ -17,6 +17,11 @@
 			<artifactId>para-server</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>jakarta.inject</groupId>
+			<artifactId>jakarta.inject-api</artifactId>
+			<version>2.0.1</version>
+		</dependency>
 	</dependencies>
 
 	<properties>
@@ -65,7 +70,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<release>11</release>
+					<release>17</release>
 					<stylesheetfile>../para-core/src/main/javadoc/stylesheet.css</stylesheetfile>
 					<failOnError>false</failOnError>
 					<show>public</show>

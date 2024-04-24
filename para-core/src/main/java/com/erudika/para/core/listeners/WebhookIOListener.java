@@ -24,7 +24,7 @@ import com.erudika.para.core.Webhook;
 import com.erudika.para.core.utils.Utils;
 import java.lang.reflect.Method;
 import java.util.List;
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 /**
  * Listens for IO events and forwards them to the registered webhooks, via a queue.

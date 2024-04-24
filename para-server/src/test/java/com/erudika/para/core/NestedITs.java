@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 Erudika. https://erudika.com
+ * Copyright 2013-2024 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,27 +17,14 @@
  */
 package com.erudika.para.core;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import org.junit.jupiter.api.Test;
-
+import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.TestClassOrder;
 
 /**
- *
+ * Integration tests for ParaClient & AWSDynamoDBDAO
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-
-public class AddressTest {
-
-	@Test
-	public void test() {
-		Address a = new Address();
-		assertNull(a.getId());
-
-		Address b = new Address("123");
-		assertNotNull(b.getId());
-		assertEquals("123", b.getId());
-	}
+@TestClassOrder(ClassOrderer.OrderAnnotation.class)
+public interface NestedITs {
 
 }

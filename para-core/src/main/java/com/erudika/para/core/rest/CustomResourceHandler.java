@@ -18,8 +18,8 @@
 
 package com.erudika.para.core.rest;
 
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.Response;
 
 /**
  * A custom API resource handler. Handles custom resources.

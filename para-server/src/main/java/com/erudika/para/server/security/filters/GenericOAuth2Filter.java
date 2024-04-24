@@ -28,15 +28,15 @@ import com.erudika.para.server.security.SecurityUtils;
 import com.erudika.para.server.security.UserAuthentication;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.HttpHeaders;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
@@ -481,7 +481,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 				JsonNode profileTree = ParaObjectUtils.getJsonMapper().valueToTree(profile);
 				JsonNode nodeAtPath = profileTree.at(emailParam);
 				if (!nodeAtPath.isMissingNode()) {
-					email = nodeAtPath.asText(email);
+					email = nodeAtPath.asText();
 				}
 			}
 			if (StringUtils.isBlank(email)) {
@@ -505,7 +505,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			JsonNode profileTree = ParaObjectUtils.getJsonMapper().valueToTree(profile);
 			JsonNode nodeAtPath = profileTree.at(pictureParam);
 			if (!nodeAtPath.isMissingNode()) {
-				pic = nodeAtPath.asText(pic);
+				pic = nodeAtPath.asText();
 			}
 		}
 		return pic;
@@ -518,7 +518,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			JsonNode profileTree = ParaObjectUtils.getJsonMapper().valueToTree(profile);
 			JsonNode nodeAtPath = profileTree.at(nameParam);
 			if (!nodeAtPath.isMissingNode()) {
-				name = nodeAtPath.asText(name);
+				name = nodeAtPath.asText();
 			}
 		}
 		return name;
@@ -531,7 +531,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			JsonNode profileTree = ParaObjectUtils.getJsonMapper().valueToTree(profile);
 			JsonNode nodeAtPath = profileTree.at(gnParam);
 			if (!nodeAtPath.isMissingNode()) {
-				gname = nodeAtPath.asText(gname);
+				gname = nodeAtPath.asText();
 			}
 		}
 		return gname;
@@ -544,7 +544,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			JsonNode profileTree = ParaObjectUtils.getJsonMapper().valueToTree(profile);
 			JsonNode nodeAtPath = profileTree.at(fnParam);
 			if (!nodeAtPath.isMissingNode()) {
-				fname = nodeAtPath.asText(fname);
+				fname = nodeAtPath.asText();
 			}
 		}
 		return fname;

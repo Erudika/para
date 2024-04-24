@@ -78,17 +78,19 @@
 		<skipITs>${skipTests}</skipITs>
 		<skipUTs>${skipTests}</skipUTs>
 		<deployPluginVer>3.1.1</deployPluginVer>
-		<slf4jVer>1.7.36</slf4jVer>
-		<logbackVer>1.2.13</logbackVer>
+		<slf4jVer>2.0.12</slf4jVer>
+		<logbackVer>1.5.3</logbackVer>
 		<awsJdkVer>[2.21.23,)</awsJdkVer>
-		<jerseyVer>2.41</jerseyVer>
-		<springBootVer>2.7.18</springBootVer>
+		<jerseyVer>3.1.6</jerseyVer>
+		<springBootVer>3.2.4</springBootVer>
 		<metricsVer>4.2.25</metricsVer>
 		<httpClientVer>5.3.1</httpClientVer>
 		<httpCoreVer>5.2.4</httpCoreVer>
 		<commonsCodecVer>1.16.0</commonsCodecVer>
 		<lucenePluginVer>1.47.0</lucenePluginVer>
 		<sqlPluginVer>1.47.0</sqlPluginVer>
+		<junitVer>5.10.2</junitVer>
+		<junitPlatformVer>1.10.2</junitPlatformVer>
 	</properties>
 
 	<dependencies>
@@ -96,33 +98,45 @@
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-core</artifactId>
-			<version>4.8.1</version>
+			<version>5.11.0</version>
 			<scope>test</scope>
 		</dependency>
-		<dependency>
+<!--		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>4.13.1</version>
+			<version>4.13.2</version>
 			<scope>test</scope>
-		</dependency>
+		</dependency>-->
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
-			<version>5.9.2</version>
+			<version>${junitVer}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-engine</artifactId>
-			<version>5.9.2</version>
+			<version>${junitVer}</version>
 			<scope>test</scope>
 		</dependency>
-		<dependency>
+<!--		<dependency>
 			<groupId>org.junit.vintage</groupId>
 			<artifactId>junit-vintage-engine</artifactId>
-			<version>5.9.2</version>
+			<version>${junitVer}</version>
 			<scope>test</scope>
-		</dependency>
+		</dependency>-->
+<!--		<dependency>
+			<groupId>org.junit.platform</groupId>
+			<artifactId>junit-platform-launcher</artifactId>
+			<version>${junitPlatformVer}</version>
+			<scope>test</scope>
+		</dependency>-->
+<!--		<dependency>
+			<groupId>org.junit.platform</groupId>
+			<artifactId>junit-platform-runner</artifactId>
+			<version>${junitPlatformVer}</version>
+			<scope>test</scope>
+		</dependency>-->
 	</dependencies>
 
 	<build>
@@ -130,7 +144,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-failsafe-plugin</artifactId>
-				<version>3.0.0</version>
+				<version>3.2.5</version>
 				<executions>
 					<execution>
 						<goals>
@@ -151,11 +165,21 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.0.0</version>
+				<version>3.2.5</version>
+				<dependencies>
+					<dependency>
+						<groupId>org.apache.maven.surefire</groupId>
+						<artifactId>surefire-junit-platform</artifactId>
+						<version>3.2.5</version>
+					</dependency>
+				</dependencies>
 				<configuration>
+<!--					<includes>
+						<include>**/*IT.java</include>
+					</includes>-->
 					<!--<argLine>-Xmx256m  ${surefireArgLine}</argLine>-->
 					<skipTests>${skipUTs}</skipTests>
-					<forkCount>1.5C</forkCount>
+					<forkCount>2C</forkCount>
 <!--					<threadCount>2</threadCount>
 					<forkCount>2C</forkCount>-->
 					<!--					<parallel>methods</parallel>
@@ -167,9 +191,9 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.11.0</version>
+				<version>3.12.1</version>
 				<configuration>
-					<release>11</release>
+					<release>17</release>
 					<compilerArgument>-Xlint:-options</compilerArgument>
 					<compilerArguments>
 						<endorseddirs>${endorsed.dir}</endorseddirs>
@@ -184,7 +208,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-release-plugin</artifactId>
-				<version>3.0.0</version>
+				<version>3.0.1</version>
 				<configuration>
 					<autoVersionSubmodules>true</autoVersionSubmodules>
 					<mavenExecutorId>forked-path</mavenExecutorId>
@@ -215,7 +239,7 @@
 			<plugin>
 				<groupId>org.sonarsource.scanner.maven</groupId>
 				<artifactId>sonar-maven-plugin</artifactId>
-				<version>3.9.1.2184</version>
+				<version>3.11.0.3922</version>
 			</plugin>
 		</plugins>
 	</build>
@@ -234,7 +258,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-source-plugin</artifactId>
-						<version>3.2.1</version>
+						<version>3.3.0</version>
 						<executions>
 							<execution>
 								<id>attach-sources</id>
@@ -256,7 +280,7 @@
 									<goal>jar</goal>
 								</goals>
 								<configuration>
-									<release>11</release>
+									<release>17</release>
 									<stylesheetfile>para-core/src/main/javadoc/stylesheet.css</stylesheetfile>
 									<show>public</show>
 									<aggregate>true</aggregate>
@@ -270,7 +294,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-gpg-plugin</artifactId>
-						<version>3.0.1</version>
+						<version>3.2.0</version>
 						<executions>
 							<execution>
 								<id>sign-artifacts</id>
