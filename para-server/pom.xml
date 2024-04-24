@@ -12,7 +12,7 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>6.2.2</springSecVer>
+		<springSecVer>6.2.3</springSecVer>
 		<springLdapVer>3.2.2</springLdapVer>
 	</properties>
 
