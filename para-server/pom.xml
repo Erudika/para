@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.erudika</groupId>
 		<artifactId>para-parent</artifactId>
-		<version>1.49.6-SNAPSHOT</version>
+		<version>1.50.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>para-server</artifactId>
@@ -12,8 +12,8 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>6.2.3</springSecVer>
-		<springLdapVer>3.2.2</springLdapVer>
+		<springSecVer>6.2.4</springSecVer>
+		<springLdapVer>3.2.3</springLdapVer>
 	</properties>
 
 	<dependencies>
