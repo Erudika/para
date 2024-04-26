@@ -53,6 +53,7 @@ public class Tag implements ParaObject {
 
 	@Stored @NotBlank @Locked private String tag;
 	@Stored private Integer count;
+	@Stored private String description;
 
 	/**
 	 * No-args constructor.
@@ -121,6 +122,22 @@ public class Tag implements ParaObject {
 				replaceAll("^[\\p{S}|\\p{P}|\\p{C}|\\-|\\+|\\p{Z}]*", "").
 				replaceAll("[^\\p{L}\\p{N}\\+\\#\\-\\.]+", " ").
 				replaceAll("\\p{Z}+", " "), "-");
+	}
+
+	/**
+	 * Some description text for this tag.
+	 * @return description
+	 */
+	public String getDescription() {
+		return description;
+	}
+
+	/**
+	 * Sets the description for the tag.
+	 * @param description some text
+	 */
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
 	/**
