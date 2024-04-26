@@ -827,7 +827,7 @@ public final class ParaClient implements Closeable {
 		if (keys == null || keys.isEmpty()) {
 			return;
 		}
-		final int size = this.chunkSize;
+		final int size = (keys.size() > 100 && this.chunkSize <= 0) ? 50 : this.chunkSize;
 		IntStream.range(0, getNumChunks(keys, size))
 			.mapToObj(i -> (List<String>) partitionList(keys, i, size))
 			.forEach(chunk -> {
