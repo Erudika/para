@@ -91,10 +91,6 @@
 					<artifactId>spring-boot-starter-tomcat</artifactId>
 				</exclusion>
 				<exclusion>
-					<groupId>org.hibernate</groupId>
-					<artifactId>hibernate-validator</artifactId>
-				</exclusion>
-				<exclusion>
 					<groupId>org.apache.logging.log4j</groupId>
 					<artifactId>log4j-to-slf4j</artifactId>
 				</exclusion>
