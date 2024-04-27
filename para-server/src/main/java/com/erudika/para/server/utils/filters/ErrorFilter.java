@@ -18,7 +18,6 @@
 
 package com.erudika.para.server.utils.filters;
 
-import java.io.IOException;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
@@ -28,6 +27,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
+import java.io.IOException;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -45,6 +45,12 @@ public class ErrorFilter implements Filter {
 
 	private static final String ERROR_MESSAGE = "javax.servlet.error.message";
 	private static final String ERROR_STATUS_CODE = "javax.servlet.error.status_code";
+
+	/**
+	 * Constructor.
+	 */
+	public ErrorFilter() {
+	}
 
 	@Override
 	public void init(FilterConfig fc) throws ServletException {

@@ -29,6 +29,12 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class EmailModule extends AbstractModule {
 
+	/**
+	 * Constructor.
+	 */
+	public EmailModule() {
+	}
+
 	protected void configure() {
 		String selectedEmailer = Para.getConfig().emailerPlugin();
 		if (StringUtils.isBlank(selectedEmailer)) {

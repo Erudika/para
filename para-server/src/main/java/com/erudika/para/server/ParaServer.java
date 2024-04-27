@@ -234,6 +234,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	}
 
 	/**
+	 * Filter.
 	 * @return API servlet bean
 	 */
 	@Bean
@@ -249,6 +250,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	}
 
 	/**
+	 * Filter.
 	 * @return GZIP filter bean
 	 */
 	@Bean
@@ -265,6 +267,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	}
 
 	/**
+	 * Filter.
 	 * @return CORS filter bean
 	 */
 	@Bean
@@ -287,6 +290,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	}
 
 	/**
+	 * Jetty config.
 	 * @return Jetty config bean
 	 */
 	@Bean

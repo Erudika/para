@@ -106,7 +106,7 @@ public final class GZipResponseUtil {
 	 * @param response the response which will have a header added to it. I.e this method changes its parameter
 	 * @throws ServletException Either the response is committed or we were called using the
 	 * include method from a
-	 * {@link jakarta.servlet.RequestDispatcher#include(javax.servlet.ServletRequest, jakarta.servlet.ServletResponse)}
+	 * {@link jakarta.servlet.RequestDispatcher#include(jakarta.servlet.ServletRequest, jakarta.servlet.ServletResponse)}
 	 * method and the set header is ignored.
 	 */
 	public static void addGzipHeader(final HttpServletResponse response) throws ServletException {

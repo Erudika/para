@@ -26,10 +26,16 @@ import org.springframework.security.web.authentication.rememberme.RememberMeAuth
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
 /**
- *
+ * JwtConfigurer.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class JwtConfigurer extends AbstractHttpConfigurer<JwtConfigurer, HttpSecurity> {
+
+	/**
+	 * Constructor.
+	 */
+	public JwtConfigurer() {
+	}
 
 	@Override
 	public void configure(HttpSecurity builder) throws Exception {

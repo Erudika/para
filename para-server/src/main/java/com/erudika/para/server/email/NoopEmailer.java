@@ -31,6 +31,12 @@ public class NoopEmailer implements Emailer {
 
 	private static final Logger logger = LoggerFactory.getLogger(NoopEmailer.class);
 
+	/**
+	 * Constructor.
+	 */
+	public NoopEmailer() {
+	}
+
 	@Override
 	public boolean sendEmail(List<String> emails, String subject, String body) {
 		logger.info("EMAIL SENT: {}, {}, {}", emails, subject, body);

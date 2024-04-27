@@ -381,6 +381,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param app {@link App}
 	 * @param type a type
 	 * @return response
@@ -414,6 +415,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @return response
 	 */
 	public static Inflector<ContainerRequestContext, Response> linksHandler() {
@@ -459,6 +461,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @return response
 	 */
 	public static Inflector<ContainerRequestContext, Response> meHandler() {
@@ -497,6 +500,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @return response
 	 */
 	public static Inflector<ContainerRequestContext, Response> readIdHandler() {
@@ -513,6 +517,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @return response
 	 */
 	public static Inflector<ContainerRequestContext, Response> configOptionsHandler() {
@@ -535,6 +540,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @return response
 	 */
@@ -556,6 +562,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @return response
 	 */
@@ -583,6 +590,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @return response
 	 */
@@ -605,6 +613,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @return response
 	 */
@@ -626,6 +635,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @return response
 	 */
@@ -646,6 +656,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @return response
 	 */
@@ -687,6 +698,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @return response
 	 */
@@ -714,6 +726,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @return response
 	 */
@@ -824,6 +837,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @param type a type
 	 * @return response
@@ -838,6 +852,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @param type a type
 	 * @return response
@@ -857,6 +872,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @param type a type
 	 * @return response
@@ -876,6 +892,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @param type a type
 	 * @return response
@@ -891,6 +908,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @param type a type
 	 * @return response
@@ -907,6 +925,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @return response
 	 */
@@ -920,6 +939,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @return response
 	 */
@@ -933,6 +953,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @return response
 	 */
@@ -959,6 +980,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @return response
 	 */
@@ -972,6 +994,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param app {@link App}
 	 * @param type a type
 	 * @return response
@@ -996,6 +1019,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @return response
 	 */
 	public static Inflector<ContainerRequestContext, Response> reindexHandler() {
@@ -1022,6 +1046,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @return response
 	 */
@@ -1067,6 +1092,7 @@ public final class Api1 extends ResourceConfig {
 	}
 
 	/**
+	 * Api method.
 	 * @param a {@link App}
 	 * @return response
 	 */

@@ -29,6 +29,12 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class CacheModule extends AbstractModule {
 
+	/**
+	 * Constructor.
+	 */
+	public CacheModule() {
+	}
+
 	protected void configure() {
 		String selectedCache = Para.getConfig().cachePlugin();
 		if (StringUtils.isBlank(selectedCache) || "inmemory".equalsIgnoreCase(selectedCache)) {

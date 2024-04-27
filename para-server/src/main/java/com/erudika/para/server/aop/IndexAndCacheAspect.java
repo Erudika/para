@@ -17,17 +17,18 @@
  */
 package com.erudika.para.server.aop;
 
-import com.erudika.para.core.listeners.IOListener;
-import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.annotations.Cached;
 import com.erudika.para.core.annotations.Indexed;
 import com.erudika.para.core.cache.Cache;
-import com.erudika.para.core.ParaObject;
+import com.erudika.para.core.listeners.IOListener;
 import com.erudika.para.core.metrics.Metrics;
 import com.erudika.para.core.persistence.DAO;
 import com.erudika.para.core.search.Search;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.core.validation.ValidationUtils;
+import jakarta.inject.Inject;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -38,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import jakarta.inject.Inject;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.slf4j.Logger;
@@ -62,6 +62,13 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	private Cache cache;
 
 	/**
+	 * Constructor.
+	 */
+	public IndexAndCacheAspect() {
+	}
+
+	/**
+	 * getter/setter.
 	 * @return {@link Search}
 	 */
 	public Search getSearch() {
@@ -69,6 +76,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param search {@link Search}
 	 */
 	@Inject
@@ -77,6 +85,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return {@link Cache}
 	 */
 	public Cache getCache() {
@@ -84,6 +93,7 @@ public class IndexAndCacheAspect implements MethodInterceptor {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param cache {@link Cache}
 	 */
 	@Inject

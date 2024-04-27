@@ -40,6 +40,7 @@ public class JWTAuthentication extends UserAuthentication {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param jwt token
 	 * @return this
 	 */
@@ -49,6 +50,7 @@ public class JWTAuthentication extends UserAuthentication {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param app {@link App}
 	 * @return this
 	 */
@@ -58,6 +60,7 @@ public class JWTAuthentication extends UserAuthentication {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return the JWT token
 	 */
 	public SignedJWT getJwt() {
@@ -65,6 +68,7 @@ public class JWTAuthentication extends UserAuthentication {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return the {@link App}
 	 */
 	public App getApp() {

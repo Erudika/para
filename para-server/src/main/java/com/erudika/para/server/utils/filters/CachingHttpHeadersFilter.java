@@ -17,15 +17,15 @@
  */
 package com.erudika.para.server.utils.filters;
 
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This filter is used in production, to put HTTP cache headers with a long (1 month) expiration time.
@@ -42,6 +42,12 @@ public class CachingHttpHeadersFilter implements Filter {
 
 	// We consider the last modified date is the start up time of the server
 	private static final long LAST_MODIFIED = System.currentTimeMillis();
+
+	/**
+	 * Constructor.
+	 */
+	public CachingHttpHeadersFilter() {
+	}
 
 	@Override
 	public void init(FilterConfig filterConfig) throws ServletException {

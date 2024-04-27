@@ -333,6 +333,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return auth manager
 	 */
 	protected AuthenticationManager getAuthenticationManager() {
@@ -340,6 +341,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param authenticationManager auth manager
 	 */
 	public void setAuthenticationManager(AuthenticationManager authenticationManager) {
@@ -352,6 +354,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return auth filter
 	 */
 	public FacebookAuthFilter getFacebookAuth() {
@@ -359,6 +362,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param facebookAuth auth filter
 	 */
 	@Inject
@@ -367,6 +371,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return auth filter
 	 */
 	public GoogleAuthFilter getGoogleAuth() {
@@ -374,6 +379,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param googleAuth auth filter
 	 */
 	@Inject
@@ -382,6 +388,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return auth filter
 	 */
 	public GitHubAuthFilter getGithubAuth() {
@@ -389,6 +396,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param githubAuth auth filter
 	 */
 	@Inject
@@ -397,6 +405,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return auth filter
 	 */
 	public LinkedInAuthFilter getLinkedinAuth() {
@@ -404,6 +413,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param linkedinAuth auth filter
 	 */
 	@Inject
@@ -412,6 +422,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return auth filter
 	 */
 	public TwitterAuthFilter getTwitterAuth() {
@@ -419,6 +430,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param twitterAuth auth filter
 	 */
 	@Inject
@@ -427,6 +439,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return auth filter
 	 */
 	public MicrosoftAuthFilter getMicrosoftAuth() {
@@ -434,6 +447,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param microsoftAuth auth filter
 	 */
 	@Inject
@@ -442,6 +456,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return auth filter
 	 */
 	public SlackAuthFilter getSlackAuth() {
@@ -449,6 +464,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param slackAuth auth filter
 	 */
 	@Inject
@@ -457,6 +473,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return auth filter
 	 */
 	public AmazonAuthFilter getAmazonAuth() {
@@ -464,6 +481,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param amazonAuth auth filter
 	 */
 	@Inject
@@ -472,6 +490,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return auth filter
 	 */
 	public GenericOAuth2Filter getGenericOAuth2Auth() {
@@ -479,6 +498,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param oauthAuth auth filter
 	 */
 	@Inject
@@ -487,6 +507,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return auth filter
 	 */
 	public LdapAuthFilter getLdapAuth() {
@@ -494,6 +515,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param ldapAuth auth filter
 	 */
 	@Inject
@@ -502,6 +524,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return auth filter
 	 */
 	public PasswordAuthFilter getPasswordAuth() {
@@ -509,6 +532,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param passwordAuth auth filter
 	 */
 	@Inject
@@ -517,6 +541,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return auth filter
 	 */
 	public PasswordlessAuthFilter getPasswordlessAuth() {
@@ -524,6 +549,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param passwordlessAuth auth filter
 	 */
 	@Inject
@@ -532,6 +558,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return auth filter
 	 */
 	public SAMLAuthFilter getSamlAuth() {
@@ -539,6 +566,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param samlAuth auth filter
 	 */
 	@Inject

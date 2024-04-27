@@ -38,6 +38,9 @@ import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jose.util.Base64URL;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import jakarta.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
@@ -52,9 +55,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
-import jakarta.ws.rs.core.HttpHeaders;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -111,6 +111,7 @@ public final class SecurityUtils {
 	}
 
 	/**
+	 * getter.
 	 * @return returns the current app associated with the authenticated user
 	 */
 	public static App getAppFromJWTAuthentication() {
@@ -125,6 +126,7 @@ public final class SecurityUtils {
 	}
 
 	/**
+	 * getter.
 	 * @return returns the current app associated with the authenticated user
 	 */
 	public static App getAppFromLdapAuthentication() {
@@ -182,6 +184,7 @@ public final class SecurityUtils {
 	}
 
 	/**
+	 * checker.
 	 * @param type some type
 	 * @return true if type of object is not "app"
 	 */
@@ -442,6 +445,7 @@ public final class SecurityUtils {
 	}
 
 	/**
+	 * getter.
 	 * @param request HTTP request
 	 * @return the URL with the correct protocol, read from X-Forwarded-Proto and CloudFront-Forwarded-Proto headers.
 	 */
@@ -471,6 +475,7 @@ public final class SecurityUtils {
 	}
 
 	/**
+	 * getter.
 	 * @param request HTTP request
 	 * @return the appid if it's present in either the 'state' or 'appid' query parameters
 	 */
@@ -504,6 +509,7 @@ public final class SecurityUtils {
 	}
 
 	/**
+	 * getter.
 	 * @param app the Para app object
 	 * @return a set of host URLs if found in app settings
 	 */
@@ -525,6 +531,7 @@ public final class SecurityUtils {
 	}
 
 	/**
+	 * getter.
 	 * @param hostUrlAliases host URL aliases
 	 * @param request request
 	 * @return a host URL or null

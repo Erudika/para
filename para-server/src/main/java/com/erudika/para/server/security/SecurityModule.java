@@ -62,6 +62,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return handler
 	 */
 	@Provides
@@ -76,6 +77,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param successHandler handler
 	 */
 	public void setSuccessHandler(SimpleAuthenticationSuccessHandler successHandler) {
@@ -83,6 +85,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return handler
 	 */
 	@Provides
@@ -95,6 +98,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param failureHandler handler
 	 */
 	public void setFailureHandler(SimpleAuthenticationFailureHandler failureHandler) {
@@ -102,6 +106,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return filter
 	 */
 	@Provides
@@ -115,6 +120,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param passwordFilter filter
 	 */
 	public void setPasswordFilter(PasswordAuthFilter passwordFilter) {
@@ -122,6 +128,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return filter
 	 */
 	@Provides
@@ -135,6 +142,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param passwordlessFilter filter
 	 */
 	public void setPasswordlessFilter(PasswordlessAuthFilter passwordlessFilter) {
@@ -142,6 +150,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return filter
 	 */
 	@Provides
@@ -155,6 +164,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param facebookFilter filter
 	 */
 	public void setFacebookFilter(FacebookAuthFilter facebookFilter) {
@@ -162,6 +172,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return filter
 	 */
 	@Provides
@@ -175,6 +186,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param googleFilter filter
 	 */
 	public void setGoogleFilter(GoogleAuthFilter googleFilter) {
@@ -182,6 +194,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return filter
 	 */
 	@Provides
@@ -195,6 +208,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param linkedinFilter filter
 	 */
 	public void setLinkedinFilter(LinkedInAuthFilter linkedinFilter) {
@@ -202,6 +216,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return filter
 	 */
 	@Provides
@@ -215,6 +230,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param twitterFilter filter
 	 */
 	public void setTwitterFilter(TwitterAuthFilter twitterFilter) {
@@ -222,6 +238,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return filter
 	 */
 	@Provides
@@ -235,6 +252,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param githubFilter filter
 	 */
 	public void setGithubFilter(GitHubAuthFilter githubFilter) {
@@ -242,6 +260,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return filter
 	 */
 	@Provides
@@ -255,6 +274,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param microsoftFilter filter
 	 */
 	public void setMicrosoftFilter(MicrosoftAuthFilter microsoftFilter) {
@@ -262,6 +282,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return filter
 	 */
 	@Provides
@@ -275,6 +296,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param slackFilter filter
 	 */
 	public void setSlackFilter(SlackAuthFilter slackFilter) {
@@ -282,6 +304,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return filter
 	 */
 	@Provides
@@ -295,6 +318,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param amazonFilter filter
 	 */
 	public void setAmazonFilter(AmazonAuthFilter amazonFilter) {
@@ -302,6 +326,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return filter
 	 */
 	@Provides
@@ -315,6 +340,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param oauth2Filter filter
 	 */
 	public void setGenericOAuth2Filter(GenericOAuth2Filter oauth2Filter) {
@@ -322,6 +348,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return filter
 	 */
 	@Provides
@@ -335,6 +362,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param ldapFilter filter
 	 */
 	public void setLdapAuthFilter(LdapAuthFilter ldapFilter) {
@@ -342,6 +370,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return filter
 	 */
 	@Provides
@@ -355,6 +384,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param samlFilter filter
 	 */
 	public void setSamlAuthFilter(SAMLAuthFilter samlFilter) {
@@ -362,6 +392,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @return filter
 	 */
 	@Provides
@@ -373,6 +404,7 @@ public class SecurityModule extends AbstractModule {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param samleMetaFilter filter
 	 */
 	public void setSamlMetadataFilter(SAMLMetadataFilter samleMetaFilter) {

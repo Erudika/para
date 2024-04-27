@@ -30,6 +30,8 @@ public final class Version {
 	private static final String GIT_BRANCH = "${scmBranch}";
 	private static final String REVISION = "${buildNumber}";
 
+	private Version() { }
+
 	public static String getVersion() {
 		return VERSION;
 	}

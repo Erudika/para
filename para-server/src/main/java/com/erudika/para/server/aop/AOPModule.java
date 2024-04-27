@@ -28,6 +28,12 @@ import com.google.inject.matcher.Matchers;
  */
 public class AOPModule extends AbstractModule {
 
+	/**
+	 * Default constructor.
+	 */
+	public AOPModule() {
+	}
+
 	protected void configure() {
 		// enable automatic indexing and caching each time an object is created/updated
 		IndexAndCacheAspect coreAspect = new IndexAndCacheAspect();

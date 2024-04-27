@@ -19,6 +19,12 @@ package com.erudika.para.server.utils.filters;
 
 import com.erudika.para.core.ParaObject;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerResponseContext;
+import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.ext.Provider;
 import java.beans.PropertyDescriptor;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -27,12 +33,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.container.ContainerResponseContext;
-import jakarta.ws.rs.container.ContainerResponseFilter;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.ext.Provider;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
@@ -47,6 +47,12 @@ public class FieldFilter implements ContainerResponseFilter {
 
 	@Context
 	private HttpServletRequest request;
+
+	/**
+	 * Constructor.
+	 */
+	public FieldFilter() {
+	}
 
 	@Override
 	@SuppressWarnings("unchecked")

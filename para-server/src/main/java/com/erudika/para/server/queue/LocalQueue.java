@@ -21,17 +21,17 @@ import com.erudika.para.core.listeners.DestroyListener;
 import com.erudika.para.core.queue.MockQueue;
 import com.erudika.para.core.queue.Queue;
 import com.erudika.para.core.utils.Para;
+import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
-import jakarta.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Local queue impl.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 @Singleton
@@ -54,6 +54,7 @@ public class LocalQueue implements Queue {
 	}
 
 	/**
+	 * getter/setter.
 	 * @param name name
 	 */
 	public LocalQueue(String name) {
