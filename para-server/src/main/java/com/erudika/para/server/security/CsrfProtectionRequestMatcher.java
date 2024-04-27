@@ -17,8 +17,9 @@
  */
 package com.erudika.para.server.security;
 
-import java.util.regex.Pattern;
+import com.erudika.para.core.utils.Para;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.regex.Pattern;
 import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
@@ -37,6 +38,7 @@ public final class CsrfProtectionRequestMatcher implements RequestMatcher {
 	private final RegexRequestMatcher passAuthEndpoint = new RegexRequestMatcher("^/password_auth", null, true);
 	private final RegexRequestMatcher samlEndpoint = new RegexRequestMatcher("^/saml_auth.*", null, true);
 	private final RegexRequestMatcher samlMetaEndpoint = new RegexRequestMatcher("^/saml_metadata.*", null, true);
+	private final RegexRequestMatcher signinEndpoint = new RegexRequestMatcher("^" + Para.getConfig().signinPath() + ".*", null, true);
 
 	private CsrfProtectionRequestMatcher() {
 	}
@@ -49,7 +51,7 @@ public final class CsrfProtectionRequestMatcher implements RequestMatcher {
 				&& !samlEndpoint.matches(request)
 				&& !authEndpoints.matches(request)
 				&& !allowedMethods.matcher(request.getMethod()).matches();
-		return matches || passAuthEndpoint.matches(request);
+		return matches || passAuthEndpoint.matches(request) || signinEndpoint.matches(request);
 	}
 
 }

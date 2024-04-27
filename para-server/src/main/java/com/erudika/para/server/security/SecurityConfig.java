@@ -18,11 +18,15 @@
 package com.erudika.para.server.security;
 
 import com.erudika.para.core.utils.Para;
-import static com.erudika.para.server.ParaServer.getInstance;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigObject;
 import com.typesafe.config.ConfigValue;
 import jakarta.annotation.security.DeclareRoles;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.LinkedList;
 import org.slf4j.Logger;
@@ -36,7 +40,13 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
+import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.firewall.DefaultHttpFirewall;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * Programmatic configuration for Spring Security.
@@ -50,13 +60,11 @@ public class SecurityConfig {
 	private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 	private static final String[] DEFAULT_ROLES = {"USER", "MOD", "ADMIN", "APP"};
 
-	private final CachedCsrfTokenRepository csrfTokenRepository;
 
 	/**
 	 * No-args constructor.
 	 */
 	public SecurityConfig() {
-		csrfTokenRepository = getInstance(CachedCsrfTokenRepository.class);
 	}
 
 	/**
@@ -95,8 +103,18 @@ public class SecurityConfig {
 		parseProtectedResources(http, protectedResources);
 
 		if (Para.getConfig().csrfProtectionEnabled()) {
+			CookieCsrfTokenRepository tokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+			XorCsrfTokenRequestAttributeHandler delegate = new XorCsrfTokenRequestAttributeHandler();
+			// set the name of the attribute the CsrfToken will be populated on
+			delegate.setCsrfRequestAttributeName("_csrf");
+			// Use only the handle() method of XorCsrfTokenRequestAttributeHandler and the
+			// default implementation of resolveCsrfTokenValue() from CsrfTokenRequestHandler
+			CsrfTokenRequestHandler requestHandler = delegate::handle;
 			http.csrf((csrf) -> csrf.requireCsrfProtectionMatcher(CsrfProtectionRequestMatcher.INSTANCE).
-					csrfTokenRepository(csrfTokenRepository));
+					csrfTokenRepository(tokenRepository).csrfTokenRequestHandler(requestHandler))
+					.addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class);
+//			http.csrf((csrf) -> csrf.requireCsrfProtectionMatcher(CsrfProtectionRequestMatcher.INSTANCE).
+//					csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()));
 		} else {
 			http.csrf((csrf) -> csrf.disable());
 		}
@@ -157,6 +175,18 @@ public class SecurityConfig {
 					http.authorizeHttpRequests((authorize) -> authorize.requestMatchers(method, patternz).hasAnyRole(rolz));
 				}
 			}
+		}
+	}
+
+	private static final class CsrfCookieFilter extends OncePerRequestFilter {
+
+		@Override
+		protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+				throws ServletException, IOException {
+			CsrfToken csrfToken = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+			// Render the token value to a cookie by causing the deferred token to be loaded
+			csrfToken.getToken();
+			filterChain.doFilter(request, response);
 		}
 	}
 }

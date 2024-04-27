@@ -17,7 +17,6 @@
  */
 package com.erudika.para.server.security;
 
-import com.erudika.para.core.cache.Cache;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.server.security.filters.AmazonAuthFilter;
 import com.erudika.para.server.security.filters.FacebookAuthFilter;
@@ -42,7 +41,6 @@ import com.google.inject.Provides;
  */
 public class SecurityModule extends AbstractModule {
 
-	private CachedCsrfTokenRepository csrfTokenRepository;
 	private SimpleAuthenticationSuccessHandler successHandler;
 	private SimpleAuthenticationFailureHandler failureHandler;
 	private PasswordAuthFilter passwordFilter;
@@ -61,26 +59,6 @@ public class SecurityModule extends AbstractModule {
 	private SAMLMetadataFilter samlMetaFilter;
 
 	protected void configure() {
-	}
-
-	/**
-	 * @param cache {@link Cache}
-	 * @return token repository
-	 */
-	@Provides
-	public CachedCsrfTokenRepository getCsrfTokenRepository(Cache cache) {
-		if (csrfTokenRepository == null) {
-			csrfTokenRepository = new CachedCsrfTokenRepository();
-			csrfTokenRepository.setCache(cache);
-		}
-		return csrfTokenRepository;
-	}
-
-	/**
-	 * @param csrfTokenRepository token repository
-	 */
-	public void setCsrfTokenRepository(CachedCsrfTokenRepository csrfTokenRepository) {
-		this.csrfTokenRepository = csrfTokenRepository;
 	}
 
 	/**
