@@ -523,15 +523,6 @@ public class ParaConfig extends Config {
 		return getConfigBoolean("security.csrf_protection", true);
 	}
 
-	@Documented(position = 490,
-			identifier = "security.csrf_cookie",
-			value = "para-csrf-token",
-			category = "Security",
-			description = "The name of the CSRF cookie.")
-	public String csrfCookieName() {
-		return getConfigParam("security.csrf_cookie", "para-csrf-token");
-	}
-
 	@Documented(position = 500,
 			identifier = "auth_cookie",
 			value = "para-auth",
