@@ -17,10 +17,17 @@
  */
 package com.erudika.para.core.utils;
 
-import com.erudika.para.core.annotations.Stored;
+import com.erudika.para.core.Address;
 import com.erudika.para.core.App;
+import com.erudika.para.core.Linker;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
+import com.erudika.para.core.Tag;
+import com.erudika.para.core.Translation;
+import com.erudika.para.core.User;
+import com.erudika.para.core.Vote;
+import com.erudika.para.core.Webhook;
+import com.erudika.para.core.annotations.Stored;
 import static com.erudika.para.core.utils.Utils.getAllDeclaredFields;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -42,6 +49,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.collections.bidimap.DualHashBidiMap;
@@ -58,8 +66,6 @@ public final class ParaObjectUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(ParaObjectUtils.class);
 	// maps plural to singular type definitions
-	private static final Map<String, String> CORE_TYPES = new DualHashBidiMap();
-	private static final Map<String, String> CORE_PARA_TYPES = new DualHashBidiMap();
 	// maps lowercase simple names to class objects
 	private static final Map<String, Class<? extends ParaObject>> CORE_CLASSES = new DualHashBidiMap();
 	private static final Map<String, Class<? extends ParaObject>> CORE_PARA_CLASSES = new DualHashBidiMap();
@@ -73,6 +79,16 @@ public final class ParaObjectUtils {
 		JSON_MAPPER.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 		JSON_MAPPER.registerModule(new JavaTimeModule());
 		JSON_MAPPER.findAndRegisterModules();
+
+		CORE_PARA_CLASSES.put(Address.class.getSimpleName().toLowerCase(), Address.class);
+		CORE_PARA_CLASSES.put(App.class.getSimpleName().toLowerCase(), App.class);
+		CORE_PARA_CLASSES.put(Linker.class.getSimpleName().toLowerCase(), Linker.class);
+		CORE_PARA_CLASSES.put(Sysprop.class.getSimpleName().toLowerCase(), Sysprop.class);
+		CORE_PARA_CLASSES.put(Tag.class.getSimpleName().toLowerCase(), Tag.class);
+		CORE_PARA_CLASSES.put(Translation.class.getSimpleName().toLowerCase(), Translation.class);
+		CORE_PARA_CLASSES.put(User.class.getSimpleName().toLowerCase(), User.class);
+		CORE_PARA_CLASSES.put(Vote.class.getSimpleName().toLowerCase(), Vote.class);
+		CORE_PARA_CLASSES.put(Webhook.class.getSimpleName().toLowerCase(), Webhook.class);
 	}
 
 	private ParaObjectUtils() { }
@@ -123,17 +139,8 @@ public final class ParaObjectUtils {
 	 * @return a map of type plural - type singular form
 	 */
 	public static Map<String, String> getCoreTypes() {
-		if (CORE_TYPES.isEmpty()) {
-			try {
-				for (Class<? extends ParaObject> clazz : getCoreClassesMap().values()) {
-					ParaObject p = clazz.getConstructor().newInstance();
-					CORE_TYPES.put(p.getPlural(), p.getType());
-				}
-			} catch (Exception ex) {
-				logger.error(null, ex);
-			}
-		}
-		return Collections.unmodifiableMap(CORE_TYPES);
+		return getCoreClassesMap().values().stream().
+				collect(Collectors.toMap(k -> Utils.singularToPlural(Utils.type(k)), v -> Utils.type(v)));
 	}
 
 	/**
@@ -141,18 +148,8 @@ public final class ParaObjectUtils {
 	 * @return a map of type plural - type singular form
 	 */
 	public static Map<String, String> getCoreParaTypes() {
-		if (CORE_PARA_TYPES.isEmpty()) {
-			try {
-				getCoreClassesMap();
-				for (Class<? extends ParaObject> clazz : CORE_PARA_CLASSES.values()) {
-					ParaObject p = clazz.getConstructor().newInstance();
-					CORE_PARA_TYPES.put(p.getPlural(), p.getType());
-				}
-			} catch (Exception ex) {
-				logger.error(null, ex);
-			}
-		}
-		return Collections.unmodifiableMap(CORE_PARA_TYPES);
+		return CORE_PARA_CLASSES.values().stream().
+				collect(Collectors.toMap(k -> Utils.singularToPlural(Utils.type(k)), v -> Utils.type(v)));
 	}
 
 	/**
@@ -500,17 +497,6 @@ public final class ParaObjectUtils {
 	public static Map<String, Class<? extends ParaObject>> getCoreClassesMap() {
 		if (CORE_CLASSES.isEmpty()) {
 			try {
-				String corePackage = ParaObject.class.getPackage().getName();
-				ClassGraph cg1 = new ClassGraph().enableClassInfo().acceptPackages(corePackage);
-				try (ScanResult scanResult = cg1.scan()) {
-					ClassInfoList classes = scanResult.getClassesImplementing(ParaObject.class.getName()).
-							filter(ci -> !ci.isInterface() && !ci.isAbstract());
-					for (io.github.classgraph.ClassInfo clazz : classes) {
-						CORE_PARA_CLASSES.put(clazz.getSimpleName().toLowerCase(),
-								(Class<? extends ParaObject>) clazz.loadClass(true));
-					}
-				}
-
 				CORE_CLASSES.putAll(CORE_PARA_CLASSES);
 
 				if (!Para.getConfig().corePackageName().isEmpty()) {
@@ -530,6 +516,19 @@ public final class ParaObjectUtils {
 			}
 		}
 		return Collections.unmodifiableMap(CORE_CLASSES);
+	}
+
+	/**
+	 * Explicitly registers core classes for reflection.
+	 * @param classes a list of classes
+	 */
+	public static void registerCoreClasses(Class<? extends ParaObject>... classes) {
+		if (classes != null && classes.length > 0) {
+			getCoreClassesMap();
+			for (Class<? extends ParaObject> clazz : classes) {
+				CORE_CLASSES.putIfAbsent(clazz.getSimpleName().toLowerCase(), clazz);
+			}
+		}
 	}
 
 	/**

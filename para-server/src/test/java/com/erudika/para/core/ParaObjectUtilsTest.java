@@ -21,6 +21,7 @@ import com.erudika.para.core.annotations.Stored;
 import com.erudika.para.core.utils.Cat;
 import com.erudika.para.core.utils.CatDeserializer;
 import com.erudika.para.core.utils.CatSerializer;
+import com.erudika.para.core.utils.Para;
 import static com.erudika.para.core.utils.ParaObjectUtils.getAnnotatedFields;
 import static com.erudika.para.core.utils.ParaObjectUtils.getAppidFromAuthHeader;
 import static com.erudika.para.core.utils.ParaObjectUtils.getCoreTypes;
@@ -34,12 +35,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.AfterAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -164,6 +165,7 @@ public class ParaObjectUtilsTest {
 	public void testSetAnnotatedFields() {
 		assertNull(setAnnotatedFields(null));
 		assertNull(setAnnotatedFields(Collections.emptyMap()));
+		Para.registerCoreClasses(Custom.class);
 		Map<String, Object> data1 = new HashMap<String, Object>();
 		data1.put("missing", "123");
 		data1.put("type", "custom");

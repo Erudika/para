@@ -86,8 +86,8 @@
 		<httpClientVer>5.3.1</httpClientVer>
 		<httpCoreVer>5.2.4</httpCoreVer>
 		<commonsCodecVer>1.16.1</commonsCodecVer>
-		<lucenePluginVer>1.48.0</lucenePluginVer>
-		<sqlPluginVer>1.48.0</sqlPluginVer>
+		<lucenePluginVer>1.48.1</lucenePluginVer>
+		<sqlPluginVer>1.48.1</sqlPluginVer>
 		<junitVer>5.10.2</junitVer>
 		<junitPlatformVer>1.10.2</junitPlatformVer>
 	</properties>
@@ -100,12 +100,6 @@
 			<version>5.11.0</version>
 			<scope>test</scope>
 		</dependency>
-<!--		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.13.2</version>
-			<scope>test</scope>
-		</dependency>-->
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
@@ -118,24 +112,6 @@
 			<version>${junitVer}</version>
 			<scope>test</scope>
 		</dependency>
-<!--		<dependency>
-			<groupId>org.junit.vintage</groupId>
-			<artifactId>junit-vintage-engine</artifactId>
-			<version>${junitVer}</version>
-			<scope>test</scope>
-		</dependency>-->
-<!--		<dependency>
-			<groupId>org.junit.platform</groupId>
-			<artifactId>junit-platform-launcher</artifactId>
-			<version>${junitPlatformVer}</version>
-			<scope>test</scope>
-		</dependency>-->
-<!--		<dependency>
-			<groupId>org.junit.platform</groupId>
-			<artifactId>junit-platform-runner</artifactId>
-			<version>${junitPlatformVer}</version>
-			<scope>test</scope>
-		</dependency>-->
 	</dependencies>
 
 	<build>

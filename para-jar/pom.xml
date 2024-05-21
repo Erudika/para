@@ -248,12 +248,6 @@
 							</execution>
 						</executions>
 						<configuration>
-							<buildArgs>
-								--initialize-at-build-time=org.apache.velocity.runtime.resource.ResourceManagerImpl
-								--initialize-at-build-time=org.hibernate.validator.constraints.CodePointLength$NormalizationStrategy
-								--initialize-at-build-time=com.vladsch.flexmark
-								--initialize-at-build-time=org.apache.commons.logging.impl.Jdk14Logger
-								--initialize-at-build-time=org.sqlite.util.ProcessRunner</buildArgs>
 							<mainClass>com.erudika.para.jar.Run</mainClass>
 							<agentConfiguration>
 								<enabled>true</enabled>

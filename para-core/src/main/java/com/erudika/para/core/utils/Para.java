@@ -18,6 +18,7 @@
 package com.erudika.para.core.utils;
 
 import com.erudika.para.core.App;
+import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.cache.Cache;
 import com.erudika.para.core.listeners.DestroyListener;
 import com.erudika.para.core.listeners.IOListener;
@@ -375,6 +376,14 @@ public final class Para {
 			}
 		}
 		return paraClassLoader;
+	}
+
+	/**
+	 * Explicitly registers core classes for reflection.
+	 * @param classes a list of classes
+	 */
+	public static void registerCoreClasses(Class<? extends ParaObject>... classes) {
+		ParaObjectUtils.registerCoreClasses(classes);
 	}
 
 	/**
