@@ -478,11 +478,11 @@ public class Webhook extends Sysprop {
 		String propValue = StringUtils.substringAfter(webhook.getPropertyFilter(), ":");
 		Set<String> vals = new LinkedHashSet<>(List.of(StringUtils.split(propValue, ",|", 50)));
 		boolean matchAll = StringUtils.contains(propValue, ",");
-//		boolean multiple = StringUtils.containsAny(propValue, ",", "|");
 		Map<String, Object> props = ParaObjectUtils.getAnnotatedFields(paraObject, null, false);
 		if (props.containsKey(propName)) {
 			Object v = props.get(propName);
-			if ("-".equals(propValue) && (v == null || StringUtils.isBlank(v.toString()))) {
+			if ("-".equals(propValue) && (v == null || StringUtils.isBlank(v.toString()) ||
+					(v instanceof Collection && ((Collection) v).isEmpty()))) {
 				return true;
 			}
 			if (v instanceof Collection) {
