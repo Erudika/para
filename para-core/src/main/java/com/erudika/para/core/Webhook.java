@@ -23,12 +23,15 @@ import com.erudika.para.core.utils.Pager;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
+import jakarta.validation.constraints.NotBlank;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import jakarta.validation.constraints.NotBlank;
+import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.URL;
 import org.slf4j.LoggerFactory;
@@ -43,6 +46,7 @@ public class Webhook extends Sysprop {
 	@Stored @NotBlank @URL private String targetUrl;
 	@Stored private String secret;
 	@Stored private String typeFilter;
+	@Stored private String propertyFilter;
 	@Stored private Boolean urlEncoded;
 	@Stored private Boolean active;
 	@Stored private Boolean tooManyFailures;
@@ -123,6 +127,20 @@ public class Webhook extends Sysprop {
 	 */
 	public void setTypeFilter(String typeFilter) {
 		this.typeFilter = typeFilter;
+	}
+
+	/**
+	 * @return property filter
+	 */
+	public String getPropertyFilter() {
+		return propertyFilter;
+	}
+
+	/**
+	 * @param propertyFilter property filter
+	 */
+	public void setPropertyFilter(String propertyFilter) {
+		this.propertyFilter = propertyFilter;
 	}
 
 	/**
@@ -418,7 +436,8 @@ public class Webhook extends Sysprop {
 			terms.put(Config._APPID, appid);
 			terms.put("active", true);
 			webhooks = Para.getSearch().findTerms(appid, Utils.type(Webhook.class), terms, true, p);
-			webhooks.stream().filter(webhook -> typeFilterMatches(webhook, payload)).
+			webhooks.stream().
+					filter(webhook -> typeFilterMatches(webhook, payload) && propertyFilterMatches(webhook, payload)).
 					forEach(webhook -> Para.getQueue().push(webhook.buildPayloadAsJSON(
 					(eventValue instanceof String) ? (String) eventValue : eventName, payload)));
 		} while (!webhooks.isEmpty());
@@ -434,6 +453,63 @@ public class Webhook extends Sysprop {
 			List<?> list = (List) paraObjects;
 			if (!list.isEmpty() && list.get(0) instanceof ParaObject) {
 				return webhook.getTypeFilter().equalsIgnoreCase(((ParaObject) list.get(0)).getType());
+			}
+		}
+		return false;
+	}
+
+	public static boolean propertyFilterMatches(Webhook webhook, Object paraObjects) {
+		if (StringUtils.isBlank(webhook.getPropertyFilter())) {
+			return true;
+		}
+		if (webhook.getPropertyFilter().contains(":")) {
+			if (paraObjects instanceof ParaObject) {
+				return matchesPropFilter(webhook, (ParaObject) paraObjects);
+			} else if (paraObjects instanceof List) {
+				List<?> list = (List) paraObjects;
+				return !list.isEmpty() && list.stream().anyMatch((pobj) -> matchesPropFilter(webhook, (ParaObject) pobj));
+			}
+		}
+		return false;
+	}
+
+	private static boolean matchesPropFilter(Webhook webhook, ParaObject paraObject) {
+		String propName = StringUtils.substringBefore(webhook.getPropertyFilter(), ":");
+		String propValue = StringUtils.substringAfter(webhook.getPropertyFilter(), ":");
+		Set<String> vals = new LinkedHashSet<>(List.of(StringUtils.split(propValue, ",|", 50)));
+		boolean matchAll = StringUtils.contains(propValue, ",");
+//		boolean multiple = StringUtils.containsAny(propValue, ",", "|");
+		Map<String, Object> props = ParaObjectUtils.getAnnotatedFields(paraObject, null, false);
+		if (props.containsKey(propName)) {
+			Object v = props.get(propName);
+			if ("-".equals(propValue) && (v == null || StringUtils.isBlank(v.toString()))) {
+				return true;
+			}
+			if (v instanceof Collection) {
+				if (matchAll) {
+					try {
+						return ((Collection) v).containsAll(vals);
+					} catch (Exception e) {
+						return false;
+					}
+				} else {
+					for (String val : vals) {
+						if (((Collection) v).contains(val)) {
+							return true;
+						}
+					}
+				}
+
+			} else {
+				if (vals.size() > 1 && !matchAll) {
+					for (String val : vals) {
+						if (v != null && v.equals(val)) {
+							return true;
+						}
+					}
+				} else {
+					return v != null && v.equals(propValue);
+				}
 			}
 		}
 		return false;
