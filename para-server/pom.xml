@@ -386,7 +386,6 @@
 							<goal>stop</goal>
 						</goals>
 						<configuration>
-							<scope>test</scope>
 							<skip>${skipITs}</skip>
 							<port>8000</port>
 							<dist>${project.build.directory}/dynamodb-dist</dist>
@@ -440,7 +439,6 @@
 						<configuration>
 							<skip>${skipTests}</skip>
 							<configLocation>../para-core/src/main/resources/checkstyle.xml</configLocation>
-							<encoding>UTF-8</encoding>
 							<consoleOutput>true</consoleOutput>
 							<failsOnError>true</failsOnError>
 							<linkXRef>false</linkXRef>

@@ -131,7 +131,6 @@
 				<configuration>
 					<skipTests>${skipTests}</skipTests>
 					<skipITs>${skipITs}</skipITs>
-					<encoding>UTF-8</encoding>
 <!--					<threadCount>2</threadCount>
 					<forkCount>2C</forkCount>-->
 				</configuration>
@@ -170,9 +169,6 @@
 				<configuration>
 					<release>17</release>
 					<compilerArgument>-Xlint:-options</compilerArgument>
-					<compilerArguments>
-						<endorseddirs>${endorsed.dir}</endorseddirs>
-					</compilerArguments>
 					<encoding>UTF-8</encoding>
 					<showWarnings>true</showWarnings>
 					<showDeprecation>true</showDeprecation>
