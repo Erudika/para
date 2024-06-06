@@ -28,13 +28,13 @@ import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.NotBlank;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import javax.naming.LimitExceededException;
-import jakarta.validation.constraints.NotBlank;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -179,7 +179,6 @@ public class User implements ParaObject {
 	/**
 	 * @return the 2FA secret key. Used for checking the TOTP code.
 	 */
-	@JsonIgnore
 	public String getTwoFAkey() {
 		return twoFAkey;
 	}
@@ -195,7 +194,6 @@ public class User implements ParaObject {
 	/**
 	 * @return the hashed backup key (shown only once). Used for disabling 2FA.
 	 */
-	@JsonIgnore
 	public String getTwoFAbackupKeyHash() {
 		return twoFAbackupKeyHash;
 	}
