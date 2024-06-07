@@ -12,7 +12,7 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>6.2.4</springSecVer>
+		<springSecVer>6.3.0</springSecVer>
 		<springLdapVer>3.2.3</springLdapVer>
 	</properties>
 
@@ -132,7 +132,7 @@
 		<dependency>
 			<groupId>com.fasterxml.woodstox</groupId>
 			<artifactId>woodstox-core</artifactId>
-			<version>6.6.1</version>
+			<version>6.6.2</version>
 		</dependency>
 		<!--	 FOR JAKARTA WORKAROUND - REMOVE AFTER SAML LIB HAS BEEN UPDATED -->
 		<dependency>
