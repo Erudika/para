@@ -158,6 +158,8 @@ public enum HealthUtils implements InitializeListener, Runnable {
 			try (InputStream ref = getClass().getClassLoader().getResourceAsStream("reference.conf");
 						InputStream config = Optional.ofNullable(Para.getFileStore().load(confFile)).orElse(ref)) {
 				return new String(config.readAllBytes(), StandardCharsets.UTF_8);
+			} catch (Exception e) {
+				return "";
 			}
 		}
 
