@@ -1020,6 +1020,7 @@ class ParaIntegrationsIT {
 			String emailPassFail = emailInactive + "::12345678";
 			String emailPassPass = "test3@user.com::12345678";
 			String emailPassPass2 = "test4@user.com::12345678";
+			String emailPassPass3 = "TEST4@user.COM::12345678";
 			assertNull(pcc.signIn("password", emailPassFail)); // unverified email - user is created but not active
 			List<User> failed = pcc.findTerms(fbUser.getType(), Collections.singletonMap(Config._EMAIL, emailInactive), true);
 			assertFalse(failed.isEmpty());
@@ -1033,6 +1034,8 @@ class ParaIntegrationsIT {
 			assertNotNull(newUser2);
 			pcc.signOut();
 			assertNotNull(pcc.signIn("password", emailPassPass));
+			pcc.signOut();
+			assertNotNull(pcc.signIn("password", emailPassPass3)); // emails mustn't be case sensitive
 			pcc.signOut();
 
 			// test permissions with/without signed in user
