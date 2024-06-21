@@ -72,7 +72,7 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 		if (requestURI.endsWith(PASSWORD_ACTION)) {
 			user = new User();
-			user.setIdentifier(request.getParameter(EMAIL));
+			user.setIdentifier(StringUtils.toRootLowerCase(request.getParameter(EMAIL)));
 			user.setPassword(request.getParameter(PASSWORD));
 			String appid = SecurityUtils.getAppidFromAuthRequest(request);
 			if (!App.isRoot(appid)) {
@@ -107,7 +107,7 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 		User user = new User();
 		if (accessToken != null && accessToken.contains(Para.getConfig().separator())) {
 			String[] parts = accessToken.split(Para.getConfig().separator(), 3);
-			String email = parts[0];
+			String email = StringUtils.toRootLowerCase(parts[0]);
 			String name = StringUtils.trimToEmpty(parts[1]);
 			String pass = (parts.length > 2) ? parts[2] : "";
 
