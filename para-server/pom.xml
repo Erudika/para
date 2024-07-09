@@ -259,7 +259,7 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>9.37.3</version>
+			<version>9.40</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents.core5</groupId>
@@ -288,7 +288,7 @@
 		<dependency>
 			<groupId>org.elasticmq</groupId>
 			<artifactId>elasticmq-rest-sqs_2.13</artifactId>
-			<version>1.5.7</version>
+			<version>1.6.5</version>
 			<scope>test</scope>
 			<exclusions>
 				<exclusion>
