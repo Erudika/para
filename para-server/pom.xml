@@ -12,8 +12,8 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>6.3.0</springSecVer>
-		<springLdapVer>3.2.3</springLdapVer>
+		<springSecVer>6.3.3</springSecVer>
+		<springLdapVer>3.2.6</springLdapVer>
 	</properties>
 
 	<dependencies>
@@ -138,7 +138,7 @@
 		<dependency>
 			<groupId>org.apache.felix</groupId>
 			<artifactId>org.apache.felix.http.wrappers</artifactId>
-			<version>1.1.2</version>
+			<version>1.1.6</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>

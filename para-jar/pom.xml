@@ -29,6 +29,8 @@
 	</properties>
 
 	<build>
+		<finalName>para-${project.version}</finalName>
+
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -49,7 +51,6 @@
 							<goal>repackage</goal>
 						</goals>
 						<configuration>
-							<finalName>para-${project.version}</finalName>
 							<mainClass>com.erudika.para.jar.Run</mainClass>
 							<layout>ZIP</layout>
 						</configuration>
