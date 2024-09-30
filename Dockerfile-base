@@ -5,7 +5,8 @@ FROM maven:3-eclipse-temurin-21-alpine AS build
 RUN mkdir -p /para
 RUN curl -Ls https://github.com/Erudika/para/archive/master.tar.gz | tar -xz -C /para
 RUN cd /para/para-master && mvn -q install -DskipTests=true -DskipITs=true && \
-	cd /para/para-master/para-jar && mvn -q -Pbase clean package && mv target/para-[0-9]*.jar /para/
+	cd /para/para-master/para-jar && mvn -q -Pbase clean package && \
+	mv target/para-base-[0-9]*.jar /para/para.jar
 
 FROM eclipse-temurin:21-alpine
 
@@ -18,7 +19,7 @@ WORKDIR /para
 
 VOLUME ["/para/data"]
 
-COPY --from=build /para/para-*.jar /para/para.jar
+#COPY --from=build /para/para-*.jar /para/para.jar
 
 EXPOSE 8080
 
