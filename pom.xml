@@ -87,7 +87,7 @@
 		<httpCoreVer>5.2.4</httpCoreVer>
 		<commonsCodecVer>1.16.1</commonsCodecVer>
 		<lucenePluginVer>1.48.1</lucenePluginVer>
-		<sqlPluginVer>1.48.1</sqlPluginVer>
+		<sqlPluginVer>1.48.2</sqlPluginVer>
 		<junitVer>5.10.2</junitVer>
 		<junitPlatformVer>1.10.2</junitPlatformVer>
 	</properties>
