@@ -72,7 +72,7 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 	@Override
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws IOException, ServletException {
-		String requestURI = request.getRequestURI();
+		String requestURI = request.getServletPath();
 		UserAuthentication userAuth = null;
 		boolean redirect = !"false".equals(request.getParameter("redirect"));
 		User user = null;

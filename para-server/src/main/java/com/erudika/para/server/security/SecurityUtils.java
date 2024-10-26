@@ -415,7 +415,7 @@ public final class SecurityUtils {
 			params.put(param.getKey(), param.getValue()[0]);
 		}
 
-		String path = incoming.getRequestURI();
+		String path = incoming.getRequestURI(); // DO NOT USE req.getServletPath() here!
 		String endpoint = StringUtils.removeEndIgnoreCase(incoming.getRequestURL().toString(), path);
 		String httpMethod = incoming.getMethod();
 		InputStream entity;
@@ -483,9 +483,9 @@ public final class SecurityUtils {
 		String appidFromState = request.getParameter("state");
 		String appidFromAppid = request.getParameter(Config._APPID);
 		if (StringUtils.isBlank(appidFromState) && StringUtils.isBlank(appidFromAppid)) {
-			if (StringUtils.startsWith(request.getRequestURI(), SAMLAuthFilter.SAML_ACTION + "/")) {
-				return StringUtils.trimToNull(request.getRequestURI().substring(SAMLAuthFilter.SAML_ACTION.length() + 1));
-			} else if (StringUtils.startsWith(request.getRequestURI(), "/" + PasswordlessAuthFilter.PASSWORDLESS_ACTION)) {
+			if (StringUtils.startsWith(request.getServletPath(), SAMLAuthFilter.SAML_ACTION + "/")) {
+				return StringUtils.trimToNull(request.getServletPath().substring(SAMLAuthFilter.SAML_ACTION.length() + 1));
+			} else if (StringUtils.startsWith(request.getServletPath(), "/" + PasswordlessAuthFilter.PASSWORDLESS_ACTION)) {
 				String token = request.getParameter("token"); // JWT
 				JWTClaimsSet claims = null;
 				try {

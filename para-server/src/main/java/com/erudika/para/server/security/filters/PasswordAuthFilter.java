@@ -66,7 +66,7 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 	@Override
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws IOException, ServletException {
-		String requestURI = request.getRequestURI();
+		String requestURI = request.getServletPath();
 		UserAuthentication userAuth = null;
 		User user = null;
 

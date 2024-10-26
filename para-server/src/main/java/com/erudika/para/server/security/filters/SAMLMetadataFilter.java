@@ -58,7 +58,7 @@ public class SAMLMetadataFilter extends GenericFilterBean {
 		HttpServletRequest request = (HttpServletRequest) req;
 		HttpServletResponse response = (HttpServletResponse) res;
 
-		final String requestURI = request.getRequestURI();
+		final String requestURI = request.getServletPath();
 		String appid;
 
 		if (requestURI.startsWith(SAML_ACTION)) {

@@ -75,7 +75,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 	@Override
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws IOException {
-		final String requestURI = request.getRequestURI();
+		final String requestURI = request.getServletPath();
 		UserAuthentication userAuth = null;
 		String username = request.getParameter(Para.getConfig().ldapUsernameParameter());
 		String password = request.getParameter(Para.getConfig().ldapPasswordParameter());

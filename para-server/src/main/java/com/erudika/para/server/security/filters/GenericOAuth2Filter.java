@@ -105,7 +105,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	@Override
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws IOException {
-		final String requestURI = request.getRequestURI();
+		final String requestURI = request.getServletPath();
 		UserAuthentication userAuth = null;
 		boolean isSecond = requestURI.endsWith(OAUTH2_SECOND_ACTION);
 		boolean isThird = requestURI.endsWith(OAUTH2_THIRD_ACTION);

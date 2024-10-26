@@ -94,7 +94,7 @@ public class AmazonAuthFilter extends AbstractAuthenticationProcessingFilter {
 	@Override
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws IOException {
-		final String requestURI = request.getRequestURI();
+		final String requestURI = request.getServletPath();
 		UserAuthentication userAuth = null;
 
 		if (requestURI.endsWith(AMAZON_ACTION)) {
