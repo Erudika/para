@@ -16,7 +16,7 @@ echo "" >> changelog.txt && \
 echo "### :package: [Download JAR](https://oss.sonatype.org/service/local/repositories/releases/content/com/erudika/para-jar/${ver}/para-jar-${ver}.jar)" >> changelog.txt && \
 echo "" >> changelog.txt && \
 echo "### :package: [Download WAR](https://oss.sonatype.org/service/local/repositories/releases/content/com/erudika/para-war/${ver}/para-war-${ver}.war)" >> changelog.txt && \
-hub release create -F changelog.txt -t "v$ver" "v$ver" && \
+gh release create -F changelog.txt -t "v$ver" "v$ver" && \
 rm changelog.txt
 
 
