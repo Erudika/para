@@ -147,11 +147,11 @@ public final class RestUtils {
 	 * @return the resource path
 	 */
 	public static String extractResourcePath(HttpServletRequest request) {
-		if (request == null || request.getServletPath().length() <= 3) {
+		if (request == null || request.getRequestURI().length() <= 3) {
 			return "";
 		}
 		// get request path, strip first slash '/'
-		String uri = request.getServletPath().substring(1);
+		String uri = request.getRequestURI().substring(1);
 		// skip to the end of API version prefix '/v1/'
 		int start = uri.indexOf('/');
 

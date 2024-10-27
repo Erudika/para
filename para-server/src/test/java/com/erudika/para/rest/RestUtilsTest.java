@@ -44,10 +44,10 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.jupiter.api.AfterAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -188,27 +188,27 @@ public class RestUtilsTest {
 	@Test
 	public void testExtractResourcePath() {
 		HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
-		Mockito.when(req.getServletPath()).thenReturn("");
+		Mockito.when(req.getRequestURI()).thenReturn("");
 		assertEquals(extractResourcePath(null), "");
 		assertEquals(extractResourcePath(req), "");
 
-		Mockito.when(req.getServletPath()).thenReturn("/v1");
+		Mockito.when(req.getRequestURI()).thenReturn("/v1");
 		assertEquals("", extractResourcePath(req));
 
-		Mockito.when(req.getServletPath()).thenReturn("/v1/");
+		Mockito.when(req.getRequestURI()).thenReturn("/v1/");
 		assertEquals("", extractResourcePath(req));
 
-		Mockito.when(req.getServletPath()).thenReturn("/v1/_");
+		Mockito.when(req.getRequestURI()).thenReturn("/v1/_");
 		assertEquals("_", extractResourcePath(req));
 
-		Mockito.when(req.getServletPath()).thenReturn("/v1/_test");
+		Mockito.when(req.getRequestURI()).thenReturn("/v1/_test");
 		assertEquals("_test", extractResourcePath(req));
 
-		Mockito.when(req.getServletPath()).thenReturn("/v1/_test/path/id");
+		Mockito.when(req.getRequestURI()).thenReturn("/v1/_test/path/id");
 		assertEquals("_test/path/id", extractResourcePath(req));
 
 		// new feature - specific resource paths
-		Mockito.when(req.getServletPath()).thenReturn("/v2.0/posts/123");
+		Mockito.when(req.getRequestURI()).thenReturn("/v2.0/posts/123");
 		assertEquals("posts/123", extractResourcePath(req));
 	}
 
