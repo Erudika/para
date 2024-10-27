@@ -20,6 +20,10 @@ package com.erudika.para.core.utils;
 import com.erudika.para.core.annotations.Documented;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigIncludeContext;
+import com.typesafe.config.ConfigIncluder;
+import com.typesafe.config.ConfigObject;
+import com.typesafe.config.ConfigParseOptions;
 import com.typesafe.config.ConfigRenderOptions;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueFactory;
@@ -191,13 +195,14 @@ public abstract class Config {
 					StringUtils.isBlank(System.getProperty("config.url")) &&
 					Files.exists(localConfig)) {
 				try {
-					conf = ConfigFactory.parseFile(localConfig.toFile()).
+					conf = parseFileWithoutIncludes(localConfig.toFile()).
 							getConfig(getConfigRootPrefix()).withFallback(getFallbackConfig());
 				} catch (Exception e) {
 					logger.debug("Failed to parse local config {}", e.getMessage());
 				}
 			}
-			config = ConfigFactory.load().getConfig(getConfigRootPrefix()).withFallback(getFallbackConfig());
+			config = ConfigFactory.load(ConfigParseOptions.defaults().setIncluder(NoopConfigIncluder.INSTANCE)).
+					getConfig(getConfigRootPrefix()).withFallback(getFallbackConfig());
 			if (conf != null && !conf.isEmpty()) {
 				config = conf.withFallback(config);
 			}
@@ -467,6 +472,24 @@ public abstract class Config {
 		return configMap;
 	}
 
+	/**
+	 * Parses a HOCON file with includes disabled.
+	 * @param file a file
+	 * @return a Config object
+	 */
+	public static com.typesafe.config.Config parseFileWithoutIncludes(File file) {
+		return ConfigFactory.parseFile(file, ConfigParseOptions.defaults().setIncluder(NoopConfigIncluder.INSTANCE));
+	}
+
+	/**
+	 * Parses a HOCON string with includes disabled.
+	 * @param config HOCON confing string
+	 * @return a Config object
+	 */
+	public static com.typesafe.config.Config parseStringWithoutIncludes(String config) {
+		return ConfigFactory.parseString(config, ConfigParseOptions.defaults().setIncluder(NoopConfigIncluder.INSTANCE));
+	}
+
 	private String renderCategoryHeader(String format, String category, Map.Entry<String, Documented> entry,
 			Map<String, Map<String, Map<String, String>>> jsonMapByCat, StringBuilder sb) {
 		String cat = getSortedConfigKeys().get(entry.getKey());
@@ -528,4 +551,23 @@ public abstract class Config {
 		}
 	}
 
+	/**
+	 * Disables the "include" keyword in HOCON files.
+	 */
+	static final class NoopConfigIncluder implements ConfigIncluder {
+		static final ConfigIncluder INSTANCE = new NoopConfigIncluder();
+
+		private NoopConfigIncluder() {
+		}
+
+		@Override
+		public ConfigIncluder withFallback(ConfigIncluder fallback) {
+			return this;
+		}
+
+		@Override
+		public ConfigObject include(ConfigIncludeContext context, String what) {
+			return ConfigValueFactory.fromMap(Map.of());
+		}
+	}
 }
