@@ -48,7 +48,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -564,7 +563,7 @@ public final class Utils {
 			try {
 				var href = new URI(value).toURL();
 				return Arrays.binarySearch(Para.getConfig().markdownAllowFollowDomains(), href.getHost()) >= 0;
-			} catch (MalformedURLException | URISyntaxException e) {
+			} catch (Exception e) {
 				return false;
 			}
 		}
@@ -815,7 +814,7 @@ public final class Utils {
 		URL u;
 		try {
 			u = new URI(url).toURL();
-		} catch (MalformedURLException | URISyntaxException e) {
+		} catch (Exception e) {
 			// the URL is not in a valid form
 			u = null;
 		}

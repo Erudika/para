@@ -76,8 +76,8 @@
 		<skipTests>false</skipTests>
 		<skipITs>${skipTests}</skipITs>
 		<skipUTs>${skipTests}</skipUTs>
-		<deployPluginVer>3.1.1</deployPluginVer>
-		<slf4jVer>2.0.13</slf4jVer>
+		<deployPluginVer>3.1.3</deployPluginVer>
+		<slf4jVer>2.0.16</slf4jVer>
 		<logbackVer>1.5.3</logbackVer>
 		<awsJdkVer>[2.21.23,)</awsJdkVer>
 		<jerseyVer>3.1.6</jerseyVer>
@@ -88,7 +88,7 @@
 		<commonsCodecVer>1.16.1</commonsCodecVer>
 		<lucenePluginVer>1.48.1</lucenePluginVer>
 		<sqlPluginVer>1.48.1</sqlPluginVer>
-		<junitVer>5.10.2</junitVer>
+		<junitVer>5.11.2</junitVer>
 		<junitPlatformVer>1.10.2</junitPlatformVer>
 	</properties>
 
@@ -97,7 +97,7 @@
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-core</artifactId>
-			<version>5.11.0</version>
+			<version>5.14.1</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -119,7 +119,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-failsafe-plugin</artifactId>
-				<version>3.2.5</version>
+				<version>3.5.1</version>
 				<executions>
 					<execution>
 						<goals>
@@ -139,7 +139,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.2.5</version>
+				<version>3.5.1</version>
 				<dependencies>
 					<dependency>
 						<groupId>org.apache.maven.surefire</groupId>
@@ -179,7 +179,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-release-plugin</artifactId>
-				<version>3.0.1</version>
+				<version>3.1.1</version>
 				<configuration>
 					<autoVersionSubmodules>true</autoVersionSubmodules>
 					<mavenExecutorId>forked-path</mavenExecutorId>
@@ -192,7 +192,7 @@
 			<plugin>
 				<groupId>org.sonatype.plugins</groupId>
 				<artifactId>nexus-staging-maven-plugin</artifactId>
-				<version>1.6.13</version>
+				<version>1.7.0</version>
 				<extensions>true</extensions>
 				<configuration>
 					<serverId>ossrh</serverId>
@@ -210,7 +210,7 @@
 			<plugin>
 				<groupId>org.sonarsource.scanner.maven</groupId>
 				<artifactId>sonar-maven-plugin</artifactId>
-				<version>3.11.0.3922</version>
+				<version>4.0.0.4121</version>
 			</plugin>
 		</plugins>
 	</build>
@@ -243,7 +243,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
-						<version>3.6.3</version>
+						<version>3.10.1</version>
 						<executions>
 							<execution>
 								<id>attach-javadocs</id>
@@ -266,7 +266,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-gpg-plugin</artifactId>
-						<version>3.2.2</version>
+						<version>3.2.7</version>
 						<executions>
 							<execution>
 								<id>sign-artifacts</id>
@@ -294,7 +294,7 @@
 					<plugin>
 						<groupId>org.pitest</groupId>
 						<artifactId>pitest-maven</artifactId>
-						<version>1.4.2</version>
+						<version>1.17.0</version>
 						<executions>
 							<execution>
 								<goals>
@@ -333,7 +333,7 @@
 			<plugin>
 				<groupId>org.pitest</groupId>
 				<artifactId>pitest-maven</artifactId>
-				<version>1.4.2</version>
+				<version>1.17.0</version>
 				<reportSets>
 					<reportSet>
 						<reports>
