@@ -37,10 +37,10 @@ import java.util.List;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -317,6 +317,7 @@ public abstract class SearchTest {
 	@Test
 	public void testPaginationAndSorting() {
 		Pager pager = new Pager(2);
+		pager.setSortby("_docid");
 		List<User> page1 = s.findQuery(u.getType(), "type:user", pager);
 		pager.setPage(2);
 		List<User> page2 = s.findQuery(u.getType(), "type:user", pager);

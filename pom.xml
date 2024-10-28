@@ -86,8 +86,8 @@
 		<httpClientVer>5.3.1</httpClientVer>
 		<httpCoreVer>5.2.4</httpCoreVer>
 		<commonsCodecVer>1.16.1</commonsCodecVer>
-		<lucenePluginVer>1.48.1</lucenePluginVer>
-		<sqlPluginVer>1.48.1</sqlPluginVer>
+		<lucenePluginVer>1.49.0</lucenePluginVer>
+		<sqlPluginVer>1.49.0</sqlPluginVer>
 		<junitVer>5.11.2</junitVer>
 		<junitPlatformVer>1.10.2</junitPlatformVer>
 	</properties>
@@ -167,7 +167,7 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.13.0</version>
 				<configuration>
-					<release>17</release>
+					<release>21</release>
 					<compilerArgument>-Xlint:-options</compilerArgument>
 					<encoding>UTF-8</encoding>
 					<showWarnings>true</showWarnings>
