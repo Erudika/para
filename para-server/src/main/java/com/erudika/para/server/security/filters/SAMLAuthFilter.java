@@ -53,7 +53,7 @@ import com.onelogin.saml2.util.Constants;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -124,7 +124,7 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 					if (StringUtils.isBlank(idpMetaUrl)) {
 						samlSettings = getSAMLSettings(app);
 					} else {
-						samlSettings = parseRemoteXML(new URL(idpMetaUrl), request.getParameter("entityid"));
+						samlSettings = parseRemoteXML(new URI(idpMetaUrl).toURL(), request.getParameter("entityid"));
 						samlSettings.putAll(getSAMLSettings(app)); // override IDP meta with config values
 					}
 

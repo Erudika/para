@@ -369,7 +369,7 @@ public final class Para {
 						jars.add(file.toURI().toURL());
 					}
 				}
-				paraClassLoader = new URLClassLoader(jars.toArray(new URL[0]), currentClassLoader);
+				paraClassLoader = new URLClassLoader(jars.toArray(URL[]::new), currentClassLoader);
 				// Thread.currentThread().setContextClassLoader(paraClassLoader);
 			} catch (Exception e) {
 				logger.error(null, e);

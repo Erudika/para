@@ -39,6 +39,7 @@ import com.vladsch.flexmark.util.ast.Node;
 import com.vladsch.flexmark.util.data.MutableDataHolder;
 import com.vladsch.flexmark.util.data.MutableDataSet;
 import com.vladsch.flexmark.util.html.MutableAttributes;
+import jakarta.validation.constraints.NotNull;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
@@ -48,6 +49,7 @@ import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -68,7 +70,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import jakarta.validation.constraints.NotNull;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -561,9 +562,9 @@ public final class Utils {
 
 		private Boolean isIgnoredDomain(String value) {
 			try {
-				var href = new URL(value);
+				var href = new URI(value).toURL();
 				return Arrays.binarySearch(Para.getConfig().markdownAllowFollowDomains(), href.getHost()) >= 0;
-			} catch (MalformedURLException e) {
+			} catch (MalformedURLException | URISyntaxException e) {
 				return false;
 			}
 		}
@@ -813,8 +814,8 @@ public final class Utils {
 		}
 		URL u;
 		try {
-			u = new URL(url);
-		} catch (MalformedURLException e) {
+			u = new URI(url).toURL();
+		} catch (MalformedURLException | URISyntaxException e) {
 			// the URL is not in a valid form
 			u = null;
 		}
