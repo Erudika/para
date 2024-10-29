@@ -47,7 +47,7 @@
 
 	<scm>
 		<connection>scm:git:https://github.com/Erudika/para.git</connection>
-		<developerConnection>scm:git:git@github.com:Erudika/para.git</developerConnection>
+		<developerConnection>scm:git:https://github.com/Erudika/para.git</developerConnection>
 		<url>https://github.com/Erudika/para</url>
 		<tag>HEAD</tag>
 	</scm>
