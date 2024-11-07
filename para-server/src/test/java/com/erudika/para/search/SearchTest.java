@@ -317,13 +317,13 @@ public abstract class SearchTest {
 	@Test
 	public void testPaginationAndSorting() {
 		Pager pager = new Pager(2);
-		pager.setSortby("_docid");
 		List<User> page1 = s.findQuery(u.getType(), "type:user", pager);
 		pager.setPage(2);
 		List<User> page2 = s.findQuery(u.getType(), "type:user", pager);
 		pager.setPage(3);
 		List<User> page3 = s.findQuery(u.getType(), "type:user", pager);
 
+		assertFalse(s.findQuery(u.getType(), "type:user", new Pager(2, 2)).isEmpty());
 		assertEquals(2, page1.size());
 		assertEquals(1, page2.size());
 		assertEquals(0, page3.size());
