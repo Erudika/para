@@ -83,8 +83,8 @@
 		<jerseyVer>3.1.6</jerseyVer>
 		<springBootVer>3.4.0</springBootVer>
 		<metricsVer>4.2.25</metricsVer>
-		<httpClientVer>5.3.1</httpClientVer>
-		<httpCoreVer>5.2.4</httpCoreVer>
+		<httpClientVer>5.4.1</httpClientVer>
+		<httpCoreVer>5.3.1</httpCoreVer>
 		<commonsCodecVer>1.16.1</commonsCodecVer>
 		<lucenePluginVer>1.49.2</lucenePluginVer>
 		<sqlPluginVer>1.49.0</sqlPluginVer>

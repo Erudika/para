@@ -15,6 +15,9 @@
  */
 package com.erudika.para.utils.filters;
 
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -22,10 +25,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
 
 @SuppressWarnings("unchecked")
 public class MockHttpServletResponse implements HttpServletResponse {
@@ -206,6 +205,11 @@ public class MockHttpServletResponse implements HttpServletResponse {
 
 	@Override
 	public void setContentLengthLong(long len) {
+		throw new UnsupportedOperationException("Not supported yet.");
+	}
+
+	@Override
+	public void sendRedirect(String string, int i, boolean bln) throws IOException {
 		throw new UnsupportedOperationException("Not supported yet.");
 	}
 

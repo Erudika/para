@@ -24,11 +24,11 @@ import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.rest.RestUtils;
 import com.erudika.para.server.utils.HttpUtils;
 import com.nimbusds.jwt.SignedJWT;
-import java.io.IOException;
-import java.util.Set;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.DefaultRedirectStrategy;
@@ -64,10 +64,10 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 				}
 				if (!StringUtils.isBlank(hostUrlParam)) {
 					if (hostUrlAliases.contains(hostUrlParam) || StringUtils.startsWith(customURI, hostUrlParam)) {
-						UriComponents hostUrl = UriComponentsBuilder.fromHttpUrl(hostUrlParam).build();
-						customURI = UriComponentsBuilder.fromHttpUrl(customURI).host(hostUrl.getHost()).toUriString();
+						UriComponents hostUrl = UriComponentsBuilder.fromUriString(hostUrlParam).build();
+						customURI = UriComponentsBuilder.fromUriString(customURI).host(hostUrl.getHost()).toUriString();
 					} else {
-						UriComponents customHost = UriComponentsBuilder.fromHttpUrl(customURI).build();
+						UriComponents customHost = UriComponentsBuilder.fromUriString(customURI).build();
 						customURI = customHost.getScheme() + "://" + customHost.getHost();
 					}
 				}
