@@ -308,6 +308,16 @@ public abstract class Config {
 	}
 
 	/**
+	 * Overwrites the internal config object with a new one.
+	 * @param newConfig a new Config object
+	 * @return returns this instance for chaining
+	 */
+	public Config overwriteConfig(com.typesafe.config.Config newConfig) {
+		config = newConfig;
+		return this;
+	}
+
+	/**
 	 * Constructs a sorted set of configuration keys.
 	 * Heavily relies on the {@link Documented} annotation for sort order.
 	 * @return a set of map of config keys, without the root prefix (path), to config categories.
@@ -455,14 +465,11 @@ public abstract class Config {
 	public Map<String, Object> getConfigMap() {
 		Map<String, Object> configMap = new LinkedHashMap<>();
 		for (String keyNoPrefix : getSortedConfigKeys().keySet()) {
-			Object value = getConfigValue(keyNoPrefix, null);
-			if (value != null) {
-				configMap.put(getConfigRootPrefix() + "." + keyNoPrefix, value);
-			}
+			configMap.put(getConfigRootPrefix() + "." + keyNoPrefix, null);
 		}
 		for (Map.Entry<String, ConfigValue> entry : getConfig().entrySet()) {
-			String keyNoPrefix = entry.getKey();
-			String keyPrefixed = getConfigRootPrefix() + "." + entry.getKey();
+			String keyNoPrefix = StringUtils.removeStart(entry.getKey(), getConfigRootPrefix() + ".");
+			String keyPrefixed = getConfigRootPrefix() + "." + keyNoPrefix;
 			Object value = getConfigValue(keyNoPrefix, "");
 			Object valueUnwrapped = ConfigValueFactory.fromAnyRef(value).unwrapped();
 			if (!getKeysExcludedFromRendering().contains(keyNoPrefix)) {
