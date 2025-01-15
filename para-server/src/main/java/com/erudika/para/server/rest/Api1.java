@@ -962,7 +962,7 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				App app = (a != null) ? a : getPrincipalApp();
-				Response entityRes = getEntity(ctx.getEntityStream(), List.class);
+				Response entityRes = getEntity(ctx.getEntityStream(), List.class, true);
 				if (entityRes.getStatusInfo() == Response.Status.OK) {
 					List<Map<String, Object>> newProps = (List<Map<String, Object>>) entityRes.getEntity();
 					ArrayList<String> ids = new ArrayList<>(newProps.size());

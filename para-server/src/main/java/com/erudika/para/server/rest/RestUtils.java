@@ -39,6 +39,7 @@ import static com.erudika.para.server.security.SecurityUtils.getPrincipalApp;
 import static com.erudika.para.server.security.SecurityUtils.isNotAnApp;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -60,6 +61,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -195,26 +197,57 @@ public final class RestUtils {
 	}
 
 	/**
+	 * @see #getEntity(java.io.InputStream, java.lang.Class, boolean)
+	 * @return response with 200 or error status
+	 */
+	public static Response getEntity(InputStream is, Class<?> type) {
+		return getEntity(is, type, false);
+	}
+
+	/**
 	 * Returns a Response with the entity object inside it and 200 status code.
 	 * If there was and error the status code is different than 200.
 	 *
 	 * @param is the entity input stream
 	 * @param type the type to convert the entity into, for example a Map. If null, this returns the InputStream.
+	 * @param batchMode if true, checks size of individual objects only, not size of whole batch.
 	 * @return response with 200 or error status
 	 */
-	public static Response getEntity(InputStream is, Class<?> type) {
+	public static Response getEntity(InputStream is, Class<?> type, boolean batchMode) {
 		Object entity;
 		try {
 			if (is != null) {
-				if (is.available() > Para.getConfig().maxEntitySizeBytes()) {
+				int maxReqSize = Para.getConfig().maxEntitySizeBytes();
+				int maxReqSizeKb = (maxReqSize / 1024);
+				if (!batchMode && is.available() > maxReqSize) {
 					return getStatusResponse(Response.Status.BAD_REQUEST,
-							"Request is too large - the maximum is " +
-							(Para.getConfig().maxEntitySizeBytes() / 1024) + " KB.");
+							"Request is too large - the maximum is " + maxReqSizeKb + " KB.");
+				} else if (batchMode && is.available() > 100 * maxReqSize) {
+					return getStatusResponse(Response.Status.BAD_REQUEST, "Batch request is too large - "
+							+ "the maximum total batch size is " + 100 * maxReqSizeKb + " KB.");
 				}
 				if (type == null) {
 					entity = is;
 				} else {
-					entity = ParaObjectUtils.getJsonReader(type).readValue(is);
+					if (batchMode && is.available() > maxReqSize) {
+						JsonNode entityNode = ParaObjectUtils.getJsonReader(type).readTree(is);
+						boolean tooLarge = false;
+						if (entityNode.isArray()) {
+							for (JsonNode i : entityNode) {
+								if (calculateObjectSize(i) > maxReqSize) {
+									tooLarge = true;
+									break;
+								}
+							}
+						}
+						if (tooLarge) {
+							return getStatusResponse(Response.Status.BAD_REQUEST, "Batch request too large or "
+									+ "containing items larger than the max. allowed size " + maxReqSizeKb + " KB.");
+						}
+						entity = ParaObjectUtils.getJsonReader(type).readValue(entityNode);
+					} else {
+						entity = ParaObjectUtils.getJsonReader(type).readValue(is);
+					}
 				}
 			} else {
 				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
@@ -487,7 +520,7 @@ public final class RestUtils {
 			if (app != null) {
 				final LinkedList<ParaObject> newObjects = new LinkedList<>();
 				Set<String> ids = new LinkedHashSet<>();
-				Response entityRes = getEntity(is, List.class);
+				Response entityRes = getEntity(is, List.class, true);
 				if (entityRes.getStatusInfo() == Response.Status.OK) {
 					List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
 					for (Map<String, Object> object : items) {
@@ -878,6 +911,29 @@ public final class RestUtils {
 				}
 			}
 		}
+	}
+
+	private static int calculateObjectSize(JsonNode jsonNode) {
+		if (jsonNode == null || jsonNode.isNull()) {
+			return 4; // null
+		}
+		if (jsonNode.isTextual() || jsonNode.isNumber() || jsonNode.isBoolean()) {
+			return 2 + jsonNode.asText().length(); // two quotes + string
+		}
+		if (jsonNode.isArray() || jsonNode.isObject()) {
+			AtomicInteger size = new AtomicInteger(2); // extra chars like quotes & braces
+			if (jsonNode.isObject()) {
+				jsonNode.fieldNames().forEachRemaining(
+						field -> size.getAndAdd(12 + field.length()));
+			}
+			if (!jsonNode.isEmpty()) {
+				size.getAndAdd(jsonNode.size() - 1); // commas
+				jsonNode.elements().forEachRemaining(
+						element -> size.getAndAdd(calculateObjectSize(element)));
+			}
+			return size.get();
+		}
+		return jsonNode.asText().length();
 	}
 
 	/////////////////////////////////////////////
