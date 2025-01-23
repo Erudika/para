@@ -453,7 +453,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.11.1</version>
+				<version>3.11.2</version>
 				<executions>
 					<execution>
 						<id>javadocs</id>
@@ -464,9 +464,8 @@
 				</executions>
 				<configuration>
 					<release>17</release>
-					<stylesheetfile>../para-core/src/main/javadoc/stylesheet.css</stylesheetfile>
+					<stylesheetfile>para-core/src/main/javadoc/stylesheet.css</stylesheetfile>
 					<show>public</show>
-					<aggregate>true</aggregate>
 					<quiet>true</quiet>
 					<docfilessubdirs>true</docfilessubdirs>
 				</configuration>

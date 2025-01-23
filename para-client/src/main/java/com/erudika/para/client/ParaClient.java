@@ -71,7 +71,7 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.io.HttpClientConnectionManager;
-import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactoryBuilder;
+import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpHeaders;
@@ -144,10 +144,8 @@ public final class ParaClient implements Closeable {
 			sslFactory = SSLFactory.builder().withDefaultTrustMaterial().build();
 		}
 		HttpClientConnectionManager cm = PoolingHttpClientConnectionManagerBuilder.create().
-				setSSLSocketFactory(SSLConnectionSocketFactoryBuilder.create().
-						setHostnameVerifier(sslFactory.getHostnameVerifier()).
-						setSslContext(sslFactory.getSslContext()).
-						build()).build();
+				setTlsSocketStrategy(new DefaultClientTlsStrategy(sslFactory.getSslContext(),
+						sslFactory.getHostnameVerifier())).build();
 
 		int timeout = 30;
 		this.httpclient = HttpClientBuilder.create().
