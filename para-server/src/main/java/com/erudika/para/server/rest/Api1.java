@@ -354,7 +354,7 @@ public final class Api1 extends ResourceConfig {
 		return new Inflector<ContainerRequestContext, Response>() {
 			public Response apply(ContainerRequestContext ctx) {
 				Map<String, String> info = new TreeMap<>();
-				info.put("info", "Para - the backend for busy developers.!");
+				info.put("info", "Para - the backend for busy developers.");
 				if (Para.getConfig().versionBannerEnabled()) {
 					info.put("version", StringUtils.replace(getVersion(), "-SNAPSHOT", ""));
 				}
