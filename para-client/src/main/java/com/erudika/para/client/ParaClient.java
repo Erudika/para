@@ -515,8 +515,8 @@ public final class ParaClient implements Closeable {
 				if (throwExceptionOnHTTPError) {
 					throw new RuntimeException(msg);
 				} else {
-					logger.error(msg);
-				}
+					logger.error(msg + " [{} {}]", method, uri);
+				}			
 			}
 		} catch (URISyntaxException ex) {
 			logger.error(null, ex);
