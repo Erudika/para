@@ -12,8 +12,8 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>6.4.1</springSecVer>
-		<springLdapVer>3.2.8</springLdapVer>
+		<springSecVer>6.4.4</springSecVer>
+		<springLdapVer>3.2.11</springLdapVer>
 	</properties>
 
 	<dependencies>
@@ -120,7 +120,7 @@
 		<dependency>
 			<groupId>com.unboundid</groupId>
 			<artifactId>unboundid-ldapsdk</artifactId>
-			<version>6.0.10</version>
+			<version>6.0.11</version>
 		</dependency>
 
 		<!-- SAML -->
@@ -132,13 +132,13 @@
 		<dependency>
 			<groupId>com.fasterxml.woodstox</groupId>
 			<artifactId>woodstox-core</artifactId>
-			<version>6.6.2</version>
+			<version>6.7.0</version>
 		</dependency>
 		<!--	 FOR JAKARTA WORKAROUND - REMOVE AFTER SAML LIB HAS BEEN UPDATED -->
 		<dependency>
 			<groupId>org.apache.felix</groupId>
 			<artifactId>org.apache.felix.http.wrappers</artifactId>
-			<version>1.1.6</version>
+			<version>1.1.8</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
@@ -153,7 +153,7 @@
 		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
 			<artifactId>caffeine</artifactId>
-			<version>3.1.8</version>
+			<version>3.2.0</version>
 		</dependency>
 
 		<!-- JERSEY -->
@@ -243,7 +243,7 @@
 		<dependency>
 			<groupId>org.yaml</groupId>
 			<artifactId>snakeyaml</artifactId>
-			<version>2.3</version>
+			<version>2.4</version>
 		</dependency>
 		<dependency>
 			<groupId>jakarta.servlet</groupId>
@@ -259,7 +259,7 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>9.47</version>
+			<version>10.0.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents.core5</groupId>

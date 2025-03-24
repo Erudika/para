@@ -76,7 +76,7 @@
 		<skipTests>false</skipTests>
 		<skipITs>${skipTests}</skipITs>
 		<skipUTs>${skipTests}</skipUTs>
-		<deployPluginVer>3.1.3</deployPluginVer>
+		<deployPluginVer>3.1.4</deployPluginVer>
 		<slf4jVer>2.0.16</slf4jVer>
 		<logbackVer>1.5.3</logbackVer>
 		<awsJdkVer>[2.21.23,)</awsJdkVer>
@@ -88,7 +88,7 @@
 		<commonsCodecVer>1.16.1</commonsCodecVer>
 		<lucenePluginVer>1.49.2</lucenePluginVer>
 		<sqlPluginVer>1.49.0</sqlPluginVer>
-		<junitVer>5.11.3</junitVer>
+		<junitVer>5.12.0</junitVer>
 		<junitPlatformVer>1.10.2</junitPlatformVer>
 	</properties>
 
@@ -165,7 +165,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.13.0</version>
+				<version>3.14.0</version>
 				<configuration>
 					<release>21</release>
 					<compilerArgument>-Xlint:-options</compilerArgument>
