@@ -481,6 +481,7 @@ public final class ParaClient implements Closeable {
 			}
 
 			uri = setQueryParameters(uri, params);
+			String reqDetails = Utils.formatMessage(" [{0} {1}]", method, uri);
 
 			HttpUriRequest req = getHttpUriRequest(uri, method, jsonEntity);
 
@@ -507,16 +508,16 @@ public final class ParaClient implements Closeable {
 				return httpclient.execute(req, (resp) -> {
 					HttpEntity respEntity = resp.getEntity();
 					int statusCode = resp.getCode();
-					String reason = resp.getReasonPhrase();
+					String reason = resp.getReasonPhrase() + reqDetails;
 					return readEntity(respEntity, returnType, statusCode, reason);
 				});
 			} catch (Exception ex) {
-				String msg = "Failed to execute signed " + method + " request to " + path + ": " + ex.getMessage();
+				String msg = "Failed to execute signed " + method + " request to " + uri + ": " + ex.getMessage();
 				if (throwExceptionOnHTTPError) {
 					throw new RuntimeException(msg);
 				} else {
-					logger.error(msg + " [{} {}]", method, uri);
-				}			
+					logger.error(msg + reqDetails);
+				}
 			}
 		} catch (URISyntaxException ex) {
 			logger.error(null, ex);
