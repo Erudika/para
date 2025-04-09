@@ -458,31 +458,45 @@ public class Webhook extends Sysprop {
 		return false;
 	}
 
-	public static boolean propertyFilterMatches(Webhook webhook, Object paraObjects) {
+	@SuppressWarnings("unchecked")
+	public static boolean propertyFilterMatches(Webhook webhook, Object payload) {
 		if (StringUtils.isBlank(webhook.getPropertyFilter())) {
 			return true;
 		}
 		if (webhook.getPropertyFilter().contains(":")) {
-			if (paraObjects instanceof ParaObject) {
-				return matchesPropFilter(webhook, (ParaObject) paraObjects);
-			} else if (paraObjects instanceof List) {
-				List<?> list = (List) paraObjects;
-				return !list.isEmpty() && list.stream().anyMatch((pobj) -> matchesPropFilter(webhook, (ParaObject) pobj));
+			if (payload instanceof ParaObject) {
+				return matchesPropFilter(webhook, (ParaObject) payload);
+			} else if (payload instanceof List) {
+				List<?> list = (List) payload;
+				return !list.isEmpty() && list.stream().anyMatch((pobj) -> matchesPropFilter(webhook, pobj));
+			} else if (payload instanceof Map) {
+				Map<?, ?> props = (Map) payload;
+				return !props.isEmpty() && matchesProp(webhook, (Map<String, Object>) props);
 			}
 		}
 		return false;
 	}
 
-	private static boolean matchesPropFilter(Webhook webhook, ParaObject paraObject) {
+	@SuppressWarnings("unchecked")
+	private static boolean matchesPropFilter(Webhook webhook, Object paraObject) {
+		if (paraObject instanceof ParaObject) {
+			Map<String, Object> props = ParaObjectUtils.getAnnotatedFields((ParaObject) paraObject, null, false);
+			return matchesProp(webhook, props);
+		} else if (paraObject instanceof Map) {
+			return matchesProp(webhook, (Map<String, Object>) paraObject);
+		}
+		return false;
+	}
+
+	private static boolean matchesProp(Webhook webhook, Map<String, Object> props) {
 		String propName = StringUtils.substringBefore(webhook.getPropertyFilter(), ":");
 		String propValue = StringUtils.substringAfter(webhook.getPropertyFilter(), ":");
 		Set<String> vals = new LinkedHashSet<>(List.of(StringUtils.split(propValue, ",|", 50)));
 		boolean matchAll = StringUtils.contains(propValue, ",");
-		Map<String, Object> props = ParaObjectUtils.getAnnotatedFields(paraObject, null, false);
 		if (props.containsKey(propName)) {
 			Object v = props.get(propName);
-			if ("-".equals(propValue) && (v == null || StringUtils.isBlank(v.toString()) ||
-					(v instanceof Collection && ((Collection) v).isEmpty()))) {
+			if ("-".equals(propValue) && (v == null || StringUtils.isBlank(v.toString())
+					|| (v instanceof Collection && ((Collection) v).isEmpty()))) {
 				return true;
 			}
 			if (v instanceof Collection) {
