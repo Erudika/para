@@ -13,9 +13,9 @@ mvn release:perform && \
 echo "Maven release done, publishing release on GitHub..," && \
 git log $lastver..HEAD --oneline >> changelog.txt && \
 echo "" >> changelog.txt && \
-echo "### :package: [Download JAR](https://oss.sonatype.org/service/local/repositories/releases/content/com/erudika/para-jar/${ver}/para-jar-${ver}.jar)" >> changelog.txt && \
+echo "### :package: [Download JAR](https://repo1.maven.org/maven2/com/erudika/para-jar/${ver}/para-jar-${ver}.jar)" >> changelog.txt && \
 echo "" >> changelog.txt && \
-echo "### :package: [Download WAR](https://oss.sonatype.org/service/local/repositories/releases/content/com/erudika/para-war/${ver}/para-war-${ver}.war)" >> changelog.txt && \
+echo "### :package: [Download WAR](https://repo1.maven.org/maven2/com/erudika/para-war/${ver}/para-war-${ver}.war)" >> changelog.txt && \
 gh release create -F changelog.txt -t "v$ver" "v$ver" && \
 rm changelog.txt
 

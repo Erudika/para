@@ -7,7 +7,7 @@ PORT="8080"
 WORKDIR="/home/ubuntu/para"
 mkdir $WORKDIR
 
-JARURL="https://oss.sonatype.org/service/local/repositories/releases/content/com/erudika/para-jar/${VERSION}/para-jar-${VERSION}.jar"
+JARURL="https://repo1.maven.org/maven2/com/erudika/para-jar/${VERSION}/para-jar-${VERSION}.jar"
 sfile="/etc/systemd/system/para.service"
 
 apt-get update && apt-get install -y wget openjdk-21-jre &&
