@@ -88,8 +88,8 @@
 		<commonsCodecVer>1.16.1</commonsCodecVer>
 		<lucenePluginVer>1.49.3</lucenePluginVer>
 		<sqlPluginVer>1.49.1</sqlPluginVer>
-		<junitVer>5.12.1</junitVer>
-		<junitPlatformVer>1.12.1</junitPlatformVer>
+		<junitVer>5.12.2</junitVer>
+		<junitPlatformVer>1.12.2</junitPlatformVer>
 	</properties>
 
 	<dependencies>
@@ -125,7 +125,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-failsafe-plugin</artifactId>
-				<version>3.5.2</version>
+				<version>3.5.3</version>
 				<executions>
 					<execution>
 						<goals>
@@ -145,14 +145,14 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.5.2</version>
-				<dependencies>
+				<version>3.5.3</version>
+<!--				<dependencies>
 					<dependency>
 						<groupId>org.apache.maven.surefire</groupId>
 						<artifactId>surefire-junit-platform</artifactId>
 						<version>3.2.5</version>
 					</dependency>
-				</dependencies>
+				</dependencies>-->
 				<configuration>
 <!--					<includes>
 						<include>**/*IT.java</include>
@@ -216,7 +216,7 @@
 			<plugin>
 				<groupId>org.sonarsource.scanner.maven</groupId>
 				<artifactId>sonar-maven-plugin</artifactId>
-				<version>5.0.0.4389</version>
+				<version>5.1.0.4751</version>
 			</plugin>
 		</plugins>
 	</build>
