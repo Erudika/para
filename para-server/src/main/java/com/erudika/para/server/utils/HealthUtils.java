@@ -129,9 +129,8 @@ public enum HealthUtils implements InitializeListener, Runnable {
 				try {
 					confString = loadConfigFile(confFile);
 				} catch (IOException e) {
-					logger.info("Initialized root app with access key '{}' and secret '{}', "
-							+ "but could not write these to {}.",
-							rootAppCredentials.get("accessKey"), rootAppCredentials.get("secretKey"), confFile);
+					logger.info("Initialized root app with access key '{}', "
+							+ "but could not write to {}.", rootAppCredentials.get("accessKey"), confFile);
 				}
 				String accessKey = "para.root_access_key = \"" + rootAppCredentials.get("accessKey") + "\"";
 				String secretKey = "para.root_secret_key = \"" + rootAppCredentials.get("secretKey") + "\"";
