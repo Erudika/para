@@ -3,7 +3,7 @@
 ## A scalable, multitenant backend for the cloud.
 
 [![Docker pulls](https://img.shields.io/docker/pulls/erudikaltd/para)](https://hub.docker.com/r/erudikaltd/para)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.erudika/para-core)
+![Maven Central Version](https://img.shields.io/maven-central/v/com.erudika/para-parent)
 [![Join the chat at https://gitter.im/Erudika/para](https://badges.gitter.im/Erudika/para.svg)](https://gitter.im/Erudika/para?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 
