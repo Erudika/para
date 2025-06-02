@@ -85,7 +85,7 @@
 		<metricsVer>4.2.25</metricsVer>
 		<httpClientVer>5.4.4</httpClientVer>
 		<httpCoreVer>5.3.4</httpCoreVer>
-		<commonsCodecVer>1.16.1</commonsCodecVer>
+		<commonsCodecVer>1.18.0</commonsCodecVer>
 		<lucenePluginVer>1.49.3</lucenePluginVer>
 		<sqlPluginVer>1.49.1</sqlPluginVer>
 		<junitVer>5.12.2</junitVer>
