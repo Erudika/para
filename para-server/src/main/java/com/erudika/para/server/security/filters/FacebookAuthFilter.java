@@ -28,11 +28,11 @@ import com.erudika.para.server.security.SecurityUtils;
 import com.erudika.para.server.security.UserAuthentication;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectReader;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -181,7 +181,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 					logger.info("Authentication request failed because response was missing or contained invalid JSON.");
 				}
 			} catch (Exception e) {
-				logger.warn("Facebook auth request failed: GET " + PROFILE_URL + accessToken, e);
+				logger.warn("Facebook auth request failed: GET " + PROFILE_URL + "{access_token}", e);
 			}
 			return SecurityUtils.checkIfActive(userAuth, user, false);
 		});
