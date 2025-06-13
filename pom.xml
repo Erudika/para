@@ -82,13 +82,13 @@
 		<awsJdkVer>[2.21.23,)</awsJdkVer>
 		<jerseyVer>3.1.6</jerseyVer>
 		<springBootVer>3.5.0</springBootVer>
-		<metricsVer>4.2.25</metricsVer>
+		<metricsVer>4.2.32</metricsVer>
 		<httpClientVer>5.4.4</httpClientVer>
 		<httpCoreVer>5.3.4</httpCoreVer>
 		<commonsCodecVer>1.16.1</commonsCodecVer>
 		<lucenePluginVer>1.49.3</lucenePluginVer>
 		<sqlPluginVer>1.49.1</sqlPluginVer>
-		<junitVer>5.12.2</junitVer>
+		<junitVer>5.13.1</junitVer>
 		<junitPlatformVer>1.12.2</junitPlatformVer>
 	</properties>
 
@@ -97,7 +97,7 @@
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-core</artifactId>
-			<version>5.17.0</version>
+			<version>5.18.0</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

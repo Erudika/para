@@ -60,7 +60,7 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.util.Assert;
 import org.springframework.web.filter.GenericFilterBean;
 
@@ -74,7 +74,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	private static final Logger logger = LoggerFactory.getLogger(JWTRestfulAuthFilter.class);
 
 	private AuthenticationManager authenticationManager;
-	private AntPathRequestMatcher authenticationRequestMatcher;
+	private PathPatternRequestMatcher authenticationRequestMatcher;
 
 	private FacebookAuthFilter facebookAuth;
 	private GoogleAuthFilter googleAuth;
@@ -329,7 +329,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	private void setFilterProcessesUrl(String filterProcessesUrl) {
-		this.authenticationRequestMatcher = new AntPathRequestMatcher(filterProcessesUrl);
+		this.authenticationRequestMatcher = PathPatternRequestMatcher.withDefaults().matcher(filterProcessesUrl);
 	}
 
 	/**

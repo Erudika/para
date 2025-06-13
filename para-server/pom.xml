@@ -12,7 +12,7 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>6.4.6</springSecVer>
+		<springSecVer>6.5.0</springSecVer>
 		<springLdapVer>3.3.0</springLdapVer>
 	</properties>
 
@@ -153,7 +153,7 @@
 		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
 			<artifactId>caffeine</artifactId>
-			<version>3.2.0</version>
+			<version>3.2.1</version>
 		</dependency>
 
 		<!-- JERSEY -->

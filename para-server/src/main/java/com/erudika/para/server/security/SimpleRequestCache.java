@@ -18,12 +18,10 @@
 package com.erudika.para.server.security;
 
 import com.erudika.para.core.utils.Para;
-import com.erudika.para.server.utils.HttpUtils;
 import com.erudika.para.core.utils.Utils;
+import com.erudika.para.server.utils.HttpUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.security.web.PortResolver;
-import org.springframework.security.web.PortResolverImpl;
 import org.springframework.security.web.savedrequest.DefaultSavedRequest;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.savedrequest.SavedRequest;
@@ -38,7 +36,6 @@ public class SimpleRequestCache implements RequestCache {
 
 	private final RequestMatcher anyRequestMatcher = AnyRequestMatcher.INSTANCE;
 	private final RequestMatcher ajaxRequestMatcher = AjaxRequestMatcher.INSTANCE;
-	private final PortResolver portResolver = new PortResolverImpl();
 
 	/**
 	 * Saves a request in cache.
@@ -48,7 +45,7 @@ public class SimpleRequestCache implements RequestCache {
 	@Override
 	public void saveRequest(HttpServletRequest request, HttpServletResponse response) {
 		if (anyRequestMatcher.matches(request) && !ajaxRequestMatcher.matches(request)) {
-			DefaultSavedRequest savedRequest = new DefaultSavedRequest(request, portResolver);
+			DefaultSavedRequest savedRequest = new DefaultSavedRequest(request);
 			HttpUtils.setStateParam(Para.getConfig().returnToCookieName(),
 					Utils.base64enc(savedRequest.getRedirectUrl().getBytes()), request, response);
 		}

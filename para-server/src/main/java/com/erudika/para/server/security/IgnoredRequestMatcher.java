@@ -23,7 +23,7 @@ import com.typesafe.config.ConfigValue;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
@@ -43,10 +43,10 @@ public final class IgnoredRequestMatcher implements RequestMatcher {
 		List<RequestMatcher> list = new ArrayList<>();
 		if (c != null) {
 			for (ConfigValue configValue : c) {
-				list.add(new AntPathRequestMatcher((String) configValue.unwrapped()));
+				list.add(PathPatternRequestMatcher.withDefaults().matcher((String) configValue.unwrapped()));
 			}
 		} else {
-			list.add(new AntPathRequestMatcher("/"));
+			list.add(PathPatternRequestMatcher.withDefaults().matcher("/"));
 		}
 		orMatcher = new OrRequestMatcher(list);
 	}
