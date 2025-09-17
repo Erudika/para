@@ -12,8 +12,8 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>6.5.0</springSecVer>
-		<springLdapVer>3.3.0</springLdapVer>
+		<springSecVer>6.5.4</springSecVer>
+		<springLdapVer>3.3.3</springLdapVer>
 	</properties>
 
 	<dependencies>
@@ -120,7 +120,7 @@
 		<dependency>
 			<groupId>com.unboundid</groupId>
 			<artifactId>unboundid-ldapsdk</artifactId>
-			<version>7.0.2</version>
+			<version>7.0.3</version>
 		</dependency>
 
 		<!-- SAML -->
@@ -132,7 +132,7 @@
 		<dependency>
 			<groupId>com.fasterxml.woodstox</groupId>
 			<artifactId>woodstox-core</artifactId>
-			<version>7.1.0</version>
+			<version>7.1.1</version>
 		</dependency>
 		<!--	 FOR JAKARTA WORKAROUND - REMOVE AFTER SAML LIB HAS BEEN UPDATED -->
 		<dependency>
@@ -153,7 +153,7 @@
 		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
 			<artifactId>caffeine</artifactId>
-			<version>3.2.1</version>
+			<version>3.2.2</version>
 		</dependency>
 
 		<!-- JERSEY -->
@@ -259,7 +259,7 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>10.3</version>
+			<version>10.4.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents.core5</groupId>
@@ -288,7 +288,7 @@
 		<dependency>
 			<groupId>org.elasticmq</groupId>
 			<artifactId>elasticmq-rest-sqs_2.13</artifactId>
-			<version>1.6.12</version>
+			<version>1.6.14</version>
 			<scope>test</scope>
 			<exclusions>
 				<exclusion>
@@ -453,7 +453,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.11.2</version>
+				<version>3.11.3</version>
 				<executions>
 					<execution>
 						<id>javadocs</id>

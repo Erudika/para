@@ -81,14 +81,14 @@
 		<logbackVer>1.5.3</logbackVer>
 		<awsJdkVer>[2.21.23,)</awsJdkVer>
 		<jerseyVer>3.1.6</jerseyVer>
-		<springBootVer>3.5.0</springBootVer>
+		<springBootVer>3.5.5</springBootVer>
 		<metricsVer>4.2.32</metricsVer>
 		<httpClientVer>5.4.4</httpClientVer>
 		<httpCoreVer>5.3.4</httpCoreVer>
 		<commonsCodecVer>1.16.1</commonsCodecVer>
 		<lucenePluginVer>1.49.3</lucenePluginVer>
 		<sqlPluginVer>1.49.1</sqlPluginVer>
-		<junitVer>5.13.1</junitVer>
+		<junitVer>5.13.4</junitVer>
 		<junitPlatformVer>1.12.2</junitPlatformVer>
 	</properties>
 
@@ -97,7 +97,7 @@
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-core</artifactId>
-			<version>5.18.0</version>
+			<version>5.19.0</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -174,7 +174,7 @@
 			<plugin>
 				<groupId>org.sonatype.central</groupId>
 				<artifactId>central-publishing-maven-plugin</artifactId>
-				<version>0.7.0</version>
+				<version>0.8.0</version>
 				<extensions>true</extensions>
 				<configuration>
 					<publishingServerId>central</publishingServerId>
@@ -192,7 +192,7 @@
 			<plugin>
 				<groupId>org.sonarsource.scanner.maven</groupId>
 				<artifactId>sonar-maven-plugin</artifactId>
-				<version>5.1.0.4751</version>
+				<version>5.2.0.4988</version>
 			</plugin>
 		</plugins>
 	</build>
@@ -225,7 +225,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
-						<version>3.11.2</version>
+						<version>3.11.3</version>
 						<executions>
 							<execution>
 								<id>attach-javadocs</id>
@@ -247,7 +247,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-gpg-plugin</artifactId>
-						<version>3.2.7</version>
+						<version>3.2.8</version>
 						<executions>
 							<execution>
 								<id>sign-artifacts</id>
@@ -275,7 +275,7 @@
 					<plugin>
 						<groupId>org.pitest</groupId>
 						<artifactId>pitest-maven</artifactId>
-						<version>1.17.1</version>
+						<version>1.20.2</version>
 						<executions>
 							<execution>
 								<goals>
@@ -314,7 +314,7 @@
 			<plugin>
 				<groupId>org.pitest</groupId>
 				<artifactId>pitest-maven</artifactId>
-				<version>1.17.1</version>
+				<version>1.20.2</version>
 				<reportSets>
 					<reportSet>
 						<reports>
