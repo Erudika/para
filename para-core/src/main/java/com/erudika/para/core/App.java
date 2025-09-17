@@ -44,6 +44,7 @@ import com.erudika.para.core.validation.ValidationUtils;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
+import jakarta.validation.constraints.NotBlank;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,9 +56,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import jakarta.validation.constraints.NotBlank;
 import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -152,7 +153,7 @@ public class App implements ParaObject, Serializable {
 	 * @return the full id, e.g. "app:myapp"
 	 */
 	public static final String id(String id) {
-		if (StringUtils.startsWith(id, PREFIX)) {
+		if (Strings.CS.startsWith(id, PREFIX)) {
 			String identifier = Utils.noSpaces(Utils.stripAndTrim(id.replaceAll(PREFIX, ""), " ", true), "-");
 			return StringUtils.isBlank(identifier) ? null : PREFIX.concat(identifier);
 		} else if (id != null) {
@@ -503,7 +504,7 @@ public class App implements ParaObject, Serializable {
 	 */
 	@JsonIgnore
 	public boolean isRootApp() {
-		return StringUtils.equals(id(Para.getConfig().getRootAppIdentifier()), getId());
+		return Strings.CS.equals(id(Para.getConfig().getRootAppIdentifier()), getId());
 	}
 	/**
 	 * Return true if the app is the root app (the first one created).
@@ -511,7 +512,7 @@ public class App implements ParaObject, Serializable {
 	 * @return true if root
 	 */
 	public static boolean isRoot(String appid) {
-		return StringUtils.equals(id(Para.getConfig().getRootAppIdentifier()), id(appid));
+		return Strings.CS.equals(id(Para.getConfig().getRootAppIdentifier()), id(appid));
 	}
 
 	/**
@@ -655,9 +656,9 @@ public class App implements ParaObject, Serializable {
 			EnumSet<AllowedMethods> permission, boolean allowGuestAccess) {
 		// urlDecode resource path & strip slashes at both ends
 		resourcePath = Utils.urlDecode(resourcePath);
-		resourcePath = StringUtils.removeEnd(resourcePath, "/");
-		resourcePath = StringUtils.removeStart(resourcePath, "/");
-		resourcePath = StringUtils.remove(resourcePath, ".");	// Elasticsearch 2.0+ restriction
+		resourcePath = Strings.CS.removeEnd(resourcePath, "/");
+		resourcePath = Strings.CS.removeStart(resourcePath, "/");
+		resourcePath = Strings.CS.remove(resourcePath, ".");	// Elasticsearch 2.0+ restriction
 		if (!StringUtils.isBlank(subjectid) && !StringUtils.isBlank(resourcePath) &&
 				permission != null && !permission.isEmpty()) {
 
@@ -795,19 +796,19 @@ public class App implements ParaObject, Serializable {
 				// special case where we have wildcard permissions * but public access is not allowed
 				wildcard = httpMethod;
 			}
-			if (StringUtils.contains(resourcePath, '/')) {
+			if (Strings.CS.contains(resourcePath, "/")) {
 				// we assume that a full resource path is given like: 'users/something/123'
 				// so we check to see if 'users/something' is in the list of resources.
 				// we don't want 'users/someth' to match, but only the exact full path
 				String fragment = resourcePath.substring(0, resourcePath.lastIndexOf('/'));
 				for (String resource : getResourcePermissions().get(subjectid).keySet()) {
-					if (StringUtils.startsWith(fragment, resource) &&
+					if (Strings.CS.startsWith(fragment, resource) &&
 							pathMatches(subjectid, resource, httpMethod, wildcard)) {
 						allowed = true;
 						break;
 					}
 					// allow basic wildcard matching
-					if (StringUtils.endsWith(resource, "/*") &&
+					if (Strings.CS.endsWith(resource, "/*") &&
 							resourcePath.startsWith(resource.substring(0, resource.length() - 1))) {
 						exactPathToMatch = resource;
 						break;

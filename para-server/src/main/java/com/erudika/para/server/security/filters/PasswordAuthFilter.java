@@ -29,6 +29,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import javax.naming.LimitExceededException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
@@ -82,7 +83,7 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 				}
 			}
 			try {
-				if (User.passwordMatches(user) && StringUtils.contains(user.getIdentifier(), "@")) {
+				if (User.passwordMatches(user) && Strings.CS.contains(user.getIdentifier(), "@")) {
 					//success!
 					user = User.readUserForIdentifier(user);
 					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));

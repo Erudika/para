@@ -60,6 +60,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.felix.http.javaxwrappers.HttpServletRequestWrapper;
 import org.apache.felix.http.javaxwrappers.HttpServletResponseWrapper;
 import org.slf4j.Logger;
@@ -106,7 +107,7 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (requestURI.startsWith(SAML_ACTION)) {
 			appid = Para.getConfig().getRootAppIdentifier();
 			if (requestURI.startsWith(SAML_ACTION + "/")) {
-				String id = Utils.urlDecode(StringUtils.removeStart(requestURI, SAML_ACTION + "/"));
+				String id = Utils.urlDecode(Strings.CS.removeStart(requestURI, SAML_ACTION + "/"));
 				if (!id.isEmpty()) {
 					appid = id;
 				} else {
@@ -226,15 +227,15 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 	private boolean updateUserInfo(User user, String pic, String email, String name) {
 		String picture = getPicture(pic);
 		boolean update = false;
-		if (!StringUtils.equals(user.getPicture(), picture)) {
+		if (!Strings.CS.equals(user.getPicture(), picture)) {
 			user.setPicture(picture);
 			update = true;
 		}
-		if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+		if (!StringUtils.isBlank(email) && !Strings.CS.equals(user.getEmail(), email)) {
 			user.setEmail(email);
 			update = true;
 		}
-		if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
+		if (!StringUtils.isBlank(name) && !Strings.CS.equals(user.getName(), name)) {
 			user.setName(name);
 			update = true;
 		}
@@ -344,7 +345,7 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private static String getConfigProp(App app, String propKey, String defaultValue) {
 		return Para.getConfig().getSettingForApp(app, "security.saml" +
-				StringUtils.removeStart(propKey, "onelogin.saml2"), defaultValue);
+				Strings.CS.removeStart(propKey, "onelogin.saml2"), defaultValue);
 	}
 
 	private static boolean getConfigPropBool(App app, String propKey, boolean defaultValue) {

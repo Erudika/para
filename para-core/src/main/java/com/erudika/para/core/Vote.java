@@ -17,21 +17,21 @@
  */
 package com.erudika.para.core;
 
-import com.erudika.para.core.utils.CoreUtils;
-import com.erudika.para.core.utils.ParaObjectUtils;
-import com.erudika.para.core.annotations.Locked;
-import com.erudika.para.core.annotations.Stored;
 import static com.erudika.para.core.Votable.VoteValue.DOWN;
 import static com.erudika.para.core.Votable.VoteValue.UP;
+import com.erudika.para.core.annotations.Locked;
+import com.erudika.para.core.annotations.Stored;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Pager;
 import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import jakarta.validation.constraints.NotNull;
-import org.apache.commons.lang3.StringUtils;
-import jakarta.validation.constraints.NotBlank;
+import org.apache.commons.lang3.Strings;
 
 /**
  * When a user votes on an object the vote is saved as positive or negative.
@@ -114,14 +114,14 @@ public class Vote implements ParaObject {
 	 * @return true if vote is positive
 	 */
 	public boolean isUpvote() {
-		return StringUtils.equals(this.value, UP.toString());
+		return Strings.CS.equals(this.value, UP.toString());
 	}
 
 	/**
 	 * @return true if vote is negative
 	 */
 	public boolean isDownvote() {
-		return StringUtils.equals(this.value, DOWN.toString());
+		return Strings.CS.equals(this.value, DOWN.toString());
 	}
 
 	/**

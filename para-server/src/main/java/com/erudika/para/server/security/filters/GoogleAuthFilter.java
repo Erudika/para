@@ -27,13 +27,14 @@ import com.erudika.para.server.security.AuthenticatedUserDetails;
 import com.erudika.para.server.security.SecurityUtils;
 import com.erudika.para.server.security.UserAuthentication;
 import com.fasterxml.jackson.databind.ObjectReader;
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.core.HttpHeaders;
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -194,15 +195,15 @@ public class GoogleAuthFilter extends AbstractAuthenticationProcessingFilter {
 	private boolean updateUserInfo(User user, String pic, String email, String name) {
 		String picture = getPicture(pic);
 		boolean update = false;
-		if (!StringUtils.equals(user.getPicture(), picture)) {
+		if (!Strings.CS.equals(user.getPicture(), picture)) {
 			user.setPicture(picture);
 			update = true;
 		}
-		if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+		if (!StringUtils.isBlank(email) && !Strings.CS.equals(user.getEmail(), email)) {
 			user.setEmail(email);
 			update = true;
 		}
-		if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
+		if (!StringUtils.isBlank(name) && !Strings.CS.equals(user.getName(), name)) {
 			user.setName(name);
 			update = true;
 		}

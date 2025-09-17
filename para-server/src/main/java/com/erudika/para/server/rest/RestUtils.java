@@ -64,6 +64,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,7 +122,7 @@ public final class RestUtils {
 	 */
 	public static boolean isAnonymousRequest(HttpServletRequest request) {
 		return request != null &&
-				(StringUtils.startsWith(request.getHeader(HttpHeaders.AUTHORIZATION), "Anonymous") ||
+				(Strings.CS.startsWith(request.getHeader(HttpHeaders.AUTHORIZATION), "Anonymous") ||
 					StringUtils.isBlank(request.getHeader(HttpHeaders.AUTHORIZATION)));
 	}
 
@@ -810,8 +811,8 @@ public final class RestUtils {
 		List<String> fields = params.get("fields");
 		String like = params.getFirst("like");
 		String[] fieldz = (fields != null) ? fields.toArray(new String[0]) : null;
-		if (StringUtils.startsWith(like, "id:")) {
-			ParaObject likeObj = Para.getDAO().read(appid, StringUtils.removeStart(like, "id:"));
+		if (Strings.CS.startsWith(like, "id:")) {
+			ParaObject likeObj = Para.getDAO().read(appid, Strings.CS.removeStart(like, "id:"));
 			if (likeObj != null) {
 				StringBuilder sb = new StringBuilder();
 				Arrays.asList(fieldz).forEach(field -> {
@@ -833,7 +834,7 @@ public final class RestUtils {
 	private static <P extends ParaObject> List<P> findNearbyQuery(MultivaluedMap<String, String> params,
 			String appid, String type, String query, Pager pager) {
 		String latlng = params.getFirst("latlng");
-		if (StringUtils.contains(latlng, ",")) {
+		if (Strings.CS.contains(latlng, ",")) {
 			String[] coords = latlng.split(",", 2);
 			String rad = paramOrDefault(params, "radius", null);
 			int radius = NumberUtils.toInt(rad, 10);

@@ -72,6 +72,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.jsoup.Jsoup;
@@ -425,7 +426,7 @@ public final class Utils {
 	public static String formatMessage(String msg, Object... params) {
 		try {
 			// required by MessageFormat, single quotes break string interpolation!
-			msg = StringUtils.replace(msg, "'", "''");
+			msg = Strings.CS.replace(msg, "'", "''");
 			return StringUtils.isBlank(msg) ? "" : MessageFormat.format(msg, params);
 		} catch (IllegalArgumentException e) {
 			return msg;
@@ -859,9 +860,9 @@ public final class Utils {
 	 * @return true if JSON
 	 */
 	public static boolean isJsonType(String contentType) {
-		return StringUtils.startsWith(contentType, "application/json") ||
-				StringUtils.startsWith(contentType, "application/javascript") ||
-				StringUtils.startsWith(contentType, "text/javascript");	// F U facebook!
+		return Strings.CS.startsWith(contentType, "application/json") ||
+				Strings.CS.startsWith(contentType, "application/javascript") ||
+				Strings.CS.startsWith(contentType, "text/javascript");	// F U facebook!
 	}
 
 	/**
@@ -875,7 +876,7 @@ public final class Utils {
 		}
 		return (StringUtils.isBlank(singul) || singul.endsWith("es") || singul.endsWith("ies")) ? singul :
 				(singul.endsWith("s") ? singul + "es" :
-				(singul.endsWith("y") ? StringUtils.removeEndIgnoreCase(singul, "y") + "ies" :
+				(singul.endsWith("y") ? Strings.CI.removeEnd(singul, "y") + "ies" :
 										singul + "s"));
 	}
 

@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -741,7 +742,7 @@ public final class AWSDynamoUtils {
 			for (Map<String, AttributeValue> item : pages.items()) {
 				String key = item.get(Config._KEY).s();
 				// only delete rows which belong to the given appid
-				if (StringUtils.startsWith(key, keyPrefix(appid))) {
+				if (Strings.CS.startsWith(key, keyPrefix(appid))) {
 					logger.debug("Preparing to delete '{}' from shared table, appid: '{}'.", key, appid);
 					pager.setLastKey(item.get(Config._ID).s());
 					deletePage.add(WriteRequest.builder().deleteRequest(b -> b.
@@ -780,7 +781,7 @@ public final class AWSDynamoUtils {
 	 * @return true if appid starts with " "
 	 */
 	public static boolean isSharedAppid(String appIdentifier) {
-		return StringUtils.startsWith(appIdentifier, " ");
+		return Strings.CS.startsWith(appIdentifier, " ");
 	}
 
 	/**

@@ -19,13 +19,14 @@ package com.erudika.para.server.storage;
 
 import com.erudika.para.core.storage.FileStore;
 import com.erudika.para.core.utils.Para;
+import jakarta.ws.rs.core.HttpHeaders;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-import jakarta.ws.rs.core.HttpHeaders;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -62,7 +63,7 @@ public class AWSFileStore implements FileStore {
 
 	@Override
 	public InputStream load(String path) {
-		if (StringUtils.startsWith(path, "/")) {
+		if (Strings.CS.startsWith(path, "/")) {
 			path = path.substring(1);
 		}
 		if (!StringUtils.isBlank(path)) {
@@ -78,7 +79,7 @@ public class AWSFileStore implements FileStore {
 
 	@Override
 	public String store(String path, InputStream data) {
-		if (StringUtils.startsWith(path, "/")) {
+		if (Strings.CS.startsWith(path, "/")) {
 			path = path.substring(1);
 		}
 		if (StringUtils.isBlank(path) || data == null) {
@@ -125,7 +126,7 @@ public class AWSFileStore implements FileStore {
 
 	@Override
 	public boolean delete(String path) {
-		if (StringUtils.startsWith(path, "/")) {
+		if (Strings.CS.startsWith(path, "/")) {
 			path = path.substring(1);
 		}
 		if (!StringUtils.isBlank(path)) {

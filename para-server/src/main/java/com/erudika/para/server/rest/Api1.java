@@ -94,6 +94,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.glassfish.jersey.process.Inflector;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -356,7 +357,7 @@ public final class Api1 extends ResourceConfig {
 				Map<String, String> info = new TreeMap<>();
 				info.put("info", "Para - the backend for busy developers.");
 				if (Para.getConfig().versionBannerEnabled()) {
-					info.put("version", StringUtils.replace(getVersion(), "-SNAPSHOT", ""));
+					info.put("version", Strings.CS.replace(getVersion(), "-SNAPSHOT", ""));
 				}
 				return Response.ok(info).build();
 			}
@@ -474,7 +475,7 @@ public final class Api1 extends ResourceConfig {
 						return Response.ok(user).build();
 					} else if (app != null) {
 						String bearer = ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-						if (app.isRootApp() && StringUtils.startsWith(bearer, "Bearer")) {
+						if (app.isRootApp() && Strings.CS.startsWith(bearer, "Bearer")) {
 							try {
 								String token = bearer.substring(6).trim();
 								SignedJWT jwt = SignedJWT.parse(token);
@@ -884,7 +885,7 @@ public final class Api1 extends ResourceConfig {
 				ParaObject obj = ParaObjectUtils.toObject(app, type);
 				obj.setId(pathParam(Config._ID, ctx));
 				// allow apps to partially update themselves
-				String appid = StringUtils.equals(type, Utils.type(App.class)) ? app.getAppid() : app.getAppIdentifier();
+				String appid = Strings.CS.equals(type, Utils.type(App.class)) ? app.getAppid() : app.getAppIdentifier();
 				// partial update - equivalent to PATCH method
 				return getUpdateResponse(app, getDAO().read(appid, obj.getId()), ctx.getEntityStream());
 			}

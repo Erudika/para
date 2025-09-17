@@ -60,6 +60,7 @@ import java.util.stream.IntStream;
 import nl.altindag.ssl.SSLFactory;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.hc.client5.http.classic.methods.HttpDelete;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPatch;
@@ -378,7 +379,7 @@ public final class ParaClient implements Closeable {
 	 * @return the full resource path, e.g. "/v1/path"
 	 */
 	protected String getFullPath(String resourcePath) {
-		if (StringUtils.startsWith(resourcePath, JWT_PATH)) {
+		if (Strings.CS.startsWith(resourcePath, JWT_PATH)) {
 			if (StringUtils.countMatches(getApiPath(), "/") > 2) {
 				String s = getApiPath().substring(0, getApiPath().indexOf("/", 1)) + resourcePath;
 				return s;
@@ -467,7 +468,7 @@ public final class ParaClient implements Closeable {
 			String method, String apiURL, String path,
 			Map<String, String> headers, MultivaluedMap<String, String> params, Object entity, Class<?> returnType) {
 
-		boolean isJWT = StringUtils.startsWithIgnoreCase(secretKey, "Bearer");
+		boolean isJWT = Strings.CI.startsWith(secretKey, "Bearer");
 
 		try {
 			String uri = getEndpoint() + path;

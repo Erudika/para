@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 
 /**
  * A simple rate limiter implemented using the sliding window counter algorithm.
@@ -149,14 +150,14 @@ public class RateLimiter {
 	}
 
 	private String limitsKey(String userId) {
-		return StringUtils.startsWith(userId, LIMITS_PREFIX) ? userId : LIMITS_PREFIX.concat(userId);
+		return Strings.CS.startsWith(userId, LIMITS_PREFIX) ? userId : LIMITS_PREFIX.concat(userId);
 	}
 
 	private String hourlyLimitsKey(String userId) {
-		return StringUtils.startsWith(userId, LIMITS_H_PREFIX) ? userId : LIMITS_H_PREFIX.concat(userId);
+		return Strings.CS.startsWith(userId, LIMITS_H_PREFIX) ? userId : LIMITS_H_PREFIX.concat(userId);
 	}
 
 	private String dailyLimitsKey(String userId) {
-		return StringUtils.startsWith(userId, LIMITS_D_PREFIX) ? userId : LIMITS_D_PREFIX.concat(userId);
+		return Strings.CS.startsWith(userId, LIMITS_D_PREFIX) ? userId : LIMITS_D_PREFIX.concat(userId);
 	}
 }

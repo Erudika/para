@@ -27,6 +27,7 @@ import com.erudika.para.core.utils.Utils;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 
 /**
  * A tag. Must not be null or empty.
@@ -74,7 +75,7 @@ public class Tag implements ParaObject {
 
 	@Override
 	public final void setId(String id) {
-		if (StringUtils.startsWith(id, PREFIX)) {
+		if (Strings.CS.startsWith(id, PREFIX)) {
 			setTag(id.replaceAll(PREFIX, ""));
 			this.id = PREFIX.concat(getTag());
 		} else if (id != null) {
@@ -166,7 +167,7 @@ public class Tag implements ParaObject {
 			return false;
 		}
 		final Tag other = (Tag) obj;
-		if (!StringUtils.equalsIgnoreCase(tag, other.tag)) {
+		if (!Strings.CI.equals(tag, other.tag)) {
 			return false;
 		}
 		return true;

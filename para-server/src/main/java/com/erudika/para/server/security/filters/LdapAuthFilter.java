@@ -27,13 +27,14 @@ import com.erudika.para.server.security.AuthenticatedUserDetails;
 import com.erudika.para.server.security.LDAPAuthentication;
 import com.erudika.para.server.security.SecurityUtils;
 import com.erudika.para.server.security.UserAuthentication;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -171,15 +172,15 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private boolean updateUserInfo(User user, String email, String name, String groups) {
 		boolean update = false;
-		if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+		if (!StringUtils.isBlank(email) && !Strings.CS.equals(user.getEmail(), email)) {
 			user.setEmail(email);
 			update = true;
 		}
-		if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
+		if (!StringUtils.isBlank(name) && !Strings.CS.equals(user.getName(), name)) {
 			user.setName(name);
 			update = true;
 		}
-		if (!StringUtils.isBlank(groups) && !StringUtils.equals(user.getGroups(), groups)) {
+		if (!StringUtils.isBlank(groups) && !Strings.CS.equals(user.getGroups(), groups)) {
 			user.setGroups(groups);
 			CoreUtils.getInstance().overwrite(user.getAppid(), user);
 			update = false;
@@ -227,12 +228,12 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (!StringUtils.isBlank(dn)) {
 			String modsNode = (String) app.getSetting("security.ldap.mods_group_node");
 			String adminsNode = (String) app.getSetting("security.ldap.admins_group_node");
-			if (!StringUtils.isBlank(modsNode) && (StringUtils.containsIgnoreCase(dn, modsNode) ||
-					StringUtils.containsIgnoreCase(memberOf, modsNode))) {
+			if (!StringUtils.isBlank(modsNode) && (Strings.CI.contains(dn, modsNode) ||
+					Strings.CI.contains(memberOf, modsNode))) {
 				group = User.Groups.MODS.toString();
 			}
-			if (!StringUtils.isBlank(adminsNode) && (StringUtils.containsIgnoreCase(dn, adminsNode) ||
-					StringUtils.containsIgnoreCase(memberOf, adminsNode))) {
+			if (!StringUtils.isBlank(adminsNode) && (Strings.CI.contains(dn, adminsNode) ||
+					Strings.CI.contains(memberOf, adminsNode))) {
 				group = User.Groups.ADMINS.toString();
 			}
 		}

@@ -17,14 +17,12 @@
  */
 package com.erudika.para.server.security.filters;
 
-import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.App;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import com.onelogin.saml2.exception.SettingsException;
 import com.onelogin.saml2.settings.Saml2Settings;
 import com.onelogin.saml2.settings.SettingsBuilder;
-import java.io.IOException;
-import java.util.List;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
@@ -34,7 +32,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import jakarta.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.util.List;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.filter.GenericFilterBean;
@@ -64,7 +65,7 @@ public class SAMLMetadataFilter extends GenericFilterBean {
 		if (requestURI.startsWith(SAML_ACTION)) {
 			appid = Para.getConfig().getRootAppIdentifier();
 			if (requestURI.startsWith(SAML_ACTION + "/")) {
-				String id = Utils.urlDecode(StringUtils.removeStart(requestURI, SAML_ACTION + "/"));
+				String id = Utils.urlDecode(Strings.CS.removeStart(requestURI, SAML_ACTION + "/"));
 				if (!id.isEmpty()) {
 					appid = id;
 				} else {

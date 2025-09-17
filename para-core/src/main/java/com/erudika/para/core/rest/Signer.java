@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -119,10 +120,10 @@ public final class Signer extends BaseAws4Signer {
 		if (!StringUtils.isBlank(endpoint)) {
 			if (endpoint.startsWith("https://")) {
 				r.protocol("HTTPS");
-				r.host(StringUtils.removeStart(endpoint, "https://"));
+				r.host(Strings.CS.removeStart(endpoint, "https://"));
 			} else if (endpoint.startsWith("http://")) {
 				r.protocol("HTTP");
-				r.host(StringUtils.removeStart(endpoint, "http://"));
+				r.host(Strings.CS.removeStart(endpoint, "http://"));
 			}
 		}
 		if (!StringUtils.isBlank(resourcePath)) {

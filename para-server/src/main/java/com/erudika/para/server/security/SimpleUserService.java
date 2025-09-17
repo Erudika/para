@@ -18,7 +18,7 @@
 package com.erudika.para.server.security;
 
 import com.erudika.para.core.User;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -38,7 +38,7 @@ public class SimpleUserService implements UserDetailsService {
 		User user = new User();
 		// check if the cookie has an appid prefix
 		// and load user from the corresponding app
-		if (StringUtils.contains(ident, "/")) {
+		if (Strings.CS.contains(ident, "/")) {
 			String[] parts = ident.split("/");
 			user.setAppid(parts[0]);
 			ident = parts[1];

@@ -30,6 +30,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.DefaultRedirectStrategy;
 import org.springframework.security.web.RedirectStrategy;
@@ -63,7 +64,7 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 					customURI = Para.getConfig().signinSuccessPath();
 				}
 				if (!StringUtils.isBlank(hostUrlParam)) {
-					if (hostUrlAliases.contains(hostUrlParam) || StringUtils.startsWith(customURI, hostUrlParam)) {
+					if (hostUrlAliases.contains(hostUrlParam) || Strings.CS.startsWith(customURI, hostUrlParam)) {
 						UriComponents hostUrl = UriComponentsBuilder.fromUriString(hostUrlParam).build();
 						customURI = UriComponentsBuilder.fromUriString(customURI).host(hostUrl.getHost()).toUriString();
 					} else {
@@ -71,11 +72,11 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 						customURI = customHost.getScheme() + "://" + customHost.getHost();
 					}
 				}
-				if (StringUtils.contains(customURI, "jwt=?")) {
+				if (Strings.CS.contains(customURI, "jwt=?")) {
 					SignedJWT newJWT = SecurityUtils.generateJWToken(u, app);
 					customURI = customURI.replace("jwt=?", "jwt=" + newJWT.serialize());
 				}
-				if (StringUtils.contains(customURI, "jwt=id")) {
+				if (Strings.CS.contains(customURI, "jwt=id")) {
 					SignedJWT newJWT = SecurityUtils.generateIdToken(u, app);
 					customURI = customURI.replace("jwt=id", "jwt=" + newJWT.serialize());
 				}

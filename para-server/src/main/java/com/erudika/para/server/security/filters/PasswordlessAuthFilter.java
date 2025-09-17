@@ -26,12 +26,13 @@ import com.erudika.para.server.security.AuthenticatedUserDetails;
 import com.erudika.para.server.security.SecurityUtils;
 import com.erudika.para.server.security.UserAuthentication;
 import com.nimbusds.jwt.SignedJWT;
-import java.io.IOException;
-import java.text.ParseException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.text.ParseException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -164,19 +165,19 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 
 	private boolean updateUserInfo(User user, String picture, String email, String name, String accessToken, String groups) {
 		boolean update = false;
-		if (!StringUtils.equals(user.getPicture(), picture)) {
+		if (!Strings.CS.equals(user.getPicture(), picture)) {
 			user.setPicture(picture);
 			update = true;
 		}
-		if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+		if (!StringUtils.isBlank(email) && !Strings.CS.equals(user.getEmail(), email)) {
 			user.setEmail(email);
 			update = true;
 		}
-		if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
+		if (!StringUtils.isBlank(name) && !Strings.CS.equals(user.getName(), name)) {
 			user.setName(name);
 			update = true;
 		}
-		if (!StringUtils.isBlank(groups) && !StringUtils.equals(user.getGroups(), groups)) {
+		if (!StringUtils.isBlank(groups) && !Strings.CS.equals(user.getGroups(), groups)) {
 			user.setGroups(groups);
 			CoreUtils.getInstance().overwrite(user.getAppid(), user);
 			update = false;

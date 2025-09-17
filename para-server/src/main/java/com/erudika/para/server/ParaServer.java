@@ -54,6 +54,7 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
@@ -320,7 +321,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 									if (StringUtils.isBlank(cfProto)) {
 										cfProto = request.getHeaders().get("X-Forwarded-Proto");
 									}
-									if (StringUtils.equalsIgnoreCase(cfProto, config.getSecureScheme())) {
+									if (Strings.CI.equals(cfProto, config.getSecureScheme())) {
 										setForwardedProtoHeader(cfProto);
 										setSslIsSecure(true);
 										//request.setScheme(cfProto);

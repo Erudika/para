@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 
 /**
  * A few helper methods.
@@ -105,14 +105,14 @@ public final class AOPUtils {
 	 */
 	protected static void checkAndFixType(ParaObject obj) {
 		if (obj != null) {
-			if (StringUtils.startsWith(obj.getType(), SPECIAL_PREFIX)) {
+			if (Strings.CS.startsWith(obj.getType(), SPECIAL_PREFIX)) {
 				obj.setType(obj.getType().replaceAll("^[" + SPECIAL_PREFIX + "]*", ""));
 			}
-			if (StringUtils.contains(obj.getType(), "#")) {
+			if (Strings.CS.contains(obj.getType(), "#")) {
 				// ElasticSearch doesn't allow # in type mappings
 				obj.setType(obj.getType().replaceAll("#", ""));
 			}
-			if (StringUtils.contains(obj.getType(), "/")) {
+			if (Strings.CS.contains(obj.getType(), "/")) {
 				// type must not contain "/"
 				obj.setType(obj.getType().replaceAll("/", ""));
 			}

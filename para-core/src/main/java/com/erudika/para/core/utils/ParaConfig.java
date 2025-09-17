@@ -26,6 +26,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.math.NumberUtils;
 
 /**
@@ -481,7 +482,7 @@ public class ParaConfig extends Config {
 	 * @return an array ["app_id", "secret_key"] or ["", ""]
 	 */
 	public String[] getOAuthKeysForApp(App app, String prefix) {
-		prefix = StringUtils.removeEnd(prefix + "", separator());
+		prefix = Strings.CS.removeEnd(prefix + "", separator());
 		String appIdKey = prefix + "_app_id";
 		String secretKey = prefix + "_secret";
 		String[] keys = new String[]{"", ""};

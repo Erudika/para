@@ -39,6 +39,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -233,15 +234,15 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			String accessToken, String refreshToken, String idToken, String alias, boolean tokenDelegationEnabled) {
 		String picture = getPicture(app, user, accessToken, alias, pic);
 		boolean update = false;
-		if (!StringUtils.equals(user.getPicture(), picture)) {
+		if (!Strings.CS.equals(user.getPicture(), picture)) {
 			user.setPicture(picture);
 			update = true;
 		}
-		if (!StringUtils.isBlank(email) && !StringUtils.equals(user.getEmail(), email)) {
+		if (!StringUtils.isBlank(email) && !Strings.CS.equals(user.getEmail(), email)) {
 			user.setEmail(email);
 			update = true;
 		}
-		if (!StringUtils.isBlank(name) && !StringUtils.equals(user.getName(), name)) {
+		if (!StringUtils.isBlank(name) && !Strings.CS.equals(user.getName(), name)) {
 			user.setName(name);
 			update = true;
 		}
@@ -302,7 +303,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	 */
 	private Map<String, Object> fetchProfileFromIDP(App app, String accessToken, String idToken, String alias) throws IOException {
 		Map<String, Object> profile = new HashMap<>();
-		if (StringUtils.contains(idToken, ".")) {
+		if (Strings.CS.contains(idToken, ".")) {
 			String idTokenDecoded = Utils.base64dec(StringUtils.substringBetween(idToken, "."));
 			profile.putAll(jreader.readValue(idTokenDecoded));
 		}
@@ -351,7 +352,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 				user.setIdpIdToken("");
 			}
 			String newRefresh = (String) token.get("refresh_token");
-			if (!StringUtils.equals(newRefresh, user.getIdpRefreshToken())) {
+			if (!Strings.CS.equals(newRefresh, user.getIdpRefreshToken())) {
 				user.setIdpRefreshToken(newRefresh);
 			}
 			printTokenDebugInfo(user);

@@ -54,6 +54,7 @@ import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -176,7 +177,7 @@ public final class ParaObjectUtils {
 		}
 		String appid = "";
 		// JWT token
-		if (StringUtils.startsWith(authorization, "Bearer")) {
+		if (Strings.CS.startsWith(authorization, "Bearer")) {
 			try {
 				String[] parts = StringUtils.split(authorization, '.');
 				if (parts.length > 1) {
@@ -186,7 +187,7 @@ public final class ParaObjectUtils {
 					}
 				}
 			} catch (Exception e) { }
-		} else if (StringUtils.startsWith(authorization, "Anonymous")) {
+		} else if (Strings.CS.startsWith(authorization, "Anonymous")) {
 			// Anonymous request - no signature or JWT
 			appid = StringUtils.substringAfter(authorization, "Anonymous").trim();
 		} else {
@@ -279,7 +280,7 @@ public final class ParaObjectUtils {
 					}
 					if (Arrays.stream(field.getAnnotations()).
 							map((a) -> a.annotationType().getSimpleName()).
-							anyMatch((a) -> StringUtils.startsWithIgnoreCase(a, "Json"))) {
+							anyMatch((a) -> Strings.CI.startsWith(a, "Json"))) {
 						annotatedFields.add(name);
 						hasJsonAnnotations = true;
 					}

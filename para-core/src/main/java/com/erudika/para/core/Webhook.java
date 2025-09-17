@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.hibernate.validator.constraints.URL;
 import org.slf4j.LoggerFactory;
 
@@ -492,7 +493,7 @@ public class Webhook extends Sysprop {
 		String propName = StringUtils.substringBefore(webhook.getPropertyFilter(), ":");
 		String propValue = StringUtils.substringAfter(webhook.getPropertyFilter(), ":");
 		Set<String> vals = new LinkedHashSet<>(List.of(StringUtils.split(propValue, ",|", 50)));
-		boolean matchAll = StringUtils.contains(propValue, ",");
+		boolean matchAll = Strings.CS.contains(propValue, ",");
 		if (props.containsKey(propName)) {
 			Object v = props.get(propName);
 			if ("-".equals(propValue) && (v == null || StringUtils.isBlank(v.toString())

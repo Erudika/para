@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -101,7 +102,7 @@ public abstract class River implements Runnable {
 
 						for (final String msg : msgs) {
 							logger.debug("Message from queue: {}", msg);
-							if (StringUtils.contains(msg, Config._APPID) && StringUtils.contains(msg, Config._TYPE)) {
+							if (Strings.CS.contains(msg, Config._APPID) && Strings.CS.contains(msg, Config._TYPE)) {
 								processedHooks += parseAndCategorizeMessage(jreader.readValue(msg),
 										createList, updateList, deleteList);
 							}

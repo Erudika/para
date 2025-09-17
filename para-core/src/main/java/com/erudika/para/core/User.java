@@ -36,6 +36,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import javax.naming.LimitExceededException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -372,9 +373,9 @@ public class User implements ParaObject {
 	 * @param identifier an attached identifier
 	 */
 	public void detachIdentifier(String identifier) {
-		if (!StringUtils.equals(identifier, getIdentifier())) {
+		if (!Strings.CS.equals(identifier, getIdentifier())) {
 			Sysprop s = CoreUtils.getInstance().getDao().read(getAppid(), identifier);
-			if (s != null && StringUtils.equals(getId(), s.getCreatorid())) {
+			if (s != null && Strings.CS.equals(getId(), s.getCreatorid())) {
 				deleteIdentifier(identifier);
 			}
 		}
@@ -386,7 +387,7 @@ public class User implements ParaObject {
 	 */
 	@JsonIgnore
 	public boolean isFacebookUser() {
-		return StringUtils.startsWithIgnoreCase(identifier, Config.FB_PREFIX);
+		return Strings.CI.startsWith(identifier, Config.FB_PREFIX);
 	}
 
 	/**
@@ -395,7 +396,7 @@ public class User implements ParaObject {
 	 */
 	@JsonIgnore
 	public boolean isGooglePlusUser() {
-		return StringUtils.startsWithIgnoreCase(identifier, Config.GPLUS_PREFIX);
+		return Strings.CI.startsWith(identifier, Config.GPLUS_PREFIX);
 	}
 
 	/**
@@ -404,7 +405,7 @@ public class User implements ParaObject {
 	 */
 	@JsonIgnore
 	public boolean isLinkedInUser() {
-		return StringUtils.startsWithIgnoreCase(identifier, Config.LINKEDIN_PREFIX);
+		return Strings.CI.startsWith(identifier, Config.LINKEDIN_PREFIX);
 	}
 
 	/**
@@ -413,7 +414,7 @@ public class User implements ParaObject {
 	 */
 	@JsonIgnore
 	public boolean isTwitterUser() {
-		return StringUtils.startsWithIgnoreCase(identifier, Config.TWITTER_PREFIX);
+		return Strings.CI.startsWith(identifier, Config.TWITTER_PREFIX);
 	}
 
 	/**
@@ -422,7 +423,7 @@ public class User implements ParaObject {
 	 */
 	@JsonIgnore
 	public boolean isGitHubUser() {
-		return StringUtils.startsWithIgnoreCase(identifier, Config.GITHUB_PREFIX);
+		return Strings.CI.startsWith(identifier, Config.GITHUB_PREFIX);
 	}
 
 	/**
@@ -431,7 +432,7 @@ public class User implements ParaObject {
 	 */
 	@JsonIgnore
 	public boolean isMicrosoftUser() {
-		return StringUtils.startsWithIgnoreCase(identifier, Config.MICROSOFT_PREFIX);
+		return Strings.CI.startsWith(identifier, Config.MICROSOFT_PREFIX);
 	}
 
 	/**
@@ -440,7 +441,7 @@ public class User implements ParaObject {
 	 */
 	@JsonIgnore
 	public boolean isSlackUser() {
-		return StringUtils.startsWithIgnoreCase(identifier, Config.SLACK_PREFIX);
+		return Strings.CI.startsWith(identifier, Config.SLACK_PREFIX);
 	}
 
 	/**
@@ -449,7 +450,7 @@ public class User implements ParaObject {
 	 */
 	@JsonIgnore
 	public boolean isMattermostUser() {
-		return StringUtils.startsWithIgnoreCase(identifier, Config.MATTERMOST_PREFIX);
+		return Strings.CI.startsWith(identifier, Config.MATTERMOST_PREFIX);
 	}
 
 	/**
@@ -458,7 +459,7 @@ public class User implements ParaObject {
 	 */
 	@JsonIgnore
 	public boolean isAmazonUser() {
-		return StringUtils.startsWithIgnoreCase(identifier, Config.AMAZON_PREFIX);
+		return Strings.CI.startsWith(identifier, Config.AMAZON_PREFIX);
 	}
 
 	/**
@@ -467,7 +468,7 @@ public class User implements ParaObject {
 	 */
 	@JsonIgnore
 	public boolean isLDAPUser() {
-		return StringUtils.startsWithIgnoreCase(identifier, Config.LDAP_PREFIX);
+		return Strings.CI.startsWith(identifier, Config.LDAP_PREFIX);
 	}
 
 	/**
@@ -476,7 +477,7 @@ public class User implements ParaObject {
 	 */
 	@JsonIgnore
 	public boolean isSAMLUser() {
-		return StringUtils.startsWithIgnoreCase(identifier, Config.SAML_PREFIX);
+		return Strings.CI.startsWith(identifier, Config.SAML_PREFIX);
 	}
 
 	/**
@@ -485,7 +486,7 @@ public class User implements ParaObject {
 	 */
 	@JsonIgnore
 	public boolean isPasswordlessUser() {
-		return StringUtils.startsWithIgnoreCase(identifier, Config.PASSWORDLESS_PREFIX);
+		return Strings.CI.startsWith(identifier, Config.PASSWORDLESS_PREFIX);
 	}
 
 	/**
@@ -494,9 +495,9 @@ public class User implements ParaObject {
 	 */
 	@JsonIgnore
 	public boolean isOAuth2User() {
-		return StringUtils.startsWithIgnoreCase(identifier, Config.OAUTH2_PREFIX) ||
-				StringUtils.startsWithIgnoreCase(identifier, Config.OAUTH2_SECOND_PREFIX) ||
-				StringUtils.startsWithIgnoreCase(identifier, Config.OAUTH2_THIRD_PREFIX);
+		return Strings.CI.startsWith(identifier, Config.OAUTH2_PREFIX) ||
+				Strings.CI.startsWith(identifier, Config.OAUTH2_SECOND_PREFIX) ||
+				Strings.CI.startsWith(identifier, Config.OAUTH2_THIRD_PREFIX);
 	}
 
 	/**
@@ -505,7 +506,7 @@ public class User implements ParaObject {
 	 */
 	@JsonIgnore
 	public boolean isAdmin() {
-		return StringUtils.equalsIgnoreCase(this.groups, Groups.ADMINS.toString());
+		return Strings.CI.equals(this.groups, Groups.ADMINS.toString());
 	}
 
 	/**
@@ -514,7 +515,7 @@ public class User implements ParaObject {
 	 */
 	@JsonIgnore
 	public boolean isModerator() {
-		return isAdmin() ? true : StringUtils.equalsIgnoreCase(this.groups, Groups.MODS.toString());
+		return isAdmin() ? true : Strings.CI.equals(this.groups, Groups.MODS.toString());
 	}
 
 	/**
@@ -890,7 +891,7 @@ public class User implements ParaObject {
 			String storedToken = (String) s.getProperty(key);
 			// tokens expire afer a reasonably short period ~ 30 mins
 			long timeout = (long) Para.getConfig().passwordResetTimeoutSec() * 1000L;
-			if (StringUtils.equals(storedToken, token) && (s.getUpdated() + timeout) > Utils.timestamp()) {
+			if (Strings.CS.equals(storedToken, token) && (s.getUpdated() + timeout) > Utils.timestamp()) {
 				return true;
 			}
 		}

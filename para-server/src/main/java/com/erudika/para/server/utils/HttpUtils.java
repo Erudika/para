@@ -25,6 +25,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.core.HttpHeaders;
 import java.util.TimeZone;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.time.DateFormatUtils;
 
 /**
@@ -179,7 +180,7 @@ public final class HttpUtils {
 		if (httpOnly) {
 			sb.append("HttpOnly;");
 		}
-		if (StringUtils.startsWithIgnoreCase(SecurityUtils.getRedirectUrl(request), "https://") || request.isSecure()) {
+		if (Strings.CI.startsWith(SecurityUtils.getRedirectUrl(request), "https://") || request.isSecure()) {
 			sb.append("Secure;");
 		}
 		if (!StringUtils.isBlank(sameSite)) {

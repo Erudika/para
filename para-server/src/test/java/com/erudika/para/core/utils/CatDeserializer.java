@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.math.NumberUtils;
 
 /**
@@ -43,7 +44,7 @@ public class CatDeserializer extends StdDeserializer<Cat> {
 
 	@Override
 	public Cat deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-		if (StringUtils.contains(p.getText(), "::")) {
+		if (Strings.CS.contains(p.getText(), "::")) {
 			String[] vals = StringUtils.split(p.getText(), "::");
 			String name = vals[0];
 			int age = NumberUtils.toInt(vals[1], 0);

@@ -26,6 +26,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.DefaultRedirectStrategy;
 import org.springframework.security.web.RedirectStrategy;
@@ -57,7 +58,7 @@ public class SimpleAuthenticationFailureHandler extends SimpleUrlAuthenticationF
 					customURI = Para.getConfig().signinFailurePath();
 				}
 				if (!StringUtils.isBlank(hostUrlParam)) {
-					if (hostUrlAliases.contains(hostUrlParam) || StringUtils.startsWith(customURI, hostUrlParam)) {
+					if (hostUrlAliases.contains(hostUrlParam) || Strings.CS.startsWith(customURI, hostUrlParam)) {
 						UriComponents hostUrl = UriComponentsBuilder.fromUriString(hostUrlParam).build();
 						customURI = UriComponentsBuilder.fromUriString(customURI).host(hostUrl.getHost()).toUriString();
 					} else {
@@ -65,7 +66,7 @@ public class SimpleAuthenticationFailureHandler extends SimpleUrlAuthenticationF
 						customURI = customHost.getScheme() + "://" + customHost.getHost();
 					}
 				}
-				if (StringUtils.contains(customURI, "cause=?")) {
+				if (Strings.CS.contains(customURI, "cause=?")) {
 					customURI = customURI.replace("cause=?", "cause=" + exception.getMessage());
 				}
 				if (!StringUtils.isBlank(customURI)) {

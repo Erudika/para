@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -189,7 +190,7 @@ public final class SecurityUtils {
 	 * @return true if type of object is not "app"
 	 */
 	public static boolean isNotAnApp(String type) {
-		return !StringUtils.equals(type, Utils.type(App.class));
+		return !Strings.CS.equals(type, Utils.type(App.class));
 	}
 
 	/**
@@ -318,7 +319,7 @@ public final class SecurityUtils {
 				claimsSet.claim(Config._NAME, user.getName());
 				claimsSet.claim(Config._EMAIL, user.getEmail());
 				claimsSet.claim(Config._IDENTIFIER, user.getIdentifier());
-				if (StringUtils.startsWithIgnoreCase(user.getPicture(), "http")) {
+				if (Strings.CI.startsWith(user.getPicture(), "http")) {
 					claimsSet.claim("picture", user.getPicture());
 				} else {
 					claimsSet.claim("picture", "https://gravatar.com/avatar/" + Utils.md5(user.getEmail()) +
@@ -416,7 +417,7 @@ public final class SecurityUtils {
 		}
 
 		String path = incoming.getRequestURI(); // DO NOT USE req.getServletPath() here!
-		String endpoint = StringUtils.removeEndIgnoreCase(incoming.getRequestURL().toString(), path);
+		String endpoint = Strings.CI.removeEnd(incoming.getRequestURL().toString(), path);
 		String httpMethod = incoming.getMethod();
 		InputStream entity;
 		try {
@@ -436,7 +437,7 @@ public final class SecurityUtils {
 		String auth2 = sig.get(HttpHeaders.AUTHORIZATION);
 		String recreatedSig = StringUtils.substringAfter(auth2, "Signature=");
 
-		boolean signaturesMatch = StringUtils.equals(givenSig, recreatedSig);
+		boolean signaturesMatch = Strings.CS.equals(givenSig, recreatedSig);
 		if (Para.getConfig().debugRequestSignaturesEnabled()) {
 			logger.info("Incoming client signature for request {} {}: {} == {} calculated by server, matching: {}",
 					httpMethod, path, givenSig, recreatedSig, signaturesMatch);
@@ -483,9 +484,9 @@ public final class SecurityUtils {
 		String appidFromState = request.getParameter("state");
 		String appidFromAppid = request.getParameter(Config._APPID);
 		if (StringUtils.isBlank(appidFromState) && StringUtils.isBlank(appidFromAppid)) {
-			if (StringUtils.startsWith(request.getServletPath(), SAMLAuthFilter.SAML_ACTION + "/")) {
+			if (Strings.CS.startsWith(request.getServletPath(), SAMLAuthFilter.SAML_ACTION + "/")) {
 				return StringUtils.trimToNull(request.getServletPath().substring(SAMLAuthFilter.SAML_ACTION.length() + 1));
-			} else if (StringUtils.startsWith(request.getServletPath(), "/" + PasswordlessAuthFilter.PASSWORDLESS_ACTION)) {
+			} else if (Strings.CS.startsWith(request.getServletPath(), "/" + PasswordlessAuthFilter.PASSWORDLESS_ACTION)) {
 				String token = request.getParameter("token"); // JWT
 				JWTClaimsSet claims = null;
 				try {
@@ -520,7 +521,7 @@ public final class SecurityUtils {
 			if (domains != null && domains.length > 0) {
 				Set<String> list = new LinkedHashSet<>();
 				for (String domain : domains) {
-					if (StringUtils.startsWithAny(domain, "http://", "https://")) {
+					if (Strings.CS.startsWithAny(domain, "http://", "https://")) {
 						list.add(domain);
 					}
 				}
@@ -541,7 +542,7 @@ public final class SecurityUtils {
 			String hostUrlParam = request.getParameter("host_url");
 			if (StringUtils.isBlank(hostUrlParam)) {
 				String state = request.getParameter("state");
-				if (StringUtils.contains(state, "|") && NumberUtils.isDigits(StringUtils.substringAfterLast(state, "|"))) {
+				if (Strings.CS.contains(state, "|") && NumberUtils.isDigits(StringUtils.substringAfterLast(state, "|"))) {
 					int index = Math.abs(NumberUtils.toInt(StringUtils.substringAfterLast(state, "|"), 0));
 					if (hostUrlAliases != null && index < hostUrlAliases.size() && index >= 0) {
 						return hostUrlAliases.toArray(String[]::new)[index];

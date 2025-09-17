@@ -44,6 +44,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -282,7 +283,7 @@ public abstract class Config {
 			// keep existing values from config file, but if any properties were set through
 			// System.setProperty() to a new value - skip this step and use the new values
 			if (getConfig().hasPath(key) && getConfig().getValue(key).unwrapped() != null &&
-					StringUtils.equals(valString, getConfig().getAnyRef(key).toString())) {
+					Strings.CS.equals(valString, getConfig().getAnyRef(key).toString())) {
 				return getConfig().getValue(key).unwrapped();
 			}
 			Documented doc = annotatedMethodsMap.get(key);
@@ -396,12 +397,12 @@ public abstract class Config {
 		} else {
 			String category = "";
 			StringBuilder sb = new StringBuilder(hoconHeader);
-			if (!StringUtils.isBlank(hoconHeader) && !StringUtils.endsWith(hoconHeader, "\n")) {
+			if (!StringUtils.isBlank(hoconHeader) && !Strings.CS.endsWith(hoconHeader, "\n")) {
 				sb.append("\n");
 			}
 			for (Map.Entry<String, Object> entry : getConfigMap().entrySet()) {
 				String keyPrefixed = entry.getKey();
-				String keyNoPrefix = StringUtils.removeStart(keyPrefixed, getConfigRootPrefix() + ".");
+				String keyNoPrefix = Strings.CS.removeStart(keyPrefixed, getConfigRootPrefix() + ".");
 				Object val = entry.getValue();
 				Object valRendered = ConfigValueFactory.fromAnyRef(val).render(ConfigRenderOptions.concise().
 						setComments(false).setOriginComments(false));
@@ -468,7 +469,7 @@ public abstract class Config {
 			configMap.put(getConfigRootPrefix() + "." + keyNoPrefix, null);
 		}
 		for (Map.Entry<String, ConfigValue> entry : getConfig().entrySet()) {
-			String keyNoPrefix = StringUtils.removeStart(entry.getKey(), getConfigRootPrefix() + ".");
+			String keyNoPrefix = Strings.CS.removeStart(entry.getKey(), getConfigRootPrefix() + ".");
 			String keyPrefixed = getConfigRootPrefix() + "." + keyNoPrefix;
 			Object value = getConfigValue(keyNoPrefix, "");
 			Object valueUnwrapped = ConfigValueFactory.fromAnyRef(value).unwrapped();

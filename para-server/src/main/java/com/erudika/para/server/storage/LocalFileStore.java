@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +55,7 @@ public class LocalFileStore implements FileStore {
 	 * @param folder the folder to store files in
 	 */
 	public LocalFileStore(String folder) {
-		if (StringUtils.endsWith(folder, File.separator)) {
+		if (Strings.CS.endsWith(folder, File.separator)) {
 			this.folder = folder;
 		} else {
 			this.folder = folder.concat(File.separator);
@@ -63,7 +64,7 @@ public class LocalFileStore implements FileStore {
 
 	@Override
 	public InputStream load(String path) {
-		if (StringUtils.startsWith(path, File.separator)) {
+		if (Strings.CS.startsWith(path, File.separator)) {
 			path = path.substring(1);
 		}
 		if (!StringUtils.isBlank(path)) {
@@ -85,7 +86,7 @@ public class LocalFileStore implements FileStore {
 
 	@Override
 	public String store(String path, InputStream data) {
-		if (StringUtils.startsWith(path, File.separator)) {
+		if (Strings.CS.startsWith(path, File.separator)) {
 			path = path.substring(1);
 		}
 		if (StringUtils.isBlank(path)) {
@@ -135,7 +136,7 @@ public class LocalFileStore implements FileStore {
 
 	@Override
 	public boolean delete(String path) {
-		if (StringUtils.startsWith(path, File.separator)) {
+		if (Strings.CS.startsWith(path, File.separator)) {
 			path = path.substring(1);
 		}
 		if (!StringUtils.isBlank(path)) {
