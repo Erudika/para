@@ -17,11 +17,12 @@
  */
 package com.erudika.para.core.rest;
 
-import com.erudika.para.core.utils.Config;
+import com.github.davidmoten.aws.lw.client.internal.auth.AwsSignatureVersion4;
+import com.github.davidmoten.aws.lw.client.internal.util.Util;
 import jakarta.ws.rs.core.MultivaluedMap;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.time.Clock;
+import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -34,15 +35,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.signer.internal.BaseAws4Signer;
-import software.amazon.awssdk.auth.signer.params.Aws4SignerParams;
-import software.amazon.awssdk.http.SdkHttpFullRequest;
-import software.amazon.awssdk.http.SdkHttpMethod;
-import software.amazon.awssdk.regions.Region;
 
 /**
  * This class extends {@code BaseAws4Signer} implementing the AWS Signature Version 4 algorithm.
@@ -50,16 +44,12 @@ import software.amazon.awssdk.regions.Region;
  * compatible with the original AWS SDK implementation.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public final class Signer extends BaseAws4Signer {
+public final class Signer {
 
 	private static final Logger logger = LoggerFactory.getLogger(Signer.class);
 	private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.
 			ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneId.of("Z"));
 
-	/**
-	 * No-args constructor.
-	 */
-	public Signer() { }
 
 	/**
 	 * Signs a request using AWS signature V4.
@@ -77,74 +67,37 @@ public final class Signer extends BaseAws4Signer {
 			Map<String, String> headers, Map<String, String> params, InputStream entity,
 			String accessKey, String secretKey) {
 
-		String date = Optional.ofNullable(headers).orElse(Collections.emptyMap()).get("x-amz-date");
-		Clock override = date != null ? Clock.fixed(parseAWSInstant(date), ZoneOffset.UTC) : null;
-		SdkHttpFullRequest req = buildAWSRequest(httpeMethod, endpoint, resourcePath, headers, params, entity);
-		req = sign(req, accessKey, secretKey, override);
-		Map<String, String> headerz = new HashMap<>(req.headers().size());
-		for (String header : req.headers().keySet()) {
-			headerz.put(header, req.firstMatchingHeader(header).orElse(""));
+		Map<String, String> headerz = new HashMap<>();
+		Map<String, String> h = Optional.ofNullable(headers).orElse(Collections.emptyMap());
+		String date = h.getOrDefault("x-amz-date", h.get("X-Amz-Date"));
+		com.github.davidmoten.aws.lw.client.internal.Clock clock =
+				() -> date != null ? parseAWSInstant(date).toEpochMilli() : Instant.now().toEpochMilli();
+		if (headers != null) {
+			headerz.putAll(headers);
+			headerz.remove("host");
+			headerz.remove("Host");
+			headerz.remove("x-amz-date");
+			headerz.remove("X-Amz-Date");
+		}
+
+		try {
+			final String contentHashString;
+			byte[] requestBody = entity == null ? null : entity.readAllBytes();
+			if (requestBody == null || requestBody.length == 0) {
+				contentHashString = AwsSignatureVersion4.EMPTY_BODY_SHA256;
+			} else {
+				contentHashString = Util.toHex(Util.sha256(requestBody));
+			}
+			headerz.put("Authorization", AwsSignatureVersion4.computeSignatureForAuthorizationHeader(
+					URI.create(endpoint + resourcePath).toURL(), httpeMethod, "para", "us-east-1",
+					clock, headerz, params, contentHashString, accessKey, secretKey));
+			// clean up headers and normalize case
+			headerz.put("X-Amz-Date", headerz.get("x-amz-date"));
+			headerz.remove("x-amz-date");
+		} catch (Exception e) {
+			logger.info("Request signature failed", e);
 		}
 		return headerz;
-	}
-
-	/**
-	 * Signs a request using AWS signature V4.
-	 * @param request the request instance
-	 * @param accessKey the app's access key
-	 * @param secretKey the app's secret key
-	 * @param override the clock override from x-amz-date
-	 * @return the request object
-	 */
-	public SdkHttpFullRequest sign(SdkHttpFullRequest request, String accessKey, String secretKey, Clock override) {
-		Aws4SignerParams.Builder<?> signerParams = Aws4SignerParams.builder().
-				awsCredentials(AwsBasicCredentials.create(accessKey, secretKey)).
-				// this is important!
-				doubleUrlEncode(true).
-				signingName(Config.PARA).
-				signingRegion(Region.US_EAST_1);
-		if (override != null) {
-			signerParams.signingClockOverride(override);
-		}
-		return super.sign(request, signerParams.build());
-	}
-
-	private SdkHttpFullRequest buildAWSRequest(String httpMethod, String endpoint, String resourcePath,
-			Map<String, String> headers, Map<String, String> params, InputStream entity) {
-		SdkHttpFullRequest.Builder r = SdkHttpFullRequest.builder();
-
-		if (!StringUtils.isBlank(httpMethod)) {
-			r.method(SdkHttpMethod.valueOf(httpMethod));
-		}
-
-		if (!StringUtils.isBlank(endpoint)) {
-			if (endpoint.startsWith("https://")) {
-				r.protocol("HTTPS");
-				r.host(Strings.CS.removeStart(endpoint, "https://"));
-			} else if (endpoint.startsWith("http://")) {
-				r.protocol("HTTP");
-				r.host(Strings.CS.removeStart(endpoint, "http://"));
-			}
-		}
-		if (!StringUtils.isBlank(resourcePath)) {
-			// Don't encode resource paths manually! can lead to invalid signatures
-			r.encodedPath(resourcePath);
-			//r.encodedPath(SdkHttpUtils.urlEncodeIgnoreSlashes(resourcePath));
-		}
-
-		if (headers != null) {
-			// we don't need these here, added by default
-			headers.remove("host");
-			headers.remove("x-amz-date");
-			headers.entrySet().forEach(e -> r.putHeader(e.getKey(), e.getValue()));
-		}
-		if (params != null) {
-			params.entrySet().forEach(e -> r.appendRawQueryParameter(e.getKey(), e.getValue()));
-		}
-		if (entity != null) {
-			r.contentStreamProvider(() -> entity);
-		}
-		return r.build();
 	}
 
 	/**

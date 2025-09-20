@@ -19,9 +19,9 @@
 	<dependencies>
 		<!-- AWS JAVA SDK -->
 		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>auth</artifactId>
-			<version>${awsJdkVer}</version>
+			<groupId>com.github.davidmoten</groupId>
+			<artifactId>aws-lightweight-client-java</artifactId>
+			<version>0.1.23</version>
 		</dependency>
 
 		<!-- CLASSGRAPH -->
