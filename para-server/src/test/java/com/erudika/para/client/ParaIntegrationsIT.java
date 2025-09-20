@@ -1089,7 +1089,7 @@ class ParaIntegrationsIT {
 			pc.delete(todo2);
 			pc.delete(newUser);
 			pc.delete(newUser2);
-			pc.deleteAll(List.of(emailPassPass, emailPassPass2));
+			pc.deleteAll(List.of(newUser.getEmail(), newUser2.getEmail()));
 
 			// an app should be able to update and delete itself
 			String appId = "para-child-app-test";
