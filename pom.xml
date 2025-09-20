@@ -81,7 +81,7 @@
 		<logbackVer>1.5.3</logbackVer>
 		<awsJdkVer>[2.21.23,)</awsJdkVer>
 		<jerseyVer>3.1.6</jerseyVer>
-		<springBootVer>3.5.5</springBootVer>
+		<springBootVer>3.5.6</springBootVer>
 		<metricsVer>4.2.32</metricsVer>
 		<httpClientVer>5.4.4</httpClientVer>
 		<httpCoreVer>5.3.4</httpCoreVer>
