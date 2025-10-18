@@ -301,7 +301,8 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 			System.setProperty("server.jetty.accesslog.enabled", "true");
 			if (!System.getProperty("para.file_logger_level", "INFO").equalsIgnoreCase("OFF")) {
 				System.setProperty("server.jetty.accesslog.filename", System.getProperty("para.logs_dir", ".")
-						+ File.separator + Para.getConfig().getConfigRootPrefix() + "-access.log");
+						+ File.separator + Para.getConfig().getConfigRootPrefix() + "-access_yyyy_MM_dd.log");
+				System.setProperty("server.jetty.accesslog.file-date-format", "yyyy_MM_dd");
 			}
 		}
 		JettyServletWebServerFactory jef = new JettyServletWebServerFactory();
