@@ -17,12 +17,14 @@
  */
 package com.erudika.para.core.rest;
 
+import com.erudika.para.core.utils.Utils;
 import com.github.davidmoten.aws.lw.client.internal.auth.AwsSignatureVersion4;
 import com.github.davidmoten.aws.lw.client.internal.util.Util;
 import jakarta.ws.rs.core.MultivaluedMap;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URL;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -39,9 +41,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class extends {@code BaseAws4Signer} implementing the AWS Signature Version 4 algorithm.
- * Also contains a method for signature validation. The signatures that this class produces are
- * compatible with the original AWS SDK implementation.
+ * This class implements the AWS Signature Version 4 algorithm. The signatures that this class produces are compatible
+ * with the original AWS SDK implementation.
+ *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public final class Signer {
@@ -50,10 +52,14 @@ public final class Signer {
 	private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.
 			ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneId.of("Z"));
 
+	/**
+	 * If true, resource path will be URL-encoded twice for compatibility with older Para instances.
+	 */
+	private static final boolean DOUBLE_URL_ENCODE = true;
 
 	/**
 	 * Signs a request using AWS signature V4.
-	 * @param httpeMethod GET/POST/PUT... etc.
+	 * @param httpMethod GET/POST/PUT... etc.
 	 * @param endpoint the hostname of the API server
 	 * @param resourcePath the path of the resource (starting from root e.g. "/path/to/res")
 	 * @param headers the headers map
@@ -63,15 +69,15 @@ public final class Signer {
 	 * @param secretKey the app's secret key
 	 * @return a signed request. The actual signature is inside the {@code Authorization} header.
 	 */
-	public Map<String, String> sign(String httpeMethod, String endpoint, String resourcePath,
+	public Map<String, String> sign(String httpMethod, String endpoint, String resourcePath,
 			Map<String, String> headers, Map<String, String> params, InputStream entity,
 			String accessKey, String secretKey) {
 
 		Map<String, String> headerz = new HashMap<>();
 		Map<String, String> h = Optional.ofNullable(headers).orElse(Collections.emptyMap());
 		String date = h.getOrDefault("x-amz-date", h.get("X-Amz-Date"));
-		com.github.davidmoten.aws.lw.client.internal.Clock clock =
-				() -> date != null ? parseAWSInstant(date).toEpochMilli() : Instant.now().toEpochMilli();
+		com.github.davidmoten.aws.lw.client.internal.Clock clock
+				= () -> date != null ? parseAWSInstant(date).toEpochMilli() : Instant.now().toEpochMilli();
 		if (headers != null) {
 			headerz.putAll(headers);
 			headerz.remove("host");
@@ -88,14 +94,16 @@ public final class Signer {
 			} else {
 				contentHashString = Util.toHex(Util.sha256(requestBody));
 			}
-			headerz.put("Authorization", AwsSignatureVersion4.computeSignatureForAuthorizationHeader(
-					URI.create(endpoint + resourcePath).toURL(), httpeMethod, "para", "us-east-1",
-					clock, headerz, params, contentHashString, accessKey, secretKey));
+			URL endpointURL = URI.create(endpoint + urlEncodeExceptSlashes(resourcePath)).toURL();
+
+			// TEMPORARY FIX, REMOVE AFTER PR IS MERGED: https://github.com/davidmoten/aws-lightweight-client-java/pull/232
+			headerz.put("Authorization", AwsSignatureVersion4Fix.computeSignatureForAuthorizationHeader(endpointURL,
+					httpMethod, "para", "us-east-1", clock, headerz, params, contentHashString, accessKey, secretKey));
 			// clean up headers and normalize case
 			headerz.put("X-Amz-Date", headerz.get("x-amz-date"));
 			headerz.remove("x-amz-date");
 		} catch (Exception e) {
-			logger.info("Request signature failed", e);
+			logger.info("Request signature failed: {}", e.getMessage());
 		}
 		return headerz;
 	}
@@ -122,6 +130,17 @@ public final class Signer {
 			return null;
 		}
 		return LocalDateTime.from(TIME_FORMATTER.parse(date)).toInstant(ZoneOffset.UTC);
+	}
+
+	private static String urlEncodeExceptSlashes(String value) {
+		if (value == null) {
+			return null;
+		}
+		if (DOUBLE_URL_ENCODE) {
+			return StringUtils.replaceEach(Utils.urlEncode(value),
+					new String[]{"+", "*", "%7E", "%2F"}, new String[]{"%20", "%2A", "~", "/"});
+		}
+		return value;
 	}
 
 	/**
