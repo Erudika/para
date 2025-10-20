@@ -117,7 +117,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 		if (profile != null && profile.isEnabled() && profile.isAccountNonLocked() && profile.isAccountNonExpired()) {
 			String ldapAccountId = profile.getUsername();
 			String email = profile.getMail();
-			String name = StringUtils.join(profile.getCn(), ", ");
+			String name = getFullName(app, profile);
 			String adDomain = (String) app.getSetting("security.ldap.active_directory_domain");
 			String memberOf = Optional.ofNullable(profile.getAuthorities()).orElse(Collections.emptyList()).stream().
 					map(ga -> "CN=" + ga.getAuthority()).collect(Collectors.joining(","));
@@ -238,5 +238,18 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 		}
 		return group;
+	}
+
+	private String getFullName(App app, InetOrgPerson profile) {
+		String attribute = (String) app.getSetting("security.ldap.displayname_attribute");
+		String def = StringUtils.join(profile.getCn(), ", ");
+		String val = switch (attribute.toLowerCase()) {
+			case "displayname" -> profile.getDisplayName();
+			case "username" -> profile.getUsername();
+			case "uid" -> profile.getUid();
+			case "sn" -> profile.getSn();
+			default -> def;
+		};
+		return StringUtils.isBlank(val) ? def : val;
 	}
 }

@@ -953,6 +953,7 @@ public class ParaConfig extends Config {
 			ldapSettings.put("security.ldap.user_search_filter", "(cn={0})");
 			ldapSettings.put("security.ldap.user_dn_pattern", "uid={0}");
 			ldapSettings.put("security.ldap.password_attribute", "userPassword");
+			ldapSettings.put("security.ldap.displayname_attribute", "cn");
 			//ldapSettings.put("security.ldap.compare_passwords", "false"); //don't remove comment
 			Map<String, Object> settings = app.getSettings();
 			for (Map.Entry<String, String> entry : ldapSettings.entrySet()) {
