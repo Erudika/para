@@ -17,7 +17,6 @@
  */
 package com.erudika.para.core.rest;
 
-import com.erudika.para.core.utils.Utils;
 import com.github.davidmoten.aws.lw.client.internal.auth.AwsSignatureVersion4;
 import com.github.davidmoten.aws.lw.client.internal.util.Util;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -49,6 +48,8 @@ import org.slf4j.LoggerFactory;
 public final class Signer {
 
 	private static final Logger logger = LoggerFactory.getLogger(Signer.class);
+	private static final String SERVICE_NAME = "para";
+	private static final String REGION = "us-east-1";
 	private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.
 			ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneId.of("Z"));
 
@@ -96,9 +97,9 @@ public final class Signer {
 			}
 			URL endpointURL = URI.create(endpoint + urlEncodeExceptSlashes(resourcePath)).toURL();
 
-			// TEMPORARY FIX, REMOVE AFTER PR IS MERGED: https://github.com/davidmoten/aws-lightweight-client-java/pull/232
-			headerz.put("Authorization", AwsSignatureVersion4Fix.computeSignatureForAuthorizationHeader(endpointURL,
-					httpMethod, "para", "us-east-1", clock, headerz, params, contentHashString, accessKey, secretKey));
+			// https://github.com/davidmoten/aws-lightweight-client-java/pull/232
+			headerz.put("Authorization", AwsSignatureVersion4.computeSignatureForAuthorizationHeader(endpointURL,
+					httpMethod, SERVICE_NAME, REGION, clock, headerz, params, contentHashString, accessKey, secretKey));
 			// clean up headers and normalize case
 			headerz.put("X-Amz-Date", headerz.get("x-amz-date"));
 			headerz.remove("x-amz-date");
@@ -137,8 +138,7 @@ public final class Signer {
 			return null;
 		}
 		if (DOUBLE_URL_ENCODE) {
-			return StringUtils.replaceEach(Utils.urlEncode(value),
-					new String[]{"+", "*", "%7E", "%2F"}, new String[]{"%20", "%2A", "~", "/"});
+			return Util.urlEncode(value, true);
 		}
 		return value;
 	}
