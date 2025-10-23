@@ -66,6 +66,7 @@ import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.eclipse.jetty.http.BadMessageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,21 +97,26 @@ public final class RestUtils {
 		String accessKey = "";
 		String auth = request.getHeader(HttpHeaders.AUTHORIZATION);
 		boolean isAnonymousRequest = isAnonymousRequest(request);
-		if (StringUtils.isBlank(auth)) {
-			auth = request.getParameter("X-Amz-Credential");
-			if (!StringUtils.isBlank(auth)) {
-				accessKey = StringUtils.substringBetween(auth, "=", "/");
-			}
-		} else {
-			if (isAnonymousRequest) {
-				accessKey = StringUtils.substringAfter(auth, "Anonymous").trim();
+		try {
+			if (StringUtils.isBlank(auth)) {
+				auth = request.getParameter("X-Amz-Credential");
+				if (!StringUtils.isBlank(auth)) {
+					accessKey = StringUtils.substringBetween(auth, "=", "/");
+				}
 			} else {
-				accessKey = StringUtils.substringBetween(auth, "=", "/");
+				if (isAnonymousRequest) {
+					accessKey = StringUtils.substringAfter(auth, "Anonymous").trim();
+				} else {
+					accessKey = StringUtils.substringBetween(auth, "=", "/");
+				}
 			}
-		}
-		if (isAnonymousRequest && StringUtils.isBlank(accessKey)) {
-			// try to get access key from parameter
-			accessKey = request.getParameter("accessKey");
+			if (isAnonymousRequest && StringUtils.isBlank(accessKey)) {
+				// try to get access key from parameter
+				accessKey = request.getParameter("accessKey");
+			}
+		} catch (BadMessageException e) {
+			logger.error("Bad or invalid query: {} [{} {}?{}]", e.getMessage(), request.getMethod(),
+					request.getServletPath(), request.getQueryString());
 		}
 		return accessKey;
 	}
