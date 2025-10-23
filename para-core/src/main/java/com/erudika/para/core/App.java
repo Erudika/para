@@ -110,6 +110,7 @@ public class App implements ParaObject, Serializable {
 	@Stored private Boolean stored;
 	@Stored private Boolean indexed;
 	@Stored private Boolean cached;
+	@Stored private Long objectCount;
 
 	@Stored @Locked private boolean sharingIndex;
 	@Stored @Locked private boolean sharingTable;
@@ -145,6 +146,7 @@ public class App implements ParaObject, Serializable {
 		setName(getName());
 		this.sharingIndex = !isRoot(getId());
 		this.sharingTable = false;
+		this.objectCount = 0L;
 	}
 
 	/**
@@ -513,6 +515,22 @@ public class App implements ParaObject, Serializable {
 	 */
 	public static boolean isRoot(String appid) {
 		return Strings.CS.equals(id(Para.getConfig().getRootAppIdentifier()), id(appid));
+	}
+
+	/**
+	 * Holds an estimate of the total number of objects (items) stored in this particular app.
+	 * @return an estimate of the total number of objects
+	 */
+	public Long getObjectCount() {
+		return objectCount;
+	}
+
+	/**
+	 * Sets the estimate objects count. Usually, this would be called each time the index is rebuilt.
+	 * @param objectCount number of objects for this app
+	 */
+	public void setObjectCount(Long objectCount) {
+		this.objectCount = objectCount;
 	}
 
 	/**
