@@ -49,7 +49,7 @@ public class GenericExceptionMapper implements ExceptionMapper<Exception> {
 		if (ex instanceof WebApplicationException) {
 			WebApplicationException e = (WebApplicationException) ex;
 			if (e.getResponse().getStatus() != Response.Status.NOT_FOUND.getStatusCode()) {
-				logger.error("API request error: {}", e.getMessage());
+				logger.debug("API request error: {}", e.getMessage());
 			}
 			return getExceptionResponse(e.getResponse().getStatus(), ex.getMessage());
 		} else {
