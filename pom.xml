@@ -77,7 +77,7 @@
 		<skipITs>${skipTests}</skipITs>
 		<skipUTs>${skipTests}</skipUTs>
 		<deployPluginVer>3.1.4</deployPluginVer>
-		<slf4jVer>2.0.16</slf4jVer>
+		<slf4jVer>2.0.17</slf4jVer>
 		<logbackVer>1.5.3</logbackVer>
 		<awsJdkVer>[2.21.23,)</awsJdkVer>
 		<jerseyVer>3.1.6</jerseyVer>
@@ -85,7 +85,7 @@
 		<metricsVer>4.2.32</metricsVer>
 		<httpClientVer>5.5.1</httpClientVer>
 		<httpCoreVer>5.3.6</httpCoreVer>
-		<commonsCodecVer>1.16.1</commonsCodecVer>
+		<commonsCodecVer>1.19.0</commonsCodecVer>
 		<lucenePluginVer>1.49.3</lucenePluginVer>
 		<sqlPluginVer>1.49.1</sqlPluginVer>
 		<junitVer>6.0.0</junitVer>

@@ -343,16 +343,16 @@
 			<version>${springSecVer}</version>
 			<scope>test</scope>
 		</dependency>-->
-		<dependency>
+<!--		<dependency>
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
 			<version>${commonsCodecVer}</version>
-		</dependency>
-		<dependency>
+		</dependency>-->
+<!--		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
 			<version>${slf4jVer}</version>
-		</dependency>
+		</dependency>-->
 	</dependencies>
 
 	<build>
