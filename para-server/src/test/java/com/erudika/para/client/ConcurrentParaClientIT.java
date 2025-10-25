@@ -100,7 +100,7 @@ public class ConcurrentParaClientIT {
 				logger.info("Created {} objects from thread {}.", created.size(), Thread.currentThread().getName());
 			}, executorService));
 		}
-		CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+		CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
 		executorService.shutdown();
 	}
 

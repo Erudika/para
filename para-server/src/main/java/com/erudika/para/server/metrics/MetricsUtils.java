@@ -162,6 +162,8 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 	 */
 	private static final class GraphiteSettings extends HashMap<String, Object> {
 
+		private static final long serialVersionUID = 1761310534582L;
+
 		GraphiteSettings(String host, int port) {
 			this.put("host", host);
 			this.put("port", port);
@@ -175,8 +177,9 @@ public enum MetricsUtils implements InitializeListener, Runnable {
 			return (int) this.get("port");
 		}
 
+		@SuppressWarnings("unchecked")
 		public static GraphiteSettings parse(Object object) {
-			Map map = (Map) object;
+			Map<String, ?> map = (Map<String, ?>) object;
 			if (map == null || !map.containsKey("host") || !map.containsKey("port")) {
 				return null;
 			}

@@ -414,7 +414,7 @@ public final class AWSDynamoUtils {
 			dbStatus.put("id", appid);
 			dbStatus.put("status", td.tableStatus().name());
 			dbStatus.put("created", td.creationDateTime().toEpochMilli());
-			dbStatus.put("sizeBytes", td.tableSizeBytes());
+			dbStatus.put("sizeBytes", td.tableSizeBytes() * 2); // index + DB
 			dbStatus.put("itemCount", td.itemCount());
 			dbStatus.put("readCapacityUnits", td.provisionedThroughput().readCapacityUnits());
 			dbStatus.put("writeCapacityUnits", td.provisionedThroughput().writeCapacityUnits());
