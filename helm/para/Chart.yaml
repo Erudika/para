@@ -1,0 +1,17 @@
+apiVersion: v2
+type: application
+appVersion: latest_stable
+description: Para - the backend for busy developers
+name: para
+home: https://paraio.org
+sources:
+- https://github.com/Erudika/para
+icon: https://paraio.org/img/logo.png
+version: 0.3.0
+keywords:
+- backend
+- para
+- database
+- storage
+- json
+- baas

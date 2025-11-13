@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "para.fullname" . }}-test-connection"
+  labels:
+    {{- include "para.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+    - name: wget
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+      args:
+        - wget --spider --timeout=5 "{{ include "para.fullname" . }}:{{ .Values.service.port }}/ping"
+  restartPolicy: Never
