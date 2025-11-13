@@ -1,27 +1,33 @@
-# Para docker image without any plugins
+FROM maven:eclipse-temurin AS deps
 
-FROM maven:3-eclipse-temurin-21-alpine AS build
+ENV PARA_HOME=/para
+WORKDIR ${PARA_HOME}/para-jar
 
-RUN mkdir -p /para
-RUN curl -Ls https://github.com/Erudika/para/archive/master.tar.gz | tar -xz -C /para
-RUN cd /para/para-master && mvn -q install -DskipTests=true -DskipITs=true && \
-	cd /para/para-master/para-jar && mvn -q -Pbase clean package && \
-	mv target/para-base-[0-9]*.jar /para/para.jar
+# Cache dependencies for the para-jar module
+COPY para-jar/pom.xml pom.xml
+RUN mvn -B dependency:go-offline --fail-never
 
-FROM eclipse-temurin:21-alpine
+FROM deps AS build
 
-ENV BOOT_SLEEP=0 \
-    JAVA_OPTS="-Dloader.path=lib"
+ENV PARA_HOME=/para
+WORKDIR ${PARA_HOME}
 
-RUN mkdir -p /para/lib &&	mkdir -p /para/data
+COPY . .
+RUN mvn -B -pl para-jar -am -Pbase -DskipTests=true -DskipITs=true package && \
+    cp para-jar/target/para-base-[0-9]*.jar ${PARA_HOME}/para.jar
 
-WORKDIR /para
+FROM eclipse-temurin:25-jre-alpine
 
-VOLUME ["/para/data"]
+ENV PARA_HOME=/para
+ENV JAVA_OPTS="-Dloader.path=lib"
+WORKDIR ${PARA_HOME}
 
-#COPY --from=build /para/para-*.jar /para/para.jar
+COPY --from=build ${PARA_HOME}/para.jar ./para.jar
+
+RUN mkdir -p ${PARA_HOME}/lib ${PARA_HOME}/data
+VOLUME ["/para/data", "/para/lib"]
 
 EXPOSE 8080
 
-CMD sleep $BOOT_SLEEP && \
-    java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar para.jar
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar para.jar \"$@\"", "para"]
+CMD []

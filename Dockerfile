@@ -1,26 +1,33 @@
-# Default Para docker image bundled with H2 and Lucene plugins
+FROM maven:eclipse-temurin AS deps
 
-FROM maven:3-eclipse-temurin-21-alpine AS build
+ENV PARA_HOME=/para
+WORKDIR ${PARA_HOME}/para-jar
 
-RUN mkdir -p /para
-RUN curl -Ls https://github.com/Erudika/para/archive/master.tar.gz | tar -xz -C /para
-RUN cd /para/para-master && mvn -q install -DskipTests=true -DskipITs=true && \
-	cd /para/para-master/para-jar && mv target/para-[0-9]*.jar /para/
+# Cache dependencies for the para-jar module
+COPY para-jar/pom.xml pom.xml
+RUN mvn -B dependency:go-offline --fail-never
 
-FROM eclipse-temurin:21-alpine
+FROM deps AS build
+# Para docker image without any plugins
+ENV PARA_HOME=/para
+WORKDIR ${PARA_HOME}
 
-ENV BOOT_SLEEP=0 \
-    JAVA_OPTS="-Dloader.path=lib"
+COPY . .
+RUN mvn -B -pl para-jar -am -DskipTests=true -DskipITs=true package && \
+    cp para-jar/target/para-[0-9]*.jar ${PARA_HOME}/para.jar
 
-RUN mkdir -p /para/lib &&	mkdir -p /para/data
+FROM eclipse-temurin:25-jre-alpine
 
-WORKDIR /para
+ENV PARA_HOME=/para
+ENV JAVA_OPTS="-Dloader.path=lib"
+WORKDIR ${PARA_HOME}
 
-VOLUME ["/para/data"]
+COPY --from=build ${PARA_HOME}/para.jar ./para.jar
 
-COPY --from=build /para/para-*.jar /para/para.jar
+RUN mkdir -p ${PARA_HOME}/lib ${PARA_HOME}/data
+VOLUME ["/para/data", "/para/lib"]
 
 EXPOSE 8080
 
-CMD sleep $BOOT_SLEEP && \
-    java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar para.jar
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar para.jar \"$@\"", "para"]
+CMD []
