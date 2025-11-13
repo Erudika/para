@@ -71,7 +71,6 @@ The following table lists the configurable parameters of the Para chart and thei
 | `nodeSelector`                      | Node selector                                                 | `{}`                                                     |
 | `tolerations`                       | Tolerations                                                   | `[]`                                                     |
 | `affinity`                          | Affinity rules                                                | `{}`                                                     |
-| `ecrHelper.enabled`                 | Enable the optional ECR credential helper                     | `false`                                                  |
 
 For more information please refer to the [Para README](https://github.com/Erudika/para/blob/master/README.md).
 

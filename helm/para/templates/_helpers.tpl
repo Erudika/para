@@ -51,14 +51,3 @@ Selector labels
 app.kubernetes.io/name: {{ include "para.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
-
-{{/*
-ServiceAccount name for the ECR helper
-*/}}
-{{- define "para.ecrHelperServiceAccountName" -}}
-{{- if .Values.ecrHelper.serviceAccount.name -}}
-{{- .Values.ecrHelper.serviceAccount.name -}}
-{{- else -}}
-{{- printf "%s-ecr-helper" (include "para.fullname" .) | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-{{- end -}}

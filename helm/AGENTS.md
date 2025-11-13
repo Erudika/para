@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 - `para/Chart.yaml` defines chart metadata and required Kubernetes version.
-- `para/templates/` contains manifests (deployment, service, ingress, ConfigMap) plus ECR helper jobs for private registries.
+- `para/templates/` contains manifests (deployment, service, ingress)
 - `para/templates/tests/test-connection.yaml` holds the Helm test pod.
 - `para/values.yaml` centralizes defaults; mirror its structure when adding new settings to keep overrides predictable.
 
@@ -16,7 +16,6 @@
 - Use two-space YAML indentation and keep keys alphabetized within related blocks for readability.
 - Prefer expressive value names (e.g., `paraEndpoint`, `imagePullSecrets`) that match Para’s configuration vocabulary.
 - Place reusable snippets in `_helpers.tpl`; reference via `{{ include }}` rather than duplicating logic.
-- Gate optional resources with clearly named booleans such as `ingress.enabled` or `ecrHelper.enabled`.
 
 ## Testing Guidelines
 - Maintain the smoke test pod in `templates/tests`; extend it when adding services that need reachability checks.
@@ -30,4 +29,3 @@
 
 ## Security & Configuration Tips
 - Never hardcode secrets; point to existing Kubernetes Secrets via `values.yaml` keys and document expected keys.
-- Review ECR helper CronJob schedules and roles when altering registry access, ensuring least privilege before merging.
