@@ -19,3 +19,4 @@ nb-configuration.xml
 **/data/
 *.iml
 .idea
+.vscode
