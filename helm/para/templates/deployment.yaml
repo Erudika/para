@@ -38,6 +38,27 @@ spec:
         - name: libvol
           persistentVolumeClaim:
             claimName: {{ include "para.fullname" . }}-lib
+      {{- if .Values.downloadInitContainer.enabled }}
+      initContainers:
+        - name: {{ include "para.fullname" . }}-lib-fetch
+          image: "{{ .Values.downloadInitContainer.image.repository }}:{{ .Values.downloadInitContainer.image.tag }}"
+          imagePullPolicy: {{ .Values.downloadInitContainer.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - {{ .Values.downloadInitContainer.command | quote }}
+          volumeMounts:
+            - name: libvol
+              mountPath: /para/lib
+          {{- with .Values.downloadInitContainer.env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.downloadInitContainer.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"

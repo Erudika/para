@@ -25,7 +25,7 @@ service:
 # Para configuration
 ######################
 appconfigVolume:
-  path: "/etc/para/application.conf"
+  path: "/para/application.conf"
 
 persistentVolumes:
   data:
@@ -39,10 +39,23 @@ persistentVolumes:
     size: 1Gi
     storageClassName: ""
 
+#############################################
+# Optional init container for adding plugins 
+#############################################
+downloadInitContainer:
+  command: "wget https://jdbc.org/driver.jar -O /para/lib/jdbc.jar"
+  enabled: false
+  env: []
+  image:
+    pullPolicy: IfNotPresent
+    repository: curlimages/curl
+    tag: "8.11.1"
+  resources: {}
+
 ###################################################
 # JVM command line arguments, exported as JAVA_OPTS
 ###################################################
-javaOpts: "-Xmx512m -Xms512m -Dconfig.file=/para/config/application.conf"
+javaOpts: "-Xmx512m -Xms512m -Dloader.path=/para/lib -Dconfig.file=/para/config/application.conf"
 
 podAnnotations: {}
 
