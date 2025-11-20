@@ -115,18 +115,107 @@ $ docker run -ti -p 8080:8080 --rm -v $(pwd)/data:/para/data \
 
 **Plugins**
 
-To use plugins, create a new `Dockerfile-plugins` which does a multi-stage build like so:
-```
-# change X.Y.Z to the version you want to use
-FROM erudikaltd/para:v1.XY.Z-base AS base
-FROM erudikaltd/para-search-lucene:1.XY.Z AS search
-FROM erudikaltd/para-dao-mongodb:1.XY.Z AS dao
+You can create a custom Para container with all plugins and JDBC drivers you need by using `docker compose`.
+Below is an example build of Para, using `para-dao-sql`, `para-search-lucene` and PosgreSQL as a database.
+
+1. First, create a new `Dockerfile-plugins` which does a multi-stage build like so:
+
+<ul><li>
+<details>
+  <summary>View contents of <code>Dockerfile-plugins</code></summary>
+
+```docker
+ARG PARA_VERSION="0.0.0"
+ARG SQL_DAO_VERSION="0.0.0"
+FROM erudikaltd/para:v${PARA_VERSION} AS base
+FROM erudikaltd/para-dao-sql:${SQL_DAO_VERSION} AS dao
+FROM erudikaltd/para-search-lucene:${SEARCH_VERSION} AS search
 FROM base AS final
-COPY --from=search /para/lib/*.jar /para/lib
 COPY --from=dao /para/lib/*.jar /para/lib
+COPY --from=search /para/lib/*.jar /para/lib
+
+# EXAMPLE: Add a PostgreSQL JDBC Driver
+ARG PG_JDBC_VERSION="0.0.0"
+ADD https://jdbc.postgresql.org/download/postgresql-${PG_JDBC_VERSION}.jar /para/lib/
 ```
 
-Then simply run `$ docker build -f Dockerfile-plugins -t para-mongo .`
+</details>
+</li></ul>
+
+2. Then, create a `docker-compose.yml` file:
+
+<ul><li>
+<details>
+  <summary>View contents of <code>docker-compose.yml</code></summary>
+
+```yml
+services:
+   para:
+     depends_on:
+       - db
+     build:
+       context: .
+       dockerfile: Dockerfile
+       args:
+         PARA_VERSION: "1.51.0"
+         SQL_DAO_VERSION: "1.49.1"
+         PG_JDBC_VERSION: "42.7.7"
+     image: para-base:latest
+     pull_policy: never
+     ports:
+       - "8080:8080"
+     volumes:
+       - type: volume
+         source: paraData
+         target: /para/data
+       - type: volume
+         source: paraLib
+         target: /para/lib
+       - type: bind
+         source: ./para-application.conf
+         target: /para/application.conf
+     restart: always
+     environment:
+       - JAVA_OPTS=-Dconfig.file=/para/application.conf -Dloader.path=/para/lib
+
+   db:
+     image: postgres:latest
+     ports:
+       - "5432:5432"
+     volumes:
+       - type: volume
+         source: postgresData
+         target: /var/lib/postgresql/data
+     restart: always
+     environment:
+       - POSTGRES_PASSWORD=mysecretpassword
+       - PGDATA=/var/lib/postgresql/data
+volumes:
+  paraData:
+  paraLib:
+  postgresData:
+```
+</details>
+</li></ul>
+
+3. Also reate the Para configuration file `para-application.conf`:
+
+<ul><li>
+<details>
+  <summary>View contents of <code>para-application.conf</code></summary>
+
+```ini
+para.env = "production"
+para.dao = "SqlDAO"
+para.sql.driver = "org.postgresql.Driver"
+para.sql.url = "postgresql://db:5432/para"
+para.sql.user = "postgres"
+para.sql.password = "mysecretpassword"
+```
+</details>
+</li></ul>
+
+4. Finally, run `docker compose build para && docker compose up`
 
 ## Building Para
 
