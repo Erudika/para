@@ -97,7 +97,7 @@ or integrate Para directly into your project with one of the API clients below.
 ## Docker
 
 Tagged Docker images for Para are located at `erudikaltd/para` on Docker Hub.
-**It's highly recommended that you pull only release images like `:1.45.1` or `:latest_stable`
+**It's highly recommended that you pull only release images like `:1.51.0` or `:latest_stable`
 because the `:latest` tag can be broken or unstable.**
 First, create an `application.conf` file and a `data` folder and start the Para container:
 
@@ -110,8 +110,7 @@ $ docker run -ti -p 8080:8080 --rm -v $(pwd)/data:/para/data \
 
 **Environment variables**
 
-`JAVA_OPTS` - Java system properties, e.g. `-Dpara.port=8000`
-`BOOT_SLEEP` - Startup delay, in seconds
+`JAVA_OPTS` - Java system properties, defaults to `-Dloader.path=lib`
 
 **Plugins**
 
