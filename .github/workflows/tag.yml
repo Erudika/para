@@ -48,18 +48,6 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
 
-      - name: Build and push base
-        id: docker_build_base
-        uses: docker/build-push-action@v6
-        with:
-          context: ./
-          file: ./Dockerfile-base
-          builder: ${{ steps.buildx.outputs.name }}
-          push: true
-          tags: erudikaltd/para:${{ env.RELEASE_VERSION }}-base
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
-
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
         
