@@ -1,0 +1,11 @@
+{{- if .Values.applicationConf }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "para.fullname" . }}-config
+  labels:
+    {{- include "para.labels" . | nindent 4 }}
+data:
+  application.conf: |
+{{- nindent 4 .Values.applicationConf }}
+{{- end }}

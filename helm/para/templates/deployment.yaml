@@ -17,7 +17,12 @@ spec:
         {{- include "para.selectorLabels" . | nindent 8 }}
       {{- with .Values.podAnnotations }}
       annotations:
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- if .Values.applicationConf }}
+        configchecksum: {{ include (print .Template.BasePath "/configmap.yaml") . | sha256sum | trunc 63 }}
+        {{- end }}
       {{- end }}
     spec:
       {{- with .Values.image.pullSecrets }}
@@ -26,12 +31,13 @@ spec:
         - name: {{ . }}
         {{- end }}
       {{- end }}
-      {{- $appConfigPath := .Values.appconfigVolume.path }}
       volumes:
         - name: appconfig
-          hostPath:
-            path: {{ $appConfigPath | quote }}
-            type: FileOrCreate
+          configMap:
+            name: {{ include "para.fullname" . }}-config
+            items:
+              - key: "application.conf"
+                path: "application.conf"
         - name: datavol
           persistentVolumeClaim:
             claimName: {{ include "para.fullname" . }}-data
@@ -86,13 +92,12 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           volumeMounts:
-            - name: appconfig
-              mountPath: /para/config/application.conf
-              readOnly: false
             - name: datavol
               mountPath: /para/data
             - name: libvol
               mountPath: /para/lib
+            - name: appconfig
+              mountPath: /para/data/config
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

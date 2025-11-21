@@ -24,8 +24,12 @@ service:
 ######################
 # Para configuration
 ######################
-appconfigVolume:
-  path: "/para/application.conf"
+applicationConf: |
+  para.port = 8080
+  para.env = production
+  ####################################
+  # Add more config properties here...
+  ####################################
 
 persistentVolumes:
   data:
@@ -55,7 +59,7 @@ downloadInitContainer:
 ###################################################
 # JVM command line arguments, exported as JAVA_OPTS
 ###################################################
-javaOpts: "-Xmx512m -Xms512m -Dloader.path=/para/lib -Dconfig.file=/para/config/application.conf"
+javaOpts: "-Xmx512m -Xms512m -Dloader.path=/para/lib -Dconfig.file=/para/data/config/application.conf"
 
 podAnnotations: {}
 
@@ -64,7 +68,7 @@ podAnnotations: {}
 #####################
 extraEnvs: []
 
-updateStrategy: RollingUpdate
+updateStrategy: Recreate
 
 ingress:
   enabled: false

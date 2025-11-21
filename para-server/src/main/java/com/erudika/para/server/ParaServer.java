@@ -95,6 +95,22 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	@Value("${server.ssl.enabled:false}")
 	private boolean sslEnabled;
 
+	static {
+		System.setProperty("server.port", String.valueOf(Para.getConfig().serverPort()));
+		System.setProperty("server.servlet.context-path", Para.getConfig().serverContextPath());
+		System.setProperty("server.use-forward-headers", String.valueOf(Para.getConfig().inProduction()));
+		System.setProperty("para.logs_name", Para.getConfig().getConfigRootPrefix());
+		if (Para.getConfig().accessLogEnabled()) {
+			System.setProperty("server.jetty.accesslog.append", "true");
+			System.setProperty("server.jetty.accesslog.enabled", "true");
+			if (!System.getProperty("para.file_logger_level", "INFO").equalsIgnoreCase("OFF")) {
+				System.setProperty("server.jetty.accesslog.filename", System.getProperty("para.logs_dir", ".")
+						+ File.separator + Para.getConfig().getConfigRootPrefix() + "-access_yyyy_MM_dd.log");
+				System.setProperty("server.jetty.accesslog.file-date-format", "yyyy_MM_dd");
+			}
+		}
+	}
+
 	/**
 	 * Returns the list of core modules.
 	 * @return the core modules
@@ -296,17 +312,9 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	 */
 	@Bean
 	public ServletWebServerFactory jettyConfigBean() {
-		if (Para.getConfig().accessLogEnabled()) {
-			System.setProperty("server.jetty.accesslog.append", "true");
-			System.setProperty("server.jetty.accesslog.enabled", "true");
-			if (!System.getProperty("para.file_logger_level", "INFO").equalsIgnoreCase("OFF")) {
-				System.setProperty("server.jetty.accesslog.filename", System.getProperty("para.logs_dir", ".")
-						+ File.separator + Para.getConfig().getConfigRootPrefix() + "-access_yyyy_MM_dd.log");
-				System.setProperty("server.jetty.accesslog.file-date-format", "yyyy_MM_dd");
-			}
-		}
 		JettyServletWebServerFactory jef = new JettyServletWebServerFactory();
 		jef.setRegisterDefaultServlet(true);
+		jef.setPort(Para.getConfig().serverPort());
 		jef.addServerCustomizers((JettyServerCustomizer) (Server server) -> {
 			for (Connector y : server.getConnectors()) {
 				for (ConnectionFactory cf : y.getConnectionFactories()) {

@@ -74,7 +74,7 @@ The following table lists the configurable parameters of the Para chart and thei
 | `service.type`                      | Kubernetes Service type                                       | `ClusterIP`                                              |
 | `service.port`                      | Service HTTP port                                             | `8080`                                                   |
 | `service.name`                      | Service port name                                             | `http`                                                   |
-| `appconfigVolume.path`              | Absolute path to a local `application.conf` file              | `/para/application.conf`                                 |
+| `applicationConf`                   | Para configuration block (config map)                         | Example Para config in `values.yaml`                     |
 | `persistentVolumes.data.size`       | Requested capacity for `/para/data` PVC                       | `5Gi`                                                    |
 | `persistentVolumes.data.accessModes`| Access modes for `/para/data` PVC                             | `[ReadWriteOnce]`                                        |
 | `persistentVolumes.data.storageClassName` | StorageClass for `/para/data` PVC                       | `""`                                                     |
@@ -83,7 +83,7 @@ The following table lists the configurable parameters of the Para chart and thei
 | `persistentVolumes.lib.storageClassName` | StorageClass for `/para/lib` PVC                         | `""`                                                     |
 | `downloadInitContainer.enabled`     | Run a command to fetch plugin dependencies into `/para/lib`   | `false`                                                  |
 | `downloadInitContainer.command`     | Shell snippet (wget/curl) executed by the init container      | `wget https://jdbc.org/driver.jar -O /para/lib/jdbc.jar` |
-| `javaOpts`                          | `JAVA_OPTS` JVM arguments                                     | `-Xmx512m -Xms512m -Dloader.path=/para/lib -Dconfig.file=/para/config/application.conf` |
+| `javaOpts`                          | `JAVA_OPTS` JVM arguments                                     | `-Xmx512m -Xms512m -Dloader.path=/para/lib -Dconfig.file=/para/data/config/application.conf` |
 | `podAnnotations`                    | Pod annotations                                               | `{}`                                                     |
 | `extraEnvs`                         | Extra environment variables                                   | `[]`                                                     |
 | `updateStrategy`                    | Deployment update strategy                                    | `RollingUpdate`                                          |
