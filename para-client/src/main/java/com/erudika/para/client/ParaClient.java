@@ -127,7 +127,7 @@ public final class ParaClient implements Closeable {
 		}
 		this.throwExceptionOnHTTPError = false;
 		mapper = ParaObjectUtils.getJsonMapper();
-		mapper.setSerializationInclusion(JsonInclude.Include.USE_DEFAULTS);
+		mapper.setDefaultPropertyInclusion(JsonInclude.Include.USE_DEFAULTS);
 
 		SSLFactory sslFactory = null;
 		if (!StringUtils.isBlank(truststorePath)) {

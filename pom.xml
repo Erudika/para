@@ -80,15 +80,15 @@
 		<slf4jVer>2.0.17</slf4jVer>
 		<logbackVer>1.5.3</logbackVer>
 		<awsJdkVer>2.36.2</awsJdkVer>
-		<jerseyVer>3.1.10</jerseyVer>
-		<springBootVer>3.5.6</springBootVer>
+		<jerseyVer>3.1.11</jerseyVer>
+		<springBootVer>3.5.7</springBootVer>
 		<metricsVer>4.2.32</metricsVer>
 		<httpClientVer>5.5.1</httpClientVer>
 		<httpCoreVer>5.3.6</httpCoreVer>
 		<commonsCodecVer>1.19.0</commonsCodecVer>
 		<lucenePluginVer>1.49.3</lucenePluginVer>
 		<sqlPluginVer>1.49.1</sqlPluginVer>
-		<junitVer>6.0.0</junitVer>
+		<junitVer>6.0.1</junitVer>
 		<junitPlatformVer>1.12.2</junitPlatformVer>
 	</properties>
 
@@ -161,7 +161,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-release-plugin</artifactId>
-				<version>3.1.1</version>
+				<version>3.2.0</version>
 				<configuration>
 					<autoVersionSubmodules>true</autoVersionSubmodules>
 					<mavenExecutorId>forked-path</mavenExecutorId>
@@ -192,7 +192,7 @@
 			<plugin>
 				<groupId>org.sonarsource.scanner.maven</groupId>
 				<artifactId>sonar-maven-plugin</artifactId>
-				<version>5.2.0.4988</version>
+				<version>5.3.0.6276</version>
 			</plugin>
 		</plugins>
 	</build>

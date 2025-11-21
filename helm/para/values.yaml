@@ -12,7 +12,7 @@ fullnameOverride: ""
 #########################################
 image:
   repository: erudikaltd/para
-  tag: "latest"
+  tag: "latest_stable"
   pullPolicy: IfNotPresent
   pullSecrets: []
 

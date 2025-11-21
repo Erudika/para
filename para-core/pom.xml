@@ -12,7 +12,7 @@
 	<name>para-core</name>
 
 	<properties>
-		<jacksonVer>2.19.2</jacksonVer>
+		<jacksonVer>2.19.4</jacksonVer>
 		<flexmarkVer>0.64.8</flexmarkVer>
 	</properties>
 
@@ -166,12 +166,12 @@
 		<dependency>
 			<groupId>org.hibernate.validator</groupId>
 			<artifactId>hibernate-validator</artifactId>
-			<version>9.1.0.Alpha2</version>
+			<version>9.1.0.Final</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
-			<version>3.19.0</version>
+			<version>3.20.0</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-codec</groupId>
@@ -181,7 +181,7 @@
 		<dependency>
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
-			<version>2.20.0</version>
+			<version>2.21.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jsoup</groupId>
@@ -267,7 +267,7 @@
 		<dependency>
 			<groupId>io.github.hakky54</groupId>
 			<artifactId>ayza</artifactId>
-			<version>10.0.0</version>
+			<version>10.0.1</version>
 		</dependency>
 	</dependencies>
 
@@ -367,7 +367,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.4.2</version>
+				<version>3.5.0</version>
 				<configuration>
 					<archive>
 						<manifestEntries>

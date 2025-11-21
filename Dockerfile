@@ -5,7 +5,7 @@ WORKDIR ${PARA_HOME}/para-jar
 
 # Cache dependencies for the para-jar module
 COPY para-jar/pom.xml pom.xml
-RUN mvn -B dependency:go-offline --fail-never
+RUN mvn -B -pl para-jar dependency:go-offline --fail-never
 
 FROM deps AS build
 # Para docker image without any plugins
