@@ -93,7 +93,7 @@ spec:
           {{- end }}
           {{- with .Values.rootSecretOverride }}
             - name: para_root_secret_override
-              value: {{ .Values.rootSecretOverride.stringData.paraSecret | quote }}
+              value: {{ .stringData.paraSecret | quote }}
           {{- end }}
           volumeMounts:
             - name: datavol

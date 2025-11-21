@@ -70,12 +70,12 @@ extraEnvs: []
 ############################################
 # Optional Secret for overriding root keys
 ############################################
-rootSecretOverride: {}
-# rootSecretOverride:
-#   name: root-app-secret
-#   type: Opaque
-#   stringData:
-#     paraSecret: "secret"
+# rootSecretOverride: {}
+rootSecretOverride:
+  name: para-root-app-secret
+  type: Opaque
+  stringData:
+    paraSecret: "pi60pi60pi60pi60pi60pi60pi60pi60pi60pi60pi60pi60pi60pi60pi60pi60pi60"
 
 updateStrategy: Recreate
 
