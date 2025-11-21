@@ -13,7 +13,7 @@ fullnameOverride: ""
 image:
   repository: erudikaltd/para
   tag: "latest_stable"
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   pullSecrets: []
 
 service:
@@ -25,11 +25,10 @@ service:
 # Para configuration
 ######################
 applicationConf: |
-  para.port = 8080
+  ###########################
+  # Para Configuration File #
+  ###########################
   para.env = production
-  ####################################
-  # Add more config properties here...
-  ####################################
 
 persistentVolumes:
   data:
@@ -59,7 +58,7 @@ downloadInitContainer:
 ###################################################
 # JVM command line arguments, exported as JAVA_OPTS
 ###################################################
-javaOpts: "-Xmx512m -Xms512m -Dloader.path=/para/lib -Dconfig.file=/para/config/application.conf"
+javaOpts: "-Xmx512m -Xms512m -Dpara.port=8080 -Dloader.path=/para/lib -Dconfig.file=/para/config/application.conf"
 
 podAnnotations: {}
 

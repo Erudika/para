@@ -128,7 +128,6 @@ public abstract class River implements Runnable {
 				}
 			}
 		} catch (InterruptedException ex) {
-			logger.info("River interrupted: {}", ex.getMessage());
 			Thread.currentThread().interrupt();
 		}
 	}
@@ -299,8 +298,6 @@ public abstract class River implements Runnable {
 			objs.entrySet().stream().filter(entry -> (entry.getValue() == null)).forEachOrdered(entry -> {
 				pendingIds.putIfAbsent(entry.getKey(), 1);
 			});
-//			This line below throws error, possibly ConcurrentModificationException
-//			objs.keySet().stream().filter(k -> objs.get(k) == null).forEach(k -> pendingIds.putIfAbsent(k, 1));
 			logger.debug("Some objects are missing from local database while performing 'index_all_op': {}", pendingIds);
 			Para.asyncExecute(() -> {
 				try {
@@ -312,7 +309,6 @@ public abstract class River implements Runnable {
 						pending.entrySet().stream().filter(entry -> (entry.getValue() != null)).forEachOrdered(entry -> {
 							pendingIds.remove(entry.getKey());
 						});
-//						pending.keySet().stream().filter(k -> pending.get(k) != null).forEach(k -> pendingIds.remove(k));
 						if (pendingCount != pendingIds.size()) {
 							Para.getSearch().indexAll(appid, pending.values().stream().collect(Collectors.toList()));
 						}

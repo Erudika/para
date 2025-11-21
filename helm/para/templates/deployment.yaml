@@ -88,8 +88,6 @@ spec:
           env:
             - name: JAVA_OPTS
               value: "{{ .Values.javaOpts }}"
-            - name: spring.server.port
-              value: {{ .Values.service.port | quote }}
           {{- with .Values.extraEnvs }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
