@@ -17,11 +17,12 @@ This chart installs Para in a K8s cluster. We also offer a fully managed Para se
 
 **Note:** The Para configuration file is mounted as a volume from the local filesystem to the pod.
 When Para starts up for the first time, it saves the root app keys to that file inside the pod at `/para/config/application.conf`.
+You can override the secret key for the root app with `rootSecretOverride` (see `values.yaml` for details)
 
 In the `./helm/` directory of this repo, execute the following console command:
 
 ```console
-$ helm install para ./para --set appconfigVolume.path=$(pwd)/application.conf
+$ helm install para ./para
 ```
 
 The command deploys Para on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
@@ -61,6 +62,25 @@ para.sql.user = "postgres"
 para.sql.password = "mysecretpassword"
 ```
 
+## Root secret override
+
+If you prefer to inject predetermined root application keys instead of letting Para
+generate them on first boot, set `rootSecretOverride` with the exact Secret payload
+you want rendered. The chart creates a Secret named `<release>-root-secret` by
+default, or you can provide `rootSecretOverride.name` to take control of the
+resource name. When this override is present the pod also receives an environment
+variable `para_root_secret_override` containing the same JSON payload so the app can
+react without mounting the Secret file.
+
+```yaml
+rootSecretOverride:
+  name: para-root-credentials
+  type: Opaque
+  stringData:
+    para.root.app.id: "app:para"
+    para.root.app.secret: "secret"
+```
+
 ## Configuration
 
 The following table lists the configurable parameters of the Para chart and their default values.
@@ -75,6 +95,7 @@ The following table lists the configurable parameters of the Para chart and thei
 | `service.port`                      | Service HTTP port                                             | `8080`                                                   |
 | `service.name`                      | Service port name                                             | `http`                                                   |
 | `applicationConf`                   | Para configuration block (config map)                         | Example Para config in `values.yaml`                     |
+| `rootSecretOverride`                | Optional root secret override, saved as Secret in the cluster | `{}`                                                     |
 | `persistentVolumes.data.size`       | Requested capacity for `/para/data` PVC                       | `5Gi`                                                    |
 | `persistentVolumes.data.accessModes`| Access modes for `/para/data` PVC                             | `[ReadWriteOnce]`                                        |
 | `persistentVolumes.data.storageClassName` | StorageClass for `/para/data` PVC                       | `""`                                                     |
@@ -83,7 +104,7 @@ The following table lists the configurable parameters of the Para chart and thei
 | `persistentVolumes.lib.storageClassName` | StorageClass for `/para/lib` PVC                         | `""`                                                     |
 | `downloadInitContainer.enabled`     | Run a command to fetch plugin dependencies into `/para/lib`   | `false`                                                  |
 | `downloadInitContainer.command`     | Shell snippet (wget/curl) executed by the init container      | `wget https://jdbc.org/driver.jar -O /para/lib/jdbc.jar` |
-| `javaOpts`                          | `JAVA_OPTS` JVM arguments                                     | `-Xmx512m -Xms512m -Dloader.path=/para/lib -Dconfig.file=/para/data/config/application.conf` |
+| `javaOpts`                          | `JAVA_OPTS` JVM arguments                                     | `-Xmx512m -Xms512m -Dloader.path=/para/lib -Dconfig.file=/para/config/application.conf` |
 | `podAnnotations`                    | Pod annotations                                               | `{}`                                                     |
 | `extraEnvs`                         | Extra environment variables                                   | `[]`                                                     |
 | `updateStrategy`                    | Deployment update strategy                                    | `RollingUpdate`                                          |

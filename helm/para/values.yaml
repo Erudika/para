@@ -12,7 +12,7 @@ fullnameOverride: ""
 #########################################
 image:
   repository: erudikaltd/para
-  tag: "latest_stable"
+  tag: "latest"
   pullPolicy: IfNotPresent
   pullSecrets: []
 
@@ -59,7 +59,7 @@ downloadInitContainer:
 ###################################################
 # JVM command line arguments, exported as JAVA_OPTS
 ###################################################
-javaOpts: "-Xmx512m -Xms512m -Dloader.path=/para/lib -Dconfig.file=/para/data/config/application.conf"
+javaOpts: "-Xmx512m -Xms512m -Dloader.path=/para/lib -Dconfig.file=/para/config/application.conf"
 
 podAnnotations: {}
 
@@ -67,6 +67,16 @@ podAnnotations: {}
 # Extra ENV variables
 #####################
 extraEnvs: []
+
+############################################
+# Optional Secret for overriding root keys
+############################################
+rootSecretOverride: {}
+# rootSecretOverride:
+#   name: root-app-secret
+#   type: Opaque
+#   stringData:
+#     paraSecret: "secret"
 
 updateStrategy: Recreate
 
@@ -103,4 +113,3 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
-

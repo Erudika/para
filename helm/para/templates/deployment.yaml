@@ -88,8 +88,14 @@ spec:
           env:
             - name: JAVA_OPTS
               value: "{{ .Values.javaOpts }}"
+            - name: spring.server.port
+              value: {{ .Values.service.port | quote }}
           {{- with .Values.extraEnvs }}
             {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.rootSecretOverride }}
+            - name: para_root_secret_override
+              value: {{ .Values.rootSecretOverride.stringData.paraSecret | quote }}
           {{- end }}
           volumeMounts:
             - name: datavol
@@ -97,7 +103,7 @@ spec:
             - name: libvol
               mountPath: /para/lib
             - name: appconfig
-              mountPath: /para/data/config
+              mountPath: /para/config
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
