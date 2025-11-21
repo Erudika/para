@@ -56,6 +56,14 @@ public class ParaConfig extends Config {
 		return getConfigParam("app_name", PARA);
 	}
 
+	@Documented(position = 11,
+			identifier = "root_secret_override",
+			category = "Core",
+			description = "Overrides the secret key for the root Para app `app:para` once, upon first initialization.")
+	public String rootSecretOverride() {
+		return getConfigParam("root_secret_override", "");
+	}
+
 	@Documented(position = 20,
 			identifier = "context_path",
 			category = "Core",

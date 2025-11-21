@@ -1056,6 +1056,9 @@ public class App implements ParaObject, Serializable {
 			logger.error("Child apps cannot contain app objects.");
 			return null;
 		}
+		if (isRoot(getAppid()) && !StringUtils.isBlank(Para.getConfig().rootSecretOverride())) {
+			setSecret(Para.getConfig().rootSecretOverride());
+		}
 		if (StringUtils.isBlank(secret)) {
 			resetSecret();
 		}
