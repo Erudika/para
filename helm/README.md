@@ -64,21 +64,17 @@ para.sql.password = "mysecretpassword"
 
 ## Root secret override
 
-If you prefer to inject predetermined root application keys instead of letting Para
-generate them on first boot, set `rootSecretOverride` with the exact Secret payload
-you want rendered. The chart creates a Secret named `<release>-root-secret` by
-default, or you can provide `rootSecretOverride.name` to take control of the
-resource name. When this override is present the pod also receives an environment
-variable `para_root_secret_override` containing the same JSON payload so the app can
-react without mounting the Secret file.
+If you prefer to inject predetermined secret key for the root Para app `app:para`
+for initialization on the first run, set `rootSecretOverride` with the exact Secret 
+payload you want rendered. The chart creates a Secret named `para-root-secret` by
+default, or you can provide `rootSecretOverride.name` as the Secret name.
 
 ```yaml
 rootSecretOverride:
-  name: para-root-credentials
+  name: para-root-app-secret
   type: Opaque
   stringData:
-    para.root.app.id: "app:para"
-    para.root.app.secret: "secret"
+    paraSecret: "custom_secret"
 ```
 
 ## Configuration
@@ -104,7 +100,7 @@ The following table lists the configurable parameters of the Para chart and thei
 | `persistentVolumes.lib.storageClassName` | StorageClass for `/para/lib` PVC                         | `""`                                                     |
 | `downloadInitContainer.enabled`     | Run a command to fetch plugin dependencies into `/para/lib`   | `false`                                                  |
 | `downloadInitContainer.command`     | Shell snippet (wget/curl) executed by the init container      | `wget https://jdbc.org/driver.jar -O /para/lib/jdbc.jar` |
-| `javaOpts`                          | `JAVA_OPTS` JVM arguments                                     | `-Xmx512m -Xms512m -Dloader.path=/para/lib -Dconfig.file=/para/config/application.conf` |
+| `javaOpts`                          | `JAVA_OPTS` JVM arguments                                     | `-Xmx512m -Xms512m -Dpara.port=8080 -Dloader.path=/para/lib -Dconfig.file=/para/config/application.conf` |
 | `podAnnotations`                    | Pod annotations                                               | `{}`                                                     |
 | `extraEnvs`                         | Extra environment variables                                   | `[]`                                                     |
 | `updateStrategy`                    | Deployment update strategy                                    | `RollingUpdate`                                          |
