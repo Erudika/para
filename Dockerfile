@@ -1,11 +1,15 @@
 FROM maven:eclipse-temurin AS deps
 
 ENV PARA_HOME=/para
-WORKDIR ${PARA_HOME}/para-jar
+WORKDIR ${PARA_HOME}
 
 # Cache dependencies for the para-jar module
-COPY para-jar/pom.xml pom.xml
-RUN mvn -B -pl para-jar dependency:go-offline --fail-never
+COPY pom.xml pom.xml
+COPY para-core/pom.xml para-core/pom.xml
+COPY para-client/pom.xml para-client/pom.xml
+COPY para-server/pom.xml para-server/pom.xml
+COPY para-jar/pom.xml para-jar/pom.xml
+RUN mvn -B dependency:go-offline --fail-never
 
 FROM deps AS build
 # Para docker image without any plugins
