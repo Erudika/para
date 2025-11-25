@@ -987,7 +987,11 @@ public class App implements ParaObject, Serializable {
 	 * Resets the secret key by generating a new one.
 	 */
 	public void resetSecret() {
-		secret = Utils.generateSecurityToken(40);
+		if (StringUtils.isBlank(Para.getConfig().rootSecretOverride())) {
+			secret = Utils.generateSecurityToken(40);
+		} else {
+			secret = Para.getConfig().rootSecretOverride();
+		}
 	}
 
 	/**
