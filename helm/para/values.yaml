@@ -77,6 +77,14 @@ rootSecretOverride: {}
 #   stringData:
 #     paraSecret: "secret"
 
+#############################################
+# Reference an existing Secret for root keys
+#############################################
+rootSecretExternal: {}
+# rootSecretExternal:
+#   name: para-root-app-secret
+#   key: paraSecret
+
 updateStrategy: Recreate
 
 ingress:

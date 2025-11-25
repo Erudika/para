@@ -77,6 +77,16 @@ rootSecretOverride:
     paraSecret: "custom_secret"
 ```
 
+When a Secret already exists in the cluster, skip rendering a new one by
+configuring `rootSecretExternal` with the name/key to reference. The deployment
+will mount the value using `secretKeyRef`.
+
+```yaml
+rootSecretExternal:
+  name: para-root-app-secret
+  key: paraSecret
+```
+
 ## Configuration
 
 The following table lists the configurable parameters of the Para chart and their default values.
@@ -92,6 +102,7 @@ The following table lists the configurable parameters of the Para chart and thei
 | `service.name`                      | Service port name                                             | `http`                                                   |
 | `applicationConf`                   | Para configuration block (config map)                         | Example Para config in `values.yaml`                     |
 | `rootSecretOverride`                | Optional root secret override, saved as Secret in the cluster | `{}`                                                     |
+| `rootSecretExternal`                | Reference to an existing Secret/key for the root Para secret   | `{}`                                                     |
 | `persistentVolumes.data.size`       | Requested capacity for `/para/data` PVC                       | `5Gi`                                                    |
 | `persistentVolumes.data.accessModes`| Access modes for `/para/data` PVC                             | `[ReadWriteOnce]`                                        |
 | `persistentVolumes.data.storageClassName` | StorageClass for `/para/data` PVC                       | `""`                                                     |

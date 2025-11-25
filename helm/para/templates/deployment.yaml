@@ -94,6 +94,14 @@ spec:
           {{- with .Values.rootSecretOverride }}
             - name: para_root_secret_override
               value: {{ .stringData.paraSecret | quote }}
+          {{- else }}
+            {{- with .Values.rootSecretExternal }}
+            - name: para_root_secret_override
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "rootSecretExternal.name is required when referencing an existing Secret" .name }}
+                  key: {{ default "paraSecret" .key }}
+            {{- end }}
           {{- end }}
           volumeMounts:
             - name: datavol
