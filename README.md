@@ -159,7 +159,7 @@ services:
          PARA_VERSION: "1.51.0"
          SQL_DAO_VERSION: "1.49.1"
          PG_JDBC_VERSION: "42.7.7"
-     image: para-base:latest
+     image: para-with-plugins
      pull_policy: never
      ports:
        - "8080:8080"

@@ -1,5 +1,6 @@
 FROM maven:eclipse-temurin AS deps
 
+ARG BUILD_OPTS=""
 ENV PARA_HOME=/para
 WORKDIR ${PARA_HOME}
 
@@ -17,10 +18,10 @@ ENV PARA_HOME=/para
 WORKDIR ${PARA_HOME}
 
 COPY . .
-RUN mvn -B -pl para-jar -am -DskipTests=true -DskipITs=true package && \
+RUN mvn -B -pl para-jar -am ${BUILD_OPTS} -DskipTests=true -DskipITs=true package && \
     cp para-jar/target/para-[0-9]*.jar ${PARA_HOME}/para.jar
 
-FROM eclipse-temurin:25-jre-alpine
+FROM eclipse-temurin:25-jre
 
 ENV PARA_HOME=/para
 ENV JAVA_OPTS="-Dloader.path=lib"
@@ -29,9 +30,9 @@ WORKDIR ${PARA_HOME}
 COPY --from=build ${PARA_HOME}/para.jar ./para.jar
 
 RUN mkdir -p ${PARA_HOME}/lib ${PARA_HOME}/data
-VOLUME ["/para/data", "/para/lib"]
+VOLUME ["${PARA_HOME}/data", "${PARA_HOME}/lib"]
 
 EXPOSE 8080
 
-ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar para.jar \"$@\"", "para"]
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar para.jar \"$@\"", "para"]
 CMD []

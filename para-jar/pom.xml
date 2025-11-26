@@ -147,7 +147,7 @@
 				<dependency>
 					<groupId>com.erudika</groupId>
 					<artifactId>para-dao-mongodb</artifactId>
-					<version>[1.42.1,)</version>
+					<version>[1.42.0,)</version>
 				</dependency>
 			</dependencies>
 		</profile>
@@ -157,7 +157,7 @@
 				<dependency>
 					<groupId>com.erudika</groupId>
 					<artifactId>para-search-elasticsearch</artifactId>
-					<version>[1.41.3,)</version>
+					<version>[1.42.0,)</version>
 				</dependency>
 			</dependencies>
 		</profile>
