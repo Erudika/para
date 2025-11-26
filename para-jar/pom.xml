@@ -71,7 +71,6 @@
 					</execution>
 				</executions>
 				<configuration>
-					<release>17</release>
 					<stylesheetfile>para-core/src/main/javadoc/stylesheet.css</stylesheetfile>
 					<failOnError>false</failOnError>
 					<show>public</show>

@@ -64,7 +64,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.11.3</version>
+				<version>3.12.0</version>
 				<executions>
 					<execution>
 						<id>javadocs</id>
@@ -74,7 +74,6 @@
 					</execution>
 				</executions>
 				<configuration>
-					<release>17</release>
 					<stylesheetfile>para-core/src/main/javadoc/stylesheet.css</stylesheetfile>
 					<show>public</show>
 					<quiet>true</quiet>
@@ -85,7 +84,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.4.2</version>
+				<version>3.5.0</version>
 				<configuration>
 					<archive>
 						<manifestEntries>

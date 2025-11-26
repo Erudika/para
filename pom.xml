@@ -86,8 +86,8 @@
 		<httpClientVer>5.5.1</httpClientVer>
 		<httpCoreVer>5.3.6</httpCoreVer>
 		<commonsCodecVer>1.19.0</commonsCodecVer>
-		<lucenePluginVer>1.49.3</lucenePluginVer>
-		<sqlPluginVer>1.49.1</sqlPluginVer>
+		<lucenePluginVer>1.49.4</lucenePluginVer>
+		<sqlPluginVer>1.49.2</sqlPluginVer>
 		<junitVer>6.0.1</junitVer>
 		<junitPlatformVer>1.12.2</junitPlatformVer>
 	</properties>
@@ -233,7 +233,6 @@
 									<goal>jar</goal>
 								</goals>
 								<configuration>
-									<release>17</release>
 									<stylesheetfile>para-core/src/main/javadoc/stylesheet.css</stylesheetfile>
 									<show>public</show>
 									<quiet>true</quiet>
@@ -261,79 +260,5 @@
 				</plugins>
 			</build>
 		</profile>
-
-		<profile>
-			<id>coverage</id>
-			<activation>
-				<property>
-					<name>performCoverage</name>
-					<value>true</value>
-				</property>
-			</activation>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.pitest</groupId>
-						<artifactId>pitest-maven</artifactId>
-						<version>1.20.2</version>
-						<executions>
-							<execution>
-								<goals>
-									<goal>mutationCoverage</goal>
-								</goals>
-							</execution>
-						</executions>
-						<configuration>
-							<verbose>true</verbose>
-							<targetClasses>
-								<param>com.erudika.para*</param>
-							</targetClasses>
-							<targetTests>
-								<param>com.erudika.para*</param>
-							</targetTests>
-							<avoidCallsTo>
-								<avoidCallsTo>java.util.logging</avoidCallsTo>
-								<avoidCallsTo>org.apache.log4j</avoidCallsTo>
-								<avoidCallsTo>org.slf4j</avoidCallsTo>
-								<avoidCallsTo>org.apache.commons.logging</avoidCallsTo>
-							</avoidCallsTo>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-
-		<profile>
-			<!--FOR DOCKER BASE IMAGE-->
-			<id>base</id>
-		</profile>
 	</profiles>
-
-	<reporting>
-		<plugins>
-			<plugin>
-				<groupId>org.pitest</groupId>
-				<artifactId>pitest-maven</artifactId>
-				<version>1.20.2</version>
-				<reportSets>
-					<reportSet>
-						<reports>
-							<report>report</report>
-						</reports>
-					</reportSet>
-				</reportSets>
-			</plugin>
-		</plugins>
-	</reporting>
-
-<!--	<distributionManagement>
-		<snapshotRepository>
-			<id>ossrh</id>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-		</snapshotRepository>
-		<repository>
-			<id>ossrh</id>
-			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-		</repository>
-	</distributionManagement>-->
 </project>
