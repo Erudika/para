@@ -86,10 +86,15 @@
 		<httpClientVer>5.5.1</httpClientVer>
 		<httpCoreVer>5.3.6</httpCoreVer>
 		<commonsCodecVer>1.19.0</commonsCodecVer>
-		<lucenePluginVer>1.49.4</lucenePluginVer>
-		<sqlPluginVer>1.49.2</sqlPluginVer>
 		<junitVer>6.0.1</junitVer>
 		<junitPlatformVer>1.12.2</junitPlatformVer>
+		<!-- PLUGINS -->
+		<lucenePluginVer>1.49.4</lucenePluginVer>
+		<sqlPluginVer>1.49.2</sqlPluginVer>
+		<hcPluginVer>1.41.4</hcPluginVer>
+		<casPluginVer>1.41.1</casPluginVer>
+		<mongoPluginVer>1.42.0</mongoPluginVer>
+		<esPluginVer>1.42.0</esPluginVer>
 	</properties>
 
 	<dependencies>
