@@ -73,6 +73,28 @@ public final class Signer {
 	public Map<String, String> sign(String httpMethod, String endpoint, String resourcePath,
 			Map<String, String> headers, Map<String, String> params, InputStream entity,
 			String accessKey, String secretKey) {
+		return sign(httpMethod, endpoint, resourcePath, headers, params, entity, accessKey, secretKey,
+				SERVICE_NAME, REGION, DOUBLE_URL_ENCODE);
+	}
+
+	/**
+	 * Signs a request using AWS signature V4.
+	 * @param httpMethod GET/POST/PUT... etc.
+	 * @param endpoint the hostname of the API server
+	 * @param resourcePath the path of the resource (starting from root e.g. "/path/to/res")
+	 * @param headers the headers map
+	 * @param params the params map
+	 * @param entity the entity object or null
+	 * @param accessKey the app's access key
+	 * @param secretKey the app's secret key
+	 * @param serviceName service name override
+	 * @param region region override
+	 * @param doubleUrlEncodePath if true, resouce path will be double url-encoded
+	 * @return a signed request. The actual signature is inside the {@code Authorization} header.
+	 */
+	public Map<String, String> sign(String httpMethod, String endpoint, String resourcePath,
+			Map<String, String> headers, Map<String, String> params, InputStream entity,
+			String accessKey, String secretKey, String serviceName, String region, boolean doubleUrlEncodePath) {
 
 		Map<String, String> headerz = new HashMap<>();
 		Map<String, String> h = Optional.ofNullable(headers).orElse(Collections.emptyMap());
@@ -95,11 +117,11 @@ public final class Signer {
 			} else {
 				contentHashString = Util.toHex(Util.sha256(requestBody));
 			}
-			URL endpointURL = URI.create(endpoint + urlEncodeExceptSlashes(resourcePath)).toURL();
+			URL endpointURL = URI.create(endpoint + urlEncodeExceptSlashes(resourcePath, doubleUrlEncodePath)).toURL();
 
 			// https://github.com/davidmoten/aws-lightweight-client-java/pull/232
 			headerz.put("Authorization", AwsSignatureVersion4.computeSignatureForAuthorizationHeader(endpointURL,
-					httpMethod, SERVICE_NAME, REGION, clock, headerz, params, contentHashString, accessKey, secretKey));
+					httpMethod, serviceName, region, clock, headerz, params, contentHashString, accessKey, secretKey));
 			// clean up headers and normalize case
 			headerz.put("X-Amz-Date", headerz.get("x-amz-date"));
 			headerz.remove("x-amz-date");
@@ -133,11 +155,11 @@ public final class Signer {
 		return LocalDateTime.from(TIME_FORMATTER.parse(date)).toInstant(ZoneOffset.UTC);
 	}
 
-	private static String urlEncodeExceptSlashes(String value) {
+	private static String urlEncodeExceptSlashes(String value, boolean doubleUrlEncode) {
 		if (value == null) {
 			return null;
 		}
-		if (DOUBLE_URL_ENCODE) {
+		if (doubleUrlEncode) {
 			return Util.urlEncode(value, true);
 		}
 		return value;

@@ -20,10 +20,20 @@ package com.erudika.para.jar;
 import com.erudika.para.server.ParaServer;
 
 /**
+ * Main entry point of Para JAR.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class Run {
 
+	/**
+	 * Default constructor.
+	 */
+	private Run() { }
+
+	/**
+	 * Main method.
+	 * @param args args
+	 */
 	public static void main(String[] args) {
 		ParaServer.main(args);
 	}
