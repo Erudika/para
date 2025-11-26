@@ -168,6 +168,7 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 	}
 
 	/**
+	 * Creates or loads a Para user based on the SAML assertion attributes.
 	 * @param app the app where the user will be created, use null for root app
 	 * @param samlAttributes SAML attibutes from response assertion
 	 * @return {@link UserAuthentication} object or null if something went wrong

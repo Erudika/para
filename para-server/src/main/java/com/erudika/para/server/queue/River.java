@@ -65,6 +65,13 @@ public abstract class River implements Runnable {
 	private static final CloseableHttpClient HTTP;
 	private static ConcurrentHashMap<String, Integer> pendingIds;
 
+	/**
+	 * Protected constructor for subclasses.
+	 */
+	protected River() {
+		// default constructor
+	}
+
 	static {
 		int timeout = 10;
 		HTTP = HttpClientBuilder.create().

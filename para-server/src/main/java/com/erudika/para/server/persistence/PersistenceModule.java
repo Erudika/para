@@ -30,6 +30,13 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class PersistenceModule extends AbstractModule {
 
+	/**
+	 * Creates the persistence module with the default wiring logic.
+	 */
+	public PersistenceModule() {
+		// default constructor
+	}
+
 	protected void configure() {
 		String selectedDAO = Para.getConfig().daoPlugin();
 		if (StringUtils.isBlank(selectedDAO)) {

@@ -95,6 +95,13 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	@Value("${server.ssl.enabled:false}")
 	private boolean sslEnabled;
 
+	/**
+	 * Creates the main Para server bootstrapper.
+	 */
+	public ParaServer() {
+		// default constructor
+	}
+
 	static {
 		System.setProperty("server.port", String.valueOf(Para.getConfig().serverPort()));
 		System.setProperty("server.servlet.context-path", Para.getConfig().serverContextPath());

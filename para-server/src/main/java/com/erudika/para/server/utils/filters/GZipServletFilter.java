@@ -43,6 +43,13 @@ import org.slf4j.LoggerFactory;
  */
 public class GZipServletFilter implements Filter {
 
+	/**
+	 * Creates a filter that compresses compatible HTTP responses.
+	 */
+	public GZipServletFilter() {
+		// default constructor
+	}
+
 	private final Logger log = LoggerFactory.getLogger(GZipServletFilter.class);
 
 	@Override

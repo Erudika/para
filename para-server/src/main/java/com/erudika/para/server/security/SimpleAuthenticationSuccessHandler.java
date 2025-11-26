@@ -46,6 +46,13 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
 	private RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
 
+	/**
+	 * Creates the handler that customizes successful login redirects.
+	 */
+	public SimpleAuthenticationSuccessHandler() {
+		// default constructor
+	}
+
 	@Override
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 			Authentication authentication) throws IOException, ServletException {

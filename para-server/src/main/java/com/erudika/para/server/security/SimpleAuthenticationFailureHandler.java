@@ -42,6 +42,13 @@ public class SimpleAuthenticationFailureHandler extends SimpleUrlAuthenticationF
 
 	private RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
 
+	/**
+	 * Creates the handler that customizes redirect destinations on failures.
+	 */
+	public SimpleAuthenticationFailureHandler() {
+		// default constructor
+	}
+
 	@Override
 	public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
 			AuthenticationException exception) throws IOException, ServletException {

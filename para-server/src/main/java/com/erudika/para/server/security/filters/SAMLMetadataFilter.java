@@ -53,6 +53,12 @@ public class SAMLMetadataFilter extends GenericFilterBean {
 	 */
 	public static final String SAML_ACTION = "/saml_metadata";
 
+	/**
+	 * Creates the filter that exposes service provider metadata.
+	 */
+	public SAMLMetadataFilter() {
+		// default constructor
+	}
 
 	@Override
 	public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException {

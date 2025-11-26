@@ -34,6 +34,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 public class AuthenticatedUserDetails implements UserDetails {
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * The wrapped Para user.
+	 */
 	private User user;
 
 	/**

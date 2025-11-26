@@ -28,7 +28,13 @@ public class JWTAuthentication extends UserAuthentication {
 
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * Application context that issued the JWT.
+	 */
 	private App app;
+	/**
+	 * Signed JWT representing the login session.
+	 */
 	private SignedJWT jwt;
 
 	/**

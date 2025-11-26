@@ -29,6 +29,13 @@ import java.util.ServiceLoader;
  */
 public class SearchModule extends AbstractModule {
 
+	/**
+	 * Creates the search module with the default provider selection logic.
+	 */
+	public SearchModule() {
+		// default constructor
+	}
+
 	protected void configure() {
 		String selectedSearch = Para.getConfig().searchPlugin();
 		Search searchPlugin = loadExternalSearch(selectedSearch);

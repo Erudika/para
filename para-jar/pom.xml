@@ -71,11 +71,11 @@
 					</execution>
 				</executions>
 				<configuration>
-					<stylesheetfile>para-core/src/main/javadoc/stylesheet.css</stylesheetfile>
+					<!--<stylesheetfile>para-core/src/main/javadoc/stylesheet.css</stylesheetfile>-->
 					<failOnError>false</failOnError>
 					<show>public</show>
 					<quiet>true</quiet>
-					<docfilessubdirs>true</docfilessubdirs>
+					<!--<docfilessubdirs>true</docfilessubdirs>-->
 				</configuration>
 			</plugin>
 		</plugins>

@@ -29,7 +29,13 @@ import org.springframework.security.core.GrantedAuthority;
 public class UserAuthentication implements Authentication {
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * The authenticated principal exposed to Spring Security.
+	 */
 	private final AuthenticatedUserDetails principal;
+	/**
+	 * Indicates whether the security context should treat this authentication as valid.
+	 */
 	private final boolean authenticated;
 
 	/**

@@ -43,6 +43,13 @@ public class SearchQueryAspect implements MethodInterceptor {
 	private static final Logger logger = LoggerFactory.getLogger(SearchQueryAspect.class);
 
 	/**
+	 * Creates the aspect that captures search metrics.
+	 */
+	public SearchQueryAspect() {
+		// default constructor
+	}
+
+	/**
 	 * Executes code when a method is invoked.
 	 * @param mi method invocation
 	 * @return the returned value of the method invoked or something else (decided here)

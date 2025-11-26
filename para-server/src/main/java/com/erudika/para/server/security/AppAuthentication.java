@@ -31,8 +31,17 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 public class AppAuthentication implements Authentication {
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * The backing application instance.
+	 */
 	private final transient App principal;
+	/**
+	 * Arbitrary details exposed to Spring Security.
+	 */
 	private final transient Object details;
+	/**
+	 * Flag that indicates whether the authentication is valid.
+	 */
 	private final boolean authenticated;
 
 	/**

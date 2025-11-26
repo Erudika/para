@@ -90,6 +90,10 @@ public class JwtConfigurer extends AbstractHttpConfigurer<JwtConfigurer, HttpSec
 		builder.addFilterBefore(restAuthFilter, RememberMeAuthenticationFilter.class);
 	}
 
+	/**
+	 * Creates a custom DSL configurer so it can be chained inside the Spring Security builder.
+	 * @return a new {@link JwtConfigurer} instance
+	 */
 	public static JwtConfigurer customDsl() {
 		return new JwtConfigurer();
 	}

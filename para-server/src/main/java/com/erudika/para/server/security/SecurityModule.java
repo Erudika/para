@@ -58,6 +58,13 @@ public class SecurityModule extends AbstractModule {
 	private SAMLAuthFilter samlFilter;
 	private SAMLMetadataFilter samlMetaFilter;
 
+	/**
+	 * Creates the security module that wires authentication filters and handlers.
+	 */
+	public SecurityModule() {
+		// default constructor
+	}
+
 	protected void configure() {
 	}
 

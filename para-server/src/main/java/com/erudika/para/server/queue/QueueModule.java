@@ -29,6 +29,13 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class QueueModule extends AbstractModule {
 
+	/**
+	 * Creates the queue module with default bindings.
+	 */
+	public QueueModule() {
+		// default constructor
+	}
+
 	protected void configure() {
 		String selectedQueue = Para.getConfig().queuePlugin();
 		if (StringUtils.isBlank(selectedQueue)) {

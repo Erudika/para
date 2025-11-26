@@ -204,6 +204,9 @@ public final class RestUtils {
 	}
 
 	/**
+	 * Convenience overload that reads an entity from the request stream without batch processing.
+	 * @param is the raw request stream
+	 * @param type the expected entity type
 	 * @see #getEntity(java.io.InputStream, java.lang.Class, boolean)
 	 * @return response with 200 or error status
 	 */

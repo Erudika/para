@@ -375,6 +375,7 @@ public final class ParaClient implements Closeable {
 	}
 
 	/**
+	 * Returns the full resource path.
 	 * @param resourcePath API subpath
 	 * @return the full resource path, e.g. "/v1/path"
 	 */

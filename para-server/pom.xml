@@ -463,11 +463,10 @@
 					</execution>
 				</executions>
 				<configuration>
-					<release>17</release>
-					<stylesheetfile>para-core/src/main/javadoc/stylesheet.css</stylesheetfile>
+					<!--<stylesheetfile>para-core/src/main/javadoc/stylesheet.css</stylesheetfile>-->
 					<show>public</show>
 					<quiet>true</quiet>
-					<docfilessubdirs>true</docfilessubdirs>
+					<!--<docfilessubdirs>true</docfilessubdirs>-->
 				</configuration>
 			</plugin>
 

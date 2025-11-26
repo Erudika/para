@@ -30,6 +30,13 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 public class SimpleUserService implements UserDetailsService {
 
 	/**
+	 * Creates the simple user service that reads accounts from Para's data store.
+	 */
+	public SimpleUserService() {
+		// default constructor
+	}
+
+	/**
 	 * Loads a user from the data store.
 	 * @param ident the user identifier
 	 * @return a user object or null if user is not found

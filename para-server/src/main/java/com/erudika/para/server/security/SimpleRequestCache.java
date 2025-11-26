@@ -38,6 +38,13 @@ public class SimpleRequestCache implements RequestCache {
 	private final RequestMatcher ajaxRequestMatcher = AjaxRequestMatcher.INSTANCE;
 
 	/**
+	 * Creates the simple request cache backed by a cookie.
+	 */
+	public SimpleRequestCache() {
+		// default constructor
+	}
+
+	/**
 	 * Saves a request in cache.
 	 * @param request HTTP request
 	 * @param response HTTP response

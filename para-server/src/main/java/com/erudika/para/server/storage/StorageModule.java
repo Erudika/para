@@ -29,6 +29,13 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class StorageModule extends AbstractModule {
 
+	/**
+	 * Creates the storage module with the default provider lookup logic.
+	 */
+	public StorageModule() {
+		// default constructor
+	}
+
 	protected void configure() {
 		String selectedFileStore = Para.getConfig().fileStoragePlugin();
 		if (StringUtils.isBlank(selectedFileStore)) {

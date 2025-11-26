@@ -62,6 +62,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 	}
 
 	/**
+	 * Creates the filter and optionally disables request signing checks.
 	 * @param apiSecurityEnabled true if API security is enabled
 	 */
 	public RestAuthFilter(boolean apiSecurityEnabled) {

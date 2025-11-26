@@ -41,6 +41,13 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 @ControllerAdvice
 public class RequestNotSupportedExceptionHandler extends ResponseEntityExceptionHandler {
 
+	/**
+	 * Creates the exception handler that customizes Spring MVC responses.
+	 */
+	public RequestNotSupportedExceptionHandler() {
+		// default constructor
+	}
+
 	@Override
 	protected ResponseEntity<Object> handleHttpRequestMethodNotSupported(HttpRequestMethodNotSupportedException ex,
 			HttpHeaders headers, HttpStatusCode status, WebRequest request) {

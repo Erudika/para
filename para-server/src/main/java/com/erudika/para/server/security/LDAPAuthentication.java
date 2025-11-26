@@ -30,6 +30,9 @@ public class LDAPAuthentication extends UsernamePasswordAuthenticationToken {
 
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * The application context the LDAP user belongs to.
+	 */
 	private App app;
 
 	/**
@@ -42,8 +45,9 @@ public class LDAPAuthentication extends UsernamePasswordAuthenticationToken {
 	}
 
 	/**
-	 * @param app {@link App}
-	 * @return this
+	 * Attaches the owning application to this authentication instance.
+	 * @param app the {@link App} to associate
+	 * @return this authentication for fluent chaining
 	 */
 	public LDAPAuthentication withApp(App app) {
 		this.app = app;
@@ -51,6 +55,7 @@ public class LDAPAuthentication extends UsernamePasswordAuthenticationToken {
 	}
 
 	/**
+	 * Gets the application tied to the authentication.
 	 * @return the {@link App}
 	 */
 	public App getApp() {
@@ -58,6 +63,7 @@ public class LDAPAuthentication extends UsernamePasswordAuthenticationToken {
 	}
 
 	/**
+	 * Resolves the LDAP settings for the attached application.
 	 * @return LDAP settings map
 	 */
 	public Map<String, String> getLdapSettings() {

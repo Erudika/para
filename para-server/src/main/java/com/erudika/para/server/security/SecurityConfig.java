@@ -138,6 +138,10 @@ public class SecurityConfig {
 		return http.build();
 	}
 
+	/**
+	 * Supplies the simple in-memory {@link UserDetailsService} used for admin authentication.
+	 * @return service backed by {@link SimpleUserService}
+	 */
 	@Bean
 	public UserDetailsService simpleUserDetailsService() {
 		return new SimpleUserService();
