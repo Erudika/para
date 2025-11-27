@@ -91,10 +91,10 @@
 		<!-- PLUGINS -->
 		<lucenePluginVer>1.49.4</lucenePluginVer>
 		<sqlPluginVer>1.49.2</sqlPluginVer>
-		<hcPluginVer>1.41.4</hcPluginVer>
-		<casPluginVer>1.41.1</casPluginVer>
-		<mongoPluginVer>1.42.0</mongoPluginVer>
-		<esPluginVer>1.42.0</esPluginVer>
+		<hcPluginVer>1.41.5</hcPluginVer>
+		<casPluginVer>1.41.2</casPluginVer>
+		<mongoPluginVer>1.42.1</mongoPluginVer>
+		<esPluginVer>1.42.1</esPluginVer>
 	</properties>
 
 	<dependencies>

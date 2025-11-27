@@ -356,7 +356,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<release>17</release>
+					<release>21</release>
 					<!--<stylesheetfile>${basedir}/src/main/javadoc/stylesheet.css</stylesheetfile>-->
 					<show>public</show>
 					<quiet>true</quiet>
