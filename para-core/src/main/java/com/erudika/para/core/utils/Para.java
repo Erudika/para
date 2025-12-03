@@ -461,6 +461,14 @@ public final class Para {
 	}
 
 	/**
+	 * The current Git revision of Para.
+	 * @return revision string
+	 */
+	public static String getRevision() {
+		return VersionInfo.getRevision();
+	}
+
+	/**
 	 * @return the default Para CONF instance.
 	 */
 	public static ParaConfig getConfig() {

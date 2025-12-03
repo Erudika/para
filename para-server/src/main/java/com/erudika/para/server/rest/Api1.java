@@ -31,6 +31,7 @@ import com.erudika.para.core.utils.Pager;
 import com.erudika.para.core.utils.Para;
 import static com.erudika.para.core.utils.Para.getCustomResourceHandlers;
 import static com.erudika.para.core.utils.Para.getDAO;
+import static com.erudika.para.core.utils.Para.getRevision;
 import static com.erudika.para.core.utils.Para.getSearch;
 import static com.erudika.para.core.utils.Para.getVersion;
 import static com.erudika.para.core.utils.Para.newApp;
@@ -358,6 +359,7 @@ public final class Api1 extends ResourceConfig {
 				info.put("info", "Para - the backend for busy developers.");
 				if (Para.getConfig().versionBannerEnabled()) {
 					info.put("version", Strings.CS.replace(getVersion(), "-SNAPSHOT", ""));
+					info.put("revision", StringUtils.trimToEmpty(getRevision()));
 				}
 				return Response.ok(info).build();
 			}
