@@ -326,7 +326,7 @@ public abstract class Config {
 	public Map<String, String> getSortedConfigKeys() {
 		if (sortedConfigKeys == null || sortedConfigKeys.isEmpty()) {
 			annotatedMethods = Arrays.stream(this.getClass().getMethods()).
-					filter(m -> m.isAnnotationPresent(Documented.class)).
+					filter(m -> m.isAnnotationPresent(Documented.class) && !m.isAnnotationPresent(Deprecated.class)).
 					map(m -> m.getAnnotation(Documented.class)).
 					filter(m -> !StringUtils.isBlank(m.identifier())).
 					sorted((a1, a2) -> Integer.compare(a1.position(), a2.position())).
