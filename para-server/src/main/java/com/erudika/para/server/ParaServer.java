@@ -67,12 +67,12 @@ import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.ApplicationPidFileWriter;
-import org.springframework.boot.web.embedded.jetty.JettyServerCustomizer;
-import org.springframework.boot.web.embedded.jetty.JettyServletWebServerFactory;
-import org.springframework.boot.web.server.ErrorPage;
-import org.springframework.boot.web.server.ErrorPageRegistrar;
-import org.springframework.boot.web.server.ErrorPageRegistry;
-import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
+import org.springframework.boot.jetty.JettyServerCustomizer;
+import org.springframework.boot.jetty.servlet.JettyServletWebServerFactory;
+import org.springframework.boot.web.error.ErrorPage;
+import org.springframework.boot.web.error.ErrorPageRegistrar;
+import org.springframework.boot.web.error.ErrorPageRegistry;
+import org.springframework.boot.web.server.servlet.ServletWebServerFactory;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.Ordered;
@@ -301,7 +301,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 		if (StringUtils.length(contextPath) > 1 && contextPath.charAt(0) == '/') {
 			jef.setContextPath(contextPath);
 		}
-		Map<String, String> params = new HashMap<>(jef.getInitParameters());
+		Map<String, String> params = new HashMap<>(jef.getSettings().getInitParameters());
 		params.put("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
 		jef.setInitParameters(params);
 		jef.setPort(Para.getConfig().serverPort());

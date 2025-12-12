@@ -41,7 +41,7 @@ public class JwtConfigurer extends AbstractHttpConfigurer<JwtConfigurer, HttpSec
 	}
 
 	@Override
-	public void configure(HttpSecurity builder) throws Exception {
+	public void configure(HttpSecurity builder) {
 		JWTRestfulAuthFilter jwtAuthFilter = new JWTRestfulAuthFilter(authenticationManager);
 		RestAuthFilter restAuthFilter = new RestAuthFilter();
 		SAMLMetadataFilter samlMetadataFilter = new SAMLMetadataFilter();

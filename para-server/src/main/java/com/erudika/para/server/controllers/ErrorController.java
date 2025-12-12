@@ -43,7 +43,7 @@ import org.springframework.web.bind.annotation.PathVariable;
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 @Controller
-public class ErrorController implements org.springframework.boot.web.servlet.error.ErrorController {
+public class ErrorController implements org.springframework.boot.webmvc.error.ErrorController {
 
 	@Inject
 	public ErrorController() {

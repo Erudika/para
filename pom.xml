@@ -80,7 +80,7 @@
 		<slf4jVer>2.0.17</slf4jVer>
 		<logbackVer>1.5.3</logbackVer>
 		<awsJdkVer>2.36.2</awsJdkVer>
-		<springBootVer>3.5.8</springBootVer>
+		<springBootVer>4.0.0</springBootVer>
 		<metricsVer>4.2.32</metricsVer>
 		<httpClientVer>5.5.1</httpClientVer>
 		<httpCoreVer>5.3.6</httpCoreVer>

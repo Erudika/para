@@ -12,8 +12,8 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>6.5.7</springSecVer>
-		<springLdapVer>3.3.4</springLdapVer>
+		<springSecVer>7.0.0</springSecVer>
+		<springLdapVer>4.0.0</springLdapVer>
 	</properties>
 
 	<dependencies>
@@ -274,13 +274,6 @@
 				<configuration>
 					<fork>false</fork>
 				</configuration>
-<!--				<dependencies>
-					<dependency>
-						<groupId>org.springframework.boot</groupId>
-						<artifactId>spring-boot-devtools</artifactId>
-						<version>${springBootVer}</version>
-					</dependency>
-				</dependencies>-->
 			</plugin>
 
 			<plugin>
@@ -301,6 +294,22 @@
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-clean-plugin</artifactId>
+				<version>3.5.0</version>
+				<configuration>
+					<filesets>
+						<fileset>
+							<directory>data</directory>
+							<includes>
+								<include>**/**</include>
+							</includes>
+							<followSymlinks>false</followSymlinks>
+						</fileset>
+					</filesets>
+				</configuration>
 			</plugin>
 
 			<plugin>
