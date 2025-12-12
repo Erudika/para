@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2022 Erudika. https://erudika.com
+ * Copyright 2013-2025 Erudika. http://erudika.com
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,12 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-
-package com.erudika.para.core.rest;
+package com.erudika.para.server.security;
 
 /**
- * A custom API resource handler. Handles custom resources.
- * Usually, the implementation of this interface would be a custom @RestController in Spring.
+ * Basic login page interface. Implement this to override the default Para login page.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public interface CustomResourceHandler {
+public interface SigninPage {
+
 }

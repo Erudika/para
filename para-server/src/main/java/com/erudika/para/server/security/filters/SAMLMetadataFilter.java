@@ -31,13 +31,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static jakarta.servlet.http.HttpServletResponse.SC_OK;
-import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 import org.springframework.web.filter.GenericFilterBean;
 
 /**
@@ -88,7 +88,7 @@ public class SAMLMetadataFilter extends GenericFilterBean {
 					String metadata = settings.getSPMetadata();
 					List<String> errors = Saml2Settings.validateMetadata(metadata);
 					if (errors.isEmpty()) {
-						response.setContentType(MediaType.TEXT_XML);
+						response.setContentType(MediaType.TEXT_XML_VALUE);
 						response.setCharacterEncoding(Para.getConfig().defaultEncoding());
 						response.getOutputStream().println(metadata);
 						response.setStatus(SC_OK);

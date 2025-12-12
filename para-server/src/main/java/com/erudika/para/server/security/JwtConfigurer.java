@@ -31,15 +31,17 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
  */
 public class JwtConfigurer extends AbstractHttpConfigurer<JwtConfigurer, HttpSecurity> {
 
+	private final AuthenticationManager authenticationManager;
+
 	/**
 	 * Constructor.
 	 */
-	public JwtConfigurer() {
+	public JwtConfigurer(AuthenticationManager manager) {
+		this.authenticationManager = manager;
 	}
 
 	@Override
 	public void configure(HttpSecurity builder) throws Exception {
-		AuthenticationManager authenticationManager = builder.getSharedObject(AuthenticationManager.class);
 		JWTRestfulAuthFilter jwtAuthFilter = new JWTRestfulAuthFilter(authenticationManager);
 		RestAuthFilter restAuthFilter = new RestAuthFilter();
 		SAMLMetadataFilter samlMetadataFilter = new SAMLMetadataFilter();
@@ -89,13 +91,4 @@ public class JwtConfigurer extends AbstractHttpConfigurer<JwtConfigurer, HttpSec
 
 		builder.addFilterBefore(restAuthFilter, RememberMeAuthenticationFilter.class);
 	}
-
-	/**
-	 * Creates a custom DSL configurer so it can be chained inside the Spring Security builder.
-	 * @return a new {@link JwtConfigurer} instance
-	 */
-	public static JwtConfigurer customDsl() {
-		return new JwtConfigurer();
-	}
-
 }

@@ -80,12 +80,10 @@
 		<slf4jVer>2.0.17</slf4jVer>
 		<logbackVer>1.5.3</logbackVer>
 		<awsJdkVer>2.36.2</awsJdkVer>
-		<jerseyVer>3.1.11</jerseyVer>
-		<springBootVer>3.5.7</springBootVer>
+		<springBootVer>3.5.8</springBootVer>
 		<metricsVer>4.2.32</metricsVer>
 		<httpClientVer>5.5.1</httpClientVer>
 		<httpCoreVer>5.3.6</httpCoreVer>
-		<commonsCodecVer>1.19.0</commonsCodecVer>
 		<junitVer>6.0.1</junitVer>
 		<junitPlatformVer>1.12.2</junitPlatformVer>
 		<!-- PLUGINS -->
@@ -155,6 +153,7 @@
 				<version>3.14.1</version>
 				<configuration>
 					<release>21</release>
+					<parameters>true</parameters>
 					<compilerArgument>-Xlint:-options</compilerArgument>
 					<encoding>UTF-8</encoding>
 					<showWarnings>true</showWarnings>
@@ -199,6 +198,21 @@
 				<artifactId>sonar-maven-plugin</artifactId>
 				<version>5.3.0.6276</version>
 			</plugin>
+
+			<plugin>
+				<groupId>org.cyclonedx</groupId>
+				<artifactId>cyclonedx-maven-plugin</artifactId>
+				<version>2.9.1</version>
+				<inherited>true</inherited>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>makeAggregateBom</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 
@@ -216,7 +230,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-source-plugin</artifactId>
-						<version>3.3.1</version>
+						<version>3.4.0</version>
 						<executions>
 							<execution>
 								<id>attach-sources</id>

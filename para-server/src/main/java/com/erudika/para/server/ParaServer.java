@@ -21,21 +21,18 @@ import com.erudika.para.core.listeners.WebhookIOListener;
 import com.erudika.para.core.rest.CustomResourceHandler;
 import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.server.aop.AOPModule;
 import com.erudika.para.server.cache.CacheModule;
 import com.erudika.para.server.email.EmailModule;
 import com.erudika.para.server.metrics.MetricsUtils;
 import com.erudika.para.server.persistence.PersistenceModule;
 import com.erudika.para.server.queue.QueueModule;
-import com.erudika.para.server.rest.Api1;
 import com.erudika.para.server.search.SearchModule;
-import com.erudika.para.server.security.JWTRestfulAuthFilter;
 import com.erudika.para.server.security.SecurityModule;
 import com.erudika.para.server.storage.StorageModule;
 import com.erudika.para.server.utils.HealthUtils;
-import com.erudika.para.server.utils.filters.CORSFilter;
-import com.erudika.para.server.utils.filters.ErrorFilter;
-import com.erudika.para.server.utils.filters.GZipServletFilter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
@@ -43,15 +40,15 @@ import com.google.inject.Stage;
 import com.google.inject.util.Modules;
 import jakarta.annotation.PreDestroy;
 import java.io.File;
-import java.time.Duration;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.ServiceLoader;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
@@ -62,7 +59,6 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -73,12 +69,15 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.ApplicationPidFileWriter;
 import org.springframework.boot.web.embedded.jetty.JettyServerCustomizer;
 import org.springframework.boot.web.embedded.jetty.JettyServletWebServerFactory;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.boot.web.servlet.ServletRegistrationBean;
+import org.springframework.boot.web.server.ErrorPage;
+import org.springframework.boot.web.server.ErrorPageRegistrar;
+import org.springframework.boot.web.server.ErrorPageRegistry;
 import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 /**
  * Para modules are initialized and destroyed from here.
@@ -89,8 +88,13 @@ import org.springframework.core.Ordered;
 public class ParaServer extends SpringBootServletInitializer implements Ordered {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ParaServer.class);
-	private static LinkedList<CustomResourceHandler> customResourceHandlers;
+	private static final Map<String, String> FILE_CACHE = new ConcurrentHashMap<String, String>();
 	private static Injector injector;
+
+	/**
+	 * The path of the API controller.
+	 */
+	public static final String API_PATH = "/v1";
 
 	@Value("${server.ssl.enabled:false}")
 	private boolean sslEnabled;
@@ -104,6 +108,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 
 	static {
 		System.setProperty("server.port", String.valueOf(Para.getConfig().serverPort()));
+		System.setProperty("server.port", String.valueOf(Para.getConfig().serverPort()));
 		System.setProperty("server.servlet.context-path", Para.getConfig().serverContextPath());
 		System.setProperty("server.use-forward-headers", String.valueOf(Para.getConfig().inProduction()));
 		System.setProperty("para.logs_name", Para.getConfig().getConfigRootPrefix());
@@ -116,6 +121,7 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 				System.setProperty("server.jetty.accesslog.file-date-format", "yyyy_MM_dd");
 			}
 		}
+		System.setProperty("para.api_enabled", String.valueOf(Para.getConfig().apiEnabled()));
 	}
 
 	/**
@@ -176,6 +182,18 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 		if ((Para.getConfig().queuePollingEnabled() || Para.getConfig().webhooksEnabled())) {
 			Para.getQueue().startPolling();
 		}
+
+		Para.getCustomResourceHandlers().forEach(crh -> {
+			if (CustomResourceHandler.class.isAssignableFrom(crh.getClass())) {
+				RequestMapping[] anno = crh.getClass().getAnnotationsByType(RequestMapping.class);
+				String paths = "";
+				if (anno != null && anno.length > 0 && anno[0] != null) {
+					RequestMapping ann = anno[0];
+					paths = String.join(",", (ann.path().length == 0) ? ann.value() : ann.path());
+				}
+				LOG.info("Registered custom resource handler {} at path(s) '{}'.", crh.getClass().getSimpleName(), paths);
+			}
+		});
 	}
 
 	/**
@@ -218,27 +236,6 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 		return injector.getInstance(type);
 	}
 
-	/**
-	 * Try loading external {@link com.erudika.para.core.rest.CustomResourceHandler} classes. These will handle custom API
-	 * requests. via {@link java.util.ServiceLoader#load(java.lang.Class)}.
-	 *
-	 * @return a loaded list of ServletContextListener class.
-	 */
-	public static List<CustomResourceHandler> getCustomResourceHandlers() {
-		if (customResourceHandlers == null) {
-			customResourceHandlers = new LinkedList<>();
-			ServiceLoader<CustomResourceHandler> loader = ServiceLoader.
-					load(CustomResourceHandler.class, Para.getParaClassLoader());
-			for (CustomResourceHandler handler : loader) {
-				if (handler != null) {
-					injectInto(handler);
-					customResourceHandlers.add(handler);
-				}
-			}
-		}
-		return Collections.unmodifiableList(customResourceHandlers);
-	}
-
 	private static List<Module> getExternalModules() {
 		ServiceLoader<Module> moduleLoader = ServiceLoader.load(Module.class, Para.getParaClassLoader());
 		List<Module> externalModules = new ArrayList<>();
@@ -255,62 +252,6 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	@Override
 	public int getOrder() {
 		return 1;
-	}
-
-	/**
-	 * Filter.
-	 * @return API servlet bean
-	 */
-	@Bean
-	public ServletRegistrationBean<?> apiV1RegistrationBean() {
-		String path = Api1.PATH + "*";
-		ServletRegistrationBean<?> reg = new ServletRegistrationBean<>(new ServletContainer(new Api1()), path);
-		LOG.debug("Initializing Para API v1 [{}]...", path);
-		reg.setName(Api1.class.getSimpleName());
-		reg.setAsyncSupported(true);
-		reg.setEnabled(true);
-		reg.setOrder(3);
-		return reg;
-	}
-
-	/**
-	 * Filter.
-	 * @return GZIP filter bean
-	 */
-	@Bean
-	public FilterRegistrationBean<?> gzipFilterRegistrationBean() {
-		String path = Api1.PATH + "*";
-		FilterRegistrationBean<?> frb = new FilterRegistrationBean<>(new GZipServletFilter());
-		LOG.debug("Initializing GZip filter [{}]...", path);
-		frb.addUrlPatterns(path);
-		frb.setAsyncSupported(true);
-		frb.setEnabled(Para.getConfig().gzipEnabled());
-		frb.setMatchAfter(true);
-		frb.setOrder(20);
-		return frb;
-	}
-
-	/**
-	 * Filter.
-	 * @return CORS filter bean
-	 */
-	@Bean
-	public FilterRegistrationBean<?> corsFilterRegistrationBean() {
-		String path = Api1.PATH + "*";
-		LOG.debug("Initializing CORS filter [{}]...", path);
-		FilterRegistrationBean<?> frb = new FilterRegistrationBean<>(new CORSFilter());
-		frb.addInitParameter("cors.support.credentials", "true");
-		frb.addInitParameter("cors.allowed.methods", "GET,POST,PATCH,PUT,DELETE,HEAD,OPTIONS");
-		frb.addInitParameter("cors.exposed.headers", "Cache-Control,Content-Length,Content-Type,Date,ETag,Expires");
-		frb.addInitParameter("cors.allowed.headers", "Origin,Accept,X-Requested-With,Content-Type,"
-				+ "Access-Control-Request-Method,Access-Control-Request-Headers,X-Amz-Credential,"
-				+ "X-Amz-Date,Authorization");
-		frb.addUrlPatterns(path, "/" + JWTRestfulAuthFilter.JWT_ACTION);
-		frb.setAsyncSupported(true);
-		frb.setEnabled(Para.getConfig().corsEnabled());
-		frb.setMatchAfter(false);
-		frb.setOrder(HIGHEST_PRECEDENCE);
-		return frb;
 	}
 
 	/**
@@ -363,14 +304,63 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 		Map<String, String> params = new HashMap<>(jef.getInitParameters());
 		params.put("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
 		jef.setInitParameters(params);
-		jef.getSession().getCookie().setName("sess");
-		jef.getSession().getCookie().setMaxAge(Duration.ofSeconds(1));
-		jef.getSession().getCookie().setHttpOnly(true);
 		jef.setPort(Para.getConfig().serverPort());
 		LOG.info("Instance #{} initialized and listening on http{}://localhost:{}{}",
 				Para.getConfig().workerId(), (sslEnabled ? "s" : ""), jef.getPort(),
 				Para.getConfig().serverContextPath());
 		return jef;
+	}
+
+	/**
+	 * Configures a custom Jackson object mapper.
+	 * @return the {@link ParaObjectUtils#getJsonMapper()}
+	 */
+	@Bean
+	public ObjectMapper jacksonObjectMapper() {
+		return ParaObjectUtils.getJsonMapper();
+	}
+
+	/**
+	 * @return Error page registry bean
+	 */
+	@Bean
+	public ErrorPageRegistrar errorPageRegistrar() {
+		return (ErrorPageRegistry epr) -> {
+			epr.addErrorPages(new ErrorPage(HttpStatus.NOT_FOUND, "/not-found"));
+			epr.addErrorPages(new ErrorPage(HttpStatus.FORBIDDEN, "/error/403"));
+			epr.addErrorPages(new ErrorPage(HttpStatus.UNAUTHORIZED, "/error/401"));
+			epr.addErrorPages(new ErrorPage(HttpStatus.INTERNAL_SERVER_ERROR, "/error/500"));
+			epr.addErrorPages(new ErrorPage(HttpStatus.SERVICE_UNAVAILABLE, "/error/503"));
+			epr.addErrorPages(new ErrorPage(HttpStatus.BAD_REQUEST, "/error/400"));
+			epr.addErrorPages(new ErrorPage(HttpStatus.METHOD_NOT_ALLOWED, "/error/405"));
+			epr.addErrorPages(new ErrorPage(Exception.class, "/error/500"));
+		};
+	}
+
+	/**
+	 * Loads a file from classpath.
+	 * @param filePath a file path.
+	 * @return file contents as a string
+	 */
+	public static String loadResource(String filePath) {
+		if (filePath == null) {
+			return "";
+		}
+		if (FILE_CACHE.containsKey(filePath) && Para.getConfig().inProduction()) {
+			return FILE_CACHE.get(filePath);
+		}
+		String template = "";
+		try (InputStream in = ParaServer.class.getClassLoader().getResourceAsStream(filePath)) {
+			try (Scanner s = new Scanner(in).useDelimiter("\\A")) {
+				template = s.hasNext() ? s.next() : "";
+				if (!StringUtils.isBlank(template)) {
+					FILE_CACHE.put(filePath, template);
+				}
+			}
+		} catch (Exception ex) {
+			LOG.info("Couldn't load resource '{}'.", filePath);
+		}
+		return template;
 	}
 
 	/**
@@ -406,14 +396,14 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 		b.sources(ParaServer.class);
 		b.sources(sources);
 		b.web(WebApplicationType.SERVLET);
-		b.bannerMode(Banner.Mode.OFF);
+		b.bannerMode(Para.getConfig().logoBannerEnabled() ? Banner.Mode.CONSOLE : Banner.Mode.OFF);
 		if (Para.getConfig().pidFileEnabled()) {
 			b.listeners(new ApplicationPidFileWriter(Config.PARA + "_" + Para.getConfig().serverPort() + ".pid"));
 		}
-		if (isWar) {
-			b.sources(ErrorFilter.class);
+		if (!Para.getCustomResourceHandlers().isEmpty()) {
+			b.sources(Para.getCustomResourceHandlers().stream().map(c -> c.getClass()).toArray(Class[]::new));
 		}
-		initialize(getCoreModules());
+		b.application().addInitializers(ctx -> initialize(getCoreModules()));
 		return b;
 	}
 

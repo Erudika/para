@@ -19,7 +19,6 @@ package com.erudika.para.core.rest;
 
 import com.github.davidmoten.aws.lw.client.internal.auth.AwsSignatureVersion4;
 import com.github.davidmoten.aws.lw.client.internal.util.Util;
-import jakarta.ws.rs.core.MultivaluedMap;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URI;
@@ -179,7 +178,7 @@ public final class Signer {
 	 */
 	public Map<String, String> signRequest(String accessKey, String secretKey,
 			String httpMethod, String endpointURL, String reqPath,
-			Map<String, String> headers, MultivaluedMap<String, String> params, byte[] jsonEntity) {
+			Map<String, String> headers, Map<String, List<String>> params, byte[] jsonEntity) {
 		if (headers == null) {
 			headers = new HashMap<>();
 		}

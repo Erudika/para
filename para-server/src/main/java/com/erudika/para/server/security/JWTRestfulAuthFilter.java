@@ -45,17 +45,18 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.ws.rs.HttpMethod;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
@@ -111,11 +112,11 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 		HttpServletRequest request = (HttpServletRequest) req;
 		HttpServletResponse response = (HttpServletResponse) res;
 		if (authenticationRequestMatcher.matches(request)) {
-			if (HttpMethod.POST.equals(request.getMethod())) {
+			if (HttpMethod.POST.matches(request.getMethod())) {
 				newTokenHandler(request, response);
-			} else if (HttpMethod.GET.equals(request.getMethod())) {
+			} else if (HttpMethod.GET.matches(request.getMethod())) {
 				refreshTokenHandler(request, response);
-			} else if (HttpMethod.DELETE.equals(request.getMethod())) {
+			} else if (HttpMethod.DELETE.matches(request.getMethod())) {
 				revokeAllTokensHandler(request, response);
 			}
 			return;
@@ -144,12 +145,13 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	@SuppressWarnings("unchecked")
 	private boolean newTokenHandler(HttpServletRequest request, HttpServletResponse response)
 			throws IOException {
-		Response res = RestUtils.getEntity(request.getInputStream(), Map.class);
-		if (res.getStatusInfo() != Response.Status.OK) {
-			RestUtils.returnStatusResponse(response, res.getStatus(), res.getEntity().toString());
+		ResponseEntity<?> res = RestUtils.getEntity(request.getInputStream(), Map.class);
+		if (!res.getStatusCode().is2xxSuccessful()) {
+			RestUtils.returnStatusResponse(response, res.getStatusCode().value(),
+					Optional.ofNullable(res.getBody()).orElse("").toString());
 			return false;
 		}
-		Map<String, Object> entity = (Map<String, Object>) res.getEntity();
+		Map<String, Object> entity = (Map<String, Object>) res.getBody();
 		String provider = (String) entity.get("provider");
 		String appid = (String) entity.get(Config._APPID);
 		String token = (String) entity.get("token");

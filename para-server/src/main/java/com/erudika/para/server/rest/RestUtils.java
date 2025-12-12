@@ -23,7 +23,6 @@ import com.erudika.para.core.User;
 import com.erudika.para.core.Votable;
 import com.erudika.para.core.annotations.Locked;
 import com.erudika.para.core.metrics.Metrics;
-import com.erudika.para.core.rest.GenericExceptionMapper;
 import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Pager;
@@ -43,16 +42,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.MultivaluedMap;
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -69,6 +62,10 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.eclipse.jetty.http.BadMessageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 /**
  * A few helper methods for handling REST requests and responses.
@@ -210,7 +207,7 @@ public final class RestUtils {
 	 * @see #getEntity(java.io.InputStream, java.lang.Class, boolean)
 	 * @return response with 200 or error status
 	 */
-	public static Response getEntity(InputStream is, Class<?> type) {
+	public static ResponseEntity<?> getEntity(InputStream is, Class<?> type) {
 		return getEntity(is, type, false);
 	}
 
@@ -223,17 +220,17 @@ public final class RestUtils {
 	 * @param batchMode if true, checks size of individual objects only, not size of whole batch.
 	 * @return response with 200 or error status
 	 */
-	public static Response getEntity(InputStream is, Class<?> type, boolean batchMode) {
+	public static ResponseEntity<?> getEntity(InputStream is, Class<?> type, boolean batchMode) {
 		Object entity;
 		try {
 			if (is != null) {
 				int maxReqSize = Para.getConfig().maxEntitySizeBytes();
 				int maxReqSizeKb = (maxReqSize / 1024);
 				if (!batchMode && is.available() > maxReqSize) {
-					return getStatusResponse(Response.Status.BAD_REQUEST,
+					return getStatusResponse(HttpStatus.BAD_REQUEST,
 							"Request is too large - the maximum is " + maxReqSizeKb + " KB.");
 				} else if (batchMode && is.available() > 100 * maxReqSize) {
-					return getStatusResponse(Response.Status.BAD_REQUEST, "Batch request is too large - "
+					return getStatusResponse(HttpStatus.BAD_REQUEST, "Batch request is too large - "
 							+ "the maximum total batch size is " + 100 * maxReqSizeKb + " KB.");
 				}
 				if (type == null) {
@@ -251,7 +248,7 @@ public final class RestUtils {
 							}
 						}
 						if (tooLarge) {
-							return getStatusResponse(Response.Status.BAD_REQUEST, "Batch request too large or "
+							return getStatusResponse(HttpStatus.BAD_REQUEST, "Batch request too large or "
 									+ "containing items larger than the max. allowed size " + maxReqSizeKb + " KB.");
 						}
 						entity = ParaObjectUtils.getJsonReader(type).readValue(entityNode);
@@ -260,18 +257,18 @@ public final class RestUtils {
 					}
 				}
 			} else {
-				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing request body.");
+				return getStatusResponse(HttpStatus.BAD_REQUEST, "Missing request body.");
 			}
 		} catch (JsonMappingException e) {
-			return getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
+			return getStatusResponse(HttpStatus.BAD_REQUEST, e.getMessage());
 		} catch (JsonParseException e) {
-			return getStatusResponse(Response.Status.BAD_REQUEST, e.getMessage());
+			return getStatusResponse(HttpStatus.BAD_REQUEST, e.getMessage());
 		} catch (IOException e) {
 			logger.error(null, e);
-			return getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, e.toString());
+			return getStatusResponse(HttpStatus.INTERNAL_SERVER_ERROR, e.toString());
 		}
 
-		return Response.ok(entity).build();
+		return ResponseEntity.ok(entity);
 	}
 
 	/**
@@ -280,7 +277,7 @@ public final class RestUtils {
 	 * @param entity request entity data
 	 * @return status codetrue if vote was successful
 	 */
-	public static Response getVotingResponse(ParaObject object, Map<String, Object> entity) {
+	public static ResponseEntity<?> getVotingResponse(ParaObject object, Map<String, Object> entity) {
 		boolean voteSuccess = false;
 		if (object != null && entity != null) {
 			String upvoterId = (String) entity.get("_voteup");
@@ -306,7 +303,7 @@ public final class RestUtils {
 				object.update();
 			}
 		}
-		return Response.ok(voteSuccess).build();
+		return ResponseEntity.ok(voteSuccess);
 	}
 
 	/////////////////////////////////////////////
@@ -319,15 +316,15 @@ public final class RestUtils {
 	 * @param content the object that was read
 	 * @return status code 200 or 404
 	 */
-	public static Response getReadResponse(App app, ParaObject content) {
+	public static ResponseEntity<?> getReadResponse(App app, ParaObject content) {
 		try (Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
 				RestUtils.class, "crud", "read")) {
 			// app can't modify other apps except itself
 			if (app != null && content != null &&
 					checkImplicitAppPermissions(app, content) && checkIfUserCanModifyObject(app, content)) {
-				return Response.ok(content).build();
+				return ResponseEntity.ok(content);
 			}
-			return getStatusResponse(Response.Status.NOT_FOUND);
+			return getStatusResponse(HttpStatus.NOT_FOUND);
 		}
 	}
 
@@ -338,13 +335,13 @@ public final class RestUtils {
 	 * @param app the app object
 	 * @return a status code 201 or 400
 	 */
-	public static Response getCreateResponse(App app, String type, InputStream is) {
+	public static ResponseEntity<?> getCreateResponse(App app, String type, InputStream is) {
 		try (Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
 				RestUtils.class, "crud", "create")) {
 			ParaObject content;
-			Response entityRes = getEntity(is, Map.class);
-			if (entityRes.getStatusInfo() == Response.Status.OK) {
-				Map<String, Object> newContent = (Map<String, Object>) entityRes.getEntity();
+			ResponseEntity<?> entityRes = getEntity(is, Map.class);
+			if (entityRes.getStatusCode().is2xxSuccessful()) {
+				Map<String, Object> newContent = (Map<String, Object>) entityRes.getBody();
 				String declaredType = (String) newContent.get(Config._TYPE);
 				if (!StringUtils.isBlank(type) && (StringUtils.isBlank(declaredType) || !type.startsWith(declaredType))) {
 					newContent.put(Config._TYPE, type);
@@ -366,13 +363,12 @@ public final class RestUtils {
 							if (app.addDatatypes(content)) {
 								CoreUtils.getInstance().overwrite(app);
 							}
-							return Response.created(URI.create(Utils.urlEncode(content.getObjectURI()))).
-									entity(content).build();
+							return ResponseEntity.created(URI.create(Utils.urlEncode(content.getObjectURI()))).body(content);
 						}
 					}
-					return getStatusResponse(Response.Status.BAD_REQUEST, errors);
+					return getStatusResponse(HttpStatus.BAD_REQUEST, errors);
 				}
-				return getStatusResponse(Response.Status.BAD_REQUEST, "Failed to create object.");
+				return getStatusResponse(HttpStatus.BAD_REQUEST, "Failed to create object.");
 			}
 			return entityRes;
 		}
@@ -386,13 +382,13 @@ public final class RestUtils {
 	 * @param app the app object
 	 * @return a status code 200 or 400
 	 */
-	public static Response getOverwriteResponse(App app, String id, String type, InputStream is) {
+	public static ResponseEntity<?> getOverwriteResponse(App app, String id, String type, InputStream is) {
 		try (Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
 				RestUtils.class, "crud", "overwrite")) {
 			ParaObject content;
-			Response entityRes = getEntity(is, Map.class);
-			if (entityRes.getStatusInfo() == Response.Status.OK) {
-				Map<String, Object> newContent = (Map<String, Object>) entityRes.getEntity();
+			ResponseEntity<?> entityRes = getEntity(is, Map.class);
+			if (entityRes.getStatusCode().is2xxSuccessful()) {
+				Map<String, Object> newContent = (Map<String, Object>) entityRes.getBody();
 				if (!StringUtils.isBlank(type)) {
 					newContent.put(Config._TYPE, type);
 				}
@@ -414,11 +410,11 @@ public final class RestUtils {
 						if (app.addDatatypes(content)) {
 							CoreUtils.getInstance().overwrite(app);
 						}
-						return Response.ok(content).build();
+						return ResponseEntity.ok(content);
 					}
-					return getStatusResponse(Response.Status.BAD_REQUEST, errors);
+					return getStatusResponse(HttpStatus.BAD_REQUEST, errors);
 				}
-				return getStatusResponse(Response.Status.BAD_REQUEST, "Failed to overwrite object.");
+				return getStatusResponse(HttpStatus.BAD_REQUEST, "Failed to overwrite object.");
 			}
 			return entityRes;
 		}
@@ -431,15 +427,15 @@ public final class RestUtils {
 	 * @param app the app object
 	 * @return a status code 200 or 400 or 404
 	 */
-	public static Response getUpdateResponse(App app, ParaObject object, InputStream is) {
+	public static ResponseEntity<?> getUpdateResponse(App app, ParaObject object, InputStream is) {
 		try (Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
 				RestUtils.class, "crud", "update")) {
 			if (app != null && object != null) {
 				Map<String, Object> newContent;
-				Response entityRes = getEntity(is, Map.class);
+				ResponseEntity<?> entityRes = getEntity(is, Map.class);
 				String[] errors = {};
-				if (entityRes.getStatusInfo() == Response.Status.OK) {
-					newContent = (Map<String, Object>) entityRes.getEntity();
+				if (entityRes.getStatusCode().is2xxSuccessful()) {
+					newContent = (Map<String, Object>) entityRes.getBody();
 				} else {
 					return entityRes;
 				}
@@ -457,20 +453,20 @@ public final class RestUtils {
 							object.update();
 							// check if update failed due to optimistic locking
 							if (object.getVersion() == -1) {
-								return getStatusResponse(Response.Status.PRECONDITION_FAILED,
+								return getStatusResponse(HttpStatus.PRECONDITION_FAILED,
 										"Update failed due to 'version' mismatch.");
 							}
 							// new type added so update app object
 							if (app.addDatatypes(object)) {
 								CoreUtils.getInstance().overwrite(app);
 							}
-							return Response.ok(object).build();
+							return ResponseEntity.ok(object);
 						}
 					}
 				}
-				return getStatusResponse(Response.Status.BAD_REQUEST, errors);
+				return getStatusResponse(HttpStatus.BAD_REQUEST, errors);
 			}
-			return getStatusResponse(Response.Status.NOT_FOUND);
+			return getStatusResponse(HttpStatus.NOT_FOUND);
 		}
 	}
 
@@ -480,18 +476,18 @@ public final class RestUtils {
 	 * @param app the current App object
 	 * @return a status code 200 or 400
 	 */
-	public static Response getDeleteResponse(App app, ParaObject content) {
+	public static ResponseEntity<?> getDeleteResponse(App app, ParaObject content) {
 		try (Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
 				RestUtils.class, "crud", "delete")) {
 			if (app != null && content != null && content.getId() != null && content.getAppid() != null) {
 				if (checkImplicitAppPermissions(app, content) && checkIfUserCanModifyObject(app, content)) {
 					content.setAppid(isNotAnApp(content.getType()) ? app.getAppIdentifier() : app.getAppid());
 					content.delete();
-					return Response.ok().build();
+					return ResponseEntity.ok().build();
 				}
-				return getStatusResponse(Response.Status.BAD_REQUEST);
+				return getStatusResponse(HttpStatus.BAD_REQUEST);
 			}
-			return getStatusResponse(Response.Status.NOT_FOUND);
+			return getStatusResponse(HttpStatus.NOT_FOUND);
 		}
 	}
 
@@ -501,7 +497,7 @@ public final class RestUtils {
 	 * @param ids list of ids
 	 * @return status code 200 or 400
 	 */
-	public static Response getBatchReadResponse(App app, List<String> ids) {
+	public static ResponseEntity<?> getBatchReadResponse(App app, List<String> ids) {
 		try (Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
 				RestUtils.class, "batch", "read")) {
 			if (app != null && ids != null && !ids.isEmpty()) {
@@ -511,9 +507,9 @@ public final class RestUtils {
 						results.add(result);
 					}
 				}
-				return Response.ok(results).build();
+				return ResponseEntity.ok(results);
 			} else {
-				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing ids.");
+				return getStatusResponse(HttpStatus.BAD_REQUEST, "Missing ids.");
 			}
 		}
 	}
@@ -524,15 +520,15 @@ public final class RestUtils {
 	 * @param is entity input stream
 	 * @return a status code 200 or 400
 	 */
-	public static Response getBatchCreateResponse(final App app, InputStream is) {
+	public static ResponseEntity<?> getBatchCreateResponse(final App app, InputStream is) {
 		try (Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
 				RestUtils.class, "batch", "create")) {
 			if (app != null) {
 				final LinkedList<ParaObject> newObjects = new LinkedList<>();
 				Set<String> ids = new LinkedHashSet<>();
-				Response entityRes = getEntity(is, List.class, true);
-				if (entityRes.getStatusInfo() == Response.Status.OK) {
-					List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getEntity();
+				ResponseEntity<?> entityRes = getEntity(is, List.class, true);
+				if (entityRes.getStatusCode().is2xxSuccessful()) {
+					List<Map<String, Object>> items = (List<Map<String, Object>>) entityRes.getBody();
 					for (Map<String, Object> object : items) {
 						// can't create multiple apps in batch
 						String type = (String) object.get(Config._TYPE);
@@ -554,16 +550,16 @@ public final class RestUtils {
 					Para.getDAO().createAll(app.getAppIdentifier(), newObjects);
 
 					Para.asyncExecute(() -> {
-						if (app.addDatatypes(newObjects.toArray(new ParaObject[0]))) {
+						if (app.addDatatypes(newObjects.toArray(ParaObject[]::new))) {
 							CoreUtils.getInstance().overwrite(app);
 						}
 					});
 				} else {
 					return entityRes;
 				}
-				return Response.ok(newObjects).build();
+				return ResponseEntity.ok(newObjects);
 			} else {
-				return getStatusResponse(Response.Status.BAD_REQUEST);
+				return getStatusResponse(HttpStatus.BAD_REQUEST);
 			}
 		}
 	}
@@ -575,7 +571,7 @@ public final class RestUtils {
 	 * @param newProperties a list of new object properties to be updated
 	 * @return a status code 200 or 400
 	 */
-	public static Response getBatchUpdateResponse(App app, Map<String, ParaObject> oldObjects,
+	public static ResponseEntity<?> getBatchUpdateResponse(App app, Map<String, ParaObject> oldObjects,
 			List<Map<String, Object>> newProperties) {
 		try (Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
 				RestUtils.class, "batch", "update")) {
@@ -602,7 +598,7 @@ public final class RestUtils {
 				// check if any or all updates failed due to optimistic locking
 				return handleFailedUpdates(hasPositiveVersions, updatedObjects);
 			} else {
-				return getStatusResponse(Response.Status.BAD_REQUEST);
+				return getStatusResponse(HttpStatus.BAD_REQUEST);
 			}
 		}
 	}
@@ -613,7 +609,7 @@ public final class RestUtils {
 	 * @param ids list of ids to delete
 	 * @return a status code 200 or 400
 	 */
-	public static Response getBatchDeleteResponse(App app, List<String> ids) {
+	public static ResponseEntity<?> getBatchDeleteResponse(App app, List<String> ids) {
 		try (Metrics.Context context = Metrics.time(app == null ? null : app.getAppid(),
 				RestUtils.class, "batch", "delete")) {
 			LinkedList<ParaObject> objects = new LinkedList<>();
@@ -628,9 +624,9 @@ public final class RestUtils {
 				}
 				Para.getDAO().deleteAll(app.getAppIdentifier(), objects);
 			} else {
-				return getStatusResponse(Response.Status.BAD_REQUEST, "Missing ids.");
+				return getStatusResponse(HttpStatus.BAD_REQUEST, "Missing ids.");
 			}
-			return Response.ok().build();
+			return ResponseEntity.ok().build();
 		}
 	}
 
@@ -643,26 +639,27 @@ public final class RestUtils {
 	 * @param pobj the object to operate on
 	 * @param id2 the id of the second object (optional)
 	 * @param type2 the type of the second object
-	 * @param params query parameters
 	 * @param pager a {@link Pager} object
 	 * @param childrenOnly find only directly linked objects in 1-to-many relationship
+	 * @param req request
 	 * @return a Response
 	 */
-	public static Response readLinksHandler(ParaObject pobj, String id2, String type2,
-			MultivaluedMap<String, String> params, Pager pager, boolean childrenOnly) {
+	public static ResponseEntity<?> readLinksHandler(ParaObject pobj, String id2, String type2,
+			Pager pager, boolean childrenOnly, HttpServletRequest req) {
 		try (Metrics.Context context = Metrics.time(null, RestUtils.class, "links", "read")) {
-			String query = params.getFirst("q");
+			String query = req.getParameter("q");
 			if (type2 != null) {
 				if (id2 != null) {
-					return Response.ok(pobj.isLinked(type2, id2), MediaType.TEXT_PLAIN_TYPE).build();
+					return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).
+							body(Boolean.toString(pobj.isLinked(type2, id2)));
 				} else {
 					List<ParaObject> items = new ArrayList<>();
 					if (childrenOnly) {
-						if (params.containsKey("count")) {
+						if (req.getParameter("count") != null) {
 							pager.setCount(pobj.countChildren(type2));
 						} else {
-							if (params.containsKey("field") && params.containsKey("term")) {
-								items = pobj.getChildren(type2, params.getFirst("field"), params.getFirst("term"), pager);
+							if (req.getParameter("field") != null && req.getParameter("term") != null) {
+								items = pobj.getChildren(type2, req.getParameter("field"), req.getParameter("term"), pager);
 							} else {
 								if (StringUtils.isBlank(query)) {
 									items = pobj.getChildren(type2, pager);
@@ -672,20 +669,20 @@ public final class RestUtils {
 							}
 						}
 					} else {
-						if (params.containsKey("count")) {
+						if (req.getParameter("count") != null) {
 							pager.setCount(pobj.countLinks(type2));
 						} else {
 							if (StringUtils.isBlank(query)) {
 								items = pobj.getLinkedObjects(type2, pager);
 							} else {
-								items = pobj.findLinkedObjects(type2, params.getFirst("field"), query, pager);
+								items = pobj.findLinkedObjects(type2, req.getParameter("field"), query, pager);
 							}
 						}
 					}
-					return Response.ok(buildPageResponse(items, pager)).build();
+					return ResponseEntity.ok(buildPageResponse(items, pager));
 				}
 			} else {
-				return getStatusResponse(Response.Status.BAD_REQUEST, "Parameter 'type' is missing.");
+				return getStatusResponse(HttpStatus.BAD_REQUEST, "Parameter 'type' is missing.");
 			}
 		}
 	}
@@ -698,7 +695,7 @@ public final class RestUtils {
 	 * @param childrenOnly find only directly linked objects in 1-to-many relationship
 	 * @return a Response
 	 */
-	public static Response deleteLinksHandler(ParaObject pobj, String id2, String type2, boolean childrenOnly) {
+	public static ResponseEntity<?> deleteLinksHandler(ParaObject pobj, String id2, String type2, boolean childrenOnly) {
 		try (Metrics.Context context = Metrics.time(null, RestUtils.class, "links", "delete")) {
 			if (type2 == null && id2 == null) {
 				pobj.unlinkAll();
@@ -709,7 +706,7 @@ public final class RestUtils {
 					pobj.deleteChildren(type2);
 				}
 			}
-			return Response.ok().build();
+			return ResponseEntity.ok().build();
 		}
 	}
 
@@ -719,17 +716,17 @@ public final class RestUtils {
 	 * @param id2 the id of the second object (optional)
 	 * @return a Response
 	 */
-	public static Response createLinksHandler(ParaObject pobj, String id2) {
+	public static ResponseEntity<?> createLinksHandler(ParaObject pobj, String id2) {
 		try (Metrics.Context context = Metrics.time(null, RestUtils.class, "links", "create")) {
 			if (id2 != null && pobj != null) {
 				String linkid = pobj.link(id2);
 				if (linkid == null) {
-					return getStatusResponse(Response.Status.BAD_REQUEST, "Failed to create link.");
+					return getStatusResponse(HttpStatus.BAD_REQUEST, "Failed to create link.");
 				} else {
-					return Response.ok(linkid, MediaType.TEXT_PLAIN_TYPE).build();
+					return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(linkid);
 				}
 			} else {
-				return getStatusResponse(Response.Status.BAD_REQUEST, "Parameters 'type' and 'id' are missing.");
+				return getStatusResponse(HttpStatus.BAD_REQUEST, "Parameters 'type' and 'id' are missing.");
 			}
 		}
 	}
@@ -739,13 +736,14 @@ public final class RestUtils {
 	/////////////////////////////////////////////
 
 	static <P extends ParaObject> Map<String, Object> buildQueryAndSearch(App app, String querytype,
-			MultivaluedMap<String, String> params, String typeOverride) {
-		String query = paramOrDefault(params, "q", "*");
+			String typeOverride, HttpServletRequest req) {
+		Map<String, String[]> params = req.getParameterMap();
+		String query = paramOrDefault(req, "q", "*");
 		String appid = app.getAppIdentifier();
-		Pager pager = getPagerFromParams(params);
+		Pager pager = getPagerFromParams(req);
 		List<P> items = Collections.emptyList();
-		String queryType = paramOrDefault(params, "querytype", querytype);
-		String type = paramOrDefault(params, Config._TYPE, null);
+		String queryType = paramOrDefault(req, "querytype", querytype);
+		String type = paramOrDefault(req, Config._TYPE, null);
 		if (!StringUtils.isBlank(typeOverride) && !"search".equals(typeOverride)) {
 			type = typeOverride;
 		}
@@ -753,28 +751,28 @@ public final class RestUtils {
 			if (params == null) {
 				return buildPageResponse(Para.getSearch().findQuery(appid, type, query, pager), pager);
 			}
-
 			if ("id".equals(queryType)) {
-				items = findByIdQuery(params, appid, pager);
+				items = findByIdQuery(req, appid, pager);
 			} else if ("ids".equals(queryType)) {
-				items = Para.getSearch().findByIds(appid, params.get("ids"));
+				items = Para.getSearch().findByIds(appid, queryParams("ids", req));
 				pager.setCount(items.size());
 			} else if ("nested".equals(queryType)) {
-				items = Para.getSearch().findNestedQuery(appid, type, params.getFirst("field"), query, pager);
+				items = Para.getSearch().findNestedQuery(appid, type, req.getParameter("field"), query, pager);
 			} else if ("nearby".equals(queryType)) {
-				items = findNearbyQuery(params, appid, type, query, pager);
+				items = findNearbyQuery(req, appid, type, query, pager);
 			} else if ("prefix".equals(queryType)) {
-				items = Para.getSearch().findPrefix(appid, type, params.getFirst("field"), params.getFirst("prefix"), pager);
+				items = Para.getSearch().findPrefix(appid, type, req.getParameter("field"), req.getParameter("prefix"), pager);
 			} else if ("similar".equals(queryType)) {
-				items = findSimilarQuery(params, appid, type, pager);
+				items = findSimilarQuery(req, appid, type, pager);
 			} else if ("tagged".equals(queryType)) {
-				items = findTaggedQuery(params, appid, type, pager);
+				items = Para.getSearch().findTagged(appid, type, queryParams("tags", req).toArray(String[]::new), pager);
 			} else if ("in".equals(queryType)) {
-				items = Para.getSearch().findTermInList(appid, type, params.getFirst("field"), params.get("terms"), pager);
+				items = Para.getSearch().findTermInList(appid, type,
+						req.getParameter("field"), queryParams("terms", req), pager);
 			} else if ("terms".equals(queryType)) {
-				items = findTermsQuery(params, pager, appid, type);
+				items = findTermsQuery(req, pager, appid, type);
 			} else if ("wildcard".equals(queryType)) {
-				items = Para.getSearch().findWildcard(appid, type, params.getFirst("field"), query, pager);
+				items = Para.getSearch().findWildcard(appid, type, req.getParameter("field"), query, pager);
 			} else if ("count".equals(queryType)) {
 				pager.setCount(Para.getSearch().getCount(appid, type));
 			} else {
@@ -784,13 +782,10 @@ public final class RestUtils {
 		}
 	}
 
-	private static <P extends ParaObject> List<P> findTermsQuery(MultivaluedMap<String, String> params,
+	private static <P extends ParaObject> List<P> findTermsQuery(HttpServletRequest req,
 			Pager pager, String appid, String type) {
-		if (params == null) {
-			return Collections.emptyList();
-		}
-		String matchAll = paramOrDefault(params, "matchall", "true");
-		List<String> termsList = params.get("terms");
+		String matchAll = paramOrDefault(req, "matchall", "true");
+		List<String> termsList = queryParams("terms", req);
 		if (termsList != null) {
 			Map<String, String> terms = new HashMap<>(termsList.size());
 			for (String termTuple : termsList) {
@@ -799,7 +794,7 @@ public final class RestUtils {
 					terms.put(split[0], split[1]);
 				}
 			}
-			if (params.containsKey("count")) {
+			if (req.getParameter("count") != null) {
 				pager.setCount(Para.getSearch().getCount(appid, type, terms));
 			} else {
 				return Para.getSearch().findTerms(appid, type, terms, Boolean.parseBoolean(matchAll), pager);
@@ -808,44 +803,38 @@ public final class RestUtils {
 		return Collections.emptyList();
 	}
 
-	private static <P extends ParaObject> List<P> findTaggedQuery(MultivaluedMap<String, String> params,
-			String appid, String type, Pager pager) {
-		List<String> tags = params.get("tags");
-		String[] tagz = tags != null ? tags.toArray(new String[0]) : null;
-		return Para.getSearch().findTagged(appid, type, tagz, pager);
-	}
 
-	private static <P extends ParaObject> List<P> findSimilarQuery(MultivaluedMap<String, String> params,
+	private static <P extends ParaObject> List<P> findSimilarQuery(HttpServletRequest req,
 			String appid, String type, Pager pager) {
-		List<String> fields = params.get("fields");
-		String like = params.getFirst("like");
-		String[] fieldz = (fields != null) ? fields.toArray(new String[0]) : null;
+		String like = req.getParameter("like");
+		List<String> fieldz = queryParams("fields", req);
 		if (Strings.CS.startsWith(like, "id:")) {
 			ParaObject likeObj = Para.getDAO().read(appid, Strings.CS.removeStart(like, "id:"));
 			if (likeObj != null) {
 				StringBuilder sb = new StringBuilder();
-				Arrays.asList(fieldz).forEach(field -> {
+				fieldz.forEach(field -> {
 					try {
 						String value = BeanUtils.getProperty(likeObj, field);
 						if (value != null) {
 							sb.append(Utils.stripAndTrim(value)).append(" ");
 						}
 					} catch (Exception e) {
-						logger.debug("Missing fields {} in object {}: {}", fields, likeObj.getId(), e.getMessage());
+						logger.debug("Missing fields {} in object {}: {}", fieldz, likeObj.getId(), e.getMessage());
 					}
 				});
 				like = sb.toString();
 			}
 		}
-		return Para.getSearch().findSimilar(appid, type, params.getFirst("filterid"), fieldz, like, pager);
+		return Para.getSearch().findSimilar(appid, type, req.getParameter("filterid"),
+				fieldz.toArray(String[]::new), like, pager);
 	}
 
-	private static <P extends ParaObject> List<P> findNearbyQuery(MultivaluedMap<String, String> params,
+	private static <P extends ParaObject> List<P> findNearbyQuery(HttpServletRequest req,
 			String appid, String type, String query, Pager pager) {
-		String latlng = params.getFirst("latlng");
+		String latlng = req.getParameter("latlng");
 		if (Strings.CS.contains(latlng, ",")) {
 			String[] coords = latlng.split(",", 2);
-			String rad = paramOrDefault(params, "radius", null);
+			String rad = paramOrDefault(req, "radius", null);
 			int radius = NumberUtils.toInt(rad, 10);
 			double lat = NumberUtils.toDouble(coords[0], 0);
 			double lng = NumberUtils.toDouble(coords[1], 0);
@@ -854,9 +843,8 @@ public final class RestUtils {
 		return Collections.emptyList();
 	}
 
-	private static <P extends ParaObject> List<P> findByIdQuery(MultivaluedMap<String, String> params,
-			String appid, Pager pager) {
-		String id = paramOrDefault(params, Config._ID, null);
+	private static <P extends ParaObject> List<P> findByIdQuery(HttpServletRequest req, String appid, Pager pager) {
+		String id = paramOrDefault(req, Config._ID, null);
 		P obj = Para.getSearch().findById(appid, id);
 		if (obj != null) {
 			pager.setCount(1);
@@ -865,7 +853,7 @@ public final class RestUtils {
 		return Collections.emptyList();
 	}
 
-	private static Response handleFailedUpdates(boolean precondition, List<ParaObject> updatedObjects) {
+	private static ResponseEntity<?> handleFailedUpdates(boolean precondition, List<ParaObject> updatedObjects) {
 		if (precondition) {
 			boolean wasNotEmpty = !updatedObjects.isEmpty();
 			Iterator<ParaObject> it = updatedObjects.iterator();
@@ -876,15 +864,15 @@ public final class RestUtils {
 				}
 			}
 			if (wasNotEmpty && updatedObjects.isEmpty()) {
-				return getStatusResponse(Response.Status.PRECONDITION_FAILED,
+				return getStatusResponse(HttpStatus.PRECONDITION_FAILED,
 						"Update failed for all objects in batch due to 'version' mismatch.");
 			}
 		}
-		return Response.ok(updatedObjects).build();
+		return ResponseEntity.ok(updatedObjects);
 	}
 
-	private static String paramOrDefault(MultivaluedMap<String, String> params, String name, String defaultValue) {
-		return params != null && params.containsKey(name) ? params.getFirst(name) : defaultValue;
+	private static String paramOrDefault(HttpServletRequest req, String name, String defaultValue) {
+		return req != null && req.getParameter(name) != null ? req.getParameter(name) : defaultValue;
 	}
 
 	private static <P extends ParaObject> Map<String, Object> buildPageResponse(List<P> items, Pager pager) {
@@ -952,22 +940,22 @@ public final class RestUtils {
 
 	/**
 	 * Returns a {@link Pager} instance populated from request parameters.
-	 * @param params query params map
+	 * @param req request
 	 * @return a Pager
 	 */
-	public static Pager getPagerFromParams(MultivaluedMap<String, String> params) {
+	public static Pager getPagerFromParams(HttpServletRequest req) {
 		Pager pager = new Pager();
-		pager.setPage(NumberUtils.toLong(paramOrDefault(params, "page", ""), 0));
+		pager.setPage(NumberUtils.toLong(paramOrDefault(req, "page", ""), 0));
 		if (pager.getPage() > Para.getConfig().maxPages()) {
 			pager.setPage(Para.getConfig().maxPages());
 		}
-		pager.setLimit(NumberUtils.toInt(paramOrDefault(params, "limit", ""), pager.getLimit()));
+		pager.setLimit(NumberUtils.toInt(paramOrDefault(req, "limit", ""), pager.getLimit()));
 		if (pager.getLimit() > Para.getConfig().maxPageLimit()) {
 			pager.setLimit(Para.getConfig().maxPageLimit());
 		}
-		pager.setSortby(paramOrDefault(params, "sort", pager.getSortby()));
-		pager.setDesc(Boolean.parseBoolean(paramOrDefault(params, "desc", "true")));
-		pager.setLastKey(paramOrDefault(params, "lastKey", null));
+		pager.setSortby(paramOrDefault(req, "sort", pager.getSortby()));
+		pager.setDesc(Boolean.parseBoolean(paramOrDefault(req, "desc", "true")));
+		pager.setLastKey(paramOrDefault(req, "lastKey", null));
 		return pager;
 	}
 
@@ -977,19 +965,19 @@ public final class RestUtils {
 	 * @param messages zero or more errors
 	 * @return a response as JSON
 	 */
-	public static Response getStatusResponse(Response.Status status, String... messages) {
+	public static ResponseEntity<?> getStatusResponse(HttpStatus status, String... messages) {
 		if (status == null) {
-			return Response.status(Response.Status.BAD_REQUEST).build();
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 		}
 		String msg = StringUtils.join(messages, ". ");
 		if (StringUtils.isBlank(msg)) {
 			msg = status.getReasonPhrase();
 		}
 		try {
-			return GenericExceptionMapper.getExceptionResponse(status.getStatusCode(), msg);
+			return GenericExceptionMapper.getExceptionResponse(status.value(), msg);
 		} catch (Exception ex) {
 			logger.error(null, ex);
-			return Response.status(Response.Status.BAD_REQUEST).build();
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 		}
 	}
 
@@ -1005,10 +993,9 @@ public final class RestUtils {
 		}
 		try (ServletOutputStream out = response.getOutputStream()) {
 			response.setStatus(status);
-			response.setContentType(MediaType.APPLICATION_JSON);
+			response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 			response.setCharacterEncoding(Para.getConfig().defaultEncoding());
-			ParaObjectUtils.getJsonWriter().writeValue(out, getStatusResponse(Response.Status.
-					fromStatusCode(status), message).getEntity());
+			ParaObjectUtils.getJsonWriter().writeValue(out, getStatusResponse(HttpStatus.valueOf(status), message).getBody());
 		} catch (Exception ex) {
 			logger.error(null, ex);
 		}
@@ -1025,7 +1012,7 @@ public final class RestUtils {
 		}
 		try (ServletOutputStream out = response.getOutputStream()) {
 			response.setStatus(HttpServletResponse.SC_OK);
-			response.setContentType(MediaType.APPLICATION_JSON);
+			response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 			response.setCharacterEncoding(Para.getConfig().defaultEncoding());
 			ParaObjectUtils.getJsonWriter().writeValue(out, obj);
 		} catch (Exception ex) {
@@ -1034,53 +1021,24 @@ public final class RestUtils {
 	}
 
 	/**
-	 * Returns the path parameter value.
-	 * @param param a parameter name
-	 * @param ctx ctx
-	 * @return a value
-	 */
-	public static String pathParam(String param, ContainerRequestContext ctx) {
-		return ctx.getUriInfo().getPathParameters().getFirst(param);
-	}
-
-	/**
-	 * Returns the path parameters values.
-	 * @param param a parameter name
-	 * @param ctx ctx
-	 * @return a list of parameter values
-	 */
-	public static List<String> pathParams(String param, ContainerRequestContext ctx) {
-		return ctx.getUriInfo().getPathParameters().get(param);
-	}
-
-	/**
 	 * Returns  the query parameter value.
 	 * @param param a parameter name
-	 * @param ctx ctx
+	 * @param req request
 	 * @return parameter value
 	 */
-	public static String queryParam(String param, ContainerRequestContext ctx) {
-		return ctx.getUriInfo().getQueryParameters().getFirst(param);
+	public static String queryParam(String param, HttpServletRequest req) {
+		return req.getParameter(param);
 	}
 
 	/**
 	 * Returns the query parameter values.
 	 * @param param a parameter name
-	 * @param ctx ctx
+	 * @param req request
 	 * @return a list of values
 	 */
-	public static List<String> queryParams(String param, ContainerRequestContext ctx) {
-		return ctx.getUriInfo().getQueryParameters().get(param);
-	}
-
-	/**
-	 * Returns true if parameter exists.
-	 * @param param a parameter name
-	 * @param ctx ctx
-	 * @return true if parameter is set
-	 */
-	public static boolean hasQueryParam(String param, ContainerRequestContext ctx) {
-		return ctx.getUriInfo().getQueryParameters().containsKey(param);
+	public static List<String> queryParams(String param, HttpServletRequest req) {
+		String[] params = req.getParameterValues(param);
+		return (params != null && params.length > 0) ? List.of(params) : Collections.emptyList();
 	}
 
 }

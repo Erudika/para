@@ -43,7 +43,7 @@ persistentVolumes:
     storageClassName: ""
 
 #############################################
-# Optional init container for adding plugins 
+# Optional init container for adding plugins
 #############################################
 downloadInitContainer:
   command: "wget https://jdbc.org/driver.jar -O /para/lib/jdbc.jar"
@@ -58,7 +58,7 @@ downloadInitContainer:
 ###################################################
 # JVM command line arguments, exported as JAVA_OPTS
 ###################################################
-javaOpts: "-Xmx512m -Xms512m -Dpara.port=8080 -Dloader.path=/para/lib -Dconfig.file=/para/config/application.conf"
+javaOpts: "-Xmx512m -Xms512m -Dpara.port=8080 -Dloader.path=/para/lib -Dconfig.file=/para/config/application.conf --add-modules jdk.incubator.vector --enable-native-access=ALL-UNNAMED"
 
 podAnnotations: {}
 

@@ -17,10 +17,10 @@
  */
 package com.erudika.para.core;
 
-import java.io.Serializable;
-import java.util.List;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.io.Serializable;
+import java.util.List;
 
 /**
  * The core domain interface. All Para objects implement it.

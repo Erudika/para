@@ -58,26 +58,6 @@ import org.slf4j.LoggerFactory;
 public final class Para {
 
 	private static final ParaConfig CONF = new ParaConfig();
-	/**
-	 * The ASCII logo.
-	 */
-	public static final String LOGO;
-	static {
-		boolean printVer = CONF.versionBannerEnabled();
-		String[] logo = {"",
-			"      ____  ___ _ ____ ___ _ ",
-			"     / __ \\/ __` / ___/ __` /",
-			"    / /_/ / /_/ / /  / /_/ / ",
-			"   / .___/\\__,_/_/   \\__,_/  " + (printVer ? "v" + getVersion() : ""),
-			"  /_/                        ", ""
-		};
-		StringBuilder sb = new StringBuilder();
-		for (String line : logo) {
-			sb.append(line).append("\n");
-		}
-		LOGO = sb.toString();
-	}
-
 	private static final Logger logger = LoggerFactory.getLogger(Para.class);
 	private static final Set<DestroyListener> DESTROY_LISTENERS = new LinkedHashSet<DestroyListener>();
 	private static final Set<InitializeListener> INIT_LISTENERS = new LinkedHashSet<InitializeListener>();
@@ -105,9 +85,8 @@ public final class Para {
 			return;
 		}
 		isInitialized = true;
-		printLogo();
 		try {
-			logger.info("--- Para.initialize() [{}] ---", CONF.environment());
+			logger.info("--- Para.initialize() [{}] {} ---", CONF.environment(), getVersion());
 
 			for (InitializeListener initListener : INIT_LISTENERS) {
 				if (initListener != null) {
@@ -441,15 +420,6 @@ public final class Para {
 			}
 		}
 		return creds;
-	}
-
-	/**
-	 * Prints the Para logo to System.out.
-	 */
-	public static void printLogo() {
-		if (CONF.logoBannerEnabled()) {
-			System.out.print(LOGO);
-		}
 	}
 
 	/**

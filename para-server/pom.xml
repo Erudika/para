@@ -12,8 +12,8 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>6.5.6</springSecVer>
-		<springLdapVer>4.0.0</springLdapVer>
+		<springSecVer>6.5.7</springSecVer>
+		<springLdapVer>3.3.4</springLdapVer>
 	</properties>
 
 	<dependencies>
@@ -22,27 +22,6 @@
 			<artifactId>para-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-
-<!--		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-beans</artifactId>
-			<version>5.3.20</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-context</artifactId>
-			<version>5.3.20</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-web</artifactId>
-			<version>5.3.20</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-tx</artifactId>
-			<version>5.3.20</version>
-		</dependency>-->
 
 		<!-- SPRING SECURITY -->
 		<dependency>
@@ -156,24 +135,6 @@
 			<version>3.2.3</version>
 		</dependency>
 
-		<!-- JERSEY -->
-		<dependency>
-			<groupId>org.glassfish.jersey.core</groupId>
-			<artifactId>jersey-server</artifactId>
-			<version>${jerseyVer}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.glassfish.jersey.containers</groupId>
-			<artifactId>jersey-container-servlet</artifactId>
-			<version>${jerseyVer}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.glassfish.jersey.inject</groupId>
-			<artifactId>jersey-hk2</artifactId>
-			<version>${jerseyVer}</version>
-		</dependency>
-
-
 		<!-- AWS JAVA SDK -->
 		<dependency>
 			<groupId>software.amazon.awssdk</groupId>
@@ -251,11 +212,6 @@
 			<version>6.1.0</version>
 			<scope>provided</scope>
 		</dependency>
-<!--		<dependency>
-			<groupId>org.glassfish.jaxb</groupId>
-			<artifactId>jaxb-runtime</artifactId>
-			<version>2.3.5</version>
-		</dependency>-->
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
@@ -301,58 +257,12 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-<!--		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-mock</artifactId>
-			<version>2.0.8</version>
-			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>commons-logging</groupId>
-					<artifactId>commons-logging</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>-->
-		<dependency>
-			<groupId>org.glassfish.jersey.test-framework.providers</groupId>
-			<artifactId>jersey-test-framework-provider-inmemory</artifactId>
-			<version>${jerseyVer}</version>
-			<scope>test</scope>
-		</dependency>
 		<dependency>
 			<groupId>org.springframework.ldap</groupId>
 			<artifactId>spring-ldap-test</artifactId>
 			<version>${springLdapVer}</version>
 			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>commons-codec</groupId>
-					<artifactId>commons-codec</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
-		<!--		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<version>${springBootVer}</version>
-			<scope>test</scope>
-		</dependency>-->
-		<!--		<dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-test</artifactId>
-			<version>${springSecVer}</version>
-			<scope>test</scope>
-		</dependency>-->
-<!--		<dependency>
-			<groupId>commons-codec</groupId>
-			<artifactId>commons-codec</artifactId>
-			<version>${commonsCodecVer}</version>
-		</dependency>-->
-<!--		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>${slf4jVer}</version>
-		</dependency>-->
 	</dependencies>
 
 	<build>
@@ -372,7 +282,6 @@
 					</dependency>
 				</dependencies>-->
 			</plugin>
-
 
 			<plugin>
 				<groupId>com.jcabi</groupId>

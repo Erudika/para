@@ -18,7 +18,6 @@
 package com.erudika.para.core.listeners;
 
 import com.erudika.para.core.App;
-
 import java.util.EventListener;
 
 /**

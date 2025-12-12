@@ -30,17 +30,13 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import static jakarta.ws.rs.HttpMethod.DELETE;
-import static jakarta.ws.rs.HttpMethod.GET;
-import static jakarta.ws.rs.HttpMethod.PATCH;
-import static jakarta.ws.rs.HttpMethod.POST;
-import static jakarta.ws.rs.HttpMethod.PUT;
 import java.io.IOException;
 import java.util.Date;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.GenericFilterBean;
@@ -123,8 +119,12 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 				return false;
 			}
 		}
-		RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED, Utils.
-				formatMessage("You don't have permission to access this resource. [{0} {1}]", method, reqUri));
+		if (!Para.getConfig().apiEnabled()) {
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_FORBIDDEN, "Para API is disabled.");
+		} else {
+			RestUtils.returnStatusResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
+					Utils.formatMessage("You don't have permission to access this resource. [{0} {1}]", method, reqUri));
+		}
 		return false;
 	}
 
@@ -209,7 +209,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 			return true;
 		}
 		String resourcePath = RestUtils.extractResourcePath(request);
-		if (resourcePath.matches("^_permissions/.+") && request.getMethod().equals(GET)) {
+		if (resourcePath.matches("^_permissions/.+") && HttpMethod.GET.matches(request.getMethod())) {
 			return true; // allow permission checks, i.e. pc.isAllowed(), to go through
 		}
 		// we allow empty user ids - this means that the request is unauthenticated
@@ -234,10 +234,10 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 
 	private boolean isWriteRequest(HttpServletRequest req) {
 		return req != null &&
-				(POST.equals(req.getMethod()) ||
-				PUT.equals(req.getMethod()) ||
-				DELETE.equals(req.getMethod()) ||
-				PATCH.equals(req.getMethod()));
+				(HttpMethod.POST.matches(req.getMethod()) ||
+				HttpMethod.PUT.matches(req.getMethod()) ||
+				HttpMethod.DELETE.matches(req.getMethod()) ||
+				HttpMethod.PATCH.matches(req.getMethod()));
 	}
 
 }

@@ -76,7 +76,7 @@ public final class ParaObjectUtils {
 		JSON_MAPPER.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
 		JSON_MAPPER.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 		JSON_MAPPER.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
-		JSON_MAPPER.enable(SerializationFeature.INDENT_OUTPUT);
+		JSON_MAPPER.disable(SerializationFeature.INDENT_OUTPUT);
 		JSON_MAPPER.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
 		JSON_MAPPER.registerModule(new JavaTimeModule());
 		JSON_MAPPER.findAndRegisterModules();

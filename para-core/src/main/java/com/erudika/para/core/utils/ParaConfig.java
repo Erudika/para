@@ -738,7 +738,7 @@ public class ParaConfig extends Config {
 			category = "Security",
 			description = "The path to redirect to when 403 code is returned.")
 	public String accessDeniedPath() {
-		return getConfigParam("security.access_denied", "/403");
+		return getConfigParam("security.access_denied", "/error/403");
 	}
 
 	@Documented(position = 680,

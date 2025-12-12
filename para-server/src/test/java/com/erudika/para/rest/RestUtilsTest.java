@@ -25,21 +25,18 @@ import com.erudika.para.core.cache.MockCache;
 import com.erudika.para.core.persistence.DAO;
 import com.erudika.para.core.persistence.MockDAO;
 import com.erudika.para.core.queue.Queue;
-import com.erudika.para.core.rest.GenericExceptionMapper;
 import com.erudika.para.core.search.Search;
 import com.erudika.para.core.storage.FileStore;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.server.ParaServer;
+import com.erudika.para.server.rest.GenericExceptionMapper;
 import static com.erudika.para.server.rest.RestUtils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response.Status;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -51,6 +48,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 /**
  *
  * @author Alex Bogdanovski [alex@erudika.com]
@@ -94,9 +94,9 @@ public class RestUtilsTest {
 	public void testGetReadResponse() {
 		App app = new App("test");
 		App root = new App(Para.getConfig().appName());
-		assertEquals(Status.NOT_FOUND.getStatusCode(), getReadResponse(null, null).getStatus());
-		assertEquals(Status.OK.getStatusCode(), getReadResponse(app, new Tag("tag")).getStatus());
-		assertEquals(Status.OK.getStatusCode(), getReadResponse(root, new App("test1")).getStatus());
+		assertEquals(HttpStatus.NOT_FOUND, getReadResponse(null, null).getStatusCode());
+		assertEquals(HttpStatus.OK, getReadResponse(app, new Tag("tag")).getStatusCode());
+		assertEquals(HttpStatus.OK, getReadResponse(root, new App("test1")).getStatusCode());
 	}
 
 	@Test
@@ -104,38 +104,38 @@ public class RestUtilsTest {
 		Tag t = new Tag("tag");
 		App rootApp = new App(Para.getConfig().appName());
 		App notRootApp = new App("anotherApp");
-		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(null, null, null).getStatus());
-		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(rootApp, rootApp.getType(),
-				getInputStream(rootApp)).getStatus());
-		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(rootApp, rootApp.getType(),
-				getInputStream(rootApp)).getStatus());
-		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(notRootApp, rootApp.getType(),
-				getInputStream(rootApp)).getStatus());
-		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(rootApp, rootApp.getType(),
-				getInputStream(notRootApp)).getStatus());
-		assertEquals(Status.BAD_REQUEST.getStatusCode(), getUpdateResponse(notRootApp, rootApp,
-				getInputStream(rootApp)).getStatus());
-		assertEquals(Status.BAD_REQUEST.getStatusCode(), getCreateResponse(rootApp, notRootApp.getType(),
-				getInputStream(notRootApp)).getStatus());
-		assertEquals(Status.CREATED.getStatusCode(), getCreateResponse(rootApp, t.getType(),
-				getInputStream(t)).getStatus());
+		assertEquals(HttpStatus.BAD_REQUEST, getCreateResponse(null, null, null).getStatusCode());
+		assertEquals(HttpStatus.BAD_REQUEST, getCreateResponse(rootApp, rootApp.getType(),
+				getInputStream(rootApp)).getStatusCode());
+		assertEquals(HttpStatus.BAD_REQUEST, getCreateResponse(rootApp, rootApp.getType(),
+				getInputStream(rootApp)).getStatusCode());
+		assertEquals(HttpStatus.BAD_REQUEST, getCreateResponse(notRootApp, rootApp.getType(),
+				getInputStream(rootApp)).getStatusCode());
+		assertEquals(HttpStatus.BAD_REQUEST, getCreateResponse(rootApp, rootApp.getType(),
+				getInputStream(notRootApp)).getStatusCode());
+		assertEquals(HttpStatus.BAD_REQUEST, getUpdateResponse(notRootApp, rootApp,
+				getInputStream(rootApp)).getStatusCode());
+		assertEquals(HttpStatus.BAD_REQUEST, getCreateResponse(rootApp, notRootApp.getType(),
+				getInputStream(notRootApp)).getStatusCode());
+		assertEquals(HttpStatus.CREATED, getCreateResponse(rootApp, t.getType(),
+				getInputStream(t)).getStatusCode());
 		assertNotNull(CoreUtils.getInstance().getDao().read(t.getId()));
 
 		Map<String, Object> map = new HashMap<>();
-		assertEquals(Status.NOT_FOUND.getStatusCode(), getUpdateResponse(rootApp, null, null).getStatus());
-		assertEquals(Status.OK.getStatusCode(), getUpdateResponse(rootApp, t, getInputStream(map)).getStatus());
+		assertEquals(HttpStatus.NOT_FOUND, getUpdateResponse(rootApp, null, null).getStatusCode());
+		assertEquals(HttpStatus.OK, getUpdateResponse(rootApp, t, getInputStream(map)).getStatusCode());
 		assertNotNull(CoreUtils.getInstance().getDao().read(t.getId()));
-		assertEquals(Status.OK.getStatusCode(), getUpdateResponse(notRootApp, notRootApp,
-				getInputStream(notRootApp)).getStatus());
-		assertEquals(Status.OK.getStatusCode(), getUpdateResponse(rootApp, notRootApp,
-				getInputStream(notRootApp)).getStatus());
+		assertEquals(HttpStatus.OK, getUpdateResponse(notRootApp, notRootApp,
+				getInputStream(notRootApp)).getStatusCode());
+		assertEquals(HttpStatus.OK, getUpdateResponse(rootApp, notRootApp,
+				getInputStream(notRootApp)).getStatusCode());
 
-		assertEquals(Status.NOT_FOUND.getStatusCode(), getDeleteResponse(rootApp, null).getStatus());
-		assertEquals(Status.NOT_FOUND.getStatusCode(), getDeleteResponse(null, t).getStatus());
-		assertEquals(Status.BAD_REQUEST.getStatusCode(), getDeleteResponse(notRootApp, rootApp).getStatus());
-		assertEquals(Status.OK.getStatusCode(), getDeleteResponse(rootApp, t).getStatus());
-		assertEquals(Status.OK.getStatusCode(), getDeleteResponse(rootApp, notRootApp).getStatus());
-		assertEquals(Status.OK.getStatusCode(), getDeleteResponse(notRootApp, notRootApp).getStatus());
+		assertEquals(HttpStatus.NOT_FOUND, getDeleteResponse(rootApp, null).getStatusCode());
+		assertEquals(HttpStatus.NOT_FOUND, getDeleteResponse(null, t).getStatusCode());
+		assertEquals(HttpStatus.BAD_REQUEST, getDeleteResponse(notRootApp, rootApp).getStatusCode());
+		assertEquals(HttpStatus.OK, getDeleteResponse(rootApp, t).getStatusCode());
+		assertEquals(HttpStatus.OK, getDeleteResponse(rootApp, notRootApp).getStatusCode());
+		assertEquals(HttpStatus.OK, getDeleteResponse(notRootApp, notRootApp).getStatusCode());
 		assertNull(CoreUtils.getInstance().getDao().read(t.getId()));
 	}
 
@@ -150,14 +150,14 @@ public class RestUtilsTest {
 
 	@Test
 	public void testGetJSONResponse() {
-		assertEquals(Status.BAD_REQUEST.getStatusCode(), getStatusResponse(null).getStatus());
-		assertEquals(Status.OK.getStatusCode(), getStatusResponse(Status.OK).getStatus());
+		assertEquals(HttpStatus.BAD_REQUEST, getStatusResponse(null).getStatusCode());
+		assertEquals(HttpStatus.OK, getStatusResponse(HttpStatus.OK).getStatusCode());
 	}
 
 	@Test
 	public void testGetExceptionResponse() {
-		assertEquals(Status.FORBIDDEN.getStatusCode(), GenericExceptionMapper.getExceptionResponse(403, null).getStatus());
-		assertEquals(MediaType.APPLICATION_JSON, GenericExceptionMapper.getExceptionResponse(403, "").getMediaType().toString());
+		assertEquals(HttpStatus.FORBIDDEN, GenericExceptionMapper.getExceptionResponse(403, null).getStatusCode());
+		assertEquals(MediaType.APPLICATION_JSON, GenericExceptionMapper.getExceptionResponse(403, "").getHeaders().getContentType());
 	}
 
 	@Test

@@ -20,13 +20,7 @@ package com.erudika.para.server.utils.filters;
 import com.erudika.para.core.ParaObject;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.container.ContainerResponseContext;
-import jakarta.ws.rs.container.ContainerResponseFilter;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.ext.Provider;
 import java.beans.PropertyDescriptor;
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,61 +29,106 @@ import java.util.List;
 import java.util.Map;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.MethodParameter;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.MediaType;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.server.ServerHttpRequest;
+import org.springframework.http.server.ServerHttpResponse;
+import org.springframework.http.server.ServletServerHttpRequest;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 /**
  * Filter response entities dynamically, based on a list of selected fields. Returns partial objects.
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@Provider
-public class FieldFilter implements ContainerResponseFilter {
+@ControllerAdvice
+@Order(100)
+public class FieldFilter implements ResponseBodyAdvice<Object> {
 
-	@Context
-	private HttpServletRequest request;
+	private static final Logger LOGGER = LoggerFactory.getLogger(FieldFilter.class);
 
-	/**
-	 * Constructor.
-	 */
-	public FieldFilter() {
+	@Override
+	public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
+		return true;
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void filter(ContainerRequestContext requestContext,
-			ContainerResponseContext responseContext) throws IOException {
+	public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType,
+			Class<? extends HttpMessageConverter<?>> selectedConverterType, ServerHttpRequest request,
+			ServerHttpResponse response) {
 		try {
-			if (responseContext.getEntity() != null && !StringUtils.isBlank(request.getParameter("select"))) {
-				String[] sarr = StringUtils.split(request.getParameter("select"), ",");
-				List<String> fields = sarr == null ? new ArrayList<>(0) : Arrays.asList(sarr);
-				Object entity = responseContext.getEntity();
-				Object newEntity = null;
-				if (entity instanceof ParaObject) {
-					newEntity = getFilteredProperties(entity, fields);
-				} else if (entity instanceof Map) {
-					if (((Map) entity).containsKey("items")) {
-						List<Map<String, Object>> items = new ArrayList<>();
-						for (ParaObject item : (List<ParaObject>) ((Map) entity).get("items")) {
-							items.add(getFilteredProperties(item, fields));
-						}
-						((Map) entity).put("items", items);
-						newEntity = entity;
-					}
-				} else if (entity instanceof List) {
-					newEntity = new ArrayList<Map<String, Object>>();
-					if (!((List) entity).isEmpty() && ((List) entity).get(0) instanceof ParaObject) {
-						for (ParaObject item : (List<ParaObject>) entity) {
-							((List) newEntity).add(getFilteredProperties(item, fields));
-						}
-					}
-				}
-				if (newEntity != null) {
-					responseContext.setEntity(newEntity);
-				}
+			if (body == null) {
+				return body;
 			}
+			HttpServletRequest servletRequest = getServletRequest(request);
+			if (servletRequest == null) {
+				return body;
+			}
+			String select = servletRequest.getParameter("select");
+			if (StringUtils.isBlank(select)) {
+				return body;
+			}
+			String[] sarr = StringUtils.split(select, ",");
+			if (sarr == null || sarr.length == 0) {
+				return body;
+			}
+			List<String> fields = Arrays.asList(sarr);
+			Object filtered = filterEntity(body, fields);
+			return filtered != null ? filtered : body;
 		} catch (Exception e) {
-			LoggerFactory.getLogger(this.getClass()).warn("Failed to limit returned fields using ?select=:", e);
+			LOGGER.warn("Failed to limit returned fields using ?select=:", e);
+			return body;
 		}
+	}
+
+	private HttpServletRequest getServletRequest(ServerHttpRequest request) {
+		if (request instanceof ServletServerHttpRequest) {
+			return ((ServletServerHttpRequest) request).getServletRequest();
+		}
+		return null;
+	}
+
+	@SuppressWarnings("unchecked")
+	private Object filterEntity(Object entity, List<String> fields) {
+		if (fields == null || fields.isEmpty()) {
+			return null;
+		}
+		Object newEntity = null;
+		if (entity instanceof ParaObject) {
+			newEntity = getFilteredProperties(entity, fields);
+		} else if (entity instanceof Map) {
+			Map<String, Object> map = (Map<String, Object>) entity;
+			if (map.containsKey("items") && map.get("items") instanceof List) {
+				List<Object> filteredItems = new ArrayList<>();
+				for (Object item : (List<?>) map.get("items")) {
+					if (item instanceof ParaObject) {
+						filteredItems.add(getFilteredProperties(item, fields));
+					} else {
+						filteredItems.add(item);
+					}
+				}
+				map.put("items", filteredItems);
+				newEntity = map;
+			}
+		} else if (entity instanceof List) {
+			List<?> list = (List<?>) entity;
+			if (!list.isEmpty() && list.get(0) instanceof ParaObject) {
+				List<Map<String, Object>> newList = new ArrayList<>();
+				for (Object item : list) {
+					if (item instanceof ParaObject) {
+						newList.add(getFilteredProperties(item, fields));
+					}
+				}
+				newEntity = newList;
+			}
+		}
+		return newEntity;
 	}
 
 	private Map<String, Object> getFilteredProperties(Object object, List<String> fields) {

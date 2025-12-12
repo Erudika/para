@@ -36,8 +36,6 @@ import com.erudika.para.core.validation.Constraint;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.ws.rs.core.MultivaluedHashMap;
-import jakarta.ws.rs.core.MultivaluedMap;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -403,7 +401,7 @@ public final class ParaClient implements Closeable {
 	 * @param returnType the type of object to return
 	 * @return a POJO
 	 */
-	public <T> T invokeGet(String resourcePath, MultivaluedMap<String, String> params, Class<?> returnType) {
+	public <T> T invokeGet(String resourcePath, Map<String, List<String>> params, Class<?> returnType) {
 		logger.debug("GET {}, params: {}", getFullPath(resourcePath), params);
 		return invokeSignedRequest(accessKey, key(!JWT_PATH.equals(resourcePath)), GET.toString(),
 				getEndpoint(), getFullPath(resourcePath), null, params, null, returnType);
@@ -459,7 +457,7 @@ public final class ParaClient implements Closeable {
 	 * @param returnType the type of object to return
 	 * @return a POJO
 	 */
-	public <T> T invokeDelete(String resourcePath, MultivaluedMap<String, String> params, Class<?> returnType) {
+	public <T> T invokeDelete(String resourcePath, Map<String, List<String>> params, Class<?> returnType) {
 		logger.debug("DELETE {}, params: {}", getFullPath(resourcePath), params);
 		return invokeSignedRequest(accessKey, key(true), DELETE.toString(),
 				getEndpoint(), getFullPath(resourcePath), null, params, null, returnType);
@@ -467,7 +465,7 @@ public final class ParaClient implements Closeable {
 
 	<T> T invokeSignedRequest(String accessKey, String secretKey,
 			String method, String apiURL, String path,
-			Map<String, String> headers, MultivaluedMap<String, String> params, Object entity, Class<?> returnType) {
+			Map<String, String> headers, Map<String, List<String>> params, Object entity, Class<?> returnType) {
 
 		boolean isJWT = Strings.CI.startsWith(secretKey, "Bearer");
 
@@ -506,6 +504,8 @@ public final class ParaClient implements Closeable {
 				req.setHeader(HttpHeaders.USER_AGENT, userAgent);
 			}
 
+			req.setHeader(HttpHeaders.ACCEPT_ENCODING, "gzip");
+
 			try {
 				return httpclient.execute(req, (resp) -> {
 					HttpEntity respEntity = resp.getEntity();
@@ -538,7 +538,11 @@ public final class ParaClient implements Closeable {
 		return null;
 	}
 
-	private String setQueryParameters(String uri, MultivaluedMap<String, String> params) {
+	private List<String> getQueryParameters(String param) {
+		return (param != null) ? List.of(param) : null;
+	}
+
+	private String setQueryParameters(String uri, Map<String, List<String>> params) {
 		if (params != null) {
 			List<String> paramz = new LinkedList<>();
 			for (Map.Entry<String, List<String>> param : params.entrySet()) {
@@ -595,8 +599,8 @@ public final class ParaClient implements Closeable {
 	 * @param pager a Pager
 	 * @return list of query parameters
 	 */
-	public MultivaluedMap<String, String> pagerToParams(Pager... pager) {
-		MultivaluedMap<String, String> map = new MultivaluedHashMap<>();
+	public Map<String, List<String>> pagerToParams(Pager... pager) {
+		Map<String, List<String>> map = new HashMap<>();
 		if (pager != null && pager.length > 0) {
 			Pager p = pager[0];
 			if (p != null) {
@@ -788,7 +792,7 @@ public final class ParaClient implements Closeable {
 		return IntStream.range(0, getNumChunks(keys, size))
 				.mapToObj(i -> (List<String>) partitionList(keys, i, size))
 				.map(chunk -> {
-					MultivaluedMap<String, String> ids = new MultivaluedHashMap<>();
+					Map<String, List<String>> ids = new HashMap<>();
 					ids.put("ids", chunk);
 					return invokeGet("_batch", ids, List.class);
 				})
@@ -832,7 +836,7 @@ public final class ParaClient implements Closeable {
 		IntStream.range(0, getNumChunks(keys, size))
 			.mapToObj(i -> (List<String>) partitionList(keys, i, size))
 			.forEach(chunk -> {
-				MultivaluedMap<String, String> ids = new MultivaluedHashMap<>();
+				Map<String, List<String>> ids = new HashMap<>();
 				ids.put("ids", chunk);
 				invokeDelete("_batch", ids, null);
 			});
@@ -864,8 +868,8 @@ public final class ParaClient implements Closeable {
 	 * @return the object if found or null
 	 */
 	public <P extends ParaObject> P findById(String id) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle(Config._ID, id);
+		Map<String, List<String>> params = new HashMap<>();
+		params.put(Config._ID, getQueryParameters(id));
 		List<P> list = getItems(find("id", params));
 		return list.isEmpty() ? null : list.get(0);
 	}
@@ -877,7 +881,7 @@ public final class ParaClient implements Closeable {
 	 * @return a list of object found
 	 */
 	public <P extends ParaObject> List<P> findByIds(List<String> ids) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
+		Map<String, List<String>> params = new HashMap<>();
 		params.put("ids", ids);
 		return getItems(find("ids", params));
 	}
@@ -895,11 +899,11 @@ public final class ParaClient implements Closeable {
 	 */
 	public <P extends ParaObject> List<P> findNearby(String type, String query, int radius, double lat, double lng,
 			Pager... pager) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("latlng", lat + "," + lng);
-		params.putSingle("radius", Integer.toString(radius));
-		params.putSingle("q", query);
-		params.putSingle(Config._TYPE, type);
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("latlng", getQueryParameters(lat + "," + lng));
+		params.put("radius", getQueryParameters(Integer.toString(radius)));
+		params.put("q", getQueryParameters(query));
+		params.put(Config._TYPE, getQueryParameters(type));
 		params.putAll(pagerToParams(pager));
 		return getItems(find("nearby", params), pager);
 	}
@@ -914,10 +918,10 @@ public final class ParaClient implements Closeable {
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findPrefix(String type, String field, String prefix, Pager... pager) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("field", field);
-		params.putSingle("prefix", prefix);
-		params.putSingle(Config._TYPE, type);
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("field", getQueryParameters(field));
+		params.put("prefix", getQueryParameters(prefix));
+		params.put(Config._TYPE, getQueryParameters(type));
 		params.putAll(pagerToParams(pager));
 		return getItems(find("prefix", params), pager);
 	}
@@ -931,9 +935,9 @@ public final class ParaClient implements Closeable {
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findQuery(String type, String query, Pager... pager) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("q", query);
-		params.putSingle(Config._TYPE, type);
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("q", getQueryParameters(query));
+		params.put(Config._TYPE, getQueryParameters(type));
 		params.putAll(pagerToParams(pager));
 		return getItems(find("", params), pager);
 	}
@@ -948,10 +952,10 @@ public final class ParaClient implements Closeable {
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findNestedQuery(String type, String field, String query, Pager... pager) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("q", query);
-		params.putSingle("field", field);
-		params.putSingle(Config._TYPE, type);
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("q", getQueryParameters(query));
+		params.put("field", getQueryParameters(field));
+		params.put(Config._TYPE, getQueryParameters(type));
 		params.putAll(pagerToParams(pager));
 		return getItems(find("nested", params), pager);
 	}
@@ -968,11 +972,11 @@ public final class ParaClient implements Closeable {
 	 */
 	public <P extends ParaObject> List<P> findSimilar(String type, String filterKey, String[] fields, String liketext,
 			Pager... pager) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
+		Map<String, List<String>> params = new HashMap<>();
 		params.put("fields", fields == null ? null : Arrays.asList(fields));
-		params.putSingle("filterid", filterKey);
-		params.putSingle("like", liketext);
-		params.putSingle(Config._TYPE, type);
+		params.put("filterid", getQueryParameters(filterKey));
+		params.put("like", getQueryParameters(liketext));
+		params.put(Config._TYPE, getQueryParameters(type));
 		params.putAll(pagerToParams(pager));
 		return getItems(find("similar", params), pager);
 	}
@@ -986,9 +990,9 @@ public final class ParaClient implements Closeable {
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findTagged(String type, String[] tags, Pager... pager) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
+		Map<String, List<String>> params = new HashMap<>();
 		params.put("tags", tags == null ? null : Arrays.asList(tags));
-		params.putSingle(Config._TYPE, type);
+		params.put(Config._TYPE, getQueryParameters(type));
 		params.putAll(pagerToParams(pager));
 		return getItems(find("tagged", params), pager);
 	}
@@ -1016,10 +1020,10 @@ public final class ParaClient implements Closeable {
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findTermInList(String type, String field, List<String> terms, Pager... pager) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("field", field);
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("field", getQueryParameters(field));
 		params.put("terms", terms);
-		params.putSingle(Config._TYPE, type);
+		params.put(Config._TYPE, getQueryParameters(type));
 		params.putAll(pagerToParams(pager));
 		return getItems(find("in", params), pager);
 	}
@@ -1038,8 +1042,8 @@ public final class ParaClient implements Closeable {
 		if (terms == null) {
 			return Collections.emptyList();
 		}
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("matchall", Boolean.toString(matchAll));
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("matchall", getQueryParameters(Boolean.toString(matchAll)));
 		LinkedList<String> list = new LinkedList<>();
 		for (Map.Entry<String, ? extends Object> term : terms.entrySet()) {
 			String key = term.getKey();
@@ -1051,7 +1055,7 @@ public final class ParaClient implements Closeable {
 		if (!terms.isEmpty()) {
 			params.put("terms", list);
 		}
-		params.putSingle(Config._TYPE, type);
+		params.put(Config._TYPE, getQueryParameters(type));
 		params.putAll(pagerToParams(pager));
 		return getItems(find("terms", params), pager);
 	}
@@ -1066,10 +1070,10 @@ public final class ParaClient implements Closeable {
 	 * @return a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findWildcard(String type, String field, String wildcard, Pager... pager) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("field", field);
-		params.putSingle("q", wildcard);
-		params.putSingle(Config._TYPE, type);
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("field", getQueryParameters(field));
+		params.put("q", getQueryParameters(wildcard));
+		params.put(Config._TYPE, getQueryParameters(type));
 		params.putAll(pagerToParams(pager));
 		return getItems(find("wildcard", params), pager);
 	}
@@ -1080,8 +1084,8 @@ public final class ParaClient implements Closeable {
 	 * @return the number of results found
 	 */
 	public Long getCount(String type) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle(Config._TYPE, type);
+		Map<String, List<String>> params = new HashMap<>();
+		params.put(Config._TYPE, getQueryParameters(type));
 		Pager pager = new Pager();
 		getItems(find("count", params), pager);
 		return pager.getCount();
@@ -1097,7 +1101,7 @@ public final class ParaClient implements Closeable {
 		if (terms == null) {
 			return 0L;
 		}
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
+		Map<String, List<String>> params = new HashMap<>();
 		LinkedList<String> list = new LinkedList<>();
 		for (Map.Entry<String, ? extends Object> term : terms.entrySet()) {
 			String key = term.getKey();
@@ -1109,21 +1113,22 @@ public final class ParaClient implements Closeable {
 		if (!terms.isEmpty()) {
 			params.put("terms", list);
 		}
-		params.putSingle(Config._TYPE, type);
-		params.putSingle("count", "true");
+		params.put(Config._TYPE, getQueryParameters(type));
+		params.put("count", getQueryParameters("true"));
 		Pager pager = new Pager();
 		getItems(find("terms", params), pager);
 		return pager.getCount();
 	}
 
-	private Map<String, Object> find(String queryType, MultivaluedMap<String, String> params) {
+	private Map<String, Object> find(String queryType, Map<String, List<String>> params) {
 		Map<String, Object> map = new HashMap<>();
 		if (params != null && !params.isEmpty()) {
 			String qType = StringUtils.isBlank(queryType) ? "/default" : "/".concat(queryType);
-			if (StringUtils.isBlank(params.getFirst(Config._TYPE))) {
+			List<String> type = params.get(Config._TYPE);
+			if (type == null || type.isEmpty() || StringUtils.isBlank(type.getFirst())) {
 				return invokeGet("search" + qType, params, Map.class);
 			} else {
-				return invokeGet(params.getFirst(Config._TYPE) + "/search" + qType, params, Map.class);
+				return invokeGet(type.getFirst() + "/search" + qType, params, Map.class);
 			}
 		} else {
 			map.put("items", Collections.emptyList());
@@ -1146,8 +1151,8 @@ public final class ParaClient implements Closeable {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return 0L;
 		}
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("count", "true");
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("count", getQueryParameters("true"));
 		Pager pager = new Pager();
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
 		getItems(invokeGet(url, params, Map.class), pager);
@@ -1185,9 +1190,9 @@ public final class ParaClient implements Closeable {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return Collections.emptyList();
 		}
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("field", field);
-		params.putSingle("q", (query == null) ? "*" : query);
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("field", getQueryParameters(field));
+		params.put("q", getQueryParameters((query == null) ? "*" : query));
 		params.putAll(pagerToParams(pager));
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
 		return getItems(invokeGet(url, params, Map.class), pager);
@@ -1279,9 +1284,9 @@ public final class ParaClient implements Closeable {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return 0L;
 		}
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("count", "true");
-		params.putSingle("childrenonly", "true");
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("count", getQueryParameters("true"));
+		params.put("childrenonly", getQueryParameters("true"));
 		Pager pager = new Pager();
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
 		getItems(invokeGet(url, params, Map.class), pager);
@@ -1300,8 +1305,8 @@ public final class ParaClient implements Closeable {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return Collections.emptyList();
 		}
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("childrenonly", "true");
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("childrenonly", getQueryParameters("true"));
 		params.putAll(pagerToParams(pager));
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
 		return getItems(invokeGet(url, params, Map.class), pager);
@@ -1322,10 +1327,10 @@ public final class ParaClient implements Closeable {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return Collections.emptyList();
 		}
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("childrenonly", "true");
-		params.putSingle("field", field);
-		params.putSingle("term", term);
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("childrenonly", getQueryParameters("true"));
+		params.put("field", getQueryParameters(field));
+		params.put("term", getQueryParameters(term));
 		params.putAll(pagerToParams(pager));
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
 		return getItems(invokeGet(url, params, Map.class), pager);
@@ -1345,9 +1350,9 @@ public final class ParaClient implements Closeable {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return Collections.emptyList();
 		}
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("childrenonly", "true");
-		params.putSingle("q", (query == null) ? "*" : query);
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("childrenonly", getQueryParameters("true"));
+		params.put("q", getQueryParameters((query == null) ? "*" : query));
 		params.putAll(pagerToParams(pager));
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
 		return getItems(invokeGet(url, params, Map.class), pager);
@@ -1362,8 +1367,8 @@ public final class ParaClient implements Closeable {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return;
 		}
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("childrenonly", "true");
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("childrenonly", getQueryParameters("true"));
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
 		invokeDelete(url, params, null);
 	}
@@ -1397,9 +1402,9 @@ public final class ParaClient implements Closeable {
 	 * @return a formatted date
 	 */
 	public String formatDate(String format, Locale loc) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("format", format);
-		params.putSingle("locale", loc == null ? null : loc.toString());
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("format", getQueryParameters(format));
+		params.put("locale", getQueryParameters(loc == null ? null : loc.toString()));
 		return (String) invokeGet("utils/formatdate", params, String.class);
 	}
 
@@ -1410,9 +1415,9 @@ public final class ParaClient implements Closeable {
 	 * @return a string with dashes
 	 */
 	public String noSpaces(String str, String replaceWith) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("string", str);
-		params.putSingle("replacement", replaceWith);
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("string", getQueryParameters(str));
+		params.put("replacement", getQueryParameters(replaceWith));
 		return (String) invokeGet("utils/nospaces", params, String.class);
 	}
 
@@ -1422,8 +1427,8 @@ public final class ParaClient implements Closeable {
 	 * @return a clean string
 	 */
 	public String stripAndTrim(String str) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("string", str);
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("string", getQueryParameters(str));
 		return (String) invokeGet("utils/nosymbols", params, String.class);
 	}
 
@@ -1433,8 +1438,8 @@ public final class ParaClient implements Closeable {
 	 * @return HTML
 	 */
 	public String markdownToHtml(String markdownString) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("md", markdownString);
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("md", getQueryParameters(markdownString));
 		return (String) invokeGet("utils/md2html", params, String.class);
 	}
 
@@ -1444,8 +1449,8 @@ public final class ParaClient implements Closeable {
 	 * @return a string like "5m", "1h"
 	 */
 	public String approximately(long delta) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("delta", Long.toString(delta));
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("delta", getQueryParameters(Long.toString(delta)));
 		return (String) invokeGet("utils/timeago", params, String.class);
 	}
 
@@ -1479,8 +1484,8 @@ public final class ParaClient implements Closeable {
 	 * @return a map of singular object type to object count.
 	 */
 	public Map<String, Number> typesCount() {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("count", "true");
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("count", getQueryParameters("true"));
 		return invokeGet("_types", params, Map.class);
 	}
 
@@ -1589,8 +1594,8 @@ public final class ParaClient implements Closeable {
 	 * @return a response object with properties "tookMillis" and "reindexed"
 	 */
 	public Map<String, Object> rebuildIndex(String destinationIndex) {
-		MultivaluedMap<String, String> params = new MultivaluedHashMap<>();
-		params.putSingle("destinationIndex", destinationIndex);
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("destinationIndex", getQueryParameters(destinationIndex));
 		return invokeSignedRequest(accessKey, key(true), POST.toString(),
 				getEndpoint(), getFullPath("_reindex"), null, params, null, Map.class);
 	}

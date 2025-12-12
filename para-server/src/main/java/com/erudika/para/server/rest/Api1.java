@@ -22,23 +22,20 @@ import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.User;
 import com.erudika.para.core.metrics.Metrics;
-import com.erudika.para.core.rest.CustomResourceHandler;
-import com.erudika.para.core.rest.GenericExceptionMapper;
 import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.HumanTime;
 import com.erudika.para.core.utils.Pager;
 import com.erudika.para.core.utils.Para;
-import static com.erudika.para.core.utils.Para.getCustomResourceHandlers;
 import static com.erudika.para.core.utils.Para.getDAO;
 import static com.erudika.para.core.utils.Para.getRevision;
 import static com.erudika.para.core.utils.Para.getSearch;
 import static com.erudika.para.core.utils.Para.getVersion;
 import static com.erudika.para.core.utils.Para.newApp;
-import static com.erudika.para.core.utils.Para.setup;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.core.validation.Constraint;
+import com.erudika.para.server.ParaServer;
 import static com.erudika.para.server.rest.RestUtils.getBatchCreateResponse;
 import static com.erudika.para.server.rest.RestUtils.getBatchDeleteResponse;
 import static com.erudika.para.server.rest.RestUtils.getBatchReadResponse;
@@ -50,13 +47,11 @@ import static com.erudika.para.server.rest.RestUtils.getOverwriteResponse;
 import static com.erudika.para.server.rest.RestUtils.getReadResponse;
 import static com.erudika.para.server.rest.RestUtils.getStatusResponse;
 import static com.erudika.para.server.rest.RestUtils.getUpdateResponse;
-import static com.erudika.para.server.rest.RestUtils.pathParam;
 import static com.erudika.para.server.rest.RestUtils.queryParam;
 import static com.erudika.para.server.rest.RestUtils.queryParams;
 import com.erudika.para.server.security.SecurityUtils;
 import static com.erudika.para.server.security.SecurityUtils.getPrincipalApp;
 import com.erudika.para.server.utils.HealthUtils;
-import com.erudika.para.server.utils.filters.FieldFilter;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MapperFeature;
@@ -64,20 +59,11 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider;
 import com.nimbusds.jwt.SignedJWT;
-import jakarta.ws.rs.HttpMethod;
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.MultivaluedMap;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.StreamingOutput;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -97,1060 +83,737 @@ import java.util.zip.ZipOutputStream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.glassfish.jersey.process.Inflector;
-import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.server.ServerProperties;
-import org.glassfish.jersey.server.model.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 /**
- * This is the main REST API configuration class which defines all endpoints for all resources
- * and the way API request will be handled. This is API version 1.0.
+ * This is the main REST API configuration class which defines all endpoints for all resources and the way API request
+ * will be handled. This is API version 1.0.
+ *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public final class Api1 extends ResourceConfig {
-
-	/**
-	 * {@value #PATH}.
-	 */
-	public static final String PATH = "/v1/";
+@RestController
+@ConditionalOnProperty(value = "para.api_enabled", havingValue = "true")
+@RequestMapping(value = ParaServer.API_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
+public final class Api1 {
 
 	private static final Logger logger = LoggerFactory.getLogger(Api1.class);
 
-	private static final String JSON = MediaType.APPLICATION_JSON;
-	private static final String GET = HttpMethod.GET;
-	private static final String PUT = HttpMethod.PUT;
-	private static final String POST = HttpMethod.POST;
-	private static final String DELETE = HttpMethod.DELETE;
-	private static final String PATCH = "PATCH";
-
-	/**
-	 * Initializes all of the API resources.
-	 */
-	public Api1() {
-		if (!Para.getConfig().apiEnabled()) {
-			return;
+	@GetMapping({"", "/"})
+	public ResponseEntity<?> intro() {
+		Map<String, String> info = new TreeMap<>();
+		info.put("info", "Para - the backend for busy developers.");
+		if (Para.getConfig().versionBannerEnabled()) {
+			info.put("version", Strings.CS.replace(getVersion(), "-SNAPSHOT", ""));
+			info.put("revision", StringUtils.trimToEmpty(getRevision()));
 		}
-		property(ServerProperties.WADL_FEATURE_DISABLE, true);
-		setApplicationName(Para.getConfig().getRootAppIdentifier());
-		register(GenericExceptionMapper.class);
-		register(new JacksonJsonProvider(ParaObjectUtils.getJsonMapper()));
-		register(FieldFilter.class);
+		return ResponseEntity.ok(info);
+	}
 
-		// print logo
-		Resource.Builder logo = Resource.builder("/");
-		logo.addMethod(GET).produces(JSON).handledBy(introHandler());
-		registerResources(logo.build());
+	@GetMapping("/_setup")
+	public ResponseEntity<?> setup() {
+		return setupInternal(null, null);
+	}
 
-		// core objects CRUD API
-		registerCrudApi("{type}", typeCrudHandler(), linksHandler());
+	@GetMapping("/_setup/{appid}")
+	public ResponseEntity<?> setup(@PathVariable String appid, HttpServletRequest req) {
+		return setupInternal(appid, req);
+	}
 
-		// search API
-		Resource.Builder searchRes = Resource.builder("search/{querytype}");
-		searchRes.addMethod(GET).produces(JSON).handledBy(searchHandler(null, null));
-		registerResources(searchRes.build());
-
-		// first time newApp
-		Resource.Builder setupRes = Resource.builder("_setup");
-		setupRes.addMethod(GET).produces(JSON).handledBy(setupHandler());
-		setupRes.addChildResource("{appid}").addMethod(GET).produces(JSON).handledBy(setupHandler());
-		registerResources(setupRes.build());
-
-		// reset API keys
-		Resource.Builder keysRes = Resource.builder("_newkeys");
-		keysRes.addMethod(POST).produces(JSON).handledBy(keysHandler());
-		registerResources(keysRes.build());
-
-		// user-defined types
-		Resource.Builder typesRes = Resource.builder("_types");
-		typesRes.addMethod(GET).produces(JSON).handledBy(listTypesHandler());
-		registerResources(typesRes.build());
-
-		// current user/app object
-		Resource.Builder meRes = Resource.builder("_me");
-		meRes.addMethod(GET).produces(JSON).handledBy(meHandler());
-		registerResources(meRes.build());
-
-		// getValidationConstraints by id
-		Resource.Builder idRes = Resource.builder("_id/{id}");
-		idRes.addMethod(GET).produces(JSON).handledBy(readIdHandler());
-		registerResources(idRes.build());
-
-		Resource.Builder confRes = Resource.builder("_config");
-		confRes.addChildResource("options").addMethod(GET).produces(JSON).handledBy(configOptionsHandler());
-		registerResources(confRes.build());
-
-		// validation
-		Resource.Builder valRes = Resource.builder("_constraints");
-		valRes.addMethod(GET).produces(JSON).handledBy(getConstrHandler(null));
-		valRes.addChildResource("{type}").addMethod(GET).produces(JSON).handledBy(getConstrHandler(null));
-		valRes.addChildResource("{type}/{field}/{cname}").addMethod(PUT).produces(JSON).handledBy(addConstrHandler(null));
-		valRes.addChildResource("{type}/{field}/{cname}").addMethod(DELETE).produces(JSON).handledBy(removeConstrHandler(null));
-		registerResources(valRes.build());
-
-		// permissions
-		Resource.Builder permRes = Resource.builder("_permissions");
-		permRes.addMethod(GET).produces(JSON).handledBy(getPermitHandler(null));
-		permRes.addChildResource("{subjectid}").addMethod(GET).produces(JSON).handledBy(getPermitHandler(null));
-		permRes.addChildResource("{subjectid}/{type}/{method}").addMethod(GET).produces(JSON).handledBy(checkPermitHandler(null));
-		permRes.addChildResource("{subjectid}/{type}").addMethod(PUT).produces(JSON).handledBy(grantPermitHandler(null));
-		permRes.addChildResource("{subjectid}/{type}").addMethod(DELETE).produces(JSON).handledBy(revokePermitHandler(null));
-		permRes.addChildResource("{subjectid}").addMethod(DELETE).produces(JSON).handledBy(revokePermitHandler(null));
-		registerResources(permRes.build());
-
-		// app settings
-		Resource.Builder appSettingsRes = Resource.builder("_settings");
-		appSettingsRes.addMethod(GET).produces(JSON).handledBy(appSettingsHandler(null));
-		appSettingsRes.addMethod(PUT).produces(JSON).handledBy(appSettingsHandler(null));
-		appSettingsRes.addChildResource("{key}").addMethod(GET).produces(JSON).handledBy(appSettingsHandler(null));
-		appSettingsRes.addChildResource("{key}").addMethod(PUT).produces(JSON).handledBy(appSettingsHandler(null));
-		appSettingsRes.addChildResource("{key}").addMethod(DELETE).produces(JSON).handledBy(appSettingsHandler(null));
-		registerResources(appSettingsRes.build());
-
-		// health check
-		Resource.Builder healthCheckRes = Resource.builder("_health");
-		healthCheckRes.addMethod(GET).produces(JSON).handledBy(healthCheckHandler());
-		registerResources(healthCheckRes.build());
-
-		// util functions API
-		Resource.Builder utilsRes = Resource.builder("utils/{method}");
-		utilsRes.addMethod(GET).produces(JSON).handledBy(utilsHandler());
-		registerResources(utilsRes.build());
-
-		// rebuild index
-		Resource.Builder reindexRes = Resource.builder("_reindex");
-		reindexRes.addMethod(POST).produces(JSON).handledBy(reindexHandler());
-		registerResources(reindexRes.build());
-
-		// backup
-		Resource.Builder backupRes = Resource.builder("_export");
-		backupRes.addMethod(GET).produces("application/zip").handledBy(backupHandler(null));
-		registerResources(backupRes.build());
-
-		// restore
-		Resource.Builder restoreRes = Resource.builder("_import");
-		restoreRes.addMethod(PUT).produces(JSON).consumes("application/zip").handledBy(restoreHandler(null));
-		registerResources(restoreRes.build());
-
-		// register custom resources
-		for (final CustomResourceHandler handler : getCustomResourceHandlers()) {
-			Resource.Builder custom = Resource.builder(handler.getRelativePath());
-			custom.addMethod(GET).produces(JSON).handledBy(new Inflector<ContainerRequestContext, Response>() {
-				public Response apply(ContainerRequestContext ctx) {
-					String appid = ParaObjectUtils.getAppidFromAuthHeader(ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
-					try (Metrics.Context context = Metrics.time(appid, handler.getClass(), "handleGet")) {
-						return handler.handleGet(ctx);
-					}
-				}
-			});
-			custom.addMethod(POST).produces(JSON).consumes(JSON).handledBy(new Inflector<ContainerRequestContext, Response>() {
-				public Response apply(ContainerRequestContext ctx) {
-					String appid = ParaObjectUtils.getAppidFromAuthHeader(ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
-					try (Metrics.Context context = Metrics.time(appid, handler.getClass(), "handlePost")) {
-						return handler.handlePost(ctx);
-					}
-				}
-			});
-			custom.addMethod(PATCH).produces(JSON).consumes(JSON).handledBy(new Inflector<ContainerRequestContext, Response>() {
-				public Response apply(ContainerRequestContext ctx) {
-					String appid = ParaObjectUtils.getAppidFromAuthHeader(ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
-					try (Metrics.Context context = Metrics.time(appid, handler.getClass(), "handlePatch")) {
-						return handler.handlePatch(ctx);
-					}
-				}
-			});
-			custom.addMethod(PUT).produces(JSON).consumes(JSON).handledBy(new Inflector<ContainerRequestContext, Response>() {
-				public Response apply(ContainerRequestContext ctx) {
-					String appid = ParaObjectUtils.getAppidFromAuthHeader(ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
-					try (Metrics.Context context = Metrics.time(appid, handler.getClass(), "handlePut")) {
-						return handler.handlePut(ctx);
-					}
-				}
-			});
-			custom.addMethod(DELETE).produces(JSON).handledBy(new Inflector<ContainerRequestContext, Response>() {
-				public Response apply(ContainerRequestContext ctx) {
-					String appid = ParaObjectUtils.getAppidFromAuthHeader(ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
-					try (Metrics.Context context = Metrics.time(appid, handler.getClass(), "handleDelete")) {
-						return handler.handleDelete(ctx);
-					}
-				}
-			});
-			registerResources(custom.build());
+	@PostMapping("/_newkeys")
+	public ResponseEntity<?> newKeys() {
+		App app = SecurityUtils.getAuthenticatedApp();
+		if (app != null) {
+			app.resetSecret();
+			CoreUtils.getInstance().overwrite(app);
+			Map<String, String> creds = app.getCredentials();
+			creds.put("info", "Save the secret key! It is showed only once!");
+			return ResponseEntity.ok(creds);
 		}
+		return getStatusResponse(HttpStatus.UNAUTHORIZED, "Not an app.");
 	}
 
-	private void registerCrudApi(String path, Inflector<ContainerRequestContext, Response> handler,
-			Inflector<ContainerRequestContext, Response> linksHandler) {
-		Resource.Builder core = Resource.builder(path);
-		// list endpoints (both do the same thing)
-		core.addMethod(GET).produces(JSON).handledBy(handler);
-		core.addChildResource("search/{querytype}").addMethod(GET).produces(JSON).handledBy(handler);
-		core.addChildResource("search").addMethod(GET).produces(JSON).handledBy(handler);
-		// CRUD endpoints (non-batch)
-		core.addMethod(POST).produces(JSON).consumes(JSON).handledBy(handler);
-		core.addChildResource("{id}").addMethod(GET).produces(JSON).handledBy(handler);
-		core.addChildResource("{id}").addMethod(PUT).produces(JSON).consumes(JSON).handledBy(handler);
-		core.addChildResource("{id}").addMethod(PATCH).produces(JSON).consumes(JSON).handledBy(handler);
-		core.addChildResource("{id}").addMethod(DELETE).produces(JSON).handledBy(handler);
-		// links CRUD endpoints
-		core.addChildResource("{id}/links/{type2}/{id2}").addMethod(GET).produces(JSON).handledBy(linksHandler);
-		core.addChildResource("{id}/links/{type2}").addMethod(GET).produces(JSON).handledBy(linksHandler);
-		core.addChildResource("{id}/links/{id2}").addMethod(POST).produces(JSON).handledBy(linksHandler);
-		core.addChildResource("{id}/links/{id2}").addMethod(PUT).produces(JSON).handledBy(linksHandler);
-		core.addChildResource("{id}/links/{type2}/{id2}").addMethod(DELETE).produces(JSON).handledBy(linksHandler);
-		core.addChildResource("{id}/links").addMethod(DELETE).produces(JSON).handledBy(linksHandler);
-		// CRUD endpoints (batch)
-		Resource.Builder batch = Resource.builder("_batch");
-		batch.addMethod(POST).produces(JSON).consumes(JSON).handledBy(batchCreateHandler(null));
-		batch.addMethod(GET).produces(JSON).handledBy(batchReadHandler(null));
-		batch.addMethod(PUT).produces(JSON).consumes(JSON).handledBy(batchCreateHandler(null));
-		batch.addMethod(PATCH).produces(JSON).consumes(JSON).handledBy(batchUpdateHandler(null));
-		batch.addMethod(DELETE).produces(JSON).handledBy(batchDeleteHandler(null));
-
-		registerResources(core.build());
-		registerResources(batch.build());
+	@PostMapping("/{type}")
+	public ResponseEntity<?> create(@PathVariable String type, HttpServletRequest req) throws IOException {
+		App app = getPrincipalApp();
+		if (app == null) {
+			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+		}
+		String resolvedType = resolveType(app, type);
+		return getCreateResponse(app, resolvedType, req.getInputStream());
 	}
 
-	private Inflector<ContainerRequestContext, Response> utilsHandler() {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
-				String method = pathParam("method", ctx);
-				method = StringUtils.isBlank(method) ? params.getFirst("method") : method;
-				if ("newid".equals(method)) {
-					return Response.ok(Utils.getNewId(), MediaType.TEXT_PLAIN_TYPE).build();
-				} else if ("timestamp".equals(method)) {
-					return Response.ok(Utils.timestamp(), MediaType.TEXT_PLAIN_TYPE).build();
-				} else if ("formatdate".equals(method)) {
-					String format = params.getFirst("format");
-					String locale = params.getFirst("locale");
-					Locale loc = Utils.getLocale(locale);
-					return Response.ok(Utils.formatDate(format, loc), MediaType.TEXT_PLAIN_TYPE).build();
-				} else if ("formatmessage".equals(method)) {
-					String msg = params.getFirst("message");
-					Object[] paramz = params.get("fields").toArray();
-					return Response.ok(Utils.formatMessage(msg, paramz), MediaType.TEXT_PLAIN_TYPE).build();
-				} else if ("nospaces".equals(method)) {
-					String str = params.getFirst("string");
-					String repl = params.getFirst("replacement");
-					return Response.ok(Utils.noSpaces(str, repl), MediaType.TEXT_PLAIN_TYPE).build();
-				} else if ("nosymbols".equals(method)) {
-					String str = params.getFirst("string");
-					return Response.ok(Utils.stripAndTrim(str), MediaType.TEXT_PLAIN_TYPE).build();
-				} else if ("md2html".equals(method)) {
-					String md = params.getFirst("md");
-					return Response.ok(Utils.markdownToHtml(md), MediaType.TEXT_HTML).build();
-				} else if ("timeago".equals(method)) {
-					String d = params.getFirst("delta");
-					long delta = NumberUtils.toLong(d, 1);
-					return Response.ok(HumanTime.approximately(delta), MediaType.TEXT_PLAIN_TYPE).build();
-				}
-				return getStatusResponse(Response.Status.BAD_REQUEST, "Unknown method: " +
-						((method == null) ? "empty" : method));
-			}
-		};
+	@GetMapping("/{type}/{id}")
+	public ResponseEntity<?> read(@PathVariable String type, @PathVariable String id) {
+		App app = getPrincipalApp();
+		if (app == null) {
+			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+		}
+		if (app.getId().equals(id)) {
+			return getReadResponse(app, app);
+		}
+		ParaObject obj = loadObject(app, type, id);
+		return getReadResponse(app, obj);
 	}
 
-	private Inflector<ContainerRequestContext, Response> introHandler() {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				Map<String, String> info = new TreeMap<>();
-				info.put("info", "Para - the backend for busy developers.");
-				if (Para.getConfig().versionBannerEnabled()) {
-					info.put("version", Strings.CS.replace(getVersion(), "-SNAPSHOT", ""));
-					info.put("revision", StringUtils.trimToEmpty(getRevision()));
-				}
-				return Response.ok(info).build();
-			}
-		};
+	@PatchMapping("/{type}/{id}")
+	public ResponseEntity<?> update(@PathVariable String type, @PathVariable String id, HttpServletRequest req)
+			throws IOException {
+		App app = getPrincipalApp();
+		if (app == null) {
+			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+		}
+		String resolvedType = resolveType(app, type);
+		String appid = Strings.CS.equals(resolvedType, Utils.type(App.class)) ? app.getAppid() : app.getAppIdentifier();
+		ParaObject target = getDAO().read(appid, id);
+		return getUpdateResponse(app, target, req.getInputStream());
 	}
 
-	private Inflector<ContainerRequestContext, Response> typeCrudHandler() {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				String typePlural = pathParam(Config._TYPE, ctx);
-				App app = getPrincipalApp();
-				if (app != null && !StringUtils.isBlank(typePlural)) {
-					String type = ParaObjectUtils.getAllTypes(app).get(typePlural);
-					if (type == null) {
-						type = typePlural;
-					}
-					return crudHandler(app, type).apply(ctx);
-				}
-				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
-			}
-		};
+	@PutMapping("/{type}/{id}")
+	public ResponseEntity<?> overwrite(@PathVariable String type, @PathVariable String id, HttpServletRequest req)
+			throws IOException {
+		App app = getPrincipalApp();
+		if (app == null) {
+			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+		}
+		String resolvedType = resolveType(app, type);
+		return getOverwriteResponse(app, id, resolvedType, req.getInputStream());
 	}
 
-	/**
-	 * Api method.
-	 * @param app {@link App}
-	 * @param type a type
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> crudHandler(final App app, final String type) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				String id = pathParam(Config._ID, ctx);
-				if (StringUtils.isBlank(id)) {
-					if (GET.equals(ctx.getMethod())) {
-						return searchHandler(app, type).apply(ctx);
-					} else if (POST.equals(ctx.getMethod())) {
-						return createHandler(app, type).apply(ctx);
-					} else if (ctx.getUriInfo().getPath().contains("search")) {
-						return searchHandler(app, type).apply(ctx);
-					}
-				} else {
-					if (GET.equals(ctx.getMethod())) {
-						return readHandler(app, type).apply(ctx);
-					} else if (PUT.equals(ctx.getMethod())) {
-						return overwriteHandler(app, type).apply(ctx);
-					} else if (PATCH.equals(ctx.getMethod())) {
-						return updateHandler(app, type).apply(ctx);
-					} else if (DELETE.equals(ctx.getMethod())) {
-						return deleteHandler(app, type).apply(ctx);
-					}
-				}
-				return getStatusResponse(Response.Status.NOT_FOUND, "Type '" + type + "' not found.");
-			}
-		};
+	@DeleteMapping("/{type}/{id}")
+	public ResponseEntity<?> delete(@PathVariable String type, @PathVariable String id) {
+		App app = getPrincipalApp();
+		if (app == null) {
+			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+		}
+		ParaObject obj = loadObject(app, type, id);
+		return getDeleteResponse(app, obj);
 	}
 
-	/**
-	 * Api method.
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> linksHandler() {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
-				MultivaluedMap<String, String> pathp = ctx.getUriInfo().getPathParameters();
-				String id = pathp.getFirst(Config._ID);
-				String type = pathp.getFirst(Config._TYPE);
-				String id2 = pathp.getFirst("id2");
-				String type2 = pathp.getFirst("type2");
-				App app = getPrincipalApp();
-
-				if (app == null) {
-					return getStatusResponse(Response.Status.BAD_REQUEST);
-				}
-
-				String typeSingular = (type == null) ? null : ParaObjectUtils.getAllTypes(app).get(type);
-				type = (typeSingular == null) ? type : typeSingular;
-
-				id2 = StringUtils.isBlank(id2) ? null : id2;
-				type2 = StringUtils.isBlank(type2) ? null : ParaObjectUtils.toObject(app, type2).getType();
-
-				ParaObject pobj = ParaObjectUtils.toObject(app, type);
-				pobj.setId(id);
-				pobj = getDAO().read(app.getAppIdentifier(), pobj.getId());
-
-				Pager pager = RestUtils.getPagerFromParams(params);
-				String childrenOnly = params.getFirst("childrenonly");
-
-				if (pobj != null) {
-					if (POST.equals(ctx.getMethod()) || PUT.equals(ctx.getMethod())) {
-						return RestUtils.createLinksHandler(pobj, id2);
-					} else if (GET.equals(ctx.getMethod())) {
-						return RestUtils.readLinksHandler(pobj, id2, type2, params, pager, childrenOnly != null);
-					} else if (DELETE.equals(ctx.getMethod())) {
-						return RestUtils.deleteLinksHandler(pobj, id2, type2, childrenOnly != null);
-					}
-				}
-				return getStatusResponse(Response.Status.NOT_FOUND, "Object not found: " + id);
-			}
-		};
+	@PostMapping("/_batch")
+	public ResponseEntity<?> batchCreate(HttpServletRequest req) throws IOException {
+		App app = getPrincipalApp();
+		if (app == null) {
+			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+		}
+		return getBatchCreateResponse(app, req.getInputStream());
 	}
 
-	/**
-	 * Api method.
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> meHandler() {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				if (GET.equals(ctx.getMethod())) {
-					User user = SecurityUtils.getAuthenticatedUser();
-					App app = SecurityUtils.getAuthenticatedApp();
-					if (user != null) {
-						return Response.ok(user).build();
-					} else if (app != null) {
-						String bearer = ctx.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-						if (app.isRootApp() && Strings.CS.startsWith(bearer, "Bearer")) {
-							try {
-								String token = bearer.substring(6).trim();
-								SignedJWT jwt = SignedJWT.parse(token);
-								if (jwt != null && jwt.getJWTClaimsSet().getClaim("getCredentials") != null) {
-									App a = getDAO().read(App.id((String) jwt.getJWTClaimsSet().getClaim("getCredentials")));
-									if (a != null) {
-										Map<String, Object> obj = ParaObjectUtils.getJsonReader(Map.class).
-												readValue(ParaObjectUtils.toJSON(a));
-										obj.put("credentials", a.getCredentials());
-										return Response.ok(obj).build();
-									}
-								}
-							} catch (Exception ex) {
-								logger.error("Operation failed: {}", ex.getMessage());
-							}
-						}
-						return Response.ok(app).build();
-					}
-				}
-				return Response.status(Response.Status.UNAUTHORIZED).build();
-			}
-		};
+	@PutMapping("/_batch")
+	public ResponseEntity<?> batchPut(HttpServletRequest req) throws IOException {
+		return batchCreate(req);
 	}
 
-	/**
-	 * Api method.
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> readIdHandler() {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = getPrincipalApp();
-				String id = pathParam(Config._ID, ctx);
-				if (app != null) {
-					return getReadResponse(app, getDAO().read(app.getAppIdentifier(), id));
-				}
-				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
-			}
-		};
+	@GetMapping("/_batch")
+	public ResponseEntity<?> batchRead(HttpServletRequest req) {
+		App app = getPrincipalApp();
+		if (app == null) {
+			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+		}
+		return getBatchReadResponse(app, queryParams("ids", req));
 	}
 
-	/**
-	 * Api method.
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> configOptionsHandler() {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				String format = queryParam("format", ctx);
-				String groupby = queryParam("groupby", ctx);
-				String type = "text/plain";
-				if ("markdown".equalsIgnoreCase(format)) {
-					type = "text/markdown";
-				} else if ("hocon".equalsIgnoreCase(format)) {
-					type = "application/hocon";
-				} else if (StringUtils.isBlank(format) || "json".equalsIgnoreCase(format)) {
-					type = "application/json";
-				}
-				return Response.ok(Para.getConfig().renderConfigDocumentation(format,
-						StringUtils.isBlank(groupby) || "category".equalsIgnoreCase(groupby)), type).build();
-			}
-		};
-	}
-
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> getConstrHandler(final App a) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				String type = pathParam(Config._TYPE, ctx);
-				if (app != null) {
-					if (type != null) {
-						return Response.ok(app.getAllValidationConstraints(type)).build();
-					} else {
-						return Response.ok(app.getAllValidationConstraints()).build();
-					}
-				}
-				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
-			}
-		};
-	}
-
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @return response
-	 */
+	@PatchMapping("_batch")
 	@SuppressWarnings("unchecked")
-	public static Inflector<ContainerRequestContext, Response> addConstrHandler(final App a) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				String type = pathParam(Config._TYPE, ctx);
-				String field = pathParam("field", ctx);
-				String cname = pathParam("cname", ctx);
-				if (app != null) {
-					Response payloadRes = getEntity(ctx.getEntityStream(), Map.class);
-					if (payloadRes.getStatusInfo() == Response.Status.OK) {
-						Map<String, Object> payload = (Map<String, Object>) payloadRes.getEntity();
-						if (app.addValidationConstraint(type, field, Constraint.build(cname, payload))) {
-							app.update();
-						}
-					}
-					return Response.ok(app.getAllValidationConstraints(type)).build();
+	public ResponseEntity<?> batchUpdate(HttpServletRequest req) throws IOException {
+		App app = getPrincipalApp();
+		if (app == null) {
+			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+		}
+		ResponseEntity<?> entityRes = getEntity(req.getInputStream(), List.class, true);
+		if (entityRes.getStatusCode().is2xxSuccessful()) {
+			List<Map<String, Object>> newProps = (List<Map<String, Object>>) entityRes.getBody();
+			ArrayList<String> ids = new ArrayList<>(newProps.size());
+			for (Map<String, Object> props : newProps) {
+				if (props != null && props.containsKey(Config._ID)) {
+					ids.add((String) props.get(Config._ID));
 				}
-				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
 			}
-		};
+			return getBatchUpdateResponse(app, getDAO().readAll(app.getAppIdentifier(), ids, true), newProps);
+		}
+		return entityRes;
 	}
 
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> removeConstrHandler(final App a) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				String type = pathParam(Config._TYPE, ctx);
-				String field = pathParam("field", ctx);
-				String cname = pathParam("cname", ctx);
-				if (app != null) {
-					if (app.removeValidationConstraint(type, field, cname)) {
+	@DeleteMapping("/_batch")
+	public ResponseEntity<?> batchDelete(HttpServletRequest req) {
+		App app = getPrincipalApp();
+		if (app == null) {
+			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+		}
+		return getBatchDeleteResponse(app, queryParams("ids", req));
+	}
+
+	@GetMapping("/search")
+	public ResponseEntity<?> search(HttpServletRequest req) {
+		return search(null, null, req);
+	}
+
+	@GetMapping("/search/{querytype}")
+	public ResponseEntity<?> search(@PathVariable String querytype, HttpServletRequest req) {
+		return search(null, querytype, req);
+	}
+
+	@GetMapping("/{type}")
+	public ResponseEntity<?> searchType(@PathVariable String type, HttpServletRequest req) {
+		return search(type, null, req);
+	}
+
+	@GetMapping("/{type}/search")
+	public ResponseEntity<?> searchTypeDefault(@PathVariable String type, HttpServletRequest req) {
+		return search(type, null, req);
+	}
+
+	@GetMapping("/{type}/search/{querytype}")
+	public ResponseEntity<?> searchType(@PathVariable String type, @PathVariable String querytype,
+			HttpServletRequest req) {
+		return search(type, querytype, req);
+	}
+
+	@GetMapping(value = "/utils/{method}", produces = "text/plain")
+	public ResponseEntity<?> utilsHandler(@PathVariable String method, HttpServletRequest req) {
+		method = StringUtils.isBlank(method) ? req.getParameter("method") : method;
+		if ("newid".equals(method)) {
+			return ResponseEntity.ok(Utils.getNewId());
+		} else if ("timestamp".equals(method)) {
+			return ResponseEntity.ok(Long.toString(Utils.timestamp()));
+		} else if ("formatdate".equals(method)) {
+			String format = req.getParameter("format");
+			String locale = req.getParameter("locale");
+			Locale loc = Utils.getLocale(locale);
+			return ResponseEntity.ok(Utils.formatDate(format, loc));
+		} else if ("formatmessage".equals(method)) {
+			String msg = req.getParameter("message");
+			Object[] paramz = req.getParameterValues("fields");
+			return ResponseEntity.ok(Utils.formatMessage(msg, paramz));
+		} else if ("nospaces".equals(method)) {
+			String str = req.getParameter("string");
+			String repl = req.getParameter("replacement");
+			return ResponseEntity.ok(Utils.noSpaces(str, repl));
+		} else if ("nosymbols".equals(method)) {
+			String str = req.getParameter("string");
+			return ResponseEntity.ok(Utils.stripAndTrim(str));
+		} else if ("md2html".equals(method)) {
+			String md = req.getParameter("md");
+			return ResponseEntity.ok(Utils.markdownToHtml(md));
+		} else if ("timeago".equals(method)) {
+			String d = req.getParameter("delta");
+			long delta = NumberUtils.toLong(d, 1);
+			return ResponseEntity.ok(HumanTime.approximately(delta));
+		}
+		return getStatusResponse(HttpStatus.BAD_REQUEST, "Unknown method: " + ((method == null) ? "empty" : method));
+	}
+
+	@GetMapping("/_types")
+	public ResponseEntity<?> listTypes(HttpServletRequest req) {
+		App app = getPrincipalApp();
+		if (app != null) {
+			Map<String, String> types = ParaObjectUtils.getAllTypes(app);
+			if ("true".equalsIgnoreCase(req.getParameter("count"))) {
+				Map<String, Long> typesCount = new HashMap<>(types.size());
+				types.values().forEach(v -> typesCount.put(v, getSearch().getCount(app.getAppIdentifier(), v)));
+				return ResponseEntity.ok(typesCount);
+			}
+			return ResponseEntity.ok(types);
+		}
+		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+	}
+
+	@GetMapping("/_me")
+	public ResponseEntity<?> me(HttpServletRequest req) {
+		User user = SecurityUtils.getAuthenticatedUser();
+		App app = SecurityUtils.getAuthenticatedApp();
+		if (user != null) {
+			return ResponseEntity.ok(user);
+		}
+		if (app != null) {
+			String bearer = req.getHeader(HttpHeaders.AUTHORIZATION);
+			if (app.isRootApp() && Strings.CS.startsWith(bearer, "Bearer")) {
+				try {
+					String token = bearer.substring(6).trim();
+					SignedJWT jwt = SignedJWT.parse(token);
+					if (jwt != null && jwt.getJWTClaimsSet().getClaim("getCredentials") != null) {
+						App a = getDAO().read(App.id((String) jwt.getJWTClaimsSet().getClaim("getCredentials")));
+						if (a != null) {
+							Map<String, Object> obj = ParaObjectUtils.getJsonReader(Map.class)
+									.readValue(ParaObjectUtils.toJSON(a));
+							obj.put("credentials", a.getCredentials());
+							return ResponseEntity.ok(obj);
+						}
+					}
+				} catch (Exception ex) {
+					logger.error("Operation failed: {}", ex.getMessage());
+				}
+			}
+			return ResponseEntity.ok(app);
+		}
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+	}
+
+	@GetMapping("/_id/{id}")
+	public ResponseEntity<?> readId(@PathVariable String id) {
+		App app = getPrincipalApp();
+		if (app != null) {
+			return getReadResponse(app, getDAO().read(app.getAppIdentifier(), id));
+		}
+		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+	}
+
+	@GetMapping("/_config/options")
+	public ResponseEntity<?> configOptions(HttpServletRequest req) {
+		String format = req.getParameter("format");
+		String groupby = req.getParameter("groupby");
+		String type = "text/plain";
+		if ("markdown".equalsIgnoreCase(format)) {
+			type = "text/markdown";
+		} else if ("hocon".equalsIgnoreCase(format)) {
+			type = "application/hocon";
+		} else if (StringUtils.isBlank(format) || "json".equalsIgnoreCase(format)) {
+			type = "application/json";
+		}
+		return ResponseEntity.ok().contentType(MediaType.parseMediaType(type)).body(
+				Para.getConfig().renderConfigDocumentation(format,
+						StringUtils.isBlank(groupby) || "category".equalsIgnoreCase(groupby)));
+	}
+
+	@GetMapping("/_constraints")
+	public ResponseEntity<?> getConstraints() {
+		return getConstraints(null);
+	}
+
+	@GetMapping("/_constraints/{type}")
+	public ResponseEntity<?> getConstraints(@PathVariable String type) {
+		App app = getPrincipalApp();
+		if (app != null) {
+			if (type != null) {
+				return ResponseEntity.ok(app.getAllValidationConstraints(type));
+			}
+			return ResponseEntity.ok(app.getAllValidationConstraints());
+		}
+		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+	}
+
+	@PutMapping("/_constraints/{type}/{field}/{cname}")
+	@SuppressWarnings("unchecked")
+	public ResponseEntity<?> addConstraint(@PathVariable String type, @PathVariable String field,
+			@PathVariable String cname, HttpServletRequest req) throws IOException {
+		App app = getPrincipalApp();
+		if (app != null) {
+			ResponseEntity<?> payloadRes = getEntity(req.getInputStream(), Map.class);
+			if (payloadRes.getStatusCode().is2xxSuccessful()) {
+				Map<String, Object> payload = (Map<String, Object>) payloadRes.getBody();
+				if (app.addValidationConstraint(type, field, Constraint.build(cname, payload))) {
+					app.update();
+				}
+			}
+			return ResponseEntity.ok(app.getAllValidationConstraints(type));
+		}
+		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+	}
+
+	@DeleteMapping("/_constraints/{type}/{field}/{cname}")
+	public ResponseEntity<?> removeConstraint(@PathVariable String type, @PathVariable String field,
+			@PathVariable String cname) {
+		App app = getPrincipalApp();
+		if (app != null) {
+			if (app.removeValidationConstraint(type, field, cname)) {
+				app.update();
+			}
+			return ResponseEntity.ok(app.getAllValidationConstraints(type));
+		}
+		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+	}
+
+	@GetMapping("/_permissions")
+	public ResponseEntity<?> getPermissions() {
+		return getPermissions(null);
+	}
+
+	@GetMapping("/_permissions/{subjectid}")
+	public ResponseEntity<?> getPermissions(@PathVariable String subjectid) {
+		App app = getPrincipalApp();
+		if (app != null) {
+			if (subjectid != null) {
+				return ResponseEntity.ok(app.getAllResourcePermissions(subjectid));
+			}
+			return ResponseEntity.ok(app.getAllResourcePermissions());
+		}
+		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+	}
+
+	@GetMapping(value = "/_permissions/{subjectid}/{type}/{method}", produces = "text/plain")
+	public ResponseEntity<?> checkPermission(@PathVariable String subjectid, @PathVariable String type,
+			@PathVariable String method) {
+		App app = getPrincipalApp();
+		if (app != null) {
+			String resourcePath = Utils.base64dec(type);
+			return ResponseEntity.ok(Boolean.toString(app.isAllowedTo(subjectid, resourcePath, method)));
+		}
+		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+	}
+
+	@PutMapping("/_permissions/{subjectid}/{type}")
+	public ResponseEntity<?> grantPermission(@PathVariable String subjectid, @PathVariable String type,
+			HttpServletRequest req) throws IOException {
+		App app = getPrincipalApp();
+		if (app != null) {
+			String resourcePath = Utils.base64dec(type);
+			ResponseEntity<?> resp = getEntity(req.getInputStream(), List.class);
+			if (resp.getStatusCode().is2xxSuccessful()) {
+				List<String> permission = (List<String>) resp.getBody();
+				Set<App.AllowedMethods> set = new HashSet<>(permission.size());
+				for (String perm : permission) {
+					if (!StringUtils.isBlank(perm)) {
+						App.AllowedMethods method = App.AllowedMethods.fromString(perm);
+						if (method != null) {
+							set.add(method);
+						}
+					}
+				}
+				if (!set.isEmpty()) {
+					if (app.grantResourcePermission(subjectid, resourcePath, EnumSet.copyOf(set))) {
 						app.update();
 					}
-					return Response.ok(app.getAllValidationConstraints(type)).build();
+					return ResponseEntity.ok(app.getAllResourcePermissions(subjectid));
 				}
-				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+				return getStatusResponse(HttpStatus.BAD_REQUEST, "No allowed methods specified.");
 			}
-		};
+			return resp;
+		}
+		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 	}
 
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> getPermitHandler(final App a) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				String subjectid = pathParam("subjectid", ctx);
-				if (app != null) {
-					if (subjectid != null) {
-						return Response.ok(app.getAllResourcePermissions(subjectid)).build();
-					} else {
-						return Response.ok(app.getAllResourcePermissions()).build();
-					}
-				}
-				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+	@DeleteMapping("/_permissions/{subjectid}/{type}")
+	public ResponseEntity<?> revokePermission(@PathVariable String subjectid, @PathVariable String type) {
+		App app = getPrincipalApp();
+		if (app != null) {
+			String resourcePath = Utils.base64dec(type);
+			boolean revoked = StringUtils.isBlank(resourcePath)
+					? app.revokeAllResourcePermissions(subjectid)
+					: app.revokeResourcePermission(subjectid, resourcePath);
+			if (revoked) {
+				app.update();
 			}
-		};
+			return ResponseEntity.ok(app.getAllResourcePermissions(subjectid));
+		}
+		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 	}
 
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> checkPermitHandler(final App a) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				String subjectid = pathParam("subjectid", ctx);
-				String resourcePath = Utils.base64dec(pathParam(Config._TYPE, ctx));
-				String httpMethod = pathParam("method", ctx);
-				if (app != null) {
-					return Response.ok(app.isAllowedTo(subjectid, resourcePath, httpMethod),
-							MediaType.TEXT_PLAIN_TYPE).build();
-				}
-				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
-			}
-		};
+	@DeleteMapping("/_permissions/{subjectid}")
+	public ResponseEntity<?> revokeAllPermissions(@PathVariable String subjectid) {
+		return revokePermission(subjectid, null);
 	}
 
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @return response
-	 */
+	@GetMapping("/_settings")
+	public ResponseEntity<?> getSettings() {
+		App app = getPrincipalApp();
+		if (app != null) {
+			return ResponseEntity.ok(app.getSettings());
+		}
+		return getStatusResponse(HttpStatus.FORBIDDEN, "Not allowed.");
+	}
+
+	@GetMapping("/_settings/{key}")
+	public ResponseEntity<?> getSetting(@PathVariable String key) {
+		App app = getPrincipalApp();
+		if (app != null) {
+			return ResponseEntity.ok(Collections.singletonMap("value", app.getSetting(key)));
+		}
+		return getStatusResponse(HttpStatus.FORBIDDEN, "Not allowed.");
+	}
+
+	@PutMapping("/_settings")
+	public ResponseEntity<?> putSettings(HttpServletRequest req) throws IOException {
+		return putSetting(null, req);
+	}
+
+	@PutMapping("/_settings/{key}")
 	@SuppressWarnings("unchecked")
-	public static Inflector<ContainerRequestContext, Response> grantPermitHandler(final App a) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				String subjectid = pathParam("subjectid", ctx);
-				String resourcePath = Utils.base64dec(pathParam(Config._TYPE, ctx));
-				if (app != null) {
-					Response resp = getEntity(ctx.getEntityStream(), List.class);
-					if (resp.getStatusInfo() == Response.Status.OK) {
-						List<String> permission = (List<String>) resp.getEntity();
-						Set<App.AllowedMethods> set = new HashSet<>(permission.size());
-						for (String perm : permission) {
-							if (!StringUtils.isBlank(perm)) {
-								App.AllowedMethods method = App.AllowedMethods.fromString(perm);
-								if (method != null) {
-									set.add(method);
-								}
-							}
-						}
-						if (!set.isEmpty()) {
-							if (app.grantResourcePermission(subjectid, resourcePath, EnumSet.copyOf(set))) {
-								app.update();
-							}
-							return Response.ok(app.getAllResourcePermissions(subjectid)).build();
-						} else {
-							return getStatusResponse(Response.Status.BAD_REQUEST, "No allowed methods specified.");
-						}
-					} else {
-						return resp;
-					}
-				}
-				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
-			}
-		};
-	}
-
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> revokePermitHandler(final App a) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				String subjectid = pathParam("subjectid", ctx);
-				String resourcePath = Utils.base64dec(pathParam(Config._TYPE, ctx));
-				if (app != null) {
-					boolean revoked;
-					if (!StringUtils.isBlank(resourcePath)) {
-						revoked = app.revokeResourcePermission(subjectid, resourcePath);
-					} else {
-						revoked = app.revokeAllResourcePermissions(subjectid);
-					}
-					if (revoked) {
-						app.update();
-					}
-					return Response.ok(app.getAllResourcePermissions(subjectid)).build();
-				}
-				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
-			}
-		};
-	}
-
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @return response
-	 */
-	@SuppressWarnings("unchecked")
-	public static Inflector<ContainerRequestContext, Response> appSettingsHandler(final App a) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				String key = pathParam("key", ctx);
-				if (app != null) {
-					if (PUT.equals(ctx.getMethod())) {
-						Response resp = getEntity(ctx.getEntityStream(), Map.class);
-						if (resp.getStatusInfo() == Response.Status.OK) {
-							Map<String, Object> setting = (Map<String, Object>) resp.getEntity();
-							if (!StringUtils.isBlank(key) && setting.containsKey("value")) {
-								app.addSetting(key, setting.get("value"));
-							} else {
-								app.clearSettings().addAllSettings(setting);
-							}
-							app.update();
-							return Response.ok().build();
-						} else {
-							return getStatusResponse(Response.Status.BAD_REQUEST);
-						}
-					} else if (DELETE.equals(ctx.getMethod())) {
-						app.removeSetting(key);
-						app.update();
-						return Response.ok().build();
-					} else {
-						if (StringUtils.isBlank(key)) {
-							return Response.ok(app.getSettings()).build();
-						} else {
-							return Response.ok(Collections.singletonMap("value", app.getSetting(key))).build();
-						}
-					}
-				}
-				return getStatusResponse(Response.Status.FORBIDDEN, "Not allowed.");
-			}
-		};
-	}
-
-	private static Inflector<ContainerRequestContext, Response> healthCheckHandler() {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				if (HealthUtils.getInstance().isHealthy()) {
-					return Response.ok(Collections.singletonMap("message", "healthy")).build();
+	public ResponseEntity<?> putSetting(@PathVariable String key, HttpServletRequest req) throws IOException {
+		App app = getPrincipalApp();
+		if (app != null) {
+			ResponseEntity<?> resp = getEntity(req.getInputStream(), Map.class);
+			if (resp.getStatusCode().is2xxSuccessful()) {
+				Map<String, Object> setting = (Map<String, Object>) resp.getBody();
+				if (!StringUtils.isBlank(key) && setting.containsKey("value")) {
+					app.addSetting(key, setting.get("value"));
 				} else {
-					return getStatusResponse(Response.Status.INTERNAL_SERVER_ERROR, "unhealthy");
+					app.clearSettings().addAllSettings(setting);
 				}
+				app.update();
+				return ResponseEntity.ok().build();
 			}
-		};
+			return getStatusResponse(HttpStatus.BAD_REQUEST);
+		}
+		return getStatusResponse(HttpStatus.FORBIDDEN, "Not allowed.");
 	}
 
-	private Inflector<ContainerRequestContext, Response> listTypesHandler() {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = getPrincipalApp();
-				if (app != null) {
-					Map<String, String> types = ParaObjectUtils.getAllTypes(app);
-					if ("true".equalsIgnoreCase(queryParam("count", ctx))) {
-						Map<String, Long> typesCount = new HashMap<String, Long>(types.size());
-						types.values().forEach(v -> typesCount.put(v, getSearch().getCount(app.getAppIdentifier(), v)));
-						return Response.ok(typesCount).build();
-					} else {
-						return Response.ok(types).build();
-					}
+	@DeleteMapping("/_settings/{key}")
+	public ResponseEntity<?> deleteSetting(@PathVariable String key) {
+		App app = getPrincipalApp();
+		if (app != null) {
+			app.removeSetting(key);
+			app.update();
+			return ResponseEntity.ok().build();
+		}
+		return getStatusResponse(HttpStatus.FORBIDDEN, "Not allowed.");
+	}
+
+	@GetMapping("/_health")
+	public ResponseEntity<?> health() {
+		if (HealthUtils.getInstance().isHealthy()) {
+			return ResponseEntity.ok(Collections.singletonMap("message", "healthy"));
+		}
+		return getStatusResponse(HttpStatus.INTERNAL_SERVER_ERROR, "unhealthy");
+	}
+
+	@PostMapping("/_reindex")
+	public ResponseEntity<?> reindex(HttpServletRequest req) {
+		App app = getPrincipalApp();
+		if (app != null) {
+			long startTime = System.nanoTime();
+			Pager pager = RestUtils.getPagerFromParams(req);
+			String destinationIndex = req.getParameter("destinationIndex");
+			try (Metrics.Context context = Metrics.time(app.getAppIdentifier(), Api1.class, "rebuildIndex")) {
+				getSearch().rebuildIndex(getDAO(), app, destinationIndex, pager);
+			}
+			long tookMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
+			Map<String, Object> response = new HashMap<>(2);
+			response.put("reindexed", pager.getCount());
+			response.put("tookMillis", tookMillis);
+			return ResponseEntity.ok().body(response);
+		}
+		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+	}
+
+	@GetMapping(value = "/_export", produces = "application/zip")
+	public ResponseEntity<StreamingResponseBody> backup() {
+		App app = getPrincipalApp();
+		if (app != null) {
+			String fileName = app.getAppIdentifier().trim() + "_" + Utils.formatDate("YYYYMMdd_HHmmss", Locale.US);
+			StreamingResponseBody stream = os -> {
+				ObjectWriter writer = JsonMapper.builder().disable(MapperFeature.USE_ANNOTATIONS).build().writer()
+						.without(SerializationFeature.INDENT_OUTPUT)
+						.without(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
+				try (ZipOutputStream zipOut = new ZipOutputStream(os)) {
+					long count = 0;
+					int partNum = 0;
+					Pager pager = new Pager();
+					List<ParaObject> objects;
+					do {
+						objects = getDAO().readPage(app.getAppIdentifier(), pager);
+						ZipEntry zipEntry = new ZipEntry(fileName + "_part" + (++partNum) + ".json");
+						zipOut.putNextEntry(zipEntry);
+						writer.writeValue(zipOut, objects);
+						count += objects.size();
+					} while (!objects.isEmpty());
+					logger.info("Exported {} objects from app '{}'. (pager.count={})",
+							count, app.getId(), pager.getCount());
+				} catch (IOException e) {
+					logger.error("Failed to export data.", e);
 				}
-				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
-			}
-		};
+			};
+			return ResponseEntity.ok()
+					.contentType(MediaType.parseMediaType("application/zip"))
+					.header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + fileName + ".zip")
+					.body(stream);
+		}
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
 	}
 
-	private Inflector<ContainerRequestContext, Response> keysHandler() {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = SecurityUtils.getAuthenticatedApp();
-				if (app != null) {
-					app.resetSecret();
-					CoreUtils.getInstance().overwrite(app);
-					Map<String, String> creds = app.getCredentials();
-					creds.put("info", "Save the secret key! It is showed only once!");
-					return Response.ok(creds).build();
-				}
-				return getStatusResponse(Response.Status.UNAUTHORIZED, "Not an app.");
-			}
-		};
-	}
-
-	private Inflector<ContainerRequestContext, Response> setupHandler() {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				String appid = pathParam(Config._APPID, ctx);
-				if (!StringUtils.isBlank(appid)) {
-					App app = SecurityUtils.getAuthenticatedApp();
-					if (app != null && app.isRootApp()) {
-						boolean sharedIndex = "true".equals(queryParam("sharedIndex", ctx));
-						boolean sharedTable = "true".equals(queryParam("sharedTable", ctx));
-						return Response.ok(newApp(appid, queryParam(Config._NAME, ctx),
-								queryParam(Config._CREATORID, ctx), sharedIndex, sharedTable)).build();
-					} else {
-						return getStatusResponse(Response.Status.FORBIDDEN,
-								"Only root app can create and initialize other apps.");
-					}
-				}
-				return Response.ok(setup()).build();
-			}
-		};
-	}
-
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @param type a type
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> createHandler(final App a, final String type) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				return getCreateResponse(app, type, ctx.getEntityStream());
-			}
-		};
-	}
-
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @param type a type
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> readHandler(final App a, final String type) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				ParaObject obj = ParaObjectUtils.toObject(app, type);
-				obj.setId(pathParam(Config._ID, ctx));
-				if (app.getId().equals(obj.getId())) {
-					return getReadResponse(app, app);
-				}
-				return getReadResponse(app, getDAO().read(app.getAppIdentifier(), obj.getId()));
-			}
-		};
-	}
-
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @param type a type
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> updateHandler(final App a, final String type) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				ParaObject obj = ParaObjectUtils.toObject(app, type);
-				obj.setId(pathParam(Config._ID, ctx));
-				// allow apps to partially update themselves
-				String appid = Strings.CS.equals(type, Utils.type(App.class)) ? app.getAppid() : app.getAppIdentifier();
-				// partial update - equivalent to PATCH method
-				return getUpdateResponse(app, getDAO().read(appid, obj.getId()), ctx.getEntityStream());
-			}
-		};
-	}
-
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @param type a type
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> overwriteHandler(final App a, final String type) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				// full update - equivalent to PUT method
-				App app = (a != null) ? a : getPrincipalApp();
-				return getOverwriteResponse(app, pathParam(Config._ID, ctx), type, ctx.getEntityStream());
-			}
-		};
-	}
-
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @param type a type
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> deleteHandler(final App a, final String type) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				ParaObject obj = ParaObjectUtils.toObject(app, type);
-				obj.setId(pathParam(Config._ID, ctx));
-				return getDeleteResponse(app, obj);
-			}
-		};
-	}
-
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> batchCreateHandler(final App a) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				return getBatchCreateResponse(app, ctx.getEntityStream());
-			}
-		};
-	}
-
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> batchReadHandler(final App a) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				return getBatchReadResponse(app, queryParams("ids", ctx));
-			}
-		};
-	}
-
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @return response
-	 */
-	@SuppressWarnings("unchecked")
-	public static Inflector<ContainerRequestContext, Response> batchUpdateHandler(final App a) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				Response entityRes = getEntity(ctx.getEntityStream(), List.class, true);
-				if (entityRes.getStatusInfo() == Response.Status.OK) {
-					List<Map<String, Object>> newProps = (List<Map<String, Object>>) entityRes.getEntity();
-					ArrayList<String> ids = new ArrayList<>(newProps.size());
-					for (Map<String, Object> props : newProps) {
-						if (props != null && props.containsKey(Config._ID)) {
-							ids.add((String) props.get(Config._ID));
-						}
-					}
-					return getBatchUpdateResponse(app, getDAO().readAll(app.getAppIdentifier(), ids, true), newProps);
-				} else {
-					return entityRes;
-				}
-			}
-		};
-	}
-
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> batchDeleteHandler(final App a) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				return getBatchDeleteResponse(app, queryParams("ids", ctx));
-			}
-		};
-	}
-
-	/**
-	 * Api method.
-	 * @param app {@link App}
-	 * @param type a type
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> searchHandler(final App app, final String type) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app1 = (app == null) ? getPrincipalApp() : app;
-				MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
-				String query = params.getFirst("q");
-				if (!StringUtils.isBlank(query) && !getSearch().isValidQueryString(query)) {
-					return getStatusResponse(Response.Status.BAD_REQUEST, "Invalid query string syntax q=" +
-							query + " in request " + ctx.getMethod() + " " + ctx.getUriInfo().getRequestUri());
-				}
-				String queryType = pathParam("querytype", ctx);
-				if (StringUtils.isBlank(queryType)) {
-					queryType = "default";
-				}
-				return Response.ok(RestUtils.buildQueryAndSearch(app1, queryType, params, type)).build();
-			}
-		};
-	}
-
-	/**
-	 * Api method.
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> reindexHandler() {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = getPrincipalApp();
-				if (app != null) {
-					long startTime = System.nanoTime();
-					MultivaluedMap<String, String> params = ctx.getUriInfo().getQueryParameters();
-					Pager pager = RestUtils.getPagerFromParams(params);
-					String destinationIndex = params.getFirst("destinationIndex");
-					try (Metrics.Context context = Metrics.time(app.getAppIdentifier(), Api1.class, "rebuildIndex")) {
-						getSearch().rebuildIndex(getDAO(), app, destinationIndex, pager);
-					}
-					long tookMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
-					Map<String, Object> response = new HashMap<>(2);
-					response.put("reindexed", pager.getCount());
-					response.put("tookMillis", tookMillis);
-					return Response.ok(response, JSON).build();
-				}
-				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
-			}
-		};
-	}
-
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> backupHandler(final App a) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				if (app != null) {
-					String fileName = app.getAppIdentifier().trim() + "_" + Utils.formatDate("YYYYMMdd_HHmmss", Locale.US);
-					StreamingOutput stream = new StreamingOutput() {
-						@Override
-						public void write(OutputStream os) throws IOException, WebApplicationException {
-							// export all fields, even those which are JSON-ignored
-							ObjectWriter writer = JsonMapper.builder().disable(MapperFeature.USE_ANNOTATIONS).build().writer().
-									without(SerializationFeature.INDENT_OUTPUT).
-									without(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
-							try (ZipOutputStream zipOut = new ZipOutputStream(os)) {
-								long count = 0;
-								int partNum = 0;
-								// find all objects even if there are more than 10000 users in the system
-								Pager pager = new Pager();
-								List<ParaObject> objects;
-								do {
-									objects = getDAO().readPage(app.getAppIdentifier(), pager);
-									ZipEntry zipEntry = new ZipEntry(fileName + "_part" + (++partNum) + ".json");
-									zipOut.putNextEntry(zipEntry);
-									writer.writeValue(zipOut, objects);
-									count += objects.size();
-								} while (!objects.isEmpty());
-								logger.info("Exported {} objects from app '{}'. (pager.count={})",
-										count, app.getId(), pager.getCount());
-							} catch (final IOException e) {
-								logger.error("Failed to export data.", e);
+	@PutMapping(value = "/_import", consumes = "application/zip")
+	public ResponseEntity<?> restore(HttpServletRequest req) {
+		App app = getPrincipalApp();
+		if (app != null) {
+			ObjectReader reader = ParaObjectUtils.getJsonMapper()
+					.readerFor(new TypeReference<List<Map<String, Object>>>() {
+					});
+			int count = 0;
+			int importBatchSize = Para.getConfig().importBatchSize();
+			String filename = Optional.ofNullable(req.getParameter("filename"))
+					.orElse(app.getAppIdentifier().trim() + "_backup.zip");
+			Sysprop s = new Sysprop();
+			s.setType("paraimport");
+			try (InputStream inputStream = req.getInputStream(); ZipInputStream zipIn = new ZipInputStream(inputStream)) {
+				ZipEntry zipEntry;
+				List<ParaObject> toCreate = new LinkedList<>();
+				while ((zipEntry = zipIn.getNextEntry()) != null) {
+					if (zipEntry.getName().endsWith(".json")) {
+						List<Map<String, Object>> objects = reader.readValue(new FilterInputStream(zipIn) {
+							public void close() throws IOException {
+								zipIn.closeEntry();
 							}
+						});
+						objects.forEach(o -> toCreate.add(ParaObjectUtils.setAnnotatedFields(o)));
+						if (toCreate.size() >= importBatchSize) {
+							getDAO().createAll(app.getAppIdentifier(), toCreate);
+							toCreate.clear();
 						}
-					};
-					return Response.ok(stream, "application/zip").
-							header("Content-Disposition", "attachment;filename=" + fileName + ".zip").build();
+						count += objects.size();
+					}
 				}
-				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
+				if (!toCreate.isEmpty()) {
+					getDAO().createAll(app.getAppIdentifier(), toCreate);
+				}
+				s.setCreatorid(app.getAppIdentifier());
+				s.setName(filename);
+				s.addProperty("count", count);
+				logger.info("Imported {} objects to app '{}'", count, app.getId());
+				if (count > 0) {
+					getDAO().create(app.getAppIdentifier(), s);
+				}
+				return ResponseEntity.ok(s);
+			} catch (Exception e) {
+				logger.error("Failed to import " + filename, e);
+				return getStatusResponse(HttpStatus.BAD_REQUEST, "Import failed - " + e.getMessage());
 			}
-		};
+		}
+		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 	}
 
-	/**
-	 * Api method.
-	 * @param a {@link App}
-	 * @return response
-	 */
-	public static Inflector<ContainerRequestContext, Response> restoreHandler(final App a) {
-		return new Inflector<ContainerRequestContext, Response>() {
-			public Response apply(ContainerRequestContext ctx) {
-				App app = (a != null) ? a : getPrincipalApp();
-				if (app != null) {
-					ObjectReader reader = ParaObjectUtils.getJsonMapper().
-							readerFor(new TypeReference<List<Map<String, Object>>>() { });
-					int count = 0;
-					int importBatchSize = Para.getConfig().importBatchSize();
-					String filename = Optional.ofNullable(ctx.getUriInfo().getQueryParameters().getFirst("filename")).
-							orElse(app.getAppIdentifier().trim() + "_backup.zip");
-					Sysprop s = new Sysprop();
-					s.setType("paraimport");
-					try (InputStream inputStream = ctx.getEntityStream()) {
-						try (ZipInputStream zipIn = new ZipInputStream(inputStream)) {
-							ZipEntry zipEntry;
-							List<ParaObject> toCreate = new LinkedList<ParaObject>();
-							while ((zipEntry = zipIn.getNextEntry()) != null) {
-								if (zipEntry.getName().endsWith(".json")) {
-									List<Map<String, Object>> objects = reader.readValue(new FilterInputStream(zipIn) {
-										public void close() throws IOException {
-											zipIn.closeEntry();
-										}
-									});
-									objects.forEach(o -> toCreate.add(ParaObjectUtils.setAnnotatedFields(o)));
-									if (toCreate.size() >= importBatchSize) {
-										getDAO().createAll(app.getAppIdentifier(), toCreate);
-										toCreate.clear();
-									}
-									count += objects.size();
-								}
-							}
-							if (!toCreate.isEmpty()) {
-								getDAO().createAll(app.getAppIdentifier(), toCreate);
-							}
-						}
-						s.setCreatorid(app.getAppIdentifier());
-						s.setName(filename);
-						s.addProperty("count", count);
-						logger.info("Imported {} objects to app '{}'", count, app.getId());
+	@GetMapping("/{type}/{id}/links/{type2}/{id2}")
+	public ResponseEntity<?> readLink(@PathVariable String type, @PathVariable String id,
+			@PathVariable String type2, @PathVariable String id2, HttpServletRequest req) {
+		return readLinks(type, id, type2, id2, req);
+	}
 
-						if (count > 0) {
-							getDAO().create(app.getAppIdentifier(), s);
-						}
-					} catch (Exception e) {
-						logger.error("Failed to import " + filename, e);
-						return getStatusResponse(Response.Status.BAD_REQUEST, "Import failed - " + e.getMessage());
-					}
-					return Response.ok(s).build();
-				}
-				return getStatusResponse(Response.Status.NOT_FOUND, "App not found.");
-			}
-		};
+	@GetMapping("/{type}/{id}/links/{type2}")
+	public ResponseEntity<?> readLinksForType(@PathVariable String type, @PathVariable String id,
+			@PathVariable String type2, HttpServletRequest req) {
+		return readLinks(type, id, type2, null, req);
+	}
+
+	@PostMapping("/{type}/{id}/links/{id2}")
+	public ResponseEntity<?> createLink(@PathVariable String type, @PathVariable String id,
+			@PathVariable String id2) {
+		return modifyLink(type, id, id2);
+	}
+
+	@PutMapping("/{type}/{id}/links/{id2}")
+	public ResponseEntity<?> putLink(@PathVariable String type, @PathVariable String id,
+			@PathVariable String id2) {
+		return modifyLink(type, id, id2);
+	}
+
+	@DeleteMapping("/{type}/{id}/links/{type2}/{id2}")
+	public ResponseEntity<?> deleteLink(@PathVariable String type, @PathVariable String id,
+			@PathVariable String type2, @PathVariable String id2, HttpServletRequest req) {
+		return deleteLinks(type, id, type2, id2, req);
+	}
+
+	@DeleteMapping("/{type}/{id}/links")
+	public ResponseEntity<?> deleteAllLinks(@PathVariable String type, @PathVariable String id,
+			HttpServletRequest req) {
+		return deleteLinks(type, id, null, null, req);
+	}
+
+	private ResponseEntity<?> modifyLink(String type, String id, String id2) {
+		App app = getPrincipalApp();
+		if (app == null) {
+			return getStatusResponse(HttpStatus.BAD_REQUEST);
+		}
+		ParaObject pobj = loadObject(app, type, id);
+		if (pobj == null) {
+			return getStatusResponse(HttpStatus.NOT_FOUND, "Object not found: " + id);
+		}
+		return RestUtils.createLinksHandler(pobj, id2);
+	}
+
+	private ResponseEntity<?> search(String typeParam, String querytype, HttpServletRequest req) {
+		App app = getPrincipalApp();
+		if (app == null) {
+			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+		}
+		String query = req.getParameter("q");
+		if (!StringUtils.isBlank(query) && !getSearch().isValidQueryString(query)) {
+			return getStatusResponse(HttpStatus.BAD_REQUEST, "Invalid query string syntax q=" + query
+					+ " in request " + req.getMethod() + " " + req.getRequestURI());
+		}
+		String type = StringUtils.isBlank(typeParam) ? null : resolveType(app, typeParam);
+		String typeOverride = (StringUtils.isBlank(type)) ? null : type;
+		String queryType = querytype;
+		if (StringUtils.isBlank(queryType)) {
+			queryType = "default";
+		}
+		Map<String, Object> result = RestUtils.buildQueryAndSearch(app, queryType, typeOverride, req);
+		return ResponseEntity.ok(result);
+	}
+
+	private ResponseEntity<?> deleteLinks(String type, String id, String type2, String id2, HttpServletRequest req) {
+		App app = getPrincipalApp();
+		if (app == null) {
+			return getStatusResponse(HttpStatus.BAD_REQUEST);
+		}
+		ParaObject pobj = loadObject(app, type, id);
+		if (pobj == null) {
+			return getStatusResponse(HttpStatus.NOT_FOUND, "Object not found: " + id);
+		}
+		String resolvedType2 = StringUtils.isBlank(type2) ? null : ParaObjectUtils.toObject(app, type2).getType();
+		boolean childrenOnly = StringUtils.isNotBlank(req.getParameter("childrenonly"));
+		return RestUtils.deleteLinksHandler(pobj, id2, resolvedType2, childrenOnly);
+	}
+
+	private ResponseEntity<?> readLinks(String type, String id, String type2, String id2, HttpServletRequest req) {
+		App app = getPrincipalApp();
+		if (app == null) {
+			return getStatusResponse(HttpStatus.BAD_REQUEST);
+		}
+		ParaObject pobj = loadObject(app, type, id);
+		if (pobj == null) {
+			return getStatusResponse(HttpStatus.NOT_FOUND, "Object not found: " + id);
+		}
+		String resolvedType2 = StringUtils.isBlank(type2) ? null : ParaObjectUtils.toObject(app, type2).getType();
+		Pager pager = RestUtils.getPagerFromParams(req);
+		boolean childrenOnly = StringUtils.isNotBlank(req.getParameter("childrenonly"));
+		return RestUtils.readLinksHandler(pobj, id2, resolvedType2, pager, childrenOnly, req);
+	}
+
+	private ResponseEntity<?> setupInternal(String appid, HttpServletRequest req) {
+		if (StringUtils.isBlank(appid)) {
+			return ResponseEntity.ok(setup());
+		}
+		App app = SecurityUtils.getAuthenticatedApp();
+		if (app != null && app.isRootApp()) {
+			boolean sharedIndex = "true".equalsIgnoreCase(queryParam("sharedIndex", req));
+			boolean sharedTable = "true".equalsIgnoreCase(queryParam("sharedTable", req));
+			return ResponseEntity.ok(newApp(appid, queryParam(Config._NAME, req),
+					queryParam(Config._CREATORID, req), sharedIndex, sharedTable));
+		}
+		return getStatusResponse(HttpStatus.FORBIDDEN, "Only root app can create and initialize other apps.");
+	}
+
+	private String resolveType(App app, String typeParam) {
+		if (app == null || StringUtils.isBlank(typeParam)) {
+			return typeParam;
+		}
+		Map<String, String> types = ParaObjectUtils.getAllTypes(app);
+		String resolved = types.get(typeParam);
+		return (resolved == null) ? typeParam : resolved;
+	}
+
+	private ParaObject loadObject(App app, String typeParam, String id) {
+		if (app == null || StringUtils.isBlank(typeParam) || StringUtils.isBlank(id)) {
+			return null;
+		}
+		String type = resolveType(app, typeParam);
+		if (StringUtils.isBlank(type)) {
+			return null;
+		}
+		ParaObject pobj = ParaObjectUtils.toObject(app, type);
+		pobj.setId(id);
+		return getDAO().read(app.getAppIdentifier(), pobj.getId());
 	}
 }

@@ -17,6 +17,8 @@
  */
 package com.erudika.para.core.utils;
 
+import at.favre.lib.crypto.bcrypt.BCrypt;
+import at.favre.lib.crypto.bcrypt.BCrypt.Result;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.annotations.Email;
 import com.samskivert.mustache.Mustache;
@@ -60,6 +62,7 @@ import java.text.DateFormatSymbols;
 import java.text.MessageFormat;
 import java.text.NumberFormat;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
@@ -69,7 +72,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
@@ -77,7 +79,6 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
-import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -218,7 +219,7 @@ public final class Utils {
 	 * @return the hash
 	 */
 	public static String bcrypt(String s) {
-		return (s == null) ? s : BCrypt.hashpw(s, BCrypt.gensalt(12));
+		return (s == null) ? s : BCrypt.with(BCrypt.Version.VERSION_2B).hashToString(12, s.toCharArray());
 	}
 
 	/**
@@ -233,7 +234,12 @@ public final class Utils {
 			return false;
 		}
 		try {
-			return BCrypt.checkpw(plain, storedHash);
+			Result r = BCrypt.verifyer(BCrypt.Version.VERSION_2B).
+					verify(plain.getBytes("UTF-8"), storedHash.getBytes("UTF-8"));
+			if (!StringUtils.isBlank(r.formatErrorMessage)) {
+				logger.error(r.formatErrorMessage);
+			}
+			return r.verified;
 		} catch (Exception e) {
 			return false;
 		}
@@ -328,7 +334,8 @@ public final class Utils {
 		}
 		Writer writer = new StringWriter();
 		try {
-			Mustache.compiler().escapeHTML(escapeHtml).emptyStringIsFalse(true).compile(template).execute(context, writer);
+			Mustache.compiler().defaultValue("").escapeHTML(escapeHtml).
+					emptyStringIsFalse(true).compile(template).execute(context, writer);
 		} finally {
 			try {
 				writer.close();
@@ -442,7 +449,7 @@ public final class Utils {
 		if (str == null) {
 			return "";
 		}
-		return new String(Base64.encodeBase64(str));
+		return Base64.getEncoder().encodeToString(str);
 	}
 
 	/**
@@ -454,7 +461,7 @@ public final class Utils {
 		if (str == null) {
 			return "";
 		}
-		return new String(Base64.encodeBase64URLSafe(str));
+		return Base64.getUrlEncoder().withoutPadding().encodeToString(str);
 	}
 
 	/**
@@ -467,7 +474,7 @@ public final class Utils {
 			return "";
 		}
 		try {
-			return new String(Base64.decodeBase64(str), Para.getConfig().defaultEncoding());
+			return new String(Base64.getDecoder().decode(str), Para.getConfig().defaultEncoding());
 		} catch (Exception ex) {
 			logger.error("Failed to decode base64 string '{}'.", str, ex);
 		}

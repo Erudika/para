@@ -21,8 +21,8 @@ import com.erudika.para.server.rest.RestUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.ws.rs.HttpMethod;
 import java.io.IOException;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 
@@ -58,7 +58,7 @@ public class SimpleAuthenticationEntryPoint extends LoginUrlAuthenticationEntryP
 	 * @return true if preflight
 	 */
 	private boolean isPreflight(HttpServletRequest request) {
-		return HttpMethod.OPTIONS.equals(request.getMethod());
+		return HttpMethod.OPTIONS.matches(request.getMethod());
 	}
 
 	/**

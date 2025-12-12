@@ -49,9 +49,9 @@ public final class CsrfProtectionRequestMatcher implements RequestMatcher {
 				&& !IgnoredRequestMatcher.INSTANCE.matches(request)
 				&& !samlMetaEndpoint.matches(request)
 				&& !samlEndpoint.matches(request)
-				&& !authEndpoints.matches(request)
-				&& !allowedMethods.matcher(request.getMethod()).matches();
-		return matches || passAuthEndpoint.matches(request) || signinEndpoint.matches(request);
+				&& !authEndpoints.matches(request);
+		return !allowedMethods.matcher(request.getMethod()).matches() &&
+				(matches || passAuthEndpoint.matches(request) || signinEndpoint.matches(request));
 	}
 
 }

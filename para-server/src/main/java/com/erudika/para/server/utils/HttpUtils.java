@@ -22,11 +22,11 @@ import com.erudika.para.server.security.SecurityUtils;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.ws.rs.core.HttpHeaders;
 import java.util.TimeZone;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.time.DateFormatUtils;
+import org.springframework.http.HttpHeaders;
 
 /**
  * Various utilities for HTTP stuff - cookies, AJAX, etc.

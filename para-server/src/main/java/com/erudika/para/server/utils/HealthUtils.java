@@ -17,6 +17,7 @@ import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,6 +143,7 @@ public enum HealthUtils implements InitializeListener, Runnable {
 				}
 				String accessKey = "para.root_access_key = \"" + rootAppCredentials.get("accessKey") + "\"";
 				String secretKey = "para.root_secret_key = \"" + rootAppCredentials.get("secretKey") + "\"";
+				String existing = StringUtils.substringBetween(confString, "para.root_secret_key = \"", "\"");
 				if (confString.contains("para.root_access_key")) {
 					confString = confString.replaceAll("para\\.root_access_key\\s*=\\s*\".*?\"", accessKey);
 				} else {
@@ -152,9 +154,9 @@ public enum HealthUtils implements InitializeListener, Runnable {
 				} else {
 					confString += "\n" + secretKey;
 				}
-				if (Para.getFileStore().store(confFile,
-						new ByteArrayInputStream(confString.getBytes(StandardCharsets.UTF_8))) != null) {
-					logger.info("Saved root app credentials to {}.", confFile);
+				if (!Strings.CS.equals(rootAppCredentials.get("secretKey"), existing) && Para.getFileStore().
+						store(confFile, new ByteArrayInputStream(confString.getBytes(StandardCharsets.UTF_8))) != null) {
+					logger.info("Saved root app credentials to {}." + existing, confFile);
 				}
 			} else {
 				logger.warn("Server is unhealthy - failed to initialize root app. Open http://localhost:" +

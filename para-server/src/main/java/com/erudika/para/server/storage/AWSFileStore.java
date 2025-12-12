@@ -19,7 +19,6 @@ package com.erudika.para.server.storage;
 
 import com.erudika.para.core.storage.FileStore;
 import com.erudika.para.core.utils.Para;
-import jakarta.ws.rs.core.HttpHeaders;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,6 +28,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.s3.S3Client;

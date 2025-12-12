@@ -24,7 +24,7 @@ RUN mvn -B -pl para-jar -am ${BUILD_OPTS} -DskipTests=true -DskipITs=true packag
 FROM eclipse-temurin:25-jre
 
 ENV PARA_HOME=/para
-ENV JAVA_OPTS="-Dloader.path=lib"
+ENV JAVA_OPTS="-Dloader.path=lib --add-modules jdk.incubator.vector --enable-native-access=ALL-UNNAMED"
 WORKDIR ${PARA_HOME}
 
 COPY --from=build ${PARA_HOME}/para.jar ./para.jar
