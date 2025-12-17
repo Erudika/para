@@ -18,12 +18,21 @@
 package com.erudika.para.jar;
 
 import com.erudika.para.server.ParaServer;
+import org.apache.commons.lang3.Strings;
 
 /**
  * Main entry point of Para JAR.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class Run {
+
+
+	static {
+		if (!Strings.CS.equalsAny("false", System.getProperty("para.landing_page_enabled"),
+				System.getenv("para_landing_page_enabled"))) {
+			System.setProperty("para.landing_page_enabled", "true");
+		}
+	}
 
 	/**
 	 * Default constructor.
