@@ -26,6 +26,7 @@ import com.erudika.para.core.Votable;
 import com.erudika.para.core.annotations.Locked;
 import static com.erudika.para.core.utils.ParaObjectUtils.*;
 import static com.erudika.para.core.utils.Utils.*;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,14 +37,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.StringUtils;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.apache.commons.lang3.StringUtils;
-import org.joda.time.Instant;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -520,7 +520,7 @@ public class UtilsTest {
 
 	@Test
 	public void testRateLimiter() {
-		long start = Instant.parse("2020-03-10T13:37:37Z").getMillis();
+		long start = Instant.parse("2020-03-10T13:37:37Z").toEpochMilli();
 		RateLimiter r = Para.createRateLimiter(1, 2, 3);
 		assertFalse(r.isAllowed(null, ""));
 		assertTrue(r.isAllowed("", "u1"));
