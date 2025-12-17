@@ -148,8 +148,8 @@ public final class Api1 {
 	}
 
 	@PostMapping("/{type}")
-	public ResponseEntity<?> create(@PathVariable String type, HttpServletRequest req) throws IOException {
-		App app = getPrincipalApp();
+	public ResponseEntity<?> create(App a, @PathVariable String type, HttpServletRequest req) throws IOException {
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
@@ -158,8 +158,8 @@ public final class Api1 {
 	}
 
 	@GetMapping("/{type}/{id}")
-	public ResponseEntity<?> read(@PathVariable String type, @PathVariable String id) {
-		App app = getPrincipalApp();
+	public ResponseEntity<?> read(App a, @PathVariable String type, @PathVariable String id) {
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
@@ -171,9 +171,9 @@ public final class Api1 {
 	}
 
 	@PatchMapping("/{type}/{id}")
-	public ResponseEntity<?> update(@PathVariable String type, @PathVariable String id, HttpServletRequest req)
+	public ResponseEntity<?> update(App a, @PathVariable String type, @PathVariable String id, HttpServletRequest req)
 			throws IOException {
-		App app = getPrincipalApp();
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
@@ -184,9 +184,9 @@ public final class Api1 {
 	}
 
 	@PutMapping("/{type}/{id}")
-	public ResponseEntity<?> overwrite(@PathVariable String type, @PathVariable String id, HttpServletRequest req)
+	public ResponseEntity<?> overwrite(App a, @PathVariable String type, @PathVariable String id, HttpServletRequest req)
 			throws IOException {
-		App app = getPrincipalApp();
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
@@ -195,8 +195,8 @@ public final class Api1 {
 	}
 
 	@DeleteMapping("/{type}/{id}")
-	public ResponseEntity<?> delete(@PathVariable String type, @PathVariable String id) {
-		App app = getPrincipalApp();
+	public ResponseEntity<?> delete(App a, @PathVariable String type, @PathVariable String id) {
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
@@ -205,8 +205,8 @@ public final class Api1 {
 	}
 
 	@PostMapping("/_batch")
-	public ResponseEntity<?> batchCreate(HttpServletRequest req) throws IOException {
-		App app = getPrincipalApp();
+	public ResponseEntity<?> batchCreate(App a, HttpServletRequest req) throws IOException {
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
@@ -214,13 +214,13 @@ public final class Api1 {
 	}
 
 	@PutMapping("/_batch")
-	public ResponseEntity<?> batchPut(HttpServletRequest req) throws IOException {
-		return batchCreate(req);
+	public ResponseEntity<?> batchPut(App a, HttpServletRequest req) throws IOException {
+		return batchCreate(a, req);
 	}
 
 	@GetMapping("/_batch")
-	public ResponseEntity<?> batchRead(HttpServletRequest req) {
-		App app = getPrincipalApp();
+	public ResponseEntity<?> batchRead(App a, HttpServletRequest req) {
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
@@ -229,8 +229,8 @@ public final class Api1 {
 
 	@PatchMapping("_batch")
 	@SuppressWarnings("unchecked")
-	public ResponseEntity<?> batchUpdate(HttpServletRequest req) throws IOException {
-		App app = getPrincipalApp();
+	public ResponseEntity<?> batchUpdate(App a, HttpServletRequest req) throws IOException {
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
@@ -249,8 +249,8 @@ public final class Api1 {
 	}
 
 	@DeleteMapping("/_batch")
-	public ResponseEntity<?> batchDelete(HttpServletRequest req) {
-		App app = getPrincipalApp();
+	public ResponseEntity<?> batchDelete(App a, HttpServletRequest req) {
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
@@ -259,28 +259,48 @@ public final class Api1 {
 
 	@GetMapping("/search")
 	public ResponseEntity<?> search(HttpServletRequest req) {
-		return search(null, null, req);
+		return search(null, null, null, req);
 	}
 
 	@GetMapping("/search/{querytype}")
 	public ResponseEntity<?> search(@PathVariable String querytype, HttpServletRequest req) {
-		return search(null, querytype, req);
+		return search(null, null, querytype, req);
 	}
 
 	@GetMapping("/{type}")
 	public ResponseEntity<?> searchType(@PathVariable String type, HttpServletRequest req) {
-		return search(type, null, req);
+		return search(null, type, null, req);
 	}
 
 	@GetMapping("/{type}/search")
 	public ResponseEntity<?> searchTypeDefault(@PathVariable String type, HttpServletRequest req) {
-		return search(type, null, req);
+		return search(null, type, null, req);
 	}
 
 	@GetMapping("/{type}/search/{querytype}")
 	public ResponseEntity<?> searchType(@PathVariable String type, @PathVariable String querytype,
 			HttpServletRequest req) {
-		return search(type, querytype, req);
+		return search(null, type, querytype, req);
+	}
+
+	public ResponseEntity<?> search(App a, String typeParam, String querytype, HttpServletRequest req) {
+		App app = (a != null) ? a : getPrincipalApp();
+		if (app == null) {
+			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+		}
+		String query = req.getParameter("q");
+		if (!StringUtils.isBlank(query) && !getSearch().isValidQueryString(query)) {
+			return getStatusResponse(HttpStatus.BAD_REQUEST, "Invalid query string syntax q=" + query
+					+ " in request " + req.getMethod() + " " + req.getRequestURI());
+		}
+		String type = StringUtils.isBlank(typeParam) ? null : resolveType(app, typeParam);
+		String typeOverride = (StringUtils.isBlank(type)) ? null : type;
+		String queryType = querytype;
+		if (StringUtils.isBlank(queryType)) {
+			queryType = "default";
+		}
+		Map<String, Object> result = RestUtils.buildQueryAndSearch(app, queryType, typeOverride, req);
+		return ResponseEntity.ok(result);
 	}
 
 	@GetMapping(value = "/utils/{method}", produces = "text/plain")
@@ -391,12 +411,12 @@ public final class Api1 {
 
 	@GetMapping("/_constraints")
 	public ResponseEntity<?> getConstraints() {
-		return getConstraints(null);
+		return getConstraints(null, null);
 	}
 
 	@GetMapping("/_constraints/{type}")
-	public ResponseEntity<?> getConstraints(@PathVariable String type) {
-		App app = getPrincipalApp();
+	public ResponseEntity<?> getConstraints(App a, @PathVariable String type) {
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app != null) {
 			if (type != null) {
 				return ResponseEntity.ok(app.getAllValidationConstraints(type));
@@ -408,9 +428,9 @@ public final class Api1 {
 
 	@PutMapping("/_constraints/{type}/{field}/{cname}")
 	@SuppressWarnings("unchecked")
-	public ResponseEntity<?> addConstraint(@PathVariable String type, @PathVariable String field,
+	public ResponseEntity<?> addConstraint(App a, @PathVariable String type, @PathVariable String field,
 			@PathVariable String cname, HttpServletRequest req) throws IOException {
-		App app = getPrincipalApp();
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app != null) {
 			ResponseEntity<?> payloadRes = getEntity(req.getInputStream(), Map.class);
 			if (payloadRes.getStatusCode().is2xxSuccessful()) {
@@ -425,9 +445,9 @@ public final class Api1 {
 	}
 
 	@DeleteMapping("/_constraints/{type}/{field}/{cname}")
-	public ResponseEntity<?> removeConstraint(@PathVariable String type, @PathVariable String field,
+	public ResponseEntity<?> removeConstraint(App a, @PathVariable String type, @PathVariable String field,
 			@PathVariable String cname) {
-		App app = getPrincipalApp();
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app != null) {
 			if (app.removeValidationConstraint(type, field, cname)) {
 				app.update();
@@ -439,12 +459,12 @@ public final class Api1 {
 
 	@GetMapping("/_permissions")
 	public ResponseEntity<?> getPermissions() {
-		return getPermissions(null);
+		return getPermissions(null, null);
 	}
 
 	@GetMapping("/_permissions/{subjectid}")
-	public ResponseEntity<?> getPermissions(@PathVariable String subjectid) {
-		App app = getPrincipalApp();
+	public ResponseEntity<?> getPermissions(App a, @PathVariable String subjectid) {
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app != null) {
 			if (subjectid != null) {
 				return ResponseEntity.ok(app.getAllResourcePermissions(subjectid));
@@ -455,9 +475,9 @@ public final class Api1 {
 	}
 
 	@GetMapping(value = "/_permissions/{subjectid}/{type}/{method}", produces = "text/plain")
-	public ResponseEntity<?> checkPermission(@PathVariable String subjectid, @PathVariable String type,
+	public ResponseEntity<?> checkPermission(App a, @PathVariable String subjectid, @PathVariable String type,
 			@PathVariable String method) {
-		App app = getPrincipalApp();
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app != null) {
 			String resourcePath = Utils.base64dec(type);
 			return ResponseEntity.ok(Boolean.toString(app.isAllowedTo(subjectid, resourcePath, method)));
@@ -466,9 +486,9 @@ public final class Api1 {
 	}
 
 	@PutMapping("/_permissions/{subjectid}/{type}")
-	public ResponseEntity<?> grantPermission(@PathVariable String subjectid, @PathVariable String type,
+	public ResponseEntity<?> grantPermission(App a, @PathVariable String subjectid, @PathVariable String type,
 			HttpServletRequest req) throws IOException {
-		App app = getPrincipalApp();
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app != null) {
 			String resourcePath = Utils.base64dec(type);
 			ResponseEntity<?> resp = getEntity(req.getInputStream(), List.class);
@@ -497,8 +517,8 @@ public final class Api1 {
 	}
 
 	@DeleteMapping("/_permissions/{subjectid}/{type}")
-	public ResponseEntity<?> revokePermission(@PathVariable String subjectid, @PathVariable String type) {
-		App app = getPrincipalApp();
+	public ResponseEntity<?> revokePermission(App a, @PathVariable String subjectid, @PathVariable String type) {
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app != null) {
 			String resourcePath = Utils.base64dec(type);
 			boolean revoked = StringUtils.isBlank(resourcePath)
@@ -514,12 +534,12 @@ public final class Api1 {
 
 	@DeleteMapping("/_permissions/{subjectid}")
 	public ResponseEntity<?> revokeAllPermissions(@PathVariable String subjectid) {
-		return revokePermission(subjectid, null);
+		return revokePermission(null, subjectid, null);
 	}
 
 	@GetMapping("/_settings")
-	public ResponseEntity<?> getSettings() {
-		App app = getPrincipalApp();
+	public ResponseEntity<?> getSettings(App a) {
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app != null) {
 			return ResponseEntity.ok(app.getSettings());
 		}
@@ -527,8 +547,8 @@ public final class Api1 {
 	}
 
 	@GetMapping("/_settings/{key}")
-	public ResponseEntity<?> getSetting(@PathVariable String key) {
-		App app = getPrincipalApp();
+	public ResponseEntity<?> getSetting(App a, @PathVariable String key) {
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app != null) {
 			return ResponseEntity.ok(Collections.singletonMap("value", app.getSetting(key)));
 		}
@@ -536,14 +556,14 @@ public final class Api1 {
 	}
 
 	@PutMapping("/_settings")
-	public ResponseEntity<?> putSettings(HttpServletRequest req) throws IOException {
-		return putSetting(null, req);
+	public ResponseEntity<?> putSettings(App a, HttpServletRequest req) throws IOException {
+		return putSetting(a, null, req);
 	}
 
 	@PutMapping("/_settings/{key}")
 	@SuppressWarnings("unchecked")
-	public ResponseEntity<?> putSetting(@PathVariable String key, HttpServletRequest req) throws IOException {
-		App app = getPrincipalApp();
+	public ResponseEntity<?> putSetting(App a, @PathVariable String key, HttpServletRequest req) throws IOException {
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app != null) {
 			ResponseEntity<?> resp = getEntity(req.getInputStream(), Map.class);
 			if (resp.getStatusCode().is2xxSuccessful()) {
@@ -562,8 +582,8 @@ public final class Api1 {
 	}
 
 	@DeleteMapping("/_settings/{key}")
-	public ResponseEntity<?> deleteSetting(@PathVariable String key) {
-		App app = getPrincipalApp();
+	public ResponseEntity<?> deleteSetting(App a, @PathVariable String key) {
+		App app = (a != null) ? a : getPrincipalApp();
 		if (app != null) {
 			app.removeSetting(key);
 			app.update();
@@ -730,26 +750,6 @@ public final class Api1 {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "Object not found: " + id);
 		}
 		return RestUtils.createLinksHandler(pobj, id2);
-	}
-
-	private ResponseEntity<?> search(String typeParam, String querytype, HttpServletRequest req) {
-		App app = getPrincipalApp();
-		if (app == null) {
-			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
-		}
-		String query = req.getParameter("q");
-		if (!StringUtils.isBlank(query) && !getSearch().isValidQueryString(query)) {
-			return getStatusResponse(HttpStatus.BAD_REQUEST, "Invalid query string syntax q=" + query
-					+ " in request " + req.getMethod() + " " + req.getRequestURI());
-		}
-		String type = StringUtils.isBlank(typeParam) ? null : resolveType(app, typeParam);
-		String typeOverride = (StringUtils.isBlank(type)) ? null : type;
-		String queryType = querytype;
-		if (StringUtils.isBlank(queryType)) {
-			queryType = "default";
-		}
-		Map<String, Object> result = RestUtils.buildQueryAndSearch(app, queryType, typeOverride, req);
-		return ResponseEntity.ok(result);
 	}
 
 	private ResponseEntity<?> deleteLinks(String type, String id, String type2, String id2, HttpServletRequest req) {
