@@ -20,6 +20,7 @@ package com.erudika.para.core.utils;
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.cache.Cache;
+import com.erudika.para.core.email.Emailer;
 import com.erudika.para.core.listeners.DestroyListener;
 import com.erudika.para.core.listeners.IOListener;
 import com.erudika.para.core.listeners.InitializeListener;
@@ -163,6 +164,14 @@ public final class Para {
 	 */
 	public static FileStore getFileStore() {
 		return CoreUtils.getInstance().getFileStore();
+	}
+
+	/**
+	 * @return an instance of the core Emailer class.
+	 * @see Emailer
+	 */
+	public static Emailer getEmailer() {
+		return CoreUtils.getInstance().getEmailer();
 	}
 
 	/**

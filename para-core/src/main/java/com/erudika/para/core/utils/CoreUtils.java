@@ -17,14 +17,16 @@
  */
 package com.erudika.para.core.utils;
 
-import com.erudika.para.core.listeners.InitializeListener;
-import com.erudika.para.core.cache.Cache;
-import com.erudika.para.core.cache.MockCache;
 import com.erudika.para.core.Linker;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Votable;
 import com.erudika.para.core.Votable.VoteValue;
 import com.erudika.para.core.Vote;
+import com.erudika.para.core.cache.Cache;
+import com.erudika.para.core.cache.MockCache;
+import com.erudika.para.core.email.Emailer;
+import com.erudika.para.core.email.MockEmailer;
+import com.erudika.para.core.listeners.InitializeListener;
 import com.erudika.para.core.persistence.DAO;
 import com.erudika.para.core.persistence.MockDAO;
 import com.erudika.para.core.queue.MockQueue;
@@ -33,6 +35,7 @@ import com.erudika.para.core.search.MockSearch;
 import com.erudika.para.core.search.Search;
 import com.erudika.para.core.storage.FileStore;
 import com.erudika.para.core.storage.MockFileStore;
+import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,7 +46,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import jakarta.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +68,7 @@ public enum CoreUtils implements InitializeListener {
 		private transient Cache cache;
 		private transient Queue queue;
 		private transient FileStore fileStore;
+		private transient Emailer emailer;
 
 		{
 			dao = new MockDAO();
@@ -73,6 +76,7 @@ public enum CoreUtils implements InitializeListener {
 			cache = new MockCache();
 			queue = new MockQueue();
 			fileStore = new MockFileStore();
+			emailer = new MockEmailer();
 			logger.debug("Using default impementations - {}, {} and {}.",
 					dao.getClass().getSimpleName(),
 					search.getClass().getSimpleName(),
@@ -151,6 +155,18 @@ public enum CoreUtils implements InitializeListener {
 		public void setFileStore(FileStore fileStore) {
 			this.fileStore = fileStore;
 		}
+
+		@Override
+		public Emailer getEmailer() {
+			return emailer;
+		}
+
+		@Inject
+		@Override
+		public void setEmailer(Emailer emailer) {
+			this.emailer = emailer;
+		}
+
 
 		@Override
 		public String getObjectURI(ParaObject obj) {
@@ -497,6 +513,18 @@ public enum CoreUtils implements InitializeListener {
 	 * @param fileStore {@link FileStore}
 	 */
 	public abstract void setFileStore(FileStore fileStore);
+
+	/**
+	 * Returns the Emailer object.
+	 * @return emailer {@link Emailer}
+	 */
+	public abstract Emailer getEmailer();
+
+	/**
+	 * Sets the Emailer object.
+	 * @param emailer {@link Emailer} object
+	 */
+	public abstract void setEmailer(Emailer emailer);
 
 	///////////////////////////////////////
 	//	    	TAGGING METHODS
