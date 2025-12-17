@@ -532,6 +532,16 @@ public class ParaConfig extends Config {
 		return getConfigBoolean("security.csrf_protection", true);
 	}
 
+	@Documented(position = 480,
+			identifier = "security.csrf_protection",
+			value = "true",
+			type = Boolean.class,
+			category = "Security",
+			description = "Enable/disable CSRF protection with single-page application mode enabled.")
+	public boolean csrfProtectionWithSpaEnabled() {
+		return getConfigBoolean("security.csrf_protection_with_spa", false);
+	}
+
 	@Documented(position = 500,
 			identifier = "auth_cookie",
 			value = "para-auth",
