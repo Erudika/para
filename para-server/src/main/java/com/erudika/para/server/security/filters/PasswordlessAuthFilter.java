@@ -25,14 +25,17 @@ import com.erudika.para.core.utils.Para;
 import com.erudika.para.server.security.AuthenticatedUserDetails;
 import com.erudika.para.server.security.SecurityUtils;
 import com.erudika.para.server.security.UserAuthentication;
+import com.erudika.para.server.utils.HttpUtils;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URI;
 import java.text.ParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -78,9 +81,16 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 		boolean redirect = !"false".equals(request.getParameter("redirect"));
 		User user = null;
 		App app = null;
+		UserAuthentication auth = null;
+		// dont' use signin_success to prevent infinite loop of redirects!
+		String returnToSuccess = Para.getConfig().getSettingForApp(app, "returnto",
+				Para.getConfig().returnToPath());
+		String returnToFailure = Para.getConfig().getSettingForApp(app, "signin_failure",
+				Para.getConfig().signinFailurePath());
+
 		if (requestURI.endsWith(PASSWORDLESS_ACTION)) {
-			String appid = SecurityUtils.getAppidFromAuthRequest(request);
-			String token = request.getParameter("token"); // JWT
+			String token = StringUtils.defaultIfBlank(request.getParameter("token"), request.getParameter("jwt")); // JWT
+			String appid = SecurityUtils.getAppidFromAuthRequest(request, token);
 			app = Para.getDAO().read(App.id(appid));
 			if (app != null) {
 				userAuth = getOrCreateUser(app, token);
@@ -88,19 +98,50 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 					user = ((AuthenticatedUserDetails) userAuth.getPrincipal()).getUser();
 					user.setAppid(app.getAppIdentifier());
 				}
-			}
-		}
-		UserAuthentication auth = SecurityUtils.checkIfActive(userAuth, user, redirect);
-		if (!redirect) {
-			if (auth == null) {
-				response.sendError(HttpStatus.FORBIDDEN.value());
-				response.setStatus(HttpStatus.FORBIDDEN.value());
 			} else {
-				response.setContentType(MediaType.TEXT_PLAIN_VALUE);
-				response.setStatus(HttpStatus.OK.value());
-				response.getWriter().print(SecurityUtils.generateJWToken(user, app).serialize());
+				if (redirect) {
+					response.sendRedirect(returnToFailure, HttpStatus.FORBIDDEN.value());
+				} else {
+					response.sendError(HttpStatus.FORBIDDEN.value());
+					response.setStatus(HttpStatus.FORBIDDEN.value());
+				}
+				return null;
 			}
-			return null;
+			auth = SecurityUtils.checkIfActive(userAuth, user, redirect);
+			if (!redirect) {
+				if (auth == null) {
+					response.sendError(HttpStatus.FORBIDDEN.value());
+					response.setStatus(HttpStatus.FORBIDDEN.value());
+				} else {
+					response.setContentType(MediaType.TEXT_PLAIN_VALUE);
+					response.setStatus(HttpStatus.OK.value());
+					response.getWriter().print(SecurityUtils.generateJWToken(user, app).serialize());
+				}
+				return null;
+			} else {
+				if (!URI.create(returnToSuccess).isAbsolute() || !URI.create(returnToFailure).isAbsolute()) {
+					response.sendError(HttpStatus.BAD_REQUEST.value());
+					response.setStatus(HttpStatus.BAD_REQUEST.value());
+					String errorMsg = "Passwordless authentication failed for app '" + appid +
+							"', reason: redirect URL must be absolute.";
+					response.getWriter().print(errorMsg);
+					logger.warn(errorMsg);
+					return null;
+				}
+				if (auth == null) {
+					response.sendRedirect(returnToFailure, HttpStatus.FORBIDDEN.value());
+				} else {
+					boolean httpOnly = "true".equals(StringUtils.defaultIfBlank(request.getParameter("httpOnlyCookie"), "true"));
+					String sameSite = StringUtils.defaultIfBlank(request.getParameter("sameSiteCookie"), "Strict");
+					String authCookieName = Para.getConfig().getSettingForApp(app, "auth_cookie",
+							StringUtils.join(App.identifier(appid), "-auth"));
+					String authCookieValue = SecurityUtils.generateJWToken(user, app).serialize();
+					int maxAge = NumberUtils.toInt(Para.getConfig().getSettingForApp(app, "session_timeout", null),
+							app.getTokenValiditySec().intValue());
+					HttpUtils.setAuthCookie(authCookieName, authCookieValue, httpOnly, maxAge, sameSite, request, response);
+					response.sendRedirect(returnToSuccess, HttpStatus.FOUND.value());
+				}
+			}
 		}
 		return auth;
 	}
