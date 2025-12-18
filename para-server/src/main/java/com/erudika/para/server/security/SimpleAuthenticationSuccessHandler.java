@@ -59,7 +59,7 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
 		User u = SecurityUtils.getAuthenticatedUser(authentication);
 
-		String appid = SecurityUtils.getAppidFromAuthRequest(request);
+		String appid = StringUtils.defaultIfBlank(SecurityUtils.getAppidFromAuthRequest(request), u.getAppid());
 		if (!StringUtils.isBlank(appid)) {
 			// try to reload custom redirect URI from app
 			App app = Para.getDAO().read(App.id(appid));
@@ -88,7 +88,9 @@ public class SimpleAuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 					customURI = customURI.replace("jwt=id", "jwt=" + newJWT.serialize());
 				}
 				if (!StringUtils.isBlank(customURI)) {
-					redirectStrategy.sendRedirect(request, response, customURI);
+					if (!response.isCommitted()) {
+						redirectStrategy.sendRedirect(request, response, customURI);
+					}
 					return;
 				}
 			}

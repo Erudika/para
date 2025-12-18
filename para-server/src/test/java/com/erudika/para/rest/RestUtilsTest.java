@@ -22,6 +22,7 @@ import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.cache.Cache;
 import com.erudika.para.core.cache.MockCache;
+import com.erudika.para.core.email.Emailer;
 import com.erudika.para.core.persistence.DAO;
 import com.erudika.para.core.persistence.MockDAO;
 import com.erudika.para.core.queue.Queue;
@@ -30,6 +31,7 @@ import com.erudika.para.core.storage.FileStore;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.ParaObjectUtils;
+import com.erudika.para.email.MockEmailer;
 import com.erudika.para.server.ParaServer;
 import com.erudika.para.server.rest.GenericExceptionMapper;
 import static com.erudika.para.server.rest.RestUtils.*;
@@ -73,6 +75,7 @@ public class RestUtilsTest {
 				binder.bind(Search.class).toInstance(Mockito.mock(Search.class));
 				binder.bind(Queue.class).toInstance(Mockito.mock(Queue.class));
 				binder.bind(FileStore.class).toInstance(Mockito.mock(FileStore.class));
+				binder.bind(Emailer.class).toInstance(new MockEmailer());
 			}
 		});
 	}

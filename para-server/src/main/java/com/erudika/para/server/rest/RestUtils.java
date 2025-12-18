@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -1038,7 +1039,11 @@ public final class RestUtils {
 	 */
 	public static List<String> queryParams(String param, HttpServletRequest req) {
 		String[] params = req.getParameterValues(param);
-		return (params != null && params.length > 0) ? List.of(params) : Collections.emptyList();
+		List<String> plist = new LinkedList<String>();
+		if (params != null && params.length > 0) {
+			plist.addAll(Arrays.asList(params));
+		}
+		return plist;
 	}
 
 }

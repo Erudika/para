@@ -31,6 +31,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.saml2.provider.service.authentication.OpenSaml5AuthenticationProvider;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
@@ -61,7 +62,8 @@ public class SecurityConfig {
 
 	@Bean
 	public AuthenticationManager authenticationManager() {
-		return new ProviderManager(new JWTAuthenticationProvider(), new LDAPAuthenticationProvider());
+		return new ProviderManager(new JWTAuthenticationProvider(),
+				new LDAPAuthenticationProvider(), new OpenSaml5AuthenticationProvider());
 	}
 
 	/**
@@ -113,9 +115,12 @@ public class SecurityConfig {
 		}).
 		rememberMe((rme) -> rme.disable()).
 		csrf((csrf) -> {
-			if (Para.getConfig().csrfProtectionEnabled()) {
+			if (Para.getConfig().csrfProtectionEnabled() || Para.getConfig().csrfProtectionWithSpaEnabled()) {
 				csrf.requireCsrfProtectionMatcher(CsrfProtectionRequestMatcher.INSTANCE).
 						csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());
+				if (Para.getConfig().csrfProtectionWithSpaEnabled()) {
+					csrf.spa();
+				}
 			} else {
 				csrf.disable();
 			}

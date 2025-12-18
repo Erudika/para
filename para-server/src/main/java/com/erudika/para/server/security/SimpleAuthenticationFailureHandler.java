@@ -77,7 +77,9 @@ public class SimpleAuthenticationFailureHandler extends SimpleUrlAuthenticationF
 					customURI = customURI.replace("cause=?", "cause=" + exception.getMessage());
 				}
 				if (!StringUtils.isBlank(customURI)) {
-					redirectStrategy.sendRedirect(request, response, customURI);
+					if (!response.isCommitted()) {
+						redirectStrategy.sendRedirect(request, response, customURI);
+					}
 					return;
 				}
 			}

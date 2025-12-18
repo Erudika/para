@@ -136,7 +136,10 @@ public final class Api1 {
 
 	@PostMapping("/_newkeys")
 	public ResponseEntity<?> newKeys() {
-		App app = SecurityUtils.getAuthenticatedApp();
+		return newKeysHandler(getPrincipalApp());
+	}
+
+	public ResponseEntity<?> newKeysHandler(App app) {
 		if (app != null) {
 			app.resetSecret();
 			CoreUtils.getInstance().overwrite(app);
@@ -148,8 +151,11 @@ public final class Api1 {
 	}
 
 	@PostMapping("/{type}")
-	public ResponseEntity<?> create(App a, @PathVariable String type, HttpServletRequest req) throws IOException {
-		App app = (a != null) ? a : getPrincipalApp();
+	public ResponseEntity<?> create(@PathVariable String type, HttpServletRequest req) throws IOException {
+		return createHandler(getPrincipalApp(), type, req);
+	}
+
+	public ResponseEntity<?> createHandler(App app, String type, HttpServletRequest req) throws IOException {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
@@ -158,8 +164,11 @@ public final class Api1 {
 	}
 
 	@GetMapping("/{type}/{id}")
-	public ResponseEntity<?> read(App a, @PathVariable String type, @PathVariable String id) {
-		App app = (a != null) ? a : getPrincipalApp();
+	public ResponseEntity<?> read(@PathVariable String type, @PathVariable String id) {
+		return readHandler(getPrincipalApp(), type, id);
+	}
+
+	public ResponseEntity<?> readHandler(App app, String type, String id) {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
@@ -171,9 +180,13 @@ public final class Api1 {
 	}
 
 	@PatchMapping("/{type}/{id}")
-	public ResponseEntity<?> update(App a, @PathVariable String type, @PathVariable String id, HttpServletRequest req)
+	public ResponseEntity<?> update(@PathVariable String type, @PathVariable String id, HttpServletRequest req)
 			throws IOException {
-		App app = (a != null) ? a : getPrincipalApp();
+		return updateHandler(getPrincipalApp(), type, id, req);
+	}
+
+	public ResponseEntity<?> updateHandler(App app, String type, String id, HttpServletRequest req)
+			throws IOException {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
@@ -184,9 +197,13 @@ public final class Api1 {
 	}
 
 	@PutMapping("/{type}/{id}")
-	public ResponseEntity<?> overwrite(App a, @PathVariable String type, @PathVariable String id, HttpServletRequest req)
+	public ResponseEntity<?> overwrite(@PathVariable String type, @PathVariable String id, HttpServletRequest req)
 			throws IOException {
-		App app = (a != null) ? a : getPrincipalApp();
+		return overwriteHandler(getPrincipalApp(), type, id, req);
+	}
+
+	public ResponseEntity<?> overwriteHandler(App app, String type, String id, HttpServletRequest req)
+			throws IOException {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
@@ -195,8 +212,11 @@ public final class Api1 {
 	}
 
 	@DeleteMapping("/{type}/{id}")
-	public ResponseEntity<?> delete(App a, @PathVariable String type, @PathVariable String id) {
-		App app = (a != null) ? a : getPrincipalApp();
+	public ResponseEntity<?> delete(@PathVariable String type, @PathVariable String id) {
+		return deleteHandler(getPrincipalApp(), type, id);
+	}
+
+	public ResponseEntity<?> deleteHandler(App app, String type, String id) {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
@@ -205,22 +225,28 @@ public final class Api1 {
 	}
 
 	@PostMapping("/_batch")
-	public ResponseEntity<?> batchCreate(App a, HttpServletRequest req) throws IOException {
-		App app = (a != null) ? a : getPrincipalApp();
+	public ResponseEntity<?> batchCreate(HttpServletRequest req) throws IOException {
+		return batchCreateHandler(getPrincipalApp(), req);
+	}
+
+	@PutMapping("/_batch")
+	public ResponseEntity<?> batchPut(HttpServletRequest req) throws IOException {
+		return batchCreateHandler(getPrincipalApp(), req);
+	}
+
+	public ResponseEntity<?> batchCreateHandler(App app, HttpServletRequest req) throws IOException {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
 		return getBatchCreateResponse(app, req.getInputStream());
 	}
 
-	@PutMapping("/_batch")
-	public ResponseEntity<?> batchPut(App a, HttpServletRequest req) throws IOException {
-		return batchCreate(a, req);
+	@GetMapping("/_batch")
+	public ResponseEntity<?> batchRead(HttpServletRequest req) {
+		return batchReadHandler(getPrincipalApp(), req);
 	}
 
-	@GetMapping("/_batch")
-	public ResponseEntity<?> batchRead(App a, HttpServletRequest req) {
-		App app = (a != null) ? a : getPrincipalApp();
+	public ResponseEntity<?> batchReadHandler(App app, HttpServletRequest req) {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
@@ -228,9 +254,12 @@ public final class Api1 {
 	}
 
 	@PatchMapping("_batch")
+	public ResponseEntity<?> batchUpdate(HttpServletRequest req) throws IOException {
+		return batchUpdateHandler(getPrincipalApp(), req);
+	}
+
 	@SuppressWarnings("unchecked")
-	public ResponseEntity<?> batchUpdate(App a, HttpServletRequest req) throws IOException {
-		App app = (a != null) ? a : getPrincipalApp();
+	public ResponseEntity<?> batchUpdateHandler(App app, HttpServletRequest req) throws IOException {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
@@ -249,8 +278,11 @@ public final class Api1 {
 	}
 
 	@DeleteMapping("/_batch")
-	public ResponseEntity<?> batchDelete(App a, HttpServletRequest req) {
-		App app = (a != null) ? a : getPrincipalApp();
+	public ResponseEntity<?> batchDelete(HttpServletRequest req) {
+		return batchDeleteHandler(getPrincipalApp(), req);
+	}
+
+	public ResponseEntity<?> batchDeleteHandler(App app, HttpServletRequest req) {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
@@ -259,36 +291,35 @@ public final class Api1 {
 
 	@GetMapping("/search")
 	public ResponseEntity<?> search(HttpServletRequest req) {
-		return search(null, null, null, req);
+		return searchHandler(getPrincipalApp(), null, null, req);
 	}
 
 	@GetMapping("/search/{querytype}")
 	public ResponseEntity<?> search(@PathVariable String querytype, HttpServletRequest req) {
-		return search(null, null, querytype, req);
+		return searchHandler(getPrincipalApp(), null, querytype, req);
 	}
 
 	@GetMapping("/{type}")
 	public ResponseEntity<?> searchType(@PathVariable String type, HttpServletRequest req) {
-		return search(null, type, null, req);
+		return searchHandler(getPrincipalApp(), type, null, req);
 	}
 
 	@GetMapping("/{type}/search")
 	public ResponseEntity<?> searchTypeDefault(@PathVariable String type, HttpServletRequest req) {
-		return search(null, type, null, req);
+		return searchHandler(getPrincipalApp(), type, null, req);
 	}
 
 	@GetMapping("/{type}/search/{querytype}")
 	public ResponseEntity<?> searchType(@PathVariable String type, @PathVariable String querytype,
 			HttpServletRequest req) {
-		return search(null, type, querytype, req);
+		return searchHandler(getPrincipalApp(), type, querytype, req);
 	}
 
-	public ResponseEntity<?> search(App a, String typeParam, String querytype, HttpServletRequest req) {
-		App app = (a != null) ? a : getPrincipalApp();
+	public ResponseEntity<?> searchHandler(App app, String typeParam, String querytype, HttpServletRequest req) {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
-		String query = req.getParameter("q");
+		String query = queryParam("q", req);
 		if (!StringUtils.isBlank(query) && !getSearch().isValidQueryString(query)) {
 			return getStatusResponse(HttpStatus.BAD_REQUEST, "Invalid query string syntax q=" + query
 					+ " in request " + req.getMethod() + " " + req.getRequestURI());
@@ -305,32 +336,32 @@ public final class Api1 {
 
 	@GetMapping(value = "/utils/{method}", produces = "text/plain")
 	public ResponseEntity<?> utilsHandler(@PathVariable String method, HttpServletRequest req) {
-		method = StringUtils.isBlank(method) ? req.getParameter("method") : method;
+		method = StringUtils.isBlank(method) ? queryParam("method", req) : method;
 		if ("newid".equals(method)) {
 			return ResponseEntity.ok(Utils.getNewId());
 		} else if ("timestamp".equals(method)) {
 			return ResponseEntity.ok(Long.toString(Utils.timestamp()));
 		} else if ("formatdate".equals(method)) {
-			String format = req.getParameter("format");
-			String locale = req.getParameter("locale");
+			String format = queryParam("format", req);
+			String locale = queryParam("locale", req);
 			Locale loc = Utils.getLocale(locale);
 			return ResponseEntity.ok(Utils.formatDate(format, loc));
 		} else if ("formatmessage".equals(method)) {
-			String msg = req.getParameter("message");
+			String msg = queryParam("message", req);
 			Object[] paramz = req.getParameterValues("fields");
 			return ResponseEntity.ok(Utils.formatMessage(msg, paramz));
 		} else if ("nospaces".equals(method)) {
-			String str = req.getParameter("string");
-			String repl = req.getParameter("replacement");
+			String str = queryParam("string", req);
+			String repl = queryParam("replacement", req);
 			return ResponseEntity.ok(Utils.noSpaces(str, repl));
 		} else if ("nosymbols".equals(method)) {
-			String str = req.getParameter("string");
+			String str = queryParam("string", req);
 			return ResponseEntity.ok(Utils.stripAndTrim(str));
 		} else if ("md2html".equals(method)) {
-			String md = req.getParameter("md");
+			String md = queryParam("md", req);
 			return ResponseEntity.ok(Utils.markdownToHtml(md));
 		} else if ("timeago".equals(method)) {
-			String d = req.getParameter("delta");
+			String d = queryParam("delta", req);
 			long delta = NumberUtils.toLong(d, 1);
 			return ResponseEntity.ok(HumanTime.approximately(delta));
 		}
@@ -339,10 +370,13 @@ public final class Api1 {
 
 	@GetMapping("/_types")
 	public ResponseEntity<?> listTypes(HttpServletRequest req) {
-		App app = getPrincipalApp();
+		return listTypesHandler(getPrincipalApp(), req);
+	}
+
+	public ResponseEntity<?> listTypesHandler(App app, HttpServletRequest req) {
 		if (app != null) {
 			Map<String, String> types = ParaObjectUtils.getAllTypes(app);
-			if ("true".equalsIgnoreCase(req.getParameter("count"))) {
+			if ("true".equalsIgnoreCase(queryParam("count", req))) {
 				Map<String, Long> typesCount = new HashMap<>(types.size());
 				types.values().forEach(v -> typesCount.put(v, getSearch().getCount(app.getAppIdentifier(), v)));
 				return ResponseEntity.ok(typesCount);
@@ -385,7 +419,10 @@ public final class Api1 {
 
 	@GetMapping("/_id/{id}")
 	public ResponseEntity<?> readId(@PathVariable String id) {
-		App app = getPrincipalApp();
+		return readIdHandler(getPrincipalApp(), id);
+	}
+
+	public ResponseEntity<?> readIdHandler(App app, String id) {
 		if (app != null) {
 			return getReadResponse(app, getDAO().read(app.getAppIdentifier(), id));
 		}
@@ -394,8 +431,8 @@ public final class Api1 {
 
 	@GetMapping("/_config/options")
 	public ResponseEntity<?> configOptions(HttpServletRequest req) {
-		String format = req.getParameter("format");
-		String groupby = req.getParameter("groupby");
+		String format = queryParam("format", req);
+		String groupby = queryParam("groupby", req);
 		String type = "text/plain";
 		if ("markdown".equalsIgnoreCase(format)) {
 			type = "text/markdown";
@@ -411,12 +448,15 @@ public final class Api1 {
 
 	@GetMapping("/_constraints")
 	public ResponseEntity<?> getConstraints() {
-		return getConstraints(null, null);
+		return getConstraintsHandler(getPrincipalApp(), null);
 	}
 
 	@GetMapping("/_constraints/{type}")
-	public ResponseEntity<?> getConstraints(App a, @PathVariable String type) {
-		App app = (a != null) ? a : getPrincipalApp();
+	public ResponseEntity<?> getConstraints(@PathVariable String type) {
+		return getConstraintsHandler(getPrincipalApp(), type);
+	}
+
+	public ResponseEntity<?> getConstraintsHandler(App app, String type) {
 		if (app != null) {
 			if (type != null) {
 				return ResponseEntity.ok(app.getAllValidationConstraints(type));
@@ -427,10 +467,14 @@ public final class Api1 {
 	}
 
 	@PutMapping("/_constraints/{type}/{field}/{cname}")
-	@SuppressWarnings("unchecked")
-	public ResponseEntity<?> addConstraint(App a, @PathVariable String type, @PathVariable String field,
+	public ResponseEntity<?> addConstraint(@PathVariable String type, @PathVariable String field,
 			@PathVariable String cname, HttpServletRequest req) throws IOException {
-		App app = (a != null) ? a : getPrincipalApp();
+		return addConstraintHandler(getPrincipalApp(), type, field, cname, req);
+	}
+
+	@SuppressWarnings("unchecked")
+	public ResponseEntity<?> addConstraintHandler(App app, String type, String field, String cname, HttpServletRequest req)
+			throws IOException {
 		if (app != null) {
 			ResponseEntity<?> payloadRes = getEntity(req.getInputStream(), Map.class);
 			if (payloadRes.getStatusCode().is2xxSuccessful()) {
@@ -445,9 +489,12 @@ public final class Api1 {
 	}
 
 	@DeleteMapping("/_constraints/{type}/{field}/{cname}")
-	public ResponseEntity<?> removeConstraint(App a, @PathVariable String type, @PathVariable String field,
+	public ResponseEntity<?> removeConstraint(@PathVariable String type, @PathVariable String field,
 			@PathVariable String cname) {
-		App app = (a != null) ? a : getPrincipalApp();
+		return removeConstraintHandler(getPrincipalApp(), type, field, cname);
+	}
+
+	public ResponseEntity<?> removeConstraintHandler(App app, String type, String field, String cname) {
 		if (app != null) {
 			if (app.removeValidationConstraint(type, field, cname)) {
 				app.update();
@@ -459,12 +506,15 @@ public final class Api1 {
 
 	@GetMapping("/_permissions")
 	public ResponseEntity<?> getPermissions() {
-		return getPermissions(null, null);
+		return getPermissionsHandler(getPrincipalApp(), null);
 	}
 
 	@GetMapping("/_permissions/{subjectid}")
-	public ResponseEntity<?> getPermissions(App a, @PathVariable String subjectid) {
-		App app = (a != null) ? a : getPrincipalApp();
+	public ResponseEntity<?> getPermissions(@PathVariable String subjectid) {
+		return getPermissionsHandler(getPrincipalApp(), subjectid);
+	}
+
+	public ResponseEntity<?> getPermissionsHandler(App app, String subjectid) {
 		if (app != null) {
 			if (subjectid != null) {
 				return ResponseEntity.ok(app.getAllResourcePermissions(subjectid));
@@ -475,9 +525,12 @@ public final class Api1 {
 	}
 
 	@GetMapping(value = "/_permissions/{subjectid}/{type}/{method}", produces = "text/plain")
-	public ResponseEntity<?> checkPermission(App a, @PathVariable String subjectid, @PathVariable String type,
+	public ResponseEntity<?> checkPermission(@PathVariable String subjectid, @PathVariable String type,
 			@PathVariable String method) {
-		App app = (a != null) ? a : getPrincipalApp();
+		return checkPermissionHandler(getPrincipalApp(), subjectid, type, method);
+	}
+
+	public ResponseEntity<?> checkPermissionHandler(App app, String subjectid, String type, String method) {
 		if (app != null) {
 			String resourcePath = Utils.base64dec(type);
 			return ResponseEntity.ok(Boolean.toString(app.isAllowedTo(subjectid, resourcePath, method)));
@@ -486,9 +539,14 @@ public final class Api1 {
 	}
 
 	@PutMapping("/_permissions/{subjectid}/{type}")
-	public ResponseEntity<?> grantPermission(App a, @PathVariable String subjectid, @PathVariable String type,
+	public ResponseEntity<?> grantPermission(@PathVariable String subjectid, @PathVariable String type,
 			HttpServletRequest req) throws IOException {
-		App app = (a != null) ? a : getPrincipalApp();
+		return grantPermissionHandler(getPrincipalApp(), subjectid, type, req);
+	}
+
+	@SuppressWarnings("unchecked")
+	public ResponseEntity<?> grantPermissionHandler(App app, String subjectid, String type, HttpServletRequest req)
+			throws IOException {
 		if (app != null) {
 			String resourcePath = Utils.base64dec(type);
 			ResponseEntity<?> resp = getEntity(req.getInputStream(), List.class);
@@ -517,8 +575,16 @@ public final class Api1 {
 	}
 
 	@DeleteMapping("/_permissions/{subjectid}/{type}")
-	public ResponseEntity<?> revokePermission(App a, @PathVariable String subjectid, @PathVariable String type) {
-		App app = (a != null) ? a : getPrincipalApp();
+	public ResponseEntity<?> revokePermission(@PathVariable String subjectid, @PathVariable String type) {
+		return revokePermissionHandler(getPrincipalApp(), subjectid, type);
+	}
+
+	@DeleteMapping("/_permissions/{subjectid}")
+	public ResponseEntity<?> revokeAllPermissions(@PathVariable String subjectid) {
+		return revokePermissionHandler(getPrincipalApp(), subjectid, null);
+	}
+
+	public ResponseEntity<?> revokePermissionHandler(App app, String subjectid, String type) {
 		if (app != null) {
 			String resourcePath = Utils.base64dec(type);
 			boolean revoked = StringUtils.isBlank(resourcePath)
@@ -532,38 +598,39 @@ public final class Api1 {
 		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 	}
 
-	@DeleteMapping("/_permissions/{subjectid}")
-	public ResponseEntity<?> revokeAllPermissions(@PathVariable String subjectid) {
-		return revokePermission(null, subjectid, null);
-	}
-
 	@GetMapping("/_settings")
-	public ResponseEntity<?> getSettings(App a) {
-		App app = (a != null) ? a : getPrincipalApp();
-		if (app != null) {
-			return ResponseEntity.ok(app.getSettings());
-		}
-		return getStatusResponse(HttpStatus.FORBIDDEN, "Not allowed.");
+	public ResponseEntity<?> getSettings() {
+		return getSettingHandler(getPrincipalApp(), null);
 	}
 
 	@GetMapping("/_settings/{key}")
-	public ResponseEntity<?> getSetting(App a, @PathVariable String key) {
-		App app = (a != null) ? a : getPrincipalApp();
+	public ResponseEntity<?> getSetting(@PathVariable String key) {
+		return getSettingHandler(getPrincipalApp(), key);
+	}
+
+	public ResponseEntity<?> getSettingHandler(App app, String key) {
 		if (app != null) {
-			return ResponseEntity.ok(Collections.singletonMap("value", app.getSetting(key)));
+			if (key == null) {
+				return ResponseEntity.ok(app.getSettings());
+			} else {
+				return ResponseEntity.ok(Collections.singletonMap("value", app.getSetting(key)));
+			}
 		}
 		return getStatusResponse(HttpStatus.FORBIDDEN, "Not allowed.");
 	}
 
 	@PutMapping("/_settings")
-	public ResponseEntity<?> putSettings(App a, HttpServletRequest req) throws IOException {
-		return putSetting(a, null, req);
+	public ResponseEntity<?> putSettings(HttpServletRequest req) throws IOException {
+		return putSettingHandler(getPrincipalApp(), null, req);
 	}
 
 	@PutMapping("/_settings/{key}")
+	public ResponseEntity<?> putSetting(@PathVariable String key, HttpServletRequest req) throws IOException {
+		return putSettingHandler(getPrincipalApp(), key, req);
+	}
+
 	@SuppressWarnings("unchecked")
-	public ResponseEntity<?> putSetting(App a, @PathVariable String key, HttpServletRequest req) throws IOException {
-		App app = (a != null) ? a : getPrincipalApp();
+	public ResponseEntity<?> putSettingHandler(App app, String key, HttpServletRequest req) throws IOException {
 		if (app != null) {
 			ResponseEntity<?> resp = getEntity(req.getInputStream(), Map.class);
 			if (resp.getStatusCode().is2xxSuccessful()) {
@@ -582,8 +649,11 @@ public final class Api1 {
 	}
 
 	@DeleteMapping("/_settings/{key}")
-	public ResponseEntity<?> deleteSetting(App a, @PathVariable String key) {
-		App app = (a != null) ? a : getPrincipalApp();
+	public ResponseEntity<?> deleteSetting(@PathVariable String key) {
+		return deleteSettingHandler(getPrincipalApp(), key);
+	}
+
+	public ResponseEntity<?> deleteSettingHandler(App app, String key) {
 		if (app != null) {
 			app.removeSetting(key);
 			app.update();
@@ -602,106 +672,115 @@ public final class Api1 {
 
 	@PostMapping("/_reindex")
 	public ResponseEntity<?> reindex(HttpServletRequest req) {
-		App app = getPrincipalApp();
-		if (app != null) {
-			long startTime = System.nanoTime();
-			Pager pager = RestUtils.getPagerFromParams(req);
-			String destinationIndex = req.getParameter("destinationIndex");
-			try (Metrics.Context context = Metrics.time(app.getAppIdentifier(), Api1.class, "rebuildIndex")) {
-				getSearch().rebuildIndex(getDAO(), app, destinationIndex, pager);
-			}
-			long tookMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
-			Map<String, Object> response = new HashMap<>(2);
-			response.put("reindexed", pager.getCount());
-			response.put("tookMillis", tookMillis);
-			return ResponseEntity.ok().body(response);
+		return reindexHandler(getPrincipalApp(), req);
+	}
+
+	public ResponseEntity<?> reindexHandler(App app, HttpServletRequest req) {
+		if (app == null) {
+			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
-		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+		long startTime = System.nanoTime();
+		Pager pager = RestUtils.getPagerFromParams(req);
+		String destinationIndex = queryParam("destinationIndex", req);
+		try (Metrics.Context context = Metrics.time(app.getAppIdentifier(), Api1.class, "rebuildIndex")) {
+			getSearch().rebuildIndex(getDAO(), app, destinationIndex, pager);
+		}
+		long tookMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
+		Map<String, Object> response = new HashMap<>(2);
+		response.put("reindexed", pager.getCount());
+		response.put("tookMillis", tookMillis);
+		return ResponseEntity.ok().body(response);
 	}
 
 	@GetMapping(value = "/_export", produces = "application/zip")
 	public ResponseEntity<StreamingResponseBody> backup() {
-		App app = getPrincipalApp();
-		if (app != null) {
-			String fileName = app.getAppIdentifier().trim() + "_" + Utils.formatDate("YYYYMMdd_HHmmss", Locale.US);
-			StreamingResponseBody stream = os -> {
-				ObjectWriter writer = JsonMapper.builder().disable(MapperFeature.USE_ANNOTATIONS).build().writer()
-						.without(SerializationFeature.INDENT_OUTPUT)
-						.without(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
-				try (ZipOutputStream zipOut = new ZipOutputStream(os)) {
-					long count = 0;
-					int partNum = 0;
-					Pager pager = new Pager();
-					List<ParaObject> objects;
-					do {
-						objects = getDAO().readPage(app.getAppIdentifier(), pager);
-						ZipEntry zipEntry = new ZipEntry(fileName + "_part" + (++partNum) + ".json");
-						zipOut.putNextEntry(zipEntry);
-						writer.writeValue(zipOut, objects);
-						count += objects.size();
-					} while (!objects.isEmpty());
-					logger.info("Exported {} objects from app '{}'. (pager.count={})",
-							count, app.getId(), pager.getCount());
-				} catch (IOException e) {
-					logger.error("Failed to export data.", e);
-				}
-			};
-			return ResponseEntity.ok()
-					.contentType(MediaType.parseMediaType("application/zip"))
-					.header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + fileName + ".zip")
-					.body(stream);
+		return backupHandler(getPrincipalApp());
+	}
+
+	public ResponseEntity<StreamingResponseBody> backupHandler(App app) {
+		if (app == null) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 		}
-		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+		String fileName = app.getAppIdentifier().trim() + "_" + Utils.formatDate("YYYYMMdd_HHmmss", Locale.US);
+		StreamingResponseBody stream = os -> {
+			ObjectWriter writer = JsonMapper.builder().disable(MapperFeature.USE_ANNOTATIONS).build().writer()
+					.without(SerializationFeature.INDENT_OUTPUT)
+					.without(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
+			try (ZipOutputStream zipOut = new ZipOutputStream(os)) {
+				long count = 0;
+				int partNum = 0;
+				Pager pager = new Pager();
+				List<ParaObject> objects;
+				do {
+					objects = getDAO().readPage(app.getAppIdentifier(), pager);
+					ZipEntry zipEntry = new ZipEntry(fileName + "_part" + (++partNum) + ".json");
+					zipOut.putNextEntry(zipEntry);
+					writer.writeValue(zipOut, objects);
+					count += objects.size();
+				} while (!objects.isEmpty());
+				logger.info("Exported {} objects from app '{}'. (pager.count={})",
+						count, app.getId(), pager.getCount());
+			} catch (IOException e) {
+				logger.error("Failed to export data.", e);
+			}
+		};
+		return ResponseEntity.ok()
+				.contentType(MediaType.parseMediaType("application/zip"))
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + fileName + ".zip")
+				.body(stream);
 	}
 
 	@PutMapping(value = "/_import", consumes = "application/zip")
 	public ResponseEntity<?> restore(HttpServletRequest req) {
-		App app = getPrincipalApp();
-		if (app != null) {
-			ObjectReader reader = ParaObjectUtils.getJsonMapper()
-					.readerFor(new TypeReference<List<Map<String, Object>>>() {
-					});
-			int count = 0;
-			int importBatchSize = Para.getConfig().importBatchSize();
-			String filename = Optional.ofNullable(req.getParameter("filename"))
-					.orElse(app.getAppIdentifier().trim() + "_backup.zip");
-			Sysprop s = new Sysprop();
-			s.setType("paraimport");
-			try (InputStream inputStream = req.getInputStream(); ZipInputStream zipIn = new ZipInputStream(inputStream)) {
-				ZipEntry zipEntry;
-				List<ParaObject> toCreate = new LinkedList<>();
-				while ((zipEntry = zipIn.getNextEntry()) != null) {
-					if (zipEntry.getName().endsWith(".json")) {
-						List<Map<String, Object>> objects = reader.readValue(new FilterInputStream(zipIn) {
-							public void close() throws IOException {
-								zipIn.closeEntry();
-							}
-						});
-						objects.forEach(o -> toCreate.add(ParaObjectUtils.setAnnotatedFields(o)));
-						if (toCreate.size() >= importBatchSize) {
-							getDAO().createAll(app.getAppIdentifier(), toCreate);
-							toCreate.clear();
-						}
-						count += objects.size();
-					}
-				}
-				if (!toCreate.isEmpty()) {
-					getDAO().createAll(app.getAppIdentifier(), toCreate);
-				}
-				s.setCreatorid(app.getAppIdentifier());
-				s.setName(filename);
-				s.addProperty("count", count);
-				logger.info("Imported {} objects to app '{}'", count, app.getId());
-				if (count > 0) {
-					getDAO().create(app.getAppIdentifier(), s);
-				}
-				return ResponseEntity.ok(s);
-			} catch (Exception e) {
-				logger.error("Failed to import " + filename, e);
-				return getStatusResponse(HttpStatus.BAD_REQUEST, "Import failed - " + e.getMessage());
-			}
+		return restoreHandler(getPrincipalApp(), req);
+	}
+
+	public ResponseEntity<?> restoreHandler(App app, HttpServletRequest req) {
+		if (app == null) {
+			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
-		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
+		ObjectReader reader = ParaObjectUtils.getJsonMapper()
+				.readerFor(new TypeReference<List<Map<String, Object>>>() {
+				});
+		int count = 0;
+		int importBatchSize = Para.getConfig().importBatchSize();
+		String filename = Optional.ofNullable(queryParam("filename", req))
+				.orElse(app.getAppIdentifier().trim() + "_backup.zip");
+		Sysprop s = new Sysprop();
+		s.setType("paraimport");
+		try (InputStream inputStream = req.getInputStream(); ZipInputStream zipIn = new ZipInputStream(inputStream)) {
+			ZipEntry zipEntry;
+			List<ParaObject> toCreate = new LinkedList<>();
+			while ((zipEntry = zipIn.getNextEntry()) != null) {
+				if (zipEntry.getName().endsWith(".json")) {
+					List<Map<String, Object>> objects = reader.readValue(new FilterInputStream(zipIn) {
+						public void close() throws IOException {
+							zipIn.closeEntry();
+						}
+					});
+					objects.forEach(o -> toCreate.add(ParaObjectUtils.setAnnotatedFields(o)));
+					if (toCreate.size() >= importBatchSize) {
+						getDAO().createAll(app.getAppIdentifier(), toCreate);
+						toCreate.clear();
+					}
+					count += objects.size();
+				}
+			}
+			if (!toCreate.isEmpty()) {
+				getDAO().createAll(app.getAppIdentifier(), toCreate);
+			}
+			s.setCreatorid(app.getAppIdentifier());
+			s.setName(filename);
+			s.addProperty("count", count);
+			logger.info("Imported {} objects to app '{}'", count, app.getId());
+			if (count > 0) {
+				getDAO().create(app.getAppIdentifier(), s);
+			}
+			return ResponseEntity.ok(s);
+		} catch (Exception e) {
+			logger.error("Failed to import " + filename, e);
+			return getStatusResponse(HttpStatus.BAD_REQUEST, "Import failed - " + e.getMessage());
+		}
 	}
 
 	@GetMapping("/{type}/{id}/links/{type2}/{id2}")
@@ -740,6 +819,21 @@ public final class Api1 {
 		return deleteLinks(type, id, null, null, req);
 	}
 
+	private ResponseEntity<?> readLinks(String type, String id, String type2, String id2, HttpServletRequest req) {
+		App app = getPrincipalApp();
+		if (app == null) {
+			return getStatusResponse(HttpStatus.BAD_REQUEST);
+		}
+		ParaObject pobj = loadObject(app, type, id);
+		if (pobj == null) {
+			return getStatusResponse(HttpStatus.NOT_FOUND, "Object not found: " + id);
+		}
+		String resolvedType2 = StringUtils.isBlank(type2) ? null : ParaObjectUtils.toObject(app, type2).getType();
+		Pager pager = RestUtils.getPagerFromParams(req);
+		boolean childrenOnly = StringUtils.isNotBlank(queryParam("childrenonly", req));
+		return RestUtils.readLinksHandler(pobj, id2, resolvedType2, pager, childrenOnly, req);
+	}
+
 	private ResponseEntity<?> modifyLink(String type, String id, String id2) {
 		App app = getPrincipalApp();
 		if (app == null) {
@@ -762,23 +856,8 @@ public final class Api1 {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "Object not found: " + id);
 		}
 		String resolvedType2 = StringUtils.isBlank(type2) ? null : ParaObjectUtils.toObject(app, type2).getType();
-		boolean childrenOnly = StringUtils.isNotBlank(req.getParameter("childrenonly"));
+		boolean childrenOnly = StringUtils.isNotBlank(queryParam("childrenonly", req));
 		return RestUtils.deleteLinksHandler(pobj, id2, resolvedType2, childrenOnly);
-	}
-
-	private ResponseEntity<?> readLinks(String type, String id, String type2, String id2, HttpServletRequest req) {
-		App app = getPrincipalApp();
-		if (app == null) {
-			return getStatusResponse(HttpStatus.BAD_REQUEST);
-		}
-		ParaObject pobj = loadObject(app, type, id);
-		if (pobj == null) {
-			return getStatusResponse(HttpStatus.NOT_FOUND, "Object not found: " + id);
-		}
-		String resolvedType2 = StringUtils.isBlank(type2) ? null : ParaObjectUtils.toObject(app, type2).getType();
-		Pager pager = RestUtils.getPagerFromParams(req);
-		boolean childrenOnly = StringUtils.isNotBlank(req.getParameter("childrenonly"));
-		return RestUtils.readLinksHandler(pobj, id2, resolvedType2, pager, childrenOnly, req);
 	}
 
 	private ResponseEntity<?> setupInternal(String appid, HttpServletRequest req) {

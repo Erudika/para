@@ -24,6 +24,7 @@ import com.erudika.para.server.rest.GenericExceptionMapper;
 import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +37,7 @@ import org.springframework.web.bind.annotation.GetMapping;
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 @Controller
+@ConditionalOnProperty(value = "para.landing_page_enabled", havingValue = "true")
 public class LandingPageController {
 
 	@Inject

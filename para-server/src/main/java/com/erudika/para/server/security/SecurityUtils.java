@@ -481,13 +481,23 @@ public final class SecurityUtils {
 	 * @return the appid if it's present in either the 'state' or 'appid' query parameters
 	 */
 	public static String getAppidFromAuthRequest(HttpServletRequest request) {
+		return getAppidFromAuthRequest(request, request.getParameter("token"));
+	}
+
+	/**
+	 * getter.
+	 * @param request HTTP request
+	 * @param token the security token (ID or JWT)
+	 * @return the appid if it's present in either the 'state' or 'appid' query parameters
+	 */
+	public static String getAppidFromAuthRequest(HttpServletRequest request, String token) {
 		String appidFromState = request.getParameter("state");
 		String appidFromAppid = request.getParameter(Config._APPID);
 		if (StringUtils.isBlank(appidFromState) && StringUtils.isBlank(appidFromAppid)) {
 			if (Strings.CS.startsWith(request.getServletPath(), SAMLAuthFilter.SAML_ACTION + "/")) {
 				return StringUtils.trimToNull(request.getServletPath().substring(SAMLAuthFilter.SAML_ACTION.length() + 1));
-			} else if (Strings.CS.startsWith(request.getServletPath(), "/" + PasswordlessAuthFilter.PASSWORDLESS_ACTION)) {
-				String token = request.getParameter("token"); // JWT
+			} else if (Strings.CS.startsWith(request.getServletPath(), "/" + PasswordlessAuthFilter.PASSWORDLESS_ACTION)
+					&& !StringUtils.isBlank(token)) {
 				JWTClaimsSet claims = null;
 				try {
 					SignedJWT jwt = new SignedJWT(Base64URL.from(StringUtils.substringBefore(token, ".")),

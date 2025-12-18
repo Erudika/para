@@ -20,9 +20,6 @@ package com.erudika.para.server.security.filters;
 import com.erudika.para.core.App;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
-import com.onelogin.saml2.exception.SettingsException;
-import com.onelogin.saml2.settings.Saml2Settings;
-import com.onelogin.saml2.settings.SettingsBuilder;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
@@ -32,12 +29,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import java.io.IOException;
-import java.util.List;
-import org.apache.commons.lang3.StringUtils;
+import java.security.GeneralSecurityException;
+import java.util.Optional;
 import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
+import org.springframework.security.saml2.Saml2Exception;
+import org.springframework.security.saml2.provider.service.metadata.OpenSaml5MetadataResolver;
+import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.web.filter.GenericFilterBean;
 
 /**
@@ -81,28 +81,25 @@ public class SAMLMetadataFilter extends GenericFilterBean {
 
 			try {
 				App app = Para.getDAO().read(App.id(appid));
-				if (app != null && app.getSetting("security.saml.sp.entityid") != null) {
-					SettingsBuilder builder = new SettingsBuilder();
-					Saml2Settings settings = builder.fromValues(SAMLAuthFilter.getSAMLSettings(app)).build();
-					settings.setSPValidationOnly(true);
-					String metadata = settings.getSPMetadata();
-					List<String> errors = Saml2Settings.validateMetadata(metadata);
-					if (errors.isEmpty()) {
+				if (app != null) {
+					Optional<RelyingPartyRegistration> registration =
+							SAMLAuthFilter.buildRelyingPartyRegistration(app, appid, request.getParameter("entityid"));
+					if (registration.isPresent()) {
+						OpenSaml5MetadataResolver resolver = new OpenSaml5MetadataResolver();
+						resolver.setUsePrettyPrint(true);
+						resolver.setSignMetadata(SAMLAuthFilter.shouldSignMetadata(app));
+						String metadata = resolver.resolve(registration.get());
 						response.setContentType(MediaType.TEXT_XML_VALUE);
 						response.setCharacterEncoding(Para.getConfig().defaultEncoding());
 						response.getOutputStream().println(metadata);
 						response.setStatus(SC_OK);
 						return;
-					} else {
-						response.sendError(SC_BAD_REQUEST, StringUtils.join(errors, "; "));
-						response.setStatus(SC_BAD_REQUEST);
-						return;
 					}
 				}
-			} catch (SettingsException ex) {
-				LOG.error("Invalid SAML settings for app {}:", appid, ex);
+			} catch (Saml2Exception | GeneralSecurityException ex) {
+				LOG.error("Invalid SAML settings for app '{}': {}", appid, ex.getMessage());
 			} catch (Exception ex) {
-				LOG.error(null, ex);
+				LOG.error("Failed to generate SAML metadata for app '" + appid + "'", ex);
 			}
 			response.sendError(SC_BAD_REQUEST);
 			response.setStatus(SC_BAD_REQUEST);
