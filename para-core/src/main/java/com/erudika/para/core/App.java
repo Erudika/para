@@ -987,10 +987,10 @@ public class App implements ParaObject, Serializable {
 	 * Resets the secret key by generating a new one.
 	 */
 	public void resetSecret() {
-		if (StringUtils.isBlank(Para.getConfig().rootSecretOverride())) {
-			secret = Utils.generateSecurityToken(40);
-		} else {
+		if (isRoot(getId()) && !StringUtils.isBlank(Para.getConfig().rootSecretOverride())) {
 			secret = Para.getConfig().rootSecretOverride();
+		} else {
+			secret = Utils.generateSecurityToken(40);
 		}
 	}
 
@@ -1060,7 +1060,7 @@ public class App implements ParaObject, Serializable {
 			logger.error("Child apps cannot contain app objects.");
 			return null;
 		}
-		if (isRoot(getAppid()) && !StringUtils.isBlank(Para.getConfig().rootSecretOverride())) {
+		if (isRoot(getId()) && !StringUtils.isBlank(Para.getConfig().rootSecretOverride())) {
 			setSecret(Para.getConfig().rootSecretOverride());
 		}
 		if (StringUtils.isBlank(secret)) {

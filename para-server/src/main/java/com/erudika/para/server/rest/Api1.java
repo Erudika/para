@@ -31,7 +31,6 @@ import static com.erudika.para.core.utils.Para.getDAO;
 import static com.erudika.para.core.utils.Para.getRevision;
 import static com.erudika.para.core.utils.Para.getSearch;
 import static com.erudika.para.core.utils.Para.getVersion;
-import static com.erudika.para.core.utils.Para.newApp;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.core.validation.Constraint;
@@ -334,36 +333,36 @@ public final class Api1 {
 		return ResponseEntity.ok(result);
 	}
 
-	@GetMapping(value = "/utils/{method}", produces = "text/plain")
+	@GetMapping("/utils/{method}")
 	public ResponseEntity<?> utilsHandler(@PathVariable String method, HttpServletRequest req) {
 		method = StringUtils.isBlank(method) ? queryParam("method", req) : method;
 		if ("newid".equals(method)) {
-			return ResponseEntity.ok(Utils.getNewId());
+			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Utils.getNewId());
 		} else if ("timestamp".equals(method)) {
-			return ResponseEntity.ok(Long.toString(Utils.timestamp()));
+			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Long.toString(Utils.timestamp()));
 		} else if ("formatdate".equals(method)) {
 			String format = queryParam("format", req);
 			String locale = queryParam("locale", req);
 			Locale loc = Utils.getLocale(locale);
-			return ResponseEntity.ok(Utils.formatDate(format, loc));
+			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Utils.formatDate(format, loc));
 		} else if ("formatmessage".equals(method)) {
 			String msg = queryParam("message", req);
 			Object[] paramz = req.getParameterValues("fields");
-			return ResponseEntity.ok(Utils.formatMessage(msg, paramz));
+			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Utils.formatMessage(msg, paramz));
 		} else if ("nospaces".equals(method)) {
 			String str = queryParam("string", req);
 			String repl = queryParam("replacement", req);
-			return ResponseEntity.ok(Utils.noSpaces(str, repl));
+			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Utils.noSpaces(str, repl));
 		} else if ("nosymbols".equals(method)) {
 			String str = queryParam("string", req);
-			return ResponseEntity.ok(Utils.stripAndTrim(str));
+			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Utils.stripAndTrim(str));
 		} else if ("md2html".equals(method)) {
 			String md = queryParam("md", req);
 			return ResponseEntity.ok(Utils.markdownToHtml(md));
 		} else if ("timeago".equals(method)) {
 			String d = queryParam("delta", req);
 			long delta = NumberUtils.toLong(d, 1);
-			return ResponseEntity.ok(HumanTime.approximately(delta));
+			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(HumanTime.approximately(delta));
 		}
 		return getStatusResponse(HttpStatus.BAD_REQUEST, "Unknown method: " + ((method == null) ? "empty" : method));
 	}
@@ -524,7 +523,7 @@ public final class Api1 {
 		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 	}
 
-	@GetMapping(value = "/_permissions/{subjectid}/{type}/{method}", produces = "text/plain")
+	@GetMapping("/_permissions/{subjectid}/{type}/{method}")
 	public ResponseEntity<?> checkPermission(@PathVariable String subjectid, @PathVariable String type,
 			@PathVariable String method) {
 		return checkPermissionHandler(getPrincipalApp(), subjectid, type, method);
@@ -533,7 +532,8 @@ public final class Api1 {
 	public ResponseEntity<?> checkPermissionHandler(App app, String subjectid, String type, String method) {
 		if (app != null) {
 			String resourcePath = Utils.base64dec(type);
-			return ResponseEntity.ok(Boolean.toString(app.isAllowedTo(subjectid, resourcePath, method)));
+			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).
+					body(Boolean.toString(app.isAllowedTo(subjectid, resourcePath, method)));
 		}
 		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 	}
@@ -862,13 +862,13 @@ public final class Api1 {
 
 	private ResponseEntity<?> setupInternal(String appid, HttpServletRequest req) {
 		if (StringUtils.isBlank(appid)) {
-			return ResponseEntity.ok(setup());
+			return ResponseEntity.ok(Para.setup());
 		}
 		App app = SecurityUtils.getAuthenticatedApp();
 		if (app != null && app.isRootApp()) {
 			boolean sharedIndex = "true".equalsIgnoreCase(queryParam("sharedIndex", req));
 			boolean sharedTable = "true".equalsIgnoreCase(queryParam("sharedTable", req));
-			return ResponseEntity.ok(newApp(appid, queryParam(Config._NAME, req),
+			return ResponseEntity.ok(Para.newApp(appid, queryParam(Config._NAME, req),
 					queryParam(Config._CREATORID, req), sharedIndex, sharedTable));
 		}
 		return getStatusResponse(HttpStatus.FORBIDDEN, "Only root app can create and initialize other apps.");
