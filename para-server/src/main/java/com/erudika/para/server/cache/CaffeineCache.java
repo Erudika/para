@@ -21,6 +21,7 @@ import com.erudika.para.core.cache.Cache;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Expiry;
 import jakarta.inject.Singleton;
 import java.time.Duration;
 import java.util.Collections;
@@ -50,7 +51,7 @@ public class CaffeineCache implements Cache {
 	public CaffeineCache() {
 		cache = Caffeine.newBuilder()
 			.maximumSize(Para.getConfig().caffeineCacheSize())
-			.expireAfterAccess(Duration.ofMinutes(DEFAULT_EXPIRATION_MIN))
+			.expireAfter(Expiry.creating((k, v) -> Duration.ofMinutes(DEFAULT_EXPIRATION_MIN)))
 			.build();
 	}
 

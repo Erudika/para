@@ -135,7 +135,7 @@ public final class Api1 {
 
 	@PostMapping("/_newkeys")
 	public ResponseEntity<?> newKeys() {
-		return newKeysHandler(getPrincipalApp());
+		return newKeysHandler(SecurityUtils.getAuthenticatedApp());
 	}
 
 	public ResponseEntity<?> newKeysHandler(App app) {
