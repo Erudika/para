@@ -83,7 +83,7 @@
 		<springBootVer>4.0.0</springBootVer>
 		<metricsVer>4.2.32</metricsVer>
 		<httpClientVer>5.5.1</httpClientVer>
-		<httpCoreVer>5.3.6</httpCoreVer>
+		<httpCoreVer>5.4</httpCoreVer>
 		<junitVer>6.0.1</junitVer>
 		<junitPlatformVer>1.12.2</junitPlatformVer>
 		<!-- PLUGINS -->
