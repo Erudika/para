@@ -1,5 +1,0 @@
-[
-  {
-    "interfaces":["java.lang.reflect.ParameterizedType","org.springframework.core.SerializableTypeWrapper$SerializableTypeProxy","java.io.Serializable"]
-  }
-]

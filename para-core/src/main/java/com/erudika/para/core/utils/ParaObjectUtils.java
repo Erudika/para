@@ -37,19 +37,29 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ClassInfoList;
-import io.github.classgraph.ScanResult;
+import java.io.File;
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.collections.bidimap.DualHashBidiMap;
@@ -164,6 +174,34 @@ public final class ParaObjectUtils {
 			map.putAll(app.getDatatypes());
 		}
 		return map;
+	}
+
+	/**
+	 * Object types should not start with '_' because it is in conflict with the API. Some API resources have a path
+	 * which also starts with '_' like {@code  /v1/_me}. Also ignore types containing reserved keywords "utils",
+	 * "search".
+	 *
+	 * @param obj an object
+	 * @return obj - the same object with the correct type
+	 */
+	public static <P extends ParaObject> P checkAndFixType(P obj) {
+		if (obj != null) {
+			if (Strings.CS.startsWith(obj.getType(), "_")) {
+				obj.setType(obj.getType().replaceAll("^[_]*", ""));
+			}
+			if (Strings.CS.contains(obj.getType(), "#")) {
+				// ElasticSearch doesn't allow # in type mappings
+				obj.setType(obj.getType().replaceAll("#", ""));
+			}
+			if (Strings.CS.contains(obj.getType(), "/")) {
+				// type must not contain "/"
+				obj.setType(obj.getType().replaceAll("/", ""));
+			}
+			if (StringUtils.isBlank(obj.getType()) || Strings.CI.equalsAny(obj.getType(), "search", "utils", "para")) {
+				obj.setType(Utils.type(Sysprop.class));
+			}
+		}
+		return obj;
 	}
 
 	/**
@@ -501,15 +539,11 @@ public final class ParaObjectUtils {
 				CORE_CLASSES.putAll(CORE_PARA_CLASSES);
 
 				if (!Para.getConfig().corePackageName().isEmpty()) {
-					ClassGraph cg2 = new ClassGraph().enableClassInfo().acceptPackages(Para.getConfig().corePackageName());
-					try (ScanResult scanResult = cg2.scan()) {
-						ClassInfoList classes = scanResult.getClassesImplementing(ParaObject.class.getName()).
-								filter(ci -> !ci.isInterface() && !ci.isAbstract());
-						for (io.github.classgraph.ClassInfo clazz : classes) {
-							CORE_CLASSES.putIfAbsent(clazz.getSimpleName().toLowerCase(),
-									(Class<? extends ParaObject>) clazz.loadClass(true));
-						}
-					}
+					scanClasses(Para.getConfig().corePackageName()).stream().
+							filter(ci -> !ci.isInterface() && !Modifier.isAbstract(ci.getModifiers()) &&
+									ParaObject.class.isAssignableFrom(ci)).forEach(c ->
+											CORE_CLASSES.putIfAbsent(c.getSimpleName().toLowerCase(),
+													(Class<? extends ParaObject>) c));
 				}
 				logger.debug("Found {} ParaObject classes: {}", CORE_CLASSES.size(), CORE_CLASSES);
 			} catch (Exception ex) {
@@ -523,13 +557,53 @@ public final class ParaObjectUtils {
 	 * Explicitly registers core classes for reflection.
 	 * @param classes a list of classes
 	 */
-	public static void registerCoreClasses(Class<? extends ParaObject>... classes) {
-		if (classes != null && classes.length > 0) {
+	public static void registerCoreClasses(Set<Class<? extends ParaObject>> classes) {
+		if (classes != null && !classes.isEmpty()) {
 			getCoreClassesMap();
 			for (Class<? extends ParaObject> clazz : classes) {
 				CORE_CLASSES.putIfAbsent(clazz.getSimpleName().toLowerCase(), clazz);
 			}
 		}
+	}
+
+	private static List<Class<?>> scanClasses(String packageName) throws IOException {
+		String packagePath = packageName.replace('.', '/');
+		ClassLoader cl = Thread.currentThread().getContextClassLoader();
+		Enumeration<URL> resources = cl.getResources(packagePath);
+		Set<Class<?>> classes = new LinkedHashSet<>();
+
+		while (resources.hasMoreElements()) {
+			URL url = resources.nextElement();
+			String protocol = url.getProtocol();
+			if ("file".equals(protocol)) {
+				Path dir = Paths.get(url.getPath());
+				try (Stream<Path> stream = Files.walk(dir)) {
+					stream.filter(Files::isRegularFile)
+							.filter(p -> p.toString().endsWith(".class"))
+							.forEach(p -> loadClass(classes, packageName, dir.relativize(p)));
+				}
+			} else if ("jar".equals(protocol)) {
+				String spec = url.getFile();
+				int separator = spec.indexOf('!');
+				String jarPath = spec.substring(5, separator); // strip "file:"
+				try (JarFile jar = new JarFile(URLDecoder.decode(jarPath, StandardCharsets.UTF_8))) {
+					jar.stream()
+							.filter(e -> !e.isDirectory())
+							.filter(e -> e.getName().startsWith(packagePath))
+							.filter(e -> e.getName().endsWith(".class"))
+							.forEach(e -> loadClass(classes, "", Paths.get(e.getName())));
+				}
+			}
+		}
+		return List.copyOf(classes);
+	}
+
+	private static void loadClass(Set<Class<?>> out, String packageName, Path relativePath) {
+		String bare = relativePath.toString().replace(File.separatorChar, '.').replaceAll("\\.class$", "");
+		String fqcn = packageName.isEmpty() ? bare : packageName + "." + bare;
+		try {
+			out.add(Class.forName(fqcn));
+		} catch (ClassNotFoundException ignored) { }
 	}
 
 	/**

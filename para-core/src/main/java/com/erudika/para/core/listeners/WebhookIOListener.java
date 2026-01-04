@@ -17,20 +17,18 @@
  */
 package com.erudika.para.core.listeners;
 
-import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Webhook;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import java.lang.reflect.Method;
 import java.util.List;
-import jakarta.inject.Singleton;
 
 /**
  * Listens for IO events and forwards them to the registered webhooks, via a queue.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@Singleton
 public class WebhookIOListener implements IOListener {
 
 

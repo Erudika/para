@@ -23,7 +23,6 @@ import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.ParaServer;
 import com.erudika.para.server.rest.GenericExceptionMapper;
 import com.erudika.para.server.security.SigninPage;
-import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -42,7 +41,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 @ConditionalOnMissingBean(SigninPage.class)
 public class SigninController {
 
-	@Inject
 	public SigninController() {
 	}
 

@@ -22,7 +22,6 @@ import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.ParaServer;
 import com.erudika.para.server.rest.GenericExceptionMapper;
-import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -45,7 +44,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 @Controller
 public class ErrorController implements org.springframework.boot.webmvc.error.ErrorController {
 
-	@Inject
 	public ErrorController() {
 	}
 

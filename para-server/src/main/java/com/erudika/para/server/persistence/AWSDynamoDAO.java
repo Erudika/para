@@ -48,7 +48,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import jakarta.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +63,6 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
  * An implementation of the {@link DAO} interface using AWS DynamoDB as a data store.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@Singleton
 public class AWSDynamoDAO implements DAO {
 
 	private static final Logger logger = LoggerFactory.getLogger(AWSDynamoDAO.class);

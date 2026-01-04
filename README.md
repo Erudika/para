@@ -237,13 +237,16 @@ To compile it you'll need Maven. Once you have it, just clone and build:
 $ git clone https://github.com/erudika/para.git && cd para
 $ mvn install -DskipTests=true
 ```
-To generate the executable "fat-jar" run `$ mvn package` and it will be in `./para-jar/target/para-x.y.z-SNAPSHOT.jar`.
+To generate the executable "fat-jar" run `$ mvn package` and it will be in `./para-server/target/para-x.y.z-SNAPSHOT.jar`.
 Two JAR files will be generated in total - the fat one is a bit bigger in size.
 
-To build the base package without plugins (excludes `para-dao-sql` and `para-search-lucene`), run:
+To build the native image of Para, run:
+
 ```
-$ cd para-jar && mvn -Pbase package
+$ cd para-server && mvn -Pnative package
 ```
+
+Note, that native images are platform-dependent, so an image built on x86-64 will not run on aarch64, for example.
 
 To run a local instance of Para for development, use:
 ```sh

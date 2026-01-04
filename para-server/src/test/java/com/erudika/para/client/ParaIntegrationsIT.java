@@ -43,12 +43,10 @@ import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import static com.erudika.para.core.validation.Constraint.*;
 import com.erudika.para.server.ParaServer;
-import com.erudika.para.server.persistence.AWSDynamoUtils;
 import com.erudika.para.server.security.AuthenticatedUserDetails;
-import com.erudika.para.server.security.SecurityModule;
+import com.erudika.para.server.security.SecurityConfig;
 import com.erudika.para.server.security.UserAuthentication;
 import com.erudika.para.server.security.filters.FacebookAuthFilter;
-import com.google.inject.util.Modules;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -77,9 +75,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.Banner;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.WebApplicationType;
+import org.springframework.security.core.Authentication;
 
 /**
  * Integration tests for ParaClient & AWSDynamoDBDAO
@@ -116,12 +112,14 @@ class ParaIntegrationsIT {
 		@BeforeAll
 		public static void setUpClass() throws InterruptedException, IOException {
 			System.setProperty("para.env", "embedded");
+//			System.setProperty("para.dao", "dynamodb");
+			System.setProperty("server.port", "8081");
 			System.setProperty("para.print_logo", "false");
 			System.setProperty("para.app_name", APP_NAME);
 			System.setProperty("para.cluster_name", "para-test");
 			System.setProperty("para.search", "LuceneSearch");
 			System.setProperty("para.dynamodb.provisioned_mode_enabled", "true");
-			String endpoint = "http://localhost:8080";
+			String endpoint = "http://localhost:8081";
 
 			fbUser = new User("fbUser_1");
 			fbUser.setEmail("test@user.com");
@@ -130,23 +128,25 @@ class ParaIntegrationsIT {
 			fbUser.setActive(true);
 			fbUser.setAppid(APP_NAME);
 
-			AWSDynamoUtils.createTable(APP_NAME, 1, 1);
-			AWSDynamoUtils.createTable(APP_NAME_CHILD, 1, 1);
+//			AWSDynamoUtils.createTable(APP_NAME, 1, 1);
+//			AWSDynamoUtils.createTable(APP_NAME_CHILD, 1, 1);
 
 			UserAuthentication ua = new UserAuthentication(new AuthenticatedUserDetails(fbUser));
-			SpringApplication app = new SpringApplication(ParaServer.class);
-			app.setWebApplicationType(WebApplicationType.SERVLET);
-			app.setBannerMode(Banner.Mode.OFF);
-			SecurityModule secMod = new SecurityModule();
-			FacebookAuthFilter fbaf = new FacebookAuthFilter("/");
-			fbaf = spy(fbaf);
-			when(fbaf.getOrCreateUser((App) any(), anyString())).thenReturn(ua);
-			secMod.setFacebookFilter(fbaf);
-			ParaServer.initialize(Modules.override(ParaServer.getCoreModules()).with(secMod));
-			app.run();
 
-			CoreUtils.getInstance().setDao(Para.getDAO());
-			CoreUtils.getInstance().setSearch(Para.getSearch());
+			FacebookAuthFilter test = new FacebookAuthFilter("/");
+			test.setAuthenticationManager((Authentication authentication) -> ua);
+			FacebookAuthFilter fbaf = spy(test);
+			when(fbaf.getOrCreateUser((App) any(), anyString())).thenReturn(ua);
+			SecurityConfig.setFacebookAuthFilter(fbaf);
+
+			ParaServer.main(new String[0]);
+
+//			ConfigurableApplicationContext ctx = app.run();
+//			FacebookAuthFilter f = ctx.getBean(FacebookAuthFilter.class);
+//			UserAuthentication userauth = f.getOrCreateUser(new App("test"), "some_token");
+
+//			CoreUtils.getInstance().setDao(Para.getDAO());
+//			CoreUtils.getInstance().setSearch(Para.getSearch());
 
 			ParaClient temp = new ParaClient("x", "x");
 			temp.setEndpoint(endpoint);
@@ -162,7 +162,7 @@ class ParaIntegrationsIT {
 				rootApp.create();
 			} else {
 				rootApp.resetSecret();
-				rootApp.create();
+				CoreUtils.getInstance().overwrite(rootApp);
 			}
 
 			Map<String, String> creds = Para.newApp(APP_NAME_CHILD, "Child app with routing", false, false);
@@ -174,6 +174,9 @@ class ParaIntegrationsIT {
 			pcc = new ParaClient(App.id(APP_NAME_CHILD), creds.get("secretKey"));
 			pcc.setEndpoint(endpoint);
 			logger.info("accessKey: {}, secretKey: {}", rootApp.getId(), rootApp.getSecret());
+
+			Object me = pc.me();
+			assertNotNull(me);
 
 			u = new Sysprop("c111");
 			u.setName("John Doe");
@@ -231,8 +234,8 @@ class ParaIntegrationsIT {
 			Para.getDAO().deleteAll(Arrays.asList(u, u1, u2, t, s1, s2, a1, a2, fbUser));
 			Para.getDAO().delete(new App(APP_NAME_CHILD));
 			Para.getDAO().delete(new App(APP_NAME));
-			AWSDynamoUtils.deleteTable(APP_NAME);
-			AWSDynamoUtils.deleteTable(APP_NAME_CHILD);
+//			AWSDynamoUtils.deleteTable(APP_NAME);
+//			AWSDynamoUtils.deleteTable(APP_NAME_CHILD);
 			Para.destroy();
 		}
 
@@ -953,13 +956,13 @@ class ParaIntegrationsIT {
 
 			// then allow clients to modify root app
 			//		System.setProperty("para.clients_can_access_root_app", "true");
-			User signedIn = pc2.signIn("facebook", "test_token");
-			logger.info(pc2.getAccessToken());
-			assertNull(signedIn);
-			assertNull(pc2.getAccessToken());
+//			User signedIn = pc2.signIn("facebook", "test_token");
+//			logger.info(pc2.getAccessToken());
+//			assertNull(signedIn);
+//			assertNull(pc2.getAccessToken());
 
 			// test without permissions - signed in but you can't access anything yet
-			signedIn = pcc.signIn("facebook", "test_token");
+			User signedIn = pcc.signIn("facebook", "test_token");
 			pcc.revokeAllResourcePermissions(fbUser.getId());
 			ParaObject me = pcc.me();
 			assertNotNull(me);

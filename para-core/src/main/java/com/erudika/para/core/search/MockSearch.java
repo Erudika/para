@@ -21,7 +21,6 @@ import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.persistence.DAO;
 import com.erudika.para.core.utils.Pager;
-import jakarta.inject.Singleton;
 import java.util.List;
 import java.util.Map;
 
@@ -29,7 +28,6 @@ import java.util.Map;
  * MockSearch.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@Singleton
 public class MockSearch implements Search {
 
 	public MockSearch() {

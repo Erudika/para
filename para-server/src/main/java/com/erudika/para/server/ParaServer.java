@@ -22,43 +22,17 @@ import com.erudika.para.core.rest.CustomResourceHandler;
 import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.ParaObjectUtils;
-import com.erudika.para.server.aop.AOPModule;
-import com.erudika.para.server.cache.CacheModule;
-import com.erudika.para.server.email.EmailModule;
 import com.erudika.para.server.metrics.MetricsUtils;
-import com.erudika.para.server.persistence.PersistenceModule;
-import com.erudika.para.server.queue.QueueModule;
-import com.erudika.para.server.search.SearchModule;
-import com.erudika.para.server.security.SecurityModule;
-import com.erudika.para.server.storage.StorageModule;
 import com.erudika.para.server.utils.HealthUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Module;
-import com.google.inject.Stage;
-import com.google.inject.util.Modules;
 import jakarta.annotation.PreDestroy;
 import java.io.File;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.Strings;
-import org.eclipse.jetty.server.ConnectionFactory;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.ForwardedRequestCustomizer;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -67,14 +41,15 @@ import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.ApplicationPidFileWriter;
-import org.springframework.boot.jetty.JettyServerCustomizer;
-import org.springframework.boot.jetty.servlet.JettyServletWebServerFactory;
+import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
 import org.springframework.boot.web.error.ErrorPage;
 import org.springframework.boot.web.error.ErrorPageRegistrar;
 import org.springframework.boot.web.error.ErrorPageRegistry;
 import org.springframework.boot.web.server.servlet.ServletWebServerFactory;
-import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -85,11 +60,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 @SpringBootApplication
-public class ParaServer extends SpringBootServletInitializer implements Ordered {
+public class ParaServer implements Ordered {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ParaServer.class);
 	private static final Map<String, String> FILE_CACHE = new ConcurrentHashMap<String, String>();
-	private static Injector injector;
+	private static ConfigurableApplicationContext appContext;
 
 	/**
 	 * The path of the API controller.
@@ -121,55 +96,19 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 				System.setProperty("server.jetty.accesslog.file-date-format", "yyyy_MM_dd");
 			}
 		}
+		System.setProperty("para.landing_page_enabled", String.valueOf(Para.getConfig().landingPageEnabled()));
 		System.setProperty("para.api_enabled", String.valueOf(Para.getConfig().apiEnabled()));
 	}
 
 	/**
-	 * Returns the list of core modules.
-	 * @return the core modules
-	 */
-	public static Module[] getCoreModules() {
-		return new Module[] {
-			new PersistenceModule(),
-			new SearchModule(),
-			new CacheModule(),
-			new QueueModule(),
-			new AOPModule(),
-			new EmailModule(),
-			new StorageModule(),
-			new SecurityModule()
-		};
-	}
-
-	/**
-	 * Initializes the Para core modules and allows the user to override them. Call this method first.
+	 * * Initializes the Para core modules and allows the user to override them. Call this method first.
 	 *	This method calls {@code Para.initialize()}.
-	 * @param modules a list of modules that override the main modules
+	 * @return ctx
 	 */
-	public static void initialize(Module... modules) {
-		Stage stage = Para.getConfig().inProduction() ? Stage.PRODUCTION : Stage.DEVELOPMENT;
-
-		List<Module> coreModules = Arrays.asList(modules);
-		List<Module> externalModules = getExternalModules();
-
-		if (coreModules.isEmpty() && externalModules.isEmpty()) {
-			LOG.warn("No implementing modules found. Aborting...");
-			destroy();
-			return;
-		}
-
-		if (!externalModules.isEmpty()) {
-			injector = Guice.createInjector(stage, Modules.override(coreModules).with(externalModules));
-		} else {
-			injector = Guice.createInjector(stage, coreModules);
-		}
-
+	@EventListener({ContextRefreshedEvent.class})
+	protected static void initialize() {
 		Para.addInitListener(HealthUtils.getInstance());
 		Para.addInitListener(MetricsUtils.getInstance());
-
-		Para.getInitListeners().forEach((initListener) -> {
-			injectInto(initListener);
-		});
 
 		if (Para.getConfig().webhooksEnabled()) {
 			Para.addIOListener(new WebhookIOListener());
@@ -197,106 +136,15 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	}
 
 	/**
-	 * Calls all registered listeners on exit. Call this method last.
-	 * This method calls {@code Para.destroy()}.
-	 */
-	public static void destroy() {
-		Para.getDestroyListeners().forEach((destroyListener) -> {
-			injectInto(destroyListener);
-		});
-		Para.destroy();
-	}
-
-	/**
-	 * Inject dependencies into a given object.
-	 *
-	 * @param obj the object we inject into
-	 */
-	public static void injectInto(Object obj) {
-		if (obj == null) {
-			return;
-		}
-		if (injector == null) {
-			handleNotInitializedError();
-		}
-		injector.injectMembers(obj);
-	}
-
-	/**
-	 * Return an instance of some class if it has been wired through DI.
-	 *
-	 * @param <T> any type
-	 * @param type any type
-	 * @return an object
-	 */
-	public static <T> T getInstance(Class<T> type) {
-		if (injector == null) {
-			handleNotInitializedError();
-		}
-		return injector.getInstance(type);
-	}
-
-	private static List<Module> getExternalModules() {
-		ServiceLoader<Module> moduleLoader = ServiceLoader.load(Module.class, Para.getParaClassLoader());
-		List<Module> externalModules = new ArrayList<>();
-		for (Module module : moduleLoader) {
-			externalModules.add(module);
-		}
-		return externalModules;
-	}
-
-	private static void handleNotInitializedError() {
-		throw new IllegalStateException("Call ParaServer.initialize() first!");
-	}
-
-	@Override
-	public int getOrder() {
-		return 1;
-	}
-
-	/**
 	 * Jetty config.
 	 * @return Jetty config bean
 	 */
 	@Bean
 	public ServletWebServerFactory jettyConfigBean() {
-		JettyServletWebServerFactory jef = new JettyServletWebServerFactory();
+		TomcatServletWebServerFactory jef = new TomcatServletWebServerFactory();
+		//JettyServletWebServerFactory jef = new JettyServletWebServerFactory();
 		jef.setRegisterDefaultServlet(true);
 		jef.setPort(Para.getConfig().serverPort());
-		jef.addServerCustomizers((JettyServerCustomizer) (Server server) -> {
-			for (Connector y : server.getConnectors()) {
-				for (ConnectionFactory cf : y.getConnectionFactories()) {
-					if (cf instanceof HttpConnectionFactory) {
-						HttpConnectionFactory dcf = (HttpConnectionFactory) cf;
-						// support for X-Forwarded-Proto
-						// redirect back to https if original request uses it
-						if (Para.getConfig().inProduction()) {
-							ForwardedRequestCustomizer frc = new ForwardedRequestCustomizer() {
-								public void customize(Connector connector, HttpConfiguration config, Request request) {
-									//super.customize(connector, config, request);
-									String cfProto = request.getHeaders().get("CloudFront-Forwarded-Proto");
-									if (StringUtils.isBlank(cfProto)) {
-										cfProto = request.getHeaders().get("X-Forwarded-Proto");
-									}
-									if (Strings.CI.equals(cfProto, config.getSecureScheme())) {
-										setForwardedProtoHeader(cfProto);
-										setSslIsSecure(true);
-										//request.setScheme(cfProto);
-										//request.setSecure(true);
-									}
-								}
-							};
-							HttpConfiguration httpConfiguration = dcf.getHttpConfiguration();
-							httpConfiguration.addCustomizer(frc);
-						}
-						// Disable Jetty version header
-						dcf.getHttpConfiguration().setSendServerVersion(false);
-						// Increase idle timeout
-						dcf.getHttpConfiguration().setIdleTimeout(TimeUnit.MINUTES.toMillis(5));
-					}
-				}
-			}
-		});
 		String contextPath = Para.getConfig().serverContextPath();
 		if (StringUtils.length(contextPath) > 1 && contextPath.charAt(0) == '/') {
 			jef.setContextPath(contextPath);
@@ -364,6 +212,16 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	}
 
 	/**
+	 * Calls all registered listeners on exit. Call this method last. This method calls {@code Para.destroy()}.
+	 */
+	public static void destroy() {
+		Para.destroy();
+		if (appContext != null) {
+			appContext.close();
+		}
+	}
+
+	/**
 	 * Called before shutdown.
 	 */
 	@PreDestroy
@@ -371,27 +229,19 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 		destroy();
 	}
 
-	/**
-	 * This is the initializing method when running ParaServer as WAR,
-	 * deployed to a servlet container.
-	 * @param app the Spring app builder instance
-	 * @return the application builder
-	 */
 	@Override
-	protected SpringApplicationBuilder configure(SpringApplicationBuilder app) {
-		// entry point (WAR)
-		return builder(app, true);
+	public int getOrder() {
+		return 1;
 	}
 
 	/**
 	 * This is the initializing method when running ParaServer as executable JAR (or WAR),
 	 * from the command line: java -jar para.jar.
 	 * @param b Spring app builder
-	 * @param isWar is it started from a WAR file
 	 * @param sources the application classes that will be scanned
 	 * @return the application builder
 	 */
-	public static SpringApplicationBuilder builder(SpringApplicationBuilder b, boolean isWar, Class<?>... sources) {
+	public static SpringApplicationBuilder builder(SpringApplicationBuilder b, Class<?>... sources) {
 		b.profiles(Para.getConfig().environment());
 		b.sources(ParaServer.class);
 		b.sources(sources);
@@ -403,7 +253,6 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 		if (!Para.getCustomResourceHandlers().isEmpty()) {
 			b.sources(Para.getCustomResourceHandlers().stream().map(c -> c.getClass()).toArray(Class[]::new));
 		}
-		b.application().addInitializers(ctx -> initialize(getCoreModules()));
 		return b;
 	}
 
@@ -413,6 +262,6 @@ public class ParaServer extends SpringBootServletInitializer implements Ordered 
 	 */
 	public static void main(String[] args) {
 		// entry point (JAR)
-		builder(new SpringApplicationBuilder(), false).run(args);
+		appContext = builder(new SpringApplicationBuilder()).run(args);
 	}
 }

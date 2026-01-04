@@ -18,40 +18,41 @@
 package com.erudika.para.server.cache;
 
 import com.erudika.para.core.cache.Cache;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Para;
-import com.google.inject.AbstractModule;
 import java.util.ServiceLoader;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * The default cache module.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class CacheModule extends AbstractModule {
+@Configuration
+public class CacheModule {
 
-	/**
-	 * Constructor.
-	 */
-	public CacheModule() {
-	}
-
-	protected void configure() {
+	@Bean
+	public Cache getCache() {
+		Cache cache;
 		String selectedCache = Para.getConfig().cachePlugin();
 		if (StringUtils.isBlank(selectedCache) || "inmemory".equalsIgnoreCase(selectedCache)) {
-			bindToDefault();
+			cache = bindToDefault();
 		} else {
 			Cache cachePlugin = loadExternalCache(selectedCache);
 			if (cachePlugin != null) {
-				bind(Cache.class).to(cachePlugin.getClass()).asEagerSingleton();
+				cache = cachePlugin;
 			} else {
 				// default fallback
-				bindToDefault();
+				cache = bindToDefault();
 			}
 		}
+		CoreUtils.getInstance().setCache(cache);
+		return Para.getCache();
 	}
 
-	void bindToDefault() {
-		bind(Cache.class).to(CaffeineCache.class).asEagerSingleton();
+	Cache bindToDefault() {
+		return new CaffeineCache();
 	}
 
 	/**

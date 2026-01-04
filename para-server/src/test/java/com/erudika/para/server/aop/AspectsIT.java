@@ -21,18 +21,12 @@ import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
 import com.erudika.para.core.cache.Cache;
-import com.erudika.para.core.cache.MockCache;
 import com.erudika.para.core.persistence.DAO;
-import com.erudika.para.core.persistence.MockDAO;
 import com.erudika.para.core.search.Search;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.ParaServer;
-import com.erudika.para.server.search.LuceneSearch;
-import com.google.inject.Binder;
-import com.google.inject.Module;
-import com.google.inject.util.Modules;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -64,16 +58,14 @@ public class AspectsIT {
 	public static void setUpClass() throws Exception {
 		System.setProperty("para.env", "embedded");
 		System.setProperty("para.print_logo", "false");
+		System.setProperty("server.port", "8082");
 		System.setProperty("para.app_name", "para-test");
 		System.setProperty("para.cluster_name", "para-test");
 		System.setProperty("para.cache_enabled", "true");
-		ParaServer.initialize(Modules.override(ParaServer.getCoreModules()).with(new Module() {
-			public void configure(Binder binder) {
-				binder.bind(DAO.class).to(MockDAO.class).asEagerSingleton();
-				binder.bind(Cache.class).to(MockCache.class).asEagerSingleton();
-				binder.bind(Search.class).to(LuceneSearch.class).asEagerSingleton();
-			}
-		}));
+
+		System.setProperty("para.search", "LuceneSearch");
+		//		ParaServer.initialize(dao, new MockCache(), new LuceneSearch(dao), new LocalQueue(), new LocalFileStore());
+		ParaServer.main(new String[0]);
 
 //		ElasticSearchUtils.createIndex(Para.getConfig().getRootAppIdentifier());
 

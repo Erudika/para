@@ -20,7 +20,6 @@ package com.erudika.para.server.email;
 import com.erudika.para.core.email.Emailer;
 import com.erudika.para.core.utils.Para;
 import jakarta.activation.DataHandler;
-import jakarta.inject.Singleton;
 import jakarta.mail.Session;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.InternetHeaders;
@@ -52,7 +51,6 @@ import software.amazon.awssdk.services.ses.model.SendRawEmailRequest;
  * By default, this implementation treats the body as HTML content.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@Singleton
 public class AWSEmailer implements Emailer {
 
 	private final SesClient sesclient;

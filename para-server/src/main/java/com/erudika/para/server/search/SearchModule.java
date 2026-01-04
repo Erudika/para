@@ -17,38 +17,39 @@
  */
 package com.erudika.para.server.search;
 
+import com.erudika.para.core.persistence.DAO;
 import com.erudika.para.core.search.MockSearch;
 import com.erudika.para.core.search.Search;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Para;
-import com.google.inject.AbstractModule;
 import java.util.ServiceLoader;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * The default search module.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class SearchModule extends AbstractModule {
+@Configuration
+public class SearchModule {
 
-	/**
-	 * Creates the search module with the default provider selection logic.
-	 */
-	public SearchModule() {
-		// default constructor
-	}
-
-	protected void configure() {
+	@Bean
+	public Search getSearch(DAO dao) { // wait for DAO to be loaded
+		Search search;
 		String selectedSearch = Para.getConfig().searchPlugin();
 		Search searchPlugin = loadExternalSearch(selectedSearch);
 		if (searchPlugin != null) {
-			bind(Search.class).to(searchPlugin.getClass()).asEagerSingleton();
+			search = searchPlugin;
 		} else {
 			// default fallback - not implemented!
-			bindToDefault();
+			search = bindToDefault();
 		}
+		CoreUtils.getInstance().setSearch(new MeasuredSearch(search));
+		return Para.getSearch();
 	}
 
-	void bindToDefault() {
-		bind(Search.class).to(MockSearch.class).asEagerSingleton();
+	Search bindToDefault() {
+		return new MockSearch();
 	}
 
 	/**

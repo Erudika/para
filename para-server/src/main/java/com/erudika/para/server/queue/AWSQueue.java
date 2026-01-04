@@ -21,14 +21,12 @@ import com.erudika.para.core.queue.Queue;
 import com.erudika.para.core.utils.Para;
 import java.util.Collections;
 import java.util.List;
-import jakarta.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 
 /**
  * An implementation of the {@link Queue} interface using the AWS Simple Queue Service.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@Singleton
 public class AWSQueue implements Queue {
 
 	private String name;

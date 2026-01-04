@@ -6,6 +6,12 @@
 	<version>1.51.5-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>4.0.1</version>
+	</parent>
+
 	<organization>
 		<name>Erudika</name>
 		<url>https://erudika.com</url>
@@ -19,7 +25,6 @@
 		<module>para-server</module>
 		<module>para-core</module>
 		<module>para-client</module>
-		<module>para-jar</module>
 	</modules>
 
 	<licenses>
@@ -76,16 +81,17 @@
 		<skipTests>false</skipTests>
 		<skipITs>${skipTests}</skipITs>
 		<skipUTs>${skipTests}</skipUTs>
+
 		<deployPluginVer>3.1.4</deployPluginVer>
-		<slf4jVer>2.0.17</slf4jVer>
-		<logbackVer>1.5.3</logbackVer>
+		<!--<slf4jVer>2.0.17</slf4jVer>-->
+		<!--<logbackVer>1.5.3</logbackVer>-->
 		<awsJdkVer>2.36.2</awsJdkVer>
-		<springBootVer>4.0.0</springBootVer>
+		<!--<springBootVer>4.0.1</springBootVer>-->
 		<metricsVer>4.2.32</metricsVer>
-		<httpClientVer>5.5.1</httpClientVer>
-		<httpCoreVer>5.3.6</httpCoreVer>
-		<junitVer>6.0.1</junitVer>
-		<junitPlatformVer>1.12.2</junitPlatformVer>
+		<!--<httpClientVer>5.5.1</httpClientVer>-->
+		<!--<httpCoreVer>5.3.6</httpCoreVer>-->
+		<!--<junitVer>6.0.1</junitVer>-->
+		<!--<jacksonVer>2.20.1</jacksonVer>-->
 		<!-- PLUGINS -->
 		<lucenePluginVer>1.49.4</lucenePluginVer>
 		<sqlPluginVer>1.49.2</sqlPluginVer>
@@ -100,19 +106,16 @@
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-core</artifactId>
-			<version>5.20.0</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
-			<version>${junitVer}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-engine</artifactId>
-			<version>${junitVer}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -165,7 +168,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-release-plugin</artifactId>
-				<version>3.2.0</version>
+				<version>3.3.1</version>
 				<configuration>
 					<autoVersionSubmodules>true</autoVersionSubmodules>
 					<mavenExecutorId>forked-path</mavenExecutorId>
@@ -196,13 +199,12 @@
 			<plugin>
 				<groupId>org.sonarsource.scanner.maven</groupId>
 				<artifactId>sonar-maven-plugin</artifactId>
-				<version>5.3.0.6276</version>
+				<version>5.5.0.6356</version>
 			</plugin>
 
 			<plugin>
 				<groupId>org.cyclonedx</groupId>
 				<artifactId>cyclonedx-maven-plugin</artifactId>
-				<version>2.9.1</version>
 				<inherited>true</inherited>
 				<executions>
 					<execution>

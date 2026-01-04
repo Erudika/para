@@ -2036,6 +2036,16 @@ public class ParaConfig extends Config {
 		return getConfigParam("default_encoding", "UTF-8");
 	}
 
+	@Documented(position = 1920,
+			identifier = "landing_page_enabled",
+			value = "true",
+			type = Boolean.class,
+			category = "Miscellaneous",
+			description = "Enable/disable the landing page when opening the server address in the browser.")
+	public boolean landingPageEnabled() {
+		return getConfigBoolean("landing_page_enabled", true);
+	}
+
 	/**
 	 * @return Development environment flag.
 	 */

@@ -22,7 +22,6 @@ import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
-import jakarta.inject.Singleton;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -38,7 +37,6 @@ import org.slf4j.LoggerFactory;
  * Multitenancy is achieved by caching objects from each app using composite keys: {@code prefix_objectId}.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@Singleton
 public class CaffeineCache implements Cache {
 
 	private static final Logger logger = LoggerFactory.getLogger(CaffeineCache.class);

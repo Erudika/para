@@ -21,7 +21,6 @@ import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.ParaServer;
 import com.erudika.para.server.rest.GenericExceptionMapper;
-import jakarta.inject.Inject;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
@@ -38,7 +37,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class NotFoundController {
 
-	@Inject
 	public NotFoundController() {
 	}
 

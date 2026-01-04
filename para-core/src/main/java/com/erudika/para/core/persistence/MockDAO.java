@@ -23,7 +23,6 @@ import com.erudika.para.core.utils.Pager;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
-import jakarta.inject.Singleton;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -40,7 +39,6 @@ import org.slf4j.LoggerFactory;
  * Used for testing and development without a database.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@Singleton
 public class MockDAO implements DAO {
 
 	private static final Logger logger = LoggerFactory.getLogger(MockDAO.class);

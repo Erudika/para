@@ -17,8 +17,6 @@
  */
 package com.erudika.para.core.persistence;
 
-import com.erudika.para.core.annotations.Cached;
-import com.erudika.para.core.annotations.Indexed;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.utils.Pager;
 import java.util.List;
@@ -41,8 +39,6 @@ public interface DAO {
 	 * @param object the domain object
 	 * @return the object's id or null if not created.
 	 */
-	@Indexed(action = Indexed.Action.ADD)
-	@Cached(action = Cached.Action.PUT)
 	<P extends ParaObject> String create(String appid, P object);
 
 	/**
@@ -60,7 +56,6 @@ public interface DAO {
 	 * @param key an object id
 	 * @return the object or null if not found
 	 */
-	@Cached(action = Cached.Action.GET)
 	<P extends ParaObject> P read(String appid, String key);
 
 	/**
@@ -77,8 +72,6 @@ public interface DAO {
 	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param object the domain object
 	 */
-	@Indexed(action = Indexed.Action.ADD)
-	@Cached(action = Cached.Action.PUT)
 	<P extends ParaObject> void update(String appid, P object);
 
 	/**
@@ -94,8 +87,6 @@ public interface DAO {
 	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param object the domain object
 	 */
-	@Indexed(action = Indexed.Action.REMOVE)
-	@Cached(action = Cached.Action.DELETE)
 	<P extends ParaObject> void delete(String appid, P object);
 
 	/**
@@ -115,8 +106,6 @@ public interface DAO {
 	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param objects the list of objects to save
 	 */
-	@Indexed(action = Indexed.Action.ADD_ALL)
-	@Cached(action = Cached.Action.PUT_ALL)
 	<P extends ParaObject> void createAll(String appid, List<P> objects);
 
 	/**
@@ -134,7 +123,6 @@ public interface DAO {
 	 * @param getAllColumns true if all columns must be retrieved. used to save bandwidth.
 	 * @return a map of ids to objects
 	 */
-	@Cached(action = Cached.Action.GET_ALL)
 	<P extends ParaObject> Map<String, P> readAll(String appid, List<String> keys, boolean getAllColumns);
 
 	/**
@@ -171,8 +159,6 @@ public interface DAO {
 	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param objects a list of objects to update
 	 */
-	@Indexed(action = Indexed.Action.ADD_ALL)
-	@Cached(action = Cached.Action.PUT_ALL)
 	<P extends ParaObject> void updateAll(String appid, List<P> objects);
 
 	/**
@@ -188,8 +174,6 @@ public interface DAO {
 	 * @param appid name of the {@link com.erudika.para.core.App}
 	 * @param objects a list of objects to delete
 	 */
-	@Indexed(action = Indexed.Action.REMOVE_ALL)
-	@Cached(action = Cached.Action.DELETE_ALL)
 	<P extends ParaObject> void deleteAll(String appid, List<P> objects);
 
 	/**
@@ -198,4 +182,12 @@ public interface DAO {
 	 * @param objects a list of objects to delete
 	 */
 	<P extends ParaObject> void deleteAll(List<P> objects);
+
+	/**
+	 * DAO class name.
+	 * @return the simple name of this DAO implementation.
+	 */
+	default String getDaoClassName() {
+		return getClass().getSimpleName();
+	}
 }

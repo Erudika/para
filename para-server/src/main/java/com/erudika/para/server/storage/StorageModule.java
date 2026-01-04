@@ -18,46 +18,46 @@
 package com.erudika.para.server.storage;
 
 import com.erudika.para.core.storage.FileStore;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Para;
-import com.google.inject.AbstractModule;
 import java.util.ServiceLoader;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * The default storage module.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class StorageModule extends AbstractModule {
+@Configuration
+public class StorageModule {
 
-	/**
-	 * Creates the storage module with the default provider lookup logic.
-	 */
-	public StorageModule() {
-		// default constructor
-	}
-
-	protected void configure() {
+	@Bean
+	public FileStore getFileStore() {
+		FileStore store;
 		String selectedFileStore = Para.getConfig().fileStoragePlugin();
 		if (StringUtils.isBlank(selectedFileStore)) {
-			bindToDefault();
+			store = bindToDefault();
 		} else {
 			if ("s3".equalsIgnoreCase(selectedFileStore) ||
 					AWSFileStore.class.getSimpleName().equalsIgnoreCase(selectedFileStore)) {
-				bind(FileStore.class).to(AWSFileStore.class).asEagerSingleton();
+				store = new AWSFileStore();
 			} else {
 				FileStore fsPlugin = loadExternalFileStore(selectedFileStore);
 				if (fsPlugin != null) {
-					bind(FileStore.class).to(fsPlugin.getClass()).asEagerSingleton();
+					store = fsPlugin;
 				} else {
 					// default fallback - not implemented!
-					bindToDefault();
+					store = bindToDefault();
 				}
 			}
 		}
+		CoreUtils.getInstance().setFileStore(store);
+		return Para.getFileStore();
 	}
 
-	void bindToDefault() {
-		bind(FileStore.class).to(LocalFileStore.class).asEagerSingleton();
+	FileStore bindToDefault() {
+		return new LocalFileStore();
 	}
 
 	/**

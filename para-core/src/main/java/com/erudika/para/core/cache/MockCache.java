@@ -20,11 +20,10 @@ package com.erudika.para.core.cache;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.LinkedHashMap;
 import java.util.concurrent.ConcurrentHashMap;
-import jakarta.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +32,6 @@ import org.slf4j.LoggerFactory;
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@Singleton
 public class MockCache implements Cache {
 
 	private static final Logger logger = LoggerFactory.getLogger(MockCache.class);

@@ -35,7 +35,6 @@ import com.erudika.para.core.search.MockSearch;
 import com.erudika.para.core.search.Search;
 import com.erudika.para.core.storage.FileStore;
 import com.erudika.para.core.storage.MockFileStore;
-import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -87,86 +86,76 @@ public enum CoreUtils implements InitializeListener {
 		public void onInitialize() {
 			// switch to the real DAO, Search and Cache implementations at runtime
 			if (dao != null && search != null && cache != null) {
-				logger.info("Loaded new DAO, Search and Cache implementations - {}, {} and {}.",
-						stripGuiceMarkerFromClassname(dao.getClass()),
-						stripGuiceMarkerFromClassname(search.getClass()),
-						stripGuiceMarkerFromClassname(cache.getClass()));
+				logger.info("Loaded new DAO, Search and Cache implementations - {}.", getClassNames(dao, search, cache));
 			}
 		}
 
-		private String stripGuiceMarkerFromClassname(Class<?> clazz) {
-			if (clazz.getSimpleName().contains("$EnhancerByGuice$")) {
-				return clazz.getSuperclass().getSimpleName();
-			}
-			return clazz.getSimpleName();
+		private String getClassNames(DAO dao, Search search, Cache cache) {
+			String dn = dao.getDaoClassName();
+			String sn = search.getSearchClassName();
+			String cn = cache.getClass().getSimpleName();
+			return dn + ", " + sn + ", " + cn;
 		}
 
 		@Override
-		public DAO getDao() {
+		public synchronized DAO getDao() {
 			return dao;
 		}
 
-		@Inject
 		@Override
 		public void setDao(DAO dao) {
 			this.dao = dao;
 		}
 
 		@Override
-		public Search getSearch() {
+		public synchronized Search getSearch() {
 			return search;
 		}
 
-		@Inject
 		@Override
 		public void setSearch(Search search) {
 			this.search = search;
 		}
 
 		@Override
-		public Cache getCache() {
+		public synchronized Cache getCache() {
 			return cache;
 		}
 
-		@Inject
 		@Override
 		public void setCache(Cache cache) {
 			this.cache = cache;
 		}
 
 		@Override
-		public Queue getQueue() {
+		public synchronized Queue getQueue() {
 			return queue;
 		}
 
-		@Inject
 		@Override
 		public void setQueue(Queue queue) {
 			this.queue = queue;
 		}
 
 		@Override
-		public FileStore getFileStore() {
+		public synchronized FileStore getFileStore() {
 			return fileStore;
 		}
 
-		@Inject
 		@Override
 		public void setFileStore(FileStore fileStore) {
 			this.fileStore = fileStore;
 		}
 
 		@Override
-		public Emailer getEmailer() {
+		public synchronized Emailer getEmailer() {
 			return emailer;
 		}
 
-		@Inject
 		@Override
 		public void setEmailer(Emailer emailer) {
 			this.emailer = emailer;
 		}
-
 
 		@Override
 		public String getObjectURI(ParaObject obj) {

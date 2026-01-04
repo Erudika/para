@@ -18,7 +18,6 @@
 package com.erudika.para.core.queue;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
-import jakarta.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +25,6 @@ import org.slf4j.LoggerFactory;
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-@Singleton
 public class MockQueue implements Queue {
 
 	private ConcurrentLinkedQueue<String> q = new ConcurrentLinkedQueue<>();

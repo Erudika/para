@@ -12,8 +12,8 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>7.0.0</springSecVer>
-		<springLdapVer>4.0.0</springLdapVer>
+		<springSecVer>7.0.2</springSecVer>
+		<springLdapVer>4.0.1</springLdapVer>
 		<openSamlVer>5.1.6</openSamlVer>
 	</properties>
 
@@ -28,7 +28,6 @@
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-core</artifactId>
-			<version>${springSecVer}</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.springframework</groupId>
@@ -39,12 +38,10 @@
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-web</artifactId>
-			<version>${springSecVer}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-config</artifactId>
-			<version>${springSecVer}</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.jetbrains.kotlin</groupId>
@@ -63,17 +60,15 @@
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-saml2-service-provider</artifactId>
-			<version>${springSecVer}</version>
 		</dependency>
 		<!-- SPRING BOOT -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
-			<version>${springBootVer}</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.springframework.boot</groupId>
-					<artifactId>spring-boot-starter-tomcat</artifactId>
+					<artifactId>spring-boot-starter-jetty</artifactId>
 				</exclusion>
 				<exclusion>
 					<groupId>org.apache.logging.log4j</groupId>
@@ -84,30 +79,25 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jetty</artifactId>
-			<version>${springBootVer}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-mail</artifactId>
-			<version>${springBootVer}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-ldap</artifactId>
-			<version>${springSecVer}</version>
 		</dependency>
 		<!-- SPRING LDAP -->
 		<dependency>
 			<groupId>org.springframework.ldap</groupId>
 			<artifactId>spring-ldap-core</artifactId>
-			<version>${springLdapVer}</version>
 		</dependency>
 
 		<!-- SAML -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-security-saml2</artifactId>
-			<version>${springBootVer}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.opensaml</groupId>
@@ -124,7 +114,6 @@
 		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
 			<artifactId>caffeine</artifactId>
-			<version>3.2.3</version>
 		</dependency>
 
 		<!-- AWS JAVA SDK -->
@@ -159,13 +148,6 @@
 			<version>${awsJdkVer}</version>
 		</dependency>
 
-		<!-- GUICE -->
-		<dependency>
-			<groupId>com.google.inject</groupId>
-			<artifactId>guice</artifactId>
-			<version>7.0.0</version>
-		</dependency>
-
 		<!-- METRICS -->
 		<dependency>
 			<groupId>io.dropwizard.metrics</groupId>
@@ -196,13 +178,6 @@
 		<dependency>
 			<groupId>org.yaml</groupId>
 			<artifactId>snakeyaml</artifactId>
-			<version>2.5</version>
-		</dependency>
-		<dependency>
-			<groupId>jakarta.servlet</groupId>
-			<artifactId>jakarta.servlet-api</artifactId>
-			<version>6.1.0</version>
-			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.nimbusds</groupId>
@@ -212,12 +187,10 @@
 		<dependency>
 			<groupId>org.apache.httpcomponents.core5</groupId>
 			<artifactId>httpcore5</artifactId>
-			<version>${httpCoreVer}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents.client5</groupId>
 			<artifactId>httpclient5</artifactId>
-			<version>${httpClientVer}</version>
 		</dependency>
 
 		<!-- TESTING -->
@@ -252,13 +225,11 @@
 		<dependency>
 			<groupId>org.springframework.ldap</groupId>
 			<artifactId>spring-ldap-test</artifactId>
-			<version>${springLdapVer}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.unboundid</groupId>
 			<artifactId>unboundid-ldapsdk</artifactId>
-			<version>7.0.3</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -268,30 +239,6 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-				<version>${springBootVer}</version>
-				<configuration>
-					<fork>false</fork>
-				</configuration>
-			</plugin>
-
-			<plugin>
-				<groupId>com.jcabi</groupId>
-				<artifactId>jcabi-dynamodb-maven-plugin</artifactId>
-				<version>0.10.1</version>
-				<executions>
-					<execution>
-						<id>dynamodb-integration-test</id>
-						<goals>
-							<goal>start</goal>
-							<goal>stop</goal>
-						</goals>
-						<configuration>
-							<skip>${skipITs}</skip>
-							<port>8000</port>
-							<dist>${project.build.directory}/dynamodb-dist</dist>
-						</configuration>
-					</execution>
-				</executions>
 			</plugin>
 
 			<plugin>
@@ -308,33 +255,6 @@
 						</fileset>
 					</filesets>
 				</configuration>
-			</plugin>
-
-			<plugin>
-				<artifactId>maven-dependency-plugin</artifactId>
-				<version>3.9.0</version>
-				<executions>
-					<execution>
-						<id>unpack-dynamodb-local</id>
-						<goals>
-							<goal>unpack</goal>
-						</goals>
-						<configuration>
-							<scope>test</scope>
-							<skip>${skipITs}</skip>
-							<artifactItems>
-								<artifactItem>
-									<groupId>com.jcabi</groupId>
-									<artifactId>DynamoDBLocal</artifactId>
-									<version>2015-07-16</version>
-									<type>zip</type>
-									<outputDirectory>${project.build.directory}/dynamodb-dist</outputDirectory>
-									<overWrite>false</overWrite>
-								</artifactItem>
-							</artifactItems>
-						</configuration>
-					</execution>
-				</executions>
 			</plugin>
 
 			<plugin>
@@ -400,6 +320,162 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>default</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-dao-sql</artifactId>
+					<version>${sqlPluginVer}</version>
+				</dependency>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-search-lucene</artifactId>
+					<version>${lucenePluginVer}</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>lucene</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-search-lucene</artifactId>
+					<version>${lucenePluginVer}</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>sql</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-dao-sql</artifactId>
+					<version>${sqlPluginVer}</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>hazelcast</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-cache-hazelcast</artifactId>
+					<version>${hcPluginVer}</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>cassandra</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-dao-cassandra</artifactId>
+					<version>${casPluginVer}</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>mongodb</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-dao-mongodb</artifactId>
+					<version>${mongoPluginVer}</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>elasticsearch</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-search-elasticsearch</artifactId>
+					<version>${esPluginVer}</version>
+				</dependency>
+			</dependencies>
+		</profile>
+
+		<profile>
+			<id>native</id>
+			<properties>
+				<!--<packaging.type>jar</packaging.type>-->
+				<M_ARCH>native</M_ARCH>
+			</properties>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-dao-sql</artifactId>
+					<version>${sqlPluginVer}</version>
+				</dependency>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-search-lucene</artifactId>
+					<version>${lucenePluginVer}</version>
+				</dependency>
+			</dependencies>
+			<build>
+				<resources>
+					<resource>
+						<directory>src/main/resources/</directory>
+						<excludes>
+							<exclude>logback.xml</exclude>
+						</excludes>
+					</resource>
+				</resources>
+				<plugins>
+					<plugin>
+						<groupId>org.graalvm.buildtools</groupId>
+						<artifactId>native-maven-plugin</artifactId>
+						<extensions>true</extensions>
+						<executions>
+							<execution>
+								<id>build-native</id>
+								<goals>
+									<goal>compile-no-fork</goal>
+								</goals>
+								<phase>package</phase>
+							</execution>
+						</executions>
+						<configuration>
+							<buildArgs>
+								<buildArg>-march=${M_ARCH}</buildArg>
+								<buildArg>-R:MaxHeapSize=800m</buildArg>
+								<buildArg>-H:+SharedArenaSupport</buildArg>
+								<buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
+								<buildArg>-H:+IncludeAllLocales</buildArg>
+								<buildArg>--enable-http</buildArg>
+								<buildArg>--enable-https</buildArg>
+								<buildArg>--enable-native-access=ALL-UNNAMED</buildArg>
+								<buildArg>--initialize-at-build-time=com.ctc.wstx</buildArg>
+								<buildArg>--initialize-at-build-time=com.ctc.wstx.stax.WstxInputFactory</buildArg>
+								<buildArg>--initialize-at-build-time=com.ctc.wstx.stax.WstxOutputFactory</buildArg>
+								<buildArg>--initialize-at-build-time=org.codehaus.stax2.typed.Base64Variant</buildArg>
+								<buildArg>--initialize-at-build-time=org.springframework.boot.loader.nio.file.NestedFileSystemProvider</buildArg>
+								<buildArg>--initialize-at-run-time=org.slf4j.LoggerFactory</buildArg>
+							</buildArgs>
+							<mainClass>com.erudika.para.server.ParaServer</mainClass>
+							<agentConfiguration>
+								<enabled>true</enabled>
+							</agentConfiguration>
+							<metadataRepository>
+								<enabled>true</enabled>
+							</metadataRepository>
+						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-maven-plugin</artifactId>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 	<repositories>
 		<repository>

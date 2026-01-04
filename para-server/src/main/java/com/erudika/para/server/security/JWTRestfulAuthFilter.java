@@ -34,11 +34,9 @@ import com.erudika.para.server.security.filters.LinkedInAuthFilter;
 import com.erudika.para.server.security.filters.MicrosoftAuthFilter;
 import com.erudika.para.server.security.filters.PasswordAuthFilter;
 import com.erudika.para.server.security.filters.PasswordlessAuthFilter;
-import com.erudika.para.server.security.filters.SAMLAuthFilter;
 import com.erudika.para.server.security.filters.SlackAuthFilter;
 import com.erudika.para.server.security.filters.TwitterAuthFilter;
 import com.nimbusds.jwt.SignedJWT;
-import jakarta.inject.Inject;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
@@ -63,7 +61,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
-import org.springframework.util.Assert;
 import org.springframework.web.filter.GenericFilterBean;
 
 /**
@@ -75,22 +72,21 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(JWTRestfulAuthFilter.class);
 
-	private AuthenticationManager authenticationManager;
-	private PathPatternRequestMatcher authenticationRequestMatcher;
+	private final AuthenticationManager authenticationManager;
+	private final PathPatternRequestMatcher authenticationRequestMatcher;
 
-	private FacebookAuthFilter facebookAuth;
-	private GoogleAuthFilter googleAuth;
-	private GitHubAuthFilter githubAuth;
-	private LinkedInAuthFilter linkedinAuth;
-	private TwitterAuthFilter twitterAuth;
-	private MicrosoftAuthFilter microsoftAuth;
-	private SlackAuthFilter slackAuth;
-	private AmazonAuthFilter amazonAuth;
-	private GenericOAuth2Filter oauth2Auth;
-	private LdapAuthFilter ldapAuth;
-	private PasswordAuthFilter passwordAuth;
-	private PasswordlessAuthFilter passwordlessAuth;
-	private SAMLAuthFilter samlAuth;
+	private final FacebookAuthFilter facebookAuth;
+	private final GoogleAuthFilter googleAuth;
+	private final GitHubAuthFilter githubAuth;
+	private final LinkedInAuthFilter linkedinAuth;
+	private final TwitterAuthFilter twitterAuth;
+	private final MicrosoftAuthFilter microsoftAuth;
+	private final SlackAuthFilter slackAuth;
+	private final AmazonAuthFilter amazonAuth;
+	private final GenericOAuth2Filter oauth2Auth;
+	private final LdapAuthFilter ldapAuth;
+	private final PasswordAuthFilter passwordAuth;
+	private final PasswordlessAuthFilter passwordlessAuth;
 
 	/**
 	 * The default filter mapping.
@@ -99,11 +95,47 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 
 	/**
 	 * Default constructor.
-	 * @param authenticationManager auth manager
+	 * @param authenticationManager auth manage
+	 * @param facebookAuth filter
+	 * @param googleAuth filter
+	 * @param githubAuth filter
+	 * @param linkedinAuth filter
+	 * @param twitterAuth filter
+	 * @param microsoftAuth filter
+	 * @param slackAuth filter
+	 * @param amazonAuth filter
+	 * @param oauth2Auth filter
+	 * @param ldapAuth filter
+	 * @param passwordAuth filter
+	 * @param passwordlessAuth filter
 	 */
-	public JWTRestfulAuthFilter(AuthenticationManager authenticationManager) {
+	public JWTRestfulAuthFilter(AuthenticationManager authenticationManager,
+			FacebookAuthFilter facebookAuth,
+			GoogleAuthFilter googleAuth,
+			GitHubAuthFilter githubAuth,
+			LinkedInAuthFilter linkedinAuth,
+			TwitterAuthFilter twitterAuth,
+			MicrosoftAuthFilter microsoftAuth,
+			SlackAuthFilter slackAuth,
+			AmazonAuthFilter amazonAuth,
+			GenericOAuth2Filter oauth2Auth,
+			LdapAuthFilter ldapAuth,
+			PasswordAuthFilter passwordAuth,
+			PasswordlessAuthFilter passwordlessAuth) {
 		this.authenticationManager = authenticationManager;
-		setFilterProcessesUrl("/" + JWT_ACTION);
+		this.facebookAuth = facebookAuth;
+		this.googleAuth = googleAuth;
+		this.githubAuth = githubAuth;
+		this.linkedinAuth = linkedinAuth;
+		this.twitterAuth = twitterAuth;
+		this.microsoftAuth = microsoftAuth;
+		this.slackAuth = slackAuth;
+		this.amazonAuth = amazonAuth;
+		this.oauth2Auth = oauth2Auth;
+		this.ldapAuth = ldapAuth;
+		this.passwordAuth = passwordAuth;
+		this.passwordlessAuth = passwordlessAuth;
+		this.authenticationRequestMatcher = PathPatternRequestMatcher.withDefaults().matcher("/" + JWT_ACTION);
 	}
 
 	@Override
@@ -329,252 +361,6 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			}
 		}
 		return null;
-	}
-
-	private void setFilterProcessesUrl(String filterProcessesUrl) {
-		this.authenticationRequestMatcher = PathPatternRequestMatcher.withDefaults().matcher(filterProcessesUrl);
-	}
-
-	/**
-	 * getter/setter.
-	 * @return auth manager
-	 */
-	protected AuthenticationManager getAuthenticationManager() {
-		return authenticationManager;
-	}
-
-	/**
-	 * getter/setter.
-	 * @param authenticationManager auth manager
-	 */
-	public void setAuthenticationManager(AuthenticationManager authenticationManager) {
-		this.authenticationManager = authenticationManager;
-	}
-
-	@Override
-	public void afterPropertiesSet() {
-		Assert.notNull(authenticationManager, "authenticationManager cannot be null");
-	}
-
-	/**
-	 * getter/setter.
-	 * @return auth filter
-	 */
-	public FacebookAuthFilter getFacebookAuth() {
-		return facebookAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @param facebookAuth auth filter
-	 */
-	@Inject
-	public void setFacebookAuth(FacebookAuthFilter facebookAuth) {
-		this.facebookAuth = facebookAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @return auth filter
-	 */
-	public GoogleAuthFilter getGoogleAuth() {
-		return googleAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @param googleAuth auth filter
-	 */
-	@Inject
-	public void setGoogleAuth(GoogleAuthFilter googleAuth) {
-		this.googleAuth = googleAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @return auth filter
-	 */
-	public GitHubAuthFilter getGithubAuth() {
-		return githubAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @param githubAuth auth filter
-	 */
-	@Inject
-	public void setGithubAuth(GitHubAuthFilter githubAuth) {
-		this.githubAuth = githubAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @return auth filter
-	 */
-	public LinkedInAuthFilter getLinkedinAuth() {
-		return linkedinAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @param linkedinAuth auth filter
-	 */
-	@Inject
-	public void setLinkedinAuth(LinkedInAuthFilter linkedinAuth) {
-		this.linkedinAuth = linkedinAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @return auth filter
-	 */
-	public TwitterAuthFilter getTwitterAuth() {
-		return twitterAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @param twitterAuth auth filter
-	 */
-	@Inject
-	public void setTwitterAuth(TwitterAuthFilter twitterAuth) {
-		this.twitterAuth = twitterAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @return auth filter
-	 */
-	public MicrosoftAuthFilter getMicrosoftAuth() {
-		return microsoftAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @param microsoftAuth auth filter
-	 */
-	@Inject
-	public void setMicrosoftAuth(MicrosoftAuthFilter microsoftAuth) {
-		this.microsoftAuth = microsoftAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @return auth filter
-	 */
-	public SlackAuthFilter getSlackAuth() {
-		return slackAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @param slackAuth auth filter
-	 */
-	@Inject
-	public void setSlackAuth(SlackAuthFilter slackAuth) {
-		this.slackAuth = slackAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @return auth filter
-	 */
-	public AmazonAuthFilter getAmazonAuth() {
-		return amazonAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @param amazonAuth auth filter
-	 */
-	@Inject
-	public void setAmazonAuth(AmazonAuthFilter amazonAuth) {
-		this.amazonAuth = amazonAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @return auth filter
-	 */
-	public GenericOAuth2Filter getGenericOAuth2Auth() {
-		return oauth2Auth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @param oauthAuth auth filter
-	 */
-	@Inject
-	public void setGenericOAuth2Auth(GenericOAuth2Filter oauthAuth) {
-		this.oauth2Auth = oauthAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @return auth filter
-	 */
-	public LdapAuthFilter getLdapAuth() {
-		return ldapAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @param ldapAuth auth filter
-	 */
-	@Inject
-	public void setLdapAuth(LdapAuthFilter ldapAuth) {
-		this.ldapAuth = ldapAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @return auth filter
-	 */
-	public PasswordAuthFilter getPasswordAuth() {
-		return passwordAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @param passwordAuth auth filter
-	 */
-	@Inject
-	public void setPasswordAuth(PasswordAuthFilter passwordAuth) {
-		this.passwordAuth = passwordAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @return auth filter
-	 */
-	public PasswordlessAuthFilter getPasswordlessAuth() {
-		return passwordlessAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @param passwordlessAuth auth filter
-	 */
-	@Inject
-	public void setPasswordlessAuth(PasswordlessAuthFilter passwordlessAuth) {
-		this.passwordlessAuth = passwordlessAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @return auth filter
-	 */
-	public SAMLAuthFilter getSamlAuth() {
-		return samlAuth;
-	}
-
-	/**
-	 * getter/setter.
-	 * @param samlAuth auth filter
-	 */
-	@Inject
-	public void setSamlAuth(SAMLAuthFilter samlAuth) {
-		this.samlAuth = samlAuth;
 	}
 
 	private void validateDelegatedTokenIfNecessary(JWTAuthentication jwt) throws AuthenticationException, IOException {

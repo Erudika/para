@@ -52,8 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This is the main utility class and entry point.
- * Dependency injection is initialized with the provided modules.
+ * This is the main Para utility class and entry point.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public final class Para {
@@ -370,7 +369,7 @@ public final class Para {
 	 * Explicitly registers core classes for reflection.
 	 * @param classes a list of classes
 	 */
-	public static void registerCoreClasses(Class<? extends ParaObject>... classes) {
+	public static void registerCoreClasses(Set<Class<? extends ParaObject>> classes) {
 		ParaObjectUtils.registerCoreClasses(classes);
 	}
 

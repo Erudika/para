@@ -60,7 +60,6 @@ import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.eclipse.jetty.http.BadMessageException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -112,7 +111,7 @@ public final class RestUtils {
 				// try to get access key from parameter
 				accessKey = request.getParameter("accessKey");
 			}
-		} catch (BadMessageException e) {
+		} catch (Exception e) {
 			logger.error("Bad or invalid query: {} [{} {}?{}]", e.getMessage(), request.getMethod(),
 					request.getServletPath(), request.getQueryString());
 		}

@@ -4,12 +4,11 @@ ARG BUILD_OPTS=""
 ENV PARA_HOME=/para
 WORKDIR ${PARA_HOME}
 
-# Cache dependencies for the para-jar module
+# Cache dependencies for the para-server module
 COPY pom.xml pom.xml
 COPY para-core/pom.xml para-core/pom.xml
 COPY para-client/pom.xml para-client/pom.xml
 COPY para-server/pom.xml para-server/pom.xml
-COPY para-jar/pom.xml para-jar/pom.xml
 RUN mvn -B dependency:go-offline --fail-never
 
 FROM deps AS build
@@ -18,8 +17,8 @@ ENV PARA_HOME=/para
 WORKDIR ${PARA_HOME}
 
 COPY . .
-RUN mvn -B -pl para-jar -am ${BUILD_OPTS} -DskipTests=true -DskipITs=true package && \
-    cp para-jar/target/para-[0-9]*.jar ${PARA_HOME}/para.jar
+RUN mvn -B -pl para-server -am ${BUILD_OPTS} -DskipTests=true -DskipITs=true package && \
+    cp para-server/target/para-[0-9]*.jar ${PARA_HOME}/para.jar
 
 FROM eclipse-temurin:25-jre
 

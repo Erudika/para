@@ -18,46 +18,46 @@
 package com.erudika.para.server.queue;
 
 import com.erudika.para.core.queue.Queue;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Para;
-import com.google.inject.AbstractModule;
 import java.util.ServiceLoader;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * The default queue module.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class QueueModule extends AbstractModule {
+@Configuration
+public class QueueModule {
 
-	/**
-	 * Creates the queue module with default bindings.
-	 */
-	public QueueModule() {
-		// default constructor
-	}
-
-	protected void configure() {
+	@Bean
+	public Queue getQueue() {
+		Queue queue;
 		String selectedQueue = Para.getConfig().queuePlugin();
 		if (StringUtils.isBlank(selectedQueue)) {
-			bindToDefault();
+			queue = bindToDefault();
 		} else {
 			if ("sqs".equalsIgnoreCase(selectedQueue) ||
 					AWSQueue.class.getSimpleName().equalsIgnoreCase(selectedQueue)) {
-				bind(Queue.class).to(AWSQueue.class).asEagerSingleton();
+				queue = new AWSQueue();
 			} else {
 				Queue queuePlugin = loadExternalQueue(selectedQueue);
 				if (queuePlugin != null) {
-					bind(Queue.class).to(queuePlugin.getClass()).asEagerSingleton();
+					queue = queuePlugin;
 				} else {
 					// default fallback - not implemented!
-					bindToDefault();
+					queue = bindToDefault();
 				}
 			}
 		}
+		CoreUtils.getInstance().setQueue(queue);
+		return Para.getQueue();
 	}
 
-	void bindToDefault() {
-		bind(Queue.class).to(LocalQueue.class).asEagerSingleton();
+	Queue bindToDefault() {
+		return new LocalQueue();
 	}
 
 	/**

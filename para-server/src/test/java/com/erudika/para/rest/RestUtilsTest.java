@@ -20,24 +20,13 @@ package com.erudika.para.rest;
 import com.erudika.para.core.App;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
-import com.erudika.para.core.cache.Cache;
-import com.erudika.para.core.cache.MockCache;
-import com.erudika.para.core.email.Emailer;
-import com.erudika.para.core.persistence.DAO;
-import com.erudika.para.core.persistence.MockDAO;
-import com.erudika.para.core.queue.Queue;
-import com.erudika.para.core.search.Search;
-import com.erudika.para.core.storage.FileStore;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.ParaObjectUtils;
-import com.erudika.para.email.MockEmailer;
 import com.erudika.para.server.ParaServer;
 import com.erudika.para.server.rest.GenericExceptionMapper;
 import static com.erudika.para.server.rest.RestUtils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.inject.Binder;
-import com.google.inject.Module;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -50,6 +39,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.boot.Banner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -68,16 +60,13 @@ public class RestUtilsTest {
 		System.setProperty("para.app_name", "para-test");
 		System.setProperty("para.cluster_name", "para-test");
 		System.setProperty("para.print_logo", "false");
-		ParaServer.initialize(new Module() {
-			public void configure(Binder binder) {
-				binder.bind(DAO.class).toInstance(new MockDAO());
-				binder.bind(Cache.class).toInstance(new MockCache());
-				binder.bind(Search.class).toInstance(Mockito.mock(Search.class));
-				binder.bind(Queue.class).toInstance(Mockito.mock(Queue.class));
-				binder.bind(FileStore.class).toInstance(Mockito.mock(FileStore.class));
-				binder.bind(Emailer.class).toInstance(new MockEmailer());
-			}
-		});
+
+		System.setProperty("para.search", "LuceneSearch");
+		//		ParaServer.initialize(dao, new MockCache(), new LuceneSearch(dao), new LocalQueue(), new LocalFileStore());
+		SpringApplication app = new SpringApplication(ParaServer.class);
+		app.setWebApplicationType(WebApplicationType.SERVLET);
+		app.setBannerMode(Banner.Mode.OFF);
+		app.run();
 	}
 
 	@AfterAll

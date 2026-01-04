@@ -17,11 +17,10 @@
  */
 package com.erudika.para.core.search;
 
-import com.erudika.para.core.annotations.Measured;
 import com.erudika.para.core.App;
-import com.erudika.para.core.utils.Pager;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.persistence.DAO;
+import com.erudika.para.core.utils.Pager;
 import java.util.List;
 import java.util.Map;
 
@@ -126,7 +125,6 @@ public interface Search {
 	 * @param id the id
 	 * @return the object if found or null
 	 */
-	@Measured
 	<P extends ParaObject> P findById(String appid, String id);
 
 	/**
@@ -144,7 +142,6 @@ public interface Search {
 	 * @param ids a list of ids to search for
 	 * @return the object if found or null
 	 */
-	@Measured
 	<P extends ParaObject> List<P> findByIds(String appid, List<String> ids);
 
 	/**
@@ -172,7 +169,6 @@ public interface Search {
 	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
-	@Measured
 	<P extends ParaObject> List<P> findNearby(String appid, String type, String query, int radius, double lat, double lng, Pager... pager);
 
 	/**
@@ -196,7 +192,6 @@ public interface Search {
 	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
-	@Measured
 	<P extends ParaObject> List<P> findPrefix(String appid, String type, String field, String prefix, Pager... pager);
 
 	/**
@@ -218,7 +213,6 @@ public interface Search {
 	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
-	@Measured
 	<P extends ParaObject> List<P> findQuery(String appid, String type, String query, Pager... pager);
 
 	/**
@@ -242,7 +236,6 @@ public interface Search {
 	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return list of objects found
 	 */
-	@Measured
 	<P extends ParaObject> List<P> findNestedQuery(String appid, String type, String field, String query, Pager... pager);
 
 	/**
@@ -268,7 +261,6 @@ public interface Search {
 	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
-	@Measured
 	<P extends ParaObject> List<P> findSimilar(String appid, String type, String filterKey, String[] fields, String liketext, Pager... pager);
 
 	/**
@@ -290,7 +282,6 @@ public interface Search {
 	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
-	@Measured
 	<P extends ParaObject> List<P> findTagged(String appid, String type, String[] tags, Pager... pager);
 
 	/**
@@ -312,7 +303,6 @@ public interface Search {
 	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
-	@Measured
 	<P extends ParaObject> List<P> findTags(String appid, String keyword, Pager... pager);
 
 	/**
@@ -336,7 +326,6 @@ public interface Search {
 	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
-	@Measured
 	<P extends ParaObject> List<P> findTermInList(String appid, String type, String field, List<?> terms, Pager... pager);
 
 	/**
@@ -360,7 +349,6 @@ public interface Search {
 	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
-	@Measured
 	<P extends ParaObject> List<P> findTerms(String appid, String type, Map<String, ?> terms, boolean matchAll, Pager... pager);
 
 	/**
@@ -384,7 +372,6 @@ public interface Search {
 	 * @param pager a {@link com.erudika.para.core.utils.Pager}
 	 * @return a list of objects found
 	 */
-	@Measured
 	<P extends ParaObject> List<P> findWildcard(String appid, String type, String field, String wildcard, Pager... pager);
 
 	/////////////////////////////////////////////
@@ -404,7 +391,6 @@ public interface Search {
 	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @return the number of results found
 	 */
-	@Measured
 	Long getCount(String appid, String type);
 
 	/**
@@ -422,7 +408,6 @@ public interface Search {
 	 * @param terms a map of fields (property names) to terms (property values)
 	 * @return the number of results found
 	 */
-	@Measured
 	Long getCount(String appid, String type, Map<String, ?> terms);
 
 	/////////////////////////////////////////////
@@ -446,7 +431,6 @@ public interface Search {
 	 * @param pager a {@link Pager} object
 	 * @return true if operation was successful
 	 */
-	@Measured
 	boolean rebuildIndex(DAO dao, App app, String destinationIndex, Pager... pager);
 
 	/**
@@ -460,13 +444,20 @@ public interface Search {
 	 * Creates a new search index for the given app.
 	 * @param app an {@link App} object
 	 */
-	@Measured
 	default void createIndex(App app) { }
 
 	/**
 	 * Deletes the search index for a given app.
 	 * @param app an {@link App} object
 	 */
-	@Measured
 	default void deleteIndex(App app) { }
+
+	/**
+	 * Search class name.
+	 *
+	 * @return the simple name of this DAO implementation.
+	 */
+	default String getSearchClassName() {
+		return getClass().getSimpleName();
+	}
 }

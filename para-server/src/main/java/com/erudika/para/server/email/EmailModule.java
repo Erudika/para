@@ -18,48 +18,49 @@
 package com.erudika.para.server.email;
 
 import com.erudika.para.core.email.Emailer;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Para;
-import com.google.inject.AbstractModule;
 import java.util.ServiceLoader;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * The default email module.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class EmailModule extends AbstractModule {
+@Configuration
+public class EmailModule {
 
-	/**
-	 * Constructor.
-	 */
-	public EmailModule() {
-	}
-
-	protected void configure() {
+	@Bean
+	public Emailer getEmailer() {
+		Emailer emailer;
 		String selectedEmailer = Para.getConfig().emailerPlugin();
 		if (StringUtils.isBlank(selectedEmailer)) {
-			bindToDefault();
+			emailer = bindToDefault();
 		} else {
 			if ("aws".equalsIgnoreCase(selectedEmailer) ||
 					AWSEmailer.class.getSimpleName().equalsIgnoreCase(selectedEmailer)) {
-				bind(Emailer.class).to(AWSEmailer.class).asEagerSingleton();
+				emailer = new AWSEmailer();
 			} else if ("javamail".equalsIgnoreCase(selectedEmailer) ||
 					JavaMailEmailer.class.getSimpleName().equalsIgnoreCase(selectedEmailer)) {
-				bind(Emailer.class).to(JavaMailEmailer.class).asEagerSingleton();
+				emailer = new JavaMailEmailer();
 			} else {
 				Emailer emailerPlugin = loadExternalFileStore(selectedEmailer);
 				if (emailerPlugin != null) {
-					bind(Emailer.class).to(emailerPlugin.getClass()).asEagerSingleton();
+					emailer = emailerPlugin;
 				} else {
 					// default fallback - not implemented!
-					bindToDefault();
+					emailer = bindToDefault();
 				}
 			}
 		}
+		CoreUtils.getInstance().setEmailer(emailer);
+		return Para.getEmailer();
 	}
 
-	void bindToDefault() {
-		bind(Emailer.class).to(NoopEmailer.class).asEagerSingleton();
+	Emailer bindToDefault() {
+		return new NoopEmailer();
 	}
 
 	/**

@@ -19,51 +19,51 @@ package com.erudika.para.server.persistence;
 
 import com.erudika.para.core.persistence.DAO;
 import com.erudika.para.core.persistence.MockDAO;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Para;
-import com.google.inject.AbstractModule;
 import java.util.ServiceLoader;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * The default persistence module.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class PersistenceModule extends AbstractModule {
+@Configuration
+public class PersistenceModule {
 
-	/**
-	 * Creates the persistence module with the default wiring logic.
-	 */
-	public PersistenceModule() {
-		// default constructor
-	}
-
-	protected void configure() {
+	@Bean
+	public DAO getDAO() {
+		DAO dao;
 		String selectedDAO = Para.getConfig().daoPlugin();
 		if (StringUtils.isBlank(selectedDAO)) {
 			if ("embedded".equals(Para.getConfig().environment())) {
-				bindToDefault();
+				dao = bindToDefault();
 			} else {
-				bind(DAO.class).to(AWSDynamoDAO.class).asEagerSingleton();
+				dao = new AWSDynamoDAO();
 			}
 		} else {
 			if ("dynamodb".equalsIgnoreCase(selectedDAO) ||
 					AWSDynamoDAO.class.getSimpleName().equalsIgnoreCase(selectedDAO)) {
-				bind(DAO.class).to(AWSDynamoDAO.class).asEagerSingleton();
+				dao = new AWSDynamoDAO();
 			} else {
 				DAO daoPlugin = loadExternalDAO(selectedDAO);
 				if (daoPlugin != null) {
 					// external plugins - MongoDB, Cassandra, H2DAO, xSQL, etc.
-					bind(DAO.class).to(daoPlugin.getClass()).asEagerSingleton();
+					dao = daoPlugin;
 				} else {
 					// in-memory DAO - default fallback
-					bindToDefault();
+					dao = bindToDefault();
 				}
 			}
 		}
+		CoreUtils.getInstance().setDao(new ManagedDAO(dao));
+		return Para.getDAO();
 	}
 
-	void bindToDefault() {
-		bind(DAO.class).to(MockDAO.class).asEagerSingleton();
+	DAO bindToDefault() {
+		return new MockDAO();
 	}
 
 	/**
@@ -73,12 +73,12 @@ public class PersistenceModule extends AbstractModule {
 	 * @return a DAO instance if found, or null
 	 */
 	final DAO loadExternalDAO(String classSimpleName) {
-			ServiceLoader<DAO> daoLoader = ServiceLoader.load(DAO.class, Para.getParaClassLoader());
-			for (DAO dao : daoLoader) {
-				if (dao != null && classSimpleName.equalsIgnoreCase(dao.getClass().getSimpleName())) {
-					return dao;
-				}
+		ServiceLoader<DAO> daoLoader = ServiceLoader.load(DAO.class, Para.getParaClassLoader());
+		for (DAO dao : daoLoader) {
+			if (dao != null && classSimpleName.equalsIgnoreCase(dao.getClass().getSimpleName())) {
+				return dao;
 			}
+		}
 		return null;
 	}
 

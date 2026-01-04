@@ -156,7 +156,7 @@ public enum HealthUtils implements InitializeListener, Runnable {
 				}
 				if (!Strings.CS.equals(rootAppCredentials.get("secretKey"), existing) && Para.getFileStore().
 						store(confFile, new ByteArrayInputStream(confString.getBytes(StandardCharsets.UTF_8))) != null) {
-					logger.info("Saved root app credentials to {}." + existing, confFile);
+					logger.info("Saved root app credentials to {}.", confFile);
 				}
 			} else {
 				logger.warn("Server is unhealthy - failed to initialize root app. Open http://localhost:" +
