@@ -28,7 +28,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PreDestroy;
 import java.io.File;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,11 +40,9 @@ import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.ApplicationPidFileWriter;
-import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
 import org.springframework.boot.web.error.ErrorPage;
 import org.springframework.boot.web.error.ErrorPageRegistrar;
 import org.springframework.boot.web.error.ErrorPageRegistry;
-import org.springframework.boot.web.server.servlet.ServletWebServerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -72,7 +69,7 @@ public class ParaServer implements Ordered {
 	public static final String API_PATH = "/v1";
 
 	@Value("${server.ssl.enabled:false}")
-	private boolean sslEnabled;
+	private static boolean sslEnabled;
 
 	/**
 	 * Creates the main Para server bootstrapper.
@@ -83,19 +80,26 @@ public class ParaServer implements Ordered {
 
 	static {
 		System.setProperty("server.port", String.valueOf(Para.getConfig().serverPort()));
-		System.setProperty("server.port", String.valueOf(Para.getConfig().serverPort()));
-		System.setProperty("server.servlet.context-path", Para.getConfig().serverContextPath());
 		System.setProperty("server.use-forward-headers", String.valueOf(Para.getConfig().inProduction()));
-		System.setProperty("para.logs_name", Para.getConfig().getConfigRootPrefix());
+
+		if (StringUtils.length(Para.getConfig().serverContextPath()) > 1 &&
+				Para.getConfig().serverContextPath().charAt(0) == '/') {
+			System.setProperty("server.servlet.context-path", Para.getConfig().serverContextPath());
+		}
 		if (Para.getConfig().accessLogEnabled()) {
 			System.setProperty("server.jetty.accesslog.append", "true");
 			System.setProperty("server.jetty.accesslog.enabled", "true");
+			System.setProperty("server.tomcat.accesslog.enabled", "true");
 			if (!System.getProperty("para.file_logger_level", "INFO").equalsIgnoreCase("OFF")) {
 				System.setProperty("server.jetty.accesslog.filename", System.getProperty("para.logs_dir", ".")
 						+ File.separator + Para.getConfig().getConfigRootPrefix() + "-access_yyyy_MM_dd.log");
 				System.setProperty("server.jetty.accesslog.file-date-format", "yyyy_MM_dd");
+				System.setProperty("server.tomcat.accesslog.directory", System.getProperty("para.logs_dir", "."));
+				System.setProperty("server.tomcat.accesslog.prefix", Para.getConfig().getConfigRootPrefix() + "-access");
+				System.setProperty("server.tomcat.accesslog.file-date-format", "yyyy_MM_dd");
 			}
 		}
+		System.setProperty("para.logs_name", Para.getConfig().getConfigRootPrefix());
 		System.setProperty("para.landing_page_enabled", String.valueOf(Para.getConfig().landingPageEnabled()));
 		System.setProperty("para.api_enabled", String.valueOf(Para.getConfig().apiEnabled()));
 	}
@@ -133,30 +137,11 @@ public class ParaServer implements Ordered {
 				LOG.info("Registered custom resource handler {} at path(s) '{}'.", crh.getClass().getSimpleName(), paths);
 			}
 		});
-	}
 
-	/**
-	 * Jetty config.
-	 * @return Jetty config bean
-	 */
-	@Bean
-	public ServletWebServerFactory jettyConfigBean() {
-		TomcatServletWebServerFactory jef = new TomcatServletWebServerFactory();
-		//JettyServletWebServerFactory jef = new JettyServletWebServerFactory();
-		jef.setRegisterDefaultServlet(true);
-		jef.setPort(Para.getConfig().serverPort());
-		String contextPath = Para.getConfig().serverContextPath();
-		if (StringUtils.length(contextPath) > 1 && contextPath.charAt(0) == '/') {
-			jef.setContextPath(contextPath);
-		}
-		Map<String, String> params = new HashMap<>(jef.getSettings().getInitParameters());
-		params.put("org.eclipse.jetty.servlet.Default.dirAllowed", "false");
-		jef.setInitParameters(params);
-		jef.setPort(Para.getConfig().serverPort());
 		LOG.info("Instance #{} initialized and listening on http{}://localhost:{}{}",
-				Para.getConfig().workerId(), (sslEnabled ? "s" : ""), jef.getPort(),
+				Para.getConfig().workerId(), (sslEnabled ? "s" : ""),
+				Para.getConfig().serverPort(),
 				Para.getConfig().serverContextPath());
-		return jef;
 	}
 
 	/**

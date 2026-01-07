@@ -1,6 +1,7 @@
 package com.erudika.para.server.utils;
 
 import com.erudika.para.core.App;
+import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.listeners.InitializeListener;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Para;
@@ -78,7 +79,7 @@ public enum HealthUtils implements InitializeListener, Runnable {
 				// DO NOT assume that the root app object is still cached here from the last read() call above
 				if (healthy && Para.getConfig().isCacheEnabled()) {
 					String cacheTestId = UUID.randomUUID().toString();
-					Para.getCache().put(cacheTestId, "ok");
+					Para.getCache().put(rootAppId, cacheTestId, new Sysprop(), 10L);
 					healthy = Para.getCache().contains(cacheTestId);
 					Para.getCache().remove(cacheTestId);
 					if (!healthy) {
