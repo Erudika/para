@@ -18,7 +18,7 @@ WORKDIR ${PARA_HOME}
 
 COPY . .
 RUN mvn -B -pl para-server -am ${BUILD_OPTS} -DskipTests=true -DskipITs=true package && \
-    cp para-server/target/para-[0-9]*.jar ${PARA_HOME}/para.jar
+    cp para-server/target/para-server-*.jar ${PARA_HOME}/para.jar
 
 FROM eclipse-temurin:25-jre
 
