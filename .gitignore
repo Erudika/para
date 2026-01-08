@@ -20,3 +20,4 @@ nb-configuration.xml
 *.iml
 .idea
 .vscode
+*.pid
