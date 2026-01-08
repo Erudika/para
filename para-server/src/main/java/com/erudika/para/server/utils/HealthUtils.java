@@ -79,7 +79,7 @@ public enum HealthUtils implements InitializeListener, Runnable {
 				// DO NOT assume that the root app object is still cached here from the last read() call above
 				if (healthy && Para.getConfig().isCacheEnabled()) {
 					String cacheTestId = UUID.randomUUID().toString();
-					Para.getCache().put(rootAppId, cacheTestId, new Sysprop(), 10L);
+					Para.getCache().put(Para.getConfig().getRootAppIdentifier(), cacheTestId, new Sysprop(), 10L);
 					healthy = Para.getCache().contains(cacheTestId);
 					Para.getCache().remove(cacheTestId);
 					if (!healthy) {
