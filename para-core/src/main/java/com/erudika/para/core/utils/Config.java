@@ -100,12 +100,12 @@ public abstract class Config {
 	public static final String _VERSION = "version";
 	/** {@value #_PROPERTIES}. */
 	public static final String _PROPERTIES = "properties";
+	/** {@value #DEFAULT_LIMIT}. */
+	public static final int	DEFAULT_LIMIT = 10000;
 
 	/**
 	 * USER IDENTIFIER PREFIXES
 	 */
-	/** {@value #DEFAULT_LIMIT}. */
-	public static final int	DEFAULT_LIMIT = 10000;
 	/** Facebook prefix - defaults to 'fb:'. */
 	public static final String FB_PREFIX = "fb:";
 	/** Google prefix - defaults to 'gp:'. */
@@ -187,7 +187,7 @@ public abstract class Config {
 	 * Initializes the configuration class by loading the configuration file.
 	 * @param conf overrides the default configuration
 	 */
-	protected final void init(com.typesafe.config.Config conf) {
+	public com.typesafe.config.Config load(com.typesafe.config.Config conf) {
 		try {
 			// try to parse the locally stored app-application.conf file if it exists.
 			Path localConfig = Paths.get(getConfigFilePath()).toAbsolutePath();
@@ -213,6 +213,7 @@ public abstract class Config {
 					getConfigRootPrefix(), ex.getMessage());
 			config = getFallbackConfig();
 		}
+		return config;
 	}
 
 	/**
@@ -253,9 +254,6 @@ public abstract class Config {
 	 * @return the value of a param
 	 */
 	protected String getConfigParam(String key, String defaultValue) {
-		if (config == null) {
-			init(null);
-		}
 		if (StringUtils.isBlank(key)) {
 			return defaultValue;
 		}
@@ -267,7 +265,7 @@ public abstract class Config {
 		} else if (!StringUtils.isBlank(env)) {
 			return env;
 		} else {
-			return (!StringUtils.isBlank(key) && config.hasPath(key)) ? config.getAnyRef(key).toString() : defaultValue;
+			return (!StringUtils.isBlank(key) && getConfig().hasPath(key)) ? getConfig().getAnyRef(key).toString() : defaultValue;
 		}
 	}
 
@@ -303,7 +301,7 @@ public abstract class Config {
 	 */
 	public com.typesafe.config.Config getConfig() {
 		if (config == null) {
-			init(null);
+			load(null);
 		}
 		return config;
 	}
@@ -349,7 +347,7 @@ public abstract class Config {
 			return;
 		}
 		String confFile = Paths.get(getConfigFilePath()).toAbsolutePath().toString();
-		boolean isJsonFile = confFile.equalsIgnoreCase(".json");
+		boolean isJsonFile = Strings.CI.endsWith(confFile, ".json");
 		File conf = new File(confFile);
 		if (!conf.exists() || conf.canWrite()) {
 			try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(conf));
