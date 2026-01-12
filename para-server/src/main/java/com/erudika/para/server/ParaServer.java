@@ -155,6 +155,7 @@ public class ParaServer implements Ordered {
 	}
 
 	/**
+	 * Registers custom error pages.
 	 * @return Error page registry bean
 	 */
 	@Bean

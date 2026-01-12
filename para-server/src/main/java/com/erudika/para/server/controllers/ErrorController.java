@@ -38,7 +38,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 /**
- *
+ * A controller that handles errors and displays error messages.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 @Controller

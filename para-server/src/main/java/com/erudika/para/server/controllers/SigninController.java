@@ -34,7 +34,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 /**
- *
+ * A controller that handles the signin page.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 @Controller

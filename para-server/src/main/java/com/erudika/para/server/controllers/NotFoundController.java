@@ -31,7 +31,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 /**
- *
+ * A controller that handles 404 Not Found errors.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 @Controller

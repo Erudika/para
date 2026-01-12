@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
  * Managed Para DAO wrapper, which automatically calls the DAO functions, indexes and caches objects.
  * It also retrieves objects from cache if possible before hitting the DB.
  *
- * @see {@link com.erudika.para.core.persistence.DAO} interface.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class ManagedDAO implements DAO {
