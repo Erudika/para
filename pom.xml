@@ -79,17 +79,6 @@
 
 		<deployPluginVer>3.1.4</deployPluginVer>
 		<metricsVer>4.2.32</metricsVer>
-		<!-- PLUGINS -->
-		<lucenePluginVer>1.49.4</lucenePluginVer>
-		<sqlPluginVer>1.49.2</sqlPluginVer>
-		<dynamoPluginVer>1.51.5</dynamoPluginVer>
-		<sesPluginVer>1.51.5</sesPluginVer>
-		<s3PluginVer>1.51.5</s3PluginVer>
-		<sqsPluginVer>1.51.5</sqsPluginVer>
-		<hcPluginVer>1.41.5</hcPluginVer>
-		<casPluginVer>1.41.2</casPluginVer>
-		<mongoPluginVer>1.42.1</mongoPluginVer>
-		<esPluginVer>1.42.1</esPluginVer>
 	</properties>
 
 	<dependencies>

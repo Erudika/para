@@ -15,6 +15,28 @@
 		<springSecVer>7.0.2</springSecVer>
 		<springLdapVer>4.0.1</springLdapVer>
 		<openSamlVer>5.1.6</openSamlVer>
+
+		<!-- PLUGINS -->
+		<!--===== LUCENE =====-->
+		<lucenePluginVer>1.49.4</lucenePluginVer>
+		<!--===== SQL =====-->
+		<sqlPluginVer>1.49.2</sqlPluginVer>
+		<!--===== HAZELCAST =====-->
+		<hcPluginVer>1.41.5</hcPluginVer>
+		<!--===== CASSANDRA =====-->
+		<casPluginVer>1.41.2</casPluginVer>
+		<!--===== MONGODB =====-->
+		<mongoPluginVer>1.42.1</mongoPluginVer>
+		<!--===== ELASTICSEARCH =====-->
+		<esPluginVer>1.42.1</esPluginVer>
+		<!--===== DYNAMODB =====-->
+		<dynamoPluginVer>1.51.5</dynamoPluginVer>
+		<!--===== AWS SES =====-->
+		<sesPluginVer>1.51.5</sesPluginVer>
+		<!--===== AWS S3 =====-->
+		<s3PluginVer>1.51.5</s3PluginVer>
+		<!--===== AWS SQS =====-->
+		<sqsPluginVer>1.51.5</sqsPluginVer>
 	</properties>
 
 	<dependencies>
