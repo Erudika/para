@@ -36,6 +36,7 @@ public class ConfigTest {
 		assertNull(Para.getConfig().getConfigParam("null", null));
 		assertEquals("test", Para.getConfig().getConfigParam("null", "test"));
 
+		System.setProperty("para.env", "embedded");
 		assertEquals("embedded", Para.getConfig().environment());
 		System.setProperty("para.env", "production");
 		assertEquals("production", Para.getConfig().environment());

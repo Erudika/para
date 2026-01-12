@@ -63,6 +63,8 @@ public class AspectsIT {
 		System.setProperty("para.cluster_name", "para-test");
 		System.setProperty("para.cache_enabled", "true");
 
+//		System.setProperty("para.dao", "MockDAO");
+		System.setProperty("para.dao", "H2DAO");
 		System.setProperty("para.search", "LuceneSearch");
 		//		ParaServer.initialize(dao, new MockCache(), new LuceneSearch(dao), new LocalQueue(), new LocalFileStore());
 		ParaServer.main(new String[0]);

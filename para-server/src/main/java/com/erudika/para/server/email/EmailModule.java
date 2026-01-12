@@ -39,10 +39,7 @@ public class EmailModule {
 		if (StringUtils.isBlank(selectedEmailer)) {
 			emailer = bindToDefault();
 		} else {
-			if ("aws".equalsIgnoreCase(selectedEmailer) ||
-					AWSEmailer.class.getSimpleName().equalsIgnoreCase(selectedEmailer)) {
-				emailer = new AWSEmailer();
-			} else if ("javamail".equalsIgnoreCase(selectedEmailer) ||
+			if ("javamail".equalsIgnoreCase(selectedEmailer) ||
 					JavaMailEmailer.class.getSimpleName().equalsIgnoreCase(selectedEmailer)) {
 				emailer = new JavaMailEmailer();
 			} else {

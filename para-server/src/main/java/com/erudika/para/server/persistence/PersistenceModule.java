@@ -38,24 +38,15 @@ public class PersistenceModule {
 		DAO dao;
 		String selectedDAO = Para.getConfig().daoPlugin();
 		if (StringUtils.isBlank(selectedDAO)) {
-			if ("embedded".equals(Para.getConfig().environment())) {
-				dao = bindToDefault();
-			} else {
-				dao = new AWSDynamoDAO();
-			}
+			dao = bindToDefault();
 		} else {
-			if ("dynamodb".equalsIgnoreCase(selectedDAO) ||
-					AWSDynamoDAO.class.getSimpleName().equalsIgnoreCase(selectedDAO)) {
-				dao = new AWSDynamoDAO();
+			DAO daoPlugin = loadExternalDAO(selectedDAO);
+			if (daoPlugin != null) {
+				// external plugins - MongoDB, Cassandra, H2DAO, xSQL, etc.
+				dao = daoPlugin;
 			} else {
-				DAO daoPlugin = loadExternalDAO(selectedDAO);
-				if (daoPlugin != null) {
-					// external plugins - MongoDB, Cassandra, H2DAO, xSQL, etc.
-					dao = daoPlugin;
-				} else {
-					// in-memory DAO - default fallback
-					dao = bindToDefault();
-				}
+				// in-memory DAO - default fallback
+				dao = bindToDefault();
 			}
 		}
 		CoreUtils.getInstance().setDao(new ManagedDAO(dao));

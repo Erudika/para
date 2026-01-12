@@ -21,13 +21,13 @@ import com.erudika.para.core.storage.FileStore;
 import com.erudika.para.core.utils.Para;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
@@ -73,7 +73,7 @@ public class LocalFileStore implements FileStore {
 				if (f.exists() && f.canRead()) {
 					try	(InputStream fin = new FileInputStream(f)) {
 						byte[] buf = new byte[(int) f.length()];
-						IOUtils.readFully(fin, buf);
+						readFully(fin, buf);
 						return new ByteArrayInputStream(buf);
 					}
 				}
@@ -146,4 +146,19 @@ public class LocalFileStore implements FileStore {
 		return false;
 	}
 
+	private void readFully(final InputStream input, final byte[] buffer) throws IOException {
+		int offset = 0;
+		int remaining = buffer.length;
+		while (remaining > 0) {
+			final int location = buffer.length - remaining;
+			final int count = input.read(buffer, offset + location, remaining);
+			if (count == -1) {
+				break;
+			}
+			remaining -= count;
+		}
+		if ((buffer.length - remaining) != buffer.length) {
+			throw new EOFException("Length to read: " + buffer.length + " actual: " + (buffer.length - remaining));
+		}
+	}
 }

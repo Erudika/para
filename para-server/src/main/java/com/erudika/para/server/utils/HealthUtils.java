@@ -55,36 +55,34 @@ public enum HealthUtils implements InitializeListener, Runnable {
 		@Override
 		public synchronized void performHealthCheck() {
 			String rootAppId = App.id(Para.getConfig().getRootAppIdentifier());
-			if (!StringUtils.isBlank(rootAppId)) {
-				healthy = true;
-				failedServices.clear();
-				// last check was bad, remove root app from cache so we can hit the DB
-				if (!wasHealthy) {
-					Para.getCache().remove(rootAppId);
-				}
-				// read the root app from the DAO
-				if (Para.getDAO() != null) {
-					rootAppExists = Para.getDAO().read(rootAppId) != null;
-					if (!rootAppExists) {
-						healthy = false;
-						failedServices.add("DAO");
-					}
-				}
-				// read the root app from the search, if enabled
-				if (healthy && Para.getConfig().isSearchEnabled() && Para.getSearch().findById(rootAppId) == null) {
+			healthy = true;
+			failedServices.clear();
+			// last check was bad, remove root app from cache so we can hit the DB
+			if (!wasHealthy) {
+				Para.getCache().remove(rootAppId);
+			}
+			// read the root app from the DAO
+			if (Para.getDAO() != null) {
+				rootAppExists = Para.getDAO().read(rootAppId) != null;
+				if (!rootAppExists) {
 					healthy = false;
-					failedServices.add("Search");
+					failedServices.add("DAO");
 				}
-				// test the cache by putting a dummy object in, then remove it
-				// DO NOT assume that the root app object is still cached here from the last read() call above
-				if (healthy && Para.getConfig().isCacheEnabled()) {
-					String cacheTestId = UUID.randomUUID().toString();
-					Para.getCache().put(Para.getConfig().getRootAppIdentifier(), cacheTestId, new Sysprop(), 10L);
-					healthy = Para.getCache().contains(cacheTestId);
-					Para.getCache().remove(cacheTestId);
-					if (!healthy) {
-						failedServices.add("Cache");
-					}
+			}
+			// read the root app from the search, if enabled
+			if (healthy && Para.getConfig().isSearchEnabled() && Para.getSearch().findById(rootAppId) == null) {
+				healthy = false;
+				failedServices.add("Search");
+			}
+			// test the cache by putting a dummy object in, then remove it
+			// DO NOT assume that the root app object is still cached here from the last read() call above
+			if (healthy && Para.getConfig().isCacheEnabled()) {
+				String cacheTestId = UUID.randomUUID().toString();
+				Para.getCache().put(Para.getConfig().getRootAppIdentifier(), cacheTestId, new Sysprop(), 10L);
+				healthy = Para.getCache().contains(cacheTestId);
+				Para.getCache().remove(cacheTestId);
+				if (!healthy) {
+					failedServices.add("Cache");
 				}
 			}
 			if (wasHealthy && !healthy) {
@@ -95,6 +93,7 @@ public enum HealthUtils implements InitializeListener, Runnable {
 				logger.info("Server is healthy.");
 			}
 			wasHealthy = healthy;
+			Para.setHealthy(healthy);
 		}
 
 		@Override

@@ -36,7 +36,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
@@ -323,7 +322,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 					if (resp2.getCode() == HttpServletResponse.SC_OK) {
 						profile.putAll(jreader.readValue(respEntity.getContent()));
 					} else {
-						error = IOUtils.toString(respEntity.getContent(), Para.getConfig().defaultEncoding());
+						error = new String(respEntity.getContent().readAllBytes(), Para.getConfig().defaultEncoding());
 					}
 				}
 				if (profile.isEmpty() || error != null) {

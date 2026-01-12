@@ -15,7 +15,7 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.server.queue;
+package com.erudika.para.core.queue;
 
 import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
@@ -26,7 +26,6 @@ import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
-import com.erudika.para.server.utils.HealthUtils;
 import com.fasterxml.jackson.databind.ObjectReader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -85,7 +84,7 @@ public abstract class River implements Runnable {
 	/**
 	 * @return a list of messages pulled from queue
 	 */
-	abstract List<String> pullMessages();
+	public abstract List<String> pullMessages();
 
 	/**
 	 * Starts the river.
@@ -102,7 +101,7 @@ public abstract class River implements Runnable {
 				logger.debug("Waiting {}s for messages...", Para.getConfig().queuePollingIntervalSec());
 				int processedHooks = 0;
 				List<String> msgs = Collections.emptyList();
-				if (HealthUtils.getInstance().isHealthy()) {
+				if (Para.isHealthy()) {
 					try {
 						msgs = pullMessages();
 						logger.debug("Pulled {} messages from queue.", msgs.size());

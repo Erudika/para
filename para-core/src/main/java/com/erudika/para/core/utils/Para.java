@@ -46,7 +46,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +66,7 @@ public final class Para {
 	private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(CONF.executorThreads());
 	private static ClassLoader paraClassLoader;
 	private static volatile boolean isInitialized = false;
+	private static volatile boolean isHealthy = true;
 
 	/**
 	 * No-args constructor.
@@ -264,6 +264,22 @@ public final class Para {
 	}
 
 	/**
+	 * The health status of the server.
+	 * @return true if healthy.
+	 */
+	public static boolean isHealthy() {
+		return isHealthy;
+	}
+
+	/**
+	 * Sets the health status of the server.
+	 * @param isHealthy status
+	 */
+	public static void setHealthy(boolean isHealthy) {
+		Para.isHealthy = isHealthy;
+	}
+
+	/**
 	 * Executes a {@link java.lang.Runnable} asynchronously.
 	 * @param runnable a task
 	 */
@@ -352,7 +368,7 @@ public final class Para {
 				List<URL> jars = new ArrayList<>();
 				File lib = new File(CONF.pluginFolder());
 				if (lib.exists() && lib.isDirectory()) {
-					for (File file : FileUtils.listFiles(lib, new String[]{"jar"}, false)) {
+					for (File file : lib.listFiles((dir, fname) -> fname.toLowerCase().endsWith(".jar"))) {
 						jars.add(file.toURI().toURL());
 					}
 				}

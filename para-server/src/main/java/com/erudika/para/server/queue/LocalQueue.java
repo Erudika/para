@@ -20,6 +20,7 @@ package com.erudika.para.server.queue;
 import com.erudika.para.core.listeners.DestroyListener;
 import com.erudika.para.core.queue.MockQueue;
 import com.erudika.para.core.queue.Queue;
+import com.erudika.para.core.queue.River;
 import com.erudika.para.core.utils.Para;
 import java.util.ArrayList;
 import java.util.List;
@@ -100,7 +101,7 @@ public class LocalQueue implements Queue {
 		if (pollingTask == null) {
 			logger.info("Starting local river (polling interval: {}s)", POLLING_INTERVAL);
 			pollingTask = Para.getExecutorService().submit(new River() {
-				List<String> pullMessages() {
+				public List<String> pullMessages() {
 					String msg;
 					ArrayList<String> msgs = new ArrayList<String>(MAX_MESSAGES);
 					do {

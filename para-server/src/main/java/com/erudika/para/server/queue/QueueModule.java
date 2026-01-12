@@ -39,17 +39,12 @@ public class QueueModule {
 		if (StringUtils.isBlank(selectedQueue)) {
 			queue = bindToDefault();
 		} else {
-			if ("sqs".equalsIgnoreCase(selectedQueue) ||
-					AWSQueue.class.getSimpleName().equalsIgnoreCase(selectedQueue)) {
-				queue = new AWSQueue();
+			Queue queuePlugin = loadExternalQueue(selectedQueue);
+			if (queuePlugin != null) {
+				queue = queuePlugin;
 			} else {
-				Queue queuePlugin = loadExternalQueue(selectedQueue);
-				if (queuePlugin != null) {
-					queue = queuePlugin;
-				} else {
-					// default fallback - not implemented!
-					queue = bindToDefault();
-				}
+				// default fallback - not implemented!
+				queue = bindToDefault();
 			}
 		}
 		CoreUtils.getInstance().setQueue(queue);

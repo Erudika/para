@@ -1907,7 +1907,7 @@ public class ParaConfig extends Config {
 			category = "Miscellaneous",
 			description = "Enable/disable the GZIP filter for compressing API response entities.")
 	public boolean gzipEnabled() {
-		return Boolean.parseBoolean(getConfigParam("gzip_enabled", "false"));
+		return Boolean.parseBoolean(getConfigParam("gzip_enabled", "true"));
 	}
 
 	@Documented(position = 1800,

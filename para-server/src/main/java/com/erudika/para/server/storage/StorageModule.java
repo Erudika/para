@@ -39,17 +39,12 @@ public class StorageModule {
 		if (StringUtils.isBlank(selectedFileStore)) {
 			store = bindToDefault();
 		} else {
-			if ("s3".equalsIgnoreCase(selectedFileStore) ||
-					AWSFileStore.class.getSimpleName().equalsIgnoreCase(selectedFileStore)) {
-				store = new AWSFileStore();
+			FileStore fsPlugin = loadExternalFileStore(selectedFileStore);
+			if (fsPlugin != null) {
+				store = fsPlugin;
 			} else {
-				FileStore fsPlugin = loadExternalFileStore(selectedFileStore);
-				if (fsPlugin != null) {
-					store = fsPlugin;
-				} else {
-					// default fallback - not implemented!
-					store = bindToDefault();
-				}
+				// default fallback - not implemented!
+				store = bindToDefault();
 			}
 		}
 		CoreUtils.getInstance().setFileStore(store);

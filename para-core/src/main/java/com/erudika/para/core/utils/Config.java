@@ -186,6 +186,7 @@ public abstract class Config {
 	/**
 	 * Initializes the configuration class by loading the configuration file.
 	 * @param conf overrides the default configuration
+	 * @return {@link com.typesafe.config.Config}
 	 */
 	public com.typesafe.config.Config load(com.typesafe.config.Config conf) {
 		try {

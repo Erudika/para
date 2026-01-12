@@ -62,16 +62,11 @@
 		<url>https://github.com/Erudika/para/issues</url>
 	</issueManagement>
 
-	<ciManagement>
-		<system>Travis CI</system>
-		<url>https://travis-ci.org/Erudika/para</url>
-	</ciManagement>
-
 	<properties>
 		<endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<project.testresult.directory>${project.build.directory}/test-results</project.testresult.directory>
+		<project.testresult.directory>${project.build.directory}/	test-results</project.testresult.directory>
 
 		<sonar.surefire.reportsPath>${project.testresult.directory}/surefire-reports</sonar.surefire.reportsPath>
 		<sonar.jacoco.itReportPath>${project.testresult.directory}/coverage/jacoco/jacoco-it.exec</sonar.jacoco.itReportPath>
@@ -83,18 +78,14 @@
 		<skipUTs>${skipTests}</skipUTs>
 
 		<deployPluginVer>3.1.4</deployPluginVer>
-		<!--<slf4jVer>2.0.17</slf4jVer>-->
-		<!--<logbackVer>1.5.3</logbackVer>-->
-		<awsJdkVer>2.36.2</awsJdkVer>
-		<!--<springBootVer>4.0.1</springBootVer>-->
 		<metricsVer>4.2.32</metricsVer>
-		<!--<httpClientVer>5.5.1</httpClientVer>-->
-		<!--<httpCoreVer>5.3.6</httpCoreVer>-->
-		<!--<junitVer>6.0.1</junitVer>-->
-		<!--<jacksonVer>2.20.1</jacksonVer>-->
 		<!-- PLUGINS -->
 		<lucenePluginVer>1.49.4</lucenePluginVer>
 		<sqlPluginVer>1.49.2</sqlPluginVer>
+		<dynamoPluginVer>1.51.5</dynamoPluginVer>
+		<sesPluginVer>1.51.5</sesPluginVer>
+		<s3PluginVer>1.51.5</s3PluginVer>
+		<sqsPluginVer>1.51.5</sqsPluginVer>
 		<hcPluginVer>1.41.5</hcPluginVer>
 		<casPluginVer>1.41.2</casPluginVer>
 		<mongoPluginVer>1.42.1</mongoPluginVer>
@@ -142,9 +133,21 @@
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>properties</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.5.4</version>
 				<configuration>
+					<argLine>-javaagent:${org.mockito:mockito-core:jar}</argLine>
 					<skipTests>${skipUTs}</skipTests>
 					<forkCount>2C</forkCount>
 				</configuration>

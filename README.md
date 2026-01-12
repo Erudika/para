@@ -319,7 +319,7 @@ Use these client libraries to quickly integrate Para into your project:
 
 Use these `DAO` implementations to connect to different databases:
 
-- **DynamoDB**: `AWSDynamoDAO` (included in `para-server`)
+- **DynamoDB**: [para-dao-dynamodb](https://github.com/Erudika/para-dao-dynamodb)
 - **MongoDB**: [para-dao-mongodb](https://github.com/Erudika/para-dao-mongodb)
 - **Cassandra**: [para-dao-cassandra](https://github.com/Erudika/para-dao-cassandra)
 - **SQL** (H2/MySQL/SQL Server/PostgreSQL, etc.): [para-dao-sql](https://github.com/Erudika/para-dao-sql)
@@ -329,8 +329,8 @@ Use these `DAO` implementations to connect to different databases:
 
 The `Search` interface is implemented by:
 
-- **Lucene**: [para-search-lucene](https://github.com/erudika/para-search-lucene) **default** (packaged with the JAR file)
-- **Elasticsearch**: [para-search-elasticsearch](https://github.com/erudika/para-search-elasticsearch)
+- **Lucene**: [para-search-lucene](https://github.com/erudika/para-search-lucene)
+- **Elasticsearch / OpenSearch**: [para-search-elasticsearch](https://github.com/erudika/para-search-elasticsearch)
 - **Elasticsearch v5.x**: [para-search-elasticsearch-v5](https://github.com/erudika/para-search-elasticsearch-v5)
 Compatible with ES 5.x only and missing some of the latest features like AWS Elasticsearch support.
 
@@ -338,28 +338,42 @@ Compatible with ES 5.x only and missing some of the latest features like AWS Ela
 
 The `Cache` interface is implemented by:
 
-- **Caffeine**: **default** objects are cached locally (included in `para-server`)
+- **Caffeine**: objects are cached locally (included in `para-server`)
 - **Hazelcast**: [para-cache-hazelcast](https://github.com/Erudika/para-cache-hazelcast) (distributed)
 
 ## Queue implementations
 
 The `Queue` interface is implemented by:
 
-- **AWS SQS**: in the `AWSQueue` class
+- **Amazon SQS**: [para-queue-sqs](https://github.com/erudika/para-queue-sqs) plugin for Amazon SQS
 - `LocalQueue` for single-host deployments and local development
+
+## File storage implementations
+
+The `FileStore` interface is implemented by:
+
+- **Amazon S3**: [para-storage-s3](https://github.com/erudika/para-storage-s3) plugin for Amazon S3
+- `LocalFileStore`: for storing files to the local file system.
+
+## Emailer implementations
+
+The `Emailer` interface is implemented by:
+
+- **AWSEmailer**: [para-email-ses](https://github.com/erudika/para-email-ses) plugin for Amazon SES
+- `JavaMailEmailer` - the default JavaMail implementation for handling transaction emails
 
 ## Projects using Para
 
 - [Scoold](https://scoold.com) - an open source StackOverflow clone
 - [ParaIO.com](https://paraio.com) - managed Para hosting
 - [Erudika.com](https://erudika.com/blog) - the search bar on our blog uses Para
-- [Angular2 demo app](https://github.com/albogdano/angular2-para) - a sample Angular2 project
+- [Angular demo app](https://github.com/albogdano/angular2-para) - a sample Angular project
 - [React demo app](https://github.com/albogdano/react-para) - a sample React project
 
 ## Wishlist / Roadmap
 
-- Para `2.0` - migration to Quarkus, Java 13+ only, native image
-- GraphQL support
+- Para `2.0` - Java 25+ only, native image
+- Better admin UI
 
 ## Getting help
 

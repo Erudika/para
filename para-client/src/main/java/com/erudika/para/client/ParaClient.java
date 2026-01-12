@@ -56,7 +56,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import nl.altindag.ssl.SSLFactory;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.apache.hc.client5.http.classic.methods.HttpDelete;
@@ -359,7 +358,7 @@ public final class ParaClient implements Closeable {
 		try (InputStream in = entity.getContent()) {
 			if (in != null && type != null) {
 				if (type.isAssignableFrom(String.class)) {
-					return (T) new String(IOUtils.toByteArray(in), Para.getConfig().defaultEncoding());
+					return (T) new String(in.readAllBytes(), Para.getConfig().defaultEncoding());
 				} else {
 					return mapper.readerFor(type).readValue(in);
 				}

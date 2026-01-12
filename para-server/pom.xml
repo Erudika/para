@@ -116,38 +116,6 @@
 			<artifactId>caffeine</artifactId>
 		</dependency>
 
-		<!-- AWS JAVA SDK -->
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>sts</artifactId>
-			<version>${awsJdkVer}</version>
-		</dependency>
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>dynamodb</artifactId>
-			<version>${awsJdkVer}</version>
-		</dependency>
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>s3</artifactId>
-			<version>${awsJdkVer}</version>
-		</dependency>
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>ses</artifactId>
-			<version>${awsJdkVer}</version>
-		</dependency>
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>sqs</artifactId>
-			<version>${awsJdkVer}</version>
-		</dependency>
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>applicationautoscaling</artifactId>
-			<version>${awsJdkVer}</version>
-		</dependency>
-
 		<!-- METRICS -->
 		<dependency>
 			<groupId>io.dropwizard.metrics</groupId>
@@ -184,14 +152,6 @@
 			<artifactId>nimbus-jose-jwt</artifactId>
 			<version>10.6</version>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.httpcomponents.core5</groupId>
-			<artifactId>httpcore5</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.httpcomponents.client5</groupId>
-			<artifactId>httpclient5</artifactId>
-		</dependency>
 
 		<!-- TESTING -->
 		<dependency>
@@ -207,22 +167,6 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.elasticmq</groupId>
-			<artifactId>elasticmq-rest-sqs_2.13</artifactId>
-			<version>1.6.15</version>
-			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>org.joda</groupId>
-					<artifactId>joda-convert</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>joda-time</groupId>
-					<artifactId>joda-time</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
 			<groupId>org.springframework.ldap</groupId>
 			<artifactId>spring-ldap-test</artifactId>
 			<scope>test</scope>
@@ -230,6 +174,12 @@
 		<dependency>
 			<groupId>com.unboundid</groupId>
 			<artifactId>unboundid-ldapsdk</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.21.0</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -357,6 +307,46 @@
 					<groupId>com.erudika</groupId>
 					<artifactId>para-dao-sql</artifactId>
 					<version>${sqlPluginVer}</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>dynamodb</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-dao-dynamodb</artifactId>
+					<version>${dynamoPluginVer}</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>ses</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-email-ses</artifactId>
+					<version>${sesPluginVer}</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>s3</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-storage-s3</artifactId>
+					<version>${s3PluginVer}</version>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
+			<id>sqs</id>
+			<dependencies>
+				<dependency>
+					<groupId>com.erudika</groupId>
+					<artifactId>para-queue-sqs</artifactId>
+					<version>${sqsPluginVer}</version>
 				</dependency>
 			</dependencies>
 		</profile>

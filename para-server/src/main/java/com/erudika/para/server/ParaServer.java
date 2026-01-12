@@ -102,6 +102,7 @@ public class ParaServer implements Ordered {
 		System.setProperty("para.logs_name", Para.getConfig().getConfigRootPrefix());
 		System.setProperty("para.landing_page_enabled", String.valueOf(Para.getConfig().landingPageEnabled()));
 		System.setProperty("para.api_enabled", String.valueOf(Para.getConfig().apiEnabled()));
+		System.setProperty("server.compression.enabled", String.valueOf(Para.getConfig().gzipEnabled()));
 	}
 
 	/**
