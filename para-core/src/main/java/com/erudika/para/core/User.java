@@ -20,6 +20,7 @@ package com.erudika.para.core;
 import com.erudika.para.core.annotations.Email;
 import com.erudika.para.core.annotations.Locked;
 import com.erudika.para.core.annotations.Stored;
+import com.erudika.para.core.exceptions.RateLimitException;
 import com.erudika.para.core.i18n.CurrencyUtils;
 import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.CoreUtils;
@@ -34,7 +35,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import javax.naming.LimitExceededException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
@@ -709,9 +709,9 @@ public class User implements ParaObject {
 	 * Compares password hashes.
 	 * @param u a user with a set password
 	 * @return true if password matches the one in the data store
-	 * @throws LimitExceededException if rate limit is exceeded when password doesn't match.
+	 * @throws RateLimitException if rate limit is exceeded when password doesn't match.
 	 */
-	public static final boolean passwordMatches(User u) throws LimitExceededException {
+	public static final boolean passwordMatches(User u) throws RateLimitException {
 		if (u == null) {
 			return false;
 		}
@@ -734,7 +734,7 @@ public class User implements ParaObject {
 							(long) ((Sysprop) s).getProperty("lockedUntil") > System.currentTimeMillis()) {
 						logger.warn("Too many login attempts for user {} ({}/{}), account locked.",
 								u.getId(), u.getAppid(), identifier);
-						throw new LimitExceededException("Too many login attempts!");
+						throw new RateLimitException("Too many login attempts!");
 					}
 					((Sysprop) s).setVotes(((Sysprop) s).getVotes() + 1);
 					if (((Sysprop) s).getVotes() >= Para.getConfig().maxPasswordMatchingAttempts()) {

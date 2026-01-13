@@ -15,7 +15,7 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.utils;
+package com.erudika.para.core.utils;
 
 /**
  * GENERATED CLASS. DO NOT MODIFY!

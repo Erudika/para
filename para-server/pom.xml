@@ -18,9 +18,9 @@
 
 		<!-- PLUGINS -->
 		<!--===== LUCENE =====-->
-		<lucenePluginVer>1.49.4</lucenePluginVer>
+		<lucenePluginVer>1.49.5</lucenePluginVer>
 		<!--===== SQL =====-->
-		<sqlPluginVer>1.49.2</sqlPluginVer>
+		<sqlPluginVer>1.49.3</sqlPluginVer>
 		<!--===== HAZELCAST =====-->
 		<hcPluginVer>1.41.5</hcPluginVer>
 		<!--===== CASSANDRA =====-->
@@ -97,10 +97,6 @@
 					<artifactId>log4j-to-slf4j</artifactId>
 				</exclusion>
 			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-jetty</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -262,15 +258,8 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>3.12.0</version>
-				<executions>
-					<execution>
-						<id>javadocs</id>
-						<goals>
-							<goal>javadoc</goal>
-						</goals>
-					</execution>
-				</executions>
 				<configuration>
+					<sourcepath>src/main/java</sourcepath>
 					<!--<stylesheetfile>para-core/src/main/javadoc/stylesheet.css</stylesheetfile>-->
 					<show>public</show>
 					<quiet>true</quiet>

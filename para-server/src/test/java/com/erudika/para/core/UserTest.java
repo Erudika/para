@@ -18,6 +18,7 @@
 package com.erudika.para.core;
 
 import com.erudika.para.core.User.Groups;
+import com.erudika.para.core.exceptions.RateLimitException;
 import com.erudika.para.core.persistence.DAO;
 import com.erudika.para.core.search.Search;
 import com.erudika.para.core.utils.Config;
@@ -31,15 +32,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import javax.naming.LimitExceededException;
+import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.AfterEach;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.mockito.Mockito.*;
@@ -276,7 +276,7 @@ public class UserTest {
 	}
 
 	@Test
-	public void testPasswordMatches() throws LimitExceededException {
+	public void testPasswordMatches() throws RateLimitException {
 		User u = u();
 		u.create();
 		u.setPassword("123456");
@@ -299,7 +299,7 @@ public class UserTest {
 
 		u1.setIdentifier(u.getIdentifier());
 		u1.setPassword("-----");
-		assertThrows(LimitExceededException.class, () -> {
+		assertThrows(RateLimitException.class, () -> {
 			for (int i = 0; i < Para.getConfig().maxPasswordMatchingAttempts(); i++) {
 				assertFalse(User.passwordMatches(u1));
 			}
@@ -330,7 +330,7 @@ public class UserTest {
 	}
 
 	@Test
-	public void testResetPassword() throws LimitExceededException {
+	public void testResetPassword() throws RateLimitException {
 		User u = u();
 		u.create();
 		String token = u.generatePasswordResetToken();

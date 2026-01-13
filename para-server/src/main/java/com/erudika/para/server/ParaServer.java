@@ -69,7 +69,7 @@ public class ParaServer implements Ordered {
 	public static final String API_PATH = "/v1";
 
 	@Value("${server.ssl.enabled:false}")
-	private static boolean sslEnabled;
+	private boolean sslEnabled;
 
 	/**
 	 * Creates the main Para server bootstrapper.
@@ -139,8 +139,9 @@ public class ParaServer implements Ordered {
 			}
 		});
 
+		boolean ssl = Boolean.parseBoolean(System.getProperty("server.ssl.enabled", "false"));
 		LOG.info("Instance #{} initialized and listening on http{}://localhost:{}{}",
-				Para.getConfig().workerId(), (sslEnabled ? "s" : ""),
+				Para.getConfig().workerId(), (ssl ? "s" : ""),
 				Para.getConfig().serverPort(),
 				Para.getConfig().serverContextPath());
 	}

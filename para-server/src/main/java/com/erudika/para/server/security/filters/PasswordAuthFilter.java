@@ -19,6 +19,7 @@ package com.erudika.para.server.security.filters;
 
 import com.erudika.para.core.App;
 import com.erudika.para.core.User;
+import com.erudika.para.core.exceptions.RateLimitException;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.server.security.AuthenticatedUserDetails;
 import com.erudika.para.server.security.SecurityUtils;
@@ -27,7 +28,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import javax.naming.LimitExceededException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.springframework.security.authentication.LockedException;
@@ -88,7 +88,7 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 					user = User.readUserForIdentifier(user);
 					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 				}
-			} catch (LimitExceededException e) {
+			} catch (RateLimitException e) {
 				throw new LockedException("Too many attempts - account " + user.getId() + " (" + user.getAppid() + "/"
 						+ user.getIdentifier() + ") is locked.");
 			}
@@ -138,7 +138,7 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 				} else if (User.passwordMatches(u)) {
 					userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 				}
-			} catch (LimitExceededException e) {
+			} catch (RateLimitException e) {
 				throw new LockedException("Too many attempts - account " + user.getId() + " (" + user.getAppid() + "/"
 						+ user.getIdentifier() + ") is locked.");
 			}

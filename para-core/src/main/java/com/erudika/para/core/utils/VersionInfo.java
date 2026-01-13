@@ -17,8 +17,6 @@
  */
 package com.erudika.para.core.utils;
 
-import com.erudika.para.utils.Version;
-
 /**
  * Uses the generated class Version.java to display version information.
  * @author Alex Bogdanovski [alex@erudika.com]

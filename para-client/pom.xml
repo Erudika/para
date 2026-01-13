@@ -54,15 +54,8 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>3.12.0</version>
-				<executions>
-					<execution>
-						<id>javadocs</id>
-						<goals>
-							<goal>javadoc</goal>
-						</goals>
-					</execution>
-				</executions>
 				<configuration>
+					<sourcepath>src/main/java</sourcepath>
 					<!--<stylesheetfile>para-core/src/main/javadoc/stylesheet.css</stylesheetfile>-->
 					<show>public</show>
 					<quiet>true</quiet>
