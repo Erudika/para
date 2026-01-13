@@ -34,7 +34,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.Banner;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -67,9 +66,6 @@ public class ParaServer implements Ordered {
 	 * The path of the API controller.
 	 */
 	public static final String API_PATH = "/v1";
-
-	@Value("${server.ssl.enabled:false}")
-	private boolean sslEnabled;
 
 	/**
 	 * Creates the main Para server bootstrapper.
@@ -111,7 +107,7 @@ public class ParaServer implements Ordered {
 	 * @return ctx
 	 */
 	@EventListener({ContextRefreshedEvent.class})
-	protected static void initialize() {
+	protected static void initialize(ContextRefreshedEvent e) {
 		Para.addInitListener(HealthUtils.getInstance());
 		Para.addInitListener(MetricsUtils.getInstance());
 
@@ -134,6 +130,8 @@ public class ParaServer implements Ordered {
 				if (anno != null && anno.length > 0 && anno[0] != null) {
 					RequestMapping ann = anno[0];
 					paths = String.join(",", (ann.path().length == 0) ? ann.value() : ann.path());
+					((ConfigurableApplicationContext) e.getApplicationContext()).getBeanFactory().
+							registerSingleton(crh.getClass().getSimpleName(), crh);
 				}
 				LOG.info("Registered custom resource handler {} at path(s) '{}'.", crh.getClass().getSimpleName(), paths);
 			}

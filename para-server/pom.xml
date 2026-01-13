@@ -22,21 +22,21 @@
 		<!--===== SQL =====-->
 		<sqlPluginVer>1.49.3</sqlPluginVer>
 		<!--===== HAZELCAST =====-->
-		<hcPluginVer>1.41.5</hcPluginVer>
+		<hcPluginVer>1.42.0</hcPluginVer>
 		<!--===== CASSANDRA =====-->
-		<casPluginVer>1.41.2</casPluginVer>
+		<casPluginVer>1.42.0</casPluginVer>
 		<!--===== MONGODB =====-->
-		<mongoPluginVer>1.42.1</mongoPluginVer>
+		<mongoPluginVer>1.42.2</mongoPluginVer>
 		<!--===== ELASTICSEARCH =====-->
-		<esPluginVer>1.42.1</esPluginVer>
+		<esPluginVer>1.42.2</esPluginVer>
 		<!--===== DYNAMODB =====-->
-		<dynamoPluginVer>1.51.5</dynamoPluginVer>
+		<dynamoPluginVer>1.52.0</dynamoPluginVer>
 		<!--===== AWS SES =====-->
-		<sesPluginVer>1.51.5</sesPluginVer>
+		<sesPluginVer>1.52.0</sesPluginVer>
 		<!--===== AWS S3 =====-->
-		<s3PluginVer>1.51.5</s3PluginVer>
+		<s3PluginVer>1.52.0</s3PluginVer>
 		<!--===== AWS SQS =====-->
-		<sqsPluginVer>1.51.5</sqsPluginVer>
+		<sqsPluginVer>1.52.0</sqsPluginVer>
 	</properties>
 
 	<dependencies>
