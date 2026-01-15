@@ -30,13 +30,13 @@
 		<!--===== ELASTICSEARCH =====-->
 		<esPluginVer>1.42.2</esPluginVer>
 		<!--===== DYNAMODB =====-->
-		<dynamoPluginVer>1.52.0</dynamoPluginVer>
+		<dynamoPluginVer>1.52.1</dynamoPluginVer>
 		<!--===== AWS SES =====-->
-		<sesPluginVer>1.52.0</sesPluginVer>
+		<sesPluginVer>1.52.1</sesPluginVer>
 		<!--===== AWS S3 =====-->
-		<s3PluginVer>1.52.0</s3PluginVer>
+		<s3PluginVer>1.52.1</s3PluginVer>
 		<!--===== AWS SQS =====-->
-		<sqsPluginVer>1.52.0</sqsPluginVer>
+		<sqsPluginVer>1.52.1</sqsPluginVer>
 	</properties>
 
 	<dependencies>
