@@ -23,11 +23,14 @@ import static com.erudika.para.core.utils.Config.PARA;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigObject;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang3.stream.Streams;
 
 /**
  * Para configuration.
@@ -2044,6 +2047,21 @@ public class ParaConfig extends Config {
 			description = "Enable/disable the landing page when opening the server address in the browser.")
 	public boolean landingPageEnabled() {
 		return getConfigBoolean("landing_page_enabled", true);
+	}
+
+	/**
+	 * Returns the list of regions where a table should be replicated (global table).
+	 * Currently, this is only used in combination with DynamoDB and SQS but could be implemented with other services.
+	 * @return a list of regions
+	 */
+	public List<String> replicaRegions() {
+		if (!StringUtils.isBlank(awsDynamoReplicaRegions())) {
+			String[] regions = Para.getConfig().awsDynamoReplicaRegions().split("\\s*,\\s*");
+			if (regions != null && regions.length > 0) {
+				return Streams.of(regions).filter(StringUtils::isNotBlank).toList();
+			}
+		}
+		return Collections.emptyList();
 	}
 
 	/**
