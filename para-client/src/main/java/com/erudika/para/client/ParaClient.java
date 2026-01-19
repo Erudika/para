@@ -356,7 +356,7 @@ public final class ParaClient implements Closeable {
 	@SuppressWarnings("unchecked")
 	private <T> T readEntity(HttpEntity entity, Class<?> type) {
 		try (InputStream in = entity.getContent()) {
-			if (in != null && type != null) {
+			if (in != null && type != null && in.available() > 0) {
 				if (type.isAssignableFrom(String.class)) {
 					return (T) new String(in.readAllBytes(), Para.getConfig().defaultEncoding());
 				} else {
