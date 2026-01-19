@@ -189,10 +189,11 @@ public final class Api1 {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
+		ParaObject obj = ParaObjectUtils.toObject(app, type);
+		obj.setId(id);
 		String resolvedType = resolveType(app, type);
 		String appid = Strings.CS.equals(resolvedType, Utils.type(App.class)) ? app.getAppid() : app.getAppIdentifier();
-		ParaObject target = getDAO().read(appid, id);
-		return getUpdateResponse(app, target, req.getInputStream());
+		return getUpdateResponse(app,  getDAO().read(appid, obj.getId()), req.getInputStream());
 	}
 
 	@PutMapping("/{type}/{id}")
