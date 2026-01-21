@@ -200,6 +200,7 @@ public class UtilsTest {
 		assertEquals("test123 string", base64dec("dGVzdDEyMyBzdHJpbmc="));
 		assertEquals("   ", base64dec("ICAg"));
 		assertEquals("123", base64dec(base64enc("123".getBytes())));
+		assertEquals("a b % c:d", base64dec(base64encURL("a b % c:d".getBytes())));
 //		assertEquals("", base64dec("asd=")); // error for invalid encoding
 	}
 
