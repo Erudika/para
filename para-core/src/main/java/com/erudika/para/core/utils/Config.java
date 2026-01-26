@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -388,7 +389,9 @@ public abstract class Config {
 		if (asJson) {
 			String conf = "{}";
 			try {
-				conf = ParaObjectUtils.getJsonWriter().writeValueAsString(getConfigMap());
+				Map<String, Object> renderMap = new LinkedHashMap<> (getConfigMap());
+				renderMap.values().removeIf(Objects::isNull);
+				conf = ParaObjectUtils.getJsonWriter().writeValueAsString(renderMap);
 			} catch (JsonProcessingException ex) {
 				logger.error(null, ex);
 			}
@@ -465,7 +468,13 @@ public abstract class Config {
 	public Map<String, Object> getConfigMap() {
 		Map<String, Object> configMap = new LinkedHashMap<>();
 		for (String keyNoPrefix : getSortedConfigKeys().keySet()) {
-			configMap.put(getConfigRootPrefix() + "." + keyNoPrefix, null);
+			// allow overrides via system props to be rendered, e.g. for auto-init
+			String sval = getConfigParam(keyNoPrefix, "");
+			Object defaultValue = null;
+			if (!StringUtils.isBlank(sval) && !getConfig().hasPath(keyNoPrefix)) {
+				defaultValue = getConfigValue(keyNoPrefix, "");
+			}
+			configMap.put(getConfigRootPrefix() + "." + keyNoPrefix, defaultValue);
 		}
 		for (Map.Entry<String, ConfigValue> entry : getConfig().entrySet()) {
 			String keyNoPrefix = Strings.CS.removeStart(entry.getKey(), getConfigRootPrefix() + ".");
