@@ -389,7 +389,7 @@ public abstract class Config {
 		if (asJson) {
 			String conf = "{}";
 			try {
-				Map<String, Object> renderMap = new LinkedHashMap<> (getConfigMap());
+				Map<String, Object> renderMap = new LinkedHashMap<>(getConfigMap());
 				renderMap.values().removeIf(Objects::isNull);
 				conf = ParaObjectUtils.getJsonWriter().writeValueAsString(renderMap);
 			} catch (JsonProcessingException ex) {
