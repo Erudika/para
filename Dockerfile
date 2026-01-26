@@ -23,7 +23,7 @@ RUN mvn -B -pl para-server -am ${BUILD_OPTS} -DskipTests=true -DskipITs=true pac
 FROM eclipse-temurin:25-jre
 
 ENV PARA_HOME=/para
-ENV JAVA_OPTS="-Dloader.path=lib --add-modules jdk.incubator.vector --enable-native-access=ALL-UNNAMED"
+ENV JAVA_OPTS="-Dloader.path=lib"
 WORKDIR ${PARA_HOME}
 
 COPY --from=build ${PARA_HOME}/para.jar ./para.jar
@@ -33,5 +33,5 @@ VOLUME ["${PARA_HOME}/data", "${PARA_HOME}/lib"]
 
 EXPOSE 8080
 
-ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar para.jar \"$@\"", "para"]
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS --add-modules jdk.incubator.vector --enable-native-access=ALL-UNNAMED -jar para.jar \"$@\"", "para"]
 CMD []
