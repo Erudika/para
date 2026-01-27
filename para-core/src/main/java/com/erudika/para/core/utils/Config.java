@@ -59,7 +59,6 @@ public abstract class Config {
 	private static final Logger logger = LoggerFactory.getLogger(Config.class);
 	private com.typesafe.config.Config config;
 	private Map<String, String> sortedConfigKeys; // config key => category
-	private List<Documented> annotatedMethods;
 	private Map<String, Documented> annotatedMethodsMap; // config key => Documented
 
 	// GLOBAL SETTINGS
@@ -209,7 +208,6 @@ public abstract class Config {
 			if (conf != null && !conf.isEmpty()) {
 				config = conf.withFallback(config);
 			}
-			getSortedConfigKeys();
 		} catch (Exception ex) {
 			logger.warn("Failed to load configuration file 'application.(conf|json|properties)' for namespace '{}' - {}",
 					getConfigRootPrefix(), ex.getMessage());
@@ -286,7 +284,7 @@ public abstract class Config {
 					Strings.CS.equals(valString, getConfig().getAnyRef(key).toString())) {
 				return getConfig().getValue(key).unwrapped();
 			}
-			Documented doc = annotatedMethodsMap.get(key);
+			Documented doc = getAnnotatedMethodsMap().get(key);
 			if (doc != null && doc.type().equals(String.class)) {
 				return valString; // special case where we have a string containing numbers
 			}
@@ -325,7 +323,7 @@ public abstract class Config {
 	 */
 	public Map<String, String> getSortedConfigKeys() {
 		if (sortedConfigKeys == null || sortedConfigKeys.isEmpty()) {
-			annotatedMethods = Arrays.stream(this.getClass().getMethods()).
+			List<Documented> annotatedMethods = Arrays.stream(this.getClass().getMethods()).
 					filter(m -> m.isAnnotationPresent(Documented.class) && !m.isAnnotationPresent(Deprecated.class)).
 					map(m -> m.getAnnotation(Documented.class)).
 					filter(m -> !StringUtils.isBlank(m.identifier())).
@@ -337,6 +335,13 @@ public abstract class Config {
 					collect(Collectors.toMap(a -> a.identifier(), a -> a, (u, v) -> u, LinkedHashMap::new));
 		}
 		return sortedConfigKeys;
+	}
+
+	private Map<String, Documented> getAnnotatedMethodsMap() {
+		if (annotatedMethodsMap == null || annotatedMethodsMap.isEmpty()) {
+			getSortedConfigKeys();
+		}
+		return annotatedMethodsMap;
 	}
 
 	/**
@@ -443,7 +448,7 @@ public abstract class Config {
 			sb.append("|  ---                       | ---           | ---  |\n");
 		}
 
-		for (Map.Entry<String, Documented> entry : annotatedMethodsMap.entrySet()) {
+		for (Map.Entry<String, Documented> entry : getAnnotatedMethodsMap().entrySet()) {
 			if (!getKeysExcludedFromRendering().contains(entry.getKey())) {
 				if (groupByCategory) {
 					category = renderCategoryHeader(format, category, entry, jsonMapByCat, sb);
