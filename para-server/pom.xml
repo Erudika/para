@@ -12,8 +12,6 @@
 	<name>para-server</name>
 
 	<properties>
-		<springSecVer>7.0.2</springSecVer>
-		<springLdapVer>4.0.1</springLdapVer>
 		<openSamlVer>5.1.6</openSamlVer>
 
 		<!-- PLUGINS -->
