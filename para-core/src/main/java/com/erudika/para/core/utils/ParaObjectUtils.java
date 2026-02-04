@@ -37,29 +37,16 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.io.File;
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.jar.JarFile;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.collections.bidimap.DualHashBidiMap;
@@ -537,15 +524,10 @@ public final class ParaObjectUtils {
 		if (CORE_CLASSES.isEmpty()) {
 			try {
 				CORE_CLASSES.putAll(CORE_PARA_CLASSES);
-
 				if (!Para.getConfig().corePackageName().isEmpty()) {
-					scanClasses(Para.getConfig().corePackageName()).stream().
-							filter(ci -> !ci.isInterface() && !Modifier.isAbstract(ci.getModifiers()) &&
-									ParaObject.class.isAssignableFrom(ci)).forEach(c ->
-											CORE_CLASSES.putIfAbsent(c.getSimpleName().toLowerCase(),
-													(Class<? extends ParaObject>) c));
+					logger.warn("Using deprecated configuration 'core_package_name' - "
+							+ "declare all custom classes manually via Para.registerCoreClasses()");
 				}
-				logger.debug("Found {} ParaObject classes: {}", CORE_CLASSES.size(), CORE_CLASSES);
 			} catch (Exception ex) {
 				logger.error(null, ex);
 			}
@@ -564,46 +546,6 @@ public final class ParaObjectUtils {
 				CORE_CLASSES.putIfAbsent(clazz.getSimpleName().toLowerCase(), clazz);
 			}
 		}
-	}
-
-	private static List<Class<?>> scanClasses(String packageName) throws IOException {
-		String packagePath = packageName.replace('.', '/');
-		ClassLoader cl = Thread.currentThread().getContextClassLoader();
-		Enumeration<URL> resources = cl.getResources(packagePath);
-		Set<Class<?>> classes = new LinkedHashSet<>();
-
-		while (resources.hasMoreElements()) {
-			URL url = resources.nextElement();
-			String protocol = url.getProtocol();
-			if ("file".equals(protocol)) {
-				Path dir = Paths.get(url.getPath());
-				try (Stream<Path> stream = Files.walk(dir)) {
-					stream.filter(Files::isRegularFile)
-							.filter(p -> p.toString().endsWith(".class"))
-							.forEach(p -> loadClass(classes, packageName, dir.relativize(p)));
-				}
-			} else if ("jar".equals(protocol)) {
-				String spec = url.getFile();
-				int separator = spec.indexOf('!');
-				String jarPath = spec.substring(5, separator); // strip "file:"
-				try (JarFile jar = new JarFile(URLDecoder.decode(jarPath, StandardCharsets.UTF_8))) {
-					jar.stream()
-							.filter(e -> !e.isDirectory())
-							.filter(e -> e.getName().startsWith(packagePath))
-							.filter(e -> e.getName().endsWith(".class"))
-							.forEach(e -> loadClass(classes, "", Paths.get(e.getName())));
-				}
-			}
-		}
-		return List.copyOf(classes);
-	}
-
-	private static void loadClass(Set<Class<?>> out, String packageName, Path relativePath) {
-		String bare = relativePath.toString().replace(File.separatorChar, '.').replaceAll("\\.class$", "");
-		String fqcn = packageName.isEmpty() ? bare : packageName + "." + bare;
-		try {
-			out.add(Class.forName(fqcn));
-		} catch (ClassNotFoundException ignored) { }
 	}
 
 	/**

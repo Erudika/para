@@ -213,8 +213,10 @@ public class ParaConfig extends Config {
 	@Documented(position = 160,
 			identifier = "core_package_name",
 			category = "Core",
+			tags = {"deprecated"},
 			description = "The package path (e.g. `org.company.app.core`) where all domain classes are defined. "
 					+ "Specify this when integrating your app with Para core/client, to get deserialization working.")
+	@Deprecated
 	public String corePackageName() {
 		return getConfigParam("core_package_name", "");
 	}
