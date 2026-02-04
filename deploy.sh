@@ -18,8 +18,10 @@ gh release create -F changelog.txt -t "$ver" "$ver" && \
 rm changelog.txt
 
 # Build executable JAR
+mvn versions:set -DnewVersion=$ver
 mvn -DskipTests=true -Pfatjar,sql,lucene package
+mv para-server/target/para-$devver-SNAPSHOT.jar para-server/target/para-$ver.jar
 mv para-server/target/classes/META-INF/sbom/application.cdx.json para-server/target/para-$ver-cyclonedx.json
-gh release upload $ver target/para-$ver-cyclonedx.json
-gh release upload $ver target/para-$ver.jar
-
+gh release upload $ver para-server/target/para-$ver-cyclonedx.json
+gh release upload $ver para-server/target/para-$ver.jar
+mvn versions:revert
