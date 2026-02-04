@@ -255,21 +255,23 @@ $ mvn -Dconfig.file=./application.conf spring-boot:run
 
 ## Standalone server
 
-You can run Para as a standalone server by downloading the executable JAR and then:
+Either download the executable JAR file and run it, or build it from scratch after cloning the Para repository.
+To build the "uber JAR" (fat JAR) file you need to enable it with the following Maven profiles:
 
-```sh
-$ java -jar para-X.Y.Z.jar
+```bash
+mvn -Pfatjar,sql,lucene -DskipTests=true package
+```
+
+Finally, run Para server:
+
+```bash
+java -jar para-X.Y.Z.jar
 ```
 
 The you can browse your objects through the **Para Web Console** [console.paraio.org](https://console.paraio.org).
 Simply change the API endpoint to be your local server and connect your access keys.
 The admin interface is client-side only and your secret key is never sent over the the network. Instead,
 a JWT access token is generated locally and sent to the server on each request.
-
-Alternatively, you can build a WAR file and deploy it to your favorite servlet container:
-```
-$ cd para-war && mvn package
-```
 
 ## [Download JAR](https://github.com/Erudika/para/releases)
 

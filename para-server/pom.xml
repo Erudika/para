@@ -203,11 +203,6 @@
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-			</plugin>
-
-			<plugin>
 				<artifactId>maven-clean-plugin</artifactId>
 				<version>3.5.0</version>
 				<configuration>
@@ -277,27 +272,42 @@
 					</archive>
 				</configuration>
 			</plugin>
+
+			<plugin>
+				<groupId>org.cyclonedx</groupId>
+				<artifactId>cyclonedx-maven-plugin</artifactId>
+				<inherited>true</inherited>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>makeAggregateBom</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 
 	<profiles>
 		<profile>
-			<id>default</id>
-			<activation>
-				<activeByDefault>true</activeByDefault>
-			</activation>
-			<dependencies>
-				<dependency>
-					<groupId>com.erudika</groupId>
-					<artifactId>para-dao-sql</artifactId>
-					<version>${sqlPluginVer}</version>
-				</dependency>
-				<dependency>
-					<groupId>com.erudika</groupId>
-					<artifactId>para-search-lucene</artifactId>
-					<version>${lucenePluginVer}</version>
-				</dependency>
-			</dependencies>
+			<id>fatjar</id>
+			<build>
+				<finalName>para-${project.version}</finalName>
+				<plugins>
+					<plugin>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<configuration>
+									<mainClass>com.erudika.para.server.ParaServer</mainClass>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
 		<profile>
 			<id>lucene</id>
