@@ -102,7 +102,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 		UserAuthentication userAuth = null;
 
 		if (requestURI.endsWith(TWITTER_ACTION)) {
-			String verifier = request.getParameter("oauth_verifier");
+			String verifier = Utils.stripHtml(request.getParameter("oauth_verifier"));
 			String appid = SecurityUtils.getAppidFromAuthRequest(request);
 			String denied = request.getParameter("denied");
 			String redirectURI = SecurityUtils.getRedirectUrl(request) + (appid == null ? "" : "?appid=" + appid);
