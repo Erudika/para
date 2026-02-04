@@ -189,7 +189,7 @@ public class ManagedDAO implements DAO {
 		}
 	}
 
-	<P extends ParaObject, R> P readFromCachOrDB(String appid, String key,
+	<P extends ParaObject, R> P readFromCacheOrDB(String appid, String key,
 			BiFunction<String, String, P> daoFunction, String opName) {
 		P result = null;
 		if (Para.getConfig().isCacheEnabled()) {
@@ -301,7 +301,7 @@ public class ManagedDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> P read(String appid, String key) {
-		return readFromCachOrDB(appid, key, (aid, pobj) -> dao.read(appid, key), appid);
+		return readFromCacheOrDB(appid, key, (aid, pobj) -> dao.read(appid, key), "read");
 	}
 
 	@Override
