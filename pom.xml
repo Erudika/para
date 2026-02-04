@@ -188,6 +188,20 @@
 				<version>${deployPluginVer}</version>
 			</plugin>
 
+			<plugin>
+				<groupId>org.cyclonedx</groupId>
+				<artifactId>cyclonedx-maven-plugin</artifactId>
+				<inherited>true</inherited>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>makePackageBom</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
 <!--			<plugin>
 				<groupId>org.sonarsource.scanner.maven</groupId>
 				<artifactId>sonar-maven-plugin</artifactId>

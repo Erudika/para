@@ -272,20 +272,6 @@
 					</archive>
 				</configuration>
 			</plugin>
-
-			<plugin>
-				<groupId>org.cyclonedx</groupId>
-				<artifactId>cyclonedx-maven-plugin</artifactId>
-				<inherited>true</inherited>
-				<executions>
-					<execution>
-						<phase>package</phase>
-						<goals>
-							<goal>makeAggregateBom</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
 		</plugins>
 	</build>
 
