@@ -69,6 +69,20 @@ public class ManagedDAO implements DAO {
 		}
 	}
 
+	<P extends ParaObject> Map<String, P> invokeDAOBatchRead(String appid, List<String> keys,
+			BiFunction<String, List<String>, Map<String, P>> daoFunction, String opName) {
+		try (Metrics.Context context = Metrics.time(appid, dao.getClass(), opName)) {
+			Object[] args = new Object[] {appid, keys};
+			Class<?>[] params = new Class<?>[] {String.class, List.class, boolean.class};
+
+			onPreInvoke(opName, args, params);
+			Map<String, P> result = daoFunction.apply(appid, keys);
+			onPostInvoke(opName, args, result, params);
+
+			return result;
+		}
+	}
+
 	<P extends ParaObject, R> R invokeDAOWrite(String appid, P object,
 			BiFunction<String, P, R> daoFunction, String opName) {
 		try (Metrics.Context context = Metrics.time(appid, dao.getClass(), opName)) {
@@ -91,20 +105,6 @@ public class ManagedDAO implements DAO {
 
 			onPreInvoke(opName, args, params);
 			R result = daoFunction.apply(appid, objects);
-			onPostInvoke(opName, args, result, params);
-
-			return result;
-		}
-	}
-
-	<P extends ParaObject> Map<String, P> invokeDAOBatchRead(String appid, List<String> keys,
-			BiFunction<String, List<String>, Map<String, P>> daoFunction, String opName) {
-		try (Metrics.Context context = Metrics.time(appid, dao.getClass(), opName)) {
-			Object[] args = new Object[] {appid, keys};
-			Class<?>[] params = new Class<?>[] {String.class, List.class, Boolean.class};
-
-			onPreInvoke(opName, args, params);
-			Map<String, P> result = daoFunction.apply(appid, keys);
 			onPostInvoke(opName, args, result, params);
 
 			return result;
