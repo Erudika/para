@@ -1,6 +1,6 @@
 FROM maven:eclipse-temurin AS deps
 
-ARG BUILD_OPTS=""
+ARG BUILD_OPTS="-Pfatjar,sql,lucene"
 ENV PARA_HOME=/para
 WORKDIR ${PARA_HOME}
 
@@ -18,7 +18,7 @@ WORKDIR ${PARA_HOME}
 
 COPY . .
 RUN mvn -B -pl para-server -am ${BUILD_OPTS} -DskipTests=true -DskipITs=true package && \
-    cp para-server/target/para-server-*.jar ${PARA_HOME}/para.jar
+    cp para-server/target/para-*.jar ${PARA_HOME}/para.jar
 
 FROM eclipse-temurin:25-jre
 
