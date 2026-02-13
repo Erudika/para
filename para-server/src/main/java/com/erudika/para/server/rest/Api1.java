@@ -359,7 +359,7 @@ public final class Api1 {
 			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Utils.stripAndTrim(str));
 		} else if ("md2html".equals(method)) {
 			String md = queryParam("md", req);
-			return ResponseEntity.ok(Utils.markdownToHtml(md));
+			return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(Utils.markdownToHtml(md));
 		} else if ("timeago".equals(method)) {
 			String d = queryParam("delta", req);
 			long delta = NumberUtils.toLong(d, 1);
