@@ -78,7 +78,7 @@
 		<skipUTs>${skipTests}</skipUTs>
 
 		<deployPluginVer>3.1.4</deployPluginVer>
-		<metricsVer>4.2.32</metricsVer>
+		<metricsVer>4.2.37</metricsVer>
 	</properties>
 
 	<dependencies>
