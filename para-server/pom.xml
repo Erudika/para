@@ -12,7 +12,7 @@
 	<name>para-server</name>
 
 	<properties>
-		<openSamlVer>5.1.6</openSamlVer>
+		<openSamlVer>5.2.0</openSamlVer>
 
 		<!-- PLUGINS -->
 		<!--===== LUCENE =====-->
@@ -166,7 +166,7 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>10.7</version>
+			<version>10.8</version>
 		</dependency>
 
 		<!-- TESTING -->
