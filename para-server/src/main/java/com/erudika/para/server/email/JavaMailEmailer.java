@@ -19,6 +19,8 @@ package com.erudika.para.server.email;
 
 import com.erudika.para.core.email.Emailer;
 import com.erudika.para.core.utils.Para;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.util.ByteArrayDataSource;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
@@ -26,8 +28,6 @@ import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
-import jakarta.mail.internet.MimeMessage;
-import jakarta.mail.util.ByteArrayDataSource;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,7 +87,7 @@ public class JavaMailEmailer implements Emailer {
 							msg.addBcc(emailz.next());
 						}
 						msg.setSubject(subject);
-						msg.setFrom(Para.getConfig().supportEmail());
+						msg.setFrom(Para.getConfig().supportEmail(), Para.getConfig().appName());
 						msg.setText(body, true); // body is assumed to be HTML
 						if (attachment != null) {
 							msg.addAttachment(fileName, new ByteArrayDataSource(attachment, mimeType));
