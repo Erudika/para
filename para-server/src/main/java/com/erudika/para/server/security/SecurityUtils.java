@@ -27,7 +27,6 @@ import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.security.filters.PasswordlessAuthFilter;
 import com.erudika.para.server.security.filters.SAMLAuthFilter;
-import com.erudika.para.server.utils.BufferedRequestWrapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -421,11 +420,7 @@ public final class SecurityUtils {
 		String httpMethod = incoming.getMethod();
 		InputStream entity;
 		try {
-			if (incoming instanceof BufferedRequestWrapper) {
-				entity = incoming.getInputStream();
-			} else {
-				entity = new BufferedRequestWrapper(incoming).getInputStream();
-			}
+			entity = incoming.getInputStream();
 		} catch (IOException ex) {
 			logger.error(null, ex);
 			entity = null;

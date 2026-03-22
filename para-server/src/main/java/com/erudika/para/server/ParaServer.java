@@ -49,6 +49,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.multipart.MultipartResolver;
+import org.springframework.web.multipart.support.StandardServletMultipartResolver;
 
 /**
  * Para modules are initialized and destroyed from here.
@@ -151,6 +153,15 @@ public class ParaServer implements Ordered {
 	@Bean
 	public ObjectMapper jacksonObjectMapper() {
 		return ParaObjectUtils.getJsonMapper();
+	}
+
+	/**
+	 * Configures MultiPart form data handling.
+	 * @return a new MultipartResolver instance
+	 */
+	@Bean
+	public MultipartResolver multipartResolver() {
+		return new StandardServletMultipartResolver();
 	}
 
 	/**

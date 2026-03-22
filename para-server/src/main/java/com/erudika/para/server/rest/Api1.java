@@ -64,7 +64,6 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -792,21 +791,21 @@ public final class Api1 {
 		}
 	}
 
-	@PostMapping(value = "/_emails", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<?> emails(HttpUtils.MultipartFormData formData,
+	@PostMapping("/_emails")
+	public ResponseEntity<?> emails(HttpUtils.MultipartForm formData,
 			HttpServletRequest req, HttpServletResponse res) throws IOException {
 		return emailsHandler(getPrincipalApp(), null, formData, req, res);
 	}
 
 	// Public (unauthenticated) resource
 	@PostMapping(value = "/_forms/{appid}/{formid}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<?> emails(@Valid HttpUtils.MultipartFormData formData, BindingResult errors,
+	public ResponseEntity<?> emails(HttpUtils.MultipartForm formData, BindingResult errors,
 			@PathVariable String appid, @PathVariable String formid,
 			HttpServletRequest req, HttpServletResponse res) throws IOException {
 		return emailsHandler(getDAO().read(App.id(appid)), formid, formData, req, res);
 	}
 
-	public ResponseEntity<?> emailsHandler(App app, String formId, HttpUtils.MultipartFormData formData,
+	public ResponseEntity<?> emailsHandler(App app, String formId, HttpUtils.MultipartForm formData,
 			HttpServletRequest req, HttpServletResponse res) throws IOException {
 		if (app == null && StringUtils.isBlank(formId)) {
 			return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Invalid request.")).build();
@@ -836,7 +835,7 @@ public final class Api1 {
 					} else {
 						status = HttpStatus.BAD_REQUEST;
 						logger.warn("Email not sent via public API request for app {} "
-								+ "because of invalid CAPTCHA response.", formData.getAppid());
+								+ "because of invalid CAPTCHA response. form: {}", formData.getAppid(), formId);
 					}
 					if (Utils.isValidURL(redirectTo)) {
 						return ResponseEntity.status(status.value()).location(URI.create(redirectTo)).build();

@@ -37,6 +37,10 @@ import org.hibernate.validator.constraints.URL;
  */
 public class Form implements ParaObject {
 	private static final long serialVersionUID = 1L;
+	/**
+	 * Max email recipients that will be notified by email after a form is submitted.
+	 * Consider making this configurable in the future.
+	 */
 	public static final int MAX_RECIPIENTS_PER_FORM = 10;
 
 	@Stored @Locked private String id;

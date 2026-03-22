@@ -20,51 +20,37 @@ package com.erudika.para.server.utils;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import org.slf4j.LoggerFactory;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 /**
  * HttpServletRequest wrapper.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public class BufferedRequestWrapper extends HttpServletRequestWrapper {
+public final class BufferedRequestWrapper extends HttpServletRequestWrapper {
 
-	private ByteArrayInputStream bais;
-	private ByteArrayOutputStream baos;
-	private BufferedServletInputStream bsis;
-	private byte[] buffer;
+	private final byte[] body;
 
-	/**
-	 * Default constructor.
-	 * @param req {@link HttpServletRequest}
-	 * @throws IOException error
-	 */
-	public BufferedRequestWrapper(HttpServletRequest req) throws IOException {
-		super(req);
-		if (req != null) {
-			InputStream is = req.getInputStream();
-			baos = new ByteArrayOutputStream();
-			byte[] buf = new byte[1024];
-			int length;
-			while ((length = is.read(buf)) > 0) {
-				baos.write(buf, 0, length);
-			}
-			buffer = baos.toByteArray();
-		}
+	public BufferedRequestWrapper(HttpServletRequest request) throws IOException {
+		super(request);
+		this.body = request.getInputStream().readAllBytes();
 	}
 
 	@Override
 	public ServletInputStream getInputStream() {
-		try {
-			bais = new ByteArrayInputStream(buffer);
-			bsis = new BufferedServletInputStream(bais);
-		} catch (Exception ex) {
-			LoggerFactory.getLogger(BufferedRequestWrapper.class).error(null, ex);
-		}
-		return bsis;
+		return new BufferedServletInputStream(new ByteArrayInputStream(body));
 	}
 
+	@Override
+	public BufferedReader getReader() throws IOException {
+		String enc = getCharacterEncoding() != null ? getCharacterEncoding() : StandardCharsets.UTF_8.name();
+		return new BufferedReader(new InputStreamReader(getInputStream(), enc));
+	}
+
+	public byte[] getCachedBody() {
+		return body.clone();
+	}
 }

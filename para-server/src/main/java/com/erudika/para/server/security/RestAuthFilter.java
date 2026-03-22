@@ -79,7 +79,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 		// We must wrap the request in order to read the InputStream twice:
 		// - first read - used to calculate the signature
 		// - second read - used as request payload
-		BufferedRequestWrapper request = new BufferedRequestWrapper((HttpServletRequest) req);
+		HttpServletRequest request = (HttpServletRequest) req;
 		HttpServletResponse response = (HttpServletResponse) res;
 		boolean proceed = true;
 		try {
@@ -93,6 +93,7 @@ public class RestAuthFilter extends GenericFilterBean implements InitializingBea
 			} else if (!isApp && RestRequestMatcher.INSTANCE.matches(request)) {
 				proceed = userAuthRequestHandler((HttpServletRequest) req, response);
 			} else if (isApp && RestRequestMatcher.INSTANCE_STRICT.matches(request)) {
+				request = new BufferedRequestWrapper(request);
 				proceed = appAuthRequestHandler(appid, request, response);
 			}
 		} catch (Exception e) {

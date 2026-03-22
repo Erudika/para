@@ -62,8 +62,8 @@ public final class HttpUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(HttpUtils.class);
 	private static CloseableHttpClient httpclient;
-	private static final RateLimiter emailRateLimiterStrict = Para.createRateLimiter(10, 100);
-	private static final RateLimiter emailRateLimiterLax = Para.createRateLimiter(100, 5000);
+	private static final RateLimiter EMAIL_LIMITER_STRICT = Para.createRateLimiter(10, 100);
+	private static final RateLimiter EMAIL_LIMITER_LAX = Para.createRateLimiter(100, 5000);
 
 	/**
 	 * Default private constructor.
@@ -250,14 +250,12 @@ public final class HttpUtils {
 			return false;
 		}
 		String url;
-		switch (captchaParamKey) {
-			case "g-recaptcha-response" -> url = "https://www.google.com/recaptcha/api/siteverify";
-			case "h-captcha-response" -> url = "https://api.hcaptcha.com/siteverify";
-			case "cf-turnstile-response" -> url = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
-			default -> {
-				return false;
-			}
-		}
+		url = switch (captchaParamKey) {
+			case "g-recaptcha-response" -> "https://www.google.com/recaptcha/api/siteverify";
+			case "h-captcha-response" -> "https://api.hcaptcha.com/siteverify";
+			case "cf-turnstile-response" -> "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+			default -> "";
+		};
 		List<NameValuePair> params = new ArrayList<>();
 		params.add(new BasicNameValuePair("secret", captchaSecretKey));
 		params.add(new BasicNameValuePair("response", captchaParamValue));
@@ -292,12 +290,12 @@ public final class HttpUtils {
 	 * @return OK if email was sent
 	 * @throws IOException exception
 	 */
-	public static HttpStatus sendEmail(HttpUtils.MultipartFormData formData, App app, String formId) throws IOException {
+	public static HttpStatus sendEmail(HttpUtils.MultipartForm formData, App app, String formId) throws IOException {
 		if (app == null) {
 			return org.springframework.http.HttpStatus.BAD_REQUEST;
 		}
 
-		if (!(app.isSharingTable() ? emailRateLimiterStrict : emailRateLimiterLax).
+		if (!(app.isSharingTable() ? EMAIL_LIMITER_STRICT : EMAIL_LIMITER_LAX).
 				isAllowed(App.identifier(app.getId()), app.getId())) {
 			logger.warn("Too many email send requests for app {}, form: {}", app.getId(), formId);
 			return HttpStatus.TOO_MANY_REQUESTS;
@@ -312,7 +310,7 @@ public final class HttpUtils {
 					formData.getFile().getContentType(),
 					formData.getFile().getOriginalFilename());
 		} else {
-			isSent = getEmailer().sendEmail(Arrays.asList(formData.getToEmails()), 
+			isSent = getEmailer().sendEmail(Arrays.asList(formData.getToEmails()),
 					formData.getSubject(),
 					formData.getMessage());
 		}
@@ -326,7 +324,7 @@ public final class HttpUtils {
 	/**
 	 * A class for handling the form data from form submissions.
 	 */
-	public static class MultipartFormData {
+	public static class MultipartForm {
 
 		@NotBlank
 		@Size(min = 0, max = 255)
