@@ -18,6 +18,7 @@
 package com.erudika.para.server.rest;
 
 import com.erudika.para.core.App;
+import com.erudika.para.core.Form;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.User;
@@ -34,6 +35,7 @@ import static com.erudika.para.core.utils.Para.getVersion;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.core.validation.Constraint;
+import com.erudika.para.core.validation.ValidationUtils;
 import com.erudika.para.server.ParaServer;
 import static com.erudika.para.server.rest.RestUtils.getBatchCreateResponse;
 import static com.erudika.para.server.rest.RestUtils.getBatchDeleteResponse;
@@ -51,6 +53,7 @@ import static com.erudika.para.server.rest.RestUtils.queryParams;
 import com.erudika.para.server.security.SecurityUtils;
 import static com.erudika.para.server.security.SecurityUtils.getPrincipalApp;
 import com.erudika.para.server.utils.HealthUtils;
+import com.erudika.para.server.utils.HttpUtils;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MapperFeature;
@@ -60,9 +63,12 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -88,7 +94,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -782,6 +790,64 @@ public final class Api1 {
 			logger.error("Failed to import " + filename, e);
 			return getStatusResponse(HttpStatus.BAD_REQUEST, "Import failed - " + e.getMessage());
 		}
+	}
+
+	@PostMapping(value = "/_emails", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<?> emails(HttpUtils.MultipartFormData formData,
+			HttpServletRequest req, HttpServletResponse res) throws IOException {
+		return emailsHandler(getPrincipalApp(), null, formData, req, res);
+	}
+
+	// Public (unauthenticated) resource
+	@PostMapping(value = "/_forms/{appid}/{formid}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<?> emails(@Valid HttpUtils.MultipartFormData formData, BindingResult errors,
+			@PathVariable String appid, @PathVariable String formid,
+			HttpServletRequest req, HttpServletResponse res) throws IOException {
+		return emailsHandler(getDAO().read(App.id(appid)), formid, formData, req, res);
+	}
+
+	public ResponseEntity<?> emailsHandler(App app, String formId, HttpUtils.MultipartFormData formData,
+			HttpServletRequest req, HttpServletResponse res) throws IOException {
+		if (app == null && StringUtils.isBlank(formId)) {
+			return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Invalid request.")).build();
+		}
+
+		String[] errors = ValidationUtils.validateObject(formData);
+		if (errors.length > 0) {
+			return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
+					"Invalid form data: " + String.join(", ", errors))).build();
+		}
+
+		if (StringUtils.isBlank(formId)) {
+			// scenario 1: authenticated email sending
+			return ResponseEntity.status(HttpUtils.sendEmail(formData, app, null)).build();
+		} else if (!StringUtils.isBlank(formId)) {
+			// scenario 2: unauthenticated email sending via HTML forms
+			if (app != null) {
+				Form form = getDAO().read(app.getAppIdentifier(), formId);
+				if (form != null) {
+					HttpStatus status;
+					String redirectTo = form.getRedirectTo();
+					formData.setToEmails(form.getNotifyEmails()); // form settings take precedence
+
+					if (HttpUtils.isValidCaptchaResponse(formData.getCaptchaParamKey(),
+							formData.getCaptchaParamValue(), form.getCaptchaSecretKey())) {
+						status = HttpUtils.sendEmail(formData, app, formId);
+					} else {
+						status = HttpStatus.BAD_REQUEST;
+						logger.warn("Email not sent via public API request for app {} "
+								+ "because of invalid CAPTCHA response.", formData.getAppid());
+					}
+					if (Utils.isValidURL(redirectTo)) {
+						return ResponseEntity.status(status.value()).location(URI.create(redirectTo)).build();
+					} else {
+						return ResponseEntity.status(status.value()).build();
+					}
+				}
+			}
+			return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Form not found.")).build();
+		}
+		return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Invalid request.")).build();
 	}
 
 	@GetMapping("/{type}/{id}/links/{type2}/{id2}")

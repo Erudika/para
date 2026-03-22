@@ -40,13 +40,6 @@ import static com.erudika.para.core.validation.Constraint.required;
 import static com.erudika.para.core.validation.Constraint.size;
 import static com.erudika.para.core.validation.Constraint.truthy;
 import static com.erudika.para.core.validation.Constraint.url;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -59,6 +52,13 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -116,13 +116,13 @@ public final class ValidationUtils {
 	 * @param content an object to be validated
 	 * @return a list of error messages or empty if object is valid
 	 */
-	public static String[] validateObject(ParaObject content) {
+	public static <T> String[] validateObject(T content) {
 		if (content == null) {
 			return new String[]{"Object cannot be null."};
 		}
 		LinkedList<String> list = new LinkedList<>();
 		try {
-			for (ConstraintViolation<ParaObject> constraintViolation : getValidator().validate(content)) {
+			for (ConstraintViolation<T> constraintViolation : getValidator().validate(content)) {
 				String prop = "'".concat(constraintViolation.getPropertyPath().toString()).concat("'");
 				list.add(prop.concat(" ").concat(constraintViolation.getMessage()));
 			}

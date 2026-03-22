@@ -19,6 +19,7 @@ package com.erudika.para.core.utils;
 
 import com.erudika.para.core.Address;
 import com.erudika.para.core.App;
+import com.erudika.para.core.Form;
 import com.erudika.para.core.Linker;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
@@ -87,6 +88,7 @@ public final class ParaObjectUtils {
 		CORE_PARA_CLASSES.put(User.class.getSimpleName().toLowerCase(), User.class);
 		CORE_PARA_CLASSES.put(Vote.class.getSimpleName().toLowerCase(), Vote.class);
 		CORE_PARA_CLASSES.put(Webhook.class.getSimpleName().toLowerCase(), Webhook.class);
+		CORE_PARA_CLASSES.put(Form.class.getSimpleName().toLowerCase(), Form.class);
 	}
 
 	private ParaObjectUtils() { }
