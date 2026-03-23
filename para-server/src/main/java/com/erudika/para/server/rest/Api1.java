@@ -67,7 +67,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -95,7 +94,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -105,6 +103,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * This is the main REST API configuration class which defines all endpoints for all resources and the way API request
@@ -792,14 +791,18 @@ public final class Api1 {
 	}
 
 	@PostMapping("/_emails")
-	public ResponseEntity<?> emails(HttpUtils.MultipartForm formData,
-			HttpServletRequest req, HttpServletResponse res) throws IOException {
-		return emailsHandler(getPrincipalApp(), null, formData, req, res);
+	public ResponseEntity<?> emails(HttpServletRequest req, HttpServletResponse res) throws IOException {
+		HttpUtils.MultipartForm formData = HttpUtils.MultipartForm.fromJson(req.getInputStream());
+		if (formData != null) {
+//			HttpUtils.MultipartForm formData = (HttpUtils.MultipartForm) entity.getBody();
+			return emailsHandler(getPrincipalApp(), null, formData, req, res);
+		}
+		return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Invalid form data.")).build();
 	}
 
 	// Public (unauthenticated) resource
 	@PostMapping(value = "/_forms/{appid}/{formid}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<?> emails(HttpUtils.MultipartForm formData, BindingResult errors,
+	public ResponseEntity<?> emails(HttpUtils.MultipartForm formData,
 			@PathVariable String appid, @PathVariable String formid,
 			HttpServletRequest req, HttpServletResponse res) throws IOException {
 		return emailsHandler(getDAO().read(App.id(appid)), formid, formData, req, res);
@@ -807,46 +810,75 @@ public final class Api1 {
 
 	public ResponseEntity<?> emailsHandler(App app, String formId, HttpUtils.MultipartForm formData,
 			HttpServletRequest req, HttpServletResponse res) throws IOException {
-		if (app == null && StringUtils.isBlank(formId)) {
-			return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Invalid request.")).build();
-		}
+		String redirectTo = null;
+		HttpStatus status;
+		String responseMsg;
 
 		String[] errors = ValidationUtils.validateObject(formData);
-		if (errors.length > 0) {
-			return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
-					"Invalid form data: " + String.join(", ", errors))).build();
-		}
-
-		if (StringUtils.isBlank(formId)) {
-			// scenario 1: authenticated email sending
-			return ResponseEntity.status(HttpUtils.sendEmail(formData, app, null)).build();
-		} else if (!StringUtils.isBlank(formId)) {
-			// scenario 2: unauthenticated email sending via HTML forms
-			if (app != null) {
+		if (app == null || errors.length > 0) {
+			status = HttpStatus.BAD_REQUEST;
+			responseMsg = "Invalid form data: " + String.join(", ", errors);
+			if (!StringUtils.isBlank(formId) && app != null) {
 				Form form = getDAO().read(app.getAppIdentifier(), formId);
 				if (form != null) {
-					HttpStatus status;
-					String redirectTo = form.getRedirectTo();
-					formData.setToEmails(form.getNotifyEmails()); // form settings take precedence
-
-					if (HttpUtils.isValidCaptchaResponse(formData.getCaptchaParamKey(),
-							formData.getCaptchaParamValue(), form.getCaptchaSecretKey())) {
-						status = HttpUtils.sendEmail(formData, app, formId);
-					} else {
-						status = HttpStatus.BAD_REQUEST;
-						logger.warn("Email not sent via public API request for app {} "
-								+ "because of invalid CAPTCHA response. form: {}", formData.getAppid(), formId);
-					}
-					if (Utils.isValidURL(redirectTo)) {
-						return ResponseEntity.status(status.value()).location(URI.create(redirectTo)).build();
-					} else {
-						return ResponseEntity.status(status.value()).build();
-					}
+					redirectTo = form.getRedirectTo();
 				}
 			}
-			return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Form not found.")).build();
+		} else {
+			if (StringUtils.isBlank(formId)) {
+				// scenario 1: authenticated email sending
+				status = HttpUtils.sendEmail(formData, app, null);
+				responseMsg = status.getReasonPhrase();
+			} else {
+				// scenario 2: unauthenticated email sending via HTML forms
+				Form form = getDAO().read(app.getAppIdentifier(), formId);
+				if (form != null) {
+					redirectTo = form.getRedirectTo();
+					// form settings take precedence
+					formData.setToEmails(form.getNotifyEmails());
+					formData.setPlaintextOnly(form.isPlaintextOnly());
+					formData.setMarkdownEnabled(form.isMarkdownEnabled());
+
+					if (HttpUtils.isValidCaptchaResponse(form.getCaptchaSecretKey(), req)) {
+						status = HttpUtils.sendEmail(formData, app, form);
+						responseMsg = status.getReasonPhrase();
+						if (status.is2xxSuccessful() && form.isMessageStorageEnabled()) {
+							Sysprop msg = new Sysprop();
+							msg.setType("formdata");
+							msg.setParentid(formId);
+							msg.setName(formData.getName());
+							msg.addProperty("email", formData.getEmail());
+							msg.addProperty("subject", formData.getSubject());
+							msg.addProperty("message", formData.getMessage());
+							getDAO().create(app.getAppIdentifier(), msg);
+						}
+					} else {
+						status = HttpStatus.FORBIDDEN;
+						responseMsg = "Form validation failed due to invalid CAPTCHA response.";
+						logger.warn("Email not sent via public API request for app '{}' "
+								+ "because of invalid CAPTCHA response. form: {}", app.getAppIdentifier(), formId);
+					}
+				} else {
+					redirectTo = req.getHeader(HttpHeaders.REFERER);
+					status = HttpStatus.NOT_FOUND;
+					responseMsg = "Form '" + formId + "' not found.";
+				}
+			}
 		}
-		return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Invalid request.")).build();
+		if (Utils.isValidURL(redirectTo)) {
+			UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(redirectTo);
+			if (!status.is2xxSuccessful()) {
+				uriBuilder.queryParam("status", status.value()).queryParam("message", Utils.urlEncode(responseMsg));
+			}
+			return ResponseEntity.
+					status(HttpStatus.FOUND).
+					location(uriBuilder.build().toUri()).
+					build();
+		} else if (status.is2xxSuccessful()) {
+			return ResponseEntity.status(status).build();
+		} else {
+			return ResponseEntity.of(ProblemDetail.forStatusAndDetail(status, responseMsg)).build();
+		}
 	}
 
 	@GetMapping("/{type}/{id}/links/{type2}/{id2}")

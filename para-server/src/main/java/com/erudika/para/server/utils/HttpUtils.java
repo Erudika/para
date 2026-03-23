@@ -19,20 +19,29 @@ package com.erudika.para.server.utils;
 
 import com.erudika.para.core.App;
 import com.erudika.para.core.Form;
-import com.erudika.para.core.annotations.Email;
 import com.erudika.para.core.utils.Para;
 import static com.erudika.para.core.utils.Para.getEmailer;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.RateLimiter;
+import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.security.SecurityUtils;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -62,8 +71,8 @@ public final class HttpUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(HttpUtils.class);
 	private static CloseableHttpClient httpclient;
-	private static final RateLimiter EMAIL_LIMITER_STRICT = Para.createRateLimiter(10, 100);
-	private static final RateLimiter EMAIL_LIMITER_LAX = Para.createRateLimiter(100, 5000);
+	private static final RateLimiter EMAIL_LIMITER_STRICT = Para.createRateLimiter(10, 100, 200);
+	private static final RateLimiter EMAIL_LIMITER_LAX = Para.createRateLimiter(100, 500, 1000);
 
 	/**
 	 * Default private constructor.
@@ -244,11 +253,37 @@ public final class HttpUtils {
 	 * @return true if validation was successful
 	 */
 	@SuppressWarnings("unchecked")
-	public static boolean isValidCaptchaResponse(String captchaParamKey, String captchaParamValue,
-			String captchaSecretKey) {
-		if (StringUtils.isBlank(captchaParamValue) || StringUtils.isBlank(captchaSecretKey)) {
+	public static boolean isValidCaptchaResponse(String captchaSecretKey, HttpServletRequest request) {
+		String gRecaptcha = request.getParameter("g-recaptcha-response");
+		String hCaptcha = request.getParameter("h-captcha-response");
+		String cfTurnstile = request.getParameter("cf-turnstile-response");
+		if (StringUtils.isBlank(gRecaptcha) && StringUtils.isBlank(hCaptcha) && StringUtils.isBlank(cfTurnstile)) {
 			return false;
 		}
+		String captchaParamKey = "";
+		String captchaParamValue = "";
+		if (!StringUtils.isBlank(gRecaptcha)) {
+			captchaParamKey = "g-recaptcha-response";
+			captchaParamValue = gRecaptcha;
+		} else if (!StringUtils.isBlank(hCaptcha)) {
+			captchaParamKey = "h-captcha-response";
+			captchaParamValue = hCaptcha;
+		} else if (!StringUtils.isBlank(cfTurnstile)) {
+			captchaParamKey = "cf-turnstile-response";
+			captchaParamValue = cfTurnstile;
+		}
+		return isValidCaptchaResponse(captchaParamKey, captchaParamValue, captchaSecretKey);
+	}
+
+	/**
+	 * Captcha validation method for reCAPTCHA v3, Turnstile and hCaptcha.
+	 * @param captchaParamKey param key, i.e. g_captcha_response
+	 * @param captchaParamValue param value (response)
+	 * @param captchaSecretKey serverside secret key
+	 * @return true if validation was successful
+	 */
+	@SuppressWarnings("unchecked")
+	public static boolean isValidCaptchaResponse(String captchaParamKey, String captchaParamValue, String captchaSecretKey) {
 		String url;
 		url = switch (captchaParamKey) {
 			case "g-recaptcha-response" -> "https://www.google.com/recaptcha/api/siteverify";
@@ -256,6 +291,9 @@ public final class HttpUtils {
 			case "cf-turnstile-response" -> "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 			default -> "";
 		};
+		if (StringUtils.isBlank(url)) {
+			return false;
+		}
 		List<NameValuePair> params = new ArrayList<>();
 		params.add(new BasicNameValuePair("secret", captchaSecretKey));
 		params.add(new BasicNameValuePair("response", captchaParamValue));
@@ -290,29 +328,42 @@ public final class HttpUtils {
 	 * @return OK if email was sent
 	 * @throws IOException exception
 	 */
-	public static HttpStatus sendEmail(HttpUtils.MultipartForm formData, App app, String formId) throws IOException {
+	public static HttpStatus sendEmail(HttpUtils.MultipartForm formData, App app, Form form) throws IOException {
 		if (app == null) {
 			return org.springframework.http.HttpStatus.BAD_REQUEST;
 		}
 
+		String formId = (form != null) ? form.getId() : "";
+		String subject;
+		String body;
+		boolean isSent;
+
 		if (!(app.isSharingTable() ? EMAIL_LIMITER_STRICT : EMAIL_LIMITER_LAX).
 				isAllowed(App.identifier(app.getId()), app.getId())) {
-			logger.warn("Too many email send requests for app {}, form: {}", app.getId(), formId);
+			logger.warn("Too many email send requests for app {}, form: {}",
+					app.getId(), formId);
 			return HttpStatus.TOO_MANY_REQUESTS;
 		}
 
-		boolean isSent;
+		if (form != null) {
+			subject = form.getName() + ": " + formData.getSubject();
+			body = form.isPlaintextOnly()
+					? Utils.stripHtml(formData.getMessage())
+					: (form.isMarkdownEnabled() ? Utils.markdownToHtml(formData.getMessage()) : formData.getMessage());
+		} else {
+			subject = formData.getSubject();
+			body = formData.isPlaintextOnly()
+					? Utils.stripHtml(formData.getMessage())
+					: (formData.isMarkdownEnabled() ? Utils.markdownToHtml(formData.getMessage()) : formData.getMessage());
+		}
+
 		if (formData.getFile() != null) {
-			isSent = getEmailer().sendEmail(Arrays.asList(formData.getToEmails()),
-					formData.getSubject(),
-					formData.getMessage(),
+			isSent = getEmailer().sendEmail(Arrays.asList(formData.getToEmails()), subject, body,
 					formData.getFile().getInputStream(),
 					formData.getFile().getContentType(),
 					formData.getFile().getOriginalFilename());
 		} else {
-			isSent = getEmailer().sendEmail(Arrays.asList(formData.getToEmails()),
-					formData.getSubject(),
-					formData.getMessage());
+			isSent = getEmailer().sendEmail(Arrays.asList(formData.getToEmails()), subject, body);
 		}
 		if (!isSent) {
 			logger.warn("Email not sent via API request for app {}, form: {}", app.getId(), formId);
@@ -330,10 +381,7 @@ public final class HttpUtils {
 		@Size(min = 0, max = 255)
 		private String name;
 
-		@NotBlank
-		private String appid;
-
-		@Email
+		@Size(min = 0, max = 255)
 		private String email;
 
 		private String[] toEmails;
@@ -344,11 +392,15 @@ public final class HttpUtils {
 		@Size(min = 0, max = 255)
 		private String subject;
 
-		@Size(min = 0, max = 255)
-		private String captchaParamKey;
-		private String captchaParamValue;
+		private boolean plaintextOnly;
+		private boolean markdownEnabled;
 
 		private MultipartFile file;
+
+		public MultipartForm() {
+			this.plaintextOnly = true;
+			this.markdownEnabled = false;
+		}
 
 		public String getName() {
 			return name;
@@ -356,14 +408,6 @@ public final class HttpUtils {
 
 		public void setName(String name) {
 			this.name = name;
-		}
-
-		public String getAppid() {
-			return appid;
-		}
-
-		public void setAppid(String appid) {
-			this.appid = appid;
 		}
 
 		public String getEmail() {
@@ -398,7 +442,7 @@ public final class HttpUtils {
 
 		public String getSubject() {
 			if (StringUtils.isBlank(subject)) {
-				subject = "New email from Para [" + appid + "]";
+				subject = "New message from " + name + (StringUtils.isBlank(email) ? "" : " <" + email + ">");
 			}
 			return subject;
 		}
@@ -407,20 +451,20 @@ public final class HttpUtils {
 			this.subject = subject;
 		}
 
-		public String getCaptchaParamKey() {
-			return captchaParamKey;
+		public boolean isPlaintextOnly() {
+			return plaintextOnly;
 		}
 
-		public void setCaptchaParamKey(String captchaParamKey) {
-			this.captchaParamKey = captchaParamKey;
+		public void setPlaintextOnly(boolean plaintextOnly) {
+			this.plaintextOnly = plaintextOnly;
 		}
 
-		public String getCaptchaParamValue() {
-			return captchaParamValue;
+		public boolean isMarkdownEnabled() {
+			return plaintextOnly ? false : markdownEnabled;
 		}
 
-		public void setCaptchaParamValue(String captchaParamValue) {
-			this.captchaParamValue = captchaParamValue;
+		public void setMarkdownEnabled(boolean markdownEnabled) {
+			this.markdownEnabled = markdownEnabled;
 		}
 
 		public MultipartFile getFile() {
@@ -429,6 +473,66 @@ public final class HttpUtils {
 
 		public void setFile(MultipartFile file) {
 			this.file = file;
+		}
+
+		abstract class MultipartFormMixin {
+			@JsonDeserialize(using = MultipartFileDeserializer.class)
+			abstract MultipartFile getFile();
+		}
+
+		static class MultipartFileDeserializer extends JsonDeserializer<MultipartFile> {
+
+			public MultipartFileDeserializer() {
+			}
+
+			@Override
+			public MultipartFile deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+				String n = p.currentName();
+				String f = p.getValueAsString();
+				String filename = Utils.getNewId();
+				String contentType = StringUtils.substringBetween(f, "data:", ";");
+				String base64 = StringUtils.substringAfter(f, ";base64,");
+				byte[] content = Base64.getDecoder().decode(base64);
+
+				return new MultipartFile() {
+					public String getName() {
+						return n;
+					}
+					public String getOriginalFilename() {
+						return filename;
+					}
+					public String getContentType() {
+						return contentType;
+					}
+					public boolean isEmpty() {
+						return content.length == 0;
+					}
+					public long getSize() {
+						return content.length;
+					}
+					public byte[] getBytes() throws IOException {
+						return content;
+					}
+					public InputStream getInputStream() throws IOException {
+						return new ByteArrayInputStream(content);
+					}
+					public void transferTo(File dest) throws IOException, IllegalStateException {
+						throw new UnsupportedOperationException("Not supported yet.");
+					}
+				};
+			}
+		}
+
+		public static MultipartForm fromJson(InputStream json) {
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.addMixIn(MultipartForm.class, MultipartFormMixin.class);
+			try {
+				MultipartForm formData = mapper.readValue(json, MultipartForm.class);
+				return formData;
+			} catch (Exception e) {
+				logger.error("Failed to deserialize MultipartForm: {}", e.getMessage());
+			}
+			return null;
 		}
 
 	}

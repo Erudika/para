@@ -29,6 +29,7 @@ import jakarta.validation.constraints.NotEmpty;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.validator.constraints.URL;
 
 /**
@@ -60,8 +61,9 @@ public class Form implements ParaObject {
 
 	@Stored @NotBlank private String captchaSecretKey;
 	@Stored @NotEmpty private String[] notifyEmails;
-	@Stored private boolean bcc;
-	@Stored private boolean plaintext;
+	@Stored private boolean messageStorageEnabled;
+	@Stored private boolean plaintextOnly;
+	@Stored private boolean markdownEnabled;
 	@Stored @URL private String redirectTo;
 
 	/**
@@ -78,7 +80,9 @@ public class Form implements ParaObject {
 	 */
 	public Form(String id) {
 		setId(id);
-		setName(getName());
+		this.plaintextOnly = true;
+		this.markdownEnabled = false;
+		this.messageStorageEnabled = false;
 	}
 
 	/**
@@ -128,35 +132,51 @@ public class Form implements ParaObject {
 	}
 
 	/**
-	 * Should we BCC emails?.
-	 * @return true if bcc
+	 * Should we keep messages in DB?.
+	 * @return true if messages are kept in DB
 	 */
-	public boolean isBcc() {
-		return bcc;
+	public boolean isMessageStorageEnabled() {
+		return messageStorageEnabled;
 	}
 
 	/**
-	 * Should we BCC emails?.
-	 * @param bcc true of false
+	 * Should we keep messages in DB?.
+	 * @param messageStorageEnabled true of false
 	 */
-	public void setBcc(boolean bcc) {
-		this.bcc = bcc;
+	public void setMessageStorageEnabled(boolean messageStorageEnabled) {
+		this.messageStorageEnabled = messageStorageEnabled;
 	}
 
 	/**
 	 * Is HTML allowed?.
 	 * @return false if plaintext only
 	 */
-	public boolean isPlaintext() {
-		return plaintext;
+	public boolean isPlaintextOnly() {
+		return plaintextOnly;
 	}
 
 	/**
 	 * Is HTML allowed?.
-	 * @param plaintext plaintext
+	 * @param plaintextOnly plaintext
 	 */
-	public void setPlaintext(boolean plaintext) {
-		this.plaintext = plaintext;
+	public void setPlaintextOnly(boolean plaintextOnly) {
+		this.plaintextOnly = plaintextOnly;
+	}
+
+	/**
+	 * Is Markdown in message body enabled?.
+	 * @return true if enabled
+	 */
+	public boolean isMarkdownEnabled() {
+		return plaintextOnly ? false : markdownEnabled;
+	}
+
+	/**
+	 * Is Markdown in message body enabled?.
+	 * @param markdownEnabled true if enabled
+	 */
+	public void setMarkdownEnabled(boolean markdownEnabled) {
+		this.markdownEnabled = markdownEnabled;
 	}
 
 	/**
@@ -285,7 +305,10 @@ public class Form implements ParaObject {
 
 	@Override
 	public final String getName() {
-		return CoreUtils.getInstance().getName(name, id);
+		if (StringUtils.isBlank(name)) {
+			name = "Form #" + id;
+		}
+		return name;
 	}
 
 	@Override
