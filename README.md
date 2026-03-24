@@ -38,6 +38,7 @@ See how **Para** [compares to other open source backend frameworks](https://erud
 - Modular design powered by Google Guice and support for plugins
 - I18n utilities for translating language packs and working with currencies
 - Standalone executable JAR with embedded Jetty
+- HTML form handling with public endpoint accepting `multipart/form-data` requests
 - [Para Web Console](https://console.paraio.org) - admin user interface
 
 ### Architecture
@@ -333,8 +334,8 @@ The `Search` interface is implemented by:
 
 - **Lucene**: [para-search-lucene](https://github.com/erudika/para-search-lucene)
 - **Elasticsearch / OpenSearch**: [para-search-elasticsearch](https://github.com/erudika/para-search-elasticsearch)
-- **Elasticsearch v5.x**: [para-search-elasticsearch-v5](https://github.com/erudika/para-search-elasticsearch-v5)
-Compatible with ES 5.x only and missing some of the latest features like AWS Elasticsearch support.
+- ~Elasticsearch v5.x~: [para-search-elasticsearch-v5](https://github.com/erudika/para-search-elasticsearch-v5) `[DEPRECATED]`
+  Compatible with ES 5.x only and missing some of the latest features like AWS Elasticsearch support.
 
 ## Cache integrations
 
@@ -366,9 +367,9 @@ The `Emailer` interface is implemented by:
 
 ## Projects using Para
 
-- [Scoold](https://scoold.com) - an open source StackOverflow clone
+- [Scoold](https://scoold.com) - an open source Stack Overflow clone
 - [ParaIO.com](https://paraio.com) - managed Para hosting
-- [Erudika.com](https://erudika.com/blog) - the search bar on our blog uses Para
+- [Erudika.com](https://erudika.com/blog/) - the search bar and contact form on our website use Para
 - [Angular demo app](https://github.com/albogdano/angular2-para) - a sample Angular project
 - [React demo app](https://github.com/albogdano/react-para) - a sample React project
 
@@ -376,6 +377,11 @@ The `Emailer` interface is implemented by:
 
 - Para `2.0` - Java 25+ only, native image
 - Better admin UI
+
+## Support
+
+You can get support here by submitting an issue. Also you can head over to the Gitter chat room for help.
+[Paid/priority support is also available](https://erudika.com/support/).
 
 ## Getting help
 
