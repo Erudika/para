@@ -526,7 +526,7 @@ public final class ParaObjectUtils {
 		if (CORE_CLASSES.isEmpty()) {
 			try {
 				CORE_CLASSES.putAll(CORE_PARA_CLASSES);
-				if (!Para.getConfig().corePackageName().isEmpty()) {
+				if (!Para.getConfig().getConfigParam("core_package_name", "").isEmpty()) {
 					logger.warn("Using deprecated configuration 'core_package_name' - "
 							+ "declare all custom classes manually via Para.registerCoreClasses()");
 				}
