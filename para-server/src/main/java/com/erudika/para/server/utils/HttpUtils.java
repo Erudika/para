@@ -356,7 +356,7 @@ public final class HttpUtils {
 					: (formData.isMarkdownEnabled() ? Utils.markdownToHtml(formData.getMessage()) : formData.getMessage());
 		}
 
-		if (formData.getFile() != null) {
+		if (formData.getFile() != null && !StringUtils.isBlank(formData.getFile().getOriginalFilename())) {
 			isSent = getEmailer().sendEmail(Arrays.asList(formData.getToEmails()), subject, body,
 					formData.getFile().getInputStream(),
 					formData.getFile().getContentType(),
