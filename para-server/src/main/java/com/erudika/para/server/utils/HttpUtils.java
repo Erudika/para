@@ -247,8 +247,7 @@ public final class HttpUtils {
 
 	/**
 	 * Captcha validation method for reCAPTCHA v3, Turnstile and hCaptcha.
-	 * @param captchaParamKey param key, i.e. g_captcha_response
-	 * @param captchaParamValue param value (response)
+	 * @param request HTTP request
 	 * @param captchaSecretKey serverside secret key
 	 * @return true if validation was successful
 	 */
@@ -324,7 +323,7 @@ public final class HttpUtils {
 	 * Sends emails with rate limiting enabled.
 	 * @param formData form data
 	 * @param app app
-	 * @param formId form ID
+	 * @param form form object
 	 * @return OK if email was sent
 	 * @throws IOException exception
 	 */
@@ -482,8 +481,7 @@ public final class HttpUtils {
 
 		static class MultipartFileDeserializer extends JsonDeserializer<MultipartFile> {
 
-			public MultipartFileDeserializer() {
-			}
+			MultipartFileDeserializer() { }
 
 			@Override
 			public MultipartFile deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {

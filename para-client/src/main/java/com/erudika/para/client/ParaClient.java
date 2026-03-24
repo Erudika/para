@@ -335,6 +335,8 @@ public final class ParaClient implements Closeable {
 					logger.error("{} - {}", error.get("code"), e.getMessage());
 					if (throwExceptionOnHTTPError) {
 						throw e;
+					} else if (returnType == null) {
+						return (T) error;
 					}
 				} else {
 					logger.error("{} - {}", statusCode, reason);
@@ -1646,14 +1648,13 @@ public final class ParaClient implements Closeable {
 				logger.error("Failed to encode file: ", ex.getMessage());
 			}
 		}
-		Map<String, Object> resp = invokePost("_emails", data, Map.class);
-		if (resp != null && resp.containsKey("status")) {
-			if (resp.containsKey("detail")) {
-				logger.warn(resp.get("status") + " - " + (String) resp.get("detail"));
-			}
-			return (int) resp.get("status") == 200;
+		Map<String, Object> resp = invokePost("_emails", data, null);
+		if (resp != null && resp.containsKey("message") && (int) resp.get("code") != 200) {
+			logger.warn((String) resp.get("message"));
+			System.out.println(">>>>>>>>> " + resp);
+			return false;
 		}
-		return false;
+		return true;
 	}
 
 	/////////////////////////////////////////////

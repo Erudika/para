@@ -92,7 +92,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -797,7 +796,7 @@ public final class Api1 {
 //			HttpUtils.MultipartForm formData = (HttpUtils.MultipartForm) entity.getBody();
 			return emailsHandler(getPrincipalApp(), null, formData, req, res);
 		}
-		return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Invalid form data.")).build();
+		return getStatusResponse(HttpStatus.BAD_REQUEST, "Invalid form data.");
 	}
 
 	// Public (unauthenticated) resource
@@ -882,7 +881,7 @@ public final class Api1 {
 		} else if (status.is2xxSuccessful()) {
 			return ResponseEntity.status(status).build();
 		} else {
-			return ResponseEntity.of(ProblemDetail.forStatusAndDetail(status, responseMsg)).build();
+			return getStatusResponse(status, responseMsg);
 		}
 	}
 

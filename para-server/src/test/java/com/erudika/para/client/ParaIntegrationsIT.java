@@ -1112,5 +1112,16 @@ class ParaIntegrationsIT {
 			pclient.delete(app);
 			assertNull(pclient.read(App.id(appId)));
 		}
+
+		@Test
+		public void testSendEmail() {
+			String email = "test2@user.com";
+			String emailFail = email.replace("@", "_");
+			List<String> toEmails = List.of(email);
+			assertFalse(pc.sendEmail(toEmails, "subject", emailFail, "Gordon", "message"));
+			assertFalse(pc.sendEmail(List.of(emailFail), null, email, "Gordon", "message"));
+			assertFalse(pc.sendEmail(List.of(email), null, email, null, null));
+			assertTrue(pc.sendEmail(List.of(email), null, null, "Gordon F.", "message:OK"));
+		}
 	}
 }
