@@ -54,6 +54,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -273,5 +274,18 @@ public final class ValidationUtils {
 					Collections.singletonMap("max", Constraint.max(User.MAX_PASSWORD_LENGTH).getPayload()));
 		}
 		return Collections.unmodifiableMap(CORE_CONSTRAINTS);
+	}
+
+	public static String[] validateEmails(String... emails) {
+		if (emails == null || emails.length == 0) {
+			return new String[0];
+		}
+		List<String> errors = new LinkedList<>();
+		Arrays.stream(emails).forEach(email -> {
+			if (!StringUtils.isBlank(email) && !Utils.isValidEmail(email)) {
+				errors.add("Invalid email '" + email + "'.");
+			}
+		});
+		return errors.toArray(String[]::new);
 	}
 }

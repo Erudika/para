@@ -489,6 +489,9 @@ public final class HttpUtils {
 			public MultipartFile deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
 				String n = p.currentName();
 				String f = p.getValueAsString();
+				if (f.indexOf(";base64,") > 255) {
+					return null;
+				}
 				String filename = Utils.getNewId();
 				String contentType = StringUtils.substringBetween(f, "data:", ";");
 				String base64 = StringUtils.substringAfter(f, ";base64,");

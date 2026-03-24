@@ -43,6 +43,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -1597,6 +1598,62 @@ public final class ParaClient implements Closeable {
 		params.put("destinationIndex", getQueryParameters(destinationIndex));
 		return invokeSignedRequest(accessKey, key(true), POST.toString(),
 				getEndpoint(), getFullPath("_reindex"), null, params, null, Map.class);
+	}
+
+	/**
+	 * Endpoint for sending transactional emails.
+	 * @param toEmails list of email recipients
+	 * @param subject subject
+	 * @param fromEmail from email address
+	 * @param senderName sender name
+	 * @param message message body
+	 * @return true if email was sent
+	 */
+	public boolean sendEmail(List<String> toEmails, String subject, String fromEmail,
+			String senderName, String message) {
+		return sendEmail(toEmails, subject, fromEmail, senderName, message, true, false, null, null);
+	}
+
+	/**
+	 * Endpoint for sending transactional emails.
+	 * @param toEmails list of email recipients
+	 * @param subject subject
+	 * @param fromEmail from email address
+	 * @param senderName sender name
+	 * @param message message body
+	 * @param plaintextOnly true if plain text
+	 * @param markdownEnabled true if Markdown is enabled
+	 * @param file file input stream
+	 * @param fileContentType file MIME type
+	 * @return true if email was sent
+	 */
+	public boolean sendEmail(List<String> toEmails, String subject, String fromEmail,
+			String senderName, String message, boolean plaintextOnly, boolean markdownEnabled,
+			InputStream file, String fileContentType) {
+		Map<String, Object> data = new HashMap<>();
+		data.put("name", senderName);
+		data.put("email", fromEmail);
+		data.put("toEmails", toEmails);
+		data.put("subject", subject);
+		data.put("message", message);
+		data.put("plaintextOnly", plaintextOnly);
+		data.put("markdownEnabled", markdownEnabled);
+		if (file != null && fileContentType != null) {
+			try {
+				String base64 = Base64.getEncoder().encodeToString(file.readAllBytes());
+				data.put("file", "data:" + fileContentType + ";base64," + base64);
+			} catch (IOException ex) {
+				logger.error("Failed to encode file: ", ex.getMessage());
+			}
+		}
+		Map<String, Object> resp = invokePost("_emails", data, Map.class);
+		if (resp != null && resp.containsKey("status")) {
+			if (resp.containsKey("detail")) {
+				logger.warn(resp.get("status") + " - " + (String) resp.get("detail"));
+			}
+			return (int) resp.get("status") == 200;
+		}
+		return false;
 	}
 
 	/////////////////////////////////////////////

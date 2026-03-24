@@ -814,7 +814,12 @@ public final class Api1 {
 		HttpStatus status;
 		String responseMsg;
 
-		String[] errors = ValidationUtils.validateObject(formData);
+		List<String> err = new LinkedList<>();
+		err.addAll(List.of(ValidationUtils.validateObject(formData)));
+		err.addAll(List.of(ValidationUtils.validateEmails(formData.getToEmails())));
+		err.addAll(List.of(ValidationUtils.validateEmails(formData.getEmail())));
+		String[] errors = err.toArray(String[]::new);
+
 		if (app == null || errors.length > 0) {
 			status = HttpStatus.BAD_REQUEST;
 			responseMsg = "Invalid form data: " + String.join(", ", errors);
