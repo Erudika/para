@@ -55,6 +55,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.commons.collections.bidimap.DualHashBidiMap;
 import org.apache.commons.lang3.StringUtils;
@@ -262,7 +263,7 @@ public class App implements ParaObject, Serializable {
 	@JsonIgnore
 	public Map<String, Object> getSettings() {
 		if (settings == null) {
-			settings = new LinkedHashMap<>();
+			settings = new ConcurrentHashMap<>();
 		}
 		return settings;
 	}
@@ -281,7 +282,7 @@ public class App implements ParaObject, Serializable {
 	 */
 	public Map<String, Map<String, Map<String, Map<String, ?>>>> getValidationConstraints() {
 		if (validationConstraints == null) {
-			validationConstraints = new LinkedHashMap<>();
+			validationConstraints = new ConcurrentHashMap<>();
 		}
 		try {
 			// hacky, but works! perform validation here, so that even if user supplied bad map data,
@@ -297,7 +298,7 @@ public class App implements ParaObject, Serializable {
 				return validationConstraints;
 			}
 		} catch (Exception e) {
-			validationConstraints = new LinkedHashMap<>();
+			validationConstraints = new ConcurrentHashMap<>();
 		}
 		return validationConstraints;
 	}
@@ -316,7 +317,7 @@ public class App implements ParaObject, Serializable {
 	 */
 	public Map<String, Map<String, List<String>>> getResourcePermissions() {
 		if (resourcePermissions == null) {
-			resourcePermissions = new LinkedHashMap<>();
+			resourcePermissions = new ConcurrentHashMap<>();
 		}
 		try {
 			// hacky, but works! perform validation here, so that even if user supplied bad map data,
@@ -329,7 +330,7 @@ public class App implements ParaObject, Serializable {
 				return resourcePermissions;
 			}
 		} catch (Exception e) {
-			resourcePermissions = new LinkedHashMap<>();
+			resourcePermissions = new ConcurrentHashMap<>();
 		}
 		return resourcePermissions;
 	}

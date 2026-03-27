@@ -994,7 +994,10 @@ public final class Api1 {
 			return null;
 		}
 		ParaObject pobj = ParaObjectUtils.toObject(app, type);
-		pobj.setId(id);
-		return getDAO().read(app.getAppIdentifier(), pobj.getId());
+		if (pobj != null) {
+			pobj.setId(id);
+			return getDAO().read(app.getAppIdentifier(), pobj.getId());
+		}
+		return null;
 	}
 }
