@@ -33,6 +33,17 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SearchModule {
 
+	/**
+	 * No-args constructor.
+	 */
+	public SearchModule() {
+	}
+
+	/**
+	 * Returns the search implementation.
+	 * @param dao DAO
+	 * @return the search
+	 */
 	@Bean
 	public Search getSearch(DAO dao) { // wait for DAO to be loaded
 		Search search;

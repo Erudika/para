@@ -82,6 +82,7 @@ public abstract class River implements Runnable {
 	}
 
 	/**
+	 * Returns a list of messages pulled from queue.
 	 * @return a list of messages pulled from queue
 	 */
 	public abstract List<String> pullMessages();

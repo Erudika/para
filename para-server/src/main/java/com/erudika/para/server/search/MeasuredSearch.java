@@ -41,6 +41,10 @@ public class MeasuredSearch implements Search {
 
 	private final Search search;
 
+	/**
+	 * Default constructor.
+	 * @param search the Search implementation to wrap
+	 */
 	public MeasuredSearch(Search search) {
 		this.search = Objects.requireNonNull(search, "Search implementation not provided.");
 	}

@@ -30,6 +30,9 @@ import java.util.Map;
  */
 public class MockSearch implements Search {
 
+	/**
+	 * No-args constructor.
+	 */
 	public MockSearch() {
 	}
 

@@ -99,6 +99,26 @@ public class ParaServer implements Ordered {
 		System.setProperty("para.landing_page_enabled", String.valueOf(Para.getConfig().landingPageEnabled()));
 		System.setProperty("para.api_enabled", String.valueOf(Para.getConfig().apiEnabled()));
 		System.setProperty("server.compression.enabled", String.valueOf(Para.getConfig().gzipEnabled()));
+
+		// MCP configuration
+		boolean isMcpEnabled = !Para.getConfig().mcpServerMode().equalsIgnoreCase("off");
+		boolean isMcpReadOnly = Para.getConfig().mcpServerMode().equalsIgnoreCase("r");
+		System.setProperty("spring.ai.mcp.server.enabled", String.valueOf(isMcpEnabled));
+		System.setProperty("spring.ai.mcp.server.name", "para-mcp-server");
+		System.setProperty("spring.ai.mcp.server.type", "SYNC");
+		System.setProperty("spring.ai.mcp.server.protocol", "STREAMABLE");
+		System.setProperty("spring.ai.mcp.server.streamable-http.mcp-endpoint", API_PATH + "/_mcp");
+		System.setProperty("spring.ai.mcp.server.streamable-http.disallow-delete", String.valueOf(isMcpReadOnly));
+		System.setProperty("spring.ai.mcp.server.capabilities.tool", "true");
+		System.setProperty("spring.ai.mcp.server.capabilities.resource", "true");
+		System.setProperty("spring.ai.mcp.server.capabilities.prompt", "false");
+		System.setProperty("spring.ai.mcp.server.capabilities.completion", "false");
+		System.setProperty("spring.ai.mcp.server.instructions",
+				"This server provides back-end services, basic CRUD endpoints for data management and full-text search. "
+				+ "Browse resources (para:///) to explore available context, documentation, and server health. "
+				+ "Use tools for specific operations like searching, creating, updating, or deleting objects. "
+				+ "IMPORTANT: When tools return errors requesting additional information from the user, you MUST ask the user "
+				+ "to provide that information. Never generate, guess, or infer values that should come from the user.");
 	}
 
 	/**

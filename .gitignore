@@ -21,3 +21,4 @@ nb-configuration.xml
 .idea
 .vscode
 *.pid
+para-server/src/main/java/com/erudika/para/server/mcp/*.md

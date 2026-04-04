@@ -347,6 +347,7 @@ public final class Utils {
 	}
 
 	/**
+	 * Compiles a Mustache template.
 	 * @see #compileMustache(java.util.Map, java.lang.String, boolean)
 	 * @param context a map of fields and values
 	 * @param template a Mustache template
@@ -641,6 +642,7 @@ public final class Utils {
 	}
 
 	/**
+	 * Returns a {@link Locale} instance from a locale string.
 	 * @param localeStr locale string
 	 * @return a {@link Locale} instance from a locale string.
 	 */

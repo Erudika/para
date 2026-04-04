@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * In-memory cache implementation.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class MockCache implements Cache {
@@ -37,6 +37,9 @@ public class MockCache implements Cache {
 	private static final Logger logger = LoggerFactory.getLogger(MockCache.class);
 	private Map<String, Map<String, Object>> maps = new ConcurrentHashMap<>();
 
+	/**
+	 * No-args constructor.
+	 */
 	public MockCache() {
 	}
 

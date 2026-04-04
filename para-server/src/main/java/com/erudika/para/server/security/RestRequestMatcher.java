@@ -121,6 +121,10 @@ public final class RestRequestMatcher implements RequestMatcher {
 		}
 	}
 
+	/**
+	 * Returns a list of custom protected paths.
+	 * @return a list of paths
+	 */
 	public static List<ProtectedPath> getCustomProtectedPaths() {
 		return Collections.unmodifiableList(PROTECTED_PATHS);
 	}

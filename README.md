@@ -39,6 +39,7 @@ See how **Para** [compares to other open source backend frameworks](https://erud
 - I18n utilities for translating language packs and working with currencies
 - Standalone executable JAR with embedded Jetty
 - HTML form handling with public endpoint accepting `multipart/form-data` requests
+- MCP server - allows AI agents to interact with your backend
 - [Para Web Console](https://console.paraio.org) - admin user interface
 
 ### Architecture

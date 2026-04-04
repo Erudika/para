@@ -126,6 +126,7 @@ public final class Para {
 	}
 
 	/**
+	 * Returns an instance of the core persistence class.
 	 * @return an instance of the core persistence class.
 	 * @see DAO
 	 */
@@ -134,6 +135,7 @@ public final class Para {
 	}
 
 	/**
+	 * Returns an instance of the core search class.
 	 * @return an instance of the core search class.
 	 * @see Search
 	 */
@@ -142,6 +144,7 @@ public final class Para {
 	}
 
 	/**
+	 * Returns an instance of the core cache class.
 	 * @return an instance of the core cache class.
 	 * @see Cache
 	 */
@@ -150,6 +153,7 @@ public final class Para {
 	}
 
 	/**
+	 * Returns an instance of the core queue class.
 	 * @return an instance of the core queue class.
 	 * @see Queue
 	 */
@@ -158,6 +162,7 @@ public final class Para {
 	}
 
 	/**
+	 * Returns an instance of the core FileStore class.
 	 * @return an instance of the core FileStore class.
 	 * @see FileStore
 	 */
@@ -166,6 +171,7 @@ public final class Para {
 	}
 
 	/**
+	 * Returns an instance of the core Emailer class.
 	 * @return an instance of the core Emailer class.
 	 * @see Emailer
 	 */
@@ -185,6 +191,7 @@ public final class Para {
 	}
 
 	/**
+	 * Returns a list of {@link InitializeListener}.
 	 * @return a list of {@link InitializeListener}
 	 */
 	public static Set<InitializeListener> getInitListeners() {
@@ -203,6 +210,7 @@ public final class Para {
 	}
 
 	/**
+	 * Returns a list of {@link DestroyListener}.
 	 * @return a list of {@link DestroyListener}
 	 */
 	public static Set<DestroyListener> getDestroyListeners() {
@@ -463,6 +471,7 @@ public final class Para {
 	}
 
 	/**
+	 * Returns the default Para CONF instance.
 	 * @return the default Para CONF instance.
 	 */
 	public static ParaConfig getConfig() {

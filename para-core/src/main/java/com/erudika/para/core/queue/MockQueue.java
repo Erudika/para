@@ -22,7 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * In-memory queue implementation.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class MockQueue implements Queue {
@@ -39,6 +39,7 @@ public class MockQueue implements Queue {
 	}
 
 	/**
+	 * Creates a new instance.
 	 * @param name name
 	 */
 	public MockQueue(String name) {

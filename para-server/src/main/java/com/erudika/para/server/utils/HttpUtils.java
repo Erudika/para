@@ -396,27 +396,50 @@ public final class HttpUtils {
 
 		private MultipartFile file;
 
+		/**
+		 * Default constructor.
+		 */
 		public MultipartForm() {
 			this.plaintextOnly = true;
 			this.markdownEnabled = false;
 		}
 
+		/**
+		 * Returns the name of the sender.
+		 * @return the name
+		 */
 		public String getName() {
 			return name;
 		}
 
+		/**
+		 * Sets the name of the sender.
+		 * @param name the name
+		 */
 		public void setName(String name) {
 			this.name = name;
 		}
 
+		/**
+		 * Returns the email of the sender.
+		 * @return the email
+		 */
 		public String getEmail() {
 			return email;
 		}
 
+		/**
+		 * Sets the email of the sender.
+		 * @param email the email
+		 */
 		public void setEmail(String email) {
 			this.email = email;
 		}
 
+		/**
+		 * Returns the list of recipient emails.
+		 * @return a list of emails
+		 */
 		public String[] getToEmails() {
 			if (toEmails == null) {
 				toEmails = new String[0];
@@ -427,18 +450,34 @@ public final class HttpUtils {
 			return toEmails;
 		}
 
+		/**
+		 * Sets the list of recipient emails.
+		 * @param toEmails a list of emails
+		 */
 		public void setToEmails(String[] toEmails) {
 			this.toEmails = toEmails;
 		}
 
+		/**
+		 * Returns the message body.
+		 * @return the message
+		 */
 		public String getMessage() {
 			return message;
 		}
 
+		/**
+		 * Sets the message body.
+		 * @param message the message
+		 */
 		public void setMessage(String message) {
 			this.message = message;
 		}
 
+		/**
+		 * Returns the message subject.
+		 * @return the subject
+		 */
 		public String getSubject() {
 			if (StringUtils.isBlank(subject)) {
 				subject = "New message from " + name + (StringUtils.isBlank(email) ? "" : " <" + email + ">");
@@ -446,30 +485,58 @@ public final class HttpUtils {
 			return subject;
 		}
 
+		/**
+		 * Sets the message subject.
+		 * @param subject the subject
+		 */
 		public void setSubject(String subject) {
 			this.subject = subject;
 		}
 
+		/**
+		 * Checks if the message is plaintext only.
+		 * @return true if plaintext
+		 */
 		public boolean isPlaintextOnly() {
 			return plaintextOnly;
 		}
 
+		/**
+		 * Sets the plaintext only flag.
+		 * @param plaintextOnly true if plaintext
+		 */
 		public void setPlaintextOnly(boolean plaintextOnly) {
 			this.plaintextOnly = plaintextOnly;
 		}
 
+		/**
+		 * Checks if markdown is enabled.
+		 * @return true if markdown is enabled
+		 */
 		public boolean isMarkdownEnabled() {
 			return plaintextOnly ? false : markdownEnabled;
 		}
 
+		/**
+		 * Sets the markdown enabled flag.
+		 * @param markdownEnabled true if markdown is enabled
+		 */
 		public void setMarkdownEnabled(boolean markdownEnabled) {
 			this.markdownEnabled = markdownEnabled;
 		}
 
+		/**
+		 * Returns the uploaded file.
+		 * @return the file
+		 */
 		public MultipartFile getFile() {
 			return file;
 		}
 
+		/**
+		 * Sets the uploaded file.
+		 * @param file the file
+		 */
 		public void setFile(MultipartFile file) {
 			this.file = file;
 		}
@@ -524,6 +591,11 @@ public final class HttpUtils {
 			}
 		}
 
+		/**
+		 * Deserializes a MultipartForm from JSON.
+		 * @param json the JSON input stream
+		 * @return a new instance or null
+		 */
 		public static MultipartForm fromJson(InputStream json) {
 			ObjectMapper mapper = new ObjectMapper();
 			mapper.addMixIn(MultipartForm.class, MultipartFormMixin.class);

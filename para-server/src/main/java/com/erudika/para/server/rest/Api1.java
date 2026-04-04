@@ -117,6 +117,16 @@ public final class Api1 {
 
 	private static final Logger logger = LoggerFactory.getLogger(Api1.class);
 
+	/**
+	 * No-args constructor.
+	 */
+	public Api1() {
+	}
+
+	/**
+	 * Returns the welcome message and version info.
+	 * @return a response containing info and version
+	 */
 	@GetMapping({"", "/"})
 	public ResponseEntity<?> intro() {
 		Map<String, String> info = new TreeMap<>();
@@ -128,21 +138,40 @@ public final class Api1 {
 		return ResponseEntity.ok(info);
 	}
 
+	/**
+	 * Initializes the root app.
+	 * @return a response
+	 */
 	@GetMapping("/_setup")
 	public ResponseEntity<?> setup() {
 		return setupInternal(null, null);
 	}
 
+	/**
+	 * Initializes a new app.
+	 * @param appid the app id
+	 * @param req the request
+	 * @return a response
+	 */
 	@GetMapping("/_setup/{appid}")
 	public ResponseEntity<?> setup(@PathVariable String appid, HttpServletRequest req) {
 		return setupInternal(appid, req);
 	}
 
+	/**
+	 * Generates a new set of API keys for the current app.
+	 * @return a response
+	 */
 	@PostMapping("/_newkeys")
 	public ResponseEntity<?> newKeys() {
 		return newKeysHandler(SecurityUtils.getAuthenticatedApp());
 	}
 
+	/**
+	 * Handles the generation of new API keys.
+	 * @param app the app
+	 * @return a response
+	 */
 	public ResponseEntity<?> newKeysHandler(App app) {
 		if (app != null) {
 			app.resetSecret();
@@ -154,11 +183,26 @@ public final class Api1 {
 		return getStatusResponse(HttpStatus.UNAUTHORIZED, "Not an app.");
 	}
 
-	@PostMapping("/{type}")
+	/**
+	 * Creates a new object of a given type.
+	 * @param type the object type
+	 * @param req the request
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
+	@PostMapping("/{type:[^_].*}")
 	public ResponseEntity<?> create(@PathVariable String type, HttpServletRequest req) throws IOException {
 		return createHandler(getPrincipalApp(), type, req);
 	}
 
+	/**
+	 * Handles the creation of a new object.
+	 * @param app the app
+	 * @param type the object type
+	 * @param req the request
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	public ResponseEntity<?> createHandler(App app, String type, HttpServletRequest req) throws IOException {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
@@ -167,11 +211,24 @@ public final class Api1 {
 		return getCreateResponse(app, resolvedType, req.getInputStream());
 	}
 
+	/**
+	 * Reads an object of a given type.
+	 * @param type the object type
+	 * @param id the object id
+	 * @return a response
+	 */
 	@GetMapping("/{type}/{id}")
 	public ResponseEntity<?> read(@PathVariable String type, @PathVariable String id) {
 		return readHandler(getPrincipalApp(), type, id);
 	}
 
+	/**
+	 * Handles the reading of an object.
+	 * @param app the app
+	 * @param type the object type
+	 * @param id the object id
+	 * @return a response
+	 */
 	public ResponseEntity<?> readHandler(App app, String type, String id) {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
@@ -183,12 +240,29 @@ public final class Api1 {
 		return getReadResponse(app, obj);
 	}
 
+	/**
+	 * Updates an object of a given type.
+	 * @param type the object type
+	 * @param id the object id
+	 * @param req the request
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	@PatchMapping("/{type}/{id}")
 	public ResponseEntity<?> update(@PathVariable String type, @PathVariable String id, HttpServletRequest req)
 			throws IOException {
 		return updateHandler(getPrincipalApp(), type, id, req);
 	}
 
+	/**
+	 * Handles the update of an object.
+	 * @param app the app
+	 * @param type the object type
+	 * @param id the object id
+	 * @param req the request
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	public ResponseEntity<?> updateHandler(App app, String type, String id, HttpServletRequest req)
 			throws IOException {
 		if (app == null) {
@@ -201,12 +275,29 @@ public final class Api1 {
 		return getUpdateResponse(app,  getDAO().read(appid, obj.getId()), req.getInputStream());
 	}
 
+	/**
+	 * Overwrites an object of a given type.
+	 * @param type the object type
+	 * @param id the object id
+	 * @param req the request
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	@PutMapping("/{type}/{id}")
 	public ResponseEntity<?> overwrite(@PathVariable String type, @PathVariable String id, HttpServletRequest req)
 			throws IOException {
 		return overwriteHandler(getPrincipalApp(), type, id, req);
 	}
 
+	/**
+	 * Handles the overwrite of an object.
+	 * @param app the app
+	 * @param type the object type
+	 * @param id the object id
+	 * @param req the request
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	public ResponseEntity<?> overwriteHandler(App app, String type, String id, HttpServletRequest req)
 			throws IOException {
 		if (app == null) {
@@ -216,11 +307,24 @@ public final class Api1 {
 		return getOverwriteResponse(app, id, resolvedType, req.getInputStream());
 	}
 
+	/**
+	 * Deletes an object of a given type.
+	 * @param type the object type
+	 * @param id the object id
+	 * @return a response
+	 */
 	@DeleteMapping("/{type}/{id}")
 	public ResponseEntity<?> delete(@PathVariable String type, @PathVariable String id) {
 		return deleteHandler(getPrincipalApp(), type, id);
 	}
 
+	/**
+	 * Handles the deletion of an object.
+	 * @param app the app
+	 * @param type the object type
+	 * @param id the object id
+	 * @return a response
+	 */
 	public ResponseEntity<?> deleteHandler(App app, String type, String id) {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
@@ -229,16 +333,35 @@ public final class Api1 {
 		return getDeleteResponse(app, obj);
 	}
 
+	/**
+	 * Batch creates objects.
+	 * @param req the request
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	@PostMapping("/_batch")
 	public ResponseEntity<?> batchCreate(HttpServletRequest req) throws IOException {
 		return batchCreateHandler(getPrincipalApp(), req);
 	}
 
+	/**
+	 * Batch creates or overwrites objects.
+	 * @param req the request
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	@PutMapping("/_batch")
 	public ResponseEntity<?> batchPut(HttpServletRequest req) throws IOException {
 		return batchCreateHandler(getPrincipalApp(), req);
 	}
 
+	/**
+	 * Handles batch creation of objects.
+	 * @param app the app
+	 * @param req the request
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	public ResponseEntity<?> batchCreateHandler(App app, HttpServletRequest req) throws IOException {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
@@ -246,11 +369,22 @@ public final class Api1 {
 		return getBatchCreateResponse(app, req.getInputStream());
 	}
 
+	/**
+	 * Batch reads objects.
+	 * @param req the request
+	 * @return a response
+	 */
 	@GetMapping("/_batch")
 	public ResponseEntity<?> batchRead(HttpServletRequest req) {
 		return batchReadHandler(getPrincipalApp(), req);
 	}
 
+	/**
+	 * Handles batch reading of objects.
+	 * @param app the app
+	 * @param req the request
+	 * @return a response
+	 */
 	public ResponseEntity<?> batchReadHandler(App app, HttpServletRequest req) {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
@@ -258,11 +392,24 @@ public final class Api1 {
 		return getBatchReadResponse(app, queryParams("ids", req));
 	}
 
+	/**
+	 * Batch updates objects.
+	 * @param req the request
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	@PatchMapping("_batch")
 	public ResponseEntity<?> batchUpdate(HttpServletRequest req) throws IOException {
 		return batchUpdateHandler(getPrincipalApp(), req);
 	}
 
+	/**
+	 * Handles batch update of objects.
+	 * @param app the app
+	 * @param req the request
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	@SuppressWarnings("unchecked")
 	public ResponseEntity<?> batchUpdateHandler(App app, HttpServletRequest req) throws IOException {
 		if (app == null) {
@@ -282,11 +429,22 @@ public final class Api1 {
 		return entityRes;
 	}
 
+	/**
+	 * Batch deletes objects.
+	 * @param req the request
+	 * @return a response
+	 */
 	@DeleteMapping("/_batch")
 	public ResponseEntity<?> batchDelete(HttpServletRequest req) {
 		return batchDeleteHandler(getPrincipalApp(), req);
 	}
 
+	/**
+	 * Handles batch deletion of objects.
+	 * @param app the app
+	 * @param req the request
+	 * @return a response
+	 */
 	public ResponseEntity<?> batchDeleteHandler(App app, HttpServletRequest req) {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
@@ -294,32 +452,70 @@ public final class Api1 {
 		return getBatchDeleteResponse(app, queryParams("ids", req));
 	}
 
+	/**
+	 * Searches for objects.
+	 * @param req the request
+	 * @return a response
+	 */
 	@GetMapping("/search")
 	public ResponseEntity<?> search(HttpServletRequest req) {
 		return searchHandler(getPrincipalApp(), null, null, req);
 	}
 
+	/**
+	 * Searches for objects using a specific query type.
+	 * @param querytype the query type
+	 * @param req the request
+	 * @return a response
+	 */
 	@GetMapping("/search/{querytype}")
 	public ResponseEntity<?> search(@PathVariable String querytype, HttpServletRequest req) {
 		return searchHandler(getPrincipalApp(), null, querytype, req);
 	}
 
+	/**
+	 * Searches for objects of a specific type.
+	 * @param type the object type
+	 * @param req the request
+	 * @return a response
+	 */
 	@GetMapping("/{type}")
 	public ResponseEntity<?> searchType(@PathVariable String type, HttpServletRequest req) {
 		return searchHandler(getPrincipalApp(), type, null, req);
 	}
 
+	/**
+	 * Searches for objects of a specific type (default search).
+	 * @param type the object type
+	 * @param req the request
+	 * @return a response
+	 */
 	@GetMapping("/{type}/search")
 	public ResponseEntity<?> searchTypeDefault(@PathVariable String type, HttpServletRequest req) {
 		return searchHandler(getPrincipalApp(), type, null, req);
 	}
 
+	/**
+	 * Searches for objects of a specific type using a specific query type.
+	 * @param type the object type
+	 * @param querytype the query type
+	 * @param req the request
+	 * @return a response
+	 */
 	@GetMapping("/{type}/search/{querytype}")
 	public ResponseEntity<?> searchType(@PathVariable String type, @PathVariable String querytype,
 			HttpServletRequest req) {
 		return searchHandler(getPrincipalApp(), type, querytype, req);
 	}
 
+	/**
+	 * Handles search requests.
+	 * @param app the app
+	 * @param typeParam the object type
+	 * @param querytype the query type
+	 * @param req the request
+	 * @return a response
+	 */
 	public ResponseEntity<?> searchHandler(App app, String typeParam, String querytype, HttpServletRequest req) {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
@@ -339,6 +535,12 @@ public final class Api1 {
 		return ResponseEntity.ok(result);
 	}
 
+	/**
+	 * Provides utility functions like ID generation and date formatting.
+	 * @param method the utility method
+	 * @param req the request
+	 * @return a response
+	 */
 	@GetMapping("/utils/{method}")
 	public ResponseEntity<?> utilsHandler(@PathVariable String method, HttpServletRequest req) {
 		method = StringUtils.isBlank(method) ? queryParam("method", req) : method;
@@ -373,11 +575,22 @@ public final class Api1 {
 		return getStatusResponse(HttpStatus.BAD_REQUEST, "Unknown method: " + ((method == null) ? "empty" : method));
 	}
 
+	/**
+	 * Lists all types for the current app.
+	 * @param req the request
+	 * @return a response
+	 */
 	@GetMapping("/_types")
 	public ResponseEntity<?> listTypes(HttpServletRequest req) {
 		return listTypesHandler(getPrincipalApp(), req);
 	}
 
+	/**
+	 * Handles the listing of types.
+	 * @param app the app
+	 * @param req the request
+	 * @return a response
+	 */
 	public ResponseEntity<?> listTypesHandler(App app, HttpServletRequest req) {
 		if (app != null) {
 			Map<String, String> types = ParaObjectUtils.getAllTypes(app);
@@ -391,6 +604,11 @@ public final class Api1 {
 		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 	}
 
+	/**
+	 * Returns the current authenticated user or app.
+	 * @param req the request
+	 * @return a response
+	 */
 	@GetMapping("/_me")
 	public ResponseEntity<?> me(HttpServletRequest req) {
 		User user = SecurityUtils.getAuthenticatedUser();
@@ -422,11 +640,22 @@ public final class Api1 {
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 	}
 
+	/**
+	 * Reads an object by its ID.
+	 * @param id the object id
+	 * @return a response
+	 */
 	@GetMapping("/_id/{id}")
 	public ResponseEntity<?> readId(@PathVariable String id) {
 		return readIdHandler(getPrincipalApp(), id);
 	}
 
+	/**
+	 * Handles reading an object by ID.
+	 * @param app the app
+	 * @param id the object id
+	 * @return a response
+	 */
 	public ResponseEntity<?> readIdHandler(App app, String id) {
 		if (app != null) {
 			return getReadResponse(app, getDAO().read(app.getAppIdentifier(), id));
@@ -434,6 +663,11 @@ public final class Api1 {
 		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 	}
 
+	/**
+	 * Returns the configuration documentation.
+	 * @param req the request
+	 * @return a response
+	 */
 	@GetMapping("/_config/options")
 	public ResponseEntity<?> configOptions(HttpServletRequest req) {
 		String format = queryParam("format", req);
@@ -451,16 +685,31 @@ public final class Api1 {
 						StringUtils.isBlank(groupby) || "category".equalsIgnoreCase(groupby)));
 	}
 
+	/**
+	 * Returns all validation constraints.
+	 * @return a response
+	 */
 	@GetMapping("/_constraints")
 	public ResponseEntity<?> getConstraints() {
 		return getConstraintsHandler(getPrincipalApp(), null);
 	}
 
+	/**
+	 * Returns validation constraints for a specific type.
+	 * @param type the object type
+	 * @return a response
+	 */
 	@GetMapping("/_constraints/{type}")
 	public ResponseEntity<?> getConstraints(@PathVariable String type) {
 		return getConstraintsHandler(getPrincipalApp(), type);
 	}
 
+	/**
+	 * Handles the retrieval of validation constraints.
+	 * @param app the app
+	 * @param type the object type
+	 * @return a response
+	 */
 	public ResponseEntity<?> getConstraintsHandler(App app, String type) {
 		if (app != null) {
 			if (type != null) {
@@ -471,12 +720,31 @@ public final class Api1 {
 		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 	}
 
+	/**
+	 * Adds a validation constraint.
+	 * @param type the object type
+	 * @param field the field name
+	 * @param cname the constraint name
+	 * @param req the request
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	@PutMapping("/_constraints/{type}/{field}/{cname}")
 	public ResponseEntity<?> addConstraint(@PathVariable String type, @PathVariable String field,
 			@PathVariable String cname, HttpServletRequest req) throws IOException {
 		return addConstraintHandler(getPrincipalApp(), type, field, cname, req);
 	}
 
+	/**
+	 * Handles the addition of a validation constraint.
+	 * @param app the app
+	 * @param type the object type
+	 * @param field the field name
+	 * @param cname the constraint name
+	 * @param req the request
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	@SuppressWarnings("unchecked")
 	public ResponseEntity<?> addConstraintHandler(App app, String type, String field, String cname, HttpServletRequest req)
 			throws IOException {
@@ -493,12 +761,27 @@ public final class Api1 {
 		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 	}
 
+	/**
+	 * Removes a validation constraint.
+	 * @param type the object type
+	 * @param field the field name
+	 * @param cname the constraint name
+	 * @return a response
+	 */
 	@DeleteMapping("/_constraints/{type}/{field}/{cname}")
 	public ResponseEntity<?> removeConstraint(@PathVariable String type, @PathVariable String field,
 			@PathVariable String cname) {
 		return removeConstraintHandler(getPrincipalApp(), type, field, cname);
 	}
 
+	/**
+	 * Handles the removal of a validation constraint.
+	 * @param app the app
+	 * @param type the object type
+	 * @param field the field name
+	 * @param cname the constraint name
+	 * @return a response
+	 */
 	public ResponseEntity<?> removeConstraintHandler(App app, String type, String field, String cname) {
 		if (app != null) {
 			if (app.removeValidationConstraint(type, field, cname)) {
@@ -509,16 +792,31 @@ public final class Api1 {
 		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 	}
 
+	/**
+	 * Returns all resource permissions.
+	 * @return a response
+	 */
 	@GetMapping("/_permissions")
 	public ResponseEntity<?> getPermissions() {
 		return getPermissionsHandler(getPrincipalApp(), null);
 	}
 
+	/**
+	 * Returns resource permissions for a specific subject.
+	 * @param subjectid the subject id
+	 * @return a response
+	 */
 	@GetMapping("/_permissions/{subjectid}")
 	public ResponseEntity<?> getPermissions(@PathVariable String subjectid) {
 		return getPermissionsHandler(getPrincipalApp(), subjectid);
 	}
 
+	/**
+	 * Handles the retrieval of resource permissions.
+	 * @param app the app
+	 * @param subjectid the subject id
+	 * @return a response
+	 */
 	public ResponseEntity<?> getPermissionsHandler(App app, String subjectid) {
 		if (app != null) {
 			if (subjectid != null) {
@@ -529,12 +827,27 @@ public final class Api1 {
 		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 	}
 
+	/**
+	 * Checks if a subject has permission for a resource.
+	 * @param subjectid the subject id
+	 * @param type the resource type (base64 encoded path)
+	 * @param method the HTTP method
+	 * @return a response
+	 */
 	@GetMapping("/_permissions/{subjectid}/{type}/{method}")
 	public ResponseEntity<?> checkPermission(@PathVariable String subjectid, @PathVariable String type,
 			@PathVariable String method) {
 		return checkPermissionHandler(getPrincipalApp(), subjectid, type, method);
 	}
 
+	/**
+	 * Handles the checking of permissions.
+	 * @param app the app
+	 * @param subjectid the subject id
+	 * @param type the resource type
+	 * @param method the HTTP method
+	 * @return a response
+	 */
 	public ResponseEntity<?> checkPermissionHandler(App app, String subjectid, String type, String method) {
 		if (app != null) {
 			String resourcePath = Utils.base64dec(type);
@@ -544,12 +857,29 @@ public final class Api1 {
 		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 	}
 
+	/**
+	 * Grants a resource permission.
+	 * @param subjectid the subject id
+	 * @param type the resource type
+	 * @param req the request
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	@PutMapping("/_permissions/{subjectid}/{type}")
 	public ResponseEntity<?> grantPermission(@PathVariable String subjectid, @PathVariable String type,
 			HttpServletRequest req) throws IOException {
 		return grantPermissionHandler(getPrincipalApp(), subjectid, type, req);
 	}
 
+	/**
+	 * Handles the granting of permissions.
+	 * @param app the app
+	 * @param subjectid the subject id
+	 * @param type the resource type
+	 * @param req the request
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	@SuppressWarnings("unchecked")
 	public ResponseEntity<?> grantPermissionHandler(App app, String subjectid, String type, HttpServletRequest req)
 			throws IOException {
@@ -580,16 +910,34 @@ public final class Api1 {
 		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 	}
 
+	/**
+	 * Revokes a resource permission.
+	 * @param subjectid the subject id
+	 * @param type the resource type
+	 * @return a response
+	 */
 	@DeleteMapping("/_permissions/{subjectid}/{type}")
 	public ResponseEntity<?> revokePermission(@PathVariable String subjectid, @PathVariable String type) {
 		return revokePermissionHandler(getPrincipalApp(), subjectid, type);
 	}
 
+	/**
+	 * Revokes all resource permissions for a subject.
+	 * @param subjectid the subject id
+	 * @return a response
+	 */
 	@DeleteMapping("/_permissions/{subjectid}")
 	public ResponseEntity<?> revokeAllPermissions(@PathVariable String subjectid) {
 		return revokePermissionHandler(getPrincipalApp(), subjectid, null);
 	}
 
+	/**
+	 * Handles the revocation of permissions.
+	 * @param app the app
+	 * @param subjectid the subject id
+	 * @param type the resource type
+	 * @return a response
+	 */
 	public ResponseEntity<?> revokePermissionHandler(App app, String subjectid, String type) {
 		if (app != null) {
 			String resourcePath = Utils.base64dec(type);
@@ -604,16 +952,31 @@ public final class Api1 {
 		return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 	}
 
+	/**
+	 * Returns all app settings.
+	 * @return a response
+	 */
 	@GetMapping("/_settings")
 	public ResponseEntity<?> getSettings() {
 		return getSettingHandler(getPrincipalApp(), null);
 	}
 
+	/**
+	 * Returns a specific app setting.
+	 * @param key the setting key
+	 * @return a response
+	 */
 	@GetMapping("/_settings/{key}")
 	public ResponseEntity<?> getSetting(@PathVariable String key) {
 		return getSettingHandler(getPrincipalApp(), key);
 	}
 
+	/**
+	 * Handles the retrieval of settings.
+	 * @param app the app
+	 * @param key the setting key
+	 * @return a response
+	 */
 	public ResponseEntity<?> getSettingHandler(App app, String key) {
 		if (app != null) {
 			if (key == null) {
@@ -625,16 +988,37 @@ public final class Api1 {
 		return getStatusResponse(HttpStatus.FORBIDDEN, "Not allowed.");
 	}
 
+	/**
+	 * Updates all app settings.
+	 * @param req the request
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	@PutMapping("/_settings")
 	public ResponseEntity<?> putSettings(HttpServletRequest req) throws IOException {
 		return putSettingHandler(getPrincipalApp(), null, req);
 	}
 
+	/**
+	 * Updates a specific app setting.
+	 * @param key the setting key
+	 * @param req the request
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	@PutMapping("/_settings/{key}")
 	public ResponseEntity<?> putSetting(@PathVariable String key, HttpServletRequest req) throws IOException {
 		return putSettingHandler(getPrincipalApp(), key, req);
 	}
 
+	/**
+	 * Handles the update of settings.
+	 * @param app the app
+	 * @param key the setting key
+	 * @param req the request
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	@SuppressWarnings("unchecked")
 	public ResponseEntity<?> putSettingHandler(App app, String key, HttpServletRequest req) throws IOException {
 		if (app != null) {
@@ -654,11 +1038,22 @@ public final class Api1 {
 		return getStatusResponse(HttpStatus.FORBIDDEN, "Not allowed.");
 	}
 
+	/**
+	 * Deletes an app setting.
+	 * @param key the setting key
+	 * @return a response
+	 */
 	@DeleteMapping("/_settings/{key}")
 	public ResponseEntity<?> deleteSetting(@PathVariable String key) {
 		return deleteSettingHandler(getPrincipalApp(), key);
 	}
 
+	/**
+	 * Handles the deletion of a setting.
+	 * @param app the app
+	 * @param key the setting key
+	 * @return a response
+	 */
 	public ResponseEntity<?> deleteSettingHandler(App app, String key) {
 		if (app != null) {
 			app.removeSetting(key);
@@ -668,6 +1063,10 @@ public final class Api1 {
 		return getStatusResponse(HttpStatus.FORBIDDEN, "Not allowed.");
 	}
 
+	/**
+	 * Returns the health status of the server.
+	 * @return a response
+	 */
 	@GetMapping("/_health")
 	public ResponseEntity<?> health() {
 		if (HealthUtils.getInstance().isHealthy()) {
@@ -676,11 +1075,22 @@ public final class Api1 {
 		return getStatusResponse(HttpStatus.INTERNAL_SERVER_ERROR, "unhealthy");
 	}
 
+	/**
+	 * Rebuilds the search index.
+	 * @param req the request
+	 * @return a response
+	 */
 	@PostMapping("/_reindex")
 	public ResponseEntity<?> reindex(HttpServletRequest req) {
 		return reindexHandler(getPrincipalApp(), req);
 	}
 
+	/**
+	 * Handles the reindexing request.
+	 * @param app the app
+	 * @param req the request
+	 * @return a response
+	 */
 	public ResponseEntity<?> reindexHandler(App app, HttpServletRequest req) {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
@@ -698,11 +1108,20 @@ public final class Api1 {
 		return ResponseEntity.ok().body(response);
 	}
 
+	/**
+	 * Exports the app data as a ZIP file.
+	 * @return a response
+	 */
 	@GetMapping(value = "/_export", produces = "application/zip")
 	public ResponseEntity<StreamingResponseBody> backup() {
 		return backupHandler(getPrincipalApp());
 	}
 
+	/**
+	 * Handles the backup request.
+	 * @param app the app
+	 * @return a response
+	 */
 	public ResponseEntity<StreamingResponseBody> backupHandler(App app) {
 		if (app == null) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -736,11 +1155,22 @@ public final class Api1 {
 				.body(stream);
 	}
 
+	/**
+	 * Imports app data from a ZIP file.
+	 * @param req the request
+	 * @return a response
+	 */
 	@PutMapping(value = "/_import", consumes = "application/zip")
 	public ResponseEntity<?> restore(HttpServletRequest req) {
 		return restoreHandler(getPrincipalApp(), req);
 	}
 
+	/**
+	 * Handles the restore request.
+	 * @param app the app
+	 * @param req the request
+	 * @return a response
+	 */
 	public ResponseEntity<?> restoreHandler(App app, HttpServletRequest req) {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
@@ -789,6 +1219,13 @@ public final class Api1 {
 		}
 	}
 
+	/**
+	 * Sends an email (authenticated).
+	 * @param req the request
+	 * @param res the response
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	@PostMapping("/_emails")
 	public ResponseEntity<?> emails(HttpServletRequest req, HttpServletResponse res) throws IOException {
 		HttpUtils.MultipartForm formData = HttpUtils.MultipartForm.fromJson(req.getInputStream());
@@ -800,6 +1237,17 @@ public final class Api1 {
 	}
 
 	// Public (unauthenticated) resource
+
+	/**
+	 * Sends an email (unauthenticated via public form).
+	 * @param formData the form data
+	 * @param appid the app id
+	 * @param formid the form id
+	 * @param req the request
+	 * @param res the response
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	@PostMapping(value = "/_forms/{appid}/{formid}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<?> emails(HttpUtils.MultipartForm formData,
 			@PathVariable String appid, @PathVariable String formid,
@@ -807,6 +1255,16 @@ public final class Api1 {
 		return emailsHandler(getDAO().read(App.id(appid)), formid, formData, req, res);
 	}
 
+	/**
+	 * Handles email sending.
+	 * @param app the app
+	 * @param formId the form id
+	 * @param formData the form data
+	 * @param req the request
+	 * @param res the response
+	 * @return a response
+	 * @throws IOException if operation fails
+	 */
 	public ResponseEntity<?> emailsHandler(App app, String formId, HttpUtils.MultipartForm formData,
 			HttpServletRequest req, HttpServletResponse res) throws IOException {
 		String redirectTo = null;
@@ -885,36 +1343,83 @@ public final class Api1 {
 		}
 	}
 
+	/**
+	 * Reads a link between two objects.
+	 * @param type the type of first object
+	 * @param id the id of first object
+	 * @param type2 the type of second object
+	 * @param id2 the id of second object
+	 * @param req the request
+	 * @return a response
+	 */
 	@GetMapping("/{type}/{id}/links/{type2}/{id2}")
 	public ResponseEntity<?> readLink(@PathVariable String type, @PathVariable String id,
 			@PathVariable String type2, @PathVariable String id2, HttpServletRequest req) {
 		return readLinks(type, id, type2, id2, req);
 	}
 
+	/**
+	 * Reads all links of a certain type for an object.
+	 * @param type the object type
+	 * @param id the object id
+	 * @param type2 the linked object type
+	 * @param req the request
+	 * @return a response
+	 */
 	@GetMapping("/{type}/{id}/links/{type2}")
 	public ResponseEntity<?> readLinksForType(@PathVariable String type, @PathVariable String id,
 			@PathVariable String type2, HttpServletRequest req) {
 		return readLinks(type, id, type2, null, req);
 	}
 
+	/**
+	 * Creates a link between two objects.
+	 * @param type the type of first object
+	 * @param id the id of first object
+	 * @param id2 the id of second object
+	 * @return a response
+	 */
 	@PostMapping("/{type}/{id}/links/{id2}")
 	public ResponseEntity<?> createLink(@PathVariable String type, @PathVariable String id,
 			@PathVariable String id2) {
 		return modifyLink(type, id, id2);
 	}
 
+	/**
+	 * Creates or updates a link between two objects.
+	 * @param type the type of first object
+	 * @param id the id of first object
+	 * @param id2 the id of second object
+	 * @return a response
+	 */
 	@PutMapping("/{type}/{id}/links/{id2}")
 	public ResponseEntity<?> putLink(@PathVariable String type, @PathVariable String id,
 			@PathVariable String id2) {
 		return modifyLink(type, id, id2);
 	}
 
+	/**
+	 * Deletes a link between two objects.
+	 * @param type the type of first object
+	 * @param id the id of first object
+	 * @param type2 the type of second object
+	 * @param id2 the id of second object
+	 * @param req the request
+	 * @return a response
+	 */
 	@DeleteMapping("/{type}/{id}/links/{type2}/{id2}")
 	public ResponseEntity<?> deleteLink(@PathVariable String type, @PathVariable String id,
 			@PathVariable String type2, @PathVariable String id2, HttpServletRequest req) {
 		return deleteLinks(type, id, type2, id2, req);
 	}
 
+	/**
+	 * Deletes all links for an object.
+	 * @param type the object type
+	 * @param id the object id
+	 * @param req the request
+	 * @return a response
+	 */
 	@DeleteMapping("/{type}/{id}/links")
 	public ResponseEntity<?> deleteAllLinks(@PathVariable String type, @PathVariable String id,
 			HttpServletRequest req) {

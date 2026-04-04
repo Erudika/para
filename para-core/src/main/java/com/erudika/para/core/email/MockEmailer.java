@@ -23,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Mock emailer implementation.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class MockEmailer implements Emailer {

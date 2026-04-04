@@ -33,6 +33,16 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class PersistenceModule {
 
+	/**
+	 * No-args constructor.
+	 */
+	public PersistenceModule() {
+	}
+
+	/**
+	 * Returns the DAO implementation.
+	 * @return the DAO
+	 */
 	@Bean
 	public DAO getDAO() {
 		DAO dao;

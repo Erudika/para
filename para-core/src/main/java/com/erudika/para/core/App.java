@@ -97,35 +97,113 @@ public class App implements ParaObject, Serializable {
 	private static final Set<AppSettingRemovedListener> REMOVE_SETTING_LISTENERS = new LinkedHashSet<>();
 	private static final Logger logger = LoggerFactory.getLogger(App.class);
 
+	/**
+	 * The object ID.
+	 */
 	@Stored @Locked @NotBlank private String id;
+	/**
+	 * The timestamp.
+	 */
 	@Stored @Locked private Long timestamp;
+	/**
+	 * The object type.
+	 */
 	@Stored @Locked private String type;
+	/**
+	 * The appid.
+	 */
 	@Stored @Locked private String appid;
+	/**
+	 * The parentid.
+	 */
 	@Stored @Locked private String parentid;
+	/**
+	 * The creatorid.
+	 */
 	@Stored @Locked private String creatorid;
+	/**
+	 * The updated timestamp.
+	 */
 	@Stored private Long updated;
+	/**
+	 * The name.
+	 */
 	@Stored private String name;
+	/**
+	 * The tags.
+	 */
 	@Stored private List<String> tags;
+	/**
+	 * The votes.
+	 */
 	@Stored private Integer votes;
+	/**
+	 * The version.
+	 */
 	@Stored private Long version;
+	/**
+	 * The stored flag.
+	 */
 	@Stored private Boolean stored;
+	/**
+	 * The indexed flag.
+	 */
 	@Stored private Boolean indexed;
+	/**
+	 * The cached flag.
+	 */
 	@Stored private Boolean cached;
+	/**
+	 * The object count.
+	 */
 	@Stored private Long objectCount;
 
+	/**
+	 * The sharing index flag.
+	 */
 	@Stored @Locked private boolean sharingIndex;
+	/**
+	 * The sharing table flag.
+	 */
 	@Stored @Locked private boolean sharingTable;
+	/**
+	 * The app secret.
+	 */
 	@Stored @Locked private String secret;
+	/**
+	 * The read-only flag.
+	 */
 	@Stored @Locked private Boolean readOnly;
+	/**
+	 * The custom data types map.
+	 */
 	@Stored @Locked private Map<String, String> datatypes;
+	/**
+	 * The validation constraints map.
+	 */
 	// type -> field -> constraint -> property -> value
 	@Stored private Map<String, Map<String, Map<String, Map<String, ?>>>> validationConstraints;
+	/**
+	 * The resource permissions map.
+	 */
 	// subject_id -> resource_name -> [http_methods_allowed]
 	@Stored private Map<String, Map<String, List<String>>> resourcePermissions;
+	/**
+	 * The active flag.
+	 */
 	@Stored private Boolean active;
+	/**
+	 * The deletion timestamp.
+	 */
 	@Stored private Long deleteOn;
+	/**
+	 * The token validity period.
+	 */
 	@Stored private Long tokenValiditySec;
 
+	/**
+	 * The app settings map.
+	 */
 	// used to store various settings, OAuth keys, etc.
 	@Stored private Map<String, Object> settings;
 
@@ -918,6 +996,7 @@ public class App implements ParaObject, Serializable {
 	}
 
 	/**
+	 * Returns true if app contains permission for this resource path and it is marked with "OWN".
 	 * @param subjectid id of user
 	 * @param resourcePath path
 	 * @return true if app contains permission for this resource path and it is marked with "OWN"

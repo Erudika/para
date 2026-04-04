@@ -39,9 +39,19 @@ import org.springframework.web.bind.annotation.GetMapping;
 @ConditionalOnProperty(value = "para.landing_page_enabled", havingValue = "true")
 public class LandingPageController {
 
+	/**
+	 * No-args constructor.
+	 */
 	public LandingPageController() {
 	}
 
+	/**
+	 * Handles GET requests for the landing page.
+	 * @param req request
+	 * @param res response
+	 * @param model model
+	 * @return response
+	 */
 	@GetMapping({"", "/", "/index.html", "/index.htm"})
 	public ResponseEntity<?> get(HttpServletRequest req, HttpServletResponse res, Model model) {
 		model.addAttribute("landing", true);

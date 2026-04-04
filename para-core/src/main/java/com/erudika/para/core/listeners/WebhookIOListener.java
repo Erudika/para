@@ -31,6 +31,11 @@ import java.util.List;
  */
 public class WebhookIOListener implements IOListener {
 
+	/**
+	 * No-args constructor.
+	 */
+	public WebhookIOListener() {
+	}
 
 	@Override
 	public void onPreInvoke(Method method, Object[] args) {

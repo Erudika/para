@@ -96,6 +96,11 @@ public final class Metrics {
 		return SharedMetricRegistries.getOrCreate(registryName).counter(MetricRegistry.name(className, names));
 	}
 
+	/**
+	 * Returns the class name.
+	 * @param clazz class
+	 * @return class name
+	 */
 	public static String getClassName(Class<?> clazz) {
 		if (clazz.getSimpleName().contains("EnhancerByGuice")) {
 			clazz = clazz.getSuperclass();

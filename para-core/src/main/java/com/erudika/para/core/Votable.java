@@ -45,6 +45,7 @@ public interface Votable {
 		}
 
 		/**
+		 * Returns the vote value.
 		 * @return -1 if DOWN, 1 if UP
 		 */
 		public int getValue() {

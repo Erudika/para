@@ -44,9 +44,21 @@ import org.springframework.web.bind.annotation.PathVariable;
 @Controller
 public class ErrorController implements org.springframework.boot.webmvc.error.ErrorController {
 
+	/**
+	 * No-args constructor.
+	 */
 	public ErrorController() {
 	}
 
+	/**
+	 * Handles error requests.
+	 * @param code error code
+	 * @param req request
+	 * @param res response
+	 * @param model model
+	 * @throws IOException if error
+	 * @return response
+	 */
 	@GetMapping({"/error", "/error/{code}"})
 	public ResponseEntity<?> get(@PathVariable(required = false) String code,
 			HttpServletRequest req, HttpServletResponse res, Model model) throws IOException {

@@ -114,6 +114,7 @@ public final class ValidationUtils {
 
 	/**
 	 * Validates objects using Hibernate Validator.
+	 * @param <T> the type
 	 * @param content an object to be validated
 	 * @return a list of error messages or empty if object is valid
 	 */
@@ -276,6 +277,11 @@ public final class ValidationUtils {
 		return Collections.unmodifiableMap(CORE_CONSTRAINTS);
 	}
 
+	/**
+	 * Validates a list of email addresses.
+	 * @param emails one or more emails
+	 * @return an array of error messages
+	 */
 	public static String[] validateEmails(String... emails) {
 		if (emails == null || emails.length == 0) {
 			return new String[0];

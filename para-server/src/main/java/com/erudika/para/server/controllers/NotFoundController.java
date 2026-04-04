@@ -37,9 +37,19 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class NotFoundController {
 
+	/**
+	 * No-args constructor.
+	 */
 	public NotFoundController() {
 	}
 
+	/**
+	 * Handles GET requests for the 404 page.
+	 * @param req request
+	 * @param res response
+	 * @param model model
+	 * @return response
+	 */
 	@GetMapping("/not-found")
 	public ResponseEntity<?> get(HttpServletRequest req, HttpServletResponse res, Model model) {
 		model.addAttribute("title", "Not Found - 404");

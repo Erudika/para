@@ -78,6 +78,10 @@ public class SecurityConfig {
 	public SecurityConfig() {
 	}
 
+	/**
+	 * Configures the {@link AuthenticationManager} with various providers.
+	 * @return the authentication manager
+	 */
 	@Bean
 	public AuthenticationManager authenticationManager() {
 		return new ProviderManager(new JWTAuthenticationProvider(),
@@ -86,7 +90,7 @@ public class SecurityConfig {
 
 	/**
 	 * Configures the unsecured public resources.
-	 * @return web
+	 * @return web security customizer
 	 */
 	@Bean
 	public WebSecurityCustomizer webSecurityCustomizer() {
@@ -101,9 +105,22 @@ public class SecurityConfig {
 	/**
 	 * Configures the protected private resources.
 	 *
-	 * @param http HTTP sec object
+	 * @param http HTTP security object
+	 * @param authManager authentication manager
+	 * @param facebookAuth Facebook auth filter
+	 * @param googleAuth Google auth filter
+	 * @param githubAuth GitHub auth filter
+	 * @param linkedinAuth LinkedIn auth filter
+	 * @param twitterAuth Twitter auth filter
+	 * @param microsoftAuth Microsoft auth filter
+	 * @param slackAuth Slack auth filter
+	 * @param amazonAuth Amazon auth filter
+	 * @param oauth2Auth generic OAuth2 auth filter
+	 * @param ldapAuth LDAP auth filter
+	 * @param passwordAuth password auth filter
+	 * @param passwordlessAuth passwordless auth filter
 	 * @throws Exception ex
-	 * @return http
+	 * @return the security filter chain
 	 */
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http,
@@ -199,11 +216,17 @@ public class SecurityConfig {
 		configuration.setAllowedOrigins(Arrays.asList("*"));
 		configuration.setAllowedMethods(Arrays.asList("*"));
 		configuration.setAllowedHeaders(Arrays.asList("*"));
+		configuration.addExposedHeader("Mcp-Protocol-Version");
+		configuration.addExposedHeader("Mcp-Session-Id");
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 		source.registerCorsConfiguration("/**", configuration);
 		return source;
 	}
 
+	/**
+	 * Parses custom protected paths from the configuration and applies them to HttpSecurity.
+	 * @param http HTTP security object
+	 */
 	private void parseProtectedResources(HttpSecurity http) {
 		RestRequestMatcher.getCustomProtectedPaths().stream().filter(p -> !p.isRest()).forEach(path -> {
 			path.getPatterns().forEach(pattern -> path.getMethods().forEach(method -> {
@@ -218,9 +241,9 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * getter/setter.
+	 * Returns the authentication success handler.
 	 *
-	 * @return handler
+	 * @return success handler
 	 */
 	@Bean
 	public SimpleAuthenticationSuccessHandler getSuccessHandler() {
@@ -232,8 +255,8 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * getter/setter.
-	 * @return handler
+	 * Returns the authentication failure handler.
+	 * @return failure handler
 	 */
 	@Bean
 	public SimpleAuthenticationFailureHandler getFailureHandler() {
@@ -243,7 +266,20 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * getter/setter.
+	 * Returns the JWT restful authentication filter.
+	 * @param authenticationManager auth manager
+	 * @param twitterAuth Twitter auth filter
+	 * @param googleAuth Google auth filter
+	 * @param githubAuth GitHub auth filter
+	 * @param linkedinAuth LinkedIn auth filter
+	 * @param facebookAuth Facebook auth filter
+	 * @param microsoftAuth Microsoft auth filter
+	 * @param amazonAuth Amazon auth filter
+	 * @param slackAuth Slack auth filter
+	 * @param oauth2Auth generic OAuth2 auth filter
+	 * @param ldapAuth LDAP auth filter
+	 * @param passwordlessAuth passwordless auth filter
+	 * @param passwordAuth password auth filter
 	 * @return filter
 	 */
 	@Bean
@@ -266,7 +302,8 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * getter/setter.
+	 * Returns the password authentication filter.
+	 * @param authenticationManager auth manager
 	 * @return filter
 	 */
 	@Bean
@@ -279,7 +316,8 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * getter/setter.
+	 * Returns the passwordless authentication filter.
+	 * @param authenticationManager auth manager
 	 * @return filter
 	 */
 	@Bean
@@ -292,7 +330,8 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * getter/setter.
+	 * Returns the Facebook authentication filter.
+	 * @param authenticationManager auth manager
 	 * @return filter
 	 */
 	@Bean
@@ -316,7 +355,8 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * getter/setter.
+	 * Returns the Google authentication filter.
+	 * @param authenticationManager auth manager
 	 * @return filter
 	 */
 	@Bean
@@ -329,7 +369,8 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * getter/setter.
+	 * Returns the LinkedIn authentication filter.
+	 * @param authenticationManager auth manager
 	 * @return filter
 	 */
 	@Bean
@@ -342,7 +383,8 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * getter/setter.
+	 * Returns the Twitter authentication filter.
+	 * @param authenticationManager auth manager
 	 * @return filter
 	 */
 	@Bean
@@ -355,7 +397,8 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * getter/setter.
+	 * Returns the GitHub authentication filter.
+	 * @param authenticationManager auth manager
 	 * @return filter
 	 */
 	@Bean
@@ -368,7 +411,8 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * getter/setter.
+	 * Returns the Microsoft authentication filter.
+	 * @param authenticationManager auth manager
 	 * @return filter
 	 */
 	@Bean
@@ -381,7 +425,8 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * getter/setter.
+	 * Returns the Slack authentication filter.
+	 * @param authenticationManager auth manager
 	 * @return filter
 	 */
 	@Bean
@@ -394,7 +439,8 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * getter/setter.
+	 * Returns the Amazon authentication filter.
+	 * @param authenticationManager auth manager
 	 * @return filter
 	 */
 	@Bean
@@ -407,7 +453,8 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * getter/setter.
+	 * Returns the generic OAuth2 authentication filter.
+	 * @param authenticationManager auth manager
 	 * @return filter
 	 */
 	@Bean
@@ -420,7 +467,8 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * getter/setter.
+	 * Returns the LDAP authentication filter.
+	 * @param authenticationManager auth manager
 	 * @return filter
 	 */
 	@Bean
@@ -433,7 +481,8 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * getter/setter.
+	 * Returns the SAML authentication filter.
+	 * @param authenticationManager auth manager
 	 * @return filter
 	 */
 	@Bean
@@ -446,7 +495,7 @@ public class SecurityConfig {
 	}
 
 	/**
-	 * getter/setter.
+	 * Returns the SAML metadata filter.
 	 * @return filter
 	 */
 	@Bean

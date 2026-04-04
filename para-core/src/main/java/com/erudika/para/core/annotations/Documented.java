@@ -32,36 +32,43 @@ import java.lang.annotation.Target;
 public @interface Documented {
 
 	/**
+	 * Returns the category which this property is part of.
 	 * @return the category which this property is part of.
 	 */
 	String category() default "main";
 
 	/**
+	 * Returns basic description of the config property.
 	 * @return basic description of the config property.
 	 */
 	String description() default "";
 
 	/**
+	 * Returns the data type of the config value.
 	 * @return the data type of the config value.
 	 */
 	Class<?> type() default String.class;
 
 	/**
+	 * Returns a default or suggested value.
 	 * @return a default or suggested value.
 	 */
 	String value() default "";
 
 	/**
+	 * Returns the config property key (identifier).
 	 * @return the config property key (identifier).
 	 */
 	String identifier() default "";
 
 	/**
+	 * Returns position number for sorting.
 	 * @return position number for sorting.
 	 */
 	int position() default Integer.MAX_VALUE;
 
 	/**
+	 * Returns additional tags.
 	 * @return additional tags.
 	 */
 	String[] tags() default {};

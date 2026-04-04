@@ -170,6 +170,7 @@ public final class ParaObjectUtils {
 	 * which also starts with '_' like {@code  /v1/_me}. Also ignore types containing reserved keywords "utils",
 	 * "search".
 	 *
+	 * @param <P> the object type
 	 * @param obj an object
 	 * @return obj - the same object with the correct type
 	 */
@@ -238,6 +239,7 @@ public final class ParaObjectUtils {
 	}
 
 	/**
+	 * Returns a map of annotated fields.
 	 * @see #getAnnotatedFields(com.erudika.para.core.ParaObject, java.lang.Class, boolean)
 	 * @param <P> the object type
 	 * @param pojo the object to convert to a map
@@ -248,6 +250,7 @@ public final class ParaObjectUtils {
 	}
 
 	/**
+	 * Returns a map of annotated fields.
 	 * @see #getAnnotatedFields(com.erudika.para.core.ParaObject, java.lang.Class, boolean)
 	 * @param <P> the object type
 	 * @param pojo the object to convert to a map
@@ -260,6 +263,7 @@ public final class ParaObjectUtils {
 	}
 
 	/**
+	 * Returns a map of annotated fields.
 	 * @see #getAnnotatedFields(com.erudika.para.core.ParaObject, java.lang.Class, boolean)
 	 * @param <P> the object type
 	 * @param pojo the object to convert to a map
@@ -332,6 +336,7 @@ public final class ParaObjectUtils {
 	}
 
 	/**
+	 * Populates an object from a map of fields and values.
 	 * @see #setAnnotatedFields(com.erudika.para.core.ParaObject, java.util.Map, java.lang.Class)
 	 * @param <P> the object type
 	 * @param data the map of fields/values

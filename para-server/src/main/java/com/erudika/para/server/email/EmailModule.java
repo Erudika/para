@@ -32,6 +32,16 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class EmailModule {
 
+	/**
+	 * No-args constructor.
+	 */
+	public EmailModule() {
+	}
+
+	/**
+	 * Returns the emailer implementation.
+	 * @return the emailer
+	 */
 	@Bean
 	public Emailer getEmailer() {
 		Emailer emailer;

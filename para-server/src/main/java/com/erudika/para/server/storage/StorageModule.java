@@ -32,6 +32,16 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class StorageModule {
 
+	/**
+	 * No-args constructor.
+	 */
+	public StorageModule() {
+	}
+
+	/**
+	 * Returns the configured file storage implementation.
+	 * @return {@link FileStore}
+	 */
 	@Bean
 	public FileStore getFileStore() {
 		FileStore store;

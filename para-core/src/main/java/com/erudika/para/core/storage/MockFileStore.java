@@ -27,6 +27,12 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class MockFileStore implements FileStore {
 
+	/**
+	 * No-args constructor.
+	 */
+	public MockFileStore() {
+	}
+
 	private ConcurrentHashMap<String, InputStream> fs = new ConcurrentHashMap<>();
 
 	@Override

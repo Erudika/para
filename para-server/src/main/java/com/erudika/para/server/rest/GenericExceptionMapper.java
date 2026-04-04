@@ -39,14 +39,28 @@ public class GenericExceptionMapper {
 
 	private static final Logger logger = LoggerFactory.getLogger(GenericExceptionMapper.class);
 
+	/**
+	 * No-args constructor.
+	 */
 	public GenericExceptionMapper() { }
 
+	/**
+	 * Handles exceptions.
+	 * @param ex the exception
+	 * @return response
+	 */
 	@ExceptionHandler(Throwable.class)
 	public ResponseEntity<Map<String, Object>> handleException(Throwable ex) {
 		logger.error("API request error: {}", ex.getMessage(), ex);
 		return getExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), ex.getMessage());
 	}
 
+	/**
+	 * Builds an exception response.
+	 * @param status status code
+	 * @param message error message
+	 * @return response
+	 */
 	public static ResponseEntity<Map<String, Object>> getExceptionResponse(int status, String message) {
 		Map<String, Object> body = new LinkedHashMap<>();
 		body.put("code", status);

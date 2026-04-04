@@ -52,6 +52,12 @@ public class FieldFilter implements ResponseBodyAdvice<Object> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(FieldFilter.class);
 
+	/**
+	 * No-args constructor.
+	 */
+	public FieldFilter() {
+	}
+
 	@Override
 	public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
 		return true;

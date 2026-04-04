@@ -25,6 +25,10 @@ public class RateLimitException extends Exception {
 
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * Default constructor.
+	 * @param message error message
+	 */
 	public RateLimitException(String message) {
 		super(message);
 	}

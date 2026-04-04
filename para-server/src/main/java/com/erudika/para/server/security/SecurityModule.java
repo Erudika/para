@@ -27,6 +27,12 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 
 public class SecurityModule extends AbstractHttpConfigurer<SecurityModule, HttpSecurity> {
 
+	/**
+	 * No-args constructor.
+	 */
+	public SecurityModule() {
+	}
+
 //	private final AuthenticationManager authenticationManager;
 
 

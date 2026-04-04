@@ -45,6 +45,9 @@ public class MockDAO implements DAO {
 	private static final Map<String, Map<String, ParaObject>> MAPS =
 			new ConcurrentHashMap<String, Map<String, ParaObject>>();
 
+	/**
+	 * No-args constructor.
+	 */
 	public MockDAO() {
 	}
 

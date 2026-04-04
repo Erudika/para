@@ -34,6 +34,11 @@ public final class BufferedRequestWrapper extends HttpServletRequestWrapper {
 
 	private final byte[] body;
 
+	/**
+	 * Default constructor.
+	 * @param request the request to wrap
+	 * @throws IOException if error
+	 */
 	public BufferedRequestWrapper(HttpServletRequest request) throws IOException {
 		super(request);
 		this.body = request.getInputStream().readAllBytes();
@@ -50,6 +55,10 @@ public final class BufferedRequestWrapper extends HttpServletRequestWrapper {
 		return new BufferedReader(new InputStreamReader(getInputStream(), enc));
 	}
 
+	/**
+	 * Returns the cached body as byte array.
+	 * @return the body
+	 */
 	public byte[] getCachedBody() {
 		return body.clone();
 	}

@@ -32,6 +32,16 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class QueueModule {
 
+	/**
+	 * No-args constructor.
+	 */
+	public QueueModule() {
+	}
+
+	/**
+	 * Returns the queue implementation.
+	 * @return the queue
+	 */
 	@Bean
 	public Queue getQueue() {
 		Queue queue;

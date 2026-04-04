@@ -41,9 +41,19 @@ import org.springframework.web.bind.annotation.GetMapping;
 @ConditionalOnMissingBean(SigninPage.class)
 public class SigninController {
 
+	/**
+	 * No-args constructor.
+	 */
 	public SigninController() {
 	}
 
+	/**
+	 * Handles GET requests for the signin page.
+	 * @param req request
+	 * @param res response
+	 * @param model model
+	 * @return response
+	 */
 	@GetMapping("/signin")
 	public ResponseEntity<?> get(HttpServletRequest req, HttpServletResponse res, Model model) {
 		model.addAttribute("title", "Protected resource");

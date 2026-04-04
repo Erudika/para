@@ -48,6 +48,8 @@
 	<logger name="org.elasticsearch" level="INFO"/>
 	<logger name="org.springframework" level="WARN"/>
 	<logger name="org.springframework.ldap" level="WARN"/>
+	<logger name="org.springframework.ai" level="ERROR"/>
+	<logger name="org.springframework.context.support" level="ERROR"/>
 	<logger name="org.opensaml.xmlsec" level="WARN"/>
 	<logger name="org.eclipse.jetty" level="WARN"/>
 	<logger name="com.erudika" level="INFO"/>

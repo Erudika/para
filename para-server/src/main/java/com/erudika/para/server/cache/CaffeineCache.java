@@ -54,6 +54,7 @@ public class CaffeineCache implements Cache {
 	}
 
 	/**
+	 * Creates a new instance.
 	 * @param cache cache
 	 */
 	CaffeineCache(com.github.benmanes.caffeine.cache.Cache<String, Object> cache) {

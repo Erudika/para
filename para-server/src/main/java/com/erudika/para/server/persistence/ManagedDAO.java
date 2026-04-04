@@ -50,6 +50,10 @@ public class ManagedDAO implements DAO {
 	private final Set<IOListener> ioListeners;
 
 
+	/**
+	 * Default constructor.
+	 * @param dao the DAO implementation to wrap
+	 */
 	public ManagedDAO(DAO dao) {
 		this.dao = Objects.requireNonNull(dao, "DAO implementation not provided.");
 		this.ioListeners = Para.getIOListeners();

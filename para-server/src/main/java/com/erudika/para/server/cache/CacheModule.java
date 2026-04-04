@@ -32,6 +32,16 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class CacheModule {
 
+	/**
+	 * No-args constructor.
+	 */
+	public CacheModule() {
+	}
+
+	/**
+	 * Returns the cache implementation.
+	 * @return the cache
+	 */
 	@Bean
 	public Cache getCache() {
 		Cache cache;

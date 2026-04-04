@@ -57,6 +57,13 @@ import org.slf4j.LoggerFactory;
 public abstract class Config {
 
 	private static final Logger logger = LoggerFactory.getLogger(Config.class);
+
+	/**
+	 * No-args constructor.
+	 */
+	public Config() {
+	}
+
 	private com.typesafe.config.Config config;
 	private Map<String, String> sortedConfigKeys; // config key => category
 	private Map<String, Documented> annotatedMethodsMap; // config key => Documented
@@ -375,6 +382,7 @@ public abstract class Config {
 	}
 
 	/**
+	 * Renders the configuration.
 	 * @see #render(boolean, java.lang.String, java.lang.String)
 	 * @param asJson if true, a JSON object will be rendered, otherwise the HOCON format is used
 	 * @return config as string
@@ -468,6 +476,7 @@ public abstract class Config {
 	}
 
 	/**
+	 * Returns the configuration as a map of keys and values.
 	 * @return returns the configuration as a map of keys and values.
 	 */
 	public Map<String, Object> getConfigMap() {
@@ -510,6 +519,16 @@ public abstract class Config {
 	public static com.typesafe.config.Config parseStringWithoutIncludes(String config) {
 		return ConfigFactory.parseString(config, ConfigParseOptions.defaults().setIncluder(NoopConfigIncluder.INSTANCE));
 	}
+
+	/**
+	 * Simple heuristic for determining if a config key contains sensistive data.
+	 * @param configKey config key
+	 * @return true if key name contains: "secret", "credential", "sensitive", "password", "pass", "privatekey".
+	 */
+	public static boolean isSensitiveData(String configKey) {
+		return Strings.CI.containsAny(configKey, "secret", "credential", "sensitive", "password", "pass", "privatekey");
+	}
+
 
 	private String renderCategoryHeader(String format, String category, Map.Entry<String, Documented> entry,
 			Map<String, Map<String, Map<String, String>>> jsonMapByCat, StringBuilder sb) {

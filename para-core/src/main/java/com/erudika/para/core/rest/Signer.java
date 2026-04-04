@@ -47,6 +47,13 @@ import org.slf4j.LoggerFactory;
 public final class Signer {
 
 	private static final Logger logger = LoggerFactory.getLogger(Signer.class);
+
+	/**
+	 * No-args constructor.
+	 */
+	public Signer() {
+	}
+
 	private static final String SERVICE_NAME = "para";
 	private static final String REGION = "us-east-1";
 	private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.
