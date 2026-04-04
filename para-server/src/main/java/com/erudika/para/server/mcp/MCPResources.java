@@ -16,9 +16,9 @@ import org.springframework.stereotype.Component;
  * authenticated App obtained via SecurityUtils.getPrincipalApp().
  */
 @Component
-public class ParaMCPServer {
+public class MCPResources {
 
-	private static final Logger logger = LoggerFactory.getLogger(ParaMCPServer.class);
+	private static final Logger logger = LoggerFactory.getLogger(MCPResources.class);
 
 	private final MCPUtils utils;
 
@@ -26,7 +26,7 @@ public class ParaMCPServer {
 	 * Default constructor.
 	 * @param utils MCP utils
 	 */
-	public ParaMCPServer(MCPUtils utils) {
+	public MCPResources(MCPUtils utils) {
 		this.utils = utils;
 	}
 
