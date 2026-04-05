@@ -47,29 +47,7 @@ public class MCPResources {
 		index.put("version", "1.0");
 		index.put("appIdentifier", app.getAppIdentifier());
 		index.put("mcpMode", utils.getMcpMode());
-
-		// List all available tools
-		Map<String, String> tools = new LinkedHashMap<>();
-		tools.put("config_search", "Search Para configuration by keyword");
-		tools.put("get_config_by_key", "Get configuration property details by key");
-		tools.put("list_types", "List all object types and their counts");
-		tools.put("search", "Search for Para objects using Lucene query syntax");
-		tools.put("get_user_by_email", "Find a user by email address");
-		tools.put("get_object_by_id", "Get a Para object by its ID");
-		tools.put("get_app_settings", "Get all app-specific settings");
-
-		if (!utils.isReadOnly()) {
-			tools.put("put_app_setting", "Set or update an app-specific setting by key");
-			tools.put("create_app", "Create a new Para app (root app only)");
-			tools.put("create_object", "Create a new Para object with interactive field input");
-			tools.put("update_object", "Update an existing Para object with interactive field input");
-			tools.put("delete_object", "Delete a Para object with confirmation");
-			tools.put("rebuild_index", "Rebuild the search index for all objects");
-			tools.put("clear_cache", "Clear all cached data for the app");
-		}
-
-		index.put("tools", tools);
-		index.put("toolCount", tools.size());
+		index.put("tools", utils.listAllTools());
 
 		return jsonResource("para:///", index);
 	}

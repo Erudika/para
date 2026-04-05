@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -291,14 +292,8 @@ public class MCPUtils {
 
 	private Map<String, Object> resolveMcpTransportMetadata(int serverPort) {
 		Map<String, Object> transport = new LinkedHashMap<>();
-		String protocol = springEnv.getProperty("spring.ai.mcp.server.protocol", "sse");
-		transport.put("protocol", protocol);
-		if ("streamable".equalsIgnoreCase(protocol) || "stateless".equalsIgnoreCase(protocol)) {
-			transport.put("endpoint", springEnv.getProperty("spring.ai.mcp.server.streamable-http.mcp-endpoint", "/mcp"));
-		} else {
-			transport.put("endpoint", springEnv.getProperty("spring.ai.mcp.server.sse-endpoint", "/sse"));
-			transport.put("messageEndpoint", springEnv.getProperty("spring.ai.mcp.server.sse-message-endpoint", "/mcp/message"));
-		}
+		transport.put("protocol", "streamable");
+		transport.put("endpoint", "/v1/_mcp");
 		transport.put("baseUrl", springEnv.getProperty("spring.ai.mcp.server.base-url", "http://localhost:" + serverPort));
 		return transport;
 	}
@@ -313,6 +308,14 @@ public class MCPUtils {
 				.sorted(Comparator.comparingInt(Documented::position))
 				.map(doc -> new ConfigEntry(prefix, doc))
 				.collect(Collectors.toList());
+	}
+
+	Map<String, String> listAllTools() {
+		return Arrays.stream(MCPTools.class.getDeclaredMethods())
+				.filter(method -> method.isAnnotationPresent(McpTool.class))
+				.filter(method -> !isReadOnly() || !method.getAnnotation(McpTool.class).annotations().destructiveHint())
+				.collect(Collectors.toMap(m1 -> m1.getAnnotation(McpTool.class).name(),
+						m2 -> m2.getAnnotation(McpTool.class).description()));
 	}
 
 	private static final class ConfigEntry {
@@ -373,7 +376,6 @@ public class MCPUtils {
 			payload.put("requiresRestart", orderedTags.stream()
 					.anyMatch(tag -> "requires restart".equalsIgnoreCase(tag)));
 			payload.put("position", position);
-			payload.put("resourceUri", "para:///config/" + key);
 			if (sanitizedValue != null) {
 				payload.put("value", sanitizedValue);
 			}
