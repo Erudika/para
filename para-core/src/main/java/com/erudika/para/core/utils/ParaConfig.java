@@ -734,6 +734,7 @@ public class ParaConfig extends Config {
 			value = "true",
 			type = Boolean.class,
 			category = "Security",
+			tags = {"requires restart"},
 			description = "Enable/disable the CORS filter. It adds CORS headers to API responses.")
 	public boolean corsEnabled() {
 		return Boolean.parseBoolean(getConfigParam("cors_enabled", "true"));
@@ -748,6 +749,7 @@ public class ParaConfig extends Config {
 			value = "true",
 			type = Boolean.class,
 			category = "Security",
+			tags = {"requires restart"},
 			description = "Enable/disable CSRF protection which checks for valid CSRF tokens in write requests.")
 	public boolean csrfProtectionEnabled() {
 		return getConfigBoolean("security.csrf_protection", true);
@@ -758,10 +760,11 @@ public class ParaConfig extends Config {
 	 * @return true if CSRF protection with SPA is enabled
 	 */
 	@Documented(position = 480,
-			identifier = "security.csrf_protection",
+			identifier = "security.csrf_protection_with_spa",
 			value = "true",
 			type = Boolean.class,
 			category = "Security",
+			tags = {"requires restart"},
 			description = "Enable/disable CSRF protection with single-page application mode enabled.")
 	public boolean csrfProtectionWithSpaEnabled() {
 		return getConfigBoolean("security.csrf_protection_with_spa", false);
