@@ -307,6 +307,16 @@ public final class HttpUtils {
 					if (data != null && data.containsKey("success")) {
 						if (data.get("error-codes") != null) {
 							errors.addAll((List<String>) data.get("error-codes"));
+							logger.info("Failed to verify CAPTCHA: {} {}", captchaParamKey, errors);
+						}
+						if (data.get("score") != null) {
+							double score = (double) data.get("score");
+							logger.debug("Form got CAPTCHA response with score {}.", score);
+							if (url.contains("recaptcha") && score < 0.5) {
+								return false;
+							} else if (url.contains("hcaptcha") && score >= 0.5) {
+								return false;
+							}
 						}
 						return (boolean) data.getOrDefault("success", false);
 					}
