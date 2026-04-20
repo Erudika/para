@@ -624,18 +624,20 @@ public class App implements ParaObject, Serializable {
 		}
 		try {
 			for (String aType : types) {
-				Map<String, Map<String, Map<String, ?>>> vc = new LinkedHashMap<>();
-				// add all core constraints first
-				if (ValidationUtils.getCoreValidationConstraints().containsKey(aType)) {
-					vc.putAll(ValidationUtils.getCoreValidationConstraints().get(aType));
-				}
-				// also add the ones that are defined locally for this app
-				Map<String, Map<String, Map<String, ?>>> appConstraints = getValidationConstraints().get(aType);
-				if (appConstraints != null && !appConstraints.isEmpty()) {
-					vc.putAll(appConstraints);
-				}
-				if (!vc.isEmpty()) {
-					allConstr.put(aType, vc);
+				if (!StringUtils.isBlank(aType)) {
+					Map<String, Map<String, Map<String, ?>>> vc = new LinkedHashMap<>();
+					// add all core constraints first
+					if (ValidationUtils.getCoreValidationConstraints().containsKey(aType)) {
+						vc.putAll(ValidationUtils.getCoreValidationConstraints().get(aType));
+					}
+					// also add the ones that are defined locally for this app
+					Map<String, Map<String, Map<String, ?>>> appConstraints = getValidationConstraints().get(aType);
+					if (appConstraints != null && !appConstraints.isEmpty()) {
+						vc.putAll(appConstraints);
+					}
+					if (!vc.isEmpty()) {
+						allConstr.put(aType, vc);
+					}
 				}
 			}
 		} catch (Exception ex) {

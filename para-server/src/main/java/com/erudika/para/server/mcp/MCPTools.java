@@ -11,7 +11,6 @@ import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
 import static com.erudika.para.server.mcp.MCPUtils.requireRootApp;
 import static com.erudika.para.server.mcp.MCPUtils.requireWritePermission;
-import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
-import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.stereotype.Component;
 
 /**
@@ -463,8 +461,7 @@ public class MCPTools {
 			@McpToolParam(description = "Object type (e.g., 'user', 'sysprop', 'tag').", required = true) String type,
 			@McpToolParam(description = "Object display name.", required = true) String name,
 			@McpToolParam(description = "Optional field values as JSON object (e.g., "
-					+ "{\"email\": \"user@example.com\", \"password\": \"secret\"}).") Map<String, Object> fields,
-			McpSyncRequestContext context, McpSyncServerExchange ex) {
+					+ "{\"email\": \"user@example.com\", \"password\": \"secret\"}).") Map<String, Object> fields) {
 		requireWritePermission();
 
 		try {
@@ -507,7 +504,6 @@ public class MCPTools {
 					errorBuilder.append("DO NOT generate, guess, or make up values. Ask the user explicitly for each field.");
 
 					String error = errorBuilder.toString();
-					context.error(error);
 					return CallToolResult.builder().isError(true).addTextContent(error).build();
 				}
 			}
