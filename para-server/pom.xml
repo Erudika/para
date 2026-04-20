@@ -20,7 +20,7 @@
 		<!--===== SQL =====-->
 		<sqlPluginVer>1.50.0</sqlPluginVer>
 		<!--===== HAZELCAST =====-->
-		<hcPluginVer>1.42.0</hcPluginVer>
+		<hcPluginVer>1.43.0</hcPluginVer>
 		<!--===== CASSANDRA =====-->
 		<casPluginVer>1.42.0</casPluginVer>
 		<!--===== MONGODB =====-->
@@ -28,7 +28,7 @@
 		<!--===== ELASTICSEARCH =====-->
 		<esPluginVer>1.42.2</esPluginVer>
 		<!--===== DYNAMODB =====-->
-		<dynamoPluginVer>1.52.3</dynamoPluginVer>
+		<dynamoPluginVer>1.52.5</dynamoPluginVer>
 		<!--===== AWS SES =====-->
 		<sesPluginVer>1.52.2</sesPluginVer>
 		<!--===== AWS S3 =====-->
