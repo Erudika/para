@@ -351,7 +351,7 @@ public class App implements ParaObject, Serializable {
 	 * @param settings a new map
 	 */
 	public void setSettings(Map<String, Object> settings) {
-		this.settings = settings;
+		this.settings = (settings == null) ? null : new ConcurrentHashMap<>(settings);
 	}
 
 	/**
