@@ -343,6 +343,20 @@ public class ParaConfig extends Config {
 	}
 
 	/**
+	 * The number of threads to use for the `ExecutorService` thread pool.
+	 * @return the number of executor threads
+	 */
+	@Documented(position = 191,
+			identifier = "executor_service_enabled",
+			value = "true",
+			type = Boolean.class,
+			category = "Core",
+			description = "Enable/disable the asyncronous exectution of task through the executor service.")
+	public boolean executorServiceEnabled() {
+		return getConfigBoolean("executor_service_enabled", true);
+	}
+
+	/**
 	 * The number of maximum failed webhook delivery attemts. Webhooks with too many failed
 	 * deliveries will be disabled automatically.
 	 * @return the maximum failed webhook attempts

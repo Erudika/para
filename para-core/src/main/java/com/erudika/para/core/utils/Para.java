@@ -62,8 +62,9 @@ public final class Para {
 	private static final Set<InitializeListener> INIT_LISTENERS = new LinkedHashSet<InitializeListener>();
 	private static final Set<IOListener> IO_LISTENERS = new LinkedHashSet<IOListener>();
 	private static final Set<IOListener> SEARCH_LISTENERS = new LinkedHashSet<IOListener>();
-	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(CONF.executorThreads());
-	private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(CONF.executorThreads());
+	private static final ExecutorService EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
+	private static final ScheduledExecutorService SCHEDULER = Executors.
+			newScheduledThreadPool(CONF.executorThreads(), Thread.ofVirtual().factory());
 	private static ClassLoader paraClassLoader;
 	private static volatile boolean isInitialized = false;
 	private static volatile boolean isHealthy = true;
@@ -294,7 +295,11 @@ public final class Para {
 	public static void asyncExecute(Runnable runnable) {
 		if (runnable != null) {
 			try {
-				Para.getExecutorService().execute(runnable);
+				if (CONF.executorServiceEnabled()) {
+					Para.getExecutorService().execute(runnable);
+				} else {
+					runnable.run();
+				}
 			} catch (RejectedExecutionException ex) {
 				logger.warn(ex.getMessage());
 				try {
@@ -317,7 +322,7 @@ public final class Para {
 	public static ScheduledFuture<?> asyncExecutePeriodically(Runnable task, long delay, long interval, TimeUnit t) {
 		if (task != null) {
 			try {
-				return Para.getScheduledExecutorService().scheduleAtFixedRate(task, delay, interval, t);
+				return Para.getScheduledExecutorService().scheduleAtFixedRate(() -> asyncExecute(task), delay, interval, t);
 			} catch (RejectedExecutionException ex) {
 				logger.warn(ex.getMessage());
 			}
