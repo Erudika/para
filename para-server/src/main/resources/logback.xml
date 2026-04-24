@@ -14,11 +14,13 @@
 
 	<appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
 		<file>${para.logs_dir:-.}/${para.logs_name:-para}.log</file>
-		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
 			<!-- rollover monthly -->
-			<fileNamePattern>para-%d{yyyy-MM}.log.zip</fileNamePattern>
-			<maxHistory>12</maxHistory>
-			<totalSizeCap>3GB</totalSizeCap>
+			<fileNamePattern>para-%d{yyyy-MM}.%i.zip</fileNamePattern>
+			<maxHistory>6</maxHistory>
+			<maxFileSize>100MB</maxFileSize>
+			<totalSizeCap>500MB</totalSizeCap>
+			<cleanHistoryOnStart>true</cleanHistoryOnStart>
 		</rollingPolicy>
 		<encoder>
 			<pattern>%-26(%d [%-5level]) %logger{35} - %msg%n</pattern>
