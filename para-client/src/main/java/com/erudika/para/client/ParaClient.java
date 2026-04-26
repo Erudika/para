@@ -51,6 +51,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -59,6 +60,9 @@ import java.util.stream.IntStream;
 import nl.altindag.ssl.SSLFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
+import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
+import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
+import org.apache.hc.client5.http.async.methods.SimpleRequestBuilder;
 import org.apache.hc.client5.http.classic.methods.HttpDelete;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPatch;
@@ -66,11 +70,15 @@ import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.classic.methods.HttpPut;
 import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
 import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.io.HttpClientConnectionManager;
 import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
+import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpHeaders;
@@ -80,6 +88,7 @@ import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.http.io.entity.ByteArrayEntity;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.protocol.HttpContext;
+import org.apache.hc.core5.io.CloseMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,13 +113,16 @@ public final class ParaClient implements Closeable {
 	private String path;
 	private String accessKey;
 	private String secretKey;
-	private String tokenKey;
-	private Long tokenKeyExpires;
-	private Long tokenKeyNextRefresh;
+	private volatile String tokenKey;
+	private volatile Long tokenKeyExpires;
+	private volatile Long tokenKeyNextRefresh;
 	private int chunkSize = 0;
 	private boolean throwExceptionOnHTTPError;
 	private final CloseableHttpClient httpclient;
+	private final CloseableHttpAsyncClient httpasyncclient;
 	private final ObjectMapper mapper;
+	private final Object tokenRefreshLock = new Object();
+	private volatile CompletableFuture<Boolean> tokenRefreshFuture;
 
 	/**
 	 * Default constructor.
@@ -154,6 +166,16 @@ public final class ParaClient implements Closeable {
 						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).
 						build()).
 				build();
+		this.httpasyncclient = HttpAsyncClients.custom().
+				setConnectionManager(PoolingAsyncClientConnectionManagerBuilder.create().
+						setTlsStrategy(new DefaultClientTlsStrategy(sslFactory.getSslContext(),
+								sslFactory.getHostnameVerifier())).build()).
+				setConnectionReuseStrategy((HttpRequest hr, HttpResponse hr1, HttpContext hc) -> false).
+				setDefaultRequestConfig(RequestConfig.custom().
+						setConnectionRequestTimeout(timeout, TimeUnit.SECONDS).
+						build()).
+				build();
+		this.httpasyncclient.start();
 	}
 
 
@@ -169,6 +191,9 @@ public final class ParaClient implements Closeable {
 	 * Closes the underlying Jersey client and releases resources.
 	 */
 	public void close() {
+		if (httpasyncclient != null) {
+			httpasyncclient.close(CloseMode.GRACEFUL);
+		}
 		if (httpclient != null) {
 			try {
 				httpclient.close();
@@ -184,6 +209,14 @@ public final class ParaClient implements Closeable {
 	 */
 	public App getApp() {
 		return me();
+	}
+
+	/**
+	 * Returns the {@link App} for the current access key (appid) asynchronously.
+	 * @return a future of the App object
+	 */
+	public CompletableFuture<App> getAppAsync() {
+		return meAsync().thenApply(app -> (App) app);
 	}
 
 	/**
@@ -243,6 +276,16 @@ public final class ParaClient implements Closeable {
 	}
 
 	/**
+	 * Returns the Para server version asynchronously.
+	 * @return a future of the version of Para server
+	 */
+	public CompletableFuture<String> getServerVersionAsync() {
+		return this.<Map<String, Object>>invokeGetAsync("", null, Map.class)
+				.thenApply(res -> res == null || StringUtils.isBlank((String) res.get("version")) ? "unknown"
+						: (String) res.get("version"));
+	}
+
+	/**
 	 * Sets the JWT access token.
 	 * @param token a valid token
 	 */
@@ -270,6 +313,40 @@ public final class ParaClient implements Closeable {
 		tokenKey = null;
 		tokenKeyExpires = null;
 		tokenKeyNextRefresh = null;
+	}
+
+	private boolean shouldRefreshToken(long now) {
+		boolean notExpired = tokenKeyExpires != null && tokenKeyExpires > now;
+		boolean canRefresh = tokenKeyNextRefresh != null &&
+				(tokenKeyNextRefresh < now || tokenKeyNextRefresh > tokenKeyExpires);
+		return tokenKey != null && notExpired && canRefresh;
+	}
+
+	private void rememberAccessToken(Map<?, ?> jwtData) {
+		if (jwtData == null) {
+			clearAccessToken();
+			return;
+		}
+		tokenKey = (String) jwtData.get("access_token");
+		tokenKeyExpires = (Long) jwtData.get("expires");
+		tokenKeyNextRefresh = (Long) jwtData.get("refresh");
+	}
+
+	private boolean handleTokenRefreshResponse(Map<String, Object> result) {
+		if (result != null && result.containsKey("user") && result.containsKey("jwt")) {
+			rememberAccessToken((Map<?, ?>) result.get("jwt"));
+			return tokenKey != null;
+		}
+		clearAccessToken();
+		return false;
+	}
+
+	private void clearTokenRefreshFuture(CompletableFuture<Boolean> future) {
+		synchronized (tokenRefreshLock) {
+			if (tokenRefreshFuture == future) {
+				tokenRefreshFuture = null;
+			}
+		}
 	}
 
 	/**
@@ -305,9 +382,21 @@ public final class ParaClient implements Closeable {
 			if (refresh) {
 				refreshToken();
 			}
-			return "Bearer " + tokenKey;
+			if (tokenKey != null) {
+				return "Bearer " + tokenKey;
+			}
 		}
 		return secretKey;
+	}
+
+	private CompletableFuture<String> keyAsync(boolean refresh) {
+		if (tokenKey == null) {
+			return CompletableFuture.completedFuture(secretKey);
+		}
+		if (!refresh) {
+			return CompletableFuture.completedFuture("Bearer " + tokenKey);
+		}
+		return refreshTokenAsync().thenApply(refreshed -> tokenKey != null ? "Bearer " + tokenKey : secretKey);
 	}
 
 	/**
@@ -321,6 +410,36 @@ public final class ParaClient implements Closeable {
 	 */
 	private <T> T readEntity(HttpEntity respEntity, Class<?> returnType, int statusCode, String reason) throws IOException {
 		if (respEntity != null) {
+			if (statusCode == HttpStatus.SC_OK
+					|| statusCode == HttpStatus.SC_CREATED
+					|| statusCode == HttpStatus.SC_NOT_MODIFIED) {
+				return readEntity(respEntity, returnType);
+			} else if (statusCode != HttpStatus.SC_NOT_FOUND
+					&& statusCode != HttpStatus.SC_NOT_MODIFIED
+					&& statusCode != HttpStatus.SC_NO_CONTENT) {
+				Map<String, Object> error = readEntity(respEntity, Map.class);
+				if (error != null && error.containsKey("code")) {
+					String msg = error.containsKey("message") ? (String) error.get("message") : "error";
+					RuntimeException e = new RuntimeException((Integer) error.get("code") + " - " + msg);
+					logger.error("{} - {}", error.get("code"), e.getMessage());
+					if (throwExceptionOnHTTPError) {
+						throw e;
+					} else if (returnType == null) {
+						return (T) error;
+					}
+				} else {
+					logger.error("{} - {}", statusCode, reason);
+					if (throwExceptionOnHTTPError) {
+						throw new RuntimeException(statusCode + " - " + reason);
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	private <T> T readEntity(byte[] respEntity, Class<?> returnType, int statusCode, String reason) throws IOException {
+		if (respEntity != null && respEntity.length > 0) {
 			if (statusCode == HttpStatus.SC_OK
 					|| statusCode == HttpStatus.SC_CREATED
 					|| statusCode == HttpStatus.SC_NOT_MODIFIED) {
@@ -370,6 +489,22 @@ public final class ParaClient implements Closeable {
 			logger.debug(null, ex);
 		} finally {
 			EntityUtils.consumeQuietly(entity);
+		}
+		return null;
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> T readEntity(byte[] entity, Class<?> type) {
+		try {
+			if (entity != null && type != null && entity.length > 0) {
+				if (type.isAssignableFrom(String.class)) {
+					return (T) new String(entity, Para.getConfig().defaultEncoding());
+				} else {
+					return mapper.readerFor(type).readValue(entity);
+				}
+			}
+		} catch (Exception ex) {
+			logger.debug(null, ex);
 		}
 		return null;
 	}
@@ -465,6 +600,81 @@ public final class ParaClient implements Closeable {
 				getEndpoint(), getFullPath(resourcePath), null, params, null, returnType);
 	}
 
+	/**
+	 * Invoke a GET request to the Para API asynchronously.
+	 * @param <T> return type
+	 * @param resourcePath the subpath after '/v1/', should not start with '/'
+	 * @param params query parameters
+	 * @param returnType the type of object to return
+	 * @return a future of a POJO
+	 */
+	public <T> CompletableFuture<T> invokeGetAsync(String resourcePath, Map<String, List<String>> params, Class<?> returnType) {
+		logger.debug("GET {}, params: {}", getFullPath(resourcePath), params);
+		return keyAsync(!JWT_PATH.equals(resourcePath)).thenCompose(key ->
+				invokeSignedRequestAsync(accessKey, key, GET.toString(),
+						getEndpoint(), getFullPath(resourcePath), null, params, null, returnType));
+	}
+
+	/**
+	 * Invoke a POST request to the Para API asynchronously.
+	 * @param <T> return type
+	 * @param resourcePath the subpath after '/v1/', should not start with '/'
+	 * @param entity request body
+	 * @param returnType the type of object to return
+	 * @return a future of a POJO
+	 */
+	public <T> CompletableFuture<T> invokePostAsync(String resourcePath, Object entity, Class<?> returnType) {
+		logger.debug("POST {}, entity: {}", getFullPath(resourcePath), entity);
+		return keyAsync(true).thenCompose(key ->
+				invokeSignedRequestAsync(accessKey, key, POST.toString(),
+						getEndpoint(), getFullPath(resourcePath), null, null, entity, returnType));
+	}
+
+	/**
+	 * Invoke a PUT request to the Para API asynchronously.
+	 * @param <T> return type
+	 * @param resourcePath the subpath after '/v1/', should not start with '/'
+	 * @param entity request body
+	 * @param returnType the type of object to return
+	 * @return a future of a POJO
+	 */
+	public <T> CompletableFuture<T> invokePutAsync(String resourcePath, Object entity, Class<?> returnType) {
+		logger.debug("PUT {}, entity: {}", getFullPath(resourcePath), entity);
+		return keyAsync(true).thenCompose(key ->
+				invokeSignedRequestAsync(accessKey, key, PUT.toString(),
+						getEndpoint(), getFullPath(resourcePath), null, null, entity, returnType));
+	}
+
+	/**
+	 * Invoke a PATCH request to the Para API asynchronously.
+	 * @param <T> return type
+	 * @param resourcePath the subpath after '/v1/', should not start with '/'
+	 * @param entity request body
+	 * @param returnType the type of object to return
+	 * @return a future of a POJO
+	 */
+	public <T> CompletableFuture<T> invokePatchAsync(String resourcePath, Object entity, Class<?> returnType) {
+		logger.debug("PATCH {}, entity: {}", getFullPath(resourcePath), entity);
+		return keyAsync(true).thenCompose(key ->
+				invokeSignedRequestAsync(accessKey, key, PATCH.toString(),
+						getEndpoint(), getFullPath(resourcePath), null, null, entity, returnType));
+	}
+
+	/**
+	 * Invoke a DELETE request to the Para API asynchronously.
+	 * @param <T> return type
+	 * @param resourcePath the subpath after '/v1/', should not start with '/'
+	 * @param params query parameters
+	 * @param returnType the type of object to return
+	 * @return a future of a POJO
+	 */
+	public <T> CompletableFuture<T> invokeDeleteAsync(String resourcePath, Map<String, List<String>> params, Class<?> returnType) {
+		logger.debug("DELETE {}, params: {}", getFullPath(resourcePath), params);
+		return keyAsync(true).thenCompose(key ->
+				invokeSignedRequestAsync(accessKey, key, DELETE.toString(),
+						getEndpoint(), getFullPath(resourcePath), null, params, null, returnType));
+	}
+
 	<T> T invokeSignedRequest(String accessKey, String secretKey,
 			String method, String apiURL, String path,
 			Map<String, String> headers, Map<String, List<String>> params, Object entity, Class<?> returnType) {
@@ -527,6 +737,81 @@ public final class ParaClient implements Closeable {
 			logger.error(null, ex);
 		}
 		return null;
+	}
+
+	<T> CompletableFuture<T> invokeSignedRequestAsync(String accessKey, String secretKey,
+			String method, String apiURL, String path,
+			Map<String, String> headers, Map<String, List<String>> params, Object entity, Class<?> returnType) {
+
+		boolean isJWT = Strings.CI.startsWith(secretKey, "Bearer");
+
+		String uri = getEndpoint() + path;
+		Map<String, String> signedHeaders = new HashMap<>();
+		byte[] jsonEntity = getJsonEntityAsBytes(entity);
+
+		Signer signer = new Signer();
+		if (!isJWT) {
+			signedHeaders = signer.signRequest(accessKey, secretKey, method, getEndpoint(), path,
+					headers, params, jsonEntity);
+		}
+
+		uri = setQueryParameters(uri, params);
+		String reqDetails = Utils.formatMessage(" [{0} {1}]", method, uri);
+
+		SimpleHttpRequest req = getSimpleHttpRequest(uri, method, jsonEntity);
+
+		if (headers != null) {
+			for (Map.Entry<String, String> header : headers.entrySet()) {
+				req.addHeader(header.getKey(), header.getValue());
+			}
+		}
+
+		if (isJWT) {
+			req.setHeader(HttpHeaders.AUTHORIZATION, secretKey);
+		} else {
+			req.setHeader(HttpHeaders.AUTHORIZATION, signedHeaders.get(HttpHeaders.AUTHORIZATION));
+			req.setHeader("X-Amz-Date", signedHeaders.get("X-Amz-Date"));
+		}
+
+		if (Para.getConfig().clientUserAgentEnabled()) {
+			String userAgent = new StringBuilder("Para client ").append(Para.getVersion()).append(" ").append(accessKey).
+					append(" (Java ").append(System.getProperty("java.runtime.version")).append(")").toString();
+			req.setHeader(HttpHeaders.USER_AGENT, userAgent);
+		}
+
+		req.setHeader(HttpHeaders.ACCEPT_ENCODING, "gzip");
+
+		CompletableFuture<T> future = new CompletableFuture<>();
+		final String requestUri = uri;
+		httpasyncclient.execute(req, new FutureCallback<SimpleHttpResponse>() {
+			@Override
+			public void completed(SimpleHttpResponse resp) {
+				try {
+					int statusCode = resp.getCode();
+					String reason = resp.getReasonPhrase() + reqDetails;
+					future.complete(readEntity(resp.getBodyBytes(), returnType, statusCode, reason));
+				} catch (Exception ex) {
+					future.completeExceptionally(ex);
+				}
+			}
+
+			@Override
+			public void failed(Exception ex) {
+				String msg = "Failed to execute signed " + method + " request to " + requestUri + ": " + ex.getMessage();
+				if (throwExceptionOnHTTPError) {
+					future.completeExceptionally(new RuntimeException(msg, ex));
+				} else {
+					logger.error(msg + reqDetails);
+					future.complete(null);
+				}
+			}
+
+			@Override
+			public void cancelled() {
+				future.cancel(true);
+			}
+		});
+		return future;
 	}
 
 	private byte[] getJsonEntityAsBytes(Object entity) {
@@ -594,6 +879,14 @@ public final class ParaClient implements Closeable {
 				throw new UnsupportedOperationException();
 		}
 		return req;
+	}
+
+	private SimpleHttpRequest getSimpleHttpRequest(String uri, String method, byte[] jsonEntity) {
+		SimpleRequestBuilder req = SimpleRequestBuilder.create(method).setUri(uri);
+		if (jsonEntity != null && !"GET".equals(method) && !"DELETE".equals(method)) {
+			req.setBody(jsonEntity, ContentType.APPLICATION_JSON);
+		}
+		return req.build();
 	}
 
 	/**
@@ -704,6 +997,22 @@ public final class ParaClient implements Closeable {
 	}
 
 	/**
+	 * Persists an object to the data store asynchronously.
+	 * @param <P> the type of object
+	 * @param obj the domain object
+	 * @return a future of the same object with assigned id or null if not created
+	 */
+	public <P extends ParaObject> CompletableFuture<P> createAsync(P obj) {
+		if (obj == null) {
+			return CompletableFuture.completedFuture(null);
+		}
+		if (StringUtils.isBlank(obj.getId()) || StringUtils.isBlank(obj.getType())) {
+			return invokePostAsync(Utils.urlEncode(obj.getType()), obj, obj.getClass());
+		}
+		return invokePutAsync(obj.getObjectURI(), obj, obj.getClass());
+	}
+
+	/**
 	 * Retrieves an object from the data store.
 	 * @param <P> the type of object
 	 * @param type the type of the object
@@ -716,6 +1025,21 @@ public final class ParaClient implements Closeable {
 		}
 
 		return invokeGet(Utils.urlEncode(type).concat("/").concat(Utils.urlEncode(id)), null,
+				ParaObjectUtils.toClass(type));
+	}
+
+	/**
+	 * Retrieves an object from the data store asynchronously.
+	 * @param <P> the type of object
+	 * @param type the type of the object
+	 * @param id the id of the object
+	 * @return a future of the retrieved object or null if not found
+	 */
+	public <P extends ParaObject> CompletableFuture<P> readAsync(String type, String id) {
+		if (StringUtils.isBlank(type) || StringUtils.isBlank(id)) {
+			return CompletableFuture.completedFuture(null);
+		}
+		return invokeGetAsync(Utils.urlEncode(type).concat("/").concat(Utils.urlEncode(id)), null,
 				ParaObjectUtils.toClass(type));
 	}
 
@@ -734,6 +1058,20 @@ public final class ParaClient implements Closeable {
 	}
 
 	/**
+	 * Retrieves an object from the data store asynchronously.
+	 * @param <P> the type of object
+	 * @param id the id of the object
+	 * @return a future of the retrieved object or null if not found
+	 */
+	public <P extends ParaObject> CompletableFuture<P> readAsync(String id) {
+		if (StringUtils.isBlank(id)) {
+			return CompletableFuture.completedFuture(null);
+		}
+		return this.<Map<String, Object>>invokeGetAsync("_id/".concat(Utils.urlEncode(id)), null, Map.class)
+				.thenApply(data -> ParaObjectUtils.setAnnotatedFields(data));
+	}
+
+	/**
 	 * Updates an object permanently. Supports partial updates.
 	 * @param <P> the type of object
 	 * @param obj the object to update
@@ -747,6 +1085,19 @@ public final class ParaClient implements Closeable {
 	}
 
 	/**
+	 * Updates an object permanently asynchronously. Supports partial updates.
+	 * @param <P> the type of object
+	 * @param obj the object to update
+	 * @return a future of the updated object
+	 */
+	public <P extends ParaObject> CompletableFuture<P> updateAsync(P obj) {
+		if (obj == null) {
+			return CompletableFuture.completedFuture(null);
+		}
+		return invokePatchAsync(obj.getObjectURI(), obj, obj.getClass());
+	}
+
+	/**
 	 * Deletes an object permanently.
 	 * @param <P> the type of object
 	 * @param obj the object
@@ -756,6 +1107,19 @@ public final class ParaClient implements Closeable {
 			return;
 		}
 		invokeDelete(obj.getObjectURI(), null, null);
+	}
+
+	/**
+	 * Deletes an object permanently asynchronously.
+	 * @param <P> the type of object
+	 * @param obj the object
+	 * @return a future completed when the delete request finishes
+	 */
+	public <P extends ParaObject> CompletableFuture<Void> deleteAsync(P obj) {
+		if (obj == null || obj.getId() == null) {
+			return CompletableFuture.completedFuture(null);
+		}
+		return invokeDeleteAsync(obj.getObjectURI(), null, null).thenApply(ignored -> null);
 	}
 
 	/**
@@ -777,6 +1141,30 @@ public final class ParaClient implements Closeable {
 				.map(entity -> (List<P>) getItemsFromList(entity))
 				.flatMap(List::stream)
 				.collect(Collectors.toList());
+	}
+
+	/**
+	 * Saves multiple objects to the data store asynchronously.
+	 * @param <P> the type of object
+	 * @param objects the list of objects to save
+	 * @return a future of a list of objects
+	 */
+	@SuppressWarnings("unchecked")
+	public <P extends ParaObject> CompletableFuture<List<P>> createAllAsync(List<P> objects) {
+		if (objects == null || objects.isEmpty() || objects.get(0) == null) {
+			return CompletableFuture.completedFuture(Collections.emptyList());
+		}
+		final int size = this.chunkSize;
+		CompletableFuture<List<P>> future = CompletableFuture.completedFuture(new ArrayList<>());
+		for (int i = 0; i < getNumChunks(objects, size); i++) {
+			final List<P> chunk = (List<P>) partitionList(objects, i, size);
+			future = future.thenCompose(result -> invokePostAsync("_batch", chunk, List.class).thenApply(response -> {
+				List<P> combined = new ArrayList<>(result);
+				combined.addAll((List<P>) getItemsFromList((List<?>) response));
+				return combined;
+			}));
+		}
+		return future;
 	}
 
 	/**
@@ -805,6 +1193,34 @@ public final class ParaClient implements Closeable {
 	}
 
 	/**
+	 * Retrieves multiple objects from the data store asynchronously.
+	 * @param <P> the type of object
+	 * @param keys a list of object ids
+	 * @return a future of a list of objects
+	 */
+	@SuppressWarnings("unchecked")
+	public <P extends ParaObject> CompletableFuture<List<P>> readAllAsync(List<String> keys) {
+		if (keys == null || keys.isEmpty()) {
+			return CompletableFuture.completedFuture(Collections.emptyList());
+		}
+		final int size = (keys.size() > 200 && this.chunkSize <= 0) ? 200 : this.chunkSize;
+		CompletableFuture<List<P>> future = CompletableFuture.completedFuture(new ArrayList<>());
+		for (int i = 0; i < getNumChunks(keys, size); i++) {
+			final List<String> chunk = (List<String>) partitionList(keys, i, size);
+			future = future.thenCompose(result -> {
+				Map<String, List<String>> ids = new HashMap<>();
+				ids.put("ids", chunk);
+				return invokeGetAsync("_batch", ids, List.class).thenApply(response -> {
+					List<P> combined = new ArrayList<>(result);
+					combined.addAll((List<P>) getItemsFromList((List<?>) response));
+					return combined;
+				});
+			});
+		}
+		return future;
+	}
+
+	/**
 	 * Updates multiple objects.
 	 * @param <P> the type of object
 	 * @param objects the objects to update
@@ -823,6 +1239,30 @@ public final class ParaClient implements Closeable {
 				.map(entity -> (List<P>) getItemsFromList(entity))
 				.flatMap(List::stream)
 				.collect(Collectors.toList());
+	}
+
+	/**
+	 * Updates multiple objects asynchronously.
+	 * @param <P> the type of object
+	 * @param objects the objects to update
+	 * @return a future of a list of objects
+	 */
+	@SuppressWarnings("unchecked")
+	public <P extends ParaObject> CompletableFuture<List<P>> updateAllAsync(List<P> objects) {
+		if (objects == null || objects.isEmpty()) {
+			return CompletableFuture.completedFuture(Collections.emptyList());
+		}
+		final int size = this.chunkSize;
+		CompletableFuture<List<P>> future = CompletableFuture.completedFuture(new ArrayList<>());
+		for (int i = 0; i < getNumChunks(objects, size); i++) {
+			final List<P> chunk = (List<P>) partitionList(objects, i, size);
+			future = future.thenCompose(result -> invokePatchAsync("_batch", chunk, List.class).thenApply(response -> {
+				List<P> combined = new ArrayList<>(result);
+				combined.addAll((List<P>) getItemsFromList((List<?>) response));
+				return combined;
+			}));
+		}
+		return future;
 	}
 
 	/**
@@ -845,6 +1285,29 @@ public final class ParaClient implements Closeable {
 	}
 
 	/**
+	 * Deletes multiple objects asynchronously.
+	 * @param keys the ids of the objects to delete
+	 * @return a future completed when all chunks finish
+	 */
+	@SuppressWarnings("unchecked")
+	public CompletableFuture<Void> deleteAllAsync(List<String> keys) {
+		if (keys == null || keys.isEmpty()) {
+			return CompletableFuture.completedFuture(null);
+		}
+		final int size = (keys.size() > 100 && this.chunkSize <= 0) ? 100 : this.chunkSize;
+		CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
+		for (int i = 0; i < getNumChunks(keys, size); i++) {
+			final List<String> chunk = (List<String>) partitionList(keys, i, size);
+			future = future.thenCompose(ignored -> {
+				Map<String, List<String>> ids = new HashMap<>();
+				ids.put("ids", chunk);
+				return invokeDeleteAsync("_batch", ids, null).thenApply(result -> null);
+			});
+		}
+		return future;
+	}
+
+	/**
 	 * Returns a list all objects found for the given type.
 	 * The result is paginated so only one page of items is returned, at a time.
 	 * @param <P> the type of object
@@ -857,6 +1320,21 @@ public final class ParaClient implements Closeable {
 			return Collections.emptyList();
 		}
 		return getItems(invokeGet(Utils.urlEncode(type), pagerToParams(pager), Map.class), pager);
+	}
+
+	/**
+	 * Returns a list all objects found for the given type asynchronously.
+	 * @param <P> the type of object
+	 * @param type the type of objects to search for
+	 * @param pager a Pager
+	 * @return a future of a list of objects
+	 */
+	public <P extends ParaObject> CompletableFuture<List<P>> listAsync(String type, Pager... pager) {
+		if (StringUtils.isBlank(type)) {
+			return CompletableFuture.completedFuture(Collections.emptyList());
+		}
+		return this.<Map<String, Object>>invokeGetAsync(Utils.urlEncode(type), pagerToParams(pager), Map.class)
+				.thenApply(result -> getItems(result, pager));
 	}
 
 	/////////////////////////////////////////////
@@ -877,6 +1355,21 @@ public final class ParaClient implements Closeable {
 	}
 
 	/**
+	 * Simple id search asynchronously.
+	 * @param <P> type of the object
+	 * @param id the id
+	 * @return a future of the object if found or null
+	 */
+	public <P extends ParaObject> CompletableFuture<P> findByIdAsync(String id) {
+		Map<String, List<String>> params = new HashMap<>();
+		params.put(Config._ID, getQueryParameters(id));
+		return findAsync("id", params).thenApply(result -> {
+			List<P> list = getItems(result);
+			return list.isEmpty() ? null : list.get(0);
+		});
+	}
+
+	/**
 	 * Simple multi id search.
 	 * @param <P> type of the object
 	 * @param ids a list of ids to search for
@@ -886,6 +1379,18 @@ public final class ParaClient implements Closeable {
 		Map<String, List<String>> params = new HashMap<>();
 		params.put("ids", ids);
 		return getItems(find("ids", params));
+	}
+
+	/**
+	 * Simple multi id search asynchronously.
+	 * @param <P> type of the object
+	 * @param ids a list of ids to search for
+	 * @return a future of a list of objects found
+	 */
+	public <P extends ParaObject> CompletableFuture<List<P>> findByIdsAsync(List<String> ids) {
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("ids", ids);
+		return findAsync("ids", params).thenApply(this::getItems);
 	}
 
 	/**
@@ -910,6 +1415,17 @@ public final class ParaClient implements Closeable {
 		return getItems(find("nearby", params), pager);
 	}
 
+	public <P extends ParaObject> CompletableFuture<List<P>> findNearbyAsync(String type, String query, int radius,
+			double lat, double lng, Pager... pager) {
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("latlng", getQueryParameters(lat + "," + lng));
+		params.put("radius", getQueryParameters(Integer.toString(radius)));
+		params.put("q", getQueryParameters(query));
+		params.put(Config._TYPE, getQueryParameters(type));
+		params.putAll(pagerToParams(pager));
+		return findAsync("nearby", params).thenApply(result -> getItems(result, pager));
+	}
+
 	/**
 	 * Searches for objects that have a property which value starts with a given prefix.
 	 * @param <P> type of the object
@@ -928,6 +1444,16 @@ public final class ParaClient implements Closeable {
 		return getItems(find("prefix", params), pager);
 	}
 
+	public <P extends ParaObject> CompletableFuture<List<P>> findPrefixAsync(String type, String field, String prefix,
+			Pager... pager) {
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("field", getQueryParameters(field));
+		params.put("prefix", getQueryParameters(prefix));
+		params.put(Config._TYPE, getQueryParameters(type));
+		params.putAll(pagerToParams(pager));
+		return findAsync("prefix", params).thenApply(result -> getItems(result, pager));
+	}
+
 	/**
 	 * Simple query string search. This is the basic search method.
 	 * @param <P> type of the object
@@ -942,6 +1468,14 @@ public final class ParaClient implements Closeable {
 		params.put(Config._TYPE, getQueryParameters(type));
 		params.putAll(pagerToParams(pager));
 		return getItems(find("", params), pager);
+	}
+
+	public <P extends ParaObject> CompletableFuture<List<P>> findQueryAsync(String type, String query, Pager... pager) {
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("q", getQueryParameters(query));
+		params.put(Config._TYPE, getQueryParameters(type));
+		params.putAll(pagerToParams(pager));
+		return findAsync("", params).thenApply(result -> getItems(result, pager));
 	}
 
 	/**
@@ -960,6 +1494,16 @@ public final class ParaClient implements Closeable {
 		params.put(Config._TYPE, getQueryParameters(type));
 		params.putAll(pagerToParams(pager));
 		return getItems(find("nested", params), pager);
+	}
+
+	public <P extends ParaObject> CompletableFuture<List<P>> findNestedQueryAsync(String type, String field,
+			String query, Pager... pager) {
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("q", getQueryParameters(query));
+		params.put("field", getQueryParameters(field));
+		params.put(Config._TYPE, getQueryParameters(type));
+		params.putAll(pagerToParams(pager));
+		return findAsync("nested", params).thenApply(result -> getItems(result, pager));
 	}
 
 	/**
@@ -983,6 +1527,17 @@ public final class ParaClient implements Closeable {
 		return getItems(find("similar", params), pager);
 	}
 
+	public <P extends ParaObject> CompletableFuture<List<P>> findSimilarAsync(String type, String filterKey,
+			String[] fields, String liketext, Pager... pager) {
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("fields", fields == null ? null : Arrays.asList(fields));
+		params.put("filterid", getQueryParameters(filterKey));
+		params.put("like", getQueryParameters(liketext));
+		params.put(Config._TYPE, getQueryParameters(type));
+		params.putAll(pagerToParams(pager));
+		return findAsync("similar", params).thenApply(result -> getItems(result, pager));
+	}
+
 	/**
 	 * Searches for objects tagged with one or more tags.
 	 * @param <P> type of the object
@@ -999,6 +1554,14 @@ public final class ParaClient implements Closeable {
 		return getItems(find("tagged", params), pager);
 	}
 
+	public <P extends ParaObject> CompletableFuture<List<P>> findTaggedAsync(String type, String[] tags, Pager... pager) {
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("tags", tags == null ? null : Arrays.asList(tags));
+		params.put(Config._TYPE, getQueryParameters(type));
+		params.putAll(pagerToParams(pager));
+		return findAsync("tagged", params).thenApply(result -> getItems(result, pager));
+	}
+
 	/**
 	 * Searches for {@link com.erudika.para.core.Tag} objects.
 	 * This method might be deprecated in the future.
@@ -1010,6 +1573,11 @@ public final class ParaClient implements Closeable {
 	public <P extends ParaObject> List<P> findTags(String keyword, Pager... pager) {
 		keyword = (keyword == null) ? "*" : keyword.concat("*");
 		return findWildcard(Utils.type(Tag.class), "tag", keyword, pager);
+	}
+
+	public <P extends ParaObject> CompletableFuture<List<P>> findTagsAsync(String keyword, Pager... pager) {
+		String tagKeyword = (keyword == null) ? "*" : keyword.concat("*");
+		return findWildcardAsync(Utils.type(Tag.class), "tag", tagKeyword, pager);
 	}
 
 	/**
@@ -1028,6 +1596,16 @@ public final class ParaClient implements Closeable {
 		params.put(Config._TYPE, getQueryParameters(type));
 		params.putAll(pagerToParams(pager));
 		return getItems(find("in", params), pager);
+	}
+
+	public <P extends ParaObject> CompletableFuture<List<P>> findTermInListAsync(String type, String field,
+			List<String> terms, Pager... pager) {
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("field", getQueryParameters(field));
+		params.put("terms", terms);
+		params.put(Config._TYPE, getQueryParameters(type));
+		params.putAll(pagerToParams(pager));
+		return findAsync("in", params).thenApply(result -> getItems(result, pager));
 	}
 
 	/**
@@ -1062,6 +1640,29 @@ public final class ParaClient implements Closeable {
 		return getItems(find("terms", params), pager);
 	}
 
+	public <P extends ParaObject> CompletableFuture<List<P>> findTermsAsync(String type, Map<String, ?> terms,
+			boolean matchAll, Pager... pager) {
+		if (terms == null) {
+			return CompletableFuture.completedFuture(Collections.emptyList());
+		}
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("matchall", getQueryParameters(Boolean.toString(matchAll)));
+		LinkedList<String> list = new LinkedList<>();
+		for (Map.Entry<String, ? extends Object> term : terms.entrySet()) {
+			String key = term.getKey();
+			Object value = term.getValue();
+			if (value != null) {
+				list.add(key.concat(Para.getConfig().separator()).concat(value.toString()));
+			}
+		}
+		if (!terms.isEmpty()) {
+			params.put("terms", list);
+		}
+		params.put(Config._TYPE, getQueryParameters(type));
+		params.putAll(pagerToParams(pager));
+		return findAsync("terms", params).thenApply(result -> getItems(result, pager));
+	}
+
 	/**
 	 * Searches for objects that have a property with a value matching a wildcard query.
 	 * @param <P> type of the object
@@ -1080,6 +1681,16 @@ public final class ParaClient implements Closeable {
 		return getItems(find("wildcard", params), pager);
 	}
 
+	public <P extends ParaObject> CompletableFuture<List<P>> findWildcardAsync(String type, String field,
+			String wildcard, Pager... pager) {
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("field", getQueryParameters(field));
+		params.put("q", getQueryParameters(wildcard));
+		params.put(Config._TYPE, getQueryParameters(type));
+		params.putAll(pagerToParams(pager));
+		return findAsync("wildcard", params).thenApply(result -> getItems(result, pager));
+	}
+
 	/**
 	 * Counts indexed objects.
 	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
@@ -1091,6 +1702,16 @@ public final class ParaClient implements Closeable {
 		Pager pager = new Pager();
 		getItems(find("count", params), pager);
 		return pager.getCount();
+	}
+
+	public CompletableFuture<Long> getCountAsync(String type) {
+		Map<String, List<String>> params = new HashMap<>();
+		params.put(Config._TYPE, getQueryParameters(type));
+		Pager pager = new Pager();
+		return findAsync("count", params).thenApply(result -> {
+			getItems(result, pager);
+			return pager.getCount();
+		});
 	}
 
 	/**
@@ -1122,6 +1743,31 @@ public final class ParaClient implements Closeable {
 		return pager.getCount();
 	}
 
+	public CompletableFuture<Long> getCountAsync(String type, Map<String, ?> terms) {
+		if (terms == null) {
+			return CompletableFuture.completedFuture(0L);
+		}
+		Map<String, List<String>> params = new HashMap<>();
+		LinkedList<String> list = new LinkedList<>();
+		for (Map.Entry<String, ? extends Object> term : terms.entrySet()) {
+			String key = term.getKey();
+			Object value = term.getValue();
+			if (value != null) {
+				list.add(key.concat(Para.getConfig().separator()).concat(value.toString()));
+			}
+		}
+		if (!terms.isEmpty()) {
+			params.put("terms", list);
+		}
+		params.put(Config._TYPE, getQueryParameters(type));
+		params.put("count", getQueryParameters("true"));
+		Pager pager = new Pager();
+		return findAsync("terms", params).thenApply(result -> {
+			getItems(result, pager);
+			return pager.getCount();
+		});
+	}
+
 	private Map<String, Object> find(String queryType, Map<String, List<String>> params) {
 		Map<String, Object> map = new HashMap<>();
 		if (params != null && !params.isEmpty()) {
@@ -1137,6 +1783,21 @@ public final class ParaClient implements Closeable {
 			map.put("totalHits", 0);
 		}
 		return map;
+	}
+
+	private CompletableFuture<Map<String, Object>> findAsync(String queryType, Map<String, List<String>> params) {
+		if (params != null && !params.isEmpty()) {
+			String qType = StringUtils.isBlank(queryType) ? "/default" : "/".concat(queryType);
+			List<String> type = params.get(Config._TYPE);
+			if (type == null || type.isEmpty() || StringUtils.isBlank(type.getFirst())) {
+				return invokeGetAsync("search" + qType, params, Map.class);
+			}
+			return invokeGetAsync(type.getFirst() + "/search" + qType, params, Map.class);
+		}
+		Map<String, Object> map = new HashMap<>();
+		map.put("items", Collections.emptyList());
+		map.put("totalHits", 0);
+		return CompletableFuture.completedFuture(map);
 	}
 
 	/////////////////////////////////////////////
@@ -1161,6 +1822,20 @@ public final class ParaClient implements Closeable {
 		return pager.getCount();
 	}
 
+	public CompletableFuture<Long> countLinksAsync(ParaObject obj, String type2) {
+		if (obj == null || obj.getId() == null || type2 == null) {
+			return CompletableFuture.completedFuture(0L);
+		}
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("count", getQueryParameters("true"));
+		Pager pager = new Pager();
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
+		return this.<Map<String, Object>>invokeGetAsync(url, params, Map.class).thenApply(result -> {
+			getItems(result, pager);
+			return pager.getCount();
+		});
+	}
+
 	/**
 	 * Returns all objects linked to the given one. Only applicable to many-to-many relationships.
 	 * @param <P> type of linked objects
@@ -1175,6 +1850,16 @@ public final class ParaClient implements Closeable {
 		}
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
 		return getItems(invokeGet(url, pagerToParams(pager), Map.class), pager);
+	}
+
+	public <P extends ParaObject> CompletableFuture<List<P>> getLinkedObjectsAsync(ParaObject obj, String type2,
+			Pager... pager) {
+		if (obj == null || obj.getId() == null || type2 == null) {
+			return CompletableFuture.completedFuture(Collections.emptyList());
+		}
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
+		return this.<Map<String, Object>>invokeGetAsync(url, pagerToParams(pager), Map.class)
+				.thenApply(result -> getItems(result, pager));
 	}
 
 	/**
@@ -1200,6 +1885,20 @@ public final class ParaClient implements Closeable {
 		return getItems(invokeGet(url, params, Map.class), pager);
 	}
 
+	public <P extends ParaObject> CompletableFuture<List<P>> findLinkedObjectsAsync(ParaObject obj, String type2,
+			String field, String query, Pager... pager) {
+		if (obj == null || obj.getId() == null || type2 == null) {
+			return CompletableFuture.completedFuture(Collections.emptyList());
+		}
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("field", getQueryParameters(field));
+		params.put("q", getQueryParameters((query == null) ? "*" : query));
+		params.putAll(pagerToParams(pager));
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
+		return this.<Map<String, Object>>invokeGetAsync(url, params, Map.class)
+				.thenApply(result -> getItems(result, pager));
+	}
+
 	/**
 	 * Checks if this object is linked to another.
 	 * @param type2 the other type
@@ -1217,6 +1916,15 @@ public final class ParaClient implements Closeable {
 		return result != null && result;
 	}
 
+	public CompletableFuture<Boolean> isLinkedAsync(ParaObject obj, String type2, String id2) {
+		if (obj == null || obj.getId() == null || type2 == null || id2 == null) {
+			return CompletableFuture.completedFuture(false);
+		}
+		String url = Utils.formatMessage("{0}/links/{1}/{2}", obj.getObjectURI(),
+				Utils.urlEncode(type2), Utils.urlEncode(id2));
+		return this.<Boolean>invokeGetAsync(url, null, Boolean.class).thenApply(result -> result != null && result);
+	}
+
 	/**
 	 * Checks if a given object is linked to this one.
 	 * @param toObj the other object
@@ -1228,6 +1936,13 @@ public final class ParaClient implements Closeable {
 			return false;
 		}
 		return isLinked(obj, toObj.getType(), toObj.getId());
+	}
+
+	public CompletableFuture<Boolean> isLinkedAsync(ParaObject obj, ParaObject toObj) {
+		if (obj == null || obj.getId() == null || toObj == null || toObj.getId() == null) {
+			return CompletableFuture.completedFuture(false);
+		}
+		return isLinkedAsync(obj, toObj.getType(), toObj.getId());
 	}
 
 	/**
@@ -1246,6 +1961,14 @@ public final class ParaClient implements Closeable {
 		return (String) invokePost(url, null, String.class);
 	}
 
+	public CompletableFuture<String> linkAsync(ParaObject obj, String id2) {
+		if (obj == null || obj.getId() == null || id2 == null) {
+			return CompletableFuture.completedFuture(null);
+		}
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(id2));
+		return invokePostAsync(url, null, String.class);
+	}
+
 	/**
 	 * Unlinks an object from this one.
 	 * Only a link is deleted. Objects are left untouched.
@@ -1262,6 +1985,15 @@ public final class ParaClient implements Closeable {
 		invokeDelete(url, null, null);
 	}
 
+	public CompletableFuture<Void> unlinkAsync(ParaObject obj, String type2, String id2) {
+		if (obj == null || obj.getId() == null || type2 == null || id2 == null) {
+			return CompletableFuture.completedFuture(null);
+		}
+		String url = Utils.formatMessage("{0}/links/{1}/{2}", obj.getObjectURI(),
+				Utils.urlEncode(type2), Utils.urlEncode(id2));
+		return invokeDeleteAsync(url, null, null).thenApply(result -> null);
+	}
+
 	/**
 	 * Unlinks all objects that are linked to this one.
 	 * @param obj the object to execute this method on
@@ -1274,6 +2006,14 @@ public final class ParaClient implements Closeable {
 		}
 		String url = Utils.formatMessage("{0}/links", obj.getObjectURI());
 		invokeDelete(url, null, null);
+	}
+
+	public CompletableFuture<Void> unlinkAllAsync(ParaObject obj) {
+		if (obj == null || obj.getId() == null) {
+			return CompletableFuture.completedFuture(null);
+		}
+		String url = Utils.formatMessage("{0}/links", obj.getObjectURI());
+		return invokeDeleteAsync(url, null, null).thenApply(result -> null);
 	}
 
 	/**
@@ -1295,6 +2035,21 @@ public final class ParaClient implements Closeable {
 		return pager.getCount();
 	}
 
+	public CompletableFuture<Long> countChildrenAsync(ParaObject obj, String type2) {
+		if (obj == null || obj.getId() == null || type2 == null) {
+			return CompletableFuture.completedFuture(0L);
+		}
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("count", getQueryParameters("true"));
+		params.put("childrenonly", getQueryParameters("true"));
+		Pager pager = new Pager();
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
+		return this.<Map<String, Object>>invokeGetAsync(url, params, Map.class).thenApply(result -> {
+			getItems(result, pager);
+			return pager.getCount();
+		});
+	}
+
 	/**
 	 * Returns all child objects linked to this object.
 	 * @param <P> the type of children
@@ -1312,6 +2067,19 @@ public final class ParaClient implements Closeable {
 		params.putAll(pagerToParams(pager));
 		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
 		return getItems(invokeGet(url, params, Map.class), pager);
+	}
+
+	public <P extends ParaObject> CompletableFuture<List<P>> getChildrenAsync(ParaObject obj, String type2,
+			Pager... pager) {
+		if (obj == null || obj.getId() == null || type2 == null) {
+			return CompletableFuture.completedFuture(Collections.emptyList());
+		}
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("childrenonly", getQueryParameters("true"));
+		params.putAll(pagerToParams(pager));
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
+		return this.<Map<String, Object>>invokeGetAsync(url, params, Map.class)
+				.thenApply(result -> getItems(result, pager));
 	}
 
 	/**
@@ -1338,6 +2106,21 @@ public final class ParaClient implements Closeable {
 		return getItems(invokeGet(url, params, Map.class), pager);
 	}
 
+	public <P extends ParaObject> CompletableFuture<List<P>> getChildrenAsync(ParaObject obj, String type2,
+			String field, String term, Pager... pager) {
+		if (obj == null || obj.getId() == null || type2 == null) {
+			return CompletableFuture.completedFuture(Collections.emptyList());
+		}
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("childrenonly", getQueryParameters("true"));
+		params.put("field", getQueryParameters(field));
+		params.put("term", getQueryParameters(term));
+		params.putAll(pagerToParams(pager));
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
+		return this.<Map<String, Object>>invokeGetAsync(url, params, Map.class)
+				.thenApply(result -> getItems(result, pager));
+	}
+
 	/**
 	 * Search through all child objects. Only searches child objects directly
 	 * connected to this parent via the {@code parentid} field.
@@ -1360,6 +2143,20 @@ public final class ParaClient implements Closeable {
 		return getItems(invokeGet(url, params, Map.class), pager);
 	}
 
+	public <P extends ParaObject> CompletableFuture<List<P>> findChildrenAsync(ParaObject obj, String type2,
+			String query, Pager... pager) {
+		if (obj == null || obj.getId() == null || type2 == null) {
+			return CompletableFuture.completedFuture(Collections.emptyList());
+		}
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("childrenonly", getQueryParameters("true"));
+		params.put("q", getQueryParameters((query == null) ? "*" : query));
+		params.putAll(pagerToParams(pager));
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
+		return this.<Map<String, Object>>invokeGetAsync(url, params, Map.class)
+				.thenApply(result -> getItems(result, pager));
+	}
+
 	/**
 	 * Deletes all child objects permanently.
 	 * @param obj the object to execute this method on
@@ -1375,6 +2172,16 @@ public final class ParaClient implements Closeable {
 		invokeDelete(url, params, null);
 	}
 
+	public CompletableFuture<Void> deleteChildrenAsync(ParaObject obj, String type2) {
+		if (obj == null || obj.getId() == null || type2 == null) {
+			return CompletableFuture.completedFuture(null);
+		}
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("childrenonly", getQueryParameters("true"));
+		String url = Utils.formatMessage("{0}/links/{1}", obj.getObjectURI(), Utils.urlEncode(type2));
+		return invokeDeleteAsync(url, params, null).thenApply(result -> null);
+	}
+
 	/////////////////////////////////////////////
 	//				 UTILS
 	/////////////////////////////////////////////
@@ -1388,6 +2195,10 @@ public final class ParaClient implements Closeable {
 		return res != null ? res : "";
 	}
 
+	public CompletableFuture<String> newIdAsync() {
+		return this.<String>invokeGetAsync("utils/newid", null, String.class).thenApply(res -> res != null ? res : "");
+	}
+
 	/**
 	 * Returns the current timestamp.
 	 * @return a long number
@@ -1395,6 +2206,10 @@ public final class ParaClient implements Closeable {
 	public long getTimestamp() {
 		Long res = (Long) invokeGet("utils/timestamp", null, Long.class);
 		return res != null ? res : 0L;
+	}
+
+	public CompletableFuture<Long> getTimestampAsync() {
+		return this.<Long>invokeGetAsync("utils/timestamp", null, Long.class).thenApply(res -> res != null ? res : 0L);
 	}
 
 	/**
@@ -1410,6 +2225,13 @@ public final class ParaClient implements Closeable {
 		return (String) invokeGet("utils/formatdate", params, String.class);
 	}
 
+	public CompletableFuture<String> formatDateAsync(String format, Locale loc) {
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("format", getQueryParameters(format));
+		params.put("locale", getQueryParameters(loc == null ? null : loc.toString()));
+		return invokeGetAsync("utils/formatdate", params, String.class);
+	}
+
 	/**
 	 * Converts spaces to dashes.
 	 * @param str a string with spaces
@@ -1423,6 +2245,13 @@ public final class ParaClient implements Closeable {
 		return (String) invokeGet("utils/nospaces", params, String.class);
 	}
 
+	public CompletableFuture<String> noSpacesAsync(String str, String replaceWith) {
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("string", getQueryParameters(str));
+		params.put("replacement", getQueryParameters(replaceWith));
+		return invokeGetAsync("utils/nospaces", params, String.class);
+	}
+
 	/**
 	 * Strips all symbols, punctuation, whitespace and control chars from a string.
 	 * @param str a dirty string
@@ -1432,6 +2261,12 @@ public final class ParaClient implements Closeable {
 		Map<String, List<String>> params = new HashMap<>();
 		params.put("string", getQueryParameters(str));
 		return (String) invokeGet("utils/nosymbols", params, String.class);
+	}
+
+	public CompletableFuture<String> stripAndTrimAsync(String str) {
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("string", getQueryParameters(str));
+		return invokeGetAsync("utils/nosymbols", params, String.class);
 	}
 
 	/**
@@ -1445,6 +2280,12 @@ public final class ParaClient implements Closeable {
 		return (String) invokeGet("utils/md2html", params, String.class);
 	}
 
+	public CompletableFuture<String> markdownToHtmlAsync(String markdownString) {
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("md", getQueryParameters(markdownString));
+		return invokeGetAsync("utils/md2html", params, String.class);
+	}
+
 	/**
 	 * Returns the number of minutes, hours, months elapsed for a time delta (milliseconds).
 	 * @param delta the time delta between two events, in milliseconds
@@ -1454,6 +2295,12 @@ public final class ParaClient implements Closeable {
 		Map<String, List<String>> params = new HashMap<>();
 		params.put("delta", getQueryParameters(Long.toString(delta)));
 		return (String) invokeGet("utils/timeago", params, String.class);
+	}
+
+	public CompletableFuture<String> approximatelyAsync(long delta) {
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("delta", getQueryParameters(Long.toString(delta)));
+		return invokeGetAsync("utils/timeago", params, String.class);
 	}
 
 	/////////////////////////////////////////////
@@ -1473,12 +2320,25 @@ public final class ParaClient implements Closeable {
 		return keys;
 	}
 
+	public CompletableFuture<Map<String, String>> newKeysAsync() {
+		return this.<Map<String, String>>invokePostAsync("_newkeys", null, Map.class).thenApply(keys -> {
+			if (keys != null && keys.containsKey("secretKey")) {
+				this.secretKey = keys.get("secretKey");
+			}
+			return keys;
+		});
+	}
+
 	/**
 	 * Returns all registered types for this App.
 	 * @return a map of plural-singular form of all the registered types.
 	 */
 	public Map<String, String> types() {
 		return invokeGet("_types", null, Map.class);
+	}
+
+	public CompletableFuture<Map<String, String>> typesAsync() {
+		return invokeGetAsync("_types", null, Map.class);
 	}
 
 	/**
@@ -1491,6 +2351,12 @@ public final class ParaClient implements Closeable {
 		return invokeGet("_types", params, Map.class);
 	}
 
+	public CompletableFuture<Map<String, Number>> typesCountAsync() {
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("count", getQueryParameters("true"));
+		return invokeGetAsync("_types", params, Map.class);
+	}
+
 	/**
 	 * Returns a {@link com.erudika.para.core.User} or an
 	 * {@link com.erudika.para.core.App} that is currently authenticated.
@@ -1500,6 +2366,11 @@ public final class ParaClient implements Closeable {
 	public <P extends ParaObject> P me() {
 		Map<String, Object> data = invokeGet("_me", null, Map.class);
 		return ParaObjectUtils.setAnnotatedFields(data);
+	}
+
+	public <P extends ParaObject> CompletableFuture<P> meAsync() {
+		return this.<Map<String, Object>>invokeGetAsync("_me", null, Map.class)
+				.thenApply(data -> ParaObjectUtils.setAnnotatedFields(data));
 	}
 
 	/**
@@ -1518,6 +2389,16 @@ public final class ParaClient implements Closeable {
 		return me();
 	}
 
+	public <P extends ParaObject> CompletableFuture<P> meAsync(String accessToken) {
+		if (!StringUtils.isBlank(accessToken)) {
+			String auth = accessToken.startsWith("Bearer") ? accessToken : "Bearer " + accessToken;
+				return this.<Map<String, Object>>invokeSignedRequestAsync(accessKey, auth, GET.toString(),
+						getEndpoint(), getFullPath("_me"), null, null, null, Map.class)
+						.thenApply(data -> ParaObjectUtils.setAnnotatedFields(data));
+		}
+		return meAsync();
+	}
+
 	/**
 	 * Upvote an object and register the vote in DB.
 	 * @param obj the object to receive +1 votes
@@ -1526,6 +2407,10 @@ public final class ParaClient implements Closeable {
 	 */
 	public boolean voteUp(ParaObject obj, String voterid) {
 		return voteUp(obj, voterid, null, null);
+	}
+
+	public CompletableFuture<Boolean> voteUpAsync(ParaObject obj, String voterid) {
+		return voteUpAsync(obj, voterid, null, null);
 	}
 
 	/**
@@ -1550,6 +2435,24 @@ public final class ParaClient implements Closeable {
 		return (boolean) invokePatch(obj.getObjectURI(), vote, Boolean.class);
 	}
 
+	public CompletableFuture<Boolean> voteUpAsync(ParaObject obj, String voterid, Integer expiresAfter,
+			Integer lockedAfter) {
+		if (obj == null || StringUtils.isBlank(voterid)) {
+			return CompletableFuture.completedFuture(false);
+		}
+		if (expiresAfter == null && lockedAfter == null) {
+			return this.<Boolean>invokePatchAsync(obj.getObjectURI(), Collections.singletonMap("_voteup", voterid),
+					Boolean.class)
+					.thenApply(result -> result != null && result);
+		}
+		Map<String, Object> vote = new HashMap<>();
+		vote.put("_voteup", voterid);
+		vote.put("_vote_locked_after", lockedAfter);
+		vote.put("_vote_expires_after", expiresAfter);
+		return this.<Boolean>invokePatchAsync(obj.getObjectURI(), vote, Boolean.class)
+				.thenApply(result -> result != null && result);
+	}
+
 	/**
 	 * Downvote an object and register the vote in DB.
 	 * @param obj the object to receive -1 votes
@@ -1558,6 +2461,10 @@ public final class ParaClient implements Closeable {
 	 */
 	public boolean voteDown(ParaObject obj, String voterid) {
 		return voteDown(obj, voterid, null, null);
+	}
+
+	public CompletableFuture<Boolean> voteDownAsync(ParaObject obj, String voterid) {
+		return voteDownAsync(obj, voterid, null, null);
 	}
 
 	/**
@@ -1582,12 +2489,34 @@ public final class ParaClient implements Closeable {
 		return (boolean) invokePatch(obj.getObjectURI(), vote, Boolean.class);
 	}
 
+	public CompletableFuture<Boolean> voteDownAsync(ParaObject obj, String voterid, Integer expiresAfter,
+			Integer lockedAfter) {
+		if (obj == null || StringUtils.isBlank(voterid)) {
+			return CompletableFuture.completedFuture(false);
+		}
+		if (expiresAfter == null && lockedAfter == null) {
+			return this.<Boolean>invokePatchAsync(obj.getObjectURI(), Collections.singletonMap("_votedown", voterid),
+					Boolean.class)
+					.thenApply(result -> result != null && result);
+		}
+		Map<String, Object> vote = new HashMap<>();
+		vote.put("_votedown", voterid);
+		vote.put("_vote_locked_after", lockedAfter);
+		vote.put("_vote_expires_after", expiresAfter);
+		return this.<Boolean>invokePatchAsync(obj.getObjectURI(), vote, Boolean.class)
+				.thenApply(result -> result != null && result);
+	}
+
 	/**
 	 * Rebuilds the entire search index.
 	 * @return a response object with properties "tookMillis" and "reindexed"
 	 */
 	public Map<String, Object> rebuildIndex() {
 		return invokePost("_reindex", null, Map.class);
+	}
+
+	public CompletableFuture<Map<String, Object>> rebuildIndexAsync() {
+		return invokePostAsync("_reindex", null, Map.class);
 	}
 
 	/**
@@ -1602,6 +2531,13 @@ public final class ParaClient implements Closeable {
 				getEndpoint(), getFullPath("_reindex"), null, params, null, Map.class);
 	}
 
+	public CompletableFuture<Map<String, Object>> rebuildIndexAsync(String destinationIndex) {
+		Map<String, List<String>> params = new HashMap<>();
+		params.put("destinationIndex", getQueryParameters(destinationIndex));
+		return keyAsync(true).thenCompose(key -> invokeSignedRequestAsync(accessKey, key, POST.toString(),
+				getEndpoint(), getFullPath("_reindex"), null, params, null, Map.class));
+	}
+
 	/**
 	 * Endpoint for sending transactional emails.
 	 * @param toEmails list of email recipients
@@ -1614,6 +2550,11 @@ public final class ParaClient implements Closeable {
 	public boolean sendEmail(List<String> toEmails, String subject, String fromEmail,
 			String senderName, String message) {
 		return sendEmail(toEmails, subject, fromEmail, senderName, message, true, false, null, null);
+	}
+
+	public CompletableFuture<Boolean> sendEmailAsync(List<String> toEmails, String subject, String fromEmail,
+			String senderName, String message) {
+		return sendEmailAsync(toEmails, subject, fromEmail, senderName, message, true, false, null, null);
 	}
 
 	/**
@@ -1656,6 +2597,34 @@ public final class ParaClient implements Closeable {
 		return true;
 	}
 
+	public CompletableFuture<Boolean> sendEmailAsync(List<String> toEmails, String subject, String fromEmail,
+			String senderName, String message, boolean plaintextOnly, boolean markdownEnabled,
+			InputStream file, String fileContentType) {
+		Map<String, Object> data = new HashMap<>();
+		data.put("name", senderName);
+		data.put("email", fromEmail);
+		data.put("toEmails", toEmails);
+		data.put("subject", subject);
+		data.put("message", message);
+		data.put("plaintextOnly", plaintextOnly);
+		data.put("markdownEnabled", markdownEnabled);
+		if (file != null && fileContentType != null) {
+			try {
+				String base64 = Base64.getEncoder().encodeToString(file.readAllBytes());
+				data.put("file", "data:" + fileContentType + ";base64," + base64);
+			} catch (IOException ex) {
+				logger.error("Failed to encode file: ", ex.getMessage());
+			}
+		}
+		return this.<Map<String, Object>>invokePostAsync("_emails", data, Map.class).thenApply(resp -> {
+			if (resp != null && resp.containsKey("message") && (int) resp.get("code") != 200) {
+				logger.warn((String) resp.get("message"));
+				return false;
+			}
+			return true;
+		});
+	}
+
 	/////////////////////////////////////////////
 	//			Validation Constraints
 	/////////////////////////////////////////////
@@ -1668,6 +2637,10 @@ public final class ParaClient implements Closeable {
 		return invokeGet("_constraints", null, Map.class);
 	}
 
+	public CompletableFuture<Map<String, Map<String, Map<String, Map<String, ?>>>>> validationConstraintsAsync() {
+		return invokeGetAsync("_constraints", null, Map.class);
+	}
+
 	/**
 	 * Returns the validation constraints map.
 	 * @param type a type
@@ -1675,6 +2648,11 @@ public final class ParaClient implements Closeable {
 	 */
 	public Map<String, Map<String, Map<String, Map<String, ?>>>> validationConstraints(String type) {
 		return invokeGet(Utils.formatMessage("_constraints/{0}", Utils.urlEncode(type)), null, Map.class);
+	}
+
+	public CompletableFuture<Map<String, Map<String, Map<String, Map<String, ?>>>>> validationConstraintsAsync(
+			String type) {
+		return invokeGetAsync(Utils.formatMessage("_constraints/{0}", Utils.urlEncode(type)), null, Map.class);
 	}
 
 	/**
@@ -1690,6 +2668,15 @@ public final class ParaClient implements Closeable {
 			return Collections.emptyMap();
 		}
 		return invokePut(Utils.formatMessage("_constraints/{0}/{1}/{2}", Utils.urlEncode(type),
+				field, c.getName()), c.getPayload(), Map.class);
+	}
+
+	public CompletableFuture<Map<String, Map<String, Map<String, Map<String, ?>>>>> addValidationConstraintAsync(
+			String type, String field, Constraint c) {
+		if (StringUtils.isBlank(type) || StringUtils.isBlank(field) || c == null) {
+			return CompletableFuture.completedFuture(Collections.emptyMap());
+		}
+		return invokePutAsync(Utils.formatMessage("_constraints/{0}/{1}/{2}", Utils.urlEncode(type),
 				field, c.getName()), c.getPayload(), Map.class);
 	}
 
@@ -1709,6 +2696,15 @@ public final class ParaClient implements Closeable {
 				field, constraintName), null, Map.class);
 	}
 
+	public CompletableFuture<Map<String, Map<String, Map<String, Map<String, ?>>>>> removeValidationConstraintAsync(
+			String type, String field, String constraintName) {
+		if (StringUtils.isBlank(type) || StringUtils.isBlank(field) || StringUtils.isBlank(constraintName)) {
+			return CompletableFuture.completedFuture(Collections.emptyMap());
+		}
+		return invokeDeleteAsync(Utils.formatMessage("_constraints/{0}/{1}/{2}", Utils.urlEncode(type),
+				field, constraintName), null, Map.class);
+	}
+
 	/////////////////////////////////////////////
 	//			Resource Permissions
 	/////////////////////////////////////////////
@@ -1721,6 +2717,10 @@ public final class ParaClient implements Closeable {
 		return invokeGet("_permissions", null, Map.class);
 	}
 
+	public CompletableFuture<Map<String, Map<String, List<String>>>> resourcePermissionsAsync() {
+		return invokeGetAsync("_permissions", null, Map.class);
+	}
+
 	/**
 	 * Returns only the permissions for a given subject (user) of the current app.
 	 * @param subjectid the subject id (user id)
@@ -1729,6 +2729,11 @@ public final class ParaClient implements Closeable {
 	public Map<String, Map<String, List<String>>> resourcePermissions(String subjectid) {
 		subjectid = Utils.urlEncode(subjectid);
 		return invokeGet(Utils.formatMessage("_permissions/{0}", subjectid), null, Map.class);
+	}
+
+	public CompletableFuture<Map<String, Map<String, List<String>>>> resourcePermissionsAsync(String subjectid) {
+		subjectid = Utils.urlEncode(subjectid);
+		return invokeGetAsync(Utils.formatMessage("_permissions/{0}", subjectid), null, Map.class);
 	}
 
 	/**
@@ -1741,6 +2746,11 @@ public final class ParaClient implements Closeable {
 	public Map<String, Map<String, List<String>>> grantResourcePermission(String subjectid, String resourcePath,
 			EnumSet<App.AllowedMethods> permission) {
 		return grantResourcePermission(subjectid, resourcePath, permission, false);
+	}
+
+	public CompletableFuture<Map<String, Map<String, List<String>>>> grantResourcePermissionAsync(String subjectid,
+			String resourcePath, EnumSet<App.AllowedMethods> permission) {
+		return grantResourcePermissionAsync(subjectid, resourcePath, permission, false);
 	}
 
 	/**
@@ -1764,6 +2774,19 @@ public final class ParaClient implements Closeable {
 		return invokePut(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourcePath), permission, Map.class);
 	}
 
+	public CompletableFuture<Map<String, Map<String, List<String>>>> grantResourcePermissionAsync(String subjectid,
+			String resourcePath, EnumSet<App.AllowedMethods> permission, boolean allowGuestAccess) {
+		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourcePath) || permission == null) {
+			return CompletableFuture.completedFuture(Collections.emptyMap());
+		}
+		if (allowGuestAccess && App.ALLOW_ALL.equals(subjectid)) {
+			permission.add(App.AllowedMethods.GUEST);
+		}
+		subjectid = Utils.urlEncode(subjectid);
+		resourcePath = Utils.base64encURL(resourcePath.getBytes());
+		return invokePutAsync(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourcePath), permission, Map.class);
+	}
+
 	/**
 	 * Revokes a permission for a subject, meaning they no longer will be able to access the given resource.
 	 * @param subjectid subject id (user id)
@@ -1779,6 +2802,16 @@ public final class ParaClient implements Closeable {
 		return invokeDelete(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourcePath), null, Map.class);
 	}
 
+	public CompletableFuture<Map<String, Map<String, List<String>>>> revokeResourcePermissionAsync(String subjectid,
+			String resourcePath) {
+		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourcePath)) {
+			return CompletableFuture.completedFuture(Collections.emptyMap());
+		}
+		subjectid = Utils.urlEncode(subjectid);
+		resourcePath = Utils.base64encURL(resourcePath.getBytes());
+		return invokeDeleteAsync(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourcePath), null, Map.class);
+	}
+
 	/**
 	 * Revokes all permission for a subject.
 	 * @param subjectid subject id (user id)
@@ -1790,6 +2823,14 @@ public final class ParaClient implements Closeable {
 		}
 		subjectid = Utils.urlEncode(subjectid);
 		return invokeDelete(Utils.formatMessage("_permissions/{0}", subjectid), null, Map.class);
+	}
+
+	public CompletableFuture<Map<String, Map<String, List<String>>>> revokeAllResourcePermissionsAsync(String subjectid) {
+		if (StringUtils.isBlank(subjectid)) {
+			return CompletableFuture.completedFuture(Collections.emptyMap());
+		}
+		subjectid = Utils.urlEncode(subjectid);
+		return invokeDeleteAsync(Utils.formatMessage("_permissions/{0}", subjectid), null, Map.class);
 	}
 
 	/**
@@ -1810,6 +2851,16 @@ public final class ParaClient implements Closeable {
 		return result != null && result;
 	}
 
+	public CompletableFuture<Boolean> isAllowedToAsync(String subjectid, String resourcePath, String httpMethod) {
+		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourcePath) || StringUtils.isBlank(httpMethod)) {
+			return CompletableFuture.completedFuture(false);
+		}
+		subjectid = Utils.urlEncode(subjectid);
+		resourcePath = Utils.base64encURL(resourcePath.getBytes());
+		String url = Utils.formatMessage("_permissions/{0}/{1}/{2}", subjectid, resourcePath, httpMethod);
+		return this.<Boolean>invokeGetAsync(url, null, Boolean.class).thenApply(result -> result != null && result);
+	}
+
 	/////////////////////////////////////////////
 	//			App Settings
 	/////////////////////////////////////////////
@@ -1820,6 +2871,10 @@ public final class ParaClient implements Closeable {
 	 */
 	public Map<String, Object> appSettings() {
 		return invokeGet("_settings", null, Map.class);
+	}
+
+	public CompletableFuture<Map<String, Object>> appSettingsAsync() {
+		return invokeGetAsync("_settings", null, Map.class);
 	}
 
 	/**
@@ -1834,6 +2889,13 @@ public final class ParaClient implements Closeable {
 		return invokeGet(Utils.formatMessage("_settings/{0}", key), null, Map.class);
 	}
 
+	public CompletableFuture<Map<String, Object>> appSettingsAsync(String key) {
+		if (StringUtils.isBlank(key)) {
+			return appSettingsAsync();
+		}
+		return invokeGetAsync(Utils.formatMessage("_settings/{0}", key), null, Map.class);
+	}
+
 	/**
 	 * Adds or overwrites an app-specific setting.
 	 * @param key a key
@@ -1843,6 +2905,14 @@ public final class ParaClient implements Closeable {
 		if (!StringUtils.isBlank(key) && value != null) {
 			invokePut(Utils.formatMessage("_settings/{0}", key), Collections.singletonMap("value", value), Map.class);
 		}
+	}
+
+	public CompletableFuture<Void> addAppSettingAsync(String key, Object value) {
+		if (StringUtils.isBlank(key) || value == null) {
+			return CompletableFuture.completedFuture(null);
+		}
+		return invokePutAsync(Utils.formatMessage("_settings/{0}", key), Collections.singletonMap("value", value),
+				Map.class).thenApply(result -> null);
 	}
 
 	/**
@@ -1855,6 +2925,13 @@ public final class ParaClient implements Closeable {
 		}
 	}
 
+	public CompletableFuture<Void> setAppSettingsAsync(Map<?, ?> settings) {
+		if (settings == null) {
+			return CompletableFuture.completedFuture(null);
+		}
+		return invokePutAsync("_settings", settings, Map.class).thenApply(result -> null);
+	}
+
 	/**
 	 * Removes an app-specific setting.
 	 * @param key a key
@@ -1863,6 +2940,13 @@ public final class ParaClient implements Closeable {
 		if (!StringUtils.isBlank(key)) {
 			invokeDelete(Utils.formatMessage("_settings/{0}", key), null, null);
 		}
+	}
+
+	public CompletableFuture<Void> removeAppSettingAsync(String key) {
+		if (StringUtils.isBlank(key)) {
+			return CompletableFuture.completedFuture(null);
+		}
+		return invokeDeleteAsync(Utils.formatMessage("_settings/{0}", key), null, null).thenApply(result -> null);
 	}
 
 	/////////////////////////////////////////////
@@ -1909,6 +2993,30 @@ public final class ParaClient implements Closeable {
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
+	public CompletableFuture<User> signInAsync(String provider, String providerToken, boolean rememberJWT) {
+		if (StringUtils.isBlank(provider) || StringUtils.isBlank(providerToken)) {
+			return CompletableFuture.completedFuture(null);
+		}
+		Map<String, String> credentials = new HashMap<>();
+		credentials.put(Config._APPID, accessKey);
+		credentials.put("provider", provider);
+		credentials.put("token", providerToken);
+		return this.<Map<String, Object>>invokePostAsync(JWT_PATH, credentials, Map.class).thenApply(result -> {
+			if (result != null && result.containsKey("user") && result.containsKey("jwt")) {
+				Map<?, ?> jwtData = (Map<?, ?>) result.get("jwt");
+				if (rememberJWT) {
+					rememberAccessToken(jwtData);
+				}
+				User signedInUser = ParaObjectUtils.setAnnotatedFields((Map<String, Object>) result.get("user"));
+				signedInUser.setPassword((String) jwtData.get("access_token"));
+				return signedInUser;
+			}
+			clearAccessToken();
+			return null;
+		});
+	}
+
 	/**
 	 * Takes an identity provider access token and fetches the user data from that provider.
 	 * @see #signIn(java.lang.String, java.lang.String, boolean)
@@ -1918,6 +3026,10 @@ public final class ParaClient implements Closeable {
 	 */
 	public User signIn(String provider, String providerToken) {
 		return signIn(provider, providerToken, true);
+	}
+
+	public CompletableFuture<User> signInAsync(String provider, String providerToken) {
+		return signInAsync(provider, providerToken, true);
 	}
 
 	/**
@@ -1934,24 +3046,69 @@ public final class ParaClient implements Closeable {
 	 * @return true if token was refreshed
 	 */
 	protected boolean refreshToken() {
-		long now = System.currentTimeMillis();
-		boolean notExpired = tokenKeyExpires != null && tokenKeyExpires > now;
-		boolean canRefresh = tokenKeyNextRefresh != null &&
-				(tokenKeyNextRefresh < now || tokenKeyNextRefresh > tokenKeyExpires);
-		// token present and NOT expired
-		if (tokenKey != null && notExpired && canRefresh) {
-			Map<String, Object> result = invokeGet(JWT_PATH, null, Map.class);
-			if (result != null && result.containsKey("user") && result.containsKey("jwt")) {
-				Map<?, ?> jwtData = (Map<?, ?>) result.get("jwt");
-				tokenKey = (String) jwtData.get("access_token");
-				tokenKeyExpires = (Long) jwtData.get("expires");
-				tokenKeyNextRefresh = (Long) jwtData.get("refresh");
-				return true;
+		if (!shouldRefreshToken(System.currentTimeMillis())) {
+			return false;
+		}
+		CompletableFuture<Boolean> inFlight;
+		boolean shouldExecute = false;
+		synchronized (tokenRefreshLock) {
+			if (tokenRefreshFuture != null && !tokenRefreshFuture.isDone()) {
+				inFlight = tokenRefreshFuture;
+			} else if (!shouldRefreshToken(System.currentTimeMillis())) {
+				return false;
 			} else {
-				clearAccessToken();
+				inFlight = new CompletableFuture<>();
+				tokenRefreshFuture = inFlight;
+				shouldExecute = true;
 			}
 		}
-		return false;
+		if (!shouldExecute) {
+			return inFlight.join();
+		}
+		try {
+			boolean refreshed = handleTokenRefreshResponse(invokeGet(JWT_PATH, null, Map.class));
+			inFlight.complete(refreshed);
+			return refreshed;
+		} catch (RuntimeException ex) {
+			inFlight.completeExceptionally(ex);
+			throw ex;
+		} finally {
+			clearTokenRefreshFuture(inFlight);
+		}
+	}
+
+	protected CompletableFuture<Boolean> refreshTokenAsync() {
+		if (!shouldRefreshToken(System.currentTimeMillis())) {
+			return CompletableFuture.completedFuture(false);
+		}
+		CompletableFuture<Boolean> inFlight;
+		boolean shouldExecute = false;
+		synchronized (tokenRefreshLock) {
+			if (tokenRefreshFuture != null && !tokenRefreshFuture.isDone()) {
+				inFlight = tokenRefreshFuture;
+			} else if (!shouldRefreshToken(System.currentTimeMillis())) {
+				return CompletableFuture.completedFuture(false);
+			} else {
+				inFlight = new CompletableFuture<>();
+				tokenRefreshFuture = inFlight;
+				shouldExecute = true;
+			}
+		}
+		if (!shouldExecute) {
+			return inFlight;
+		}
+		this.<Map<String, Object>>invokeGetAsync(JWT_PATH, null, Map.class).whenComplete((result, error) -> {
+			try {
+				if (error != null) {
+					inFlight.completeExceptionally(error);
+				} else {
+					inFlight.complete(handleTokenRefreshResponse(result));
+				}
+			} finally {
+				clearTokenRefreshFuture(inFlight);
+			}
+		});
+		return inFlight;
 	}
 
 	/**
@@ -1963,6 +3120,10 @@ public final class ParaClient implements Closeable {
 	 */
 	public boolean revokeAllTokens() {
 		return invokeDelete(JWT_PATH, null, Map.class) != null;
+	}
+
+	public CompletableFuture<Boolean> revokeAllTokensAsync() {
+		return invokeDeleteAsync(JWT_PATH, null, Map.class).thenApply(result -> result != null);
 	}
 
 	/////////////////////////////////////////////
@@ -1996,14 +3157,16 @@ public final class ParaClient implements Closeable {
 	}
 
 	/**
-	 * Performs a partial batch update on all objects of given type. This method encapsulates the specific logic for
-	 * performing the batch update safely because updating while searching for objects can lead to bugs due to the
+	 * Performs a partial batch update (async) on all objects of given type. This method encapsulates the specific logic
+	 * for performing the batch update safely because updating while searching for objects can lead to bugs due to the
 	 * fact that _docid values change on each update call.
 	 * @param <T> type of object
 	 * @param paginatingFunc paginating function
+	 * @return a Future
 	 */
-	public <T extends ParaObject> void updateAllPartially(BiFunction<List<Map<String, Object>>, Pager, List<T>> paginatingFunc) {
-		updateAllPartially(paginatingFunc, Para.getConfig().maxItemsPerPage(), 100);
+	public <T extends ParaObject> CompletableFuture<Void> updateAllPartially(
+			BiFunction<List<Map<String, Object>>, Pager, List<T>> paginatingFunc) {
+		return updateAllPartially(paginatingFunc, Para.getConfig().maxItemsPerPage(), 100);
 	}
 
 	/**
@@ -2014,26 +3177,34 @@ public final class ParaClient implements Closeable {
 	 * @param paginatingFunc paginating function which returns a list of object
 	 * @param pageSize page size for pager (pager.limit)
 	 * @param updateBatchSize batch size for updating objects
+	 * @return a Future
 	 */
-	public <T extends ParaObject> void updateAllPartially(BiFunction<List<Map<String, Object>>, Pager, List<T>> paginatingFunc,
+	public <T extends ParaObject> CompletableFuture<Void> updateAllPartially(
+			BiFunction<List<Map<String, Object>>, Pager, List<T>> paginatingFunc,
 			int pageSize, int updateBatchSize) {
-		if (paginatingFunc != null) {
-			LinkedList<Map<String, Object>> toUpdate = new LinkedList<>();
-			readEverything((pager) -> paginatingFunc.apply(toUpdate, pager), pageSize);
-			// always patch outside the loop because _docid value changes on each update!
-			// this causes updated results to be found again and could lead to exhaution of resources
-			LinkedList<Map<String, Object>> batch = new LinkedList<>();
-			while (!toUpdate.isEmpty()) {
-				batch.add(toUpdate.pop());
-				if (batch.size() >= updateBatchSize) {
-					// partial batch update
-					invokePatch("_batch", batch, Map.class);
-					batch.clear();
-				}
-			}
-			if (!batch.isEmpty()) {
-				invokePatch("_batch", batch, Map.class);
+		if (paginatingFunc == null) {
+			return CompletableFuture.completedFuture(null);
+		}
+		LinkedList<Map<String, Object>> toUpdate = new LinkedList<>();
+		readEverything((pager) -> paginatingFunc.apply(toUpdate, pager), pageSize);
+		// always patch outside the loop because _docid value changes on each update!
+		// this causes updated results to be found again and could lead to exhaution of resources
+		LinkedList<Map<String, Object>> batch = new LinkedList<>();
+		CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
+		while (!toUpdate.isEmpty()) {
+			batch.add(toUpdate.pop());
+			if (batch.size() >= updateBatchSize) {
+				future = future.thenCompose(ignored ->
+						this.<Map<String, Object>>invokePatchAsync("_batch", List.copyOf(batch), Map.class)
+								.thenApply(result -> null));
+				batch.clear();
 			}
 		}
+		if (!batch.isEmpty()) {
+			future = future.thenCompose(ignored ->
+					this.<Map<String, Object>>invokePatchAsync("_batch", List.copyOf(batch), Map.class)
+							.thenApply(result -> null));
+		}
+		return future;
 	}
 }
