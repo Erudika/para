@@ -62,9 +62,10 @@ public final class Para {
 	private static final Set<InitializeListener> INIT_LISTENERS = new LinkedHashSet<InitializeListener>();
 	private static final Set<IOListener> IO_LISTENERS = new LinkedHashSet<IOListener>();
 	private static final Set<IOListener> SEARCH_LISTENERS = new LinkedHashSet<IOListener>();
-	private static final ExecutorService EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
-	private static final ScheduledExecutorService SCHEDULER = Executors.
-			newScheduledThreadPool(CONF.executorThreads(), Thread.ofVirtual().factory());
+	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(CONF.executorThreads(),
+			Thread.ofVirtual().factory());
+	private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(CONF.executorThreads(),
+			Thread.ofVirtual().factory());
 	private static ClassLoader paraClassLoader;
 	private static volatile boolean isInitialized = false;
 	private static volatile boolean isHealthy = true;
