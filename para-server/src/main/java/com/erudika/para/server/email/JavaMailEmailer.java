@@ -25,9 +25,6 @@ import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,13 +35,12 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.mail.javamail.MimeMessagePreparator;
 
 /**
- * A simple JavaMail implementation of {@link Emailer}.
+ * A simple synchronous JavaMail implementation of {@link Emailer}.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class JavaMailEmailer implements Emailer {
 
 	private static final Logger logger = LoggerFactory.getLogger(JavaMailEmailer.class);
-	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(Para.getConfig().executorThreads());
 	private final JavaMailSender mailSender;
 
 	/**
@@ -76,48 +72,26 @@ public class JavaMailEmailer implements Emailer {
 		if (emails == null || emails.isEmpty()) {
 			return false;
 		}
-		asyncExecute(new Runnable() {
-			public void run() {
-				MimeMessagePreparator preparator = new MimeMessagePreparator() {
-					public void prepare(MimeMessage mimeMessage) throws Exception {
-						MimeMessageHelper msg = new MimeMessageHelper(mimeMessage);
-						Iterator<String> emailz = emails.iterator();
-						msg.setTo(emailz.next());
-						while (emailz.hasNext()) {
-							msg.addBcc(emailz.next());
-						}
-						msg.setSubject(subject);
-						msg.setFrom(Para.getConfig().supportEmail(), Para.getConfig().appName());
-						msg.setText(body, true); // body is assumed to be HTML
-						if (attachment != null) {
-							msg.addAttachment(fileName, new ByteArrayDataSource(attachment, mimeType));
-						}
-					}
-				};
-				try {
-					mailSender.send(preparator);
-					logger.debug("Email sent to {}, {}", emails, subject);
-				} catch (MailException ex) {
-					logger.error("Failed to send email. {}", ex.getMessage());
-				}
+		MimeMessagePreparator preparator = (MimeMessage mimeMessage) -> {
+			MimeMessageHelper msg = new MimeMessageHelper(mimeMessage);
+			Iterator<String> emailz = emails.iterator();
+			msg.setTo(emailz.next());
+			while (emailz.hasNext()) {
+				msg.addBcc(emailz.next());
 			}
-		});
+			msg.setSubject(subject);
+			msg.setFrom(Para.getConfig().supportEmail(), Para.getConfig().appName());
+			msg.setText(body, true); // body is assumed to be HTML
+			if (attachment != null) {
+				msg.addAttachment(fileName, new ByteArrayDataSource(attachment, mimeType));
+			}
+		};
+		try {
+			mailSender.send(preparator);
+			logger.debug("Email sent to {}, {}", emails, subject);
+		} catch (MailException ex) {
+			logger.error("Failed to send email. {}", ex.getMessage());
+		}
 		return true;
 	}
-
-	private void asyncExecute(Runnable runnable) {
-		if (runnable != null) {
-			try {
-				EXECUTOR.execute(runnable);
-			} catch (RejectedExecutionException ex) {
-				logger.warn(ex.getMessage());
-				try {
-					runnable.run();
-				} catch (Exception e) {
-					logger.error(null, e);
-				}
-			}
-		}
-	}
-
 }
