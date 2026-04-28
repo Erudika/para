@@ -1457,6 +1457,17 @@ public final class ParaClient implements Closeable {
 		return getItems(find("nearby", params), pager);
 	}
 
+	/**
+	 * Searches for objects of a given type in a given radius asynchronously.
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param query the query string
+	 * @param radius the radius of the search circle
+	 * @param lat latitude
+	 * @param lng longitude
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
+	 * @return a future of a list of objects found
+	 */
 	public <P extends ParaObject> CompletableFuture<List<P>> findNearbyAsync(String type, String query, int radius,
 			double lat, double lng, Pager... pager) {
 		Map<String, List<String>> params = new HashMap<>();
@@ -1486,6 +1497,15 @@ public final class ParaClient implements Closeable {
 		return getItems(find("prefix", params), pager);
 	}
 
+	/**
+	 * Searches for objects that have a property which value starts with a given prefix asynchronously.
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param field the property name of an object
+	 * @param prefix the prefix
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
+	 * @return a future of a list of objects found
+	 */
 	public <P extends ParaObject> CompletableFuture<List<P>> findPrefixAsync(String type, String field, String prefix,
 			Pager... pager) {
 		Map<String, List<String>> params = new HashMap<>();
@@ -1512,6 +1532,14 @@ public final class ParaClient implements Closeable {
 		return getItems(find("", params), pager);
 	}
 
+	/**
+	 * Simple query string search. This is the basic search method asynchronously.
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param query the query string
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
+	 * @return a future of a list of objects found
+	 */
 	public <P extends ParaObject> CompletableFuture<List<P>> findQueryAsync(String type, String query, Pager... pager) {
 		Map<String, List<String>> params = new HashMap<>();
 		params.put("q", getQueryParameters(query));
@@ -1538,6 +1566,15 @@ public final class ParaClient implements Closeable {
 		return getItems(find("nested", params), pager);
 	}
 
+	/**
+	 * Searches within a nested field. The objects of the given type must contain a nested field "nstd" asynchronously.
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param field the name of the field to target (within a nested field "nstd")
+	 * @param query the query string
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
+	 * @return a future of a list of objects found
+	 */
 	public <P extends ParaObject> CompletableFuture<List<P>> findNestedQueryAsync(String type, String field,
 			String query, Pager... pager) {
 		Map<String, List<String>> params = new HashMap<>();
@@ -1569,6 +1606,16 @@ public final class ParaClient implements Closeable {
 		return getItems(find("similar", params), pager);
 	}
 
+	/**
+	 * Searches for objects that have similar property values to a given text. A "find like this" query asynchronously.
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param filterKey exclude an object with this key from the results (optional)
+	 * @param fields a list of property names
+	 * @param liketext text to compare to
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
+	 * @return a future of a list of objects found
+	 */
 	public <P extends ParaObject> CompletableFuture<List<P>> findSimilarAsync(String type, String filterKey,
 			String[] fields, String liketext, Pager... pager) {
 		Map<String, List<String>> params = new HashMap<>();
@@ -1596,6 +1643,14 @@ public final class ParaClient implements Closeable {
 		return getItems(find("tagged", params), pager);
 	}
 
+	/**
+	 * Searches for objects tagged with one or more tags asynchronously.
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param tags the list of tags
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
+	 * @return a future of a list of objects found
+	 */
 	public <P extends ParaObject> CompletableFuture<List<P>> findTaggedAsync(String type, String[] tags, Pager... pager) {
 		Map<String, List<String>> params = new HashMap<>();
 		params.put("tags", tags == null ? null : Arrays.asList(tags));
@@ -1617,6 +1672,14 @@ public final class ParaClient implements Closeable {
 		return findWildcard(Utils.type(Tag.class), "tag", keyword, pager);
 	}
 
+	/**
+	 * Searches for {@link com.erudika.para.core.Tag} objects asynchronously.
+	 * This method might be deprecated in the future.
+	 * @param <P> type of the object
+	 * @param keyword the tag keyword to search for
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
+	 * @return a future of a list of objects found
+	 */
 	public <P extends ParaObject> CompletableFuture<List<P>> findTagsAsync(String keyword, Pager... pager) {
 		String tagKeyword = (keyword == null) ? "*" : keyword.concat("*");
 		return findWildcardAsync(Utils.type(Tag.class), "tag", tagKeyword, pager);
@@ -1640,6 +1703,15 @@ public final class ParaClient implements Closeable {
 		return getItems(find("in", params), pager);
 	}
 
+	/**
+	 * Searches for objects having a property value that is in list of possible values asynchronously.
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param field the property name of an object
+	 * @param terms a list of terms (property values)
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
+	 * @return a future of a list of objects found
+	 */
 	public <P extends ParaObject> CompletableFuture<List<P>> findTermInListAsync(String type, String field,
 			List<String> terms, Pager... pager) {
 		Map<String, List<String>> params = new HashMap<>();
@@ -1651,13 +1723,13 @@ public final class ParaClient implements Closeable {
 	}
 
 	/**
-	 * Searches for objects that have properties matching some given values. A terms query.
+	 * Searches for objects that have properties matching some given values. A terms query asynchronously.
 	 * @param <P> type of the object
 	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
 	 * @param terms a map of fields (property names) to terms (property values)
 	 * @param matchAll match all terms. If true - AND search, if false - OR search
 	 * @param pager a {@link com.erudika.para.core.utils.Pager}
-	 * @return a list of objects found
+	 * @return a future of a list of objects found
 	 */
 	public <P extends ParaObject> List<P> findTerms(String type, Map<String, ?> terms, boolean matchAll,
 			Pager... pager) {
@@ -1682,6 +1754,15 @@ public final class ParaClient implements Closeable {
 		return getItems(find("terms", params), pager);
 	}
 
+	/**
+	 * Searches for objects that have properties matching some given values. A terms query asynchronously.
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param terms a map of fields (property names) to terms (property values)
+	 * @param matchAll match all terms. If true - AND search, if false - OR search
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
+	 * @return a future of a list of objects found
+	 */
 	public <P extends ParaObject> CompletableFuture<List<P>> findTermsAsync(String type, Map<String, ?> terms,
 			boolean matchAll, Pager... pager) {
 		if (terms == null) {
@@ -1723,6 +1804,15 @@ public final class ParaClient implements Closeable {
 		return getItems(find("wildcard", params), pager);
 	}
 
+	/**
+	 * Searches for objects that have a property with a value matching a wildcard query asynchronously.
+	 * @param <P> type of the object
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param field the property name of an object
+	 * @param wildcard wildcard query string. For example "cat*".
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
+	 * @return a future of a list of objects found
+	 */
 	public <P extends ParaObject> CompletableFuture<List<P>> findWildcardAsync(String type, String field,
 			String wildcard, Pager... pager) {
 		Map<String, List<String>> params = new HashMap<>();
@@ -1746,6 +1836,11 @@ public final class ParaClient implements Closeable {
 		return pager.getCount();
 	}
 
+	/**
+	 * Counts indexed objects asynchronously.
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @return a future of the number of results found
+	 */
 	public CompletableFuture<Long> getCountAsync(String type) {
 		Map<String, List<String>> params = new HashMap<>();
 		params.put(Config._TYPE, getQueryParameters(type));
@@ -1785,6 +1880,12 @@ public final class ParaClient implements Closeable {
 		return pager.getCount();
 	}
 
+	/**
+	 * Counts indexed objects matching a set of terms/values asynchronously.
+	 * @param type the type of object to search for. See {@link com.erudika.para.core.ParaObject#getType()}
+	 * @param terms a list of terms (property values)
+	 * @return a future of the number of results found
+	 */
 	public CompletableFuture<Long> getCountAsync(String type, Map<String, ?> terms) {
 		if (terms == null) {
 			return CompletableFuture.completedFuture(0L);
@@ -1864,6 +1965,12 @@ public final class ParaClient implements Closeable {
 		return pager.getCount();
 	}
 
+	/**
+	 * Count the total number of links between this object and another type of object asynchronously.
+	 * @param type2 the other type of object
+	 * @param obj the object to execute this method on
+	 * @return a future of the number of links for the given object
+	 */
 	public CompletableFuture<Long> countLinksAsync(ParaObject obj, String type2) {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return CompletableFuture.completedFuture(0L);
@@ -1894,6 +2001,14 @@ public final class ParaClient implements Closeable {
 		return getItems(invokeGet(url, pagerToParams(pager), Map.class), pager);
 	}
 
+	/**
+	 * Returns all objects linked to the given one. Only applicable to many-to-many relationships asynchronously.
+	 * @param <P> type of linked objects
+	 * @param type2 type of linked objects to search for
+	 * @param obj the object to execute this method on
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
+	 * @return a future of a list of linked objects
+	 */
 	public <P extends ParaObject> CompletableFuture<List<P>> getLinkedObjectsAsync(ParaObject obj, String type2,
 			Pager... pager) {
 		if (obj == null || obj.getId() == null || type2 == null) {
@@ -1927,6 +2042,16 @@ public final class ParaClient implements Closeable {
 		return getItems(invokeGet(url, params, Map.class), pager);
 	}
 
+	/**
+	 * Searches through all linked objects in many-to-many relationships asynchronously.
+	 * @param <P> type of linked objects
+	 * @param type2 type of linked objects to search for
+	 * @param obj the object to execute this method on
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
+	 * @param field the name of the field to target (within a nested field "nstd")
+	 * @param query a query string
+	 * @return a future of a list of linked objects matching the search query
+	 */
 	public <P extends ParaObject> CompletableFuture<List<P>> findLinkedObjectsAsync(ParaObject obj, String type2,
 			String field, String query, Pager... pager) {
 		if (obj == null || obj.getId() == null || type2 == null) {
@@ -1958,6 +2083,13 @@ public final class ParaClient implements Closeable {
 		return result != null && result;
 	}
 
+	/**
+	 * Checks if this object is linked to another asynchronously.
+	 * @param type2 the other type
+	 * @param id2 the other id
+	 * @param obj the object to execute this method on
+	 * @return a future of true if the two are linked
+	 */
 	public CompletableFuture<Boolean> isLinkedAsync(ParaObject obj, String type2, String id2) {
 		if (obj == null || obj.getId() == null || type2 == null || id2 == null) {
 			return CompletableFuture.completedFuture(false);
@@ -1980,6 +2112,12 @@ public final class ParaClient implements Closeable {
 		return isLinked(obj, toObj.getType(), toObj.getId());
 	}
 
+	/**
+	 * Checks if a given object is linked to this one asynchronously.
+	 * @param toObj the other object
+	 * @param obj the object to execute this method on
+	 * @return a future of true if linked
+	 */
 	public CompletableFuture<Boolean> isLinkedAsync(ParaObject obj, ParaObject toObj) {
 		if (obj == null || obj.getId() == null || toObj == null || toObj.getId() == null) {
 			return CompletableFuture.completedFuture(false);
@@ -2003,6 +2141,14 @@ public final class ParaClient implements Closeable {
 		return (String) invokePost(url, null, String.class);
 	}
 
+	/**
+	 * Links an object to this one in a many-to-many relationship asynchronously.
+	 * Only a link is created. Objects are left untouched.
+	 * The type of the second object is automatically determined on read.
+	 * @param id2 link to the object with this id
+	 * @param obj the object to execute this method on
+	 * @return a future of the id of the {@link com.erudika.para.core.Linker} object that is created
+	 */
 	public CompletableFuture<String> linkAsync(ParaObject obj, String id2) {
 		if (obj == null || obj.getId() == null || id2 == null) {
 			return CompletableFuture.completedFuture(null);
@@ -2027,6 +2173,14 @@ public final class ParaClient implements Closeable {
 		invokeDelete(url, null, null);
 	}
 
+	/**
+	 * Unlinks an object from this one asynchronously.
+	 * Only a link is deleted. Objects are left untouched.
+	 * @param type2 the other type
+	 * @param obj the object to execute this method on
+	 * @param id2 the other id
+	 * @return a future of null
+	 */
 	public CompletableFuture<Void> unlinkAsync(ParaObject obj, String type2, String id2) {
 		if (obj == null || obj.getId() == null || type2 == null || id2 == null) {
 			return CompletableFuture.completedFuture(null);
@@ -2050,6 +2204,13 @@ public final class ParaClient implements Closeable {
 		invokeDelete(url, null, null);
 	}
 
+	/**
+	 * Unlinks all objects that are linked to this one asynchronously.
+	 * @param obj the object to execute this method on
+	 * Only {@link com.erudika.para.core.Linker} objects are deleted.
+	 * {@link com.erudika.para.core.ParaObject}s are left untouched.
+	 * @return a future of null
+	 */
 	public CompletableFuture<Void> unlinkAllAsync(ParaObject obj) {
 		if (obj == null || obj.getId() == null) {
 			return CompletableFuture.completedFuture(null);
@@ -2077,6 +2238,12 @@ public final class ParaClient implements Closeable {
 		return pager.getCount();
 	}
 
+	/**
+	 * Count the total number of child objects for this object asynchronously.
+	 * @param type2 the type of the other object
+	 * @param obj the object to execute this method on
+	 * @return a future of the number of links
+	 */
 	public CompletableFuture<Long> countChildrenAsync(ParaObject obj, String type2) {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return CompletableFuture.completedFuture(0L);
@@ -2111,6 +2278,14 @@ public final class ParaClient implements Closeable {
 		return getItems(invokeGet(url, params, Map.class), pager);
 	}
 
+	/**
+	 * Returns all child objects linked to this object asynchronously.
+	 * @param <P> the type of children
+	 * @param type2 the type of children to look for
+	 * @param obj the object to execute this method on
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
+	 * @return a future of a list of {@link ParaObject} in a one-to-many relationship with this object
+	 */
 	public <P extends ParaObject> CompletableFuture<List<P>> getChildrenAsync(ParaObject obj, String type2,
 			Pager... pager) {
 		if (obj == null || obj.getId() == null || type2 == null) {
@@ -2148,6 +2323,16 @@ public final class ParaClient implements Closeable {
 		return getItems(invokeGet(url, params, Map.class), pager);
 	}
 
+	/**
+	 * Returns all child objects linked to this object asynchronously.
+	 * @param <P> the type of children
+	 * @param type2 the type of children to look for
+	 * @param field the field name to use as filter
+	 * @param term the field value to use as filter
+	 * @param obj the object to execute this method on
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
+	 * @return a future of a list of {@link ParaObject} in a one-to-many relationship with this object
+	 */
 	public <P extends ParaObject> CompletableFuture<List<P>> getChildrenAsync(ParaObject obj, String type2,
 			String field, String term, Pager... pager) {
 		if (obj == null || obj.getId() == null || type2 == null) {
@@ -2185,6 +2370,16 @@ public final class ParaClient implements Closeable {
 		return getItems(invokeGet(url, params, Map.class), pager);
 	}
 
+	/**
+	 * Search through all child objects. Only searches child objects directly
+	 * connected to this parent via the {@code parentid} field asynchronously.
+	 * @param <P> the type of children
+	 * @param type2 the type of children to look for
+	 * @param query a query string
+	 * @param obj the object to execute this method on
+	 * @param pager a {@link com.erudika.para.core.utils.Pager}
+	 * @return a future of a list of {@link ParaObject} in a one-to-many relationship with this object
+	 */
 	public <P extends ParaObject> CompletableFuture<List<P>> findChildrenAsync(ParaObject obj, String type2,
 			String query, Pager... pager) {
 		if (obj == null || obj.getId() == null || type2 == null) {
@@ -2214,6 +2409,12 @@ public final class ParaClient implements Closeable {
 		invokeDelete(url, params, null);
 	}
 
+	/**
+	 * Deletes all child objects permanently asynchronously.
+	 * @param obj the object to execute this method on
+	 * @param type2 the children's type.
+	 * @return a future of null
+	 */
 	public CompletableFuture<Void> deleteChildrenAsync(ParaObject obj, String type2) {
 		if (obj == null || obj.getId() == null || type2 == null) {
 			return CompletableFuture.completedFuture(null);
@@ -2237,6 +2438,10 @@ public final class ParaClient implements Closeable {
 		return res != null ? res : "";
 	}
 
+	/**
+	 * Generates a new unique id asynchronously.
+	 * @return a future of a new id
+	 */
 	public CompletableFuture<String> newIdAsync() {
 		return this.<String>invokeGetAsync("utils/newid", null, String.class).thenApply(res -> res != null ? res : "");
 	}
@@ -2250,6 +2455,10 @@ public final class ParaClient implements Closeable {
 		return res != null ? res : 0L;
 	}
 
+	/**
+	 * Returns the current timestamp asynchronously.
+	 * @return a future of a long number
+	 */
 	public CompletableFuture<Long> getTimestampAsync() {
 		return this.<Long>invokeGetAsync("utils/timestamp", null, Long.class).thenApply(res -> res != null ? res : 0L);
 	}
@@ -2267,6 +2476,12 @@ public final class ParaClient implements Closeable {
 		return (String) invokeGet("utils/formatdate", params, String.class);
 	}
 
+	/**
+	 * Formats a date in a specific format asynchronously.
+	 * @param format the date format
+	 * @param loc the locale instance
+	 * @return a future of a formatted date
+	 */
 	public CompletableFuture<String> formatDateAsync(String format, Locale loc) {
 		Map<String, List<String>> params = new HashMap<>();
 		params.put("format", getQueryParameters(format));
@@ -2287,6 +2502,12 @@ public final class ParaClient implements Closeable {
 		return (String) invokeGet("utils/nospaces", params, String.class);
 	}
 
+	/**
+	 * Converts spaces to dashes asynchronously.
+	 * @param str a string with spaces
+	 * @param replaceWith a string to replace spaces with
+	 * @return a future of a string with dashes
+	 */
 	public CompletableFuture<String> noSpacesAsync(String str, String replaceWith) {
 		Map<String, List<String>> params = new HashMap<>();
 		params.put("string", getQueryParameters(str));
@@ -2305,6 +2526,11 @@ public final class ParaClient implements Closeable {
 		return (String) invokeGet("utils/nosymbols", params, String.class);
 	}
 
+	/**
+	 * Strips all symbols, punctuation, whitespace and control chars from a string asynchronously.
+	 * @param str a dirty string
+	 * @return a future of a clean string
+	 */
 	public CompletableFuture<String> stripAndTrimAsync(String str) {
 		Map<String, List<String>> params = new HashMap<>();
 		params.put("string", getQueryParameters(str));
@@ -2322,6 +2548,11 @@ public final class ParaClient implements Closeable {
 		return (String) invokeGet("utils/md2html", params, String.class);
 	}
 
+	/**
+	 * Converts Markdown to HTML asynchronously.
+	 * @param markdownString Markdown
+	 * @return a future of HTML
+	 */
 	public CompletableFuture<String> markdownToHtmlAsync(String markdownString) {
 		Map<String, List<String>> params = new HashMap<>();
 		params.put("md", getQueryParameters(markdownString));
@@ -2339,6 +2570,11 @@ public final class ParaClient implements Closeable {
 		return (String) invokeGet("utils/timeago", params, String.class);
 	}
 
+	/**
+	 * Returns the number of minutes, hours, months elapsed for a time delta (milliseconds) asynchronously.
+	 * @param delta the time delta between two events, in milliseconds
+	 * @return a future of a string like "5m", "1h"
+	 */
 	public CompletableFuture<String> approximatelyAsync(long delta) {
 		Map<String, List<String>> params = new HashMap<>();
 		params.put("delta", getQueryParameters(Long.toString(delta)));
@@ -2362,6 +2598,11 @@ public final class ParaClient implements Closeable {
 		return keys;
 	}
 
+	/**
+	 * Generates a new set of access/secret keys asynchronously.
+	 * Old keys are discarded and invalid after this.
+	 * @return a future of a map of new credentials
+	 */
 	public CompletableFuture<Map<String, String>> newKeysAsync() {
 		return this.<Map<String, String>>invokePostAsync("_newkeys", null, Map.class).thenApply(keys -> {
 			if (keys != null && keys.containsKey("secretKey")) {
@@ -2379,6 +2620,10 @@ public final class ParaClient implements Closeable {
 		return invokeGet("_types", null, Map.class);
 	}
 
+	/**
+	 * Returns all registered types for this App asynchronously.
+	 * @return a future of a map of plural-singular form of all the registered types.
+	 */
 	public CompletableFuture<Map<String, String>> typesAsync() {
 		return invokeGetAsync("_types", null, Map.class);
 	}
@@ -2393,6 +2638,10 @@ public final class ParaClient implements Closeable {
 		return invokeGet("_types", params, Map.class);
 	}
 
+	/**
+	 * Returns the number of objects for each existing type in this App asynchronously.
+	 * @return a future of a map of singular object type to object count.
+	 */
 	public CompletableFuture<Map<String, Number>> typesCountAsync() {
 		Map<String, List<String>> params = new HashMap<>();
 		params.put("count", getQueryParameters("true"));
@@ -2410,6 +2659,12 @@ public final class ParaClient implements Closeable {
 		return ParaObjectUtils.setAnnotatedFields(data);
 	}
 
+	/**
+	 * Returns a {@link com.erudika.para.core.User} or an
+	 * {@link com.erudika.para.core.App} that is currently authenticated asynchronously.
+	 * @param <P> an App or User
+	 * @return a future of a {@link com.erudika.para.core.User} or an {@link com.erudika.para.core.App}
+	 */
 	public <P extends ParaObject> CompletableFuture<P> meAsync() {
 		return this.<Map<String, Object>>invokeGetAsync("_me", null, Map.class)
 				.thenApply(data -> ParaObjectUtils.setAnnotatedFields(data));
@@ -2431,6 +2686,12 @@ public final class ParaClient implements Closeable {
 		return me();
 	}
 
+	/**
+	 * Verifies a given JWT and returns the authenticated subject. This request will not remember the JWT in memory asynchronously.
+	 * @param <P> an App or User
+	 * @param accessToken a valid JWT access token
+	 * @return a future of a {@link com.erudika.para.core.User} or an {@link com.erudika.para.core.App}
+	 */
 	public <P extends ParaObject> CompletableFuture<P> meAsync(String accessToken) {
 		if (!StringUtils.isBlank(accessToken)) {
 			String auth = accessToken.startsWith("Bearer") ? accessToken : "Bearer " + accessToken;
@@ -2451,6 +2712,12 @@ public final class ParaClient implements Closeable {
 		return voteUp(obj, voterid, null, null);
 	}
 
+	/**
+	 * Upvote an object and register the vote in DB asynchronously.
+	 * @param obj the object to receive +1 votes
+	 * @param voterid the userid of the voter
+	 * @return a future of true if vote was successful
+	 */
 	public CompletableFuture<Boolean> voteUpAsync(ParaObject obj, String voterid) {
 		return voteUpAsync(obj, voterid, null, null);
 	}
@@ -2477,6 +2744,14 @@ public final class ParaClient implements Closeable {
 		return (boolean) invokePatch(obj.getObjectURI(), vote, Boolean.class);
 	}
 
+	/**
+	 * Upvote an object and register the vote in DB asynchronously.
+	 * @param obj the object to receive +1 votes
+	 * @param voterid the userid of the voter
+	 * @param expiresAfter expires after seconds
+	 * @param lockedAfter locked after seconds
+	 * @return a future of true if vote was successful
+	 */
 	public CompletableFuture<Boolean> voteUpAsync(ParaObject obj, String voterid, Integer expiresAfter,
 			Integer lockedAfter) {
 		if (obj == null || StringUtils.isBlank(voterid)) {
@@ -2505,6 +2780,12 @@ public final class ParaClient implements Closeable {
 		return voteDown(obj, voterid, null, null);
 	}
 
+	/**
+	 * Downvote an object and register the vote in DB asynchronously.
+	 * @param obj the object to receive -1 votes
+	 * @param voterid the userid of the voter
+	 * @return a future of true if vote was successful
+	 */
 	public CompletableFuture<Boolean> voteDownAsync(ParaObject obj, String voterid) {
 		return voteDownAsync(obj, voterid, null, null);
 	}
@@ -2531,6 +2812,14 @@ public final class ParaClient implements Closeable {
 		return (boolean) invokePatch(obj.getObjectURI(), vote, Boolean.class);
 	}
 
+	/**
+	 * Downvote an object and register the vote in DB asynchronously.
+	 * @param obj the object to receive -1 votes
+	 * @param voterid the userid of the voter
+	 * @param expiresAfter expires after seconds
+	 * @param lockedAfter locked after seconds
+	 * @return a future of true if vote was successful
+	 */
 	public CompletableFuture<Boolean> voteDownAsync(ParaObject obj, String voterid, Integer expiresAfter,
 			Integer lockedAfter) {
 		if (obj == null || StringUtils.isBlank(voterid)) {
@@ -2557,6 +2846,10 @@ public final class ParaClient implements Closeable {
 		return invokePost("_reindex", null, Map.class);
 	}
 
+	/**
+	 * Rebuilds the entire search index asynchronously.
+	 * @return a future of a response object with properties "tookMillis" and "reindexed"
+	 */
 	public CompletableFuture<Map<String, Object>> rebuildIndexAsync() {
 		return invokePostAsync("_reindex", null, Map.class);
 	}
@@ -2573,6 +2866,11 @@ public final class ParaClient implements Closeable {
 				getEndpoint(), getFullPath("_reindex"), null, params, null, Map.class);
 	}
 
+	/**
+	 * Rebuilds the entire search index asynchronously.
+	 * @param destinationIndex an existing index as destination
+	 * @return a future of a response object with properties "tookMillis" and "reindexed"
+	 */
 	public CompletableFuture<Map<String, Object>> rebuildIndexAsync(String destinationIndex) {
 		Map<String, List<String>> params = new HashMap<>();
 		params.put("destinationIndex", getQueryParameters(destinationIndex));
@@ -2594,6 +2892,15 @@ public final class ParaClient implements Closeable {
 		return sendEmail(toEmails, subject, fromEmail, senderName, message, true, false, null, null);
 	}
 
+	/**
+	 * Endpoint for sending transactional emails asynchronously.
+	 * @param toEmails list of email recipients
+	 * @param subject subject
+	 * @param fromEmail from email address
+	 * @param senderName sender name
+	 * @param message message body
+	 * @return a future of true if email was sent
+	 */
 	public CompletableFuture<Boolean> sendEmailAsync(List<String> toEmails, String subject, String fromEmail,
 			String senderName, String message) {
 		return sendEmailAsync(toEmails, subject, fromEmail, senderName, message, true, false, null, null);
@@ -2639,6 +2946,19 @@ public final class ParaClient implements Closeable {
 		return true;
 	}
 
+	/**
+	 * Endpoint for sending transactional emails asynchronously.
+	 * @param toEmails list of email recipients
+	 * @param subject subject
+	 * @param fromEmail from email address
+	 * @param senderName sender name
+	 * @param message message body
+	 * @param plaintextOnly true if plain text
+	 * @param markdownEnabled true if Markdown is enabled
+	 * @param file file input stream
+	 * @param fileContentType file MIME type
+	 * @return a future of true if email was sent
+	 */
 	public CompletableFuture<Boolean> sendEmailAsync(List<String> toEmails, String subject, String fromEmail,
 			String senderName, String message, boolean plaintextOnly, boolean markdownEnabled,
 			InputStream file, String fileContentType) {
@@ -2679,6 +2999,10 @@ public final class ParaClient implements Closeable {
 		return invokeGet("_constraints", null, Map.class);
 	}
 
+	/**
+	 * Returns the validation constraints map asynchronously.
+	 * @return a future of a map containing all validation constraints.
+	 */
 	public CompletableFuture<Map<String, Map<String, Map<String, Map<String, ?>>>>> validationConstraintsAsync() {
 		return invokeGetAsync("_constraints", null, Map.class);
 	}
@@ -2692,6 +3016,11 @@ public final class ParaClient implements Closeable {
 		return invokeGet(Utils.formatMessage("_constraints/{0}", Utils.urlEncode(type)), null, Map.class);
 	}
 
+	/**
+	 * Returns the validation constraints map asynchronously.
+	 * @param type a type
+	 * @return a future of a map containing all validation constraints for this type.
+	 */
 	public CompletableFuture<Map<String, Map<String, Map<String, Map<String, ?>>>>> validationConstraintsAsync(
 			String type) {
 		return invokeGetAsync(Utils.formatMessage("_constraints/{0}", Utils.urlEncode(type)), null, Map.class);
@@ -2713,6 +3042,13 @@ public final class ParaClient implements Closeable {
 				field, c.getName()), c.getPayload(), Map.class);
 	}
 
+	/**
+	 * Add a new constraint for a given field asynchronously.
+	 * @param type a type
+	 * @param field a field name
+	 * @param c the constraint
+	 * @return a future of a map containing all validation constraints for this type.
+	 */
 	public CompletableFuture<Map<String, Map<String, Map<String, Map<String, ?>>>>> addValidationConstraintAsync(
 			String type, String field, Constraint c) {
 		if (StringUtils.isBlank(type) || StringUtils.isBlank(field) || c == null) {
@@ -2738,6 +3074,13 @@ public final class ParaClient implements Closeable {
 				field, constraintName), null, Map.class);
 	}
 
+	/**
+	 * Removes a validation constraint for a given field asynchronously.
+	 * @param type a type
+	 * @param field a field name
+	 * @param constraintName the name of the constraint to remove
+	 * @return a future of a map containing all validation constraints for this type.
+	 */
 	public CompletableFuture<Map<String, Map<String, Map<String, Map<String, ?>>>>> removeValidationConstraintAsync(
 			String type, String field, String constraintName) {
 		if (StringUtils.isBlank(type) || StringUtils.isBlank(field) || StringUtils.isBlank(constraintName)) {
@@ -2759,6 +3102,10 @@ public final class ParaClient implements Closeable {
 		return invokeGet("_permissions", null, Map.class);
 	}
 
+	/**
+	 * Returns the permissions for all subjects and resources for current app asynchronously.
+	 * @return a future of a map of subject ids to resource names to a list of allowed methods
+	 */
 	public CompletableFuture<Map<String, Map<String, List<String>>>> resourcePermissionsAsync() {
 		return invokeGetAsync("_permissions", null, Map.class);
 	}
@@ -2773,6 +3120,11 @@ public final class ParaClient implements Closeable {
 		return invokeGet(Utils.formatMessage("_permissions/{0}", subjectid), null, Map.class);
 	}
 
+	/**
+	 * Returns only the permissions for a given subject (user) of the current app asynchronously.
+	 * @param subjectid the subject id (user id)
+	 * @return a future of a map of subject ids to resource names to a list of allowed methods
+	 */
 	public CompletableFuture<Map<String, Map<String, List<String>>>> resourcePermissionsAsync(String subjectid) {
 		subjectid = Utils.urlEncode(subjectid);
 		return invokeGetAsync(Utils.formatMessage("_permissions/{0}", subjectid), null, Map.class);
@@ -2790,6 +3142,13 @@ public final class ParaClient implements Closeable {
 		return grantResourcePermission(subjectid, resourcePath, permission, false);
 	}
 
+	/**
+	 * Grants a permission to a subject that allows them to call the specified HTTP methods on a given resource asynchronously.
+	 * @param subjectid subject id (user id)
+	 * @param resourcePath resource path or object type
+	 * @param permission a set of HTTP methods
+	 * @return a future of a map of the permissions for this subject id
+	 */
 	public CompletableFuture<Map<String, Map<String, List<String>>>> grantResourcePermissionAsync(String subjectid,
 			String resourcePath, EnumSet<App.AllowedMethods> permission) {
 		return grantResourcePermissionAsync(subjectid, resourcePath, permission, false);
@@ -2816,6 +3175,14 @@ public final class ParaClient implements Closeable {
 		return invokePut(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourcePath), permission, Map.class);
 	}
 
+	/**
+	 * Grants a permission to a subject that allows them to call the specified HTTP methods on a given resource asynchronously.
+	 * @param subjectid subject id (user id)
+	 * @param resourcePath resource path or object type
+	 * @param permission a set of HTTP methods
+	 * @param allowGuestAccess if true - all unauthenticated requests will go through, 'false' by default.
+	 * @return a future of a map of the permissions for this subject id
+	 */
 	public CompletableFuture<Map<String, Map<String, List<String>>>> grantResourcePermissionAsync(String subjectid,
 			String resourcePath, EnumSet<App.AllowedMethods> permission, boolean allowGuestAccess) {
 		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourcePath) || permission == null) {
@@ -2844,6 +3211,12 @@ public final class ParaClient implements Closeable {
 		return invokeDelete(Utils.formatMessage("_permissions/{0}/{1}", subjectid, resourcePath), null, Map.class);
 	}
 
+	/**
+	 * Revokes a permission for a subject, meaning they no longer will be able to access the given resource asynchronously.
+	 * @param subjectid subject id (user id)
+	 * @param resourcePath resource path or object type
+	 * @return a future of a map of the permissions for this subject id
+	 */
 	public CompletableFuture<Map<String, Map<String, List<String>>>> revokeResourcePermissionAsync(String subjectid,
 			String resourcePath) {
 		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourcePath)) {
@@ -2867,6 +3240,11 @@ public final class ParaClient implements Closeable {
 		return invokeDelete(Utils.formatMessage("_permissions/{0}", subjectid), null, Map.class);
 	}
 
+	/**
+	 * Revokes all permission for a subject asynchronously.
+	 * @param subjectid subject id (user id)
+	 * @return a future of a map of the permissions for this subject id
+	 */
 	public CompletableFuture<Map<String, Map<String, List<String>>>> revokeAllResourcePermissionsAsync(String subjectid) {
 		if (StringUtils.isBlank(subjectid)) {
 			return CompletableFuture.completedFuture(Collections.emptyMap());
@@ -2893,6 +3271,13 @@ public final class ParaClient implements Closeable {
 		return result != null && result;
 	}
 
+	/**
+	 * Checks if a subject is allowed to call method X on resource Y asynchronously.
+	 * @param subjectid subject id
+	 * @param resourcePath resource path or object type
+	 * @param httpMethod HTTP method name
+	 * @return a future of true if allowed
+	 */
 	public CompletableFuture<Boolean> isAllowedToAsync(String subjectid, String resourcePath, String httpMethod) {
 		if (StringUtils.isBlank(subjectid) || StringUtils.isBlank(resourcePath) || StringUtils.isBlank(httpMethod)) {
 			return CompletableFuture.completedFuture(false);
@@ -2915,6 +3300,10 @@ public final class ParaClient implements Closeable {
 		return invokeGet("_settings", null, Map.class);
 	}
 
+	/**
+	 * Returns the map containing app-specific settings asynchronously.
+	 * @return a future of a map
+	 */
 	public CompletableFuture<Map<String, Object>> appSettingsAsync() {
 		return invokeGetAsync("_settings", null, Map.class);
 	}
@@ -2931,6 +3320,11 @@ public final class ParaClient implements Closeable {
 		return invokeGet(Utils.formatMessage("_settings/{0}", key), null, Map.class);
 	}
 
+	/**
+	 * Returns the value of a specific app setting (property) asynchronously.
+	 * @param key a key
+	 * @return a future of a map containing one element {"value": "the_value"} or an empty map.
+	 */
 	public CompletableFuture<Map<String, Object>> appSettingsAsync(String key) {
 		if (StringUtils.isBlank(key)) {
 			return appSettingsAsync();
@@ -2949,6 +3343,12 @@ public final class ParaClient implements Closeable {
 		}
 	}
 
+	/**
+	 * Adds or overwrites an app-specific setting asynchronously.
+	 * @param key a key
+	 * @param value a value
+	 * @return a future of null
+	 */
 	public CompletableFuture<Void> addAppSettingAsync(String key, Object value) {
 		if (StringUtils.isBlank(key) || value == null) {
 			return CompletableFuture.completedFuture(null);
@@ -2967,6 +3367,11 @@ public final class ParaClient implements Closeable {
 		}
 	}
 
+	/**
+	 * Overwrites all app-specific settings asynchronously.
+	 * @param settings a key-value map of properties
+	 * @return a future of null
+	 */
 	public CompletableFuture<Void> setAppSettingsAsync(Map<?, ?> settings) {
 		if (settings == null) {
 			return CompletableFuture.completedFuture(null);
@@ -2984,6 +3389,11 @@ public final class ParaClient implements Closeable {
 		}
 	}
 
+	/**
+	 * Removes an app-specific setting asynchronously.
+	 * @param key a key
+	 * @return a future of null
+	 */
 	public CompletableFuture<Void> removeAppSettingAsync(String key) {
 		if (StringUtils.isBlank(key)) {
 			return CompletableFuture.completedFuture(null);
@@ -3035,6 +3445,21 @@ public final class ParaClient implements Closeable {
 		return null;
 	}
 
+	/**
+	 * Takes an identity provider access token and fetches the user data from that provider asynchronously.
+	 * A new {@link  User} object is created if that user doesn't exist.
+	 * Access tokens are returned upon successful authentication using one of the SDKs from
+	 * Facebook, Google, Twitter, etc.
+	 * <b>Note:</b> Twitter uses OAuth 1 and gives you a token and a token secret.
+	 * <b>You must concatenate them like this: <code>{oauth_token}:{oauth_token_secret}</code> and
+	 * use that as the provider access token.</b>
+	 * @param provider identity provider, e.g. 'facebook', 'google'...
+	 * @param providerToken access token from a provider like Facebook, Google, Twitter
+	 * @param rememberJWT it true the access token returned by Para will be stored locally and
+	 * available through {@link #getAccessToken()}
+	 * @return a future of a {@link User} object or null if something failed. The JWT is available
+	 * on the returned User object via {@link User#getPassword()}.
+	 */
 	@SuppressWarnings("unchecked")
 	public CompletableFuture<User> signInAsync(String provider, String providerToken, boolean rememberJWT) {
 		if (StringUtils.isBlank(provider) || StringUtils.isBlank(providerToken)) {
@@ -3070,6 +3495,13 @@ public final class ParaClient implements Closeable {
 		return signIn(provider, providerToken, true);
 	}
 
+	/**
+	 * Takes an identity provider access token and fetches the user data from that provider asynchronously.
+	 * @see #signIn(java.lang.String, java.lang.String, boolean)
+	 * @param provider identity provider, e.g. 'facebook', 'google'...
+	 * @param providerToken access token from a provider like Facebook, Google, Twitter
+	 * @return a future of a {@link User} object or null if something failed
+	 */
 	public CompletableFuture<User> signInAsync(String provider, String providerToken) {
 		return signInAsync(provider, providerToken, true);
 	}
@@ -3164,6 +3596,13 @@ public final class ParaClient implements Closeable {
 		return invokeDelete(JWT_PATH, null, Map.class) != null;
 	}
 
+	/**
+	 * Revokes all user tokens for a given user id asynchronously.
+	 * This would be equivalent to "logout everywhere".
+	 * <b>Note:</b> Generating a new API secret on the server will also invalidate all client tokens.
+	 * Requires a valid existing token.
+	 * @return a future of true if successful
+	 */
 	public CompletableFuture<Boolean> revokeAllTokensAsync() {
 		return invokeDeleteAsync(JWT_PATH, null, Map.class).thenApply(result -> result != null);
 	}
