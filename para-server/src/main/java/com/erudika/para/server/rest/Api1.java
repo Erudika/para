@@ -79,6 +79,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -208,7 +209,7 @@ public final class Api1 {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
 		String resolvedType = resolveType(app, type);
-		return getCreateResponse(app, resolvedType, req.getInputStream());
+		return respondToClient(req, () -> getCreateResponse(app, resolvedType, req.getInputStream()));
 	}
 
 	/**
@@ -272,7 +273,7 @@ public final class Api1 {
 		obj.setId(id);
 		String resolvedType = resolveType(app, type);
 		String appid = Strings.CS.equals(resolvedType, Utils.type(App.class)) ? app.getAppid() : app.getAppIdentifier();
-		return getUpdateResponse(app,  getDAO().read(appid, obj.getId()), req.getInputStream());
+		return respondToClient(req, () -> getUpdateResponse(app,  getDAO().read(appid, obj.getId()), req.getInputStream()));
 	}
 
 	/**
@@ -304,7 +305,7 @@ public final class Api1 {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
 		String resolvedType = resolveType(app, type);
-		return getOverwriteResponse(app, id, resolvedType, req.getInputStream());
+		return respondToClient(req, () -> getOverwriteResponse(app, id, resolvedType, req.getInputStream()));
 	}
 
 	/**
@@ -314,8 +315,8 @@ public final class Api1 {
 	 * @return a response
 	 */
 	@DeleteMapping("/{type}/{id}")
-	public ResponseEntity<?> delete(@PathVariable String type, @PathVariable String id) {
-		return deleteHandler(getPrincipalApp(), type, id);
+	public ResponseEntity<?> delete(@PathVariable String type, @PathVariable String id, HttpServletRequest req) {
+		return deleteHandler(getPrincipalApp(), type, id, req);
 	}
 
 	/**
@@ -325,12 +326,12 @@ public final class Api1 {
 	 * @param id the object id
 	 * @return a response
 	 */
-	public ResponseEntity<?> deleteHandler(App app, String type, String id) {
+	public ResponseEntity<?> deleteHandler(App app, String type, String id, HttpServletRequest req) {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
 		ParaObject obj = loadObject(app, type, id);
-		return getDeleteResponse(app, obj);
+		return respondToClient(req, () -> getDeleteResponse(app, obj));
 	}
 
 	/**
@@ -366,7 +367,7 @@ public final class Api1 {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
-		return getBatchCreateResponse(app, req.getInputStream());
+		return respondToClient(req, () -> getBatchCreateResponse(app, req.getInputStream()));
 	}
 
 	/**
@@ -424,7 +425,8 @@ public final class Api1 {
 					ids.add((String) props.get(Config._ID));
 				}
 			}
-			return getBatchUpdateResponse(app, getDAO().readAll(app.getAppIdentifier(), ids, true), newProps);
+			return respondToClient(req, () -> getBatchUpdateResponse(app,
+					getDAO().readAll(app.getAppIdentifier(), ids, true), newProps));
 		}
 		return entityRes;
 	}
@@ -449,7 +451,7 @@ public final class Api1 {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
-		return getBatchDeleteResponse(app, queryParams("ids", req));
+		return respondToClient(req, () -> getBatchDeleteResponse(app, queryParams("ids", req)));
 	}
 
 	/**
@@ -1095,17 +1097,19 @@ public final class Api1 {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
-		long startTime = System.nanoTime();
-		Pager pager = RestUtils.getPagerFromParams(req);
-		String destinationIndex = queryParam("destinationIndex", req);
-		try (Metrics.Context context = Metrics.time(app.getAppIdentifier(), Api1.class, "rebuildIndex")) {
-			getSearch().rebuildIndex(getDAO(), app, destinationIndex, pager);
-		}
-		long tookMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
-		Map<String, Object> response = new HashMap<>(2);
-		response.put("reindexed", pager.getCount());
-		response.put("tookMillis", tookMillis);
-		return ResponseEntity.ok().body(response);
+		return respondToClient(req, () -> {
+			long startTime = System.nanoTime();
+			Pager pager = RestUtils.getPagerFromParams(req);
+			String destinationIndex = queryParam("destinationIndex", req);
+			try (Metrics.Context context = Metrics.time(app.getAppIdentifier(), Api1.class, "rebuildIndex")) {
+				getSearch().rebuildIndex(getDAO(), app, destinationIndex, pager);
+			}
+			long tookMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
+			Map<String, Object> response = new HashMap<>(2);
+			response.put("reindexed", pager.getCount());
+			response.put("tookMillis", tookMillis);
+			return ResponseEntity.ok().body(response);
+		});
 	}
 
 	/**
@@ -1175,48 +1179,50 @@ public final class Api1 {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
-		ObjectReader reader = ParaObjectUtils.getJsonMapper()
-				.readerFor(new TypeReference<List<Map<String, Object>>>() {
-				});
-		int count = 0;
-		int importBatchSize = Para.getConfig().importBatchSize();
-		String filename = Optional.ofNullable(queryParam("filename", req))
-				.orElse(app.getAppIdentifier().trim() + "_backup.zip");
-		Sysprop s = new Sysprop();
-		s.setType("paraimport");
-		try (InputStream inputStream = req.getInputStream(); ZipInputStream zipIn = new ZipInputStream(inputStream)) {
-			ZipEntry zipEntry;
-			List<ParaObject> toCreate = new LinkedList<>();
-			while ((zipEntry = zipIn.getNextEntry()) != null) {
-				if (zipEntry.getName().endsWith(".json")) {
-					List<Map<String, Object>> objects = reader.readValue(new FilterInputStream(zipIn) {
-						public void close() throws IOException {
-							zipIn.closeEntry();
-						}
+		return respondToClient(req, () -> {
+			ObjectReader reader = ParaObjectUtils.getJsonMapper()
+					.readerFor(new TypeReference<List<Map<String, Object>>>() {
 					});
-					objects.forEach(o -> toCreate.add(ParaObjectUtils.setAnnotatedFields(o)));
-					if (toCreate.size() >= importBatchSize) {
-						getDAO().createAll(app.getAppIdentifier(), toCreate);
-						toCreate.clear();
+			int count = 0;
+			int importBatchSize = Para.getConfig().importBatchSize();
+			String filename = Optional.ofNullable(queryParam("filename", req))
+					.orElse(app.getAppIdentifier().trim() + "_backup.zip");
+			Sysprop s = new Sysprop();
+			s.setType("paraimport");
+			try (InputStream inputStream = req.getInputStream(); ZipInputStream zipIn = new ZipInputStream(inputStream)) {
+				ZipEntry zipEntry;
+				List<ParaObject> toCreate = new LinkedList<>();
+				while ((zipEntry = zipIn.getNextEntry()) != null) {
+					if (zipEntry.getName().endsWith(".json")) {
+						List<Map<String, Object>> objects = reader.readValue(new FilterInputStream(zipIn) {
+							public void close() throws IOException {
+								zipIn.closeEntry();
+							}
+						});
+						objects.forEach(o -> toCreate.add(ParaObjectUtils.setAnnotatedFields(o)));
+						if (toCreate.size() >= importBatchSize) {
+							getDAO().createAll(app.getAppIdentifier(), toCreate);
+							toCreate.clear();
+						}
+						count += objects.size();
 					}
-					count += objects.size();
 				}
+				if (!toCreate.isEmpty()) {
+					getDAO().createAll(app.getAppIdentifier(), toCreate);
+				}
+				s.setCreatorid(app.getAppIdentifier());
+				s.setName(filename);
+				s.addProperty("count", count);
+				logger.info("Imported {} objects to app '{}'", count, app.getId());
+				if (count > 0) {
+					getDAO().create(app.getAppIdentifier(), s);
+				}
+				return ResponseEntity.ok(s);
+			} catch (Exception e) {
+				logger.error("Failed to import " + filename, e);
+				return getStatusResponse(HttpStatus.BAD_REQUEST, "Import failed - " + e.getMessage());
 			}
-			if (!toCreate.isEmpty()) {
-				getDAO().createAll(app.getAppIdentifier(), toCreate);
-			}
-			s.setCreatorid(app.getAppIdentifier());
-			s.setName(filename);
-			s.addProperty("count", count);
-			logger.info("Imported {} objects to app '{}'", count, app.getId());
-			if (count > 0) {
-				getDAO().create(app.getAppIdentifier(), s);
-			}
-			return ResponseEntity.ok(s);
-		} catch (Exception e) {
-			logger.error("Failed to import " + filename, e);
-			return getStatusResponse(HttpStatus.BAD_REQUEST, "Import failed - " + e.getMessage());
-		}
+		});
 	}
 
 	/**
@@ -1230,8 +1236,7 @@ public final class Api1 {
 	public ResponseEntity<?> emails(HttpServletRequest req, HttpServletResponse res) throws IOException {
 		HttpUtils.MultipartForm formData = HttpUtils.MultipartForm.fromJson(req.getInputStream());
 		if (formData != null) {
-//			HttpUtils.MultipartForm formData = (HttpUtils.MultipartForm) entity.getBody();
-			return emailsHandler(getPrincipalApp(), null, formData, req, res);
+			return respondToClient(req, () -> emailsHandler(getPrincipalApp(), null, formData, req, res));
 		}
 		return getStatusResponse(HttpStatus.BAD_REQUEST, "Invalid form data.");
 	}
@@ -1252,7 +1257,7 @@ public final class Api1 {
 	public ResponseEntity<?> emails(HttpUtils.MultipartForm formData,
 			@PathVariable String appid, @PathVariable String formid,
 			HttpServletRequest req, HttpServletResponse res) throws IOException {
-		return emailsHandler(getDAO().read(App.id(appid)), formid, formData, req, res);
+		return respondToClient(req, () -> emailsHandler(getDAO().read(App.id(appid)), formid, formData, req, res));
 	}
 
 	/**
@@ -1381,8 +1386,8 @@ public final class Api1 {
 	 */
 	@PostMapping("/{type}/{id}/links/{id2}")
 	public ResponseEntity<?> createLink(@PathVariable String type, @PathVariable String id,
-			@PathVariable String id2) {
-		return modifyLink(type, id, id2);
+			@PathVariable String id2, HttpServletRequest req) {
+		return respondToClient(req, () -> modifyLink(type, id, id2));
 	}
 
 	/**
@@ -1394,8 +1399,8 @@ public final class Api1 {
 	 */
 	@PutMapping("/{type}/{id}/links/{id2}")
 	public ResponseEntity<?> putLink(@PathVariable String type, @PathVariable String id,
-			@PathVariable String id2) {
-		return modifyLink(type, id, id2);
+			@PathVariable String id2, HttpServletRequest req) {
+		return respondToClient(req, () -> modifyLink(type, id, id2));
 	}
 
 	/**
@@ -1410,7 +1415,7 @@ public final class Api1 {
 	@DeleteMapping("/{type}/{id}/links/{type2}/{id2}")
 	public ResponseEntity<?> deleteLink(@PathVariable String type, @PathVariable String id,
 			@PathVariable String type2, @PathVariable String id2, HttpServletRequest req) {
-		return deleteLinks(type, id, type2, id2, req);
+		return respondToClient(req, () -> deleteLinks(type, id, type2, id2, req));
 	}
 
 	/**
@@ -1423,7 +1428,7 @@ public final class Api1 {
 	@DeleteMapping("/{type}/{id}/links")
 	public ResponseEntity<?> deleteAllLinks(@PathVariable String type, @PathVariable String id,
 			HttpServletRequest req) {
-		return deleteLinks(type, id, null, null, req);
+		return respondToClient(req, () -> deleteLinks(type, id, null, null, req));
 	}
 
 	private ResponseEntity<?> readLinks(String type, String id, String type2, String id2, HttpServletRequest req) {
@@ -1504,5 +1509,19 @@ public final class Api1 {
 			return getDAO().read(app.getAppIdentifier(), pobj.getId());
 		}
 		return null;
+	}
+
+	private ResponseEntity<?> respondToClient(HttpServletRequest req, Callable<ResponseEntity<?>> r) {
+		if ("true".equals(req.getHeader("X-Para-Respond-Immediately"))) {
+			Para.getExecutorService().submit(r);
+			return ResponseEntity.ok().build();
+		} else {
+			try {
+				return r.call();
+			} catch (Exception e) {
+				logger.error(null, e);
+				return getStatusResponse(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+			}
+		}
 	}
 }

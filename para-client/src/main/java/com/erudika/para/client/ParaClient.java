@@ -103,6 +103,12 @@ public final class ParaClient implements Closeable {
 	private static final String DEFAULT_PATH = "/v1/";
 	private static final String JWT_PATH = "/jwt_auth";
 
+	/**
+	 * Special mode for highly restrictive environments, like AWS Lambda, where we want to execute long-running
+	 * PUT/POST/PATCH/DELETE in Para synchronously, but we don't want the client to wait for the server
+	 * to respond and finish the request (fire-and-forget).
+	 */
+	private final boolean isHybridAsyncEnabled = !Para.getConfig().executorServiceEnabled();
 	private final String protocols = Para.getConfig().clientSslProtocols();
 	private final String keystorePath = Para.getConfig().clientSslKeystore();
 	private final String keystorePass = Para.getConfig().clientSslKeystorePassword();
@@ -123,6 +129,7 @@ public final class ParaClient implements Closeable {
 	private final ObjectMapper mapper;
 	private final Object tokenRefreshLock = new Object();
 	private volatile CompletableFuture<Boolean> tokenRefreshFuture;
+
 
 	/**
 	 * Default constructor.
@@ -718,21 +725,7 @@ public final class ParaClient implements Closeable {
 
 			req.setHeader(HttpHeaders.ACCEPT_ENCODING, "gzip");
 
-			try {
-				return httpclient.execute(req, (resp) -> {
-					HttpEntity respEntity = resp.getEntity();
-					int statusCode = resp.getCode();
-					String reason = resp.getReasonPhrase() + reqDetails;
-					return readEntity(respEntity, returnType, statusCode, reason);
-				});
-			} catch (Exception ex) {
-				String msg = "Failed to execute signed " + method + " request to " + uri + ": " + ex.getMessage();
-				if (throwExceptionOnHTTPError) {
-					throw new RuntimeException(msg);
-				} else {
-					logger.error(msg + reqDetails);
-				}
-			}
+			return syncRequest(req, method, reqDetails, uri, returnType);
 		} catch (URISyntaxException ex) {
 			logger.error(null, ex);
 		}
@@ -783,6 +776,40 @@ public final class ParaClient implements Closeable {
 
 		CompletableFuture<T> future = new CompletableFuture<>();
 		final String requestUri = uri;
+
+		if (isHybridAsyncEnabled) {
+			HttpUriRequest syncRequest = fromSimpleHttpRequest(req);
+			syncRequest.addHeader("X-Para-Respond-Immediately", "true");
+			syncRequest(syncRequest, method, reqDetails, requestUri, returnType);
+			return CompletableFuture.completedFuture(null);
+		} else {
+			asyncRequest(future, req, method, reqDetails, requestUri, returnType);
+		}
+		return future;
+	}
+
+	private <T> T syncRequest(HttpUriRequest req, String method, String reqDetails,
+			String requestUri, Class<?> returnType) {
+		try {
+			return httpclient.execute(req, (resp) -> {
+				HttpEntity respEntity = resp.getEntity();
+				int statusCode = resp.getCode();
+				String reason = resp.getReasonPhrase() + reqDetails;
+				return readEntity(respEntity, returnType, statusCode, reason);
+			});
+		} catch (Exception ex) {
+			String msg = "Failed to execute signed " + method + " request to " + requestUri + ": " + ex.getMessage();
+			if (throwExceptionOnHTTPError) {
+				throw new RuntimeException(msg);
+			} else {
+				logger.error(msg + reqDetails);
+			}
+		}
+		return null;
+	}
+
+	private <T> void asyncRequest(CompletableFuture<T> future, SimpleHttpRequest req, String method, String reqDetails,
+			String requestUri, Class<?> returnType) {
 		httpasyncclient.execute(req, new FutureCallback<SimpleHttpResponse>() {
 			@Override
 			public void completed(SimpleHttpResponse resp) {
@@ -811,7 +838,22 @@ public final class ParaClient implements Closeable {
 				future.cancel(true);
 			}
 		});
-		return future;
+	}
+
+	private HttpUriRequest fromSimpleHttpRequest(SimpleHttpRequest req) {
+		try {
+			HttpUriRequest request = getHttpUriRequest(req.getRequestUri(), req.getMethod(), req.getBodyBytes());
+			request.setHeaders(req.getHeaders());
+			return request;
+		} catch (Exception e) {
+			String msg = "Failed to convert SimpleHttpRequest to HttpUriRequest";
+			if (throwExceptionOnHTTPError) {
+				throw new RuntimeException(msg);
+			} else {
+				logger.error(msg);
+			}
+		}
+		return null;
 	}
 
 	private byte[] getJsonEntityAsBytes(Object entity) {
