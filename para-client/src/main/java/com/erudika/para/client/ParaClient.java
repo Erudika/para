@@ -842,7 +842,7 @@ public final class ParaClient implements Closeable {
 
 	private HttpUriRequest fromSimpleHttpRequest(SimpleHttpRequest req) {
 		try {
-			HttpUriRequest request = getHttpUriRequest(req.getRequestUri(), req.getMethod(), req.getBodyBytes());
+			HttpUriRequest request = getHttpUriRequest(req.getUri().toString(), req.getMethod(), req.getBodyBytes());
 			request.setHeaders(req.getHeaders());
 			return request;
 		} catch (Exception e) {
