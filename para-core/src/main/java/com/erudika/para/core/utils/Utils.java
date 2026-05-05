@@ -23,11 +23,16 @@ import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.annotations.Email;
 import com.samskivert.mustache.Mustache;
 import com.vladsch.flexmark.ast.LinkNode;
+import com.vladsch.flexmark.ext.anchorlink.AnchorLinkExtension;
+import com.vladsch.flexmark.ext.attributes.AttributesExtension;
 import com.vladsch.flexmark.ext.autolink.AutolinkExtension;
 import com.vladsch.flexmark.ext.emoji.EmojiExtension;
 import com.vladsch.flexmark.ext.emoji.EmojiImageType;
+import com.vladsch.flexmark.ext.enumerated.reference.EnumeratedReferenceExtension;
 import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension;
 import com.vladsch.flexmark.ext.gfm.tasklist.TaskListExtension;
+import com.vladsch.flexmark.ext.gitlab.GitLabExtension;
+import com.vladsch.flexmark.ext.ins.InsExtension;
 import com.vladsch.flexmark.ext.media.tags.MediaTagsExtension;
 import com.vladsch.flexmark.ext.tables.TablesExtension;
 import com.vladsch.flexmark.html.AttributeProvider;
@@ -489,6 +494,7 @@ public final class Utils {
 	private static MutableDataHolder getMarkdownOptions() {
 		return new MutableDataSet()
 				.set(HtmlRenderer.ESCAPE_HTML, true)
+				.set(HtmlRenderer.GENERATE_HEADER_ID, true)
 				.set(HtmlRenderer.SUPPRESSED_LINKS, "(?i)javascript:.*")
 				.set(HtmlRenderer.SOFT_BREAK, Para.getConfig().markdownSoftBreak())
 				.set(HtmlRenderer.AUTOLINK_WWW_PREFIX, "https://")
@@ -505,6 +511,11 @@ public final class Utils {
 						TaskListExtension.create(),
 						AutolinkExtension.create(),
 						RelAttributeExtension.create(),
+						AttributesExtension.create(),
+						AnchorLinkExtension.create(),
+						InsExtension.create(),
+						GitLabExtension.create(),
+						EnumeratedReferenceExtension.create(),
 						MediaTagsExtension.create()));
 	}
 

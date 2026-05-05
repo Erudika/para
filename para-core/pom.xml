@@ -152,6 +152,31 @@
 			<version>${flexmarkVer}</version>
 		</dependency>
 		<dependency>
+			<groupId>com.vladsch.flexmark</groupId>
+			<artifactId>flexmark-ext-attributes</artifactId>
+			<version>${flexmarkVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.vladsch.flexmark</groupId>
+			<artifactId>flexmark-ext-enumerated-reference</artifactId>
+			<version>${flexmarkVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.vladsch.flexmark</groupId>
+			<artifactId>flexmark-ext-anchorlink</artifactId>
+			<version>${flexmarkVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.vladsch.flexmark</groupId>
+			<artifactId>flexmark-ext-ins</artifactId>
+			<version>${flexmarkVer}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.vladsch.flexmark</groupId>
+			<artifactId>flexmark-ext-gitlab</artifactId>
+			<version>${flexmarkVer}</version>
+		</dependency>
+		<dependency>
 			<groupId>at.favre.lib</groupId>
 			<artifactId>bcrypt</artifactId>
 			<version>0.10.2</version>
