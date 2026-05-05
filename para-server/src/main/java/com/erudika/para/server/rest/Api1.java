@@ -312,6 +312,7 @@ public final class Api1 {
 	 * Deletes an object of a given type.
 	 * @param type the object type
 	 * @param id the object id
+	 * @param req the request
 	 * @return a response
 	 */
 	@DeleteMapping("/{type}/{id}")
@@ -324,6 +325,7 @@ public final class Api1 {
 	 * @param app the app
 	 * @param type the object type
 	 * @param id the object id
+	 * @param req the request
 	 * @return a response
 	 */
 	public ResponseEntity<?> deleteHandler(App app, String type, String id, HttpServletRequest req) {
@@ -1382,6 +1384,7 @@ public final class Api1 {
 	 * @param type the type of first object
 	 * @param id the id of first object
 	 * @param id2 the id of second object
+	 * @param req the request
 	 * @return a response
 	 */
 	@PostMapping("/{type}/{id}/links/{id2}")
@@ -1395,6 +1398,7 @@ public final class Api1 {
 	 * @param type the type of first object
 	 * @param id the id of first object
 	 * @param id2 the id of second object
+	 * @param req the request
 	 * @return a response
 	 */
 	@PutMapping("/{type}/{id}/links/{id2}")
