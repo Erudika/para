@@ -17,16 +17,24 @@
  */
 package com.erudika.para.server.security;
 
+import java.util.Collection;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.ldap.core.DirContextAdapter;
+import org.springframework.ldap.core.DirContextOperations;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.ldap.authentication.AbstractLdapAuthenticationProvider;
 import org.springframework.security.ldap.authentication.LdapAuthenticationProvider;
 import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider;
+import org.springframework.security.ldap.userdetails.InetOrgPerson;
 import org.springframework.security.ldap.userdetails.InetOrgPersonContextMapper;
+import org.springframework.security.ldap.userdetails.LdapUserDetailsImpl;
+import org.springframework.util.Assert;
 
 /**
  * An authentication provider that supports LDAP and AD.
@@ -71,7 +79,7 @@ public class LDAPAuthenticationProvider implements AuthenticationProvider {
 				} else {
 					ldapProvider = new LdapAuthenticationProvider(new LDAPAuthenticator(ldapSettings));
 				}
-				ldapProvider.setUserDetailsContextMapper(new InetOrgPersonContextMapper());
+				ldapProvider.setUserDetailsContextMapper(new LdapPersonContextMapper());
 				return ldapProvider.authenticate(authentication);
 			} else {
 				throw new AuthenticationServiceException("LDAP configuration is missing.");
@@ -84,5 +92,67 @@ public class LDAPAuthenticationProvider implements AuthenticationProvider {
 	@Override
 	public boolean supports(Class<?> authentication) {
 		return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication);
+	}
+
+	public static class LdapPerson extends InetOrgPerson {
+
+		private static final long serialVersionUID = 621L;
+
+		public static class Essence extends InetOrgPerson.Essence {
+
+			public Essence(DirContextOperations ctx) {
+				super(ctx);
+				Object jpeg = ctx.getObjectAttribute("jpegPhoto");
+				Object photo = ctx.getObjectAttribute("photo");
+				Object thumb = ctx.getObjectAttribute("thumbnailPhoto"); // used in Microsoft AD
+				if (jpeg != null && jpeg instanceof byte[]) {
+					((LdapPerson) this.instance).setPhoto((byte[]) jpeg);
+				} else if (thumb != null && jpeg instanceof byte[]) {
+					((LdapPerson) this.instance).setPhoto((byte[]) thumb);
+				} else if (photo != null && jpeg instanceof byte[]) {
+					((LdapPerson) this.instance).setPhoto((byte[]) photo);
+				}
+			}
+
+			@Override
+			protected LdapUserDetailsImpl createTarget() {
+				return new LdapPerson();
+			}
+		}
+
+		private byte[] photo;
+
+		public void setPhoto(byte[] photo) {
+			this.photo = photo;
+		}
+
+		public byte[] getPhoto() {
+			return photo;
+		}
+
+		@Override
+		public void populateContext(DirContextAdapter adapter) {
+			super.populateContext(adapter);
+		}
+	}
+
+	static class LdapPersonContextMapper extends InetOrgPersonContextMapper {
+
+		@Override
+		public UserDetails mapUserFromContext(DirContextOperations ctx, String username,
+				Collection<? extends GrantedAuthority> authorities) {
+			LdapPerson.Essence p = new LdapPerson.Essence(ctx);
+			p.setUsername(username);
+			p.setAuthorities(authorities);
+			return p.createUserDetails();
+		}
+
+		@Override
+		public void mapUserToContext(UserDetails user, DirContextAdapter ctx) {
+			Assert.isInstanceOf(LdapPerson.class, user, "UserDetails must be an InetOrgPerson instance");
+			LdapPerson p = (LdapPerson) user;
+			p.populateContext(ctx);
+		}
+
 	}
 }

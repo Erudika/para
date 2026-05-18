@@ -22,13 +22,17 @@ import com.erudika.para.core.User;
 import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.security.AuthenticatedUserDetails;
 import com.erudika.para.server.security.LDAPAuthentication;
+import com.erudika.para.server.security.LDAPAuthenticationProvider.LdapPerson;
 import com.erudika.para.server.security.SecurityUtils;
 import com.erudika.para.server.security.UserAuthentication;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
@@ -105,16 +109,17 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 		return SecurityUtils.checkIfActive(userAuth, SecurityUtils.getAuthenticatedUser(userAuth), true);
 	}
 
-	private UserAuthentication getOrCreateUser(App app, Authentication ldapAuth) {
+	private UserAuthentication getOrCreateUser(App app, Authentication ldapAuth) throws JsonProcessingException {
 		LOG.debug("LDAP response: {}", ldapAuth);
 		if (ldapAuth == null) {
 			return null;
 		}
 		UserAuthentication userAuth = null;
 		User user = new User();
-		InetOrgPerson profile = (InetOrgPerson) ldapAuth.getPrincipal();
+		LdapPerson profile = (LdapPerson) ldapAuth.getPrincipal();
 
 		if (profile != null && profile.isEnabled() && profile.isAccountNonLocked() && profile.isAccountNonExpired()) {
+			boolean tokenDelegationEnabled = isAccessTokenDelegationEnabled(app);
 			String ldapAccountId = profile.getUsername();
 			String email = profile.getMail();
 			String name = getFullName(app, profile);
@@ -153,13 +158,18 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 				user.setGroups(groups);
 				user.setName(StringUtils.isBlank(name) ? "No Name" : name);
 				user.setPassword(Utils.generateSecurityToken());
+				user.setPicture(getPicture(app, user, profile));
+				if (tokenDelegationEnabled) {
+					profile.setPhoto(null);
+					user.setIdpAccessToken(getAccessTokenPayload(profile));
+				}
 				user.setIdentifier(Config.LDAP_PREFIX.concat(ldapAccountId));
 				String id = user.create();
 				if (id == null) {
 					throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 				}
 			} else {
-				if (updateUserInfo(user, email, name, groups)) {
+				if (updateUserInfo(user, getPicture(app, user, profile), email, name, groups, profile, tokenDelegationEnabled)) {
 					user.update();
 				}
 			}
@@ -170,8 +180,13 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 		return userAuth;
 	}
 
-	private boolean updateUserInfo(User user, String email, String name, String groups) {
+	private boolean updateUserInfo(User user, String pic, String email, String name, String groups,
+			LdapPerson profile, boolean tokenDelegationEnabled) throws JsonProcessingException {
 		boolean update = false;
+		if (!Strings.CS.equals(user.getPicture(), pic)) {
+			user.setPicture(pic);
+			update = true;
+		}
 		if (!StringUtils.isBlank(email) && !Strings.CS.equals(user.getEmail(), email)) {
 			user.setEmail(email);
 			update = true;
@@ -184,6 +199,11 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 			user.setGroups(groups);
 			CoreUtils.getInstance().overwrite(user.getAppid(), user);
 			update = false;
+		}
+		if (tokenDelegationEnabled) {
+			profile.setPhoto(null);
+			user.setIdpAccessToken(getAccessTokenPayload(profile));
+			update = true;
 		}
 		return update;
 	}
@@ -251,5 +271,27 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 			default -> def;
 		};
 		return StringUtils.isBlank(val) ? def : val;
+	}
+
+	private String getAccessTokenPayload(LdapPerson profile) throws JsonProcessingException {
+		byte[] json = ParaObjectUtils.getJsonWriterNoIdent().writeValueAsBytes(profile);
+		return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." + Utils.base64encURL(json) + ".bogus";
+	}
+
+	private boolean isAccessTokenDelegationEnabled(App app) {
+		return Boolean.parseBoolean(Para.getConfig().getSettingForApp(app, "security.ldap.token_delegation_enabled", "false"));
+	}
+
+	private String getPicture(App app, User user, LdapPerson profile) {
+		byte[] pic = profile.getPhoto();
+		if (pic != null && pic.length > 0) {
+			return Para.getFileStore().store(Optional.
+					ofNullable(getAppid(app)).orElse(Config.PARA) + "/" + user.getId() + ".jpeg", new ByteArrayInputStream(pic));
+		}
+		return getGravatar(user.getEmail());
+	}
+
+	private String getGravatar(String email) {
+		return "https://www.gravatar.com/avatar/" + Utils.md5(email.toLowerCase()) + "?size=400&d=mm&r=pg";
 	}
 }

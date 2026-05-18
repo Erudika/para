@@ -21,10 +21,12 @@ import com.erudika.para.core.App;
 import com.erudika.para.core.User;
 import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.security.AuthenticatedUserDetails;
 import com.erudika.para.server.security.SecurityUtils;
 import com.erudika.para.server.security.UserAuthentication;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
@@ -144,7 +146,7 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 						Utils.base64dec(request.getParameter("SAMLResponse")), requestRepo.loadAuthenticationRequest(request));
 				Authentication authentication = getAuthenticationManager().authenticate(token);
 				if (authentication instanceof Saml2Authentication saml && authentication.isAuthenticated()) {
-					userAuth = getOrCreateUser(app, ((Saml2ResponseAssertion) saml.getCredentials()).getAttributes());
+					userAuth = getOrCreateUser(app, ((Saml2ResponseAssertion) saml.getCredentials()));
 				} else {
 					throw new AuthenticationServiceException("Authentication failed: invalid SAML response.");
 				}
@@ -176,12 +178,13 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException ex
 	 */
-	public UserAuthentication getOrCreateUser(App app, Map<String, List<Object>> samlAttributes) throws IOException {
+	public UserAuthentication getOrCreateUser(App app, Saml2ResponseAssertion samlAttributes) throws IOException {
 		UserAuthentication userAuth = null;
 		User user = new User();
 		Map<String, String> userData = populateUserData(app, samlAttributes);
 
 		if (!userData.isEmpty()) {
+			boolean tokenDelegationEnabled = isAccessTokenDelegationEnabled(app);
 			String samlUserId = userData.get("uid");
 			String pic = userData.getOrDefault("pic", null);
 			String email = userData.getOrDefault("email", null);
@@ -211,13 +214,16 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 				user.setName(StringUtils.isBlank(name) ? "Anonymous" : name);
 				user.setPassword(Utils.generateSecurityToken());
 				user.setPicture(getPicture(pic));
+				if (tokenDelegationEnabled) {
+					user.setIdpAccessToken(getAccessTokenPayload(samlAttributes));
+				}
 				user.setIdentifier(Config.SAML_PREFIX.concat(samlUserId));
 				String id = user.create();
 				if (id == null) {
 					throw new AuthenticationServiceException("Authentication failed: cannot create new user.");
 				}
 			} else {
-				if (updateUserInfo(user, pic, email, name)) {
+				if (updateUserInfo(user, pic, email, name, samlAttributes, tokenDelegationEnabled)) {
 					user.update();
 				}
 			}
@@ -226,7 +232,8 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 		return SecurityUtils.checkIfActive(userAuth, user, false);
 	}
 
-	private boolean updateUserInfo(User user, String pic, String email, String name) {
+	private boolean updateUserInfo(User user, String pic, String email, String name,
+			Saml2ResponseAssertion samlAttributes, boolean tokenDelegationEnabled) throws JsonProcessingException {
 		String picture = getPicture(pic);
 		boolean update = false;
 		if (!Strings.CS.equals(user.getPicture(), picture)) {
@@ -241,10 +248,14 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 			user.setName(name);
 			update = true;
 		}
+		if (tokenDelegationEnabled) {
+			user.setIdpAccessToken(getAccessTokenPayload(samlAttributes));
+			update = true;
+		}
 		return update;
 	}
 
-	private static Map<String, String> populateUserData(App app, Map<String, List<Object>> attributes) {
+	private static Map<String, String> populateUserData(App app, Saml2ResponseAssertion attributes) {
 		Map<String, String> data = new HashMap<String, String>();
 		String useridIdParam = Para.getConfig().getSettingForApp(app, "security.saml.attributes.id", "UserID");
 		String pictureParam = Para.getConfig().getSettingForApp(app, "security.saml.attributes.picture", "Picture");
@@ -254,24 +265,24 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 		String lnameParam = Para.getConfig().getSettingForApp(app, "security.saml.attributes.lastname", "LastName");
 		String emailDomain = Para.getConfig().getSettingForApp(app, "security.saml.domain", "paraio.com");
 
-		if (attributes.containsKey(useridIdParam)) {
-			data.put("uid", (String) attributes.get(useridIdParam).get(0));
+		if (attributes.getAttributes().containsKey(useridIdParam)) {
+			data.put("uid", (String) attributes.getFirstAttribute(useridIdParam));
 			data.put("domain", emailDomain);
-			if (attributes.containsKey(pictureParam) && !attributes.get(pictureParam).isEmpty()) {
-				data.put("pic", (String) attributes.get(pictureParam).get(0));
+			if (attributes.getFirstAttribute(pictureParam) != null) {
+				data.put("pic", (String) attributes.getFirstAttribute(pictureParam));
 			}
-			if (attributes.containsKey(emailParam) && !attributes.get(emailParam).isEmpty()) {
-				data.put("email", (String) attributes.get(emailParam).get(0));
+			if (!StringUtils.isBlank(attributes.getFirstAttribute(emailParam))) {
+				data.put("email", (String) attributes.getFirstAttribute(emailParam));
 			} else {
 				LOG.warn("Missing value for SAML attribute '{}'.", emailParam);
 			}
-			if (attributes.containsKey(nameParam) && !attributes.get(nameParam).isEmpty()) {
-				data.put("name", (String) attributes.get(nameParam).get(0));
+			if (!StringUtils.isBlank(attributes.getFirstAttribute(nameParam))) {
+				data.put("name", (String) attributes.getFirstAttribute(nameParam));
 			}
-			if (!data.containsKey("name") && attributes.containsKey(fnameParam)) {
-				String fname = (String) attributes.get(fnameParam).get(0);
-				if (attributes.containsKey(lnameParam)) {
-					data.put("name", StringUtils.trimToEmpty(fname + " " + attributes.get(lnameParam).get(0)));
+			if (!data.containsKey("name") && attributes.getAttributes().containsKey(fnameParam)) {
+				String fname = (String) attributes.getFirstAttribute(fnameParam);
+				if (attributes.getAttributes().containsKey(lnameParam)) {
+					data.put("name", StringUtils.trimToEmpty(fname + " " + attributes.getFirstAttribute(lnameParam)));
 				}
 			}
 			if (!data.containsKey("name") || StringUtils.isBlank(data.get("name"))) {
@@ -281,6 +292,15 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 			LOG.error("Incorrect SAML attibute mapping - couldn't find user id value for key '{}'.", useridIdParam);
 		}
 		return data;
+	}
+
+	private String getAccessTokenPayload(Saml2ResponseAssertion profile) throws JsonProcessingException {
+		byte[] json = ParaObjectUtils.getJsonWriterNoIdent().writeValueAsBytes(profile.getAttributes());
+		return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." + Utils.base64encURL(json) + ".bogus";
+	}
+
+	private boolean isAccessTokenDelegationEnabled(App app) {
+		return Boolean.parseBoolean(Para.getConfig().getSettingForApp(app, "security.ldap.token_delegation_enabled", "false"));
 	}
 
 	private static String getPicture(String pic) {
