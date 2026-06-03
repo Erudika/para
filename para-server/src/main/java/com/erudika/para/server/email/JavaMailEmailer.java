@@ -17,6 +17,7 @@
  */
 package com.erudika.para.server.email;
 
+import com.erudika.para.core.App;
 import com.erudika.para.core.email.Emailer;
 import com.erudika.para.core.utils.Para;
 import jakarta.mail.internet.MimeMessage;
@@ -25,8 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
@@ -39,30 +38,51 @@ import org.springframework.mail.javamail.MimeMessagePreparator;
  */
 public class JavaMailEmailer implements Emailer {
 
-	private static final Logger logger = LoggerFactory.getLogger(JavaMailEmailer.class);
-	private final JavaMailSender mailSender;
+	private JavaMailSender mailSender;
 
 	/**
 	 * Default constructor.
 	 */
 	public JavaMailEmailer() {
-		JavaMailSenderImpl sender = new JavaMailSenderImpl();
-		sender.setHost(System.getProperty("spring.mail.host"));
-		sender.setPort(NumberUtils.toInt(System.getProperty("spring.mail.port"), 965));
-		sender.setUsername(System.getProperty("spring.mail.username"));
-		sender.setPassword(System.getProperty("spring.mail.password"));
+	}
 
-		Properties props = sender.getJavaMailProperties();
-		props.put("mail.transport.protocol", "smtp");
-		props.put("mail.smtp.auth", "true");
-		props.put("mail.smtp.starttls.enable", System.getProperty("spring.mail.properties.mail.smtp.starttls.enable", "true"));
-		props.put("mail.smtp.ssl.enable", System.getProperty("spring.mail.properties.mail.smtp.ssl.enable", "true"));
-		props.put("mail.debug", System.getProperty("spring.mail.properties.mail.debug", "false"));
-		this.mailSender = sender;
+	private JavaMailSender getEmailer(App app) {
+		if (app == null) {
+			if (mailSender == null) {
+				JavaMailSenderImpl sender = new JavaMailSenderImpl();
+				sender.setHost(System.getProperty("spring.mail.host"));
+				sender.setPort(NumberUtils.toInt(System.getProperty("spring.mail.port"), 965));
+				sender.setUsername(System.getProperty("spring.mail.username"));
+				sender.setPassword(System.getProperty("spring.mail.password"));
+
+				Properties props = sender.getJavaMailProperties();
+				props.put("mail.transport.protocol", "smtp");
+				props.put("mail.smtp.auth", "true");
+				props.put("mail.smtp.starttls.enable", System.getProperty("spring.mail.properties.mail.smtp.starttls.enable", "true"));
+				props.put("mail.smtp.ssl.enable", System.getProperty("spring.mail.properties.mail.smtp.ssl.enable", "true"));
+				props.put("mail.debug", System.getProperty("spring.mail.properties.mail.debug", "false"));
+				mailSender = sender;
+			}
+			return mailSender;
+		} else {
+			JavaMailSenderImpl sender = new JavaMailSenderImpl();
+			sender.setHost(Para.getConfig().getSettingForApp(app, "mail.host", ""));
+			sender.setPort(NumberUtils.toInt(Para.getConfig().getSettingForApp(app, "mail.port", "965")));
+			sender.setUsername(Para.getConfig().getSettingForApp(app, "mail.username", ""));
+			sender.setPassword(Para.getConfig().getSettingForApp(app, "mail.password", ""));
+
+			Properties props = sender.getJavaMailProperties();
+			props.put("mail.transport.protocol", "smtp");
+			props.put("mail.smtp.auth", "true");
+			props.put("mail.smtp.starttls.enable", Para.getConfig().getSettingForApp(app, "mail.tls", "true"));
+			props.put("mail.smtp.ssl.enable", Para.getConfig().getSettingForApp(app, "mail.ssl", "true"));
+			props.put("mail.debug", Para.getConfig().getSettingForApp(app, "mail.debug", "false"));
+			return sender;
+		}
 	}
 
 	@Override
-	public void sendSingleBatch(List<String> emails, String subject, String body, ByteArrayDataSource attachment, String fileName) {
+	public void sendSingleBatch(App app, List<String> emails, String subject, String body, ByteArrayDataSource attachment, String fileName) {
 		MimeMessagePreparator preparator = (MimeMessage mimeMessage) -> {
 			MimeMessageHelper msg = new MimeMessageHelper(mimeMessage);
 			Iterator<String> emailz = emails.iterator();
@@ -71,7 +91,7 @@ public class JavaMailEmailer implements Emailer {
 				msg.addBcc(emailz.next());
 			}
 			msg.setSubject(subject);
-			msg.setFrom(Para.getConfig().supportEmail(), Para.getConfig().appName());
+			msg.setFrom(getFromEmail(app), getFromName(app));
 			msg.setText(body, true); // body is assumed to be HTML
 			if (attachment != null) {
 				msg.addAttachment(fileName, attachment);
@@ -79,7 +99,7 @@ public class JavaMailEmailer implements Emailer {
 		};
 		try {
 			logger.debug("Sending email '{}' to {} recipients, {}", subject, emails.size());
-			mailSender.send(preparator);
+			getEmailer(app).send(preparator);
 		} catch (MailException ex) {
 			logger.error("Failed to send email. {}", ex.getMessage());
 		}

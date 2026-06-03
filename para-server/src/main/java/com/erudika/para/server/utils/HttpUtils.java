@@ -367,12 +367,12 @@ public final class HttpUtils {
 		}
 
 		if (formData.getFile() != null && !StringUtils.isBlank(formData.getFile().getOriginalFilename())) {
-			isSent = getEmailer().sendEmail(Arrays.asList(formData.getToEmails()), subject, body,
+			isSent = getEmailer().sendEmail(app, Arrays.asList(formData.getToEmails()), subject, body,
 					formData.getFile().getInputStream(),
 					formData.getFile().getContentType(),
 					formData.getFile().getOriginalFilename());
 		} else {
-			isSent = getEmailer().sendEmail(Arrays.asList(formData.getToEmails()), subject, body);
+			isSent = getEmailer().sendEmail(app, Arrays.asList(formData.getToEmails()), subject, body);
 		}
 		if (!isSent) {
 			logger.warn("Email not sent via API request for app {}, form: {}", app.getId(), formId);

@@ -17,6 +17,8 @@
  */
 package com.erudika.para.core.email;
 
+import com.erudika.para.core.App;
+import com.erudika.para.core.utils.Para;
 import jakarta.mail.util.ByteArrayDataSource;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -43,11 +45,24 @@ public interface Emailer {
 	 * @return true if the message was sent
 	 */
 	public default boolean sendEmail(List<String> emails, String subject, String body) {
-		return sendEmail(emails, subject, body, null, null, null);
+		return sendEmail(null, emails, subject, body, null, null, null);
 	}
 
 	/**
 	 * Sends an email.
+	 * @param app the app where mailer configuration is loaded from
+	 * @param emails a list of email addresses (recipients)
+	 * @param subject the subject of the message
+	 * @param body the body of the message
+	 * @return true if the message was sent
+	 */
+	public default boolean sendEmail(App app, List<String> emails, String subject, String body) {
+		return sendEmail(app, emails, subject, body, null, null, null);
+	}
+
+	/**
+	 * Sends an email.
+	 * @param app the app where mailer configuration is loaded from
 	 * @param emails a list of email addresses (recipients)
 	 * @param subject the subject of the message
 	 * @param body the body of the message
@@ -57,6 +72,22 @@ public interface Emailer {
 	 * @return true if the message was sent
 	 */
 	public default boolean sendEmail(List<String> emails, String subject, String body,
+			InputStream attachment, String mimeType, String fileName) {
+		return sendEmail(null, emails, subject, body, attachment, mimeType, fileName);
+	}
+
+	/**
+	 * Sends an email.
+	 * @param app the app where mailer configuration is loaded from
+	 * @param emails a list of email addresses (recipients)
+	 * @param subject the subject of the message
+	 * @param body the body of the message
+	 * @param attachment attachment
+	 * @param mimeType attachment MIME type
+	 * @param fileName attachment file name
+	 * @return true if the message was sent
+	 */
+	public default boolean sendEmail(App app, List<String> emails, String subject, String body,
 			InputStream attachment, String mimeType, String fileName) {
 		if (emails == null || emails.isEmpty()) {
 			return false;
@@ -81,14 +112,14 @@ public interface Emailer {
 							subject, emails.size(), ex.getMessage());
 				}
 			}
-			sendSingleBatch(batch, subject, body, dataSource, fileName);
+			sendSingleBatch(app, batch, subject, body, dataSource, fileName);
 		}
 		return true;
 	}
 
-
 	/**
 	 * Sends a single email message to a batch of email addresses (max. 100).
+	 * @param app the app where mailer configuration is loaded from
 	 * @param emails a list of email addresses (recipients)
 	 * @param subject the subject of the message
 	 * @param body the body of the message
@@ -96,6 +127,44 @@ public interface Emailer {
 	 * @param mimeType attachment MIME type
 	 * @param fileName attachment file name
 	 */
-	abstract void sendSingleBatch(List<String> emails, String subject, String body,
-			ByteArrayDataSource attachment, String fileName);
+	public default void sendSingleBatch(List<String> emails, String subject, String body,
+			ByteArrayDataSource attachment, String fileName) {
+		sendSingleBatch(null, emails, subject, body, attachment, fileName);
+	}
+
+	/**
+	 * Sends a single email message to a batch of email addresses (max. 100).
+	 * @param app the app where mailer configuration is loaded from
+	 * @param emails a list of email addresses (recipients)
+	 * @param subject the subject of the message
+	 * @param body the body of the message
+	 * @param attachment attachment
+	 * @param mimeType attachment MIME type
+	 * @param fileName attachment file name
+	 */
+	public default void sendSingleBatch(App app, List<String> emails, String subject, String body,
+			ByteArrayDataSource attachment, String fileName) {
+		logger.info("Email '{}' sent to {} recipients.", subject, emails != null ? emails.size() : 0);
+	}
+
+	/**
+	 * Returns the sender email for a particular app.
+	 * @param app app
+	 * @return email
+	 */
+	default String getFromEmail(App app) {
+		String def = Para.getConfig().supportEmail();
+		return app == null ? def : Para.getConfig().getSettingForApp(app, "mail.from", def);
+	}
+
+	/**
+	 * Returns the sender name for an app (i.e. the app name).
+	 * @param app app
+	 * @return app name
+	 */
+	default String getFromName(App app) {
+		String def = Para.getConfig().appName();
+		return app == null ? def : app.getName();
+	}
+
 }
