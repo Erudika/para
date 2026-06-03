@@ -21,7 +21,6 @@ import com.erudika.para.core.email.Emailer;
 import com.erudika.para.core.utils.Para;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.util.ByteArrayDataSource;
-import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
@@ -63,15 +62,7 @@ public class JavaMailEmailer implements Emailer {
 	}
 
 	@Override
-	public boolean sendEmail(final List<String> emails, final String subject, final String body) {
-		return sendEmail(emails, subject, body, null, null, null);
-	}
-
-	@Override
-	public boolean sendEmail(List<String> emails, String subject, String body, InputStream attachment, String mimeType, String fileName) {
-		if (emails == null || emails.isEmpty()) {
-			return false;
-		}
+	public void sendSingleBatch(List<String> emails, String subject, String body, ByteArrayDataSource attachment, String fileName) {
 		MimeMessagePreparator preparator = (MimeMessage mimeMessage) -> {
 			MimeMessageHelper msg = new MimeMessageHelper(mimeMessage);
 			Iterator<String> emailz = emails.iterator();
@@ -83,15 +74,14 @@ public class JavaMailEmailer implements Emailer {
 			msg.setFrom(Para.getConfig().supportEmail(), Para.getConfig().appName());
 			msg.setText(body, true); // body is assumed to be HTML
 			if (attachment != null) {
-				msg.addAttachment(fileName, new ByteArrayDataSource(attachment, mimeType));
+				msg.addAttachment(fileName, attachment);
 			}
 		};
 		try {
+			logger.debug("Sending email '{}' to {} recipients, {}", subject, emails.size());
 			mailSender.send(preparator);
-			logger.debug("Email sent to {}, {}", emails, subject);
 		} catch (MailException ex) {
 			logger.error("Failed to send email. {}", ex.getMessage());
 		}
-		return true;
 	}
 }

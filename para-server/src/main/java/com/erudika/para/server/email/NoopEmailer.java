@@ -18,7 +18,7 @@
 package com.erudika.para.server.email;
 
 import com.erudika.para.core.email.Emailer;
-import java.io.InputStream;
+import jakarta.mail.util.ByteArrayDataSource;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,9 +44,8 @@ public class NoopEmailer implements Emailer {
 	}
 
 	@Override
-	public boolean sendEmail(List<String> emails, String subject, String body, InputStream attachment, String mimeType, String fileName) {
+	public void sendSingleBatch(List<String> emails, String subject, String body, ByteArrayDataSource attachment, String fileName) {
 		logger.info("EMAIL SENT: {}, {}, {}", emails, subject, body);
-		return true;
 	}
 
 }

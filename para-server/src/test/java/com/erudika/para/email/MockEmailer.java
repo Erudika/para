@@ -18,7 +18,7 @@
 package com.erudika.para.email;
 
 import com.erudika.para.core.email.Emailer;
-import java.io.InputStream;
+import jakarta.mail.util.ByteArrayDataSource;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 
@@ -35,8 +35,7 @@ public class MockEmailer implements Emailer {
 	}
 
 	@Override
-	public boolean sendEmail(List<String> emails, String subject, String body, InputStream attachment, String mimeType, String fileName) {
-		return true;
+	public void sendSingleBatch(List<String> emails, String subject, String body, ByteArrayDataSource attachment, String fileName) {
 	}
 
 }

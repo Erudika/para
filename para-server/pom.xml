@@ -12,7 +12,7 @@
 	<name>para-server</name>
 
 	<properties>
-		<openSamlVer>5.2.1</openSamlVer>
+		<openSamlVer>5.2.2</openSamlVer>
 
 		<!-- PLUGINS -->
 		<!--===== LUCENE =====-->
@@ -113,7 +113,7 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
-			<version>2.0.0-M4</version>
+			<version>2.0.0-M6</version>
 		</dependency>
 
 		<!-- SAML -->
@@ -201,7 +201,7 @@
 		<dependency>
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
-			<version>2.21.0</version>
+			<version>2.22.0</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

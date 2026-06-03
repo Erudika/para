@@ -73,6 +73,11 @@
 
 		<!-- OTHER -->
 		<dependency>
+			<groupId>jakarta.mail</groupId>
+			<artifactId>jakarta.mail-api</artifactId>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.apache.httpcomponents.core5</groupId>
 			<artifactId>httpcore5</artifactId>
 		</dependency>
@@ -94,7 +99,7 @@
 		<dependency>
 			<groupId>com.typesafe</groupId>
 			<artifactId>config</artifactId>
-			<version>1.4.6</version>
+			<version>1.4.8</version>
 		</dependency>
 		<dependency>
 			<groupId>org.hibernate.validator</groupId>
@@ -108,7 +113,7 @@
 		<dependency>
 			<groupId>org.jsoup</groupId>
 			<artifactId>jsoup</artifactId>
-			<version>1.22.1</version>
+			<version>1.22.2</version>
 		</dependency>
 		<dependency>
 			<groupId>com.vladsch.flexmark</groupId>
@@ -201,7 +206,7 @@
 		<dependency>
 			<groupId>io.github.hakky54</groupId>
 			<artifactId>ayza</artifactId>
-			<version>10.0.4</version>
+			<version>10.0.5</version>
 		</dependency>
 	</dependencies>
 
