@@ -81,6 +81,15 @@ public class JavaMailEmailer implements Emailer {
 		}
 	}
 
+	/**
+	 * Sends emails using JavaMail.
+	 * @param app app
+	 * @param emails emails
+	 * @param subject subject
+	 * @param body body
+	 * @param attachment attachment
+	 * @param fileName filename
+	 */
 	@Override
 	public void sendSingleBatch(App app, List<String> emails, String subject, String body, ByteArrayDataSource attachment, String fileName) {
 		MimeMessagePreparator preparator = (MimeMessage mimeMessage) -> {

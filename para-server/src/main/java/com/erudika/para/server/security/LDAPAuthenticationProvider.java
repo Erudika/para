@@ -94,10 +94,16 @@ public class LDAPAuthenticationProvider implements AuthenticationProvider {
 		return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication);
 	}
 
+	/**
+	 * Ldap Person override.
+	 */
 	public static class LdapPerson extends InetOrgPerson {
 
 		private static final long serialVersionUID = 621L;
 
+		/**
+		 * Essence.
+		 */
 		public static class Essence extends InetOrgPerson.Essence {
 
 			public Essence(DirContextOperations ctx) {
@@ -122,10 +128,18 @@ public class LDAPAuthenticationProvider implements AuthenticationProvider {
 
 		private byte[] photo;
 
+		/**
+		 * Sets photo.
+		 * @param photo avatar
+		 */
 		public void setPhoto(byte[] photo) {
 			this.photo = photo;
 		}
 
+		/**
+		 * Get a person's photo.
+		 * @return bytes
+		 */
 		public byte[] getPhoto() {
 			return photo;
 		}
@@ -136,6 +150,9 @@ public class LDAPAuthenticationProvider implements AuthenticationProvider {
 		}
 	}
 
+	/**
+	 * Ldap Person helper class.
+	 */
 	static class LdapPersonContextMapper extends InetOrgPersonContextMapper {
 
 		@Override

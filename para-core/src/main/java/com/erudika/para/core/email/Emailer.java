@@ -34,8 +34,14 @@ import org.slf4j.LoggerFactory;
  */
 public interface Emailer {
 
-	static final Logger logger = LoggerFactory.getLogger(Emailer.class);
-	static final int MAX_RECIPIENTS_PER_MESSAGE = 50;
+	/**
+	 * Logger.
+	 */
+	Logger logger = LoggerFactory.getLogger(Emailer.class);
+	/**
+	 * {@value #MAX_RECIPIENTS_PER_MESSAGE}.
+	 */
+	int MAX_RECIPIENTS_PER_MESSAGE = 50;
 
 	/**
 	 * Sends an email.
@@ -44,7 +50,7 @@ public interface Emailer {
 	 * @param body the body of the message
 	 * @return true if the message was sent
 	 */
-	public default boolean sendEmail(List<String> emails, String subject, String body) {
+	default boolean sendEmail(List<String> emails, String subject, String body) {
 		return sendEmail(null, emails, subject, body, null, null, null);
 	}
 
@@ -56,13 +62,12 @@ public interface Emailer {
 	 * @param body the body of the message
 	 * @return true if the message was sent
 	 */
-	public default boolean sendEmail(App app, List<String> emails, String subject, String body) {
+	default boolean sendEmail(App app, List<String> emails, String subject, String body) {
 		return sendEmail(app, emails, subject, body, null, null, null);
 	}
 
 	/**
 	 * Sends an email.
-	 * @param app the app where mailer configuration is loaded from
 	 * @param emails a list of email addresses (recipients)
 	 * @param subject the subject of the message
 	 * @param body the body of the message
@@ -71,7 +76,7 @@ public interface Emailer {
 	 * @param fileName attachment file name
 	 * @return true if the message was sent
 	 */
-	public default boolean sendEmail(List<String> emails, String subject, String body,
+	default boolean sendEmail(List<String> emails, String subject, String body,
 			InputStream attachment, String mimeType, String fileName) {
 		return sendEmail(null, emails, subject, body, attachment, mimeType, fileName);
 	}
@@ -87,7 +92,7 @@ public interface Emailer {
 	 * @param fileName attachment file name
 	 * @return true if the message was sent
 	 */
-	public default boolean sendEmail(App app, List<String> emails, String subject, String body,
+	default boolean sendEmail(App app, List<String> emails, String subject, String body,
 			InputStream attachment, String mimeType, String fileName) {
 		if (emails == null || emails.isEmpty()) {
 			return false;
@@ -119,15 +124,13 @@ public interface Emailer {
 
 	/**
 	 * Sends a single email message to a batch of email addresses (max. 100).
-	 * @param app the app where mailer configuration is loaded from
 	 * @param emails a list of email addresses (recipients)
 	 * @param subject the subject of the message
 	 * @param body the body of the message
 	 * @param attachment attachment
-	 * @param mimeType attachment MIME type
 	 * @param fileName attachment file name
 	 */
-	public default void sendSingleBatch(List<String> emails, String subject, String body,
+	default void sendSingleBatch(List<String> emails, String subject, String body,
 			ByteArrayDataSource attachment, String fileName) {
 		sendSingleBatch(null, emails, subject, body, attachment, fileName);
 	}
@@ -139,10 +142,9 @@ public interface Emailer {
 	 * @param subject the subject of the message
 	 * @param body the body of the message
 	 * @param attachment attachment
-	 * @param mimeType attachment MIME type
 	 * @param fileName attachment file name
 	 */
-	public default void sendSingleBatch(App app, List<String> emails, String subject, String body,
+	default void sendSingleBatch(App app, List<String> emails, String subject, String body,
 			ByteArrayDataSource attachment, String fileName) {
 		logger.info("Email '{}' sent to {} recipients.", subject, emails != null ? emails.size() : 0);
 	}
