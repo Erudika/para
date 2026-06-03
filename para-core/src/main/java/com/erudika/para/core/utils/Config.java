@@ -44,6 +44,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -299,6 +300,28 @@ public abstract class Config {
 			return v.getOrDefault("v", defaultValue);
 		} catch (Exception ex) {
 			return valString;
+		}
+	}
+
+	/**
+	 * Attempts to convert a string value to its intended target type, as defined in the @Documented annotation
+	 * at the specified key.
+	 * @param key config key
+	 * @param valString config value as string
+	 * @return config value, converted to its intended type
+	 */
+	public ConfigValue parseConfigValue(String key, String valString) {
+		try {
+			Documented doc = getAnnotatedMethodsMap().get(key);
+			String description = "";
+			Class<?> targetType = String.class;
+			if (doc != null && doc.type() != null) {
+				targetType = doc.type();
+				description = doc.description();
+			}
+			return ConfigValueFactory.fromAnyRef(ConvertUtils.convert(valString, targetType), description);
+		} catch (Exception ex) {
+			return ConfigValueFactory.fromAnyRef(valString);
 		}
 	}
 
