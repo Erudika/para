@@ -130,7 +130,6 @@ public final class ParaClient implements Closeable {
 	private final Object tokenRefreshLock = new Object();
 	private volatile CompletableFuture<Boolean> tokenRefreshFuture;
 
-
 	/**
 	 * Default constructor.
 	 * @param accessKey app access key
@@ -185,6 +184,37 @@ public final class ParaClient implements Closeable {
 		this.httpasyncclient.start();
 	}
 
+	/**
+	 * Gets the Para app ID (access key).
+	 * @return app id
+	 */
+	public String getAccessKey() {
+		return accessKey;
+	}
+
+	/**
+	 * Sets the Para app ID (access key).
+	 * @param accessKey app id
+	 */
+	public void setAccessKey(String accessKey) {
+		this.accessKey = accessKey;
+	}
+
+	/**
+	 * Gets the Para app's secret key.
+	 * @return secret
+	 */
+	public String getSecretKey() {
+		return secretKey;
+	}
+
+	/**
+	 * Sets the Para app's secret key.
+	 * @param secretKey secret
+	 */
+	public void setSecretKey(String secretKey) {
+		this.secretKey = secretKey;
+	}
 
 	/**
 	 * Sets the host URL of the Para server.
