@@ -211,7 +211,23 @@ public final class Utils {
 		try {
 			Mac hmac = Mac.getInstance("HmacSHA256");
 			hmac.init(new SecretKeySpec(secret.getBytes(Para.getConfig().defaultEncoding()), "HmacSHA256"));
-			return Utils.base64enc(hmac.doFinal(message.getBytes(Para.getConfig().defaultEncoding())));
+			return base64enc(hmac.doFinal(message.getBytes(Para.getConfig().defaultEncoding())));
+		} catch (Exception e) {
+			return "";
+		}
+	}
+
+	/**
+	 * Computes the HmacSHA256 hash of a message and encodes it as URL-save base64 string.
+	 * @param message a message as UTF-8 encoded string
+	 * @param secret a secret key
+	 * @return base64(hmacSHA256(message, secret))
+	 */
+	public static String hmacSHA256URL(String message, String secret) {
+		try {
+			Mac hmac = Mac.getInstance("HmacSHA256");
+			hmac.init(new SecretKeySpec(secret.getBytes(Para.getConfig().defaultEncoding()), "HmacSHA256"));
+			return base64encURL(hmac.doFinal(message.getBytes(Para.getConfig().defaultEncoding())));
 		} catch (Exception e) {
 			return "";
 		}
