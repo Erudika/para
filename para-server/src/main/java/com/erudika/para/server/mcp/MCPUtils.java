@@ -227,7 +227,7 @@ public class MCPUtils {
 	}
 
 	static ReadResourceResult textResource(String uri, String mimeType, String body) {
-		return new ReadResourceResult(List.of(new TextResourceContents(uri, mimeType, body)));
+		return new ReadResourceResult(List.of(new TextResourceContents(uri, mimeType, body, Map.of())), Map.of());
 	}
 
 	String buildUnknownKeyMessage(String key) {

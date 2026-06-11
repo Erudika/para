@@ -144,10 +144,8 @@ public interface Emailer {
 	 * @param attachment attachment
 	 * @param fileName attachment file name
 	 */
-	default void sendSingleBatch(App app, List<String> emails, String subject, String body,
-			ByteArrayDataSource attachment, String fileName) {
-		logger.info("Email '{}' sent to {} recipients.", subject, emails != null ? emails.size() : 0);
-	}
+	void sendSingleBatch(App app, List<String> emails, String subject, String body,
+			ByteArrayDataSource attachment, String fileName);
 
 	/**
 	 * Returns the sender email for a particular app.

@@ -17,6 +17,7 @@
  */
 package com.erudika.para.core.email;
 
+import com.erudika.para.core.App;
 import jakarta.mail.util.ByteArrayDataSource;
 import java.util.List;
 import org.slf4j.Logger;
@@ -37,7 +38,7 @@ public class MockEmailer implements Emailer {
 	}
 
 	@Override
-	public void sendSingleBatch(List<String> emails, String subject, String body, ByteArrayDataSource attachment, String fileName) {
+	public void sendSingleBatch(App app, List<String> emails, String subject, String body, ByteArrayDataSource attachment, String fileName) {
 		logger.info("EMAIL SENT: {}, {}, {}", emails, subject, body);
 	}
 }
