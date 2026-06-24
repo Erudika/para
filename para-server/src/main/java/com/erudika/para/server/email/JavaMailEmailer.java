@@ -19,12 +19,14 @@ package com.erudika.para.server.email;
 
 import com.erudika.para.core.App;
 import com.erudika.para.core.email.Emailer;
+import static com.erudika.para.core.email.Emailer.logger;
 import com.erudika.para.core.utils.Para;
+import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.util.ByteArrayDataSource;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -94,10 +96,17 @@ public class JavaMailEmailer implements Emailer {
 	public void sendSingleBatch(App app, List<String> emails, String subject, String body, ByteArrayDataSource attachment, String fileName) {
 		MimeMessagePreparator preparator = (MimeMessage mimeMessage) -> {
 			MimeMessageHelper msg = new MimeMessageHelper(mimeMessage);
-			Iterator<String> emailz = emails.iterator();
-			msg.setTo(emailz.next());
-			while (emailz.hasNext()) {
-				msg.addBcc(emailz.next());
+			if (emails.size() > 1) {
+				emails.stream().forEach(e -> {
+					try {
+						msg.addBcc(e);
+					} catch (MessagingException ex) {
+						logger.error("Failed to add email '" + e + "' to BCC list:", ex.getMessage());
+					}
+				});
+				msg.setTo("noreply@" + StringUtils.substringAfter(getFromEmail(app), "@"));
+			} else {
+				msg.setTo(emails.iterator().next());
 			}
 			msg.setSubject(subject);
 			msg.setFrom(getFromEmail(app), getFromName(app));
