@@ -52,7 +52,6 @@ public final class RestRequestMatcher implements RequestMatcher {
 	private static final RegexRequestMatcher REGEX_STRICT = new RegexRequestMatcher("^/v\\d[\\.\\d]*/.*", null, true);
 	private OrRequestMatcher orMatcher = null;
 	private final RegexRequestMatcher regex;
-	private final boolean strict;
 
 	static {
 		ConfigObject protectedResources = Para.getConfig().protectedPaths();
@@ -109,7 +108,6 @@ public final class RestRequestMatcher implements RequestMatcher {
 	}
 
 	private RestRequestMatcher(boolean strict) {
-		this.strict = strict;
 		this.regex = strict ? REGEX_STRICT : REGEX;
 		PROTECTED_PATHS.stream().filter(p -> p.isRest()).forEach(path -> {
 			path.getPatterns().forEach(pattern

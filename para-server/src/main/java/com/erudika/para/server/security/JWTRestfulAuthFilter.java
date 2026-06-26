@@ -36,6 +36,7 @@ import com.erudika.para.server.security.filters.PasswordAuthFilter;
 import com.erudika.para.server.security.filters.PasswordlessAuthFilter;
 import com.erudika.para.server.security.filters.SlackAuthFilter;
 import com.erudika.para.server.security.filters.TwitterAuthFilter;
+import com.erudika.para.server.utils.HttpUtils;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -143,6 +144,9 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			throws IOException, ServletException {
 		HttpServletRequest request = (HttpServletRequest) req;
 		HttpServletResponse response = (HttpServletResponse) res;
+		boolean isRestRequestWithAuthHeader = RestRequestMatcher.INSTANCE_STRICT.matches(request);
+		boolean isRequestWithAuthCookie = ProtectedRequestMatcher.INSTANCE.matches(request);
+
 		if (authenticationRequestMatcher.matches(request)) {
 			if (HttpMethod.POST.matches(request.getMethod())) {
 				newTokenHandler(request, response);
@@ -152,7 +156,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 				revokeAllTokensHandler(request, response);
 			}
 			return;
-		} else if (RestRequestMatcher.INSTANCE_STRICT.matches(request) &&
+		} else if ((isRestRequestWithAuthHeader || isRequestWithAuthCookie) &&
 				SecurityContextHolder.getContext().getAuthentication() == null) {
 			try {
 				// validate token if present
@@ -298,13 +302,15 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 	}
 
 	private JWTAuthentication getJWTfromRequest(HttpServletRequest request) {
-		String token = request.getHeader(HttpHeaders.AUTHORIZATION);
-		if (token == null) {
-			token = request.getParameter(HttpHeaders.AUTHORIZATION);
+		String jsonWebToken = request.getHeader(HttpHeaders.AUTHORIZATION);
+		if (!StringUtils.isBlank(jsonWebToken) && Strings.CI.startsWith(jsonWebToken, "Bearer")) {
+			jsonWebToken = StringUtils.substring(jsonWebToken, 6).trim();
+		} else if (jsonWebToken == null) {
+			jsonWebToken = HttpUtils.getCookieValue(request, Para.getConfig().authCookieName()); // JWT in cookie
 		}
-		if (!StringUtils.isBlank(token) && token.contains("Bearer")) {
+		if (!StringUtils.isBlank(jsonWebToken)) {
 			try {
-				SignedJWT jwt = SignedJWT.parse(token.substring(6).trim());
+				SignedJWT jwt = SignedJWT.parse(jsonWebToken);
 				String userid = jwt.getJWTClaimsSet().getSubject();
 				String appid = (String) jwt.getJWTClaimsSet().getClaim(Config._APPID);
 				App app = Para.getDAO().read(App.id(appid));
