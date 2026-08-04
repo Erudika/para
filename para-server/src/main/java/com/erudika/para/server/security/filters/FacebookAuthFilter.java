@@ -111,13 +111,13 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 						if (accessToken != null) {
 							return getOrCreateUser(app, accessToken);
 						} else {
-							logger.info("Authentication request failed with status '"
-									+ resp1.getReasonPhrase() + "' - " + token);
+							logger.info("Authentication request failed with status '{}'", resp1.getReasonPhrase());
 						}
 						return null;
 					});
 				} catch (Exception e) {
-					logger.warn("Facebook auth request failed: GET " + url, e);
+					logger.warn("Facebook auth request failed: GET " +
+							Utils.formatMessage(TOKEN_URL, "{code}", redirectURI, "{app}", "{secret}"), e);
 				}
 			}
 		}
