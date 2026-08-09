@@ -110,10 +110,11 @@ public class Pager {
 
 	/**
 	 * The name of the field used when sorting the results.
-	 * @return the name of the field or "timestamp" as the default sorting
+	 * @return the name of the field, or {@code null} if the field was not set.
+	 * Search backends interpret {@code null} as "sort by relevance (score)".
 	 */
 	public String getSortby() {
-		return (sortby == null) ? Config._TIMESTAMP : sortby;
+		return sortby;
 	}
 
 	/**

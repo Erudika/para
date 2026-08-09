@@ -16,9 +16,9 @@
 
 		<!-- PLUGINS -->
 		<!--===== LUCENE =====-->
-		<lucenePluginVer>1.50.0</lucenePluginVer>
+		<lucenePluginVer>1.51.0</lucenePluginVer>
 		<!--===== SQL =====-->
-		<sqlPluginVer>1.50.0</sqlPluginVer>
+		<sqlPluginVer>1.51.0</sqlPluginVer>
 		<!--===== HAZELCAST =====-->
 		<hcPluginVer>1.43.0</hcPluginVer>
 		<!--===== CASSANDRA =====-->
@@ -26,7 +26,7 @@
 		<!--===== MONGODB =====-->
 		<mongoPluginVer>1.42.2</mongoPluginVer>
 		<!--===== ELASTICSEARCH =====-->
-		<esPluginVer>1.42.2</esPluginVer>
+		<esPluginVer>1.43.0</esPluginVer>
 		<!--===== DYNAMODB =====-->
 		<dynamoPluginVer>1.52.5</dynamoPluginVer>
 		<!--===== AWS SES =====-->

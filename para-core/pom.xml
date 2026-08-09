@@ -20,7 +20,7 @@
 		<dependency>
 			<groupId>com.github.davidmoten</groupId>
 			<artifactId>aws-lightweight-client-java</artifactId>
-			<version>0.1.24</version>
+			<version>0.1.25</version>
 		</dependency>
 
 		<!-- JACKSON -->
