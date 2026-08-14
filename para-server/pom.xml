@@ -11,6 +11,9 @@
 	<packaging>jar</packaging>
 	<name>para-server</name>
 
+	<description>Para Server - Spring Boot server application for the Para backend.</description>
+	<url>https://github.com/Erudika/para/tree/master/para-server</url>
+
 	<properties>
 		<openSamlVer>5.2.3</openSamlVer>
 

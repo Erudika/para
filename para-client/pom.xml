@@ -11,6 +11,9 @@
 	<packaging>jar</packaging>
 	<name>para-client</name>
 
+	<description>Para Client - the RESTful API client (Java) for the Para backend server.</description>
+	<url>https://github.com/Erudika/para/tree/master/para-client</url>
+
 	<dependencies>
 		<dependency>
 			<groupId>com.erudika</groupId>

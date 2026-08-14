@@ -11,6 +11,9 @@
 	<packaging>jar</packaging>
 	<name>para-core</name>
 
+	<description>Para Core - contains core Para functions and methods.</description>
+	<url>https://github.com/Erudika/para/tree/master/para-core</url>
+
 	<properties>
 		<flexmarkVer>0.64.8</flexmarkVer>
 	</properties>
@@ -112,7 +115,7 @@
 		<dependency>
 			<groupId>org.jsoup</groupId>
 			<artifactId>jsoup</artifactId>
-			<version>1.22.2</version>
+			<version>1.23.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.vladsch.flexmark</groupId>
