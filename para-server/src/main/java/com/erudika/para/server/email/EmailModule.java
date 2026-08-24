@@ -56,6 +56,7 @@ public class EmailModule {
 				Emailer emailerPlugin = loadExternalFileStore(selectedEmailer);
 				if (emailerPlugin != null) {
 					emailer = emailerPlugin;
+					emailer.setDefaultFallback(new JavaMailEmailer());
 				} else {
 					// default fallback - not implemented!
 					emailer = bindToDefault();

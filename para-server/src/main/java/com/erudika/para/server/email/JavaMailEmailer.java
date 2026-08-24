@@ -50,37 +50,48 @@ public class JavaMailEmailer implements Emailer {
 
 	private JavaMailSender getEmailer(App app) {
 		if (app == null) {
-			if (mailSender == null) {
+			return buildClient();
+		} else {
+			String host = Para.getConfig().getSettingForApp(app, "mail.host", "");
+			String username = Para.getConfig().getSettingForApp(app, "mail.username", "");
+			String password = Para.getConfig().getSettingForApp(app, "mail.password", "");
+			if (StringUtils.isBlank(host) || StringUtils.isBlank(username) || StringUtils.isBlank(password)) {
+				return buildClient();
+			} else {
 				JavaMailSenderImpl sender = new JavaMailSenderImpl();
-				sender.setHost(System.getProperty("spring.mail.host"));
-				sender.setPort(NumberUtils.toInt(System.getProperty("spring.mail.port"), 965));
-				sender.setUsername(System.getProperty("spring.mail.username"));
-				sender.setPassword(System.getProperty("spring.mail.password"));
+				sender.setHost(host);
+				sender.setPort(NumberUtils.toInt(Para.getConfig().getSettingForApp(app, "mail.port", "965")));
+				sender.setUsername(username);
+				sender.setPassword(password);
 
 				Properties props = sender.getJavaMailProperties();
 				props.put("mail.transport.protocol", "smtp");
 				props.put("mail.smtp.auth", "true");
-				props.put("mail.smtp.starttls.enable", System.getProperty("spring.mail.properties.mail.smtp.starttls.enable", "true"));
-				props.put("mail.smtp.ssl.enable", System.getProperty("spring.mail.properties.mail.smtp.ssl.enable", "true"));
-				props.put("mail.debug", System.getProperty("spring.mail.properties.mail.debug", "false"));
-				mailSender = sender;
+				props.put("mail.smtp.starttls.enable", Para.getConfig().getSettingForApp(app, "mail.tls", "true"));
+				props.put("mail.smtp.ssl.enable", Para.getConfig().getSettingForApp(app, "mail.ssl", "true"));
+				props.put("mail.debug", Para.getConfig().getSettingForApp(app, "mail.debug", "false"));
+				return sender;
 			}
-			return mailSender;
-		} else {
+		}
+	}
+
+	private JavaMailSender buildClient() {
+		if (mailSender == null) {
 			JavaMailSenderImpl sender = new JavaMailSenderImpl();
-			sender.setHost(Para.getConfig().getSettingForApp(app, "mail.host", ""));
-			sender.setPort(NumberUtils.toInt(Para.getConfig().getSettingForApp(app, "mail.port", "965")));
-			sender.setUsername(Para.getConfig().getSettingForApp(app, "mail.username", ""));
-			sender.setPassword(Para.getConfig().getSettingForApp(app, "mail.password", ""));
+			sender.setHost(System.getProperty("spring.mail.host"));
+			sender.setPort(NumberUtils.toInt(System.getProperty("spring.mail.port"), 965));
+			sender.setUsername(System.getProperty("spring.mail.username"));
+			sender.setPassword(System.getProperty("spring.mail.password"));
 
 			Properties props = sender.getJavaMailProperties();
 			props.put("mail.transport.protocol", "smtp");
 			props.put("mail.smtp.auth", "true");
-			props.put("mail.smtp.starttls.enable", Para.getConfig().getSettingForApp(app, "mail.tls", "true"));
-			props.put("mail.smtp.ssl.enable", Para.getConfig().getSettingForApp(app, "mail.ssl", "true"));
-			props.put("mail.debug", Para.getConfig().getSettingForApp(app, "mail.debug", "false"));
-			return sender;
+			props.put("mail.smtp.starttls.enable", System.getProperty("spring.mail.properties.mail.smtp.starttls.enable", "true"));
+			props.put("mail.smtp.ssl.enable", System.getProperty("spring.mail.properties.mail.smtp.ssl.enable", "true"));
+			props.put("mail.debug", System.getProperty("spring.mail.properties.mail.debug", "false"));
+			mailSender = sender;
 		}
+		return mailSender;
 	}
 
 	/**

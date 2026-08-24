@@ -167,4 +167,12 @@ public interface Emailer {
 		return app == null ? def : app.getName();
 	}
 
+	/**
+	 * Allows implementing classes to defer operations to the
+	 * default Emailer implementation, if needed.
+	 * @param emailer an emailer object
+	 */
+	default void setDefaultFallback(Emailer emailer) {
+	}
+
 }
