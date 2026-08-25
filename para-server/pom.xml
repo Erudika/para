@@ -33,7 +33,7 @@
 		<!--===== DYNAMODB =====-->
 		<dynamoPluginVer>1.52.6</dynamoPluginVer>
 		<!--===== AWS SES =====-->
-		<sesPluginVer>1.52.3</sesPluginVer>
+		<sesPluginVer>1.52.4</sesPluginVer>
 		<!--===== AWS S3 =====-->
 		<s3PluginVer>1.52.3</s3PluginVer>
 		<!--===== AWS SQS =====-->
