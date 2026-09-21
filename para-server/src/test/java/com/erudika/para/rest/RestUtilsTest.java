@@ -18,6 +18,7 @@
 package com.erudika.para.rest;
 
 import com.erudika.para.core.App;
+import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
 import com.erudika.para.core.utils.CoreUtils;
@@ -30,6 +31,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
@@ -144,6 +146,19 @@ public class RestUtilsTest {
 	public void testGetJSONResponse() {
 		assertEquals(HttpStatus.BAD_REQUEST, getStatusResponse(null).getStatusCode());
 		assertEquals(HttpStatus.OK, getStatusResponse(HttpStatus.OK).getStatusCode());
+	}
+
+	@Test
+	public void testBatchUpdateRejectsDuplicateIds() {
+		String id = "duplicate-batch-id";
+		Map<String, ParaObject> oldObjects = new HashMap<>();
+		Map<String, Object> first = new HashMap<>();
+		first.put("id", id);
+		Map<String, Object> second = new HashMap<>();
+		second.put("id", id);
+
+		assertEquals(HttpStatus.BAD_REQUEST, getBatchUpdateResponse(new App("test"), oldObjects,
+				Arrays.asList(first, second)).getStatusCode());
 	}
 
 	@Test

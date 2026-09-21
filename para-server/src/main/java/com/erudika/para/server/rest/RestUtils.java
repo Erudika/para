@@ -577,10 +577,16 @@ public final class RestUtils {
 				RestUtils.class, "batch", "update")) {
 			if (app != null && oldObjects != null && newProperties != null) {
 				LinkedList<ParaObject> updatedObjects = new LinkedList<>();
+				Set<String> updatedIds = new LinkedHashSet<>();
 				boolean hasPositiveVersions = false;
 				for (Map<String, Object> newProps : newProperties) {
 					if (newProps != null && newProps.containsKey(Config._ID)) {
-						ParaObject oldObject = oldObjects.get((String) newProps.get(Config._ID));
+						String id = (String) newProps.get(Config._ID);
+						if (id != null && !updatedIds.add(id)) {
+							return getStatusResponse(HttpStatus.BAD_REQUEST,
+									"Duplicate object id in batch: " + id);
+						}
+						ParaObject oldObject = oldObjects.get(id);
 						// updating apps in batch is not allowed
 						if (oldObject != null && checkImplicitAppPermissions(app, oldObject)) {
 							ParaObject updatedObject = ParaObjectUtils.setAnnotatedFields(oldObject, newProps, Locked.class);

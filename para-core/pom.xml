@@ -109,7 +109,7 @@
 		<dependency>
 			<groupId>org.jsoup</groupId>
 			<artifactId>jsoup</artifactId>
-			<version>1.23.1</version>
+			<version>1.23.2</version>
 		</dependency>
 		<dependency>
 			<groupId>com.vladsch.flexmark</groupId>
@@ -202,7 +202,7 @@
 		<dependency>
 			<groupId>io.github.hakky54</groupId>
 			<artifactId>ayza</artifactId>
-			<version>10.0.6</version>
+			<version>10.0.7</version>
 		</dependency>
 	</dependencies>
 
@@ -212,7 +212,7 @@
 				<plugin>
 					<groupId>org.codehaus.mojo</groupId>
 					<artifactId>templating-maven-plugin</artifactId>
-					<version>3.1.0</version>
+					<version>3.1.1</version>
 					<executions>
 						<execution>
 							<id>generate-verion-class</id>
@@ -229,7 +229,7 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>buildnumber-maven-plugin</artifactId>
-				<version>3.3.0</version>
+				<version>3.3.1</version>
 				<configuration>
 					<revisionOnScmFailure>UNKNOWN</revisionOnScmFailure>
 					<getRevisionOnlyOnce>true</getRevisionOnlyOnce>

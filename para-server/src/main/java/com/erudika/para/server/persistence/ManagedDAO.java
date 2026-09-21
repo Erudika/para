@@ -184,7 +184,7 @@ public class ManagedDAO implements DAO {
 		}
 		Map<String, ParaObject> toCache = objects.stream().
 				filter(o -> o != null && o.getCached() && o.getVersion() >= 0).
-				collect(Collectors.toMap(k -> k.getId(), v -> v));
+				collect(Collectors.toMap(k -> k.getId(), v -> v, (first, second) -> second));
 		if (!toCache.isEmpty() && Para.getConfig().isCacheEnabled()) {
 			try (Metrics.Context context = Metrics.time(appid, Para.getCache().getClass(), "putAll")) {
 				Para.getCache().putAll(appid, toCache);
@@ -239,7 +239,7 @@ public class ManagedDAO implements DAO {
 			}
 			Map<String, ParaObject> toCache = fromDB.values().stream().
 					filter(o -> o != null && o.getCached() && o.getVersion() >= 0).
-					collect(Collectors.toMap(k -> k.getId(), v -> v));
+					collect(Collectors.toMap(k -> k.getId(), v -> v, (first, second) -> second));
 			if (!toCache.isEmpty() && Para.getConfig().isCacheEnabled()) {
 				logger.debug("Cache: Cache miss on readAll: {}->{}", appid, toCache.keySet());
 				try (Metrics.Context context = Metrics.time(appid, Para.getCache().getClass(), "putAll")) {
