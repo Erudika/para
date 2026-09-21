@@ -673,6 +673,9 @@ class ParaIntegrationsIT {
 			Sysprop second3 = new Sysprop("secondLink3");
 			second1.addProperty("text", "hello from the other side");
 			second2.addProperty("text", "hello kitty");
+			second1.addProperty("testprop", "where");
+			second2.addProperty("testprop", "when");
+			second3.addProperty("testprop", "what");
 			second3.setName("gordon");
 
 			Sysprop child1 = new Sysprop("child1");
@@ -692,7 +695,10 @@ class ParaIntegrationsIT {
 			assertNotNull(pc.link(u, second3.getId()));
 
 			// test linked objects search
-			assertTrue(pc.findLinkedObjects(u, second1.getType(), Config._NAME, null).size() >= 3);
+			int size1 = pc.findLinkedObjects(u, second1.getType(), "properties.testprop", "wh*").size();
+			int size2 = pc.getLinkedObjects(u, second1.getType()).size();
+			assertTrue(size1 >= 3);
+			assertEquals(3, size2);
 
 			List<Sysprop> found1 = pc.findLinkedObjects(u, second1.getType(), Config._NAME, "gord*");
 			assertFalse(found1.isEmpty());
