@@ -80,6 +80,10 @@ free developer account. Browse and manage your users and objects, do backups and
 the web console. By upgrading to a premium account you will be able to scale you projects up and down in seconds and
 manage multiple apps.
 
+**Other hosting providers**
+
+[![Deploy on Hostinger](https://assets.hostinger.com/vps/deploy.svg)](https://www.hostg.xyz/aff_c?offer_id=815&aff_id=243576&url_id=6844)
+
 ## Quick Start
 
 1. [Download the latest executable JAR](https://github.com/Erudika/para/releases)
