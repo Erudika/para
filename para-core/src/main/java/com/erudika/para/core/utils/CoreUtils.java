@@ -348,7 +348,11 @@ public enum CoreUtils implements InitializeListener {
 			List<Linker> links = getLinks(obj, type2, pager);
 			LinkedList<String> keys = new LinkedList<>();
 			for (Linker link : links) {
-				keys.add(link.isFirst(type2) ? link.getId2() : link.getId1());
+				if (obj.getType().equals(type2)) {
+					keys.add(link.getId2());
+				} else {
+					keys.add(link.isFirst(type2) ? link.getId1() : link.getId2());
+				}
 			}
 			return new ArrayList<>((Collection<? extends P>) getDao().readAll(obj.getAppid(), keys, true).values());
 		}
