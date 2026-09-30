@@ -35,6 +35,7 @@ import com.erudika.para.core.Tag;
 import com.erudika.para.core.User;
 import com.erudika.para.core.Votable;
 import com.erudika.para.core.Vote;
+import com.erudika.para.core.listeners.IOListener;
 import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.HumanTime;
@@ -48,6 +49,7 @@ import com.erudika.para.server.security.SecurityConfig;
 import com.erudika.para.server.security.UserAuthentication;
 import com.erudika.para.server.security.filters.FacebookAuthFilter;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -97,6 +99,7 @@ class ParaIntegrationsIT {
 		private static final String batsType = "bat";
 		private static final String APP_NAME = "para-test";
 		private static final String APP_NAME_CHILD = "para-test-child";
+		private static TestIOListener ioListener;
 
 		protected static Sysprop u;
 		protected static Sysprop u1;
@@ -227,6 +230,8 @@ class ParaIntegrationsIT {
 
 			assertNotNull(fbUser.create());
 			pc.createAll(Arrays.asList(u, u1, u2, t, s1, s2, s3, a1, a2));
+			ioListener = new TestIOListener();
+			Para.addIOListener(ioListener);
 		}
 
 		@AfterAll
@@ -645,6 +650,73 @@ class ParaIntegrationsIT {
 			assertEquals(0L, pc.getCount(u.getType(), Collections.singletonMap(Config._ID, " ")).intValue());
 			assertEquals(1L, pc.getCount(u.getType(), Collections.singletonMap(Config._ID, u.getId())).intValue());
 			assertTrue(pc.getCount(null, Collections.singletonMap(Config._TYPE, u.getType())).intValue() > 1);
+		}
+
+		@Test
+		public void testIOListenerCallbacksForSearchAndCache() {
+			String previousCacheSetting = System.getProperty("para.cache_enabled");
+			System.setProperty("para.cache_enabled", "true");
+
+			try {
+				Sysprop indexed = new Sysprop("io-listener-indexed");
+				indexed.setCached(false);
+				indexed.setTimestamp(Utils.timestamp());
+				ioListener.clear();
+				assertNotNull(pc.create(indexed));
+				assertTrue(ioListener.preCount("create") >= 1);
+				assertTrue(ioListener.postCount("create") >= 1);
+
+				Sysprop cached = new Sysprop("io-listener-cached");
+				cached.setIndexed(false);
+				cached.setTimestamp(Utils.timestamp());
+				ioListener.clear();
+				assertNotNull(pc.create(cached));
+				assertTrue(ioListener.preCount("create") >= 1);
+				assertTrue(ioListener.postCount("create") >= 1);
+
+				ioListener.clear();
+				assertNotNull(pc.read(cached.getId()));
+				assertTrue(ioListener.preCount("read") >= 1);
+				assertTrue(ioListener.postCount("read") >= 1);
+
+				pc.delete(indexed);
+				pc.delete(cached);
+			} finally {
+				if (previousCacheSetting == null) {
+					System.clearProperty("para.cache_enabled");
+				} else {
+					System.setProperty("para.cache_enabled", previousCacheSetting);
+				}
+			}
+		}
+
+		private static class TestIOListener implements IOListener {
+
+			private final List<String> preInvocations = new ArrayList<>();
+			private final List<String> postInvocations = new ArrayList<>();
+
+			@Override
+			public void onPreInvoke(Method method, Object[] args) {
+				preInvocations.add(method.getName());
+			}
+
+			@Override
+			public void onPostInvoke(Method method, Object[] args, Object result) {
+				postInvocations.add(method.getName());
+			}
+
+			void clear() {
+				preInvocations.clear();
+				postInvocations.clear();
+			}
+
+			long preCount(String methodName) {
+				return preInvocations.stream().filter(methodName::equals).count();
+			}
+
+			long postCount(String methodName) {
+				return postInvocations.stream().filter(methodName::equals).count();
+			}
 		}
 
 		@Test

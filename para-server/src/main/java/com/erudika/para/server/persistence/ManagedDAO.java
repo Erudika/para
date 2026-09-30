@@ -62,56 +62,28 @@ public class ManagedDAO implements DAO {
 	<P extends ParaObject> P invokeDAORead(String appid, String key,
 			BiFunction<String, String, P> daoFunction, String opName) {
 		try (Metrics.Context context = Metrics.time(appid, dao.getClass(), opName)) {
-			Object[] args = new Object[] {appid, key};
-			Class<?>[] params = new Class<?>[] {String.class, String.class};
-
-			onPreInvoke(opName, args, params);
-			P result = daoFunction.apply(appid, key);
-			onPostInvoke(opName, args, result, params);
-
-			return result;
+			return daoFunction.apply(appid, key);
 		}
 	}
 
 	<P extends ParaObject> Map<String, P> invokeDAOBatchRead(String appid, List<String> keys,
 			BiFunction<String, List<String>, Map<String, P>> daoFunction, String opName) {
 		try (Metrics.Context context = Metrics.time(appid, dao.getClass(), opName)) {
-			Object[] args = new Object[] {appid, keys};
-			Class<?>[] params = new Class<?>[] {String.class, List.class, boolean.class};
-
-			onPreInvoke(opName, args, params);
-			Map<String, P> result = daoFunction.apply(appid, keys);
-			onPostInvoke(opName, args, result, params);
-
-			return result;
+			return daoFunction.apply(appid, keys);
 		}
 	}
 
 	<P extends ParaObject, R> R invokeDAOWrite(String appid, P object,
 			BiFunction<String, P, R> daoFunction, String opName) {
 		try (Metrics.Context context = Metrics.time(appid, dao.getClass(), opName)) {
-			Object[] args = new Object[] {appid, object};
-			Class<?>[] params = new Class<?>[] {String.class, ParaObject.class};
-
-			onPreInvoke(opName, args, params);
-			R result = daoFunction.apply(appid, object);
-			onPostInvoke(opName, args, result, params);
-
-			return result;
+			return daoFunction.apply(appid, object);
 		}
 	}
 
 	<P extends ParaObject, R> R invokeDAOBatchWrite(String appid, List<P> objects,
 			BiFunction<String, List<P>, R> daoFunction, String opName) {
 		try (Metrics.Context context = Metrics.time(appid, dao.getClass(), opName)) {
-			Object[] args = new Object[] {appid, objects};
-			Class<?>[] params = new Class<?>[] {String.class, List.class};
-
-			onPreInvoke(opName, args, params);
-			R result = daoFunction.apply(appid, objects);
-			onPostInvoke(opName, args, result, params);
-
-			return result;
+			return daoFunction.apply(appid, objects);
 		}
 	}
 
@@ -178,7 +150,9 @@ public class ManagedDAO implements DAO {
 		invokeDAOBatchWrite(appid, objects.stream().filter(o -> o != null && o.getStored()).toList(), daoFunction, opName);
 		if (Para.getConfig().isSearchEnabled()) {
 			try (Metrics.Context context = Metrics.time(appid, Para.getSearch().getClass(), "indexAll")) {
-				Para.getSearch().indexAll(appid, objects.stream().filter(o -> o != null && o.getIndexed() && o.getVersion() >= 0).toList());
+				List<P> toIndex = objects.stream().
+						filter(o -> o != null && o.getIndexed() && o.getVersion() >= 0).toList();
+				Para.getSearch().indexAll(appid, toIndex);
 			}
 			logger.debug("Search: Indexed all {}->{}", appid, objects.size());
 		}
@@ -295,7 +269,13 @@ public class ManagedDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> String create(String appid, P object) {
-		return addToIndexAndCache(appid, object, (aid, pobj) -> dao.create(aid, pobj), "create");
+		String opName = "create";
+		Object[] args = new Object[] {appid, object};
+		Class<?>[] params = new Class<?>[] {String.class, ParaObject.class};
+		onPreInvoke(opName, args, params);
+		String result = addToIndexAndCache(appid, object, (aid, pobj) -> dao.create(aid, pobj), opName);
+		onPostInvoke(opName, args, result, params);
+		return result;
 	}
 
 	@Override
@@ -305,7 +285,13 @@ public class ManagedDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> P read(String appid, String key) {
-		return readFromCacheOrDB(appid, key, (aid, pobj) -> dao.read(appid, key), "read");
+		String opName = "read";
+		Object[] args = new Object[] {appid, key};
+		Class<?>[] params = new Class<?>[] {String.class, String.class};
+		onPreInvoke(opName, args, params);
+		P result = readFromCacheOrDB(appid, key, (aid, pobj) -> dao.read(appid, key), opName);
+		onPostInvoke(opName, args, result, params);
+		return result;
 	}
 
 	@Override
@@ -315,10 +301,15 @@ public class ManagedDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> void update(String appid, P object) {
-		addToIndexAndCache(appid, object, (aid, pobj) -> {
+		String opName = "update";
+		Object[] args = new Object[] {appid, object};
+		Class<?>[] params = new Class<?>[] {String.class, ParaObject.class};
+		onPreInvoke(opName, args, params);
+		Object result = addToIndexAndCache(appid, object, (aid, pobj) -> {
 			dao.update(aid, pobj);
 			return null;
-		}, "update");
+		}, opName);
+		onPostInvoke(opName, args, result, params);
 	}
 
 	@Override
@@ -328,10 +319,15 @@ public class ManagedDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> void delete(String appid, P object) {
+		String opName = "delete";
+		Object[] args = new Object[] {appid, object};
+		Class<?>[] params = new Class<?>[] {String.class, ParaObject.class};
+		onPreInvoke(opName, args, params);
 		removeFromIndexAndCache(appid, object, (aid, pobj) -> {
 			dao.delete(aid, pobj);
 			return null;
-		}, "delete");
+		}, opName);
+		onPostInvoke(opName, args, object, params);
 	}
 
 	@Override
@@ -341,10 +337,15 @@ public class ManagedDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> void createAll(String appid, List<P> objects) {
+		String opName = "createAll";
+		Object[] args = new Object[] {appid, objects};
+		Class<?>[] params = new Class<?>[] {String.class, List.class};
+		onPreInvoke(opName, args, params);
 		addAllToIndexAndCache(appid, objects, (aid, list) -> {
 			dao.createAll(aid, list);
 			return null;
-		}, "createAll");
+		}, opName);
+		onPostInvoke(opName, args, objects, params);
 	}
 
 	@Override
@@ -354,7 +355,14 @@ public class ManagedDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> Map<String, P> readAll(String appid, List<String> keys, boolean getAllColumns) {
-		return readAllFromCacheOrDB(appid, keys, (aid, keyz) -> dao.readAll(aid, keyz, getAllColumns), "readAll");
+		String opName = "readAll";
+		Object[] args = new Object[] {appid, keys, getAllColumns};
+		Class<?>[] params = new Class<?>[] {String.class, List.class, boolean.class};
+		onPreInvoke(opName, args, params);
+		Map<String, P> result = readAllFromCacheOrDB(appid, keys,
+				(aid, keyz) -> dao.readAll(aid, keyz, getAllColumns), opName);
+		onPostInvoke(opName, args, result, params);
+		return result;
 	}
 
 	@Override
@@ -374,10 +382,15 @@ public class ManagedDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> void updateAll(String appid, List<P> objects) {
+		String opName = "updateAll";
+		Object[] args = new Object[] {appid, objects};
+		Class<?>[] params = new Class<?>[] {String.class, List.class};
+		onPreInvoke(opName, args, params);
 		addAllToIndexAndCache(appid, objects, (aid, list) -> {
 			dao.updateAll(aid, list);
 			return null;
-		}, "updateAll");
+		}, opName);
+		onPostInvoke(opName, args, objects, params);
 	}
 
 	@Override
@@ -387,10 +400,15 @@ public class ManagedDAO implements DAO {
 
 	@Override
 	public <P extends ParaObject> void deleteAll(String appid, List<P> objects) {
+		String opName = "deleteAll";
+		Object[] args = new Object[] {appid, objects};
+		Class<?>[] params = new Class<?>[] {String.class, List.class};
+		onPreInvoke(opName, args, params);
 		removeAllFromIndexAndCache(appid, objects, (aid, list) -> {
 			dao.deleteAll(aid, list);
 			return null;
-		}, "deleteAll");
+		}, opName);
+		onPostInvoke(opName, args, objects, params);
 	}
 
 	@Override
