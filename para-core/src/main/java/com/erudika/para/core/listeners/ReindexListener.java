@@ -21,14 +21,14 @@ import com.erudika.para.core.App;
 import java.util.EventListener;
 
 /**
- * This listener is executed when a new child {@link App} is created.
+ * This listener is executed when a the search index is being rebuilt.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public interface AppCreatedListener extends EventListener {
+public interface ReindexListener extends EventListener {
 
 	/**
-	 * Code to execute right after app is created.
+	 * Code to execute right after index is done rebuilding.
 	 * @param app the app object
 	 */
-	void onAppCreated(App app);
+	void onReindex(App app);
 }

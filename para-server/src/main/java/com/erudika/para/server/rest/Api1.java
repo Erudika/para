@@ -22,7 +22,6 @@ import com.erudika.para.core.Form;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.User;
-import com.erudika.para.core.metrics.Metrics;
 import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.HumanTime;
@@ -1102,10 +1101,8 @@ public final class Api1 {
 		return respondToClient(req, () -> {
 			long startTime = System.nanoTime();
 			Pager pager = RestUtils.getPagerFromParams(req);
-			String destinationIndex = queryParam("destinationIndex", req);
-			try (Metrics.Context context = Metrics.time(app.getAppIdentifier(), Api1.class, "rebuildIndex")) {
-				getSearch().rebuildIndex(getDAO(), app, destinationIndex, pager);
-			}
+			//String destinationIndex = queryParam("destinationIndex", req);
+			app.reindex(pager);
 			long tookMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
 			Map<String, Object> response = new HashMap<>(2);
 			response.put("reindexed", pager.getCount());

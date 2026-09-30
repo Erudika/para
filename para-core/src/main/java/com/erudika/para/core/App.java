@@ -34,6 +34,8 @@ import com.erudika.para.core.listeners.AppCreatedListener;
 import com.erudika.para.core.listeners.AppDeletedListener;
 import com.erudika.para.core.listeners.AppSettingAddedListener;
 import com.erudika.para.core.listeners.AppSettingRemovedListener;
+import com.erudika.para.core.listeners.ReindexListener;
+import com.erudika.para.core.metrics.Metrics;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Pager;
 import com.erudika.para.core.utils.Para;
@@ -95,6 +97,7 @@ public class App implements ParaObject, Serializable {
 	private static final Set<AppDeletedListener> DELETE_LISTENERS = new LinkedHashSet<AppDeletedListener>();
 	private static final Set<AppSettingAddedListener> ADD_SETTING_LISTENERS = new LinkedHashSet<>();
 	private static final Set<AppSettingRemovedListener> REMOVE_SETTING_LISTENERS = new LinkedHashSet<>();
+	private static final Set<ReindexListener> REINDEX_LISTENERS = new LinkedHashSet<>();
 	private static final Logger logger = LoggerFactory.getLogger(App.class);
 
 	/**
@@ -1132,6 +1135,16 @@ public class App implements ParaObject, Serializable {
 		}
 	}
 
+	/**
+	 * Registers a new reindex listener, to be triggered when the search index is being rebuilt.
+	 * @param listener the listener
+	 */
+	public static void addReindexListener(ReindexListener listener) {
+		if (listener != null) {
+			REINDEX_LISTENERS.add(listener);
+		}
+	}
+
 	@Override
 	public String create() {
 		if (getId() != null && this.exists()) {
@@ -1169,6 +1182,21 @@ public class App implements ParaObject, Serializable {
 				logger.info("Executed {}.onAppDeleted().", listener.getClass().getName());
 			}
 			clearSettings();
+		}
+	}
+
+	/**
+	 * Calls all the reindex listeners.
+	 */
+	public void reindex(Pager... pager) {
+		try (Metrics.Context context = Metrics.time(getAppIdentifier(), App.class, "rebuildIndex")) {
+			Para.getSearch().rebuildIndex(Para.getDAO(), this, "", pager);
+		} catch (Exception e) {
+			logger.error("Failed to rebuild index for app {} - {}.", getId(), e.getMessage());
+		}
+		for (ReindexListener listener : REINDEX_LISTENERS) {
+			listener.onReindex(this);
+			logger.info("Executed {}.onReindex().", listener.getClass().getName());
 		}
 	}
 

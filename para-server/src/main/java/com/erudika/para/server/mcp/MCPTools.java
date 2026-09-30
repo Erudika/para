@@ -674,7 +674,7 @@ public class MCPTools {
 			App app = utils.authApp();
 			String appid = app.getAppIdentifier();
 			logger.info("[MCP] Rebuilding search index for app={}", appid);
-			Para.getSearch().rebuildIndex(Para.getDAO(), app);
+			app.reindex();
 			return CallToolResult.builder().textContent(List.of("Search index rebuilt.")).build();
 		} catch (MCPException e) {
 			throw e;
