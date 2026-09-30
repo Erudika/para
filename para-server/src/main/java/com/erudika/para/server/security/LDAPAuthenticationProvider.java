@@ -102,10 +102,21 @@ public class LDAPAuthenticationProvider implements AuthenticationProvider {
 		private static final long serialVersionUID = 621L;
 
 		/**
+		 * Default constructor.
+		 */
+		public LdapPerson() {
+			super();
+		}
+
+		/**
 		 * Essence.
 		 */
 		public static class Essence extends InetOrgPerson.Essence {
 
+			/**
+			 * Default constructor.
+			 * @param ctx direcotry context
+			 */
 			public Essence(DirContextOperations ctx) {
 				super(ctx);
 				Object jpeg = ctx.getObjectAttribute("jpegPhoto");
@@ -126,6 +137,9 @@ public class LDAPAuthenticationProvider implements AuthenticationProvider {
 			}
 		}
 
+		/**
+		 * Photo.
+		 */
 		private byte[] photo;
 
 		/**

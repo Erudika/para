@@ -1187,6 +1187,7 @@ public class App implements ParaObject, Serializable {
 
 	/**
 	 * Calls all the reindex listeners.
+	 * @param pager a {@link Pager} object
 	 */
 	public void reindex(Pager... pager) {
 		try (Metrics.Context context = Metrics.time(getAppIdentifier(), App.class, "rebuildIndex")) {
