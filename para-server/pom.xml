@@ -19,25 +19,25 @@
 
 		<!-- PLUGINS -->
 		<!--===== LUCENE =====-->
-		<lucenePluginVer>1.51.1</lucenePluginVer>
+		<lucenePluginVer>1.51.2</lucenePluginVer>
 		<!--===== SQL =====-->
-		<sqlPluginVer>1.51.0</sqlPluginVer>
+		<sqlPluginVer>1.51.1</sqlPluginVer>
 		<!--===== HAZELCAST =====-->
-		<hcPluginVer>1.43.0</hcPluginVer>
+		<hcPluginVer>1.43.1</hcPluginVer>
 		<!--===== CASSANDRA =====-->
-		<casPluginVer>1.42.0</casPluginVer>
+		<casPluginVer>1.43.1</casPluginVer>
 		<!--===== MONGODB =====-->
-		<mongoPluginVer>1.42.2</mongoPluginVer>
+		<mongoPluginVer>1.42.4</mongoPluginVer>
 		<!--===== ELASTICSEARCH =====-->
-		<esPluginVer>1.43.1</esPluginVer>
+		<esPluginVer>1.43.2</esPluginVer>
 		<!--===== DYNAMODB =====-->
-		<dynamoPluginVer>1.52.6</dynamoPluginVer>
+		<dynamoPluginVer>1.52.7</dynamoPluginVer>
 		<!--===== AWS SES =====-->
-		<sesPluginVer>1.52.4</sesPluginVer>
+		<sesPluginVer>1.52.5</sesPluginVer>
 		<!--===== AWS S3 =====-->
-		<s3PluginVer>1.52.3</s3PluginVer>
+		<s3PluginVer>1.52.4</s3PluginVer>
 		<!--===== AWS SQS =====-->
-		<sqsPluginVer>1.52.3</sqsPluginVer>
+		<sqsPluginVer>1.52.4</sqsPluginVer>
 	</properties>
 
 	<dependencies>
