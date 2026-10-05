@@ -5,15 +5,19 @@ set -e -x
 VERSION="1.50.2"
 PORT="8080"
 WORKDIR="/home/ubuntu/para"
-mkdir $WORKDIR
+mkdir -p $WORKDIR/lib
 
-JARURL="https://repo1.maven.org/maven2/com/erudika/para-server/${VERSION}/para-server-${VERSION}.jar"
+# Use the GitHub release asset, not the Maven Central artifact. The release JAR is built with the
+# `fatjar` profile, which gives it a Spring Boot PropertiesLauncher and bakes in the default
+# plugins (SQL and Lucene). The Maven Central artifact is a plain JarLauncher with no plugins and
+# ignores -Dloader.path, so it cannot load anything from lib/.
+JARURL="https://github.com/Erudika/para/releases/download/${VERSION}/para-${VERSION}.jar"
 sfile="/etc/systemd/system/para.service"
 
 apt-get update && apt-get install -y wget openjdk-21-jre &&
 wget -O para.jar ${JARURL} && \
 mv para.jar $WORKDIR && \
-chown ubuntu:ubuntu ${WORKDIR}/para.jar && \
+chown -R ubuntu:ubuntu ${WORKDIR} && \
 chmod +x ${WORKDIR}/para.jar
 touch ${WORKDIR}/application.conf && \
 chown ubuntu:ubuntu ${WORKDIR}/application.conf
@@ -35,7 +39,10 @@ StartLimitBurst=2
 [Service]
 WorkingDirectory=${WORKDIR}
 SyslogIdentifier=Para
-ExecStart=java -jar -Dconfig.file=application.conf para.jar
+# JVM -D flags must precede -jar, otherwise the JVM treats them as arguments to Para.
+# -Dloader.path=lib puts the lib/ folder on the classpath; this only works because the release
+# JAR uses PropertiesLauncher. Put JDBC drivers there, e.g. lib/mysql-connector-j.jar.
+ExecStart=java -Dconfig.file=application.conf -Dloader.path=lib -jar para.jar
 User=ubuntu
 Restart=on-failure
 RestartSec=1s

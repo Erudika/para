@@ -42,9 +42,19 @@ persistentVolumes:
     size: 1Gi
     storageClassName: ""
 
-#############################################
-# Optional init container for adding plugins
-#############################################
+#########################################################
+# Optional init container for adding JDBC drivers to lib
+#
+# Para plugins are NOT downloaded here. Plugins are either
+# baked into the image with Maven profiles (see Dockerfile
+# BUILD_OPTS) or installed at runtime through the plugin
+# API. JDBC drivers are never baked in, because the driver
+# you need depends on your database and drivers are not
+# published to Maven Central. The `-Dloader.path=/para/lib`
+# flag in javaOpts below is what puts this folder on the
+# classpath, so the image must be built with
+# PropertiesLauncher for it to take effect.
+#########################################################
 downloadInitContainer:
   command: "wget https://jdbc.org/driver.jar -O /para/lib/jdbc.jar"
   enabled: false

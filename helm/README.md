@@ -41,17 +41,43 @@ The command removes all the Kubernetes components associated with the chart and 
 
 ## Running Para with plugins
 
-Optionally, you can add one or more plugins to Para before the K8s cluster is initialized, using `initContainers`.
-Set `downloadInitContainer.enabled: true` and edit the command `downloadInitContainer.command`. The command is supposed to
-download all additional plugins and JDBC drivers and put them in the `/para/lib` folder inside the pod. For example, you can
-configure Para to use the SQL plugin and connect to a PostgreSQL server like this:
+Para plugins are thin JARs. The official ones can be baked into the image at build time via Maven
+profiles, which is what the default image does:
+
+```dockerfile
+ARG BUILD_OPTS="-Pfatjar,sql,lucene"
+```
+
+To bake in a different set, build the image with the profiles you need, for example
+`-Pfatjar,sql,lucene,mongodb`. Plugins included this way are resolved by Maven and packaged into
+`BOOT-INF/lib`, so there is nothing to download at runtime.
+
+Any plugin not baked into the image can be installed at runtime through the plugin API:
+
+```console
+$ curl -X POST https://your-para-host/v1/_plugins/para-dao-mongodb/install
+```
+
+Each artifact is checksum-verified before installation, and Para must be restarted afterwards.
+See the [plugins API](https://paraio.org/docs/#/configuration/plugins) for details.
+
+### JDBC drivers
+
+JDBC drivers are never baked into the image, because which one you need depends on your database.
+Drivers are also not published to Maven Central, so they must be downloaded into `/para/lib` before
+the cluster is initialized, using `initContainers`. Set `downloadInitContainer.enabled: true` and
+edit `downloadInitContainer.command`:
 
 **`values.yaml`**
 ```yaml
 downloadInitContainer:
-  command: "wget https://jdbc.postgresql.org/download/postgresql-42.7.7.jar -O /para/lib/postgresql-jdbc.jar && wget https://repo1.maven.org/maven2/com/erudika/para-dao-sql/1.49.1/para-dao-sql-1.49.1-shaded.jar -O /para/lib/para-dao-sql.jar"
+  command: "wget https://jdbc.postgresql.org/download/postgresql-42.7.7.jar -O /para/lib/postgresql-jdbc.jar"
   enabled: true
 ```
+
+The `javaOpts` value sets `-Dloader.path=/para/lib`, which is what puts that directory on the
+classpath. The chart builds Para with `PropertiesLauncher` for this reason; the default Spring Boot
+`JarLauncher` ignores `loader.path` and only reads `BOOT-INF/lib`.
 
 **`application.conf`**
 ```ini
