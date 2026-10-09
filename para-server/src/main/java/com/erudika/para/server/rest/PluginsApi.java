@@ -49,13 +49,15 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * REST endpoints for inspecting and installing Para plugins.
  *
- * <p>Plugins are thin JARs published to Maven Central, each carrying a manifest of its runtime
- * dependencies. This controller lets an admin UI list what is available, preview what an install
- * would fetch, install it, and remove it.</p>
+ * <p>
+ * Plugins are thin JARs published to Maven Central, each carrying a manifest of its runtime dependencies. This
+ * controller lets an admin UI list what is available, preview what an install would fetch, install it, and remove
+ * it.</p>
  *
- * <p>A restart is required after installing or removing a plugin, because the plugin classloader is
- * built once during startup and cached. Selecting a different plugin via configuration also
- * requires a restart, matching the {@code requires restart} tag on those config properties.</p>
+ * <p>
+ * A restart is required after installing or removing a plugin, because the plugin classloader is built once during
+ * startup and cached. Selecting a different plugin via configuration also requires a restart, matching the
+ * {@code requires restart} tag on those config properties.</p>
  *
  * @author Alex Bogdanovski [alex@erudika.com]
  */
@@ -97,8 +99,9 @@ public final class PluginsApi {
 	}
 
 	/**
-	 * Lists the official plugins with their type, whether each is installed, and whether it is the
-	 * one currently selected by configuration.
+	 * Lists the official plugins with their type, whether each is installed, and whether it is the one currently
+	 * selected by configuration.
+	 *
 	 * @return a map keyed by Maven artifactId
 	 */
 	@GetMapping
@@ -120,8 +123,9 @@ public final class PluginsApi {
 	}
 
 	/**
-	 * Lists every JAR in the plugin folder, including plugins outside the official catalogue such
-	 * as third-party or locally built ones.
+	 * Lists every JAR in the plugin folder, including plugins outside the official catalogue such as third-party or
+	 * locally built ones.
+	 *
 	 * @return a sorted list of file names
 	 */
 	@GetMapping("/installed")
@@ -151,8 +155,9 @@ public final class PluginsApi {
 	/**
 	 * Reports what installing a plugin would download, without touching the plugin folder.
 	 *
-	 * <p>Resolution happens in a temporary directory that is deleted afterwards, so an admin UI can
-	 * show real numbers behind a confirmation prompt.</p>
+	 * <p>
+	 * Resolution happens in a temporary directory that is deleted afterwards, so an admin UI can show real numbers
+	 * behind a confirmation prompt.</p>
 	 *
 	 * @param artifactId the Maven artifactId of the plugin
 	 * @return the plugin's declared dependencies and the total download size
@@ -172,8 +177,8 @@ public final class PluginsApi {
 		try {
 			tmpDir = Files.createTempDirectory("para-plugin-preview");
 			PluginResolver resolver = new PluginResolver(tmpDir);
-			PluginResolver.ResolutionResult result =
-					resolver.resolvePlugin(GROUP_ID, artifactId, descriptor.version);
+			PluginResolver.ResolutionResult result
+					= resolver.resolvePlugin(GROUP_ID, artifactId, descriptor.version);
 
 			long totalBytes = 0;
 			List<String> deps = new ArrayList<>();
@@ -200,8 +205,9 @@ public final class PluginsApi {
 	/**
 	 * Downloads a plugin and all of its dependencies into the plugin folder.
 	 *
-	 * <p>Every artifact is checksum-verified before it is written. Para must be restarted before
-	 * the plugin can be loaded.</p>
+	 * <p>
+	 * Every artifact is checksum-verified before it is written. Para must be restarted before the plugin can be
+	 * loaded.</p>
 	 *
 	 * @param artifactId the Maven artifactId of the plugin
 	 * @param request optional JSON body with a {@code version} field
@@ -223,8 +229,8 @@ public final class PluginsApi {
 					.body(error("A version is required for " + artifactId));
 		}
 		try {
-			PluginResolver.ResolutionResult result =
-					new PluginResolver().resolvePlugin(GROUP_ID, artifactId, version);
+			PluginResolver.ResolutionResult result
+					= new PluginResolver().resolvePlugin(GROUP_ID, artifactId, version);
 			Map<String, Object> body = new LinkedHashMap<>();
 			body.put("installed", true);
 			body.put("artifactId", artifactId);
@@ -244,8 +250,9 @@ public final class PluginsApi {
 	/**
 	 * Removes a plugin JAR from the plugin folder.
 	 *
-	 * <p>Only the plugin JAR is deleted. Its dependencies stay, because plugins routinely share
-	 * them and a dependency JAR carries no record of which plugin wanted it.</p>
+	 * <p>
+	 * Only the plugin JAR is deleted. Its dependencies stay, because plugins routinely share them and a dependency JAR
+	 * carries no record of which plugin wanted it.</p>
 	 *
 	 * @param artifactId the Maven artifactId of the plugin
 	 * @param version the installed version
@@ -293,7 +300,7 @@ public final class PluginsApi {
 
 	private static boolean isActive(Map<String, String> activePlugins, PluginDescriptor pd) {
 		if (activePlugins == null || pd == null) {
-		   return false;
+			return false;
 		}
 		return pd.implClassNames.stream().anyMatch(p -> p.equalsIgnoreCase(activePlugins.get(pd.artifactId)));
 	}
@@ -336,7 +343,9 @@ public final class PluginsApi {
 		private final String artifactId;
 		private final String displayName;
 		private final String type;
-		/** Every implementation class the plugin registers via ServiceLoader. */
+		/**
+		 * Every implementation class the plugin registers via ServiceLoader.
+		 */
 		private final List<String> implClassNames;
 		private final String description;
 		private final String version;
@@ -352,10 +361,9 @@ public final class PluginsApi {
 		}
 
 		/**
-		 * Reads the plugin version baked into this build from {@code plugin-versions.properties},
-		 * which Maven filters from the version properties in {@code para-server/pom.xml}. Returns an
-		 * empty string when unknown, in which case the API asks the caller for a version rather than
-		 * guessing.
+		 * Reads the plugin version baked into this build from {@code plugin-versions.properties}, which Maven filters
+		 * from the version properties in {@code para-server/pom.xml}. Returns an empty string when unknown, in which
+		 * case the API asks the caller for a version rather than guessing.
 		 */
 		private static String defaultVersion(String artifactId) {
 			try (InputStream is = PluginsApi.class.getClassLoader()

@@ -17,13 +17,16 @@
  */
 package com.erudika.para.rest;
 
-import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.persistence.DAO;
+import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.server.rest.PluginsApi;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -61,21 +64,27 @@ class PluginsTest {
 			Assertions.assertNotNull(entry.get("implementationClasses"));
 			Assertions.assertFalse(((java.util.List<?>) entry.get("implementationClasses")).isEmpty());
 			Assertions.assertNotNull(entry.get("installed"));
-			Assertions.assertNotNull(entry.get("selected"));
+			Assertions.assertNotNull(entry.get("active"));
 		}
 	}
 
 	@Test
-	void mapsPluginTypesToTheRightConfigKeys() {
+	void mapsPluginsToTheRightTypes() {
 		Map<String, Object> body = controller.list().getBody();
 		Assertions.assertNotNull(body);
 
-		Assertions.assertEquals("dao", entry(body, "para-dao-sql").get("configKey"));
-		Assertions.assertEquals("search", entry(body, "para-search-lucene").get("configKey"));
-		Assertions.assertEquals("cache", entry(body, "para-cache-hazelcast").get("configKey"));
-		Assertions.assertEquals("fs", entry(body, "para-storage-s3").get("configKey"));
-		Assertions.assertEquals("q", entry(body, "para-queue-sqs").get("configKey"));
-		Assertions.assertEquals("emailer", entry(body, "para-email-ses").get("configKey"));
+		// The type tells the admin UI which config property controls the plugin: dao, search,
+		// cache, fs, q or emailer.
+		Assertions.assertEquals("DAO", entry(body, "para-dao-sql").get("type"));
+		Assertions.assertEquals("DAO", entry(body, "para-dao-mongodb").get("type"));
+		Assertions.assertEquals("DAO", entry(body, "para-dao-cassandra").get("type"));
+		Assertions.assertEquals("DAO", entry(body, "para-dao-dynamodb").get("type"));
+		Assertions.assertEquals("Search", entry(body, "para-search-lucene").get("type"));
+		Assertions.assertEquals("Search", entry(body, "para-search-elasticsearch").get("type"));
+		Assertions.assertEquals("Cache", entry(body, "para-cache-hazelcast").get("type"));
+		Assertions.assertEquals("FileStore", entry(body, "para-storage-s3").get("type"));
+		Assertions.assertEquals("Queue", entry(body, "para-queue-sqs").get("type"));
+		Assertions.assertEquals("Emailer", entry(body, "para-email-ses").get("type"));
 	}
 
 	@Test
@@ -101,24 +110,34 @@ class PluginsTest {
 	}
 
 	@Test
-	void reportsSelectedPluginFromConfiguration() {
-		// Para defaults to H2DAO, which is declared by para-dao-sql alongside SqlDAO.
-		String configured = Para.getConfig().daoPlugin();
-		Assertions.assertEquals("H2DAO", configured);
+	void reportsTheRunningImplementationAsActive() {
+		// "active" reflects the implementation that is actually running, not the plugin named in
+		// configuration. A bare unit test runs Para's mock DAO, so stub a DAO that reports the class
+		// name declared by para-dao-sql, then put the original back.
+		CoreUtils utils = CoreUtils.getInstance();
+		DAO original = utils.getDao();
+		DAO running = Mockito.mock(DAO.class);
+		Mockito.when(running.getDaoClassName()).thenReturn("H2DAO");
+		try {
+			utils.setDao(running);
 
-		Map<String, Object> body = controller.list().getBody();
-		Assertions.assertNotNull(body);
+			Map<String, Object> body = controller.list().getBody();
+			Assertions.assertNotNull(body);
 
-		// implementationClasses holds every ServiceLoader class name the plugin provides, so the
-		// admin UI can show which value to put in the config for each one.
-		@SuppressWarnings("unchecked")
-		java.util.List<String> sqlImpls = (java.util.List<String>) entry(body, "para-dao-sql")
-				.get("implementationClasses");
-		Assertions.assertNotNull(sqlImpls);
-		Assertions.assertTrue(sqlImpls.contains(configured),
-				"para-dao-sql should claim H2DAO but declares " + sqlImpls);
-		Assertions.assertTrue(entry(body, "para-dao-sql").get("selected").equals(Boolean.TRUE),
-				"para-dao-sql should be the selected DAO");
+			// implementationClasses holds every ServiceLoader class name the plugin provides, so the
+			// admin UI can show which value to put in the config for each one.
+			@SuppressWarnings("unchecked")
+			List<String> sqlImpls = (List<String>) entry(body, "para-dao-sql").get("implementationClasses");
+			Assertions.assertNotNull(sqlImpls);
+			Assertions.assertTrue(sqlImpls.contains("H2DAO"),
+					"para-dao-sql should claim H2DAO but declares " + sqlImpls);
+			Assertions.assertEquals(Boolean.TRUE, entry(body, "para-dao-sql").get("active"),
+					"para-dao-sql should be active while H2DAO is running");
+			Assertions.assertEquals(Boolean.FALSE, entry(body, "para-dao-mongodb").get("active"),
+					"para-dao-mongodb should not be active while H2DAO is running");
+		} finally {
+			utils.setDao(original);
+		}
 	}
 
 	@Test
@@ -157,7 +176,7 @@ class PluginsTest {
 	 */
 	@Test
 	void everyPluginHasADefaultVersion() throws Exception {
-		Method m = Class.forName("com.erudika.para.server.rest.Plugins$PluginDescriptor")
+		Method m = Class.forName("com.erudika.para.server.rest.PluginsApi$PluginDescriptor")
 				.getDeclaredMethod("defaultVersion", String.class);
 		m.setAccessible(true);
 
