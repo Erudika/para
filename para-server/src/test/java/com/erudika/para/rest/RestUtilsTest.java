@@ -21,11 +21,13 @@ import com.erudika.para.core.App;
 import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.Sysprop;
 import com.erudika.para.core.Tag;
+import com.erudika.para.core.User;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.server.ParaServer;
 import com.erudika.para.server.rest.GenericExceptionMapper;
+import com.erudika.para.server.security.AuthenticatedUserDetails;
 import static com.erudika.para.server.rest.RestUtils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,8 +35,10 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -47,6 +51,9 @@ import org.springframework.boot.WebApplicationType;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 /**
  *
  * @author Alex Bogdanovski [alex@erudika.com]
@@ -131,6 +138,105 @@ public class RestUtilsTest {
 		assertEquals(HttpStatus.OK, getDeleteResponse(rootApp, notRootApp).getStatusCode());
 		assertEquals(HttpStatus.OK, getDeleteResponse(notRootApp, notRootApp).getStatusCode());
 		assertNull(CoreUtils.getInstance().getDao().read(t.getId()));
+	}
+
+	/**
+	 * Regression test for commit 4d3831d2 - an app must not be able to update another app.
+	 * Before the fix setAnnotatedFields() ran before the permission checks, so the target object
+	 * was mutated even though the request was rejected.
+	 */
+	@Test
+	public void testUpdateByAnotherAppIsRejectedAndDoesNotMutateTarget() throws JsonProcessingException {
+		App rootApp = new App(Para.getConfig().appName());
+		rootApp.setName("root-app-name");
+		App otherApp = new App("other-app");
+
+		Map<String, Object> patch = new HashMap<>();
+		patch.put("name", "hacked-by-other-app");
+
+		ResponseEntity<?> response = getUpdateResponse(otherApp, rootApp, getInputStream(patch));
+
+		assertAll("rejected app update",
+				() -> assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode()),
+				() -> assertEquals("Operation not permitted.", messageOf(response)),
+				// setAnnotatedFields() must run only after the permission checks have passed.
+				() -> assertEquals("root-app-name", rootApp.getName(),
+						"a rejected update must not write fields onto the target object"));
+	}
+
+	/**
+	 * Regression test for commit 4d3831d2 - a user without ownership must not update an object
+	 * that the app protects with the "OWN" permission.
+	 */
+	@Test
+	public void testUpdateByUserWithoutOwnershipIsRejected() throws JsonProcessingException {
+		App app = new App("test-app");
+		app.setResourcePermissions(ownOnlyPermissions());
+
+		Tag tag = new Tag("test-tag");
+		tag.setCreatorid("another-user");
+		tag.setName("original-name");
+
+		authenticate(new User("unprivileged-user"));
+		try {
+			Map<String, Object> patch = new HashMap<>();
+			patch.put("name", "hacked-by-user");
+
+			ResponseEntity<?> response = getUpdateResponse(app, tag, getInputStream(patch));
+
+			assertAll("rejected user update",
+					() -> assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode()),
+					() -> assertEquals("Operation not permitted.", messageOf(response)),
+					// setAnnotatedFields() must run only after the permission checks have passed.
+					() -> assertEquals("original-name", tag.getName(),
+							"a rejected update must not write fields onto the target object"));
+		} finally {
+			SecurityContextHolder.clearContext();
+		}
+	}
+
+	/**
+	 * The reordering done for commit 4d3831d2 must not break updates that are actually allowed.
+	 */
+	@Test
+	public void testAuthorizedUpdateStillAppliesFields() throws JsonProcessingException {
+		App rootApp = new App(Para.getConfig().appName());
+		Tag tag = new Tag("authorized-tag");
+		tag.setName("original-name");
+		assertEquals(HttpStatus.CREATED,
+				getCreateResponse(rootApp, tag.getType(), getInputStream(tag)).getStatusCode());
+
+		Map<String, Object> patch = new HashMap<>();
+		patch.put("name", "updated-name");
+
+		ResponseEntity<?> response = getUpdateResponse(rootApp, tag, getInputStream(patch));
+
+		assertEquals(HttpStatus.OK, response.getStatusCode());
+		assertEquals("updated-name", tag.getName());
+		Tag stored = (Tag) CoreUtils.getInstance().getDao().read(tag.getId());
+		assertNotNull(stored);
+		assertEquals("updated-name", stored.getName());
+	}
+
+	private static String messageOf(ResponseEntity<?> response) {
+		Object body = response.getBody();
+		return (body instanceof Map) ? (String) ((Map<?, ?>) body).get("message") : null;
+	}
+
+	private static void authenticate(User user) {
+		AuthenticatedUserDetails details = new AuthenticatedUserDetails(user);
+		UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+				details, null, details.getAuthorities());
+		SecurityContextHolder.getContext().setAuthentication(auth);
+	}
+
+	private static Map<String, Map<String, List<String>>> ownOnlyPermissions() {
+		Map<String, Map<String, List<String>>> permissions = new HashMap<>();
+		Map<String, List<String>> byPath = new HashMap<>();
+		byPath.put("tag", List.of("OWN"));
+		byPath.put("tags", List.of("OWN"));
+		permissions.put(App.ALLOW_ALL, byPath);
+		return permissions;
 	}
 
 	@Test
