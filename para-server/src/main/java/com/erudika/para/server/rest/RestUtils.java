@@ -433,7 +433,7 @@ public final class RestUtils {
 			if (app != null && object != null) {
 				Map<String, Object> newContent;
 				ResponseEntity<?> entityRes = getEntity(is, Map.class);
-				String[] errors = {};
+				String[] errors = {"Operation not permitted."};
 				if (entityRes.getStatusCode().is2xxSuccessful()) {
 					newContent = (Map<String, Object>) entityRes.getBody();
 				} else {
@@ -442,26 +442,24 @@ public final class RestUtils {
 				object.setAppid(isNotAnApp(object.getType()) ? app.getAppIdentifier() : app.getAppid());
 				if (newContent.containsKey("_voteup") || newContent.containsKey("_votedown")) {
 					return getVotingResponse(object, newContent);
-				} else {
-					ParaObjectUtils.setAnnotatedFields(object, newContent, Locked.class);
+				} else if (checkImplicitAppPermissions(app, object) && checkIfUserCanModifyObject(app, object)) {
 					// app can't modify other apps except itself
-					if (checkImplicitAppPermissions(app, object)) {
-						// This is the primary validation pass (validates not only core POJOS but also user defined objects).
-						errors = validateObject(app, object);
-						if (errors.length == 0 && checkIfUserCanModifyObject(app, object)) {
-							// Secondary validation pass: object is validated again before being updated
-							object.update();
-							// check if update failed due to optimistic locking
-							if (object.getVersion() == -1) {
-								return getStatusResponse(HttpStatus.PRECONDITION_FAILED,
-										"Update failed due to 'version' mismatch.");
-							}
-							// new type added so update app object
-							if (app.addDatatypes(object)) {
-								CoreUtils.getInstance().overwrite(app);
-							}
-							return ResponseEntity.ok(object);
+					ParaObjectUtils.setAnnotatedFields(object, newContent, Locked.class);
+					// This is the primary validation pass (validates not only core POJOS but also user defined objects).
+					errors = validateObject(app, object);
+					if (errors.length == 0) {
+						// Secondary validation pass: object is validated again before being updated
+						object.update();
+						// check if update failed due to optimistic locking
+						if (object.getVersion() == -1) {
+							return getStatusResponse(HttpStatus.PRECONDITION_FAILED,
+									"Update failed due to 'version' mismatch.");
 						}
+						// new type added so update app object
+						if (app.addDatatypes(object)) {
+							CoreUtils.getInstance().overwrite(app);
+						}
+						return ResponseEntity.ok(object);
 					}
 				}
 				return getStatusResponse(HttpStatus.BAD_REQUEST, errors);
