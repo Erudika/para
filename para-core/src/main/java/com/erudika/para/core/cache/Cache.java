@@ -164,4 +164,13 @@ public interface Cache {
 	 * @see #removeAll(java.util.List)
 	 */
 	void removeAll(String appid, List<String> ids);
+
+	/**
+	 * Class name.
+	 *
+	 * @return the simple name of this implementation.
+	 */
+	default String getCacheClassName() {
+		return getClass().getSimpleName();
+	}
 }

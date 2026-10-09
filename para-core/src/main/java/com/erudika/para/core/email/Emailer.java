@@ -175,4 +175,13 @@ public interface Emailer {
 	default void setDefaultFallback(Emailer emailer) {
 	}
 
+	/**
+	 * Class name.
+	 *
+	 * @return the simple name of this implementation.
+	 */
+	default String getEmailerClassName() {
+		return getClass().getSimpleName();
+	}
+
 }

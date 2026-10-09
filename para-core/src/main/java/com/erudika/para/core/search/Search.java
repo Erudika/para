@@ -455,7 +455,7 @@ public interface Search {
 	/**
 	 * Search class name.
 	 *
-	 * @return the simple name of this DAO implementation.
+	 * @return the simple name of this implementation.
 	 */
 	default String getSearchClassName() {
 		return getClass().getSimpleName();

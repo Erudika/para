@@ -48,4 +48,13 @@ public interface FileStore {
 	 */
 	boolean delete(String path);
 
+	/**
+	 * Class name.
+	 *
+	 * @return the simple name of this implementation.
+	 */
+	default String getFileStoreClassName() {
+		return getClass().getSimpleName();
+	}
+
 }

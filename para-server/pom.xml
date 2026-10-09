@@ -210,7 +210,38 @@
 	</dependencies>
 
 	<build>
+		<!-- Filter plugin-versions.properties so the plugin API knows the default versions. -->
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>false</filtering>
+				<excludes>
+					<exclude>plugin-versions.properties</exclude>
+				</excludes>
+			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+				<includes>
+					<include>plugin-versions.properties</include>
+				</includes>
+			</resource>
+		</resources>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<configuration>
+					<!-- spring-boot-starter-parent disables the default ${...} delimiters and uses
+					${resource.delimiter} (@...@) instead. Re-enable them so plugin-versions
+					properties are substituted from the POM. -->
+					<useDefaultDelimiters>true</useDefaultDelimiters>
+					<delimiters>
+						<delimiter>${resource.delimiter}</delimiter>
+					</delimiters>
+				</configuration>
+			</plugin>
+
 			<plugin>
 				<artifactId>maven-clean-plugin</artifactId>
 				<version>3.5.0</version>
@@ -293,11 +324,16 @@
 					<plugin>
 						<groupId>org.springframework.boot</groupId>
 						<artifactId>spring-boot-maven-plugin</artifactId>
+						<configuration>
+							<mainClass>com.erudika.para.server.ParaServer</mainClass>
+							<!--<mainClass>${start.class}</mainClass>-->
+							<layout>ZIP</layout>
+						</configuration>
 						<executions>
 							<execution>
-								<configuration>
-									<mainClass>com.erudika.para.server.ParaServer</mainClass>
-								</configuration>
+								<goals>
+									<goal>repackage</goal>
+								</goals>
 							</execution>
 						</executions>
 					</plugin>
