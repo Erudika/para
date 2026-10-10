@@ -272,6 +272,20 @@ public class ParaConfig extends Config {
 	}
 
 	/**
+	 * Enable/disable the plugins management API at /v1/_plugins.
+	 * @return true if the plugins API is enabled
+	 */
+	@Documented(position = 145,
+			identifier = "plugins_api_enabled",
+			value = "true",
+			type = Boolean.class,
+			category = "Core",
+			description = "Enable/disable the plugins management API at /v1/_plugins.")
+	public boolean pluginsApiEnabled() {
+		return getConfigBoolean("plugins_api_enabled", true);
+	}
+
+	/**
 	 * The name of the Para cluster. Used by some of the plugins to isolate deployments.
 	 * @return the cluster name
 	 */

@@ -17,18 +17,27 @@
  */
 package com.erudika.para.rest;
 
+import com.erudika.para.core.App;
+import com.erudika.para.core.User;
 import com.erudika.para.core.persistence.DAO;
 import com.erudika.para.core.utils.CoreUtils;
+import com.erudika.para.core.utils.Para;
 import com.erudika.para.server.rest.PluginsApi;
+import com.erudika.para.server.security.AppAuthentication;
+import com.erudika.para.server.security.AuthenticatedUserDetails;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
  * Tests the plugin metadata endpoint.
@@ -43,13 +52,23 @@ class PluginsTest {
 
 	private final PluginsApi controller = new PluginsApi();
 
+	@BeforeEach
+	void authenticateRootApp() {
+		SecurityContextHolder.getContext().setAuthentication(
+				new AppAuthentication(new App(Para.getConfig().appName())));
+	}
+
+	@AfterEach
+	void clearSecurityContext() {
+		SecurityContextHolder.clearContext();
+	}
+
 	@Test
 	void listsEveryOfficialPlugin() {
-		ResponseEntity<Map<String, Object>> response = controller.list();
+		ResponseEntity<?> response = controller.list();
 
 		Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
-		Map<String, Object> body = response.getBody();
-		Assertions.assertNotNull(body);
+		Map<String, Object> body = asMap(response.getBody());
 
 		String[] expected = {
 			"para-dao-sql", "para-dao-mongodb", "para-dao-cassandra", "para-dao-dynamodb",
@@ -70,8 +89,7 @@ class PluginsTest {
 
 	@Test
 	void mapsPluginsToTheRightTypes() {
-		Map<String, Object> body = controller.list().getBody();
-		Assertions.assertNotNull(body);
+		Map<String, Object> body = asMap(controller.list().getBody());
 
 		// The type tells the admin UI which config property controls the plugin: dao, search,
 		// cache, fs, q or emailer.
@@ -121,8 +139,7 @@ class PluginsTest {
 		try {
 			utils.setDao(running);
 
-			Map<String, Object> body = controller.list().getBody();
-			Assertions.assertNotNull(body);
+			Map<String, Object> body = asMap(controller.list().getBody());
 
 			// implementationClasses holds every ServiceLoader class name the plugin provides, so the
 			// admin UI can show which value to put in the config for each one.
@@ -191,5 +208,62 @@ class PluginsTest {
 			Assertions.assertFalse(version.toString().isBlank(),
 					artifactId + " has no default version in plugin-versions.properties");
 		}
+	}
+
+	@Test
+	void rejectsRequestsWhenPluginsApiIsDisabled() {
+		System.setProperty("para.plugins_api_enabled", "false");
+		try {
+			ResponseEntity<?> response = controller.list();
+			Assertions.assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+			Assertions.assertEquals("Plugins API is disabled.", asMap(response.getBody()).get("error"));
+		} finally {
+			System.clearProperty("para.plugins_api_enabled");
+		}
+	}
+
+	@Test
+	void rejectsNonRootApp() {
+		SecurityContextHolder.getContext().setAuthentication(
+				new AppAuthentication(new App("other-app")));
+		ResponseEntity<?> response = controller.list();
+		Assertions.assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
+		Assertions.assertEquals("Only the root app can manage plugins.",
+				asMap(response.getBody()).get("error"));
+	}
+
+	@Test
+	void rejectsUnauthenticatedRequest() {
+		SecurityContextHolder.clearContext();
+		Assertions.assertEquals(HttpStatus.FORBIDDEN, controller.list().getStatusCode());
+	}
+
+	@Test
+	void allowsUsersOfTheRootApp() {
+		User user = new User("user-1");
+		user.setAppid(Para.getConfig().appName());
+		AuthenticatedUserDetails principal = new AuthenticatedUserDetails(user);
+		SecurityContextHolder.getContext().setAuthentication(
+				new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
+
+		CoreUtils utils = CoreUtils.getInstance();
+		DAO original = utils.getDao();
+		DAO dao = Mockito.mock(DAO.class);
+		// getPrincipalApp() resolves an authenticated user to the app it belongs to
+		Mockito.when(dao.read(Para.getConfig().getRootAppIdentifier(), App.id(user.getAppid())))
+				.thenReturn(new App(Para.getConfig().appName()));
+		Mockito.when(dao.getDaoClassName()).thenReturn("MockDAO");
+		try {
+			utils.setDao(dao);
+			Assertions.assertEquals(HttpStatus.OK, controller.list().getStatusCode());
+		} finally {
+			utils.setDao(original);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private static Map<String, Object> asMap(Object body) {
+		Assertions.assertNotNull(body, "expected a JSON body");
+		return (Map<String, Object>) body;
 	}
 }

@@ -58,8 +58,18 @@ Any plugin not baked into the image can be installed at runtime through the plug
 $ curl -X POST https://your-para-host/v1/_plugins/para-dao-mongodb/install
 ```
 
-Each artifact is checksum-verified before installation, and Para must be restarted afterwards.
+The plugin API is restricted to the root app (`app:para`), so the request must be signed with the
+root app keys. Messages: `Only the root app can manage plugins.` Each artifact is checksum-verified
+before installation, and Para must be restarted afterwards.
 See the [plugins API](https://paraio.org/docs/#/configuration/plugins) for details.
+
+To turn the whole plugin API off, set the `plugins_api_enabled` config property (default `true`).
+Requests are then rejected with `403 Forbidden` and the message `Plugins API is disabled.`
+
+**`application.conf`**
+```ini
+para.plugins_api_enabled = "false"
+```
 
 ### JDBC drivers
 

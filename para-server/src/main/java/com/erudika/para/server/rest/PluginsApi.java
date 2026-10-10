@@ -17,9 +17,11 @@
  */
 package com.erudika.para.server.rest;
 
+import com.erudika.para.core.App;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.PluginResolver;
 import com.erudika.para.server.ParaServer;
+import static com.erudika.para.server.security.SecurityUtils.getPrincipalApp;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,6 +55,10 @@ import org.springframework.web.bind.annotation.RestController;
  * Plugins are thin JARs published to Maven Central, each carrying a manifest of its runtime dependencies. This
  * controller lets an admin UI list what is available, preview what an install would fetch, install it, and remove
  * it.</p>
+ *
+ * <p>
+ * Access is restricted to the root app. Requests coming from any other app are rejected with
+ * {@code 403 Forbidden}. The whole API can be turned off with the {@code plugins_api_enabled} config property.</p>
  *
  * <p>
  * A restart is required after installing or removing a plugin, because the plugin classloader is built once during
@@ -105,11 +111,15 @@ public final class PluginsApi {
 	 * @return a map keyed by Maven artifactId
 	 */
 	@GetMapping
-	public ResponseEntity<Map<String, Object>> list() {
+	public ResponseEntity<?> list() {
+		ResponseEntity<?> denied = denyIfNotAuthorized();
+		if (denied != null) {
+			return denied;
+		}
 		Map<String, Object> result = new TreeMap<>();
+		Map<String, String> activePlugins = getAllActivePlugins();
 		for (PluginDescriptor descriptor : CATALOGUE.values()) {
 			Map<String, Object> entry = new LinkedHashMap<>();
-			Map<String, String> activePlugins = getAllActivePlugins();
 			entry.put("artifactId", descriptor.artifactId);
 			entry.put("name", descriptor.displayName);
 			entry.put("description", descriptor.description);
@@ -129,7 +139,11 @@ public final class PluginsApi {
 	 * @return a sorted list of file names
 	 */
 	@GetMapping("/installed")
-	public ResponseEntity<Map<String, Object>> installed() {
+	public ResponseEntity<?> installed() {
+		ResponseEntity<?> denied = denyIfNotAuthorized();
+		if (denied != null) {
+			return denied;
+		}
 		LinkedHashMap<String, Object> found = new LinkedHashMap<>();
 		Map<String, String> activePlugins = getAllActivePlugins();
 		for (Map.Entry<String, String> entry : activePlugins.entrySet()) {
@@ -164,6 +178,10 @@ public final class PluginsApi {
 	 */
 	@GetMapping("/{artifactId}/preview")
 	public ResponseEntity<?> preview(@PathVariable String artifactId) {
+		ResponseEntity<?> denied = denyIfNotAuthorized();
+		if (denied != null) {
+			return denied;
+		}
 		PluginDescriptor descriptor = CATALOGUE.get(artifactId);
 		if (descriptor == null) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -216,6 +234,10 @@ public final class PluginsApi {
 	@PostMapping("/{artifactId}/install")
 	public ResponseEntity<?> install(@PathVariable String artifactId,
 			@RequestBody(required = false) Map<String, Object> request) {
+		ResponseEntity<?> denied = denyIfNotAuthorized();
+		if (denied != null) {
+			return denied;
+		}
 		PluginDescriptor descriptor = CATALOGUE.get(artifactId);
 		if (descriptor == null) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -260,6 +282,10 @@ public final class PluginsApi {
 	 */
 	@DeleteMapping("/{artifactId}/{version}")
 	public ResponseEntity<?> uninstall(@PathVariable String artifactId, @PathVariable String version) {
+		ResponseEntity<?> denied = denyIfNotAuthorized();
+		if (denied != null) {
+			return denied;
+		}
 		File pluginJar = new File(pluginFolder(), artifactId + "-" + version + ".jar");
 		if (!pluginJar.isFile()) {
 			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -270,6 +296,24 @@ public final class PluginsApi {
 		}
 		logger.info("Uninstalled plugin {}:{} - restart required", artifactId, version);
 		return ResponseEntity.ok().build();
+	}
+
+	/**
+	 * Rejects the request unless the plugins API is enabled and the caller is the root app. Root app users are
+	 * allowed because {@code getPrincipalApp()} resolves the app behind an authenticated user.
+	 *
+	 * @return a {@code 403 Forbidden} response when access is denied, or {@code null} when the request may proceed
+	 */
+	private static ResponseEntity<?> denyIfNotAuthorized() {
+		if (!Para.getConfig().pluginsApiEnabled()) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error("Plugins API is disabled."));
+		}
+		App app = getPrincipalApp();
+		if (app == null || !app.isRootApp()) {
+			return ResponseEntity.status(HttpStatus.FORBIDDEN)
+					.body(error("Only the root app can manage plugins."));
+		}
+		return null;
 	}
 
 	private static File pluginFolder() {
