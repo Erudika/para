@@ -19,9 +19,9 @@ package com.erudika.para.server.cache;
 
 import com.erudika.para.core.cache.Cache;
 import com.erudika.para.core.utils.Para;
-import com.erudika.para.core.utils.Utils;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
+import com.github.benmanes.caffeine.cache.Ticker;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -34,31 +34,73 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Default implementation of the {@link Cache} interface using Caffeine.
- * Multitenancy is achieved by caching objects from each app using composite keys: {@code prefix_objectId}.
+ * Multitenancy uses collision-safe composite keys. Default entries expire after a period without access;
+ * entries with an explicit TTL keep that fixed lifetime.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
 public class CaffeineCache implements Cache {
 
 	private static final Logger logger = LoggerFactory.getLogger(CaffeineCache.class);
-	private static final int DEFAULT_EXPIRATION_MIN = Para.getConfig().caffeineEvictAfterMin();
 	private final com.github.benmanes.caffeine.cache.Cache<String, Object> cache;
 
 	/**
 	 * Default constructor.
 	 */
 	public CaffeineCache() {
-		cache = Caffeine.newBuilder()
-			.maximumSize(Para.getConfig().caffeineCacheSize())
-			.expireAfter(Expiry.creating((k, v) -> Duration.ofMinutes(DEFAULT_EXPIRATION_MIN)))
-			.build();
+		this(Para.getConfig().caffeineCacheSize(),
+				Duration.ofMinutes(Para.getConfig().caffeineEvictAfterMin()), Ticker.systemTicker());
 	}
 
 	/**
-	 * Creates a new instance.
-	 * @param cache cache
+	 * Creates a cache with explicit limits. This constructor supports tests with a controllable ticker.
+	 * @param maximumSize maximum number of entries
+	 * @param defaultExpiration default idle time before an entry expires
+	 * @param ticker ticker used to measure time
 	 */
-	CaffeineCache(com.github.benmanes.caffeine.cache.Cache<String, Object> cache) {
-		this.cache = cache;
+	CaffeineCache(long maximumSize, Duration defaultExpiration, Ticker ticker) {
+		long defaultExpirationNanos = defaultExpiration.toNanos();
+		cache = Caffeine.newBuilder()
+				.maximumSize(maximumSize)
+				.ticker(ticker)
+				.expireAfter(new Expiry<String, Object>() {
+					@Override
+					public long expireAfterCreate(String key, Object value, long currentTime) {
+						return expirationFor(value, defaultExpirationNanos);
+					}
+
+					@Override
+					public long expireAfterUpdate(String key, Object value, long currentTime, long currentDuration) {
+						return expirationFor(value, defaultExpirationNanos);
+					}
+
+					@Override
+					public long expireAfterRead(String key, Object value, long currentTime, long currentDuration) {
+						if (value instanceof CacheEntry entry && entry.ttlNanos > 0L) {
+							// Explicit TTL values keep their original deadline.
+							return currentDuration;
+						}
+						// A read refreshes the idle timeout for normal cached objects.
+						return defaultExpirationNanos;
+					}
+				})
+				.build();
+	}
+
+	private static long expirationFor(Object value, long defaultExpirationNanos) {
+		if (value instanceof CacheEntry entry && entry.ttlNanos > 0L) {
+			return entry.ttlNanos;
+		}
+		return defaultExpirationNanos;
+	}
+
+	private static final class CacheEntry {
+		private final Object value;
+		private final long ttlNanos;
+
+		private CacheEntry(Object value, long ttlNanos) {
+			this.value = value;
+			this.ttlNanos = ttlNanos;
+		}
 	}
 
 	@Override
@@ -74,7 +116,7 @@ public class CaffeineCache implements Cache {
 	@Override
 	public <T> void put(String appid, String id, T object) {
 		if (!StringUtils.isBlank(id) && object != null && !StringUtils.isBlank(appid)) {
-			cache.put(key(appid, id), object);
+			cache.put(key(appid, id), new CacheEntry(object, 0L));
 			logger.debug("Cache.put() {} {}", appid, id);
 		}
 	}
@@ -87,9 +129,7 @@ public class CaffeineCache implements Cache {
 		}
 		if (!StringUtils.isBlank(id) && object != null && !StringUtils.isBlank(appid)) {
 			String key = key(appid, id);
-			cache.policy().expireVariably().ifPresent((t) -> {
-				t.put(key, object, ttlSeconds, TimeUnit.SECONDS);
-			});
+			cache.put(key, new CacheEntry(object, TimeUnit.SECONDS.toNanos(ttlSeconds)));
 			logger.debug("Cache.put() {} {} ttl {}", appid, id, ttlSeconds);
 		}
 	}
@@ -97,10 +137,10 @@ public class CaffeineCache implements Cache {
 	@Override
 	public <T> void putAll(String appid, Map<String, T> objects) {
 		if (objects != null && !objects.isEmpty() && !StringUtils.isBlank(appid)) {
-			Map<String, T> cleanMap = new LinkedHashMap<>(objects.size());
+			Map<String, Object> cleanMap = new LinkedHashMap<>(objects.size());
 			for (Map.Entry<String, T> entry : objects.entrySet()) {
 				if (!StringUtils.isBlank(entry.getKey()) && entry.getValue() != null) {
-					cleanMap.put(key(appid, entry.getKey()), entry.getValue());
+					cleanMap.put(key(appid, entry.getKey()), new CacheEntry(entry.getValue(), 0L));
 				}
 			}
 			cache.putAll(cleanMap);
@@ -116,7 +156,8 @@ public class CaffeineCache implements Cache {
 		}
 		String key = key(appid, id);
 		logger.debug("Cache.get() {} {}", appid, id);
-		return (T) cache.getIfPresent(key);
+		CacheEntry entry = (CacheEntry) cache.getIfPresent(key);
+		return entry == null ? null : (T) entry.value;
 	}
 
 	@Override
@@ -149,7 +190,8 @@ public class CaffeineCache implements Cache {
 	public void removeAll(String appid) {
 		if (!StringUtils.isBlank(appid)) {
 			logger.debug("Cache.removeAll() {}", appid);
-			cache.asMap().remove("key_prefix_" + appid);
+			String prefix = keyPrefix(appid);
+			cache.asMap().keySet().removeIf(key -> key.startsWith(prefix));
 		}
 	}
 
@@ -166,7 +208,12 @@ public class CaffeineCache implements Cache {
 	}
 
 	private String key(String appid, String id) {
-		return cache.asMap().computeIfAbsent("key_prefix_" + appid, k -> Utils.getNewId()) + "_" + id;
+		return keyPrefix(appid) + id;
+	}
+
+	private String keyPrefix(String appid) {
+		// Length-prefix the app id so separators inside either value cannot cause key collisions.
+		return appid.length() + ":" + appid;
 	}
 
 	////////////////////////////////////////////////////

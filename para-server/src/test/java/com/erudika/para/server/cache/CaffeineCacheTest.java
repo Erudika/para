@@ -17,83 +17,76 @@
  */
 package com.erudika.para.server.cache;
 
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.Expiry;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
-/**
- *
- * @author Alex Bogdanovski [alex@erudika.com]
- */
-public class CaffeineCacheTest extends CacheTest {
+class CaffeineCacheTest {
 
-	public CaffeineCacheTest() {
-		super(new CaffeineCache());
+	@Test
+	void hotEntriesExpireAfterTheyBecomeIdle() {
+		FakeTicker ticker = new FakeTicker();
+		CaffeineCache cache = new CaffeineCache(100, Duration.ofSeconds(10), ticker);
+		cache.put("app", "para", "root");
+
+		ticker.advance(9, TimeUnit.SECONDS);
+		assertTrue(cache.contains("app", "para"));
+		ticker.advance(9, TimeUnit.SECONDS);
+		assertEquals("root", cache.get("app", "para"));
+		ticker.advance(9, TimeUnit.SECONDS);
+		assertTrue(cache.contains("app", "para"));
+
+		ticker.advance(11, TimeUnit.SECONDS);
+		assertNull(cache.get("app", "para"));
 	}
 
 	@Test
-	public void testVariableExpiration() {
+	void explicitTtlDoesNotExtendOnRead() {
 		FakeTicker ticker = new FakeTicker();
-		com.github.benmanes.caffeine.cache.Cache<String, Object> caffeine = Caffeine.newBuilder()
-				.expireAfter(new Expiry<String, Object>() {
-					public long expireAfterCreate(String key, Object value, long currentTime) {
-						return TimeUnit.MINUTES.toNanos(10);
-					}
-					public long expireAfterUpdate(String key, Object value, long currentTime, long currentDuration) {
-						return currentDuration;
-					}
-					public long expireAfterRead(String key, Object value, long currentTime, long currentDuration) {
-						return currentDuration;
-					}
-				}) // default expiration
-				.executor(Runnable::run)
-				.ticker(ticker::read)
-				.maximumSize(10)
-				.build();
-
-		CaffeineCache cache = new CaffeineCache(caffeine);
-		cache.put("app", "exp1", "w", 10L);
-		cache.put("app", "exp2", "x", 20L);
-		cache.put("app", "exp3", "y", 30L);
-		cache.put("app", "exp4", "z"); // default expiration
-
-		assertNotNull(cache.get("app", "exp1"));
-		assertNotNull(cache.get("app", "exp2"));
-		assertNotNull(cache.get("app", "exp3"));
-		assertNotNull(cache.get("app", "exp4"));
+		CaffeineCache cache = new CaffeineCache(100, Duration.ofMinutes(10), ticker);
+		cache.put("app", "expiring", "value", 10L);
 
 		ticker.advance(5, TimeUnit.SECONDS);
-		assertNotNull(cache.get("app", "exp1"));
-		assertNotNull(cache.get("app", "exp2"));
-		assertNotNull(cache.get("app", "exp3"));
-		assertNotNull(cache.get("app", "exp4"));
-
+		assertEquals("value", cache.get("app", "expiring"));
 		ticker.advance(5, TimeUnit.SECONDS);
-		assertNull(cache.get("app", "exp1"));
-		assertNotNull(cache.get("app", "exp2"));
-		assertNotNull(cache.get("app", "exp3"));
-		assertNotNull(cache.get("app", "exp4"));
-
-		ticker.advance(10, TimeUnit.SECONDS);
-		assertNull(cache.get("app", "exp1"));
-		assertNull(cache.get("app", "exp2"));
-		assertNotNull(cache.get("app", "exp3"));
-		assertNotNull(cache.get("app", "exp4"));
-
-		ticker.advance(10, TimeUnit.SECONDS);
-		assertNull(cache.get("app", "exp1"));
-		assertNull(cache.get("app", "exp2"));
-		assertNull(cache.get("app", "exp3"));
-		assertNotNull(cache.get("app", "exp4"));
-
-		ticker.advance(10, TimeUnit.MINUTES);
-		assertNull(cache.get("app", "exp1"));
-		assertNull(cache.get("app", "exp2"));
-		assertNull(cache.get("app", "exp3"));
-		assertNull(cache.get("app", "exp4"));
+		assertNull(cache.get("app", "expiring"));
 	}
 
+	@Test
+	void removeAllForAppDoesNotRemoveOtherApps() {
+		FakeTicker ticker = new FakeTicker();
+		CaffeineCache cache = new CaffeineCache(100, Duration.ofMinutes(10), ticker);
+		cache.put("app-one", "para", "one");
+		cache.put("app-two", "para", "two");
+
+		cache.removeAll("app-one");
+
+		assertFalse(cache.contains("app-one", "para"));
+		assertEquals("two", cache.get("app-two", "para"));
+	}
+
+	@Test
+	void appAndObjectIdsCannotCollide() {
+		FakeTicker ticker = new FakeTicker();
+		CaffeineCache cache = new CaffeineCache(100, Duration.ofMinutes(10), ticker);
+		cache.put("a", "b:c", "first");
+		cache.put("a:b", "c", "second");
+
+		assertEquals("first", cache.get("a", "b:c"));
+		assertEquals("second", cache.get("a:b", "c"));
+	}
+
+	@Test
+	void appKeyMetadataDoesNotCompeteForCacheSpace() {
+		FakeTicker ticker = new FakeTicker();
+		CaffeineCache cache = new CaffeineCache(1, Duration.ofMinutes(10), ticker);
+		cache.put("app", "para", "root");
+
+		assertTrue(cache.contains("app", "para"));
+		assertEquals("root", cache.get("app", "para"));
+	}
 }

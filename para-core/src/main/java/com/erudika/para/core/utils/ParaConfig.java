@@ -2459,8 +2459,9 @@ public class ParaConfig extends Config {
 	 ****************************************************************************************************************/
 
 	/**
-	 * Cache eviction policy - objects are evicted from Caffeine cache after this time.
-	 * @return the eviction timeout in minutes
+	 * Default idle time before an unused object expires from the Caffeine cache.
+	 * Access to an object resets this timeout.
+	 * @return the idle timeout in minutes
 	 */
 
 
@@ -2469,7 +2470,7 @@ public class ParaConfig extends Config {
 			value = "10",
 			type = Integer.class,
 			category = "Caffeine Cache",
-			description = "Cache eviction policy - objects are evicted from Caffeine cache after this time.")
+			description = "Idle time before an unused object expires from the Caffeine cache. Access resets this timeout.")
 	public int caffeineEvictAfterMin() {
 		return getConfigInt("caffeine.evict_after_minutes", 10);
 	}
