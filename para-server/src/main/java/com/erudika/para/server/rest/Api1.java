@@ -47,8 +47,7 @@ import static com.erudika.para.server.rest.RestUtils.getOverwriteResponse;
 import static com.erudika.para.server.rest.RestUtils.getReadResponse;
 import static com.erudika.para.server.rest.RestUtils.getStatusResponse;
 import static com.erudika.para.server.rest.RestUtils.getUpdateResponse;
-import static com.erudika.para.server.rest.RestUtils.queryParam;
-import static com.erudika.para.server.rest.RestUtils.queryParams;
+import static com.erudika.para.server.rest.RestUtils.pagerFromParams;
 import com.erudika.para.server.security.SecurityUtils;
 import static com.erudika.para.server.security.SecurityUtils.getPrincipalApp;
 import com.erudika.para.server.utils.HealthUtils;
@@ -75,7 +74,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
@@ -100,6 +98,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -144,18 +143,25 @@ public final class Api1 {
 	 */
 	@GetMapping("/_setup")
 	public ResponseEntity<?> setup() {
-		return setupInternal(null, null);
+		return setupInternal(null, null, null, null, null);
 	}
 
 	/**
 	 * Initializes a new app.
 	 * @param appid the app id
-	 * @param req the request
+	 * @param name the app name
+	 * @param creatorid the app creator id
+	 * @param sharedIndex whether to share the search index
+	 * @param sharedTable whether to share the database table
 	 * @return a response
 	 */
 	@GetMapping("/_setup/{appid}")
-	public ResponseEntity<?> setup(@PathVariable String appid, HttpServletRequest req) {
-		return setupInternal(appid, req);
+	public ResponseEntity<?> setup(@PathVariable String appid,
+			@RequestParam(name = Config._NAME, required = false) String name,
+			@RequestParam(name = Config._CREATORID, required = false) String creatorid,
+			@RequestParam(name = "sharedIndex", required = false) String sharedIndex,
+			@RequestParam(name = "sharedTable", required = false) String sharedTable) {
+		return setupInternal(appid, name, creatorid, sharedIndex, sharedTable);
 	}
 
 	/**
@@ -373,25 +379,25 @@ public final class Api1 {
 
 	/**
 	 * Batch reads objects.
-	 * @param req the request
+	 * @param ids the object ids to read
 	 * @return a response
 	 */
 	@GetMapping("/_batch")
-	public ResponseEntity<?> batchRead(HttpServletRequest req) {
-		return batchReadHandler(getPrincipalApp(), req);
+	public ResponseEntity<?> batchRead(@RequestParam(name = "ids", required = false) List<String> ids) {
+		return batchReadHandler(getPrincipalApp(), ids);
 	}
 
 	/**
 	 * Handles batch reading of objects.
 	 * @param app the app
-	 * @param req the request
+	 * @param ids the object ids
 	 * @return a response
 	 */
-	public ResponseEntity<?> batchReadHandler(App app, HttpServletRequest req) {
+	public ResponseEntity<?> batchReadHandler(App app, List<String> ids) {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
-		return getBatchReadResponse(app, queryParams("ids", req));
+		return getBatchReadResponse(app, ids == null ? Collections.emptyList() : ids);
 	}
 
 	/**
@@ -434,170 +440,320 @@ public final class Api1 {
 
 	/**
 	 * Batch deletes objects.
+	 * @param ids the object ids to delete
 	 * @param req the request
 	 * @return a response
 	 */
 	@DeleteMapping("/_batch")
-	public ResponseEntity<?> batchDelete(HttpServletRequest req) {
-		return batchDeleteHandler(getPrincipalApp(), req);
+	public ResponseEntity<?> batchDelete(@RequestParam(name = "ids", required = false) List<String> ids,
+			HttpServletRequest req) {
+		return batchDeleteHandler(getPrincipalApp(), ids, req);
 	}
 
 	/**
 	 * Handles batch deletion of objects.
 	 * @param app the app
+	 * @param ids the object ids
 	 * @param req the request
 	 * @return a response
 	 */
-	public ResponseEntity<?> batchDeleteHandler(App app, HttpServletRequest req) {
+	public ResponseEntity<?> batchDeleteHandler(App app, List<String> ids, HttpServletRequest req) {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
-		return respondToClient(req, () -> getBatchDeleteResponse(app, queryParams("ids", req)));
+		List<String> objectIds = ids == null ? Collections.emptyList() : ids;
+		return respondToClient(req, () -> getBatchDeleteResponse(app, objectIds));
 	}
 
 	/**
 	 * Searches for objects.
+	 * @param type the object type
+	 * @param query the search query
+	 * @param count whether to return only the result count
+	 * @param page the page number
+	 * @param limit the maximum number of results
+	 * @param desc whether to sort in descending order
+	 * @param sortby the field to sort by
+	 * @param lastKey the key for the next page
 	 * @param req the request
 	 * @return a response
 	 */
 	@GetMapping("/search")
-	public ResponseEntity<?> search(HttpServletRequest req) {
-		return searchHandler(getPrincipalApp(), null, null, req);
-	}
-
-	/**
-	 * Searches for objects using a specific query type.
-	 * @param querytype the query type
-	 * @param req the request
-	 * @return a response
-	 */
-	@GetMapping("/search/{querytype}")
-	public ResponseEntity<?> search(@PathVariable String querytype, HttpServletRequest req) {
-		return searchHandler(getPrincipalApp(), null, querytype, req);
+	public ResponseEntity<?> search(
+			@RequestParam(name = "type", required = false) String type,
+			@RequestParam(name = "q", required = false) String query,
+			@RequestParam(required = false, defaultValue = "false") Boolean count,
+			@RequestParam(required = false) Integer page,
+			@RequestParam(required = false) Integer limit,
+			@RequestParam(required = false) Boolean desc,
+			@RequestParam(required = false) String sortby,
+			@RequestParam(required = false) String lastKey,
+			HttpServletRequest req) {
+		Pager pager = pagerFromParams(page, sortby, limit, desc, lastKey);
+		return searchHandler(getPrincipalApp(), "default", type, query, null, null, null, null, null, null, null,
+				null, null, null, null, true, count, pager, req);
 	}
 
 	/**
 	 * Searches for objects of a specific type.
 	 * @param type the object type
+	 * @param query the search query
+	 * @param count whether to return only the result count
+	 * @param page the page number
+	 * @param limit the maximum number of results
+	 * @param desc whether to sort in descending order
+	 * @param sortby the field to sort by
+	 * @param lastKey the key for the next page
 	 * @param req the request
 	 * @return a response
 	 */
-	@GetMapping("/{type}")
-	public ResponseEntity<?> searchType(@PathVariable String type, HttpServletRequest req) {
-		return searchHandler(getPrincipalApp(), type, null, req);
+	@GetMapping({"/{type}", "/{type}/search"})
+	public ResponseEntity<?> searchType(@PathVariable String type,
+			@RequestParam(name = "q", required = false) String query,
+			@RequestParam(required = false, defaultValue = "false") Boolean count,
+			@RequestParam(required = false) Integer page,
+			@RequestParam(required = false) Integer limit,
+			@RequestParam(required = false) Boolean desc,
+			@RequestParam(required = false) String sortby,
+			@RequestParam(required = false) String lastKey,
+			HttpServletRequest req) {
+		Pager pager = pagerFromParams(page, sortby, limit, desc, lastKey);
+		return searchHandler(getPrincipalApp(), "default", type, query, null, null, null, null, null, null, null,
+				null, null, null, null, true, count, pager, req);
 	}
 
 	/**
-	 * Searches for objects of a specific type (default search).
+	 * Searches for objects using a specific query type.
+	 * @param querytype the query type
 	 * @param type the object type
+	 * @param query the search query
+	 * @param id the object id for an id query
+	 * @param ids the object ids for an ids query
+	 * @param field the field to search
+	 * @param prefix the prefix to match
+	 * @param latlng the latitude and longitude for a nearby query
+	 * @param radius the search radius
+	 * @param like the value to use for a similar query
+	 * @param fields the fields to use for a similar query
+	 * @param filterid the object id to exclude from a similar query
+	 * @param tags the tags to match
+	 * @param terms the terms to match
+	 * @param matchall whether all terms must match
+	 * @param count whether to return only the result count
+	 * @param page the page number
+	 * @param limit the maximum number of results
+	 * @param desc whether to sort in descending order
+	 * @param sortby the field to sort by
+	 * @param lastKey the key for the next page
 	 * @param req the request
 	 * @return a response
 	 */
-	@GetMapping("/{type}/search")
-	public ResponseEntity<?> searchTypeDefault(@PathVariable String type, HttpServletRequest req) {
-		return searchHandler(getPrincipalApp(), type, null, req);
+	@GetMapping("/search/{querytype}")
+	public ResponseEntity<?> search(@PathVariable String querytype,
+			@RequestParam(name = "type", required = false) String type,
+			@RequestParam(name = "q", required = false) String query,
+			@RequestParam(required = false) String id,
+			@RequestParam(required = false) List<String> ids,
+			@RequestParam(required = false) String field,
+			@RequestParam(required = false) String prefix,
+			@RequestParam(required = false) String latlng,
+			@RequestParam(required = false) Integer radius,
+			@RequestParam(required = false) String like,
+			@RequestParam(required = false) List<String> fields,
+			@RequestParam(required = false) String filterid,
+			@RequestParam(required = false) List<String> tags,
+			@RequestParam(required = false) List<String> terms,
+			@RequestParam(required = false, defaultValue = "false") Boolean matchall,
+			@RequestParam(required = false, defaultValue = "false") Boolean count,
+			@RequestParam(required = false) Integer page,
+			@RequestParam(required = false) Integer limit,
+			@RequestParam(required = false) Boolean desc,
+			@RequestParam(required = false) String sortby,
+			@RequestParam(required = false) String lastKey,
+			HttpServletRequest req) {
+		Pager pager = pagerFromParams(page, sortby, limit, desc, lastKey);
+		return searchHandler(getPrincipalApp(), querytype, type, query, id, ids, field, prefix, latlng, radius, like,
+				fields, filterid, tags, terms, matchall, count, pager, req);
 	}
 
 	/**
 	 * Searches for objects of a specific type using a specific query type.
 	 * @param type the object type
 	 * @param querytype the query type
+	 * @param query the search query
+	 * @param id the object id for an id query
+	 * @param ids the object ids for an ids query
+	 * @param field the field to search
+	 * @param prefix the prefix to match
+	 * @param latlng the latitude and longitude for a nearby query
+	 * @param radius the search radius
+	 * @param like the value to use for a similar query
+	 * @param fields the fields to use for a similar query
+	 * @param filterid the object id to exclude from a similar query
+	 * @param tags the tags to match
+	 * @param terms the terms to match
+	 * @param matchall whether all terms must match
+	 * @param count whether to return only the result count
+	 * @param page the page number
+	 * @param limit the maximum number of results
+	 * @param desc whether to sort in descending order
+	 * @param sortby the field to sort by
+	 * @param lastKey the key for the next page
 	 * @param req the request
 	 * @return a response
 	 */
 	@GetMapping("/{type}/search/{querytype}")
 	public ResponseEntity<?> searchType(@PathVariable String type, @PathVariable String querytype,
+			@RequestParam(name = "q", required = false) String query,
+			@RequestParam(required = false) String id,
+			@RequestParam(required = false) List<String> ids,
+			@RequestParam(required = false) String field,
+			@RequestParam(required = false) String prefix,
+			@RequestParam(required = false) String latlng,
+			@RequestParam(required = false) Integer radius,
+			@RequestParam(required = false) String like,
+			@RequestParam(required = false) List<String> fields,
+			@RequestParam(required = false) String filterid,
+			@RequestParam(required = false) List<String> tags,
+			@RequestParam(required = false) List<String> terms,
+			@RequestParam(required = false, defaultValue = "false") Boolean matchall,
+			@RequestParam(required = false, defaultValue = "false") Boolean count,
+			@RequestParam(required = false) Integer page,
+			@RequestParam(required = false) Integer limit,
+			@RequestParam(required = false) Boolean desc,
+			@RequestParam(required = false) String sortby,
+			@RequestParam(required = false) String lastKey,
 			HttpServletRequest req) {
-		return searchHandler(getPrincipalApp(), type, querytype, req);
+		Pager pager = pagerFromParams(page, sortby, limit, desc, lastKey);
+		return searchHandler(getPrincipalApp(), querytype, type, query, id, ids, field, prefix, latlng, radius, like,
+				fields, filterid, tags, terms, matchall, count, pager, req);
 	}
 
 	/**
 	 * Handles search requests.
 	 * @param app the app
-	 * @param typeParam the object type
 	 * @param querytype the query type
+	 * @param type the object type
+	 * @param query the search query
+	 * @param id the object id for an id query
+	 * @param ids the object ids for an ids query
+	 * @param field the field to search
+	 * @param prefix the prefix to match
+	 * @param latlng the latitude and longitude for a nearby query
+	 * @param radius the search radius
+	 * @param like the value to use for a similar query
+	 * @param fields the fields to use for a similar query
+	 * @param filterid the object id to exclude from a similar query
+	 * @param tags the tags to match
+	 * @param terms the terms to match
+	 * @param matchall whether all terms must match
+	 * @param count whether to return only the result count
+	 * @param pager the result page settings
 	 * @param req the request
 	 * @return a response
 	 */
-	public ResponseEntity<?> searchHandler(App app, String typeParam, String querytype, HttpServletRequest req) {
+	public ResponseEntity<?> searchHandler(App app,
+			String querytype,
+			String type,
+			String query,
+			String id,
+			List<String> ids,
+			String field,
+			String prefix,
+			String latlng,
+			Integer radius,
+			String like,
+			List<String> fields,
+			String filterid,
+			List<String> tags,
+			List<String> terms,
+			Boolean matchall,
+			Boolean count,
+			Pager pager,
+			HttpServletRequest req) {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
-		String query = queryParam("q", req);
 		if (!StringUtils.isBlank(query) && !getSearch().isValidQueryString(query)) {
 			return getStatusResponse(HttpStatus.BAD_REQUEST, "Invalid query string syntax q=" + query
 					+ " in request " + req.getMethod() + " " + req.getRequestURI());
 		}
-		String type = StringUtils.isBlank(typeParam) ? null : resolveType(app, typeParam);
-		String typeOverride = (StringUtils.isBlank(type)) ? null : type;
-		String queryType = querytype;
-		if (StringUtils.isBlank(queryType)) {
-			queryType = "default";
-		}
-		Map<String, Object> result = RestUtils.buildQueryAndSearch(app, queryType, typeOverride, req);
+		type = StringUtils.isBlank(type) || "search".equalsIgnoreCase(type) ? null : resolveType(app, type);
+
+		Map<String, Object> result = RestUtils.buildQueryAndSearch(app, querytype, type, query, id, ids, field, prefix,
+				latlng, radius, like, fields, filterid, tags, terms, matchall, count, pager);
 		return ResponseEntity.ok(result);
 	}
 
 	/**
 	 * Provides utility functions like ID generation and date formatting.
 	 * @param method the utility method
-	 * @param req the request
+	 * @param methodParam the method query parameter fallback
+	 * @param format the date format
+	 * @param locale the locale
+	 * @param message the message
+	 * @param fields the message fields
+	 * @param string the input string
+	 * @param replacement the replacement for spaces
+	 * @param md the Markdown input
+	 * @param delta the time delta
 	 * @return a response
 	 */
 	@GetMapping("/utils/{method}")
-	public ResponseEntity<?> utilsHandler(@PathVariable String method, HttpServletRequest req) {
-		method = StringUtils.isBlank(method) ? queryParam("method", req) : method;
+	public ResponseEntity<?> utilsHandler(@PathVariable String method,
+			@RequestParam(name = "method", required = false) String methodParam,
+			@RequestParam(name = "format", required = false) String format,
+			@RequestParam(name = "locale", required = false) String locale,
+			@RequestParam(name = "message", required = false) String message,
+			@RequestParam(name = "fields", required = false) List<String> fields,
+			@RequestParam(name = "string", required = false) String string,
+			@RequestParam(name = "replacement", required = false) String replacement,
+			@RequestParam(name = "md", required = false) String md,
+			@RequestParam(name = "delta", required = false) String delta) {
+		method = StringUtils.isBlank(method) ? methodParam : method;
 		if ("newid".equals(method)) {
 			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Utils.getNewId());
 		} else if ("timestamp".equals(method)) {
 			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Long.toString(Utils.timestamp()));
 		} else if ("formatdate".equals(method)) {
-			String format = queryParam("format", req);
-			String locale = queryParam("locale", req);
 			Locale loc = Utils.getLocale(locale);
 			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Utils.formatDate(format, loc));
 		} else if ("formatmessage".equals(method)) {
-			String msg = queryParam("message", req);
-			Object[] paramz = req.getParameterValues("fields");
-			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Utils.formatMessage(msg, paramz));
+			Object[] fieldValues = fields == null ? null : fields.toArray();
+			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Utils.formatMessage(message, fieldValues));
 		} else if ("nospaces".equals(method)) {
-			String str = queryParam("string", req);
-			String repl = queryParam("replacement", req);
-			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Utils.noSpaces(str, repl));
+			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Utils.noSpaces(string, replacement));
 		} else if ("nosymbols".equals(method)) {
-			String str = queryParam("string", req);
-			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Utils.stripAndTrim(str));
+			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Utils.stripAndTrim(string));
 		} else if ("md2html".equals(method)) {
-			String md = queryParam("md", req);
 			return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(Utils.markdownToHtml(md));
 		} else if ("timeago".equals(method)) {
-			String d = queryParam("delta", req);
-			long delta = NumberUtils.toLong(d, 1);
-			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(HumanTime.approximately(delta));
+			long deltaValue = NumberUtils.toLong(delta, 1);
+			return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(HumanTime.approximately(deltaValue));
 		}
 		return getStatusResponse(HttpStatus.BAD_REQUEST, "Unknown method: " + ((method == null) ? "empty" : method));
 	}
 
 	/**
 	 * Lists all types for the current app.
-	 * @param req the request
+	 * @param count whether to return object counts
 	 * @return a response
 	 */
 	@GetMapping("/_types")
-	public ResponseEntity<?> listTypes(HttpServletRequest req) {
-		return listTypesHandler(getPrincipalApp(), req);
+	public ResponseEntity<?> listTypes(@RequestParam(name = "count", required = false) String count) {
+		return listTypesHandler(getPrincipalApp(), count);
 	}
 
 	/**
 	 * Handles the listing of types.
 	 * @param app the app
-	 * @param req the request
+	 * @param count whether to return object counts
 	 * @return a response
 	 */
-	public ResponseEntity<?> listTypesHandler(App app, HttpServletRequest req) {
+	public ResponseEntity<?> listTypesHandler(App app, String count) {
 		if (app != null) {
 			Map<String, String> types = ParaObjectUtils.getAllTypes(app);
-			if ("true".equalsIgnoreCase(queryParam("count", req))) {
+			if ("true".equalsIgnoreCase(count)) {
 				Map<String, Long> typesCount = new HashMap<>(types.size());
 				types.values().forEach(v -> typesCount.put(v, getSearch().getCount(app.getAppIdentifier(), v)));
 				return ResponseEntity.ok(typesCount);
@@ -668,13 +824,13 @@ public final class Api1 {
 
 	/**
 	 * Returns the configuration documentation.
-	 * @param req the request
+	 * @param format the output format
+	 * @param groupby the grouping mode
 	 * @return a response
 	 */
 	@GetMapping("/_config/options")
-	public ResponseEntity<?> configOptions(HttpServletRequest req) {
-		String format = queryParam("format", req);
-		String groupby = queryParam("groupby", req);
+	public ResponseEntity<?> configOptions(@RequestParam(name = "format", required = false) String format,
+			@RequestParam(name = "groupby", required = false) String groupby) {
 		String type = "text/plain";
 		if ("markdown".equalsIgnoreCase(format)) {
 			type = "text/markdown";
@@ -1085,23 +1241,23 @@ public final class Api1 {
 	 */
 	@PostMapping("/_reindex")
 	public ResponseEntity<?> reindex(HttpServletRequest req) {
-		return reindexHandler(getPrincipalApp(), req);
+		return reindexHandler(getPrincipalApp(), pagerFromParams(0, null, null, true, null), req);
 	}
 
 	/**
 	 * Handles the reindexing request.
 	 * @param app the app
+	 * @param pager the page settings for reindexing
 	 * @param req the request
 	 * @return a response
 	 */
-	public ResponseEntity<?> reindexHandler(App app, HttpServletRequest req) {
+	public ResponseEntity<?> reindexHandler(App app, Pager pager, HttpServletRequest req) {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
 		return respondToClient(req, () -> {
 			long startTime = System.nanoTime();
-			Pager pager = RestUtils.getPagerFromParams(req);
-			//String destinationIndex = queryParam("destinationIndex", req);
+//			Pager pager = RestUtils.getPagerFromParams(req);
 			app.reindex(pager);
 			long tookMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
 			Map<String, Object> response = new HashMap<>(2);
@@ -1160,21 +1316,24 @@ public final class Api1 {
 
 	/**
 	 * Imports app data from a ZIP file.
+	 * @param filename the imported file name
 	 * @param req the request
 	 * @return a response
 	 */
 	@PutMapping(value = "/_import", consumes = "application/zip")
-	public ResponseEntity<?> restore(HttpServletRequest req) {
-		return restoreHandler(getPrincipalApp(), req);
+	public ResponseEntity<?> restore(@RequestParam(name = "filename", required = false) String filename,
+			HttpServletRequest req) {
+		return restoreHandler(getPrincipalApp(), filename, req);
 	}
 
 	/**
 	 * Handles the restore request.
 	 * @param app the app
+	 * @param filename the imported file name
 	 * @param req the request
 	 * @return a response
 	 */
-	public ResponseEntity<?> restoreHandler(App app, HttpServletRequest req) {
+	public ResponseEntity<?> restoreHandler(App app, String filename, HttpServletRequest req) {
 		if (app == null) {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "App not found.");
 		}
@@ -1184,8 +1343,8 @@ public final class Api1 {
 					});
 			int count = 0;
 			int importBatchSize = Para.getConfig().importBatchSize();
-			String filename = Optional.ofNullable(queryParam("filename", req))
-					.orElse(app.getAppIdentifier().trim() + "_backup.zip");
+			String importFilename = filename == null
+					? app.getAppIdentifier().trim() + "_backup.zip" : filename;
 			Sysprop s = new Sysprop();
 			s.setType("paraimport");
 			try (InputStream inputStream = req.getInputStream(); ZipInputStream zipIn = new ZipInputStream(inputStream)) {
@@ -1210,7 +1369,7 @@ public final class Api1 {
 					getDAO().createAll(app.getAppIdentifier(), toCreate);
 				}
 				s.setCreatorid(app.getAppIdentifier());
-				s.setName(filename);
+				s.setName(importFilename);
 				s.addProperty("count", count);
 				logger.info("Imported {} objects to app '{}'", count, app.getId());
 				if (count > 0) {
@@ -1218,7 +1377,7 @@ public final class Api1 {
 				}
 				return ResponseEntity.ok(s);
 			} catch (Exception e) {
-				logger.error("Failed to import " + filename, e);
+				logger.error("Failed to import " + importFilename, e);
 				return getStatusResponse(HttpStatus.BAD_REQUEST, "Import failed - " + e.getMessage());
 			}
 		});
@@ -1353,13 +1512,16 @@ public final class Api1 {
 	 * @param id the id of first object
 	 * @param type2 the type of second object
 	 * @param id2 the id of second object
+	 * @param childrenonly whether to include only direct child objects
 	 * @param req the request
 	 * @return a response
 	 */
 	@GetMapping("/{type}/{id}/links/{type2}/{id2}")
 	public ResponseEntity<?> readLink(@PathVariable String type, @PathVariable String id,
-			@PathVariable String type2, @PathVariable String id2, HttpServletRequest req) {
-		return readLinks(type, id, type2, id2, req);
+			@PathVariable String type2, @PathVariable String id2,
+			@RequestParam(required = false, defaultValue = "false") Boolean childrenonly, HttpServletRequest req) {
+		Pager pager = pagerFromParams(0, null, null, true, null);
+		return readLinks(type, id, type2, id2, null, null, null, false, childrenonly, pager);
 	}
 
 	/**
@@ -1367,13 +1529,37 @@ public final class Api1 {
 	 * @param type the object type
 	 * @param id the object id
 	 * @param type2 the linked object type
+	 * @param query the search query
+	 * @param field the field to search
+	 * @param term the field value to match
+	 * @param count whether to return only the result count
+	 * @param childrenonly whether to include only direct child objects
+	 * @param page the page number
+	 * @param limit the maximum number of results
+	 * @param desc whether to sort in descending order
+	 * @param sortby the field to sort by
+	 * @param lastKey the key for the next page
 	 * @param req the request
 	 * @return a response
 	 */
 	@GetMapping("/{type}/{id}/links/{type2}")
-	public ResponseEntity<?> readLinksForType(@PathVariable String type, @PathVariable String id,
-			@PathVariable String type2, HttpServletRequest req) {
-		return readLinks(type, id, type2, null, req);
+	public ResponseEntity<?> readLinksForType(
+			@PathVariable String type,
+			@PathVariable String id,
+			@PathVariable String type2,
+			@RequestParam(name = "q", required = false) String query,
+			@RequestParam(required = false) String field,
+			@RequestParam(required = false) String term,
+			@RequestParam(required = false, defaultValue = "false") Boolean count,
+			@RequestParam(required = false, defaultValue = "false") Boolean childrenonly,
+			@RequestParam(required = false) Integer page,
+			@RequestParam(required = false) Integer limit,
+			@RequestParam(required = false) Boolean desc,
+			@RequestParam(required = false) String sortby,
+			@RequestParam(required = false) String lastKey,
+			HttpServletRequest req) {
+		Pager pager = pagerFromParams(page, sortby, limit, desc, lastKey);
+		return readLinks(type, id, type2, null, query, field, term, count, childrenonly, pager);
 	}
 
 	/**
@@ -1410,29 +1596,34 @@ public final class Api1 {
 	 * @param id the id of first object
 	 * @param type2 the type of second object
 	 * @param id2 the id of second object
+	 * @param childrenonly whether to delete direct child objects only
 	 * @param req the request
 	 * @return a response
 	 */
 	@DeleteMapping("/{type}/{id}/links/{type2}/{id2}")
 	public ResponseEntity<?> deleteLink(@PathVariable String type, @PathVariable String id,
-			@PathVariable String type2, @PathVariable String id2, HttpServletRequest req) {
-		return respondToClient(req, () -> deleteLinks(type, id, type2, id2, req));
+			@PathVariable String type2, @PathVariable String id2,
+			@RequestParam(required = false, defaultValue = "false") Boolean childrenonly, HttpServletRequest req) {
+		return respondToClient(req, () -> deleteLinks(type, id, type2, id2, childrenonly));
 	}
 
 	/**
 	 * Deletes all links for an object.
 	 * @param type the object type
 	 * @param id the object id
+	 * @param childrenonly whether to delete direct child objects only
 	 * @param req the request
 	 * @return a response
 	 */
 	@DeleteMapping("/{type}/{id}/links")
 	public ResponseEntity<?> deleteAllLinks(@PathVariable String type, @PathVariable String id,
-			HttpServletRequest req) {
-		return respondToClient(req, () -> deleteLinks(type, id, null, null, req));
+			@RequestParam(required = false, defaultValue = "false") Boolean childrenonly, HttpServletRequest req) {
+		return respondToClient(req, () -> deleteLinks(type, id, null, null, childrenonly));
 	}
 
-	private ResponseEntity<?> readLinks(String type, String id, String type2, String id2, HttpServletRequest req) {
+	private ResponseEntity<?> readLinks(String type, String id, String type2, String id2,
+			String query, String field, String term, Boolean count, Boolean childrenOnly,
+			Pager pager) {
 		App app = getPrincipalApp();
 		if (app == null) {
 			return getStatusResponse(HttpStatus.BAD_REQUEST);
@@ -1442,9 +1633,7 @@ public final class Api1 {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "Object not found: " + id);
 		}
 		String resolvedType2 = StringUtils.isBlank(type2) ? null : ParaObjectUtils.toObject(app, type2).getType();
-		Pager pager = RestUtils.getPagerFromParams(req);
-		boolean childrenOnly = StringUtils.isNotBlank(queryParam("childrenonly", req));
-		return RestUtils.readLinksHandler(pobj, id2, resolvedType2, pager, childrenOnly, req);
+		return RestUtils.readLinksHandler(pobj, id2, resolvedType2, query, field, term, count, childrenOnly, pager);
 	}
 
 	private ResponseEntity<?> modifyLink(String type, String id, String id2) {
@@ -1459,7 +1648,7 @@ public final class Api1 {
 		return RestUtils.createLinksHandler(pobj, id2);
 	}
 
-	private ResponseEntity<?> deleteLinks(String type, String id, String type2, String id2, HttpServletRequest req) {
+	private ResponseEntity<?> deleteLinks(String type, String id, String type2, String id2, Boolean childrenOnly) {
 		App app = getPrincipalApp();
 		if (app == null) {
 			return getStatusResponse(HttpStatus.BAD_REQUEST);
@@ -1469,20 +1658,19 @@ public final class Api1 {
 			return getStatusResponse(HttpStatus.NOT_FOUND, "Object not found: " + id);
 		}
 		String resolvedType2 = StringUtils.isBlank(type2) ? null : ParaObjectUtils.toObject(app, type2).getType();
-		boolean childrenOnly = StringUtils.isNotBlank(queryParam("childrenonly", req));
 		return RestUtils.deleteLinksHandler(pobj, id2, resolvedType2, childrenOnly);
 	}
 
-	private ResponseEntity<?> setupInternal(String appid, HttpServletRequest req) {
+	private ResponseEntity<?> setupInternal(String appid, String name, String creatorid, String sharedIndex,
+			String sharedTable) {
 		if (StringUtils.isBlank(appid)) {
 			return ResponseEntity.ok(Para.setup());
 		}
 		App app = SecurityUtils.getAuthenticatedApp();
 		if (app != null && app.isRootApp()) {
-			boolean sharedIndex = "true".equalsIgnoreCase(queryParam("sharedIndex", req));
-			boolean sharedTable = "true".equalsIgnoreCase(queryParam("sharedTable", req));
-			return ResponseEntity.ok(Para.newApp(appid, queryParam(Config._NAME, req),
-					queryParam(Config._CREATORID, req), sharedIndex, sharedTable));
+			boolean useSharedIndex = "true".equalsIgnoreCase(sharedIndex);
+			boolean useSharedTable = "true".equalsIgnoreCase(sharedTable);
+			return ResponseEntity.ok(Para.newApp(appid, name, creatorid, useSharedIndex, useSharedTable));
 		}
 		return getStatusResponse(HttpStatus.FORBIDDEN, "Only root app can create and initialize other apps.");
 	}

@@ -46,7 +46,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -643,15 +642,26 @@ public final class RestUtils {
 	 * @param pobj the object to operate on
 	 * @param id2 the id of the second object (optional)
 	 * @param type2 the type of the second object
+	 * @param query the search query
+	 * @param field the field to search
+	 * @param term the field value to match
+	 * @param count whether to return only the result count
 	 * @param pager a {@link Pager} object
 	 * @param childrenOnly find only directly linked objects in 1-to-many relationship
-	 * @param req request
 	 * @return a Response
 	 */
-	public static ResponseEntity<?> readLinksHandler(ParaObject pobj, String id2, String type2,
-			Pager pager, boolean childrenOnly, HttpServletRequest req) {
+	public static ResponseEntity<?> readLinksHandler(
+			ParaObject pobj,
+			String id2,
+			String type2,
+			String query,
+			String field,
+			String term,
+			Boolean count,
+			Boolean childrenOnly,
+			Pager pager) {
 		try (Metrics.Context context = Metrics.time(null, RestUtils.class, "links", "read")) {
-			String query = req.getParameter("q");
+//			String query = req.getParameter("q");
 			if (type2 != null) {
 				if (id2 != null) {
 					return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).
@@ -659,11 +669,11 @@ public final class RestUtils {
 				} else {
 					List<ParaObject> items = new ArrayList<>();
 					if (childrenOnly) {
-						if (req.getParameter("count") != null) {
+						if (count) {
 							pager.setCount(pobj.countChildren(type2));
 						} else {
-							if (req.getParameter("field") != null && req.getParameter("term") != null) {
-								items = pobj.getChildren(type2, req.getParameter("field"), req.getParameter("term"), pager);
+							if (field != null && term != null) {
+								items = pobj.getChildren(type2, field, term, pager);
 							} else {
 								if (StringUtils.isBlank(query)) {
 									items = pobj.getChildren(type2, pager);
@@ -673,13 +683,13 @@ public final class RestUtils {
 							}
 						}
 					} else {
-						if (req.getParameter("count") != null) {
+						if (count) {
 							pager.setCount(pobj.countLinks(type2));
 						} else {
 							if (StringUtils.isBlank(query)) {
 								items = pobj.getLinkedObjects(type2, pager);
 							} else {
-								items = pobj.findLinkedObjects(type2, req.getParameter("field"), query, pager);
+								items = pobj.findLinkedObjects(type2, field, query, pager);
 							}
 						}
 					}
@@ -739,44 +749,67 @@ public final class RestUtils {
 	//			SEARCH RESPONSE HANDLERS
 	/////////////////////////////////////////////
 
-	static <P extends ParaObject> Map<String, Object> buildQueryAndSearch(App app, String querytype,
-			String typeOverride, HttpServletRequest req) {
-		Map<String, String[]> params = req.getParameterMap();
-		String query = paramOrDefault(req, "q", "*");
-		String appid = app.getAppIdentifier();
-		Pager pager = getPagerFromParams(req);
-		List<P> items = Collections.emptyList();
-		String queryType = paramOrDefault(req, "querytype", querytype);
-		String type = paramOrDefault(req, Config._TYPE, null);
-		if (!StringUtils.isBlank(typeOverride) && !"search".equals(typeOverride)) {
-			type = typeOverride;
+	static <P extends ParaObject> Map<String, Object> buildQueryAndSearch(App app,
+			String queryType,
+			String type,
+			String query,
+			String id,
+			List<String> ids,
+			String field,
+			String prefix,
+			String latlng,
+			Integer radius,
+			String like,
+			List<String> fields,
+			String filterid,
+			List<String> tags,
+			List<String> terms,
+			Boolean matchall,
+			Boolean count,
+			Pager pager) {
+//		Map<String, String[]> params = req.getParameterMap();
+//		String query = paramOrDefault(req, "q", "*");
+		if (query == null) {
+			query = "*";
 		}
+		String appid = app.getAppIdentifier();
+//		Pager pager = getPagerFromParams(req);
+		List<P> items = Collections.emptyList();
+		if (StringUtils.isBlank(queryType)) {
+			queryType = "default";
+		}
+		if (tags == null) {
+			tags = Collections.emptyList();
+		}
+//		String type = paramOrDefault(req, Config._TYPE, null);
+//		if (!StringUtils.isBlank(typeOverride) && !"search".equals(typeOverride)) {
+//			type = typeOverride;
+//		}
 		try (Metrics.Context context = Metrics.time(appid, RestUtils.class, "search", queryType)) {
-			if (params == null) {
-				return buildPageResponse(Para.getSearch().findQuery(appid, type, query, pager), pager);
-			}
+//			if (params == null) {
+//				return buildPageResponse(Para.getSearch().findQuery(appid, type, query, pager), pager);
+//			}
 			if ("id".equals(queryType)) {
-				items = findByIdQuery(req, appid, pager);
+				items = findByIdQuery(id, appid, pager);
 			} else if ("ids".equals(queryType)) {
-				items = Para.getSearch().findByIds(appid, queryParams("ids", req));
+				items = Para.getSearch().findByIds(appid, ids);
 				pager.setCount(items.size());
 			} else if ("nested".equals(queryType)) {
-				items = Para.getSearch().findNestedQuery(appid, type, req.getParameter("field"), query, pager);
+				items = Para.getSearch().findNestedQuery(appid, type, field, query, pager);
 			} else if ("nearby".equals(queryType)) {
-				items = findNearbyQuery(req, appid, type, query, pager);
+				items = findNearbyQuery(latlng, radius, appid, type, query, pager);
 			} else if ("prefix".equals(queryType)) {
-				items = Para.getSearch().findPrefix(appid, type, req.getParameter("field"), req.getParameter("prefix"), pager);
+				items = Para.getSearch().findPrefix(appid, type, field, prefix, pager);
 			} else if ("similar".equals(queryType)) {
-				items = findSimilarQuery(req, appid, type, pager);
+				items = findSimilarQuery(like, fields, filterid, appid, type, pager);
 			} else if ("tagged".equals(queryType)) {
-				items = Para.getSearch().findTagged(appid, type, queryParams("tags", req).toArray(String[]::new), pager);
+				items = Para.getSearch().findTagged(appid, type, tags.toArray(String[]::new), pager);
 			} else if ("in".equals(queryType)) {
-				items = Para.getSearch().findTermInList(appid, type,
-						req.getParameter("field"), queryParams("terms", req), pager);
+				items = Para.getSearch().findTermInList(appid, type, field, terms, pager);
 			} else if ("terms".equals(queryType)) {
-				items = findTermsQuery(req, pager, appid, type);
+				items = findTermsQuery(terms, matchall, count, pager, appid, type);
 			} else if ("wildcard".equals(queryType)) {
-				items = Para.getSearch().findWildcard(appid, type, req.getParameter("field"), query, pager);
+				items = Para.getSearch().findWildcard(appid, type, field, query, pager);
 			} else if ("count".equals(queryType)) {
 				pager.setCount(Para.getSearch().getCount(appid, type));
 			} else {
@@ -786,60 +819,65 @@ public final class RestUtils {
 		}
 	}
 
-	private static <P extends ParaObject> List<P> findTermsQuery(HttpServletRequest req,
-			Pager pager, String appid, String type) {
-		String matchAll = paramOrDefault(req, "matchall", "true");
-		List<String> termsList = queryParams("terms", req);
-		if (termsList != null) {
-			Map<String, String> terms = new HashMap<>(termsList.size());
-			for (String termTuple : termsList) {
+	private static <P extends ParaObject> List<P> findTermsQuery(List<String> terms,
+			boolean matchAll, boolean count, Pager pager, String appid, String type) {
+//		String matchAll = paramOrDefault(req, "matchall", "true");
+//		List<String> termsList = queryParams("terms", req);
+		if (terms != null) {
+			Map<String, String> termsMap = new HashMap<>(terms.size());
+			for (String termTuple : terms) {
 				if (!StringUtils.isBlank(termTuple) && termTuple.contains(Para.getConfig().separator())) {
 					String[] split = termTuple.split(Para.getConfig().separator(), 2);
-					terms.put(split[0], split[1]);
+					termsMap.put(split[0], split[1]);
 				}
 			}
-			if (req.getParameter("count") != null) {
-				pager.setCount(Para.getSearch().getCount(appid, type, terms));
+			if (count) {
+				pager.setCount(Para.getSearch().getCount(appid, type, termsMap));
 			} else {
-				return Para.getSearch().findTerms(appid, type, terms, Boolean.parseBoolean(matchAll), pager);
+				return Para.getSearch().findTerms(appid, type, termsMap, matchAll, pager);
 			}
 		}
 		return Collections.emptyList();
 	}
 
 
-	private static <P extends ParaObject> List<P> findSimilarQuery(HttpServletRequest req,
+	private static <P extends ParaObject> List<P> findSimilarQuery(String like, List<String> fields, String filterid,
 			String appid, String type, Pager pager) {
-		String like = req.getParameter("like");
-		List<String> fieldz = queryParams("fields", req);
+//		String like = req.getParameter("like");
+//		List<String> fieldz = queryParams("fields", req);
+		if (fields == null) {
+			fields = Collections.emptyList();
+		}
 		if (Strings.CS.startsWith(like, "id:")) {
 			ParaObject likeObj = Para.getDAO().read(appid, Strings.CS.removeStart(like, "id:"));
 			if (likeObj != null) {
 				StringBuilder sb = new StringBuilder();
-				fieldz.forEach(field -> {
+				fields.forEach(field -> {
 					try {
 						String value = BeanUtils.getProperty(likeObj, field);
 						if (value != null) {
 							sb.append(Utils.stripAndTrim(value)).append(" ");
 						}
 					} catch (Exception e) {
-						logger.debug("Missing fields {} in object {}: {}", fieldz, likeObj.getId(), e.getMessage());
+						logger.debug("Missing field {} in object {}: {}", field, likeObj.getId(), e.getMessage());
 					}
 				});
 				like = sb.toString();
 			}
 		}
-		return Para.getSearch().findSimilar(appid, type, req.getParameter("filterid"),
-				fieldz.toArray(String[]::new), like, pager);
+		return Para.getSearch().findSimilar(appid, type, filterid, fields.toArray(String[]::new), like, pager);
 	}
 
-	private static <P extends ParaObject> List<P> findNearbyQuery(HttpServletRequest req,
+	private static <P extends ParaObject> List<P> findNearbyQuery(String latlng, Integer radius,
 			String appid, String type, String query, Pager pager) {
-		String latlng = req.getParameter("latlng");
+//		String latlng = req.getParameter("latlng");
 		if (Strings.CS.contains(latlng, ",")) {
 			String[] coords = latlng.split(",", 2);
-			String rad = paramOrDefault(req, "radius", null);
-			int radius = NumberUtils.toInt(rad, 10);
+//			String rad = paramOrDefault(req, "radius", null);
+//			int radiusInt = NumberUtils.toInt(radius, 10);
+			if (radius == null || radius > 1000 || radius < 0) {
+				radius = 10;
+			}
 			double lat = NumberUtils.toDouble(coords[0], 0);
 			double lng = NumberUtils.toDouble(coords[1], 0);
 			return Para.getSearch().findNearby(appid, type, query, radius, lat, lng, pager);
@@ -847,8 +885,8 @@ public final class RestUtils {
 		return Collections.emptyList();
 	}
 
-	private static <P extends ParaObject> List<P> findByIdQuery(HttpServletRequest req, String appid, Pager pager) {
-		String id = paramOrDefault(req, Config._ID, null);
+	private static <P extends ParaObject> List<P> findByIdQuery(String id, String appid, Pager pager) {
+//		String id = paramOrDefault(req, Config._ID, null);
 		P obj = Para.getSearch().findById(appid, id);
 		if (obj != null) {
 			pager.setCount(1);
@@ -875,9 +913,9 @@ public final class RestUtils {
 		return ResponseEntity.ok(updatedObjects);
 	}
 
-	private static String paramOrDefault(HttpServletRequest req, String name, String defaultValue) {
-		return req != null && req.getParameter(name) != null ? req.getParameter(name) : defaultValue;
-	}
+//	private static String paramOrDefault(HttpServletRequest req, String name, String defaultValue) {
+//		return req != null && req.getParameter(name) != null ? req.getParameter(name) : defaultValue;
+//	}
 
 	private static <P extends ParaObject> Map<String, Object> buildPageResponse(List<P> items, Pager pager) {
 		App app = getPrincipalApp();
@@ -943,24 +981,26 @@ public final class RestUtils {
 	/////////////////////////////////////////////
 
 	/**
-	 * Returns a {@link Pager} instance populated from request parameters.
-	 * @param req request
+	 * Creates a {@link Pager} from page and sort values.
+	 * @param page the page number
+	 * @param sort the field to sort by
+	 * @param limit the maximum number of results
+	 * @param desc whether to sort in descending order
+	 * @param lastKey the key for the next page
 	 * @return a Pager
 	 */
-	public static Pager getPagerFromParams(HttpServletRequest req) {
-		Pager pager = new Pager();
-		pager.setPage(NumberUtils.toLong(paramOrDefault(req, "page", ""), 0));
-		if (pager.getPage() > Para.getConfig().maxPages()) {
-			pager.setPage(Para.getConfig().maxPages());
+	public static Pager pagerFromParams(Integer page, String sort, Integer limit, Boolean desc, String lastKey) {
+		Pager p = new Pager(Para.getConfig().maxItemsPerPage());
+		p.setPage(page == null ? p.getPage() : page);
+		p.setDesc(desc == null ? p.isDesc() : desc);
+		p.setLimit(limit == null ? p.getLimit() : limit);
+		if (!StringUtils.isBlank(lastKey)) {
+			p.setLastKey(lastKey);
 		}
-		pager.setLimit(NumberUtils.toInt(paramOrDefault(req, "limit", ""), pager.getLimit()));
-		if (pager.getLimit() > Para.getConfig().maxPageLimit()) {
-			pager.setLimit(Para.getConfig().maxPageLimit());
+		if (!StringUtils.isBlank(sort)) {
+			p.setSortby(sort);
 		}
-		pager.setSortby(paramOrDefault(req, "sort", pager.getSortby()));
-		pager.setDesc(Boolean.parseBoolean(paramOrDefault(req, "desc", "true")));
-		pager.setLastKey(paramOrDefault(req, "lastKey", null));
-		return pager;
+		return p;
 	}
 
 	/**
@@ -1023,30 +1063,30 @@ public final class RestUtils {
 			logger.error(null, ex);
 		}
 	}
-
-	/**
-	 * Returns  the query parameter value.
-	 * @param param a parameter name
-	 * @param req request
-	 * @return parameter value
-	 */
-	public static String queryParam(String param, HttpServletRequest req) {
-		return req.getParameter(param);
-	}
-
-	/**
-	 * Returns the query parameter values.
-	 * @param param a parameter name
-	 * @param req request
-	 * @return a list of values
-	 */
-	public static List<String> queryParams(String param, HttpServletRequest req) {
-		String[] params = req.getParameterValues(param);
-		List<String> plist = new LinkedList<String>();
-		if (params != null && params.length > 0) {
-			plist.addAll(Arrays.asList(params));
-		}
-		return plist;
-	}
+//
+//	/**
+//	 * Returns  the query parameter value.
+//	 * @param param a parameter name
+//	 * @param req request
+//	 * @return parameter value
+//	 */
+//	public static String queryParam(String param, HttpServletRequest req) {
+//		return req.getParameter(param);
+//	}
+//
+//	/**
+//	 * Returns the query parameter values.
+//	 * @param param a parameter name
+//	 * @param req request
+//	 * @return a list of values
+//	 */
+//	public static List<String> queryParams(String param, HttpServletRequest req) {
+//		String[] params = req.getParameterValues(param);
+//		List<String> plist = new LinkedList<String>();
+//		if (params != null && params.length > 0) {
+//			plist.addAll(Arrays.asList(params));
+//		}
+//		return plist;
+//	}
 
 }
