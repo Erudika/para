@@ -1,0 +1,3248 @@
+openapi: 3.2.0
+info:
+  title: Para REST API
+  description: Para REST API. All API methods require authentication by default unless marked public. Object payloads
+    are open-ended because Para supports user-defined types. JSON object fields can be limited with the `select`
+    query parameter - a comma-separated field list and applies to serialized object responses.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+servers:
+- url: /
+  description: Current host
+paths:
+  /v1/{type}/{id}:
+    get:
+      tags:
+      - objects
+      operationId: read
+      parameters:
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Object ID.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Object not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Read an object
+      description: Returns an object of the requested type. Use the type plural in the URL. The type-only route
+        `/v1/{type}` lists objects instead.
+    put:
+      tags:
+      - objects
+      operationId: overwrite
+      parameters:
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Object ID.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Request succeeded.
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid object or request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Object not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Replace an object
+      description: Replaces an object, or creates it when the ID does not exist.
+      requestBody:
+        required: true
+        description: Replacement object properties.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParaObjectInput'
+    delete:
+      tags:
+      - objects
+      operationId: delete
+      parameters:
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Object ID.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: No content.
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Delete request was not permitted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Delete an object
+      description: Deletes an object and returns an empty 200 response. The endpoint can return 400 when deletion
+        is not permitted.
+    patch:
+      tags:
+      - objects
+      operationId: update
+      parameters:
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Object ID.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Object updated. Vote requests return a boolean result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParaObjectInput'
+              example:
+                id: tag:tag1
+                timestamp: 1399721289987
+                type: tag
+                appid: para
+                name: tag tag:tag1
+                votes: 0
+                plural: tags
+                objectURI: /tags/tag1
+                tag: tag1
+                count: 0
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid object or request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Object not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '412':
+          description: Precondition failed because of optimistic locking.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Update an object
+      description: 'Partially updates an object. PATCH also supports vote bodies such as `{ "_voteup": "user123"
+        }`; optimistic-lock failures can return 412.'
+      requestBody:
+        required: true
+        description: Object properties to update.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParaObjectInput'
+  /v1/{type}/{id}/links/{id2}:
+    put:
+      tags:
+      - links
+      operationId: putLink
+      parameters:
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Object ID.
+      - name: id2
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Created link ID.
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Create or replace a link
+      description: Creates a many-to-many link. PUT has the same behavior as POST.
+    post:
+      tags:
+      - links
+      operationId: createLink
+      parameters:
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Object ID.
+      - name: id2
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Created link ID.
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Create a link
+      description: Creates a many-to-many link. For one-to-many relationships, set the child object `parentid` instead.
+  /v1/_settings:
+    get:
+      tags:
+      - settings
+      operationId: getSettings
+      responses:
+        '200':
+          description: Custom app settings.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: List app settings
+      description: Lists custom key-value settings stored on the app.
+      parameters:
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+    put:
+      tags:
+      - settings
+      operationId: putSettings
+      responses:
+        '200':
+          description: Request succeeded.
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Replace app settings
+      description: Replaces all custom app settings with the JSON object in the request body.
+      requestBody:
+        required: true
+        description: Settings to replace.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsInput'
+      parameters:
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+  /v1/_settings/{key}:
+    get:
+      tags:
+      - settings
+      operationId: getSetting
+      parameters:
+      - name: key
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Setting key.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Custom setting value.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  value: {}
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Get an app setting
+      description: Returns one custom app setting.
+    put:
+      tags:
+      - settings
+      operationId: putSetting
+      parameters:
+      - name: key
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Setting key.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Request succeeded.
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Set an app setting
+      description: Adds or replaces one setting when `key` is supplied. Without `key`, replaces all app settings.
+      requestBody:
+        required: true
+        description: Setting value or settings map.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsInput'
+    delete:
+      tags:
+      - settings
+      operationId: deleteSetting
+      parameters:
+      - name: key
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Setting key.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Request succeeded.
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Delete an app setting
+      description: Removes one custom app setting.
+  /v1/_permissions/{subjectid}/{type}:
+    put:
+      tags:
+      - permissions
+      operationId: grantPermission
+      parameters:
+      - name: subjectid
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Subject ID.
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Updated resource permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionsMap'
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid permission request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: App, subject or resource not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Grant resource permissions
+      description: Grants HTTP methods or flags for a URL-encoded resource. Flags include GET, POST, PUT, PATCH,
+        DELETE, `?`, `-`, `*` and `OWN`.
+      requestBody:
+        required: true
+        description: Allowed HTTP methods.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermissionMethodsInput'
+    delete:
+      tags:
+      - permissions
+      operationId: revokePermission
+      parameters:
+      - name: subjectid
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Subject ID.
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Updated resource permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionsMap'
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid permission request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: App, subject or resource not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Revoke a resource permission
+      description: Revokes permissions for a subject and resource.
+  /v1/_import:
+    put:
+      tags:
+      - storage operations
+      operationId: restore
+      parameters:
+      - name: filename
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Name to assign to the imported backup.
+      responses:
+        '200':
+          description: Import summary.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParaObjectInput'
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Import failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Import app data
+      description: Imports a previously exported ZIP archive and overwrites existing objects. The request must use
+        `application/zip`.
+      requestBody:
+        required: true
+        description: ZIP archive to import.
+        content:
+          application/zip:
+            schema:
+              type: string
+              format: binary
+  /v1/_constraints/{type}/{field}/{cname}:
+    put:
+      tags:
+      - constraints
+      operationId: addConstraint
+      parameters:
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: field
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Field name used by the selected search method.
+      - name: cname
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Constraint name.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Validation constraints after the update.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid constraint request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Add a validation constraint
+      description: Adds a validation constraint. Supported names include `required`, `email`, `false`, `true`, `past`,
+        `present`, `url`, `min`, `max`, `size`, `digits` and `pattern`.
+      requestBody:
+        required: true
+        description: Constraint configuration.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsInput'
+    delete:
+      tags:
+      - constraints
+      operationId: removeConstraint
+      parameters:
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: field
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Field name used by the selected search method.
+      - name: cname
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Constraint name.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Validation constraints after the update.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid constraint request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Remove a validation constraint
+      description: Removes a validation constraint and returns the remaining constraints for the type.
+  /v1/_batch:
+    get:
+      tags:
+      - batch operations
+      operationId: batchRead
+      parameters:
+      - name: ids
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        description: Object IDs. Repeat this parameter for multiple IDs. At least one ID is required for success.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Objects found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ParaObjectInput'
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: No IDs were supplied.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Read objects in a batch
+      description: Returns objects for repeated `ids` parameters. At least one ID is required for a successful request.
+    put:
+      tags:
+      - batch operations
+      operationId: batchPut
+      responses:
+        '200':
+          description: Objects returned by the batch operation.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ParaObjectInput'
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Create or replace objects in a batch
+      description: Creates or replaces multiple objects. PUT has the same batch behavior as POST; the documented
+        maximum request size is 1 MB.
+      requestBody:
+        required: true
+        description: Objects to create or replace.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParaObjectBatchInput'
+      parameters:
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+    post:
+      tags:
+      - batch operations
+      operationId: batchCreate
+      responses:
+        '200':
+          description: Objects returned by the batch operation.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ParaObjectInput'
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Create objects in a batch
+      description: Creates multiple objects. The body is a JSON array; the documented maximum request size is 1
+        MB.
+      requestBody:
+        required: true
+        description: Objects to create.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParaObjectBatchInput'
+      parameters:
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+    delete:
+      tags:
+      - batch operations
+      operationId: batchDelete
+      parameters:
+      - name: ids
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        description: Object IDs. Repeat this parameter for multiple IDs. At least one ID is required for success.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: No IDs were supplied or the request exceeds the implementation limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Delete objects in a batch
+      description: Deletes multiple objects using repeated `ids` parameters. At least one ID is required for success.
+    patch:
+      tags:
+      - batch operations
+      operationId: batchUpdate
+      responses:
+        '200':
+          description: Objects returned by the batch operation.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ParaObjectInput'
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid batch request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '412':
+          description: All updates failed because of optimistic locking.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Update objects in a batch
+      description: Partially updates multiple objects. Each object must contain `id` and `type`. Optimistic-lock
+        failures can return 412.
+      requestBody:
+        required: true
+        description: Object updates. Each item must include an ID.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParaObjectBatchInput'
+      parameters:
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+  /v1/{type}:
+    get:
+      tags:
+      - objects
+      operationId: searchType
+      parameters:
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          default: '*'
+        description: Search query. If omitted, the API searches all objects.
+      - name: count
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+        description: Return only the result count when true.
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+        description: Page number.
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 30
+        description: Maximum number of results per page.
+      - name: desc
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: true
+        description: Sort in descending order.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Field to sort by.
+      - name: lastKey
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Continuation key for the next page.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Paged result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponse'
+              example:
+                page: 0
+                totalHits: 3
+                items:
+                - id: tag:tag1
+                  type: tag
+                  name: tag tag:tag1
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid query syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Search objects of a type
+      description: Searches objects of a type. Custom fields use `properties.myfield`. The default query is `*`,
+        descending sort defaults to true, and the default page size is 30.
+    post:
+      tags:
+      - objects
+      operationId: create
+      parameters:
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '201':
+          description: Object created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParaObjectInput'
+              example:
+                id: tag:tag1
+                timestamp: 1399721289987
+                type: tag
+                appid: para
+                name: tag tag:tag1
+                votes: 0
+                plural: tags
+                objectURI: /tags/tag1
+                tag: tag1
+                count: 0
+        '400':
+          description: Invalid object or request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Create an object
+      description: Creates a new object. Custom types and fields are supported. For a new type, use a singular `type`
+        and plural `plural` value in the body.
+      requestBody:
+        required: true
+        description: Object properties to create.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParaObjectInput'
+  /v1/_reindex:
+    post:
+      tags:
+      - storage operations
+      operationId: reindex
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: App not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Rebuild the search index
+      description: Rebuilds the search index synchronously. The current endpoint does not accept the older documented
+        `destinationIndex` parameter. `destinationIndex` is intentionally not listed as a parameter because the
+        current controller ignores it.
+      parameters:
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+  /v1/_plugins/{artifactId}/install:
+    post:
+      tags:
+      - plugins
+      operationId: install
+      parameters:
+      - name: artifactId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Plugin Maven artifact ID.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      requestBody:
+        required: false
+        description: Optional plugin version.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PluginInstallInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Install a plugin
+      description: Downloads and checksum-verifies the plugin and its dependencies. Restart Para to load it. Requires
+        root-app access; the plugins API can be disabled by server configuration.
+  /v1/_newkeys:
+    post:
+      tags:
+      - miscellaneous
+      operationId: newKeys
+      responses:
+        '200':
+          description: New app credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiCredentials'
+              example:
+                secretKey: <secret>
+                accessKey: <access-key>
+                info: Save the secret key! It is showed only once!
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Generate new API keys
+      description: Resets the current app secret and returns credentials. Save the secret because it is shown only
+        once.
+      parameters:
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+  /v1/_forms/{appid}/{formid}:
+    post:
+      tags:
+      - HTML forms
+      operationId: emails
+      parameters:
+      - name: appid
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Application ID.
+      - name: formid
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartForm'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '302':
+          description: Form redirect. See the Location header.
+      summary: Send an email through a public form
+      description: See the Para REST API behavior and server security configuration for access rules and error conditions.
+      security: []
+  /v1/_emails:
+    post:
+      tags:
+      - emails
+      operationId: emails_1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '302':
+          description: Form redirect. See the Location header.
+      summary: Send an authenticated email
+      description: See the Para REST API behavior and server security configuration for access rules and error conditions.
+      requestBody:
+        required: true
+        description: Email form data.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MultipartForm'
+      parameters:
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+  /v1/{type}/{id}/links/{type2}:
+    get:
+      tags:
+      - links
+      operationId: readLinksForType
+      parameters:
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Object ID.
+      - name: type2
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Search query. If omitted, the API searches all objects.
+      - name: field
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Field name used by the selected search method.
+      - name: term
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Value to match for the selected field.
+      - name: count
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+        description: Return only the result count when true.
+      - name: childrenonly
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+        description: Limit results or deletion to direct child objects.
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+        description: Page number.
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+        description: Maximum number of results per page.
+      - name: desc
+        in: query
+        required: false
+        schema:
+          type: boolean
+        description: Sort in descending order.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Field to sort by.
+      - name: lastKey
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Continuation key for the next page.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Paged result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponse'
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: List linked objects
+      description: Returns linked or child objects. Use `childrenonly=true` for one-to-many searches. `q`, `field`,
+        `term`, `count` and pagination parameters filter or page results.
+  /v1/{type}/{id}/links/{type2}/{id2}:
+    get:
+      tags:
+      - links
+      operationId: readLink
+      parameters:
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Object ID.
+      - name: type2
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id2
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: childrenonly
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+        description: Limit results or deletion to direct child objects.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Boolean result.
+          content:
+            text/plain:
+              schema:
+                type: string
+                enum:
+                - 'true'
+                - 'false'
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Check a link between two objects
+      description: With `id2`, returns plain-text `true` or `false` for the link. Without `id2`, use the type-only
+        links route to list objects.
+    delete:
+      tags:
+      - links
+      operationId: deleteLink
+      parameters:
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Object ID.
+      - name: type2
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id2
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: childrenonly
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+        description: Limit results or deletion to direct child objects.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Request succeeded.
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Delete a link
+      description: Unlinks the specified objects. With `childrenonly=true` and no `id2`, child objects may be deleted.
+        The current API does not expose the older `all` query parameter.
+  /v1/{type}/search/{querytype}:
+    get:
+      tags:
+      - search
+      operationId: searchType_1
+      parameters:
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: querytype
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Search method, such as id, ids, terms, tagged or nearby.
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          default: '*'
+        description: Search query. If omitted, the API searches all objects.
+      - name: id
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Object ID.
+      - name: ids
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        description: Object IDs. Repeat this parameter to pass more than one ID.
+      - name: field
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Field name used by the selected search method.
+      - name: prefix
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Prefix to match.
+      - name: latlng
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Latitude and longitude as `latitude,longitude`.
+      - name: radius
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+        description: Nearby search radius in kilometers.
+      - name: like
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Text or object ID used for a similar-object search.
+      - name: fields
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        description: Fields to compare in a similar-object search. Repeat for multiple fields.
+      - name: filterid
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Object ID to exclude from a similar-object search.
+      - name: tags
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        description: Tags to match. Repeat for multiple tags.
+      - name: terms
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        description: Terms to match. Repeat for multiple terms.
+      - name: matchall
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+        description: Require all terms to match.
+      - name: count
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+        description: Return only the result count when true.
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+        description: Page number.
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 30
+        description: Maximum number of results per page.
+      - name: desc
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: true
+        description: Sort in descending order.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Field to sort by.
+      - name: lastKey
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Continuation key for the next page.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Paged result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponse'
+              example:
+                page: 0
+                totalHits: 3
+                items:
+                - id: tag:tag1
+                  type: tag
+                  name: tag tag:tag1
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid query syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Search objects of a type by query type
+      description: Searches objects of a type using the selected query method. If no method is selected, the default
+        query search is used.
+  /v1/{type}/search:
+    get:
+      tags:
+      - search
+      operationId: searchType_2
+      parameters:
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          default: '*'
+        description: Search query. If omitted, the API searches all objects.
+      - name: count
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+        description: Return only the result count when true.
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+        description: Page number.
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 30
+        description: Maximum number of results per page.
+      - name: desc
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: true
+        description: Sort in descending order.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Field to sort by.
+      - name: lastKey
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Continuation key for the next page.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Paged result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponse'
+              example:
+                page: 0
+                totalHits: 3
+                items:
+                - id: tag:tag1
+                  type: tag
+                  name: tag tag:tag1
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid query syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Search objects of a type
+      description: Equivalent to `/v1/{type}` and runs the default query search for the type.
+  /v1/utils/{method}:
+    get:
+      tags:
+      - utils
+      operationId: utilsHandler
+      parameters:
+      - name: method
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 'Utility method: newid, timestamp, formatdate, formatmessage, nospaces, nosymbols, md2html
+          or timeago.'
+      - name: method
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Utility method name.
+      - name: format
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Output format.
+      - name: locale
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Locale used for date formatting.
+      - name: message
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Message template.
+      - name: fields
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        description: Repeated format-message arguments.
+      - name: string
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Input string.
+      - name: replacement
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Text to use instead of spaces.
+      - name: md
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Markdown text to convert to HTML.
+      - name: delta
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Time delta in milliseconds.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Utility result. The media type depends on the selected method.
+          content:
+            text/plain:
+              schema:
+                type: string
+            text/html:
+              schema:
+                type: string
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Run a utility method
+      description: Runs `newid`, `timestamp`, `formatdate`, `formatmessage`, `nospaces`, `nosymbols`, `md2html`
+        or `timeago`.
+  /v1/search:
+    get:
+      tags:
+      - search
+      operationId: search
+      parameters:
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Para object type.
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          default: '*'
+        description: Search query. If omitted, the API searches all objects.
+      - name: count
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+        description: Return only the result count when true.
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+        description: Page number.
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 30
+        description: Maximum number of results per page.
+      - name: desc
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: true
+        description: Sort in descending order.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Field to sort by.
+      - name: lastKey
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Continuation key for the next page.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Paged result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponse'
+              example:
+                page: 0
+                totalHits: 3
+                items:
+                - id: tag:tag1
+                  type: tag
+                  name: tag tag:tag1
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid query syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Search objects
+      description: Executes a general search. Custom fields use `properties.myfield`; the default query is `*`,
+        descending sort defaults to true, and the default page size is 30.
+  /v1/search/{querytype}:
+    get:
+      tags:
+      - search
+      operationId: search_1
+      parameters:
+      - name: querytype
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Search method, such as id, ids, terms, tagged or nearby.
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Para object type.
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          default: '*'
+        description: Search query. If omitted, the API searches all objects.
+      - name: id
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Object ID.
+      - name: ids
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        description: Object IDs. Repeat this parameter to pass more than one ID.
+      - name: field
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Field name used by the selected search method.
+      - name: prefix
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Prefix to match.
+      - name: latlng
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Latitude and longitude as `latitude,longitude`.
+      - name: radius
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+        description: Nearby search radius in kilometers.
+      - name: like
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Text or object ID used for a similar-object search.
+      - name: fields
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        description: Fields to compare in a similar-object search. Repeat for multiple fields.
+      - name: filterid
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Object ID to exclude from a similar-object search.
+      - name: tags
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        description: Tags to match. Repeat for multiple tags.
+      - name: terms
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+        description: Terms to match. Repeat for multiple terms.
+      - name: matchall
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+        description: Require all terms to match.
+      - name: count
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+        description: Return only the result count when true.
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+        description: Page number.
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 30
+        description: Maximum number of results per page.
+      - name: desc
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: true
+        description: Sort in descending order.
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Field to sort by.
+      - name: lastKey
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Continuation key for the next page.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Paged result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponse'
+              example:
+                page: 0
+                totalHits: 3
+                items:
+                - id: tag:tag1
+                  type: tag
+                  name: tag tag:tag1
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid query syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Search objects by query type
+      description: Executes an advanced search. Query methods include `id`, `ids`, `nested`, `nearby`, `prefix`,
+        `similar`, `tagged`, `in`, `terms`, `wildcard` and `count`.
+  /v1/_types:
+    get:
+      tags:
+      - miscellaneous
+      operationId: listTypes
+      parameters:
+      - name: count
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Return only the result count when true.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Known object types.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppTypesMap'
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: List object types
+      description: Lists core and user-defined types. Set `count=true` to return object counts. The current implementation
+        also supports the optional `count` query parameter.
+  /v1/_setup:
+    get:
+      tags:
+      - miscellaneous
+      operationId: setup
+      responses:
+        '200':
+          description: Root app initialized or already initialized.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParaObjectInput'
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Initialize the root app
+      description: Public endpoint. Creates the root app and generates the first API keys. Later calls return an
+        already-configured status response.
+      parameters:
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      security: []
+  /v1/_setup/{appid}:
+    get:
+      tags:
+      - miscellaneous
+      operationId: setup_1
+      parameters:
+      - name: appid
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Application ID.
+      - name: name
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: creatorid
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: sharedIndex
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Share the search index with the parent app when true.
+      - name: sharedTable
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Share the database table with the parent app when true.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Child app credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiCredentials'
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Only the root app may create child apps.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Create an app
+      description: Creates a child app. Requires root-app authentication. `sharedTable` and `sharedIndex` control
+        resource sharing. The current route names the app path variable `appid`.
+      security: []
+  /v1/_plugins:
+    get:
+      tags:
+      - plugins
+      operationId: list
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: List official plugins
+      description: Lists the official plugin catalogue with type, installed state and active state. Requires root-app
+        access; the plugins API can be disabled by server configuration.
+      parameters:
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+  /v1/_plugins/{artifactId}/preview:
+    get:
+      tags:
+      - plugins
+      operationId: preview
+      parameters:
+      - name: artifactId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Plugin Maven artifact ID.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Preview plugin installation
+      description: Resolves plugin dependencies in a temporary folder and reports the download size without installing
+        files. Requires root-app access; the plugins API can be disabled by server configuration.
+  /v1/_plugins/installed:
+    get:
+      tags:
+      - plugins
+      operationId: installed
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: List installed plugins
+      description: Lists plugin JARs in the plugin folder, including third-party JARs. Requires root-app access;
+        the plugins API can be disabled by server configuration.
+      parameters:
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+  /v1/_permissions:
+    get:
+      tags:
+      - permissions
+      operationId: getPermissions
+      responses:
+        '200':
+          description: Resource permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionsMap'
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: List resource permissions
+      description: Returns all resource permissions.
+      parameters:
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+  /v1/_permissions/{subjectid}:
+    get:
+      tags:
+      - permissions
+      operationId: getPermissions_1
+      parameters:
+      - name: subjectid
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Subject ID.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Subject permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionsMap'
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: List permissions for a subject
+      description: Returns permissions for one subject.
+    delete:
+      tags:
+      - permissions
+      operationId: revokeAllPermissions
+      parameters:
+      - name: subjectid
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Subject ID.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Updated subject permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionsMap'
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid permission request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: App, subject or resource not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Revoke all permissions for a subject
+      description: Revokes all permissions for a subject.
+  /v1/_permissions/{subjectid}/{type}/{method}:
+    get:
+      tags:
+      - permissions
+      operationId: checkPermission
+      parameters:
+      - name: subjectid
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Subject ID.
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: method
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Utility method name.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Boolean result.
+          content:
+            text/plain:
+              schema:
+                type: string
+                enum:
+                - 'true'
+                - 'false'
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid permission request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: App, subject or resource not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Check a resource permission
+      description: Returns plain-text `true` or `false` for a subject and method.
+  /v1/_me:
+    get:
+      tags:
+      - authentication
+      operationId: me
+      responses:
+        '200':
+          description: Authenticated User or App.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParaObjectInput'
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Get the authenticated user or app
+      description: Returns the authenticated User or App. Returns 401 when unauthenticated.
+      parameters:
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+  /v1/_id/{id}:
+    get:
+      tags:
+      - objects
+      operationId: readId
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Object ID.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Read an object by ID
+      description: Returns the object for the supplied ID.
+  /v1/_health:
+    get:
+      tags:
+      - miscellaneous
+      operationId: health
+      responses:
+        '200':
+          description: Healthy server.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: healthy
+              example:
+                message: healthy
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: The server is unhealthy.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Get server health
+      description: Public endpoint. Returns `healthy` when the server is healthy; otherwise returns 500.
+      parameters:
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      security: []
+  /v1/_export:
+    get:
+      tags:
+      - storage operations
+      operationId: backup
+      responses:
+        '200':
+          description: ZIP backup archive.
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Export app data
+      description: Exports app data as a ZIP archive containing JSON files.
+  /v1/_constraints:
+    get:
+      tags:
+      - constraints
+      operationId: getConstraints
+      responses:
+        '200':
+          description: Validation constraints.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: List validation constraints
+      description: Returns validation constraints for all types in the current app.
+      parameters:
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+  /v1/_constraints/{type}:
+    get:
+      tags:
+      - constraints
+      operationId: getConstraints_1
+      parameters:
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Validation constraints.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: List constraints for a type
+      description: Returns validation constraints for one type.
+  /v1/_config/options:
+    get:
+      tags:
+      - configuration
+      operationId: configOptions
+      parameters:
+      - name: format
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Output format.
+      - name: groupby
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Configuration documentation grouping mode.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Configuration documentation in the requested format.
+          content:
+            application/json:
+              schema:
+                type: string
+            text/plain:
+              schema:
+                type: string
+            text/markdown:
+              schema:
+                type: string
+            application/hocon:
+              schema:
+                type: string
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Get configuration documentation
+      description: See the Para REST API behavior and server security configuration for access rules and error conditions.
+      security: []
+  /v1/:
+    get:
+      tags:
+      - miscellaneous
+      operationId: intro
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Get API introduction
+      description: See the Para REST API behavior and server security configuration for access rules and error conditions.
+      parameters:
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+  /v1:
+    get:
+      tags:
+      - miscellaneous
+      operationId: intro_1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Intro
+      description: See the Para REST API behavior and server security configuration for access rules and error conditions.
+  /v1/{type}/{id}/links:
+    delete:
+      tags:
+      - links
+      operationId: deleteAllLinks
+      parameters:
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Para object type.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Object ID.
+      - name: childrenonly
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+        description: Limit results or deletion to direct child objects.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Request succeeded.
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Delete all links
+      description: Unlinks all objects from the first object. With `childrenonly=true`, direct child objects are
+        deleted.
+  /v1/_plugins/{artifactId}/{version}:
+    delete:
+      tags:
+      - plugins
+      operationId: uninstall
+      parameters:
+      - name: artifactId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Plugin Maven artifact ID.
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Plugin version.
+      - name: select
+        in: query
+        required: false
+        description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
+        schema:
+          type: string
+        example: id,name,my_field
+      responses:
+        '200':
+          description: Request succeeded.
+        default:
+          description: Error response. Status and body depend on validation, access rules and server configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      summary: Remove a plugin
+      description: Removes the plugin JAR. Restart Para to unload it. Requires root-app access; the plugins API
+        can be disabled by server configuration.
+  /jwt_auth:
+    post:
+      tags:
+      - authentication
+      operationId: jwtSignIn
+      summary: Sign in and issue a JWT
+      description: Public authentication endpoint. Creates or loads a user through the selected provider and returns
+        a JWT and user object. Root-app sign-in is forbidden.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JwtAuthRequest'
+            example:
+              appid: app:myapp
+              provider: password
+              token: user@domain.com::password123
+      responses:
+        '200':
+          description: JWT and authenticated user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwtAuthResponse'
+        '400':
+          description: Authentication failed or required fields are missing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Root app access is not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security: []
+    get:
+      tags:
+      - authentication
+      operationId: jwtRefresh
+      summary: Refresh a JWT
+      description: Refreshes a valid JWT and returns a new token. Send the token in the Authorization bearer header
+        or the configured authentication cookie. The current implementation reads the token from the Authorization
+        header or configured auth cookie; it does not read a JWT query parameter.
+      responses:
+        '200':
+          description: New JWT and the same user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwtAuthResponse'
+        '400':
+          description: Token is invalid or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Reauthentication is required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - bearerJwt: []
+    delete:
+      tags:
+      - authentication
+      operationId: jwtRevoke
+      summary: Revoke all user JWTs
+      description: Invalidates all JWTs for the authenticated user by resetting the user token secret. The current
+        implementation reads the token from the Authorization header or configured auth cookie.
+      responses:
+        '200':
+          description: All user tokens were revoked.
+        '401':
+          description: Token is invalid or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - bearerJwt: []
+components:
+  schemas:
+    MultipartForm:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          minLength: 0
+        email:
+          type: string
+          maxLength: 255
+          minLength: 0
+        toEmails:
+          type: array
+          items:
+            type: string
+        message:
+          type: string
+          maxLength: 10000
+          minLength: 0
+        subject:
+          type: string
+          maxLength: 255
+          minLength: 0
+        plaintextOnly:
+          type: boolean
+        markdownEnabled:
+          type: boolean
+        file:
+          type: string
+          format: binary
+      required:
+      - message
+      - name
+    ParaObjectInput:
+      type: object
+      description: Open object properties. Fields depend on the Para object type.
+      additionalProperties: true
+    ParaObjectBatchInput:
+      type: array
+      description: A batch of Para objects.
+      items:
+        $ref: '#/components/schemas/ParaObjectInput'
+    SettingsInput:
+      type: object
+      description: Settings map or a map containing a setting value.
+      additionalProperties: true
+    PermissionMethodsInput:
+      type: array
+      description: Allowed HTTP methods.
+      items:
+        type: string
+    PluginInstallInput:
+      type: object
+      description: Optional plugin version selection.
+      properties:
+        version:
+          type: string
+      additionalProperties: true
+    JwtAuthRequest:
+      type: object
+      required:
+      - appid
+      - provider
+      - token
+      properties:
+        appid:
+          type: string
+        provider:
+          type: string
+          enum:
+          - facebook
+          - google
+          - twitter
+          - github
+          - linkedin
+          - microsoft
+          - slack
+          - amazon
+          - password
+          - oauth2
+          - oauth2second
+          - oauth2third
+          - ldap
+          - passwordless
+        token:
+          type: string
+          description: Provider token. Password uses email::password; LDAP uses uid:password.
+    JwtToken:
+      type: object
+      properties:
+        access_token:
+          type: string
+        expires:
+          type: integer
+          format: int64
+        refresh:
+          type: integer
+          format: int64
+    JwtAuthResponse:
+      type: object
+      properties:
+        jwt:
+          $ref: '#/components/schemas/JwtToken'
+        user:
+          $ref: '#/components/schemas/ParaObjectInput'
+    PageResponse:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int64
+        totalHits:
+          type: integer
+          format: int64
+        lastKey:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParaObjectInput'
+    AppTypesMap:
+      type: object
+      additionalProperties:
+        type: string
+      description: Map of plural URL names to singular object types.
+    PermissionsMap:
+      type: object
+      additionalProperties:
+        type: object
+        additionalProperties:
+          type: array
+          items:
+            type: string
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+    ApiCredentials:
+      type: object
+      properties:
+        accessKey:
+          type: string
+        secretKey:
+          type: string
+        info:
+          type: string
+  securitySchemes:
+    paraAuthorization:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Para signed-app or token authentication. The required method depends on server configuration
+        and route.
+    bearerJwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Use Para CLI to generate an API key in the JWT format.
+tags:
+- name: objects
+  description: Object CRUD operations and object-by-ID access.
+- name: search
+  description: Basic, advanced and linked-object searches.
+- name: links
+  description: Create, inspect and remove object links (i.e. many-to-many relationships).
+- name: settings
+  description: Application settings.
+- name: permissions
+  description: Resource permission management and checks.
+- name: batch operations
+  description: Batch object reads, writes and deletes.
+- name: HTML forms
+  description: Unauthenticated public HTML form email endpoint.
+- name: emails
+  description: Authenticated email operations.
+- name: constraints
+  description: Validation constraint management.
+- name: utils
+  description: Utility methods exposed by the REST API.
+- name: configuration
+  description: Configuration documentation.
+- name: storage operations
+  description: Data export, import and search-index operations.
+- name: authentication
+  description: JWT authentication and the authenticated user endpoint.
+- name: miscellaneous
+  description: Setup, API metadata, health, type and key operations.
+- name: plugins
+  description: Plugin catalogue and plugin management.
+x-generated-from: Static contract maintained from Api1, PluginsApi, JWTRestfulAuthFilter and paraio.org sections
+  034-054.
+externalDocs:
+  description: Para documentation page
+  url: https://paraio.org/docs

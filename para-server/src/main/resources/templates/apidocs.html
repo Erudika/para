@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Para - {{title}}</title>
+    <style>
+			:root {
+				--scalar-font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+				--scalar-font-code: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+			}
+
+			.swagger-ui .info .title small {
+				line-height: 20px;
+				top: 7px;
+				border-radius: 5px;
+			}
+			.swagger-ui .info {
+				margin: 40px 0 10px 0;
+			}
+			.swagger-ui table thead tr td, .swagger-ui table thead tr th {
+				width: 200px;
+			}
+			.swagger-ui .response-col_links {
+				display: none;
+			}
+			.swagger-ui select {
+				opacity: 1;
+				height: 2.4rem;
+				width: auto;
+				font-size: 16px;
+				margin: 0px;
+			}
+    </style>
+  </head>
+  <body>
+
+		<div id="app"></div>
+
+		<script
+			id="api-reference"
+			data-url="api.json"
+			data-configuration='{"telemetry":false,"withDefaultFonts":false}'
+			src="{{scriptslink}}/scalar.standalone.js?r=$!rev"></script>
+
+	</body>
+</html>
