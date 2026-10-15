@@ -473,7 +473,7 @@ public final class Api1 {
 	 * @param page the page number
 	 * @param limit the maximum number of results
 	 * @param desc whether to sort in descending order
-	 * @param sortby the field to sort by
+	 * @param sort the field to sort by
 	 * @param lastKey the key for the next page
 	 * @param req the request
 	 * @return a response
@@ -486,10 +486,10 @@ public final class Api1 {
 			@RequestParam(required = false) Integer page,
 			@RequestParam(required = false) Integer limit,
 			@RequestParam(required = false) Boolean desc,
-			@RequestParam(required = false) String sortby,
+			@RequestParam(required = false) String sort,
 			@RequestParam(required = false) String lastKey,
 			HttpServletRequest req) {
-		Pager pager = pagerFromParams(page, sortby, limit, desc, lastKey);
+		Pager pager = pagerFromParams(page, sort, limit, desc, lastKey);
 		return searchHandler(getPrincipalApp(), "default", type, query, null, null, null, null, null, null, null,
 				null, null, null, null, true, count, pager, req);
 	}
@@ -502,7 +502,7 @@ public final class Api1 {
 	 * @param page the page number
 	 * @param limit the maximum number of results
 	 * @param desc whether to sort in descending order
-	 * @param sortby the field to sort by
+	 * @param sort the field to sort by
 	 * @param lastKey the key for the next page
 	 * @param req the request
 	 * @return a response
@@ -514,10 +514,10 @@ public final class Api1 {
 			@RequestParam(required = false) Integer page,
 			@RequestParam(required = false) Integer limit,
 			@RequestParam(required = false) Boolean desc,
-			@RequestParam(required = false) String sortby,
+			@RequestParam(required = false) String sort,
 			@RequestParam(required = false) String lastKey,
 			HttpServletRequest req) {
-		Pager pager = pagerFromParams(page, sortby, limit, desc, lastKey);
+		Pager pager = pagerFromParams(page, sort, limit, desc, lastKey);
 		return searchHandler(getPrincipalApp(), "default", type, query, null, null, null, null, null, null, null,
 				null, null, null, null, true, count, pager, req);
 	}
@@ -543,7 +543,7 @@ public final class Api1 {
 	 * @param page the page number
 	 * @param limit the maximum number of results
 	 * @param desc whether to sort in descending order
-	 * @param sortby the field to sort by
+	 * @param sort the field to sort by
 	 * @param lastKey the key for the next page
 	 * @param req the request
 	 * @return a response
@@ -568,10 +568,10 @@ public final class Api1 {
 			@RequestParam(required = false) Integer page,
 			@RequestParam(required = false) Integer limit,
 			@RequestParam(required = false) Boolean desc,
-			@RequestParam(required = false) String sortby,
+			@RequestParam(required = false) String sort,
 			@RequestParam(required = false) String lastKey,
 			HttpServletRequest req) {
-		Pager pager = pagerFromParams(page, sortby, limit, desc, lastKey);
+		Pager pager = pagerFromParams(page, sort, limit, desc, lastKey);
 		return searchHandler(getPrincipalApp(), querytype, type, query, id, ids, field, prefix, latlng, radius, like,
 				fields, filterid, tags, terms, matchall, count, pager, req);
 	}
@@ -597,7 +597,7 @@ public final class Api1 {
 	 * @param page the page number
 	 * @param limit the maximum number of results
 	 * @param desc whether to sort in descending order
-	 * @param sortby the field to sort by
+	 * @param sort the field to sort by
 	 * @param lastKey the key for the next page
 	 * @param req the request
 	 * @return a response
@@ -621,10 +621,10 @@ public final class Api1 {
 			@RequestParam(required = false) Integer page,
 			@RequestParam(required = false) Integer limit,
 			@RequestParam(required = false) Boolean desc,
-			@RequestParam(required = false) String sortby,
+			@RequestParam(required = false) String sort,
 			@RequestParam(required = false) String lastKey,
 			HttpServletRequest req) {
-		Pager pager = pagerFromParams(page, sortby, limit, desc, lastKey);
+		Pager pager = pagerFromParams(page, sort, limit, desc, lastKey);
 		return searchHandler(getPrincipalApp(), querytype, type, query, id, ids, field, prefix, latlng, radius, like,
 				fields, filterid, tags, terms, matchall, count, pager, req);
 	}
@@ -1537,7 +1537,7 @@ public final class Api1 {
 	 * @param page the page number
 	 * @param limit the maximum number of results
 	 * @param desc whether to sort in descending order
-	 * @param sortby the field to sort by
+	 * @param sort the field to sort by
 	 * @param lastKey the key for the next page
 	 * @param req the request
 	 * @return a response
@@ -1555,10 +1555,10 @@ public final class Api1 {
 			@RequestParam(required = false) Integer page,
 			@RequestParam(required = false) Integer limit,
 			@RequestParam(required = false) Boolean desc,
-			@RequestParam(required = false) String sortby,
+			@RequestParam(name = "sort", required = false) String sort,
 			@RequestParam(required = false) String lastKey,
 			HttpServletRequest req) {
-		Pager pager = pagerFromParams(page, sortby, limit, desc, lastKey);
+		Pager pager = pagerFromParams(page, sort, limit, desc, lastKey);
 		return readLinks(type, id, type2, null, query, field, term, count, childrenonly, pager);
 	}
 
