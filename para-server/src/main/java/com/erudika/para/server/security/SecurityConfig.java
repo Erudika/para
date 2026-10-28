@@ -143,10 +143,13 @@ public class SecurityConfig {
 		String signoutSuccessPath = Para.getConfig().signoutSuccessPath();
 
 		return http.authorizeHttpRequests((authorize) -> {
+			// Public pages and static resources must be listed in para.security.ignored.
+			// The configured sign-in path is also public so an unauthenticated user can sign in.
+			authorize.requestMatchers(IgnoredRequestMatcher.INSTANCE).permitAll();
+			authorize.requestMatchers(signinPath).permitAll();
 			parseProtectedResources(http);
 			authorize.requestMatchers(RestRequestMatcher.INSTANCE).authenticated();
-			authorize.requestMatchers(IgnoredRequestMatcher.INSTANCE).permitAll();
-			authorize.anyRequest().permitAll(); // allow static files
+			authorize.anyRequest().authenticated();
 		}).
 		exceptionHandling((exc) -> {
 			exc.authenticationEntryPoint(new SimpleAuthenticationEntryPoint(signinPath));
