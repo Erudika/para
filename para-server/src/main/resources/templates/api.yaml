@@ -36,7 +36,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: OK
@@ -82,7 +81,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Request succeeded.
@@ -142,7 +140,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: No content.
@@ -184,7 +181,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Object updated. Vote requests return a boolean result.
@@ -272,7 +268,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Created link ID.
@@ -316,7 +311,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Created link ID.
@@ -360,7 +354,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
     put:
       tags:
       - settings
@@ -390,7 +383,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
   /v1/_settings/{key}:
     get:
       tags:
@@ -409,7 +401,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Custom setting value.
@@ -444,7 +435,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Request succeeded.
@@ -480,7 +470,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Request succeeded.
@@ -516,7 +505,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Updated resource permissions.
@@ -575,7 +563,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Updated resource permissions.
@@ -675,7 +662,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Validation constraints after the update.
@@ -735,7 +721,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Validation constraints after the update.
@@ -778,7 +763,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Objects found.
@@ -838,7 +822,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
     post:
       tags:
       - batch operations
@@ -875,7 +858,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
     delete:
       tags:
       - batch operations
@@ -895,7 +877,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: OK
@@ -965,7 +946,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
   /v1/{type}:
     get:
       tags:
@@ -1032,7 +1012,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Paged result.
@@ -1079,7 +1058,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: OK
@@ -1161,7 +1139,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
   /v1/_plugins/{artifactId}/install:
     post:
       tags:
@@ -1180,7 +1157,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       requestBody:
         required: false
         description: Optional plugin version.
@@ -1236,7 +1212,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
   /v1/_forms/{appid}/{formid}:
     post:
       tags:
@@ -1260,7 +1235,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       requestBody:
         content:
           multipart/form-data:
@@ -1320,7 +1294,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
   /v1/{type}/{id}/links/{type2}:
     get:
       tags:
@@ -1414,7 +1387,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Paged result.
@@ -1472,7 +1444,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Boolean result.
@@ -1532,7 +1503,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Request succeeded.
@@ -1699,7 +1669,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Paged result.
@@ -1795,7 +1764,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Paged result.
@@ -1899,7 +1867,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Utility result. The media type depends on the selected method.
@@ -1985,7 +1952,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Paged result.
@@ -2169,7 +2135,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Paged result.
@@ -2217,7 +2182,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Known object types.
@@ -2262,7 +2226,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       security: []
   /v1/_setup/{appid}:
     get:
@@ -2304,7 +2267,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Child app credentials.
@@ -2356,7 +2318,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
   /v1/_plugins/{artifactId}/preview:
     get:
       tags:
@@ -2375,7 +2336,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: OK
@@ -2420,7 +2380,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
   /v1/_permissions:
     get:
       tags:
@@ -2448,7 +2407,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
   /v1/_permissions/{subjectid}:
     get:
       tags:
@@ -2467,7 +2425,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Subject permissions.
@@ -2500,7 +2457,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Updated subject permissions.
@@ -2558,7 +2514,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Boolean result.
@@ -2622,7 +2577,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
   /v1/_id/{id}:
     get:
       tags:
@@ -2641,7 +2595,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: OK
@@ -2696,7 +2649,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       security: []
   /v1/_export:
     get:
@@ -2747,7 +2699,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
   /v1/_constraints/{type}:
     get:
       tags:
@@ -2766,7 +2717,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Validation constraints.
@@ -2807,7 +2757,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Configuration documentation in the requested format.
@@ -2860,7 +2809,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
   /v1:
     get:
       tags:
@@ -2912,7 +2860,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Request succeeded.
@@ -2949,7 +2896,6 @@ paths:
         description: Comma-separated fields to include in object responses, for example `id,name,my_field`.
         schema:
           type: string
-        example: id,name,my_field
       responses:
         '200':
           description: Request succeeded.
