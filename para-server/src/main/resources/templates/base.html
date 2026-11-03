@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Para - {{title}}</title>
     <style>
+      /* Accent: one source of truth for the whole page. */
+      :root {
+        --accent: #AEAEAE;
+        --accent-rgb: 128, 199, 230;
+        --on-accent: #06121a;
+      }
+
       /* Base */
       *,
       *::before,
@@ -38,7 +45,8 @@
         line-height: 1.5;
       }
       a {
-        color: hsl(198, 100%, 70%);
+        color: inherit;
+				font-weight: bold;
         cursor: pointer;
         text-decoration: none;
       }
@@ -58,6 +66,7 @@
       .navbar {
         min-height: 3.25rem;
         position: relative;
+				padding: 1.5rem;
         z-index: 30;
       }
       .navbar-brand {
@@ -73,7 +82,7 @@
         background: none;
         border: none;
         border-radius: 0.5em;
-        color: hsl(198, 100%, 70%);
+        color: var(--accent);
         cursor: pointer;
         display: inline-flex;
         flex-direction: column;
@@ -116,35 +125,39 @@
         flex-shrink: 0;
         gap: 0.75rem;
         line-height: 1.5;
-        padding: 0.5rem 0.75rem;
+        /*padding: 1.5rem;*/
         position: relative;
       }
-      .navbar-item svg {
+			.logo-item {
+				display: block;
+        flex-grow: 0;
+        flex-shrink: 0;
+        gap: 0.75rem;
+				padding-top: 0.5rem;
+				padding-right: 1rem;
+			}
+      .logo-item svg {
         max-height: 1.75rem;
       }
       a.navbar-item {
         background-color: transparent;
         cursor: pointer;
+				vertical-align: baseline;
+				padding: 10px;
       }
-      a.navbar-item:hover,
-      a.navbar-item:focus {
-        background-color: hsla(0, 0%, 100%, 0.1);
-      }
-      @media screen and (max-width: 1023px) {
+      @media screen and (max-width: 719px) {
         .navbar-brand .navbar-item {
           align-items: center;
           display: flex;
         }
         .navbar-menu {
-          background-color: #3a3a3a;
-          box-shadow: 0 0.5em 1em rgba(0, 0, 0, 0.35);
           padding: 0.5rem 0;
         }
         .navbar-menu.is-active {
           display: block;
         }
       }
-      @media screen and (min-width: 1024px) {
+      @media screen and (min-width: 720px) {
         .navbar,
         .navbar-menu,
         .navbar-start,
@@ -238,8 +251,6 @@
       /* Footer */
       .footer {
         color: hsl(221, 14%, 90%);
-        padding: 3rem 1.5rem 6rem;
-        background-image: linear-gradient(to top, rgba(3, 7, 12, 0.96) 0%, rgba(3, 7, 12, 0.9) 32%, rgba(3, 7, 12, 0.45) 68%, transparent 100%);
       }
 
       /* Buttons */
@@ -288,22 +299,22 @@
         background-color: hsl(221, 14%, 16%);
       }
       .button.is-info {
-        background-color: hsl(198, 100%, 70%);
-        border-color: hsl(198, 100%, 70%);
-        color: hsl(198, 100%, 10%);
+        background-color: var(--accent);
+        border-color: var(--accent);
+        color: var(--on-accent);
       }
       .button.is-info:hover,
       .button.is-info:focus {
-        background-color: hsl(198, 100%, 65%);
+        background-image: linear-gradient(rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.14));
       }
       .button.is-info.is-dark {
-        background-color: hsl(198, 100%, 21%);
-        border-color: hsl(198, 100%, 70%);
-        color: hsl(198, 100%, 60%);
+        background-color: rgba(var(--accent-rgb), 0.12);
+        border-color: var(--accent);
+        color: var(--accent);
       }
       .button.is-info.is-dark:hover,
       .button.is-info.is-dark:focus {
-        background-color: hsl(198, 100%, 16%);
+        background-color: rgba(var(--accent-rgb), 0.22);
       }
 
       /* Helpers */
@@ -318,6 +329,7 @@
       }
       footer {
         margin-top: -150px;
+				z-index: 10;
       }
       canvas {
         position: fixed;
@@ -336,16 +348,17 @@
       .navbar {
         background-image: linear-gradient(to bottom, rgba(3, 7, 12, 0.72) 0%, rgba(3, 7, 12, 0.28) 55%, transparent 100%);
       }
-      .hero-body {
-        position: relative;
-      }
+			/*      .hero-body {
+							position: relative;
+						}*/
       .hero-body::before {
         content: "";
         position: absolute;
         inset: 0;
         z-index: 0;
         pointer-events: none;
-        background: radial-gradient(ellipse 70% 55% at 50% 48%, rgba(3, 7, 12, 0.78) 0%, rgba(3, 7, 12, 0.58) 42%, rgba(3, 7, 12, 0.16) 74%, transparent 100%);
+        /*background: radial-gradient(ellipse 70% 55% at 50% 48%, rgba(3, 7, 12, 0.78) 0%, rgba(3, 7, 12, 0.58) 42%, rgba(3, 7, 12, 0.16) 74%, transparent 100%);*/
+				background: linear-gradient(180deg, rgba(3, 7, 12, 0.78) 0%, rgba(3, 7, 12, 0.58) 42%, rgba(3, 7, 12, 0.16) 74%, transparent 100%);
       }
       .hero-body > .container {
         position: relative;
@@ -357,6 +370,7 @@
 
       /* Cloud console */
       .noise-console {
+				display: none;
         position: fixed;
         right: calc(50% - 8.5rem);
         bottom: 5rem;
@@ -366,63 +380,65 @@
         max-width: calc(100vw - 2rem);
         max-height: calc(100vh - 2rem);
         overflow: auto;
-        border: 1px solid hsla(198, 60%, 70%, 0.22);
+        border: 1px solid rgba(var(--accent-rgb), 0.22);
         border-radius: 2px;
         background-color: rgba(5, 10, 16, 0.84);
-        background-image: linear-gradient(to bottom, hsla(198, 60%, 70%, 0.06) 0%, transparent 40%);
+        background-image: linear-gradient(to bottom, rgba(var(--accent-rgb), 0.06) 0%, transparent 40%);
         backdrop-filter: blur(14px) saturate(130%);
         -webkit-backdrop-filter: blur(14px) saturate(130%);
-        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 hsla(198, 60%, 85%, 0.08);
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(var(--accent-rgb), 0.08);
         color: hsl(221, 14%, 88%);
         font-family: ui-monospace, monospace;
         font-size: 0.6875rem;
         line-height: 1.4;
         letter-spacing: 0.05em;
-        text-transform: uppercase;
         scrollbar-width: thin;
-        scrollbar-color: hsla(198, 60%, 70%, 0.35) transparent;
+        scrollbar-color: rgba(var(--accent-rgb), 0.35) transparent;
       }
       .noise-console__head {
         align-items: center;
-        appearance: none;
-        background: none;
-        border: 0;
-        color: inherit;
-        cursor: pointer;
-        display: flex;
-        font: inherit;
-        gap: 0.75rem;
-        justify-content: space-between;
-        letter-spacing: inherit;
-        padding: 0.625rem 0.75rem;
-        text-transform: inherit;
-        width: 100%;
+				appearance: none;
+				background: none;
+				border: 0;
+				color: inherit;
+				cursor: pointer;
+				display: flex;
+				font: inherit;
+				gap: 0.75rem;
+				justify-content: space-between;
+				letter-spacing: inherit;
+				padding: 0.1rem 0.4rem;
+				text-align: left;
+				width: 100%;
       }
-      .noise-console__head:hover {
-        background-color: hsla(198, 60%, 70%, 0.07);
-      }
-      .noise-console__head:focus-visible {
-        outline: 1px solid hsl(198, 100%, 70%);
-        outline-offset: -2px;
-      }
+
       .noise-console__title {
-        color: hsl(198, 100%, 82%);
-        letter-spacing: 0.2em;
+        color: var(--accent);
+				color: var(--accent);
+				text-overflow: ellipsis;
+				max-width: 182px;
+				white-space: nowrap;
+				overflow: hidden;
       }
       .noise-console__chev {
-        color: hsla(198, 60%, 80%, 0.65);
-        font-size: 0.85rem;
-        line-height: 1;
-        transition: transform 160ms ease;
+        color: rgba(var(--accent-rgb), 0.65);
+				font-size: 0.85rem;
+				line-height: 1;
+				margin-top: -0.5rem;
+				font-size: x-large;
       }
-      .noise-console[data-open="false"] .noise-console__chev {
+      .noise-console__chev {
         transform: rotate(-90deg);
       }
+			.noise-console[data-open="false"] .noise-console__chev {
+				display: none;
+			}
+
       .noise-console[data-open="false"] .noise-console__body {
         display: none;
       }
       .noise-console__body {
-        border-top: 1px solid hsla(198, 60%, 70%, 0.16);
+        border-top: 1px solid rgba(var(--accent-rgb), 0.16);
         display: grid;
         gap: 0.75rem;
         padding: 0.75rem;
@@ -441,8 +457,58 @@
         color: hsla(221, 14%, 88%, 0.58);
       }
       .noise-row__value {
-        color: hsl(198, 100%, 78%);
+        color: var(--accent);
         font-variant-numeric: tabular-nums;
+      }
+      .noise-row--inline {
+        align-items: center;
+        display: flex;
+        justify-content: space-between;
+      }
+      .noise-accent {
+        align-items: center;
+        display: flex;
+        gap: 0.5rem;
+      }
+      .noise-color {
+        -webkit-appearance: none;
+        appearance: none;
+        background: none;
+        border: 1px solid rgba(var(--accent-rgb), 0.45);
+        cursor: pointer;
+        height: 1.125rem;
+        padding: 0;
+        width: 2.25rem;
+      }
+      .noise-color::-webkit-color-swatch-wrapper {
+        padding: 0;
+      }
+      .noise-color::-webkit-color-swatch {
+        border: 0;
+      }
+      .noise-color::-moz-color-swatch {
+        border: 0;
+      }
+      .noise-color:hover {
+        border-color: var(--accent);
+      }
+      .noise-color:focus-visible {
+        outline: 1px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .noise-seed {
+        background-color: rgba(5, 10, 16, 0.6);
+        border: 1px solid rgba(var(--accent-rgb), 0.26);
+        color: hsl(221, 14%, 90%);
+        font: inherit;
+        letter-spacing: 0.04em;
+        padding: 0.4rem 0.45rem;
+        width: 100%;
+      }
+      .noise-seed:focus-visible {
+        border-color: var(--accent);
+        outline: 1px solid var(--accent);
+        outline-offset: 1px;
       }
       .noise-range {
         -webkit-appearance: none;
@@ -455,17 +521,17 @@
         width: 100%;
       }
       .noise-range::-webkit-slider-runnable-track {
-        background-color: hsla(198, 60%, 70%, 0.2);
+        background-color: rgba(var(--accent-rgb), 0.2);
         border: 0;
         height: 1px;
       }
       .noise-range::-webkit-slider-thumb {
         -webkit-appearance: none;
         appearance: none;
-        background-color: hsl(198, 100%, 76%);
+        background-color: var(--accent);
         border: 0;
         border-radius: 0;
-        box-shadow: 0 0 10px hsla(198, 100%, 70%, 0.65);
+        box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.65);
         height: 0.75rem;
         margin-top: -0.375rem;
         width: 0.1875rem;
@@ -475,25 +541,25 @@
         background-color: hsl(0, 0%, 100%);
       }
       .noise-range::-moz-range-track {
-        background-color: hsla(198, 60%, 70%, 0.2);
+        background-color: rgba(var(--accent-rgb), 0.2);
         border: 0;
         height: 1px;
       }
       .noise-range::-moz-range-thumb {
-        background-color: hsl(198, 100%, 76%);
+        background-color: var(--accent);
         border: 0;
         border-radius: 0;
-        box-shadow: 0 0 10px hsla(198, 100%, 70%, 0.65);
+        box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.65);
         height: 0.75rem;
         width: 0.1875rem;
       }
       .noise-range:focus-visible {
-        outline: 1px solid hsl(198, 100%, 70%);
+        outline: 1px solid var(--accent);
         outline-offset: 2px;
       }
       .noise-bits {
-        background-color: hsla(198, 60%, 70%, 0.2);
-        border: 1px solid hsla(198, 60%, 70%, 0.2);
+        background-color: rgba(var(--accent-rgb), 0.2);
+        border: 1px solid rgba(var(--accent-rgb), 0.2);
         display: grid;
         gap: 1px;
         grid-template-columns: repeat(4, 1fr);
@@ -506,23 +572,22 @@
         cursor: pointer;
         font: inherit;
         letter-spacing: 0.12em;
-        padding: 0.375rem 0;
       }
       .noise-bits button:hover {
-        background-color: hsla(198, 60%, 70%, 0.14);
-        color: hsl(198, 100%, 88%);
+        background-color: rgba(var(--accent-rgb), 0.14);
+        color: var(--accent);
       }
       .noise-bits button:focus-visible {
-        outline: 1px solid hsl(198, 100%, 70%);
+        outline: 1px solid var(--accent);
         outline-offset: -2px;
       }
       .noise-bits button[aria-pressed="true"] {
-        background-color: hsl(198, 100%, 70%);
-        color: hsl(198, 100%, 8%);
+        background-color: var(--accent);
+        color: var(--on-accent);
         font-weight: 700;
       }
       .noise-palette {
-        border: 1px solid hsla(198, 60%, 70%, 0.2);
+        border: 1px solid rgba(var(--accent-rgb), 0.2);
         display: flex;
         height: 0.5625rem;
       }
@@ -533,13 +598,13 @@
       .noise-actions {
         display: grid;
         gap: 0.375rem;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 4fr 1fr;
       }
       .noise-btn {
         appearance: none;
-        background-color: hsla(198, 60%, 70%, 0.08);
-        border: 1px solid hsla(198, 60%, 70%, 0.26);
-        color: hsl(198, 100%, 82%);
+        background-color: rgba(var(--accent-rgb), 0.08);
+        border: 1px solid rgba(var(--accent-rgb), 0.26);
+        color: var(--accent);
         cursor: pointer;
         font: inherit;
         letter-spacing: 0.12em;
@@ -547,15 +612,15 @@
         text-transform: uppercase;
       }
       .noise-btn:hover {
-        background-color: hsla(198, 60%, 70%, 0.18);
+        background-color: rgba(var(--accent-rgb), 0.18);
       }
       .noise-btn:focus-visible {
-        outline: 1px solid hsl(198, 100%, 70%);
+        outline: 1px solid var(--accent);
         outline-offset: 2px;
       }
       @media screen and (max-width: 720px) {
         .noise-console {
-          bottom: 0.5rem;
+          bottom: 5rem;
           font-size: 0.65rem;
           left: 0.5rem;
           right: 0.5rem;
@@ -570,20 +635,20 @@
   <body>
     <nav class="navbar has-background-inherit" role="navigation" aria-label="main navigation">
       <div class="navbar-brand">
-        <a class="navbar-item" href="https://paraio.org">
+        <a class="logo-item" href="https://paraio.org">
           <svg width="2800" height="800" viewBox="0 0 2800 900" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-                 fill="rgb(49,199,255)"
-                 fill-rule="evenodd"
-                 d="M 762.06 516.88C 762.06 715.31 567.32 710.39 567.32 710.39 567.32 710.39 567.32 877.04 567.32 877.04 567.32 877.04 223.32 706.39 223.32 706.39 223.32 706.39 1.32 747.16 1.32 516.88 1.32 176.72 1.32 91.68 199.75 91.68 219.75 111.68 228.09 126.35 228.09 126.35 228.09 126.35 215.84 74.62 284.79 34.35 362.49-11.04 480.74-7.77 573.22 36.64 671.18 83.67 673.28 144.6 673.28 318.26 766.68 346.8 762.06 357.1 762.06 516.88ZM 338.34 274.89C 338.34 242.31 322.07 226.01 289.55 226.01 289.55 226.01 234.79 226.01 234.79 226.01 202.26 226.01 186 242.31 186 274.89 186 274.89 186 329.73 186 329.73 186 362.32 202.26 378.61 234.79 378.61 234.79 378.61 289.55 378.61 289.55 378.61 322.07 378.61 338.34 362.32 338.34 329.73 338.34 329.73 338.34 274.89 338.34 274.89ZM 338.34 488.29C 338.34 455.71 322.07 439.41 289.55 439.41 289.55 439.41 234.79 439.41 234.79 439.41 202.26 439.41 186 455.71 186 488.29 186 488.29 186 543.13 186 543.13 186 575.72 202.26 592 234.79 592 234.79 592 289.55 592 289.55 592 322.07 592 338.34 575.72 338.34 543.13 338.34 543.13 338.34 488.29 338.34 488.29ZM 551.99 274.89C 551.99 242.31 535.72 226.01 503.19 226.01 503.19 226.01 448.44 226.01 448.44 226.01 415.91 226.01 399.64 242.31 399.64 274.89 399.64 274.89 399.64 329.73 399.64 329.73 399.64 362.32 415.91 378.61 448.44 378.61 448.44 378.61 503.19 378.61 503.19 378.61 535.72 378.61 551.99 362.32 551.99 329.73 551.99 329.73 551.99 274.89 551.99 274.89ZM 551.99 488.29C 551.99 455.71 535.72 439.41 503.19 439.41 503.19 439.41 448.44 439.41 448.44 439.41 415.91 439.41 399.64 455.71 399.64 488.29 399.64 488.29 399.64 543.13 399.64 543.13 399.64 575.72 415.91 592 448.44 592 448.44 592 503.19 592 503.19 592 535.72 592 551.99 575.72 551.99 543.13 551.99 543.13 551.99 488.29 551.99 488.29Z"
-                 id="path4"
-                 style="fill:#ffffff;fill-opacity:1" />
-              <path
-                 fill="rgb(95,95,95)"
-                 fill-rule="evenodd"
-                 d="M 2438.9 702C 2413.36 702 2391.53 692.94 2373.41 674.81 2355.28 656.69 2346.22 634.86 2346.22 609.31 2346.22 609.31 2346.22 448.45 2346.22 448.45 2346.22 448.45 2735.34 448.45 2735.34 448.45 2735.34 448.45 2735.34 350.41 2735.34 350.41 2735.34 342.24 2732.4 335.22 2726.54 329.34 2720.66 323.48 2713.63 320.53 2705.47 320.53 2705.47 320.53 2346.22 320.53 2346.22 320.53 2346.22 320.53 2346.22 257.72 2346.22 257.72 2346.22 257.72 2705.47 257.72 2705.47 257.72 2731.51 257.72 2753.6 266.79 2771.73 284.91 2789.85 303.05 2798.92 324.88 2798.92 350.41 2798.92 350.41 2798.92 702 2798.92 702 2798.92 702 2438.9 702 2438.9 702ZM 2735.34 511.27C 2735.34 511.27 2409.03 511.27 2409.03 511.27 2409.03 511.27 2409.03 609.31 2409.03 609.31 2409.03 617.49 2411.96 624.51 2417.84 630.38 2423.7 636.26 2430.73 639.19 2438.9 639.19 2438.9 639.19 2735.34 639.19 2735.34 639.19 2735.34 639.19 2735.34 511.27 2735.34 511.27ZM 2025.65 329.34C 2019.77 335.22 2016.84 342.24 2016.84 350.41 2016.84 350.41 2016.84 702 2016.84 702 2016.84 702 1954.03 702 1954.03 702 1954.03 702 1954.03 350.41 1954.03 350.41 1954.03 324.88 1963.09 303.05 1981.22 284.91 1999.34 266.79 2021.17 257.72 2046.72 257.72 2046.72 257.72 2296.43 257.72 2296.43 257.72 2296.43 257.72 2296.43 320.53 2296.43 320.53 2296.43 320.53 2046.72 320.53 2046.72 320.53 2038.54 320.53 2031.52 323.48 2025.65 329.34ZM 1449.63 674.81C 1431.5 656.69 1422.44 634.86 1422.44 609.31 1422.44 609.31 1422.44 448.45 1422.44 448.45 1422.44 448.45 1811.57 448.45 1811.57 448.45 1811.57 448.45 1811.57 350.41 1811.57 350.41 1811.57 342.24 1808.62 335.22 1802.76 329.34 1796.88 323.48 1789.85 320.53 1781.69 320.53 1781.69 320.53 1422.44 320.53 1422.44 320.53 1422.44 320.53 1422.44 257.72 1422.44 257.72 1422.44 257.72 1781.69 257.72 1781.69 257.72 1807.74 257.72 1829.82 266.79 1847.95 284.91 1866.07 303.05 1875.14 324.88 1875.14 350.41 1875.14 350.41 1875.14 702 1875.14 702 1875.14 702 1515.12 702 1515.12 702 1489.58 702 1467.75 692.94 1449.63 674.81ZM 1811.57 511.27C 1811.57 511.27 1485.25 511.27 1485.25 511.27 1485.25 511.27 1485.25 609.31 1485.25 609.31 1485.25 617.49 1488.18 624.51 1494.06 630.38 1499.92 636.26 1506.95 639.19 1515.12 639.19 1515.12 639.19 1811.57 639.19 1811.57 639.19 1811.57 639.19 1811.57 511.27 1811.57 511.27ZM 1275.38 702C 1275.38 702 978.17 702 978.17 702 978.17 702 978.17 878.18 978.17 878.18 978.17 878.18 915.36 878.18 915.36 878.18 915.36 878.18 915.36 257.72 915.36 257.72 915.36 257.72 1275.38 257.72 1275.38 257.72 1300.91 257.72 1322.74 266.79 1340.87 284.91 1358.99 303.05 1368.06 324.88 1368.06 350.41 1368.06 350.41 1368.06 609.31 1368.06 609.31 1368.06 634.86 1358.99 656.69 1340.87 674.81 1322.74 692.94 1300.91 702 1275.38 702ZM 1305.25 350.41C 1305.25 342.24 1302.31 335.22 1296.44 329.34 1290.56 323.48 1283.54 320.53 1275.38 320.53 1275.38 320.53 1008.81 320.53 1008.81 320.53 1000.63 320.53 993.49 323.48 987.36 329.34 981.23 335.22 978.17 342.24 978.17 350.41 978.17 350.41 978.17 609.31 978.17 609.31 978.17 617.49 981.23 624.51 987.36 630.38 993.49 636.26 1000.63 639.19 1008.81 639.19 1008.81 639.19 1275.38 639.19 1275.38 639.19 1283.54 639.19 1290.56 636.26 1296.44 630.38 1302.31 624.51 1305.25 617.49 1305.25 609.31 1305.25 609.31 1305.25 350.41 1305.25 350.41Z"
-                 id="path6"
-                 style="fill:#ffffff;fill-opacity:1" />
+					<path
+						fill="var(--accent)"
+						fill-rule="evenodd"
+						d="M 762.06 516.88C 762.06 715.31 567.32 710.39 567.32 710.39 567.32 710.39 567.32 877.04 567.32 877.04 567.32 877.04 223.32 706.39 223.32 706.39 223.32 706.39 1.32 747.16 1.32 516.88 1.32 176.72 1.32 91.68 199.75 91.68 219.75 111.68 228.09 126.35 228.09 126.35 228.09 126.35 215.84 74.62 284.79 34.35 362.49-11.04 480.74-7.77 573.22 36.64 671.18 83.67 673.28 144.6 673.28 318.26 766.68 346.8 762.06 357.1 762.06 516.88ZM 338.34 274.89C 338.34 242.31 322.07 226.01 289.55 226.01 289.55 226.01 234.79 226.01 234.79 226.01 202.26 226.01 186 242.31 186 274.89 186 274.89 186 329.73 186 329.73 186 362.32 202.26 378.61 234.79 378.61 234.79 378.61 289.55 378.61 289.55 378.61 322.07 378.61 338.34 362.32 338.34 329.73 338.34 329.73 338.34 274.89 338.34 274.89ZM 338.34 488.29C 338.34 455.71 322.07 439.41 289.55 439.41 289.55 439.41 234.79 439.41 234.79 439.41 202.26 439.41 186 455.71 186 488.29 186 488.29 186 543.13 186 543.13 186 575.72 202.26 592 234.79 592 234.79 592 289.55 592 289.55 592 322.07 592 338.34 575.72 338.34 543.13 338.34 543.13 338.34 488.29 338.34 488.29ZM 551.99 274.89C 551.99 242.31 535.72 226.01 503.19 226.01 503.19 226.01 448.44 226.01 448.44 226.01 415.91 226.01 399.64 242.31 399.64 274.89 399.64 274.89 399.64 329.73 399.64 329.73 399.64 362.32 415.91 378.61 448.44 378.61 448.44 378.61 503.19 378.61 503.19 378.61 535.72 378.61 551.99 362.32 551.99 329.73 551.99 329.73 551.99 274.89 551.99 274.89ZM 551.99 488.29C 551.99 455.71 535.72 439.41 503.19 439.41 503.19 439.41 448.44 439.41 448.44 439.41 415.91 439.41 399.64 455.71 399.64 488.29 399.64 488.29 399.64 543.13 399.64 543.13 399.64 575.72 415.91 592 448.44 592 448.44 592 503.19 592 503.19 592 535.72 592 551.99 575.72 551.99 543.13 551.99 543.13 551.99 488.29 551.99 488.29Z"
+						id="path4"
+						style="fill:#ffffff;fill-opacity:1" />
+					<path
+						fill="rgb(95,95,95)"
+						fill-rule="evenodd"
+						d="M 2438.9 702C 2413.36 702 2391.53 692.94 2373.41 674.81 2355.28 656.69 2346.22 634.86 2346.22 609.31 2346.22 609.31 2346.22 448.45 2346.22 448.45 2346.22 448.45 2735.34 448.45 2735.34 448.45 2735.34 448.45 2735.34 350.41 2735.34 350.41 2735.34 342.24 2732.4 335.22 2726.54 329.34 2720.66 323.48 2713.63 320.53 2705.47 320.53 2705.47 320.53 2346.22 320.53 2346.22 320.53 2346.22 320.53 2346.22 257.72 2346.22 257.72 2346.22 257.72 2705.47 257.72 2705.47 257.72 2731.51 257.72 2753.6 266.79 2771.73 284.91 2789.85 303.05 2798.92 324.88 2798.92 350.41 2798.92 350.41 2798.92 702 2798.92 702 2798.92 702 2438.9 702 2438.9 702ZM 2735.34 511.27C 2735.34 511.27 2409.03 511.27 2409.03 511.27 2409.03 511.27 2409.03 609.31 2409.03 609.31 2409.03 617.49 2411.96 624.51 2417.84 630.38 2423.7 636.26 2430.73 639.19 2438.9 639.19 2438.9 639.19 2735.34 639.19 2735.34 639.19 2735.34 639.19 2735.34 511.27 2735.34 511.27ZM 2025.65 329.34C 2019.77 335.22 2016.84 342.24 2016.84 350.41 2016.84 350.41 2016.84 702 2016.84 702 2016.84 702 1954.03 702 1954.03 702 1954.03 702 1954.03 350.41 1954.03 350.41 1954.03 324.88 1963.09 303.05 1981.22 284.91 1999.34 266.79 2021.17 257.72 2046.72 257.72 2046.72 257.72 2296.43 257.72 2296.43 257.72 2296.43 257.72 2296.43 320.53 2296.43 320.53 2296.43 320.53 2046.72 320.53 2046.72 320.53 2038.54 320.53 2031.52 323.48 2025.65 329.34ZM 1449.63 674.81C 1431.5 656.69 1422.44 634.86 1422.44 609.31 1422.44 609.31 1422.44 448.45 1422.44 448.45 1422.44 448.45 1811.57 448.45 1811.57 448.45 1811.57 448.45 1811.57 350.41 1811.57 350.41 1811.57 342.24 1808.62 335.22 1802.76 329.34 1796.88 323.48 1789.85 320.53 1781.69 320.53 1781.69 320.53 1422.44 320.53 1422.44 320.53 1422.44 320.53 1422.44 257.72 1422.44 257.72 1422.44 257.72 1781.69 257.72 1781.69 257.72 1807.74 257.72 1829.82 266.79 1847.95 284.91 1866.07 303.05 1875.14 324.88 1875.14 350.41 1875.14 350.41 1875.14 702 1875.14 702 1875.14 702 1515.12 702 1515.12 702 1489.58 702 1467.75 692.94 1449.63 674.81ZM 1811.57 511.27C 1811.57 511.27 1485.25 511.27 1485.25 511.27 1485.25 511.27 1485.25 609.31 1485.25 609.31 1485.25 617.49 1488.18 624.51 1494.06 630.38 1499.92 636.26 1506.95 639.19 1515.12 639.19 1515.12 639.19 1811.57 639.19 1811.57 639.19 1811.57 639.19 1811.57 511.27 1811.57 511.27ZM 1275.38 702C 1275.38 702 978.17 702 978.17 702 978.17 702 978.17 878.18 978.17 878.18 978.17 878.18 915.36 878.18 915.36 878.18 915.36 878.18 915.36 257.72 915.36 257.72 915.36 257.72 1275.38 257.72 1275.38 257.72 1300.91 257.72 1322.74 266.79 1340.87 284.91 1358.99 303.05 1368.06 324.88 1368.06 350.41 1368.06 350.41 1368.06 609.31 1368.06 609.31 1368.06 634.86 1358.99 656.69 1340.87 674.81 1322.74 692.94 1300.91 702 1275.38 702ZM 1305.25 350.41C 1305.25 342.24 1302.31 335.22 1296.44 329.34 1290.56 323.48 1283.54 320.53 1275.38 320.53 1275.38 320.53 1008.81 320.53 1008.81 320.53 1000.63 320.53 993.49 323.48 987.36 329.34 981.23 335.22 978.17 342.24 978.17 350.41 978.17 350.41 978.17 609.31 978.17 609.31 978.17 617.49 981.23 624.51 987.36 630.38 993.49 636.26 1000.63 639.19 1008.81 639.19 1008.81 639.19 1275.38 639.19 1275.38 639.19 1283.54 639.19 1290.56 636.26 1296.44 630.38 1302.31 624.51 1305.25 617.49 1305.25 609.31 1305.25 609.31 1305.25 350.41 1305.25 350.41Z"
+						id="path6"
+						style="fill:#ffffff;fill-opacity:1" />
           </svg>
         </a>
         <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
@@ -599,26 +664,9 @@
           <a href="/apidocs" class="navbar-item">
             API
           </a>
-
           <a href="https://paraio.org/docs" class="navbar-item">
             Docs
           </a>
-
-          <!-- <div class="navbar-item has-dropdown is-hoverable">
-            <a class="navbar-link">
-              More
-            </a>
-
-            <div class="navbar-dropdown">
-              <a class="navbar-item">
-                About
-              </a>
-              <hr class="navbar-divider">
-              <a class="navbar-item">
-                Report an issue
-              </a>
-            </div>
-          </div> -->
         </div>
 
         <div class="navbar-end">
@@ -646,7 +694,7 @@
             </h1>
             <p>
 							{{#landing}}
-								<a class="button is-info" href="https://paraio.org/docs">Get Started &rarr;</a>
+							<a class="button is-info" href="https://paraio.org/docs">Get Started &rarr;</a>
 							{{/landing}}
 							{{message}}
             </p>
@@ -666,11 +714,19 @@
     </footer>
 
     <section class="noise-console" id="noise-console" data-open="false" aria-label="Background controls">
-      <button type="button" class="noise-console__head" id="noise-toggle" aria-expanded="true" aria-controls="noise-panel">
-        <span class="noise-console__title">steam field generator</span>
-        <span class="noise-console__chev" aria-hidden="true">&#9662;</span>
+      <button type="button" class="noise-console__head" id="noise-toggle" aria-expanded="false" aria-controls="noise-panel">
+        <span class="noise-console__title">⬒ steam field generator</span>
+        <span class="noise-console__chev" aria-hidden="true">⠇</span>
       </button>
       <div class="noise-console__body" id="noise-panel">
+        <div class="noise-row noise-row--inline">
+          <label class="noise-row__label" for="noise-accent">Accent</label>
+          <span class="noise-accent">
+            <output class="noise-row__value" id="noise-accent-out" for="noise-accent">#80c7e6</output>
+            <input class="noise-color" id="noise-accent" type="color" value="#80c7e6" title="Accent color is kept bright for contrast">
+          </span>
+        </div>
+				<div class="noise-palette" id="noise-palette" aria-hidden="true"></div>
         <div class="noise-row">
           <div class="noise-row__top">
             <span class="noise-row__label">Dither</span>
@@ -699,22 +755,36 @@
         </div>
         <div class="noise-row">
           <div class="noise-row__top">
-            <label class="noise-row__label" for="noise-density">Density</label>
-            <output class="noise-row__value" id="noise-density-out" for="noise-density">58%</output>
+            <label class="noise-row__label" for="noise-fade">Fade</label>
+            <output class="noise-row__value" id="noise-fade-out" for="noise-fade">0.75</output>
           </div>
-          <input class="noise-range" id="noise-density" type="range" min="0" max="1" step="0.01" value="0.58">
+          <input class="noise-range" id="noise-fade" type="range" min="0" max="1" step="0.01" value="0.75">
+        </div>
+        <div class="noise-row">
+          <div class="noise-row__top">
+            <label class="noise-row__label" for="noise-density">Density</label>
+            <output class="noise-row__value" id="noise-density-out" for="noise-density">70%</output>
+          </div>
+          <input class="noise-range" id="noise-density" type="range" min="0" max="1" step="0.01" value="0.7">
         </div>
         <div class="noise-row">
           <div class="noise-row__top">
             <label class="noise-row__label" for="noise-contrast">Contrast</label>
-            <output class="noise-row__value" id="noise-contrast-out" for="noise-contrast">1.10</output>
+            <output class="noise-row__value" id="noise-contrast-out" for="noise-contrast">1.35</output>
           </div>
-          <input class="noise-range" id="noise-contrast" type="range" min="0.5" max="2.4" step="0.01" value="1.1">
+          <input class="noise-range" id="noise-contrast" type="range" min="0.5" max="2.4" step="0.01" value="1.35">
         </div>
-        <div class="noise-palette" id="noise-palette" aria-hidden="true"></div>
+
+        <div class="noise-row">
+          <div class="noise-row__top">
+            <label class="noise-row__label" for="noise-seed-code">Seed</label>
+            <output class="noise-row__value" id="noise-seed-status" aria-live="polite">copy/paste</output>
+          </div>
+          <input class="noise-seed" id="noise-seed-code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="28" autocomplete="off" spellcheck="false" aria-label="Settings seed. Copy this number or paste a number and press Enter to load settings." title="Copy this number to share settings. Paste a number and press Enter to load it.">
+        </div>
         <div class="noise-actions">
-          <button type="button" class="noise-btn" id="noise-pause" aria-pressed="false">Pause</button>
-          <button type="button" class="noise-btn" id="noise-reseed">Reseed</button>
+          <button type="button" class="noise-btn" id="noise-save">Save</button>
+          <button type="button" class="noise-btn" id="noise-pause" aria-pressed="false">⏸</button>
         </div>
       </div>
     </section>
@@ -723,373 +793,820 @@
   </body>
 	{{#landing}}
   <script>
-    (function () {
-      'use strict';
+	(function () {
+		'use strict';
 
-      var canvas = document.getElementById('canv');
-      if (!canvas) { return; }
-      var ctx = canvas.getContext('2d');
-      if (!ctx) { return; }
+		var canvas = document.getElementById('canv');
+		if (!canvas) {
+			return;
+		}
+		var ctx = canvas.getContext('2d');
+		if (!ctx) {
+			return;
+		}
 
-      var TEX = (window.innerWidth * window.innerHeight) > 700000 ? 1024 : 512;
-      var PIXEL_BUDGET = 360000; /* max rendered pixels per frame */
-      var FRAME_MS = 33;       /* ~30 fps */
+		var TEX = (window.innerWidth * window.innerHeight) > 700000 ? 1024 : 512;
+		var PIXEL_BUDGET = 360000; /* max rendered pixels per frame */
+		var FRAME_MS = 33;       /* ~30 fps */
 
-      var params = { bits: 4, scale: 1.3, speed: 14, density: 0.58, contrast: 1.1 };
-      var seed = 1337;
-      var field = null;
-      var image = null;
-      var palR, palG, palB;
-      var vw = 0, vh = 0;
-      var paused = false;
-      var elapsed = 0;
-      var lastFrame = 0;
-      var lastDraw = 0;
-      var lastSeed = 0;
+		var params = {
+			bits: 2,
+			scale: 0.7,
+			speed: 7,
+			fade: 0.41,
+			density: 0.41,
+			contrast: 1.2,
+			zoom: PIXEL_BUDGET
+		};
+		var seed = 1337;
+		var field = null;
+		var image = null;
+		var palR, palG, palB;
+		var vw = 0, vh = 0;
+		var paused = false;
+		var elapsed = 0;
+		var lastFrame = 0;
+		var lastDraw = 0;
 
-      /* ---------------------------------------------------------------- *
-       * Seamless fBm value noise
-       * ---------------------------------------------------------------- */
+		/* ---------------------------------------------------------------- *
+	 * Seamless fBm value noise
+	 * ---------------------------------------------------------------- */
 
-      function hash2(x, y, s) {
-        var h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(s, 1442695041);
-        h = Math.imul(h ^ (h >>> 13), 1274126177);
-        h ^= h >>> 16;
-        return (h >>> 0) / 4294967296;
-      }
+		function hash2(x, y, s) {
+			var h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(s, 1442695041);
+			h = Math.imul(h ^ (h >>> 13), 1274126177);
+			h ^= h >>> 16;
+			return (h >>> 0) / 4294967296;
+		}
 
-      function smooth(t) { return t * t * (3 - 2 * t); }
+		function smooth(t) {
+			return t * t * (3 - 2 * t);
+		}
 
-      function lattice(x, y, period, s) {
-        var xi = Math.floor(x), yi = Math.floor(y);
-        var xf = x - xi, yf = y - yi;
-        var x0 = ((xi % period) + period) % period;
-        var y0 = ((yi % period) + period) % period;
-        var x1 = (x0 + 1) % period;
-        var y1 = (y0 + 1) % period;
-        var u = smooth(xf), v = smooth(yf);
-        var a = hash2(x0, y0, s), b = hash2(x1, y0, s);
-        var c = hash2(x0, y1, s), d = hash2(x1, y1, s);
-        var ab = a + (b - a) * u;
-        var cd = c + (d - c) * u;
-        return ab + (cd - ab) * v;
-      }
+		function lattice(x, y, period, s) {
+			var xi = Math.floor(x), yi = Math.floor(y);
+			var xf = x - xi, yf = y - yi;
+			var x0 = ((xi % period) + period) % period;
+			var y0 = ((yi % period) + period) % period;
+			var x1 = (x0 + 1) % period;
+			var y1 = (y0 + 1) % period;
+			var u = smooth(xf), v = smooth(yf);
+			var a = hash2(x0, y0, s), b = hash2(x1, y0, s);
+			var c = hash2(x0, y1, s), d = hash2(x1, y1, s);
+			var ab = a + (b - a) * u;
+			var cd = c + (d - c) * u;
+			return ab + (cd - ab) * v;
+		}
 
-      function sample(x, y) {
-        x %= TEX;
-        if (x < 0) { x += TEX; }
-        y %= TEX;
-        if (y < 0) { y += TEX; }
-        var xi = x | 0, yi = y | 0;
-        var xf = x - xi, yf = y - yi;
-        var x1 = (xi + 1 === TEX) ? 0 : xi + 1;
-        var y1 = (yi + 1 === TEX) ? 0 : yi + 1;
-        var r0 = yi * TEX, r1 = y1 * TEX;
-        var a = field[r0 + xi], b = field[r0 + x1];
-        var c = field[r1 + xi], d = field[r1 + x1];
-        var ab = a + (b - a) * xf;
-        var cd = c + (d - c) * xf;
-        return ab + (cd - ab) * yf;
-      }
+		function sample(x, y) {
+			x %= TEX;
+			if (x < 0) {
+				x += TEX;
+			}
+			y %= TEX;
+			if (y < 0) {
+				y += TEX;
+			}
+			var xi = x | 0, yi = y | 0;
+			var xf = x - xi, yf = y - yi;
+			var x1 = (xi + 1 === TEX) ? 0 : xi + 1;
+			var y1 = (yi + 1 === TEX) ? 0 : yi + 1;
+			var r0 = yi * TEX, r1 = y1 * TEX;
+			var a = field[r0 + xi], b = field[r0 + x1];
+			var c = field[r1 + xi], d = field[r1 + x1];
+			var ab = a + (b - a) * xf;
+			var cd = c + (d - c) * xf;
+			return ab + (cd - ab) * yf;
+		}
 
-      function build(s) {
-        var len = TEX * TEX;
-        var base = new Float32Array(len);
-        var i = 0, x, y, o;
-        for (y = 0; y < TEX; y++) {
-          var v = y / TEX;
-          for (x = 0; x < TEX; x++) {
-            var u = x / TEX;
-            var sum = 0, amp = 0.5, freq = 4, norm = 0;
-            for (o = 0; o < 5; o++) {
-              sum += lattice(u * freq, v * freq, freq, s + o * 101) * amp;
-              norm += amp;
-              freq *= 2;
-              amp *= 0.5;
-            }
-            base[i++] = sum / norm;
-          }
-        }
+		function build(s) {
+			var len = TEX * TEX;
+			var base = new Float32Array(len);
+			var i = 0, x, y, o;
+			for (y = 0; y < TEX; y++) {
+				var v = y / TEX;
+				for (x = 0; x < TEX; x++) {
+					var u = x / TEX;
+					var sum = 0, amp = 0.5, freq = 4, norm = 0;
+					for (o = 0; o < 5; o++) {
+						sum += lattice(u * freq, v * freq, freq, s + o * 101) * amp;
+						norm += amp;
+						freq *= 2;
+						amp *= 0.5;
+					}
+					base[i++] = sum / norm;
+				}
+			}
 
-        /* Domain warp: push each texel around by the field itself. This turns
-           round blobs into thin, stringy wisps. Both reads wrap, so the
-           result still tiles. */
-        field = base;
-        var WARP = 120;
-        var out = new Float32Array(len);
-        i = 0;
-        for (y = 0; y < TEX; y++) {
-          var row = y * TEX;
-          var rowW = ((y + 331) % TEX) * TEX;
-          for (x = 0; x < TEX; x++) {
-            var wx = (base[row + x] - 0.5) * WARP;
-            var wy = (base[rowW + x] - 0.5) * WARP;
-            out[i++] = sample(x + wx, y + wy);
-          }
-        }
+			/* Domain warp: push each texel around by the field itself. This turns
+		 round blobs into thin, stringy wisps. Both reads wrap, so the
+		 result still tiles. */
+			field = base;
+			var WARP = 120;
+			var out = new Float32Array(len);
+			i = 0;
+			for (y = 0; y < TEX; y++) {
+				var row = y * TEX;
+				var rowW = ((y + 331) % TEX) * TEX;
+				for (x = 0; x < TEX; x++) {
+					var wx = (base[row + x] - 0.5) * WARP;
+					var wy = (base[rowW + x] - 0.5) * WARP;
+					out[i++] = sample(x + wx, y + wy);
+				}
+			}
 
-        /* Stretch to the full 0..1 range. */
-        var lo = 1, hi = 0, val;
-        for (i = 0; i < len; i++) {
-          val = out[i];
-          if (val < lo) { lo = val; }
-          if (val > hi) { hi = val; }
-        }
-        var k = 1 / (hi - lo || 1);
-        for (i = 0; i < len; i++) { out[i] = (out[i] - lo) * k; }
+			/* Stretch to the full 0..1 range. */
+			var lo = 1, hi = 0, val;
+			for (i = 0; i < len; i++) {
+				val = out[i];
+				if (val < lo) {
+					lo = val;
+				}
+				if (val > hi) {
+					hi = val;
+				}
+			}
+			var k = 1 / (hi - lo || 1);
+			for (i = 0; i < len; i++) {
+				out[i] = (out[i] - lo) * k;
+			}
 
-        field = out;
-        return out;
-      }
+			field = out;
+			return out;
+		}
 
-      /* ---------------------------------------------------------------- *
-       * Palette (dark -> sky blue), quantized to 2^bits levels
-       * ---------------------------------------------------------------- */
+		/* ---------------------------------------------------------------- *
+	 * Palette (dark -> accent), quantized to 2^bits levels
+	 * ---------------------------------------------------------------- */
 
-      var STOPS = [
-        [0.00,   3,   7,  12],
-        [0.30,   6,  24,  36],
-        [0.55,  12,  52,  74],
-        [0.75,  24, 100, 136],
-        [0.90,  48, 150, 188],
-        [1.00, 122, 200, 232]
-      ];
+		var STOPS = [];
 
-      function gradient(t) {
-        var i, a, b, f;
-        if (t <= 0) { return [3, 7, 12]; }
-        for (i = 1; i < STOPS.length; i++) {
-          if (t <= STOPS[i][0]) {
-            a = STOPS[i - 1];
-            b = STOPS[i];
-            f = (t - a[0]) / (b[0] - a[0]);
-            if (f < 0) { f = 0; } else if (f > 1) { f = 1; }
-            return [
-              Math.round(a[1] + (b[1] - a[1]) * f),
-              Math.round(a[2] + (b[2] - a[2]) * f),
-              Math.round(a[3] + (b[3] - a[3]) * f)
-            ];
-          }
-        }
-        return [122, 200, 232];
-      }
+		function parseHex(hex) {
+			var m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(hex).trim());
+			if (!m) {
+				return [128, 199, 230];
+			}
+			return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
+		}
 
-      function applyBits() {
-        var levels = 1 << params.bits;
-        var strip = document.getElementById('noise-palette');
-        var label = document.getElementById('noise-bits-out');
-        var html = '';
-        var i, c;
-        palR = new Uint8Array(levels);
-        palG = new Uint8Array(levels);
-        palB = new Uint8Array(levels);
-        for (i = 0; i < levels; i++) {
-          c = gradient(levels === 1 ? 0 : i / (levels - 1));
-          palR[i] = c[0];
-          palG[i] = c[1];
-          palB[i] = c[2];
-          html += '<span style="background-color:rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')"></span>';
-        }
-        if (strip) { strip.innerHTML = html; }
-        if (label) { label.textContent = params.bits + ' bit / ' + levels; }
-      }
+		function relLum(r, g, b) {
+			function ch(v) {
+				v /= 255;
+				return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+			}
+			return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b);
+		}
 
-      /* ---------------------------------------------------------------- *
-       * Ordered (Bayer 8x8) dithering
-       * ---------------------------------------------------------------- */
+		function toHex(n) {
+			var s = n.toString(16);
+			return s.length < 2 ? '0' + s : s;
+		}
 
-      var BAYER = new Float32Array([
-         0, 32,  8, 40,  2, 34, 10, 42,
-        48, 16, 56, 24, 50, 18, 58, 26,
-        12, 44,  4, 36, 14, 46,  6, 38,
-        60, 28, 52, 20, 62, 30, 54, 22,
-         3, 35, 11, 43,  1, 33,  9, 41,
-        51, 19, 59, 27, 49, 17, 57, 25,
-        15, 47,  7, 39, 13, 45,  5, 37,
-        63, 31, 55, 23, 61, 29, 53, 21
-      ]);
-      var bayerN = new Float32Array(64);
-      (function () {
-        for (var i = 0; i < 64; i++) { bayerN[i] = (BAYER[i] + 0.5) / 64; }
-      })();
+		function rgbToHsl(r, g, b) {
+			r /= 255;
+			g /= 255;
+			b /= 255;
+			var max = Math.max(r, g, b), min = Math.min(r, g, b);
+			var h = 0, s = 0, l = (max + min) / 2, d;
+			if (max !== min) {
+				d = max - min;
+				s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+				if (max === r) {
+					h = (g - b) / d + (g < b ? 6 : 0);
+				} else if (max === g) {
+					h = (b - r) / d + 2;
+				} else {
+					h = (r - g) / d + 4;
+				}
+				h /= 6;
+			}
+			return [h, s, l];
+		}
 
-      /* ---------------------------------------------------------------- *
-       * Rendering
-       * ---------------------------------------------------------------- */
+		function hslToRgb(h, s, l) {
+			function hue(t) {
+				if (t < 0) {
+					t += 1;
+				}
+				if (t > 1) {
+					t -= 1;
+				}
+				if (t < 1 / 6) {
+					return p + (q - p) * 6 * t;
+				}
+				if (t < 1 / 2) {
+					return q;
+				}
+				if (t < 2 / 3) {
+					return p + (q - p) * (2 / 3 - t) * 6;
+				}
+				return p;
+			}
+			var r, g, b, p, q;
+			if (s === 0) {
+				r = g = b = l;
+			} else {
+				q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+				p = 2 * l - q;
+				r = hue(h + 1 / 3);
+				g = hue(h);
+				b = hue(h - 1 / 3);
+			}
+			return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+		}
 
-      function resize() {
-        var w = window.innerWidth || document.documentElement.clientWidth;
-        var h = window.innerHeight || document.documentElement.clientHeight;
-        var cell = 2;
-        while ((w / cell) * (h / cell) > PIXEL_BUDGET) { cell += 1; }
-        vw = Math.max(1, Math.ceil(w / cell));
-        vh = Math.max(1, Math.ceil(h / cell));
-        if (canvas.width !== vw) { canvas.width = vw; }
-        if (canvas.height !== vh) { canvas.height = vh; }
-        image = ctx.createImageData(vw, vh);
-        ctx.imageSmoothingEnabled = false;
-      }
+		/* Keep the accent readable as link text on the dark page. */
+		function normalizeAccent(rgb) {
+			var hsl = rgbToHsl(rgb[0], rgb[1], rgb[2]);
+			var l = Math.max(0.55, Math.min(0.75, hsl[2]));
+			return l === hsl[2] ? rgb : hslToRgb(hsl[0], hsl[1], l);
+		}
 
-      function draw() {
-        if (!field || !image || !palR) { return; }
-        var data = image.data;
-        var levels = (1 << params.bits) - 1; /* highest palette index */
-        var lo = 0.68 - params.density * 0.26;
-        var gain = params.contrast / 0.44;
-        var scroll = elapsed * 0.001 * params.speed;
-        var s = params.scale * TEX;
-        var spanX = s * (vw / vh) * 0.72;
-        var stepX = spanX / vw;
-        var stepY = s / vh;
-        var startX = -0.5 * spanX + stepX * 0.5;
-        var startY = -0.5 * s + scroll + stepY * 0.5;
-        var p = 0, x, y, idx, lv, q;
+		/* One hue and saturation, lightness eased from near-black to the accent. */
+		function buildStops(rgb) {
+			var hsl = rgbToHsl(rgb[0], rgb[1], rgb[2]);
+			var h = hsl[0], s = hsl[1], top = hsl[2];
+			var lo = 0.04 * top;
+			function at(t) {
+				var c = hslToRgb(h, s, lo + (top - lo) * Math.pow(t, 2.35));
+				return [t, c[0], c[1], c[2]];
+			}
+			var hi = hslToRgb(h, s, Math.min(0.94, top + (1 - top) * 0.18));
+			STOPS = [at(0), at(0.30), at(0.55), at(0.75), at(0.90), [1, hi[0], hi[1], hi[2]]];
+		}
 
-        for (y = 0; y < vh; y++) {
-          var ty = startY + y * stepY;
-          var row = (y & 7) << 3;
-          for (x = 0; x < vw; x++) {
-            lv = (sample(startX + x * stepX, ty) - lo) * gain;
-            q = lv * levels + bayerN[row + (x & 7)];
-            if (q <= 0) {
-              idx = 0;
-            } else {
-              idx = q | 0;
-              if (idx > levels) { idx = levels; }
-            }
-            data[p++] = palR[idx];
-            data[p++] = palG[idx];
-            data[p++] = palB[idx];
-            data[p++] = 255;
-          }
-        }
-        ctx.putImageData(image, 0, 0);
-      }
+		function gradient(t) {
+			var i, a, b, f;
+			if (t <= STOPS[0][0]) {
+				return [STOPS[0][1], STOPS[0][2], STOPS[0][3]];
+			}
+			for (i = 1; i < STOPS.length; i++) {
+				if (t <= STOPS[i][0]) {
+					a = STOPS[i - 1];
+					b = STOPS[i];
+					f = (t - a[0]) / (b[0] - a[0]);
+					if (f < 0) {
+						f = 0;
+					} else if (f > 1) {
+						f = 1;
+					}
+					return [
+						Math.round(a[1] + (b[1] - a[1]) * f),
+						Math.round(a[2] + (b[2] - a[2]) * f),
+						Math.round(a[3] + (b[3] - a[3]) * f)
+					];
+				}
+			}
+			var last = STOPS[STOPS.length - 1];
+			return [last[1], last[2], last[3]];
+		}
 
-      function tick(ts) {
-        window.requestAnimationFrame(tick);
-        if (!lastFrame) { lastFrame = ts; }
-        var dt = ts - lastFrame;
-        lastFrame = ts;
-        if (dt < 0) { dt = 0; }
-        if (dt > 100) { dt = 100; }
-        if (paused) { return; }
-        elapsed += dt;
-        if (ts - lastDraw < FRAME_MS) { return; }
-        lastDraw = ts;
-        draw();
-      }
+		function applyAccent(hex) {
+			var c = normalizeAccent(parseHex(hex));
+			var r = c[0], g = c[1], b = c[2];
+			var out = '#' + toHex(r) + toHex(g) + toHex(b);
+			var root = document.documentElement;
+			root.style.setProperty('--accent', out);
+			root.style.setProperty('--accent-rgb', r + ', ' + g + ', ' + b);
+			root.style.setProperty('--on-accent',
+					relLum(r, g, b) > 0.179 ? '#06121a' : '#f2fbff');
+			buildStops(c);
+			applyBits();
+			draw();
+			var label = document.getElementById('noise-accent-out');
+			if (label) {
+				label.textContent = out;
+			}
+		}
 
-      /* ---------------------------------------------------------------- *
-       * Controls
-       * ---------------------------------------------------------------- */
+		function applyBits() {
+			var levels = 1 << params.bits;
+			var strip = document.getElementById('noise-palette');
+			var label = document.getElementById('noise-bits-out');
+			var html = '';
+			var i, c;
+			palR = new Uint8Array(levels);
+			palG = new Uint8Array(levels);
+			palB = new Uint8Array(levels);
+			for (i = 0; i < levels; i++) {
+				c = gradient(levels === 1 ? 0 : i / (levels - 1));
+				palR[i] = c[0];
+				palG[i] = c[1];
+				palB[i] = c[2];
+				html += '<span style="background-color:rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')"></span>';
+			}
+			if (strip) {
+				strip.innerHTML = html;
+			}
+			if (label) {
+				label.textContent = params.bits + ' bit / ' + levels;
+			}
+		}
 
-      function bindRange(id, key, format) {
-        var input = document.getElementById(id);
-        var out = document.getElementById(id + '-out');
-        if (!input) { return; }
-        function update() {
-          var v = parseFloat(input.value);
-          if (isNaN(v)) { return; }
-          params[key] = v;
-          if (out) { out.textContent = format(v); }
-          draw();
-        }
-        input.addEventListener('input', update);
-        input.addEventListener('change', update);
-        update();
-      }
+		/* ---------------------------------------------------------------- *
+	 * Ordered (Bayer 8x8) dithering
+	 * ---------------------------------------------------------------- */
 
-      var bitButtons = document.querySelectorAll('.noise-bits button');
-      function bindBits() {
-        for (var i = 0; i < bitButtons.length; i++) {
-          bitButtons[i].addEventListener('click', function () {
-            params.bits = parseInt(this.getAttribute('data-bits'), 10) || 4;
-            for (var j = 0; j < bitButtons.length; j++) {
-              bitButtons[j].setAttribute('aria-pressed', bitButtons[j] === this ? 'true' : 'false');
-            }
-            applyBits();
-            draw();
-          });
-        }
-      }
+		var BAYER = new Float32Array([
+			0, 32, 8, 40, 2, 34, 10, 42,
+			48, 16, 56, 24, 50, 18, 58, 26,
+			12, 44, 4, 36, 14, 46, 6, 38,
+			60, 28, 52, 20, 62, 30, 54, 22,
+			3, 35, 11, 43, 1, 33, 9, 41,
+			51, 19, 59, 27, 49, 17, 57, 25,
+			15, 47, 7, 39, 13, 45, 5, 37,
+			63, 31, 55, 23, 61, 29, 53, 21
+		]);
+		var bayerN = new Float32Array(64);
+		(function () {
+			for (var i = 0; i < 64; i++) {
+				bayerN[i] = (BAYER[i] + 0.5) / 64;
+			}
+		})();
 
-      var toggle = document.getElementById('noise-toggle');
-      var panel = document.getElementById('noise-console');
-      function setOpen(open) {
-        if (!panel || !toggle) { return; }
-        panel.setAttribute('data-open', open ? 'true' : 'false');
-        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-      }
+		/* ---------------------------------------------------------------- *
+	 * Rendering
+	 * ---------------------------------------------------------------- */
 
-      var pauseBtn = document.getElementById('noise-pause');
-      var reseedBtn = document.getElementById('noise-reseed');
+		function resize() {
+			var w = window.innerWidth || document.documentElement.clientWidth;
+			var h = window.innerHeight || document.documentElement.clientHeight;
+			var cell = 2;
+			while ((w / cell) * (h / cell) > PIXEL_BUDGET) {
+				cell += 1;
+			}
+			vw = Math.max(1, Math.ceil(w / cell));
+			vh = Math.max(1, Math.ceil(h / cell));
+			if (canvas.width !== vw) {
+				canvas.width = vw;
+			}
+			if (canvas.height !== vh) {
+				canvas.height = vh;
+			}
+			image = ctx.createImageData(vw, vh);
+			ctx.imageSmoothingEnabled = false;
+		}
 
-      function init() {
-        applyBits();
-        bindBits();
-        bindRange('noise-scale', 'scale', function (v) { return v.toFixed(2); });
-        bindRange('noise-speed', 'speed', function (v) { return String(Math.round(v)); });
-        bindRange('noise-density', 'density', function (v) { return Math.round(v * 100) + '%'; });
-        bindRange('noise-contrast', 'contrast', function (v) { return v.toFixed(2); });
+		function draw() {
+			if (!field || !image || !palR) {
+				return;
+			}
+			var data = image.data;
+			var levels = (1 << params.bits) - 1; /* highest palette index */
+			var lo = 0.68 - params.density * 0.26;
+			var gain = params.contrast / 0.44;
+			var scroll = elapsed * 0.001 * params.speed;
+			var sway = Math.sin(elapsed * 0.00021) * 46;
+			var s = params.scale * TEX;
+			var spanX = s * (vw / vh) * 0.72;
+			var stepX = spanX / vw;
+			var stepY = s / vh;
+			var startX = -0.5 * spanX + stepX * 0.5;
+			var baseY = -0.5 * s + stepY * 0.5;
+			var p = 0, x, y, idx, lv, q, tx, v;
 
-        if (toggle) {
-          toggle.addEventListener('click', function () {
-            setOpen(panel.getAttribute('data-open') === 'false');
-          });
-        }
+			for (y = 0; y < vh; y++) {
+				var yy = baseY + y * stepY;
+				var ty = yy + scroll;
+				var ty2 = yy * 1.4 + scroll * 1.9 + 121.3;
+				var yf = y / vh;
+				/* Steam cools and thins out as it rises. */
+				var fade = 1 - params.fade * 0.78 * (1 - yf) * (1 - yf);
+				var drift = sway * (1 - yf);
+				var row = (y & 7) << 3;
+				for (x = 0; x < vw; x++) {
+					tx = startX + x * stepX;
+					v = sample(tx, ty) * 0.74 + sample(tx * 1.4 + 317.7 + drift, ty2) * 0.26;
+					lv = (v - lo) * gain * fade;
+					q = lv * levels + bayerN[row + (x & 7)];
+					if (q <= 0) {
+						idx = 0;
+					} else {
+						idx = q | 0;
+						if (idx > levels) {
+							idx = levels;
+						}
+					}
+					data[p++] = palR[idx];
+					data[p++] = palG[idx];
+					data[p++] = palB[idx];
+					data[p++] = 255;
+				}
+			}
+			ctx.putImageData(image, 0, 0);
+		}
 
-        if (pauseBtn) {
-          pauseBtn.addEventListener('click', function () {
-            paused = !paused;
-            pauseBtn.setAttribute('aria-pressed', paused ? 'true' : 'false');
-            pauseBtn.textContent = paused ? 'Resume' : 'Pause';
-            if (paused) { draw(); }
-            else { lastFrame = 0; }
-          });
-        }
+		function tick(ts) {
+			window.requestAnimationFrame(tick);
+			if (!lastFrame) {
+				lastFrame = ts;
+			}
+			var dt = ts - lastFrame;
+			lastFrame = ts;
+			if (dt < 0) {
+				dt = 0;
+			}
+			if (dt > 100) {
+				dt = 100;
+			}
+			if (paused) {
+				return;
+			}
+			elapsed += dt;
+			if (ts - lastDraw < FRAME_MS) {
+				return;
+			}
+			lastDraw = ts;
+			draw();
+		}
 
-        if (reseedBtn) {
-          reseedBtn.addEventListener('click', function () {
-            var now = Date.now();
-            if (now - lastSeed < 400) { return; }
-            lastSeed = now;
-            seed = (seed * 16807) % 2147483647;
-            build(seed);
-            draw();
-          });
-        }
+		/* ---------------------------------------------------------------- *
+	 * Controls
+	 * ---------------------------------------------------------------- */
 
-        if (window.innerWidth < 720) { setOpen(false); }
+		function bindRange(id, key, format) {
+			var input = document.getElementById(id);
+			var out = document.getElementById(id + '-out');
+			if (!input) {
+				return;
+			}
+			function update() {
+				var v = parseFloat(input.value);
+				if (isNaN(v)) {
+					return;
+				}
+				params[key] = v;
+				if (out) {
+					out.textContent = format(v);
+				}
+				draw();
+				updateSeedCode();
+			}
+			input.addEventListener('input', update);
+			input.addEventListener('change', update);
+			update();
+		}
 
-        resize();
-        field = build(seed);
-        draw();
+		var bitButtons = document.querySelectorAll('.noise-bits button');
+		var seedCodeInput = document.getElementById('noise-seed-code');
+		var seedStatus = document.getElementById('noise-seed-status');
+		var saveBtn = document.getElementById('noise-save');
+		var settingsStorageKey = 'para.steamField.settings.v1';
+		var seedRadix = 2147483647;
 
-        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-          paused = true;
-          if (pauseBtn) {
-            pauseBtn.setAttribute('aria-pressed', 'true');
-            pauseBtn.textContent = 'Resume';
-          }
-        }
+		function rangeRadix(id) {
+			var input = document.getElementById(id);
+			var min = parseFloat(input.min), max = parseFloat(input.max);
+			var step = parseFloat(input.step) || 1;
+			return Math.round((max - min) / step) + 1;
+		}
 
-        window.requestAnimationFrame(tick);
-      }
+		function rangeIndex(id) {
+			var input = document.getElementById(id);
+			var min = parseFloat(input.min), step = parseFloat(input.step) || 1;
+			return Math.max(0, Math.min(rangeRadix(id) - 1,
+					Math.round((parseFloat(input.value) - min) / step)));
+		}
 
-      var resizePending = false;
-      window.addEventListener('resize', function () {
-        if (resizePending) { return; }
-        resizePending = true;
-        window.requestAnimationFrame(function () {
-          resizePending = false;
-          resize();
-          draw();
-        });
-      }, false);
+		function rangeValue(id, index) {
+			var input = document.getElementById(id);
+			var min = parseFloat(input.min), step = parseFloat(input.step) || 1;
+			var value = min + index * step;
+			var decimals = (input.step.split('.')[1] || '').length;
+			return Number(value.toFixed(decimals));
+		}
 
-      init();
-    })();
+		/* Pack the controls and the texture seed into one decimal BigInt. */
+		function encodeSettingsCode() {
+			var accentValue = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+			var accent = parseHex(accentValue);
+			var accentNumber = accent[0] * 65536 + accent[1] * 256 + accent[2];
+			var bitsIndex = 0;
+			for (var i = 0; i < bitButtons.length; i++) {
+				if (parseInt(bitButtons[i].getAttribute('data-bits'), 10) === params.bits) {
+					bitsIndex = i;
+					break;
+				}
+			}
+
+			var code = BigInt(seed);
+			code = code * BigInt(16777216) + BigInt(accentNumber);
+			code = code * BigInt(rangeRadix('noise-contrast')) + BigInt(rangeIndex('noise-contrast'));
+			code = code * BigInt(rangeRadix('noise-density')) + BigInt(rangeIndex('noise-density'));
+			code = code * BigInt(rangeRadix('noise-fade')) + BigInt(rangeIndex('noise-fade'));
+			code = code * BigInt(rangeRadix('noise-speed')) + BigInt(rangeIndex('noise-speed'));
+			code = code * BigInt(rangeRadix('noise-scale')) + BigInt(rangeIndex('noise-scale'));
+			code = code * BigInt(bitButtons.length) + BigInt(bitsIndex);
+			return code.toString(10);
+		}
+
+		function decodeSettingsCode(text) {
+			if (typeof BigInt !== 'function' || !/^\d{1,32}$/.test(text)) {
+				return null;
+			}
+			var code;
+			try {
+				code = BigInt(text);
+			} catch (e) {
+				return null;
+			}
+
+			function take(radix) {
+				var base = BigInt(radix);
+				var digit = Number(code % base);
+				code = code / base;
+				return digit;
+			}
+
+			var bitsIndex = take(bitButtons.length);
+			var scaleIndex = take(rangeRadix('noise-scale'));
+			var speedIndex = take(rangeRadix('noise-speed'));
+			var fadeIndex = take(rangeRadix('noise-fade'));
+			var densityIndex = take(rangeRadix('noise-density'));
+			var contrastIndex = take(rangeRadix('noise-contrast'));
+			var accentNumber = take(16777216);
+			var textureSeed = Number(code);
+
+			if (!Number.isSafeInteger(textureSeed) || textureSeed < 0 || textureSeed >= seedRadix) {
+				return null;
+			}
+			if (!bitButtons[bitsIndex]) {
+				return null;
+			}
+
+			return {
+				bits: parseInt(bitButtons[bitsIndex].getAttribute('data-bits'), 10),
+				scale: rangeValue('noise-scale', scaleIndex),
+				speed: rangeValue('noise-speed', speedIndex),
+				fade: rangeValue('noise-fade', fadeIndex),
+				density: rangeValue('noise-density', densityIndex),
+				contrast: rangeValue('noise-contrast', contrastIndex),
+				accent: '#' + toHex(Math.floor(accentNumber / 65536)) +
+						toHex(Math.floor(accentNumber / 256) % 256) + toHex(accentNumber % 256),
+				seed: textureSeed
+			};
+		}
+
+		function updateSeedCode(message) {
+			if (seedCodeInput) {
+				seedCodeInput.value = encodeSettingsCode();
+			}
+			if (seedStatus) {
+				seedStatus.textContent = message || 'copy/paste';
+			}
+		}
+
+		function setRangeControl(id, key, value, format) {
+			var input = document.getElementById(id);
+			var output = document.getElementById(id + '-out');
+			input.value = String(value);
+			params[key] = parseFloat(input.value);
+			if (output) {
+				output.textContent = format(params[key]);
+			}
+		}
+
+		function applySettings(state) {
+			params.bits = state.bits;
+			seed = state.seed;
+			setRangeControl('noise-scale', 'scale', state.scale, function (v) {
+				return v.toFixed(2);
+			});
+			setRangeControl('noise-speed', 'speed', state.speed, function (v) {
+				return String(Math.round(v));
+			});
+			setRangeControl('noise-fade', 'fade', state.fade, function (v) {
+				return v.toFixed(2);
+			});
+			setRangeControl('noise-density', 'density', state.density, function (v) {
+				return Math.round(v * 100) + '%';
+			});
+			setRangeControl('noise-contrast', 'contrast', state.contrast, function (v) {
+				return v.toFixed(2);
+			});
+
+			for (var i = 0; i < bitButtons.length; i++) {
+				bitButtons[i].setAttribute('aria-pressed',
+						parseInt(bitButtons[i].getAttribute('data-bits'), 10) === state.bits ? 'true' : 'false');
+			}
+			var accentInput = document.getElementById('noise-accent');
+			if (accentInput) {
+				accentInput.value = state.accent;
+			}
+			applyAccent(state.accent);
+			if (field) {
+				build(seed);
+				draw();
+			}
+			updateSeedCode('Loaded');
+		}
+
+		function loadSettingsCode() {
+			var entered = seedCodeInput.value.trim();
+			if (entered === encodeSettingsCode()) {
+				seedCodeInput.removeAttribute('aria-invalid');
+				if (seedStatus) {
+					seedStatus.textContent = 'Loaded';
+				}
+				return true;
+			}
+			var state = decodeSettingsCode(entered);
+			if (!state) {
+				if (seedStatus) {
+					seedStatus.textContent = 'Invalid seed';
+				}
+				seedCodeInput.setAttribute('aria-invalid', 'true');
+				return false;
+			}
+			seedCodeInput.removeAttribute('aria-invalid');
+			applySettings(state);
+			return true;
+		}
+
+		function saveSettings() {
+			var code = encodeSettingsCode();
+			if (seedCodeInput) {
+				seedCodeInput.value = code;
+			}
+			try {
+				window.localStorage.setItem(settingsStorageKey, code);
+				if (seedStatus) {
+					seedStatus.textContent = 'Saved';
+				}
+			} catch (e) {
+				if (seedStatus) {
+					seedStatus.textContent = 'Save failed';
+				}
+			}
+		}
+
+		function bindBits() {
+			for (var i = 0; i < bitButtons.length; i++) {
+				if (bitButtons[i].getAttribute('aria-pressed') === 'true') {
+					params.bits = parseInt(bitButtons[i].getAttribute('data-bits'), 10) || params.bits;
+					break;
+				}
+			}
+			for (var i = 0; i < bitButtons.length; i++) {
+				bitButtons[i].addEventListener('click', function () {
+					params.bits = parseInt(this.getAttribute('data-bits'), 10) || 4;
+					for (var j = 0; j < bitButtons.length; j++) {
+						bitButtons[j].setAttribute('aria-pressed', bitButtons[j] === this ? 'true' : 'false');
+					}
+					applyBits();
+					draw();
+					updateSeedCode();
+				});
+			}
+		}
+
+		var toggle = document.getElementById('noise-toggle');
+		var panel = document.getElementById('noise-console');
+		var greeting = document.getElementById('greeting');
+		function setOpen(open) {
+			if (!panel || !toggle) {
+				return;
+			}
+			panel.setAttribute('data-open', open ? 'true' : 'false');
+			toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+		}
+
+		var pauseBtn = document.getElementById('noise-pause');
+
+		function init() {
+			var accentInput = document.getElementById('noise-accent');
+			var initialAccent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#80c7e6';
+			if (accentInput) {
+				accentInput.value = initialAccent;
+			}
+			bindBits();
+			applyAccent(initialAccent);
+			bindRange('noise-scale', 'scale', function (v) {
+				return v.toFixed(2);
+			});
+			bindRange('noise-speed', 'speed', function (v) {
+				return String(Math.round(v));
+			});
+			bindRange('noise-fade', 'fade', function (v) {
+				return v.toFixed(2);
+			});
+			bindRange('noise-density', 'density', function (v) {
+				return Math.round(v * 100) + '%';
+			});
+			bindRange('noise-contrast', 'contrast', function (v) {
+				return v.toFixed(2);
+			});
+
+			if (accentInput) {
+				accentInput.addEventListener('input', function () {
+					applyAccent(accentInput.value);
+					updateSeedCode();
+				});
+				accentInput.addEventListener('change', function () {
+					applyAccent(accentInput.value);
+					accentInput.value = document.getElementById('noise-accent-out').textContent;
+					updateSeedCode();
+				});
+			}
+
+			if (seedCodeInput) {
+				seedCodeInput.addEventListener('focus', function () {
+					seedCodeInput.select();
+				});
+				seedCodeInput.addEventListener('input', function () {
+					seedCodeInput.removeAttribute('aria-invalid');
+					if (seedStatus) {
+						seedStatus.textContent = 'Press Enter to load';
+					}
+				});
+				seedCodeInput.addEventListener('change', loadSettingsCode);
+				seedCodeInput.addEventListener('keydown', function (event) {
+					if (event.key === 'Enter') {
+						event.preventDefault();
+						loadSettingsCode();
+					}
+				});
+			}
+
+			if (toggle) {
+				toggle.addEventListener('click', function () {
+					setOpen(panel.getAttribute('data-open') === 'false');
+				});
+			}
+
+			var pressed3 = 0;
+			document.addEventListener('keydown', function (e) {
+				if (e.key === "p") {
+					if (++pressed3 >= 3) {
+						panel.style.display = "block";
+						setOpen(true);
+					}
+				}
+			});
+
+			if (pauseBtn) {
+				pauseBtn.addEventListener('click', function () {
+					paused = !paused;
+					pauseBtn.setAttribute('aria-pressed', paused ? 'true' : 'false');
+					pauseBtn.textContent = paused ? '▶' : '⏸';
+					if (paused) {
+						draw();
+					} else {
+						lastFrame = 0;
+					}
+				});
+			}
+
+			if (saveBtn) {
+				saveBtn.addEventListener('click', saveSettings);
+			}
+
+			if (window.innerWidth < 720) {
+				setOpen(false);
+			}
+
+			var savedCode = '';
+			try {
+				savedCode = window.localStorage.getItem(settingsStorageKey) || '';
+			} catch (e) {
+			}
+			var savedState = savedCode ? decodeSettingsCode(savedCode) : null;
+			if (savedState) {
+				applySettings(savedState);
+			} else if (savedCode && seedStatus) {
+				seedStatus.textContent = 'Invalid saved seed';
+			}
+			resize();
+			field = build(seed);
+			draw();
+			updateSeedCode(savedState ? 'Loaded' : (savedCode ? 'Invalid saved seed' : 'copy/paste'));
+
+			if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+				paused = true;
+				if (pauseBtn) {
+					pauseBtn.setAttribute('aria-pressed', 'true');
+					pauseBtn.textContent = 'Resume';
+				}
+			}
+
+			window.requestAnimationFrame(tick);
+		}
+
+		var resizePending = false;
+		window.addEventListener('resize', function () {
+			if (resizePending) {
+				return;
+			}
+			resizePending = true;
+			window.requestAnimationFrame(function () {
+				resizePending = false;
+				resize();
+				draw();
+			});
+		}, false);
+
+		init();
+	})();
   </script>
 	{{/landing}}
 </html>
