@@ -171,6 +171,8 @@ public class SecurityConfig {
 						csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse());
 				if (Para.getConfig().csrfProtectionWithSpaEnabled()) {
 					csrf.spa();
+				} else {
+					csrf.csrfTokenRequestHandler(new org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler());
 				}
 			} else {
 				csrf.disable();

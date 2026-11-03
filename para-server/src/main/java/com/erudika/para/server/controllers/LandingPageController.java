@@ -20,9 +20,12 @@ package com.erudika.para.server.controllers;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.ParaServer;
+import com.erudika.para.server.pages.LandingPage;
 import com.erudika.para.server.rest.GenericExceptionMapper;
+import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Map;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -39,10 +42,21 @@ import org.springframework.web.bind.annotation.GetMapping;
 @ConditionalOnProperty(value = "para.landing_page_enabled", havingValue = "true")
 public class LandingPageController {
 
+	private LandingPage page;
+
 	/**
 	 * No-args constructor.
 	 */
-	public LandingPageController() {
+	public LandingPageController(@Nullable LandingPage page) {
+		if (page == null) {
+			this.page = new LandingPage() {
+				public String getHTML(Map<String, Object> model) {
+					return Utils.compileMustache(model, ParaServer.loadResource("templates/base.html"));
+				}
+			};
+		} else {
+			this.page = page;
+		}
 	}
 
 	/**
@@ -59,8 +73,10 @@ public class LandingPageController {
 		if (Para.getConfig().inProduction()) {
 			return GenericExceptionMapper.getExceptionResponse(200, "Hello from Para!");
 		} else {
-			return ResponseEntity.status(HttpStatus.OK).contentType(MediaType.TEXT_HTML).
-					body(Utils.compileMustache(model.asMap(), ParaServer.loadResource("templates/base.html")));
+			return ResponseEntity.
+					status(HttpStatus.OK).
+					contentType(MediaType.TEXT_HTML).
+					body(page.getHTML(model.asMap()));
 		}
 	}
 }

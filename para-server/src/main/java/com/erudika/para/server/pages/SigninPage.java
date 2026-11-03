@@ -15,7 +15,11 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.server.security;
+package com.erudika.para.server.pages;
+
+import com.erudika.para.core.utils.Utils;
+import com.erudika.para.server.ParaServer;
+import java.util.Map;
 
 /**
  * Basic login page interface. Implement this to override the default Para login page.
@@ -23,4 +27,11 @@ package com.erudika.para.server.security;
  */
 public interface SigninPage {
 
+	/**
+	 * The default HTML content of this page.
+	 * @return
+	 */
+	public default String getHTML(Map<String, Object> model) {
+		return Utils.compileMustache(model, ParaServer.loadResource("templates/base.html"));
+	}
 }

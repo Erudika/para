@@ -21,10 +21,13 @@ package com.erudika.para.server.controllers;
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.ParaServer;
+import com.erudika.para.server.pages.ErrorPage;
 import com.erudika.para.server.rest.GenericExceptionMapper;
+import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
@@ -44,10 +47,21 @@ import org.springframework.web.bind.annotation.PathVariable;
 @Controller
 public class ErrorController implements org.springframework.boot.webmvc.error.ErrorController {
 
+	private ErrorPage page;
+
 	/**
 	 * No-args constructor.
 	 */
-	public ErrorController() {
+	public ErrorController(@Nullable ErrorPage page) {
+		if (page == null) {
+			this.page = new ErrorPage() {
+				public String getHTML(Map<String, Object> model) {
+					return Utils.compileMustache(model, ParaServer.loadResource("templates/base.html"));
+				}
+			};
+		} else {
+			this.page = page;
+		}
 	}
 
 	/**
@@ -68,14 +82,17 @@ public class ErrorController implements org.springframework.boot.webmvc.error.Er
 		model.addAttribute("message", "Error code: " + Optional.ofNullable(req.getAttribute("jakarta.servlet.error.status_code")).
 				orElse(statusCode) + " " + HttpStatus.valueOf(statusCode).getReasonPhrase());
 		model.addAttribute("landing", false);
+		model.addAttribute("errorCode", statusCode);
 
 		if (Para.getConfig().inProduction() || Strings.CS.startsWith((CharSequence)
 				req.getAttribute("jakarta.servlet.forward.request_uri"), ParaServer.API_PATH + "/")) {
 			res.setContentType(MediaType.APPLICATION_JSON_VALUE);
 			return GenericExceptionMapper.getExceptionResponse(statusCode, error);
 		} else {
-			return ResponseEntity.status(statusCode).contentType(MediaType.TEXT_HTML).
-					body(Utils.compileMustache(model.asMap(), ParaServer.loadResource("templates/base.html")));
+			return ResponseEntity.
+					status(statusCode).
+					contentType(MediaType.TEXT_HTML).
+					body(page.getHTML(model.asMap()));
 		}
 	}
 }

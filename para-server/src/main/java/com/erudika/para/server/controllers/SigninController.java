@@ -19,10 +19,9 @@
 package com.erudika.para.server.controllers;
 
 import com.erudika.para.core.utils.Para;
-import com.erudika.para.core.utils.Utils;
-import com.erudika.para.server.ParaServer;
+import com.erudika.para.server.pages.SigninPage;
 import com.erudika.para.server.rest.GenericExceptionMapper;
-import com.erudika.para.server.security.SigninPage;
+import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -41,10 +40,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 @ConditionalOnMissingBean(SigninPage.class)
 public class SigninController {
 
+	private final SigninPage page;
+
 	/**
 	 * No-args constructor.
 	 */
-	public SigninController() {
+	public SigninController(@Nullable SigninPage page) {
+		this.page = page;
 	}
 
 	/**
@@ -63,8 +65,10 @@ public class SigninController {
 		if (Para.getConfig().inProduction()) {
 			return GenericExceptionMapper.getExceptionResponse(HttpStatus.UNAUTHORIZED.value(), "Not found");
 		} else {
-			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).contentType(MediaType.TEXT_HTML).
-					body(Utils.compileMustache(model.asMap(), ParaServer.loadResource("templates/base.html")));
+			return ResponseEntity.
+					status(HttpStatus.UNAUTHORIZED).
+					contentType(MediaType.TEXT_HTML).
+					body(page.getHTML(model.asMap()));
 		}
 	}
 }

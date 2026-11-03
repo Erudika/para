@@ -15,12 +15,23 @@
  *
  * For issues and patches go to: https://github.com/erudika
  */
-package com.erudika.para.server.security;
+package com.erudika.para.server.pages;
+
+import com.erudika.para.core.utils.Utils;
+import com.erudika.para.server.ParaServer;
+import java.util.Map;
 
 /**
- * Basic login page interface. Implement this to override the default Para login page.
+ * Implement this to override the default Para 404 page.
  * @author Alex Bogdanovski [alex@erudika.com]
  */
-public interface SigninPage {
+public interface NotFoundPage {
 
+	/**
+	 * The default HTML content of this page.
+	 * @return
+	 */
+	public default String getHTML(Map<String, Object> model) {
+		return Utils.compileMustache(model, ParaServer.loadResource("templates/base.html"));
+	}
 }
