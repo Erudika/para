@@ -8,7 +8,7 @@
       /* Accent: one source of truth for the whole page. */
       :root {
         --accent: #AEAEAE;
-        --accent-rgb: 128, 199, 230;
+        --accent-rgb: 174, 174, 174;
         --on-accent: #06121a;
       }
 
@@ -351,15 +351,15 @@
 			/*      .hero-body {
 							position: relative;
 						}*/
-      .hero-body::before {
+/*      .hero-body::before {
         content: "";
         position: absolute;
         inset: 0;
         z-index: 0;
         pointer-events: none;
-        /*background: radial-gradient(ellipse 70% 55% at 50% 48%, rgba(3, 7, 12, 0.78) 0%, rgba(3, 7, 12, 0.58) 42%, rgba(3, 7, 12, 0.16) 74%, transparent 100%);*/
+        background: radial-gradient(ellipse 70% 55% at 50% 48%, rgba(3, 7, 12, 0.78) 0%, rgba(3, 7, 12, 0.58) 42%, rgba(3, 7, 12, 0.16) 74%, transparent 100%);
 				background: linear-gradient(180deg, rgba(3, 7, 12, 0.78) 0%, rgba(3, 7, 12, 0.58) 42%, rgba(3, 7, 12, 0.16) 74%, transparent 100%);
-      }
+      }*/
       .hero-body > .container {
         position: relative;
         z-index: 1;
@@ -651,7 +651,7 @@
 						style="fill:#ffffff;fill-opacity:1" />
           </svg>
         </a>
-        <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+        <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarTop">
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
@@ -659,7 +659,7 @@
         </a>
       </div>
 			{{#landing}}
-      <div id="navbarBasicExample" class="navbar-menu">
+      <div id="navbarTop" class="navbar-menu">
         <div class="navbar-start">
           <a href="/apidocs" class="navbar-item">
             API
@@ -712,6 +712,7 @@
         </p>
       </div>
     </footer>
+		{{/landing}}
 
     <section class="noise-console" id="noise-console" data-open="false" aria-label="Background controls">
       <button type="button" class="noise-console__head" id="noise-toggle" aria-expanded="false" aria-controls="noise-panel">
@@ -722,57 +723,64 @@
         <div class="noise-row noise-row--inline">
           <label class="noise-row__label" for="noise-accent">Accent</label>
           <span class="noise-accent">
-            <output class="noise-row__value" id="noise-accent-out" for="noise-accent">#80c7e6</output>
-            <input class="noise-color" id="noise-accent" type="color" value="#80c7e6" title="Accent color is kept bright for contrast">
+            <output class="noise-row__value" id="noise-accent-out" for="noise-accent">#aeaeae</output>
+            <input class="noise-color" id="noise-accent" type="color" value="#AEAEAE" title="Accent color is kept bright for contrast">
           </span>
         </div>
 				<div class="noise-palette" id="noise-palette" aria-hidden="true"></div>
         <div class="noise-row">
           <div class="noise-row__top">
             <span class="noise-row__label">Dither</span>
-            <span class="noise-row__value" id="noise-bits-out">4 bit / 16</span>
+            <span class="noise-row__value" id="noise-bits-out">2 bit / 4</span>
           </div>
           <div class="noise-bits" role="group" aria-label="Dither bit depth">
             <button type="button" data-bits="1" aria-pressed="false">1</button>
-            <button type="button" data-bits="2" aria-pressed="false">2</button>
+            <button type="button" data-bits="2" aria-pressed="true">2</button>
             <button type="button" data-bits="3" aria-pressed="false">3</button>
-            <button type="button" data-bits="4" aria-pressed="true">4</button>
+            <button type="button" data-bits="4" aria-pressed="false">4</button>
           </div>
         </div>
         <div class="noise-row">
           <div class="noise-row__top">
             <label class="noise-row__label" for="noise-scale">Scale</label>
-            <output class="noise-row__value" id="noise-scale-out" for="noise-scale">1.30</output>
+            <output class="noise-row__value" id="noise-scale-out" for="noise-scale">0.70</output>
           </div>
-          <input class="noise-range" id="noise-scale" type="range" min="0.35" max="3.2" step="0.01" value="1.3">
+          <input class="noise-range" id="noise-scale" type="range" min="0.35" max="3.2" step="0.01" value="0.7">
         </div>
         <div class="noise-row">
           <div class="noise-row__top">
             <label class="noise-row__label" for="noise-speed">Speed</label>
-            <output class="noise-row__value" id="noise-speed-out" for="noise-speed">14</output>
+            <output class="noise-row__value" id="noise-speed-out" for="noise-speed">7</output>
           </div>
-          <input class="noise-range" id="noise-speed" type="range" min="0" max="60" step="1" value="14">
+          <input class="noise-range" id="noise-speed" type="range" min="0" max="60" step="1" value="7">
         </div>
         <div class="noise-row">
           <div class="noise-row__top">
             <label class="noise-row__label" for="noise-fade">Fade</label>
-            <output class="noise-row__value" id="noise-fade-out" for="noise-fade">0.75</output>
+            <output class="noise-row__value" id="noise-fade-out" for="noise-fade">0.41</output>
           </div>
-          <input class="noise-range" id="noise-fade" type="range" min="0" max="1" step="0.01" value="0.75">
+          <input class="noise-range" id="noise-fade" type="range" min="0" max="1" step="0.01" value="0.41">
         </div>
         <div class="noise-row">
           <div class="noise-row__top">
             <label class="noise-row__label" for="noise-density">Density</label>
-            <output class="noise-row__value" id="noise-density-out" for="noise-density">70%</output>
+            <output class="noise-row__value" id="noise-density-out" for="noise-density">41%</output>
           </div>
-          <input class="noise-range" id="noise-density" type="range" min="0" max="1" step="0.01" value="0.7">
+          <input class="noise-range" id="noise-density" type="range" min="0" max="1" step="0.01" value="0.41">
         </div>
         <div class="noise-row">
           <div class="noise-row__top">
             <label class="noise-row__label" for="noise-contrast">Contrast</label>
-            <output class="noise-row__value" id="noise-contrast-out" for="noise-contrast">1.35</output>
+            <output class="noise-row__value" id="noise-contrast-out" for="noise-contrast">1.20</output>
           </div>
-          <input class="noise-range" id="noise-contrast" type="range" min="0.5" max="2.4" step="0.01" value="1.35">
+          <input class="noise-range" id="noise-contrast" type="range" min="0.5" max="2.4" step="0.01" value="1.2">
+        </div>
+        <div class="noise-row">
+          <div class="noise-row__top">
+            <label class="noise-row__label" for="noise-zoom">Zoom</label>
+            <output class="noise-row__value" id="noise-zoom-out" for="noise-zoom">360,000 px</output>
+          </div>
+          <input class="noise-range" id="noise-zoom" type="range" min="100" max="360000" step="100" value="360000">
         </div>
 
         <div class="noise-row">
@@ -780,7 +788,7 @@
             <label class="noise-row__label" for="noise-seed-code">Seed</label>
             <output class="noise-row__value" id="noise-seed-status" aria-live="polite">copy/paste</output>
           </div>
-          <input class="noise-seed" id="noise-seed-code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="28" autocomplete="off" spellcheck="false" aria-label="Settings seed. Copy this number or paste a number and press Enter to load settings." title="Copy this number to share settings. Paste a number and press Enter to load it.">
+          <input class="noise-seed" id="noise-seed-code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="33" autocomplete="off" spellcheck="false" aria-label="Settings seed. Copy this number or paste a number and press Enter to load settings." title="Copy this number to share settings. Paste a number and press Enter to load it.">
         </div>
         <div class="noise-actions">
           <button type="button" class="noise-btn" id="noise-save">Save</button>
@@ -788,10 +796,10 @@
         </div>
       </div>
     </section>
-		{{/landing}}
+
     <canvas id='canv'></canvas>
   </body>
-	{{#landing}}
+
   <script>
 	(function () {
 		'use strict';
@@ -806,8 +814,17 @@
 		}
 
 		var TEX = (window.innerWidth * window.innerHeight) > 700000 ? 1024 : 512;
-		var PIXEL_BUDGET = 360000; /* max rendered pixels per frame */
+		var DEFAULT_PIXEL_BUDGET = 360000;
 		var FRAME_MS = 33;       /* ~30 fps */
+
+		function createTextureSeed() {
+			var values = new Uint32Array(1);
+			if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+				window.crypto.getRandomValues(values);
+				return (values[0] % 2147483646) + 1;
+			}
+			return Math.floor(Math.random() * 2147483646) + 1;
+		}
 
 		var params = {
 			bits: 2,
@@ -816,14 +833,17 @@
 			fade: 0.41,
 			density: 0.41,
 			contrast: 1.2,
-			zoom: PIXEL_BUDGET
+			zoom: DEFAULT_PIXEL_BUDGET,
+			accent: '#AEAEAE',
+			seed: createTextureSeed()
 		};
-		var seed = 1337;
+		var PIXEL_BUDGET = params.zoom;
+		var seed = params.seed;
 		var field = null;
 		var image = null;
 		var palR, palG, palB;
 		var vw = 0, vh = 0;
-		var paused = false;
+		var paused = !document.getElementById("navbarTop");
 		var elapsed = 0;
 		var lastFrame = 0;
 		var lastDraw = 0;
@@ -1065,6 +1085,7 @@
 			var c = normalizeAccent(parseHex(hex));
 			var r = c[0], g = c[1], b = c[2];
 			var out = '#' + toHex(r) + toHex(g) + toHex(b);
+			params.accent = out;
 			var root = document.documentElement;
 			root.style.setProperty('--accent', out);
 			root.style.setProperty('--accent-rgb', r + ', ' + g + ', ' + b);
@@ -1132,7 +1153,7 @@
 			var w = window.innerWidth || document.documentElement.clientWidth;
 			var h = window.innerHeight || document.documentElement.clientHeight;
 			var cell = 2;
-			while ((w / cell) * (h / cell) > PIXEL_BUDGET) {
+			while (Math.ceil(w / cell) * Math.ceil(h / cell) > PIXEL_BUDGET) {
 				cell += 1;
 			}
 			vw = Math.max(1, Math.ceil(w / cell));
@@ -1236,6 +1257,12 @@
 					return;
 				}
 				params[key] = v;
+				if (key === 'zoom') {
+					PIXEL_BUDGET = Math.round(v);
+					if (image) {
+						resize();
+					}
+				}
 				if (out) {
 					out.textContent = format(v);
 				}
@@ -1251,7 +1278,7 @@
 		var seedCodeInput = document.getElementById('noise-seed-code');
 		var seedStatus = document.getElementById('noise-seed-status');
 		var saveBtn = document.getElementById('noise-save');
-		var settingsStorageKey = 'para.steamField.settings.v1';
+		var settingsStorageKey = 'para.steamField.settings';
 		var seedRadix = 2147483647;
 
 		function rangeRadix(id) {
@@ -1278,8 +1305,7 @@
 
 		/* Pack the controls and the texture seed into one decimal BigInt. */
 		function encodeSettingsCode() {
-			var accentValue = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
-			var accent = parseHex(accentValue);
+			var accent = parseHex(params.accent);
 			var accentNumber = accent[0] * 65536 + accent[1] * 256 + accent[2];
 			var bitsIndex = 0;
 			for (var i = 0; i < bitButtons.length; i++) {
@@ -1289,24 +1315,31 @@
 				}
 			}
 
-			var code = BigInt(seed);
+			var code = BigInt(params.seed);
 			code = code * BigInt(16777216) + BigInt(accentNumber);
 			code = code * BigInt(rangeRadix('noise-contrast')) + BigInt(rangeIndex('noise-contrast'));
 			code = code * BigInt(rangeRadix('noise-density')) + BigInt(rangeIndex('noise-density'));
 			code = code * BigInt(rangeRadix('noise-fade')) + BigInt(rangeIndex('noise-fade'));
 			code = code * BigInt(rangeRadix('noise-speed')) + BigInt(rangeIndex('noise-speed'));
 			code = code * BigInt(rangeRadix('noise-scale')) + BigInt(rangeIndex('noise-scale'));
+			code = code * BigInt(rangeRadix('noise-zoom')) + BigInt(rangeIndex('noise-zoom'));
 			code = code * BigInt(bitButtons.length) + BigInt(bitsIndex);
-			return code.toString(10);
+			var payload = code.toString(10);
+			while (payload.length < 32) {
+				payload = '0' + payload;
+			}
+			return '2' + payload;
 		}
 
 		function decodeSettingsCode(text) {
-			if (typeof BigInt !== 'function' || !/^\d{1,32}$/.test(text)) {
+			var version2 = /^2\d{32}$/.test(text);
+			var legacy = /^\d{1,28}$/.test(text);
+			if (typeof BigInt !== 'function' || (!version2 && !legacy)) {
 				return null;
 			}
 			var code;
 			try {
-				code = BigInt(text);
+				code = BigInt(version2 ? text.substring(1) : text);
 			} catch (e) {
 				return null;
 			}
@@ -1319,6 +1352,7 @@
 			}
 
 			var bitsIndex = take(bitButtons.length);
+			var zoomIndex = version2 ? take(rangeRadix('noise-zoom')) : null;
 			var scaleIndex = take(rangeRadix('noise-scale'));
 			var speedIndex = take(rangeRadix('noise-speed'));
 			var fadeIndex = take(rangeRadix('noise-fade'));
@@ -1336,6 +1370,7 @@
 
 			return {
 				bits: parseInt(bitButtons[bitsIndex].getAttribute('data-bits'), 10),
+				zoom: version2 ? rangeValue('noise-zoom', zoomIndex) : params.zoom,
 				scale: rangeValue('noise-scale', scaleIndex),
 				speed: rangeValue('noise-speed', speedIndex),
 				fade: rangeValue('noise-fade', fadeIndex),
@@ -1345,6 +1380,64 @@
 						toHex(Math.floor(accentNumber / 256) % 256) + toHex(accentNumber % 256),
 				seed: textureSeed
 			};
+		}
+
+		function encodeStoredSettings() {
+			return JSON.stringify({
+				version: 1,
+				bits: params.bits,
+				scale: params.scale,
+				speed: params.speed,
+				fade: params.fade,
+				density: params.density,
+				contrast: params.contrast,
+				zoom: params.zoom,
+				accent: params.accent
+			});
+		}
+
+		function isValidRangeValue(id, value) {
+			if (typeof value !== 'number' || !isFinite(value)) {
+				return false;
+			}
+			var input = document.getElementById(id);
+			var min = parseFloat(input.min), max = parseFloat(input.max);
+			var step = parseFloat(input.step) || 1;
+			if (value < min || value > max) {
+				return false;
+			}
+			var index = Math.round((value - min) / step);
+			return Math.abs(min + index * step - value) < 0.000001;
+		}
+
+		function decodeStoredSettings(text) {
+			var state;
+			try {
+				state = JSON.parse(text);
+			} catch (e) {
+				return null;
+			}
+			if (!state || state.version !== 1) {
+				return null;
+			}
+			var validBits = false;
+			for (var i = 0; i < bitButtons.length; i++) {
+				if (parseInt(bitButtons[i].getAttribute('data-bits'), 10) === state.bits) {
+					validBits = true;
+					break;
+				}
+			}
+			if (!validBits ||
+					!isValidRangeValue('noise-scale', state.scale) ||
+					!isValidRangeValue('noise-speed', state.speed) ||
+					!isValidRangeValue('noise-fade', state.fade) ||
+					!isValidRangeValue('noise-density', state.density) ||
+					!isValidRangeValue('noise-contrast', state.contrast) ||
+					!isValidRangeValue('noise-zoom', state.zoom) ||
+					typeof state.accent !== 'string' || !/^#[0-9a-f]{6}$/i.test(state.accent)) {
+				return null;
+			}
+			return state;
 		}
 
 		function updateSeedCode(message) {
@@ -1361,6 +1454,9 @@
 			var output = document.getElementById(id + '-out');
 			input.value = String(value);
 			params[key] = parseFloat(input.value);
+			if (key === 'zoom') {
+				PIXEL_BUDGET = Math.round(params.zoom);
+			}
 			if (output) {
 				output.textContent = format(params[key]);
 			}
@@ -1368,7 +1464,10 @@
 
 		function applySettings(state) {
 			params.bits = state.bits;
-			seed = state.seed;
+			if (typeof state.seed === 'number' && isFinite(state.seed)) {
+				params.seed = state.seed;
+				seed = state.seed;
+			}
 			setRangeControl('noise-scale', 'scale', state.scale, function (v) {
 				return v.toFixed(2);
 			});
@@ -1384,6 +1483,9 @@
 			setRangeControl('noise-contrast', 'contrast', state.contrast, function (v) {
 				return v.toFixed(2);
 			});
+			setRangeControl('noise-zoom', 'zoom', state.zoom, function (v) {
+				return Math.round(v).toLocaleString() + ' px';
+			});
 
 			for (var i = 0; i < bitButtons.length; i++) {
 				bitButtons[i].setAttribute('aria-pressed',
@@ -1395,6 +1497,7 @@
 			}
 			applyAccent(state.accent);
 			if (field) {
+				resize();
 				build(seed);
 				draw();
 			}
@@ -1424,12 +1527,9 @@
 		}
 
 		function saveSettings() {
-			var code = encodeSettingsCode();
-			if (seedCodeInput) {
-				seedCodeInput.value = code;
-			}
+			var settings = encodeStoredSettings();
 			try {
-				window.localStorage.setItem(settingsStorageKey, code);
+				window.localStorage.setItem(settingsStorageKey, settings);
 				if (seedStatus) {
 					seedStatus.textContent = 'Saved';
 				}
@@ -1442,10 +1542,8 @@
 
 		function bindBits() {
 			for (var i = 0; i < bitButtons.length; i++) {
-				if (bitButtons[i].getAttribute('aria-pressed') === 'true') {
-					params.bits = parseInt(bitButtons[i].getAttribute('data-bits'), 10) || params.bits;
-					break;
-				}
+				bitButtons[i].setAttribute('aria-pressed',
+					parseInt(bitButtons[i].getAttribute('data-bits'), 10) === params.bits ? 'true' : 'false');
 			}
 			for (var i = 0; i < bitButtons.length; i++) {
 				bitButtons[i].addEventListener('click', function () {
@@ -1475,12 +1573,30 @@
 
 		function init() {
 			var accentInput = document.getElementById('noise-accent');
-			var initialAccent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#80c7e6';
 			if (accentInput) {
-				accentInput.value = initialAccent;
+				accentInput.value = params.accent;
 			}
 			bindBits();
-			applyAccent(initialAccent);
+			setRangeControl('noise-scale', 'scale', params.scale, function (v) {
+				return v.toFixed(2);
+			});
+			setRangeControl('noise-speed', 'speed', params.speed, function (v) {
+				return String(Math.round(v));
+			});
+			setRangeControl('noise-fade', 'fade', params.fade, function (v) {
+				return v.toFixed(2);
+			});
+			setRangeControl('noise-density', 'density', params.density, function (v) {
+				return Math.round(v * 100) + '%';
+			});
+			setRangeControl('noise-contrast', 'contrast', params.contrast, function (v) {
+				return v.toFixed(2);
+			});
+			setRangeControl('noise-zoom', 'zoom', params.zoom, function (v) {
+				return Math.round(v).toLocaleString() + ' px';
+			});
+			PIXEL_BUDGET = Math.round(params.zoom);
+			applyAccent(params.accent);
 			bindRange('noise-scale', 'scale', function (v) {
 				return v.toFixed(2);
 			});
@@ -1495,6 +1611,9 @@
 			});
 			bindRange('noise-contrast', 'contrast', function (v) {
 				return v.toFixed(2);
+			});
+			bindRange('noise-zoom', 'zoom', function (v) {
+				return Math.round(v).toLocaleString() + ' px';
 			});
 
 			if (accentInput) {
@@ -1565,21 +1684,21 @@
 				setOpen(false);
 			}
 
-			var savedCode = '';
+			var savedSettingsText = '';
 			try {
-				savedCode = window.localStorage.getItem(settingsStorageKey) || '';
+				savedSettingsText = window.localStorage.getItem(settingsStorageKey) || '';
 			} catch (e) {
 			}
-			var savedState = savedCode ? decodeSettingsCode(savedCode) : null;
+			var savedState = savedSettingsText ? decodeStoredSettings(savedSettingsText) : null;
 			if (savedState) {
 				applySettings(savedState);
-			} else if (savedCode && seedStatus) {
-				seedStatus.textContent = 'Invalid saved seed';
+			} else if (savedSettingsText && seedStatus) {
+				seedStatus.textContent = 'Invalid saved settings';
 			}
 			resize();
 			field = build(seed);
 			draw();
-			updateSeedCode(savedState ? 'Loaded' : (savedCode ? 'Invalid saved seed' : 'copy/paste'));
+			updateSeedCode(savedState ? 'Loaded' : (savedSettingsText ? 'Invalid saved settings' : 'copy/paste'));
 
 			if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 				paused = true;
@@ -1587,6 +1706,7 @@
 					pauseBtn.setAttribute('aria-pressed', 'true');
 					pauseBtn.textContent = 'Resume';
 				}
+				setOpen(true);
 			}
 
 			window.requestAnimationFrame(tick);
@@ -1608,5 +1728,4 @@
 		init();
 	})();
   </script>
-	{{/landing}}
 </html>
