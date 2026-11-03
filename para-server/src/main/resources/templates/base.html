@@ -43,6 +43,12 @@
         font-size: 1em;
         font-weight: 400;
         line-height: 1.5;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        height: 100vh;
+        height: 100dvh;
+        min-height: 100vh;
       }
       a {
         color: inherit;
@@ -64,6 +70,7 @@
 
       /* Navbar */
       .navbar {
+        grid-row: 1;
         min-height: 3.25rem;
         position: relative;
 				padding: 1.5rem;
@@ -104,6 +111,22 @@
         position: absolute;
         transform-origin: center;
         width: 20px;
+      }
+      .navbar-burger span:nth-child(1),
+      .navbar-burger span:nth-child(2),
+      .navbar-burger span:nth-child(3),
+      .navbar-burger span:nth-child(4) {
+        transition: opacity 120ms ease, transform 120ms ease;
+      }
+      .navbar-burger.is-active span:nth-child(1) {
+        transform: rotate(45deg);
+      }
+      .navbar-burger.is-active span:nth-child(2) {
+        transform: rotate(-45deg);
+      }
+      .navbar-burger.is-active span:nth-child(3),
+      .navbar-burger.is-active span:nth-child(4) {
+        opacity: 0;
       }
       .navbar-burger span:nth-child(1),
       .navbar-burger span:nth-child(2) {
@@ -192,17 +215,19 @@
 
       /* Hero */
       .hero {
-        align-items: stretch;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
+        display: grid;
+        grid-row: 2;
+        grid-template-rows: minmax(0, 1fr);
+        min-height: 0;
       }
       .hero.is-fullheight {
-        min-height: 100vh;
+        min-height: 0;
       }
       .hero-body {
-        flex-grow: 1;
-        flex-shrink: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        place-items: center;
+        min-height: 0;
         padding: 3rem 1.5rem;
       }
       @media screen and (min-width: 769px) {
@@ -211,15 +236,13 @@
         }
       }
       .hero.is-fullheight .hero-body {
-        align-items: center;
-        display: flex;
+        display: grid;
+        place-items: center;
       }
       .hero.is-fullheight .hero-body > .container {
-        flex-grow: 1;
-        flex-shrink: 1;
+        width: 100%;
       }
       .container {
-        flex-grow: 1;
         margin: 0 auto;
         position: relative;
         width: 100%;
@@ -333,7 +356,8 @@
         font-weight: 400 !important;
       }
       footer {
-        margin-top: -150px;
+        grid-row: 3;
+        margin-top: -7rem;
 				z-index: 10;
       }
       canvas {
@@ -656,12 +680,12 @@
 						style="fill:#ffffff;fill-opacity:1" />
           </svg>
         </a>
-        <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarTop">
+        <button type="button" class="navbar-burger" aria-label="Menu" aria-expanded="false" aria-controls="navbarTop" data-target="navbarTop">
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
           <span aria-hidden="true"></span>
-        </a>
+        </button>
       </div>
 			{{#landing}}
       <div id="navbarTop" class="navbar-menu">
@@ -1621,6 +1645,7 @@
 
 		var toggle = document.getElementById('noise-toggle');
 		var panel = document.getElementById('noise-console');
+		var navbarBurger = document.querySelector('.navbar-burger');
 		var greeting = document.getElementById('greeting');
 		function setOpen(open) {
 			if (!panel || !toggle) {
@@ -1633,6 +1658,18 @@
 		var pauseBtn = document.getElementById('noise-pause');
 
 		function init() {
+			if (navbarBurger) {
+				var navbarMenu = document.getElementById(navbarBurger.getAttribute('data-target'));
+				if (navbarMenu) {
+					navbarBurger.addEventListener('click', function () {
+						var open = !navbarMenu.classList.contains('is-active');
+						navbarMenu.classList.toggle('is-active');
+						navbarBurger.classList.toggle('is-active');
+						navbarBurger.setAttribute('aria-expanded', open ? 'true' : 'false');
+					});
+				}
+			}
+
 			var accentInput = document.getElementById('noise-accent');
 			if (accentInput) {
 				accentInput.value = params.accent;
