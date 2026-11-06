@@ -29,9 +29,10 @@ public interface SigninPage {
 
 	/**
 	 * The default HTML content of this page.
-	 * @return
+	 * @param model model
+	 * @return html
 	 */
-	public default String getHTML(Map<String, Object> model) {
+	default String getHTML(Map<String, Object> model) {
 		return Utils.compileMustache(model, ParaServer.loadResource("templates/base.html"));
 	}
 }
