@@ -401,7 +401,7 @@ public class User implements ParaObject {
 		}
 
 		// admin detected
-		if (!Para.getConfig().adminIdentifier().isEmpty() && Para.getConfig().adminIdentifier().equals(getIdentifier())) {
+		if (!Para.getConfig().admins().isEmpty() && Para.getConfig().admins().contains(getIdentifier())) {
 			logger.info("Creating new user '{}' ({}) with admin privileges.", getName(), getIdentifier());
 			setGroups(User.Groups.ADMINS.toString());
 		}

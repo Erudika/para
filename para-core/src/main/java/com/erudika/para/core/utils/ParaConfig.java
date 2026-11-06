@@ -23,6 +23,7 @@ import static com.erudika.para.core.utils.Config.PARA;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigObject;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -320,11 +321,22 @@ public class ParaConfig extends Config {
 	 * @return the admin identifier
 	 */
 	@Documented(position = 170,
-			identifier = "admin_ident",
+			identifier = "admins",
 			category = "Core",
-			description = "The identifier of the first administrator (can be email or social login ID).")
-	public String adminIdentifier() {
-		return getConfigParam("admin_ident", "");
+			description = "Comma-separated list of admin identifiers - users to be promoted to administrator "
+					+ "(can be email or social login ID).")
+	public List<String> admins() {
+		String adminz = getConfigParam("admins", getConfigParam("admin_ident", ""));
+		String[] admins = adminz.split("\\s*,\\s*");
+		List<String> list = new ArrayList<String>();
+		if (!StringUtils.isBlank(adminz) && admins != null && admins.length > 0) {
+			for (String admin : admins) {
+				if (!StringUtils.isBlank(admin)) {
+					list.add(admin);
+				}
+			}
+		}
+		return list;
 	}
 
 	/**
@@ -996,6 +1008,54 @@ public class ParaConfig extends Config {
 	 */
 	public ConfigObject protectedPaths() {
 		return getConfig().hasPath("security.protected") ? getConfig().getObject("security.protected") : null;
+	}
+
+	/**
+	 * A list of paths which are publicly accessible by default.
+	 * For example, /password_auth, /google_auth, /signout, /apidocs.
+	 * @return a list of public paths
+	 */
+	public List<?> unprotectedByDefaultPaths() {
+		List<String> defaultList = List.of(
+				"/",
+				"/favicon.ico",
+				"/robots.txt",
+				"/humans.txt",
+				"/images/**",
+				"/styles/**",
+				"/scripts/**",
+				"/v1/_health",
+				"/v1/_setup",
+				"/v1/_setup/**",
+				"/v1/_forms/**",
+				"/v1/_config/options",
+				"/signin",
+				"/signout",
+				"/start",
+				"/not-found",
+				"/jwt_auth",
+				"/facebook_auth",
+				"/google_auth",
+				"/twitter_auth",
+				"/github_auth",
+				"/linkedin_auth",
+				"/microsoft_auth",
+				"/slack_auth",
+				"/amazon_auth",
+				"/oauth2_auth",
+				"/oauth2second_auth",
+				"/oauth2third_auth",
+				"/ldap_auth",
+				"/password_auth",
+				"/passwordless_auth",
+				"/saml_auth",
+				"/saml_auth/**",
+				"/saml_metadata",
+				"/saml_metadata/**",
+				"/apidocs",
+				"/api.json");
+		return getConfig().hasPath("security.unprotected_by_default") ?
+				getConfig().getList("security.unprotected_by_default").unwrapped() : defaultList;
 	}
 
 	/**

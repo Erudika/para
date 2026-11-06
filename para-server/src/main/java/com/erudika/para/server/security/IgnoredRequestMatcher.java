@@ -41,9 +41,12 @@ public final class IgnoredRequestMatcher implements RequestMatcher {
 	private IgnoredRequestMatcher() {
 		ConfigList c = Para.getConfig().ignoredPaths();
 		List<RequestMatcher> list = new ArrayList<>();
+		for (Object unprotectedPath : Para.getConfig().unprotectedByDefaultPaths()) {
+			list.add(PathPatternRequestMatcher.withDefaults().matcher(unprotectedPath.toString()));
+		}
 		if (c != null) {
 			for (ConfigValue configValue : c) {
-				list.add(PathPatternRequestMatcher.withDefaults().matcher((String) configValue.unwrapped()));
+				list.add(PathPatternRequestMatcher.withDefaults().matcher(configValue.unwrapped().toString()));
 			}
 		} else {
 			list.add(PathPatternRequestMatcher.withDefaults().matcher("/"));
