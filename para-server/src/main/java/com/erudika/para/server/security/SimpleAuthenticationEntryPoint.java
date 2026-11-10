@@ -38,6 +38,10 @@ public class SimpleAuthenticationEntryPoint extends LoginUrlAuthenticationEntryP
 	 */
 	public SimpleAuthenticationEntryPoint(String loginFormUrl) {
 		super(loginFormUrl);
+		// Never build an absolute redirect URL from the request scheme. Behind a TLS-terminating
+		// proxy the application may see "http" even though the browser uses "https", which makes
+		// the browser bounce between the proxy and the application forever.
+		setFavorRelativeUris(true);
 	}
 
 	@Override

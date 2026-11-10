@@ -89,6 +89,13 @@ class SecurityConfigTest {
 	}
 
 	@Test
+	void errorPageIsPublic() throws Exception {
+		mvc.perform(get("/error"))
+				.andExpect(status().isOk())
+				.andExpect(content().string("error"));
+	}
+
+	@Test
 	void versionedRestPathKeepsRestAuthentication() throws Exception {
 		mvc.perform(get("/v1/private-api")).andExpect(status().isUnauthorized());
 	}
@@ -138,6 +145,11 @@ class SecurityConfigTest {
 		@GetMapping("/**")
 		String signIn() {
 			return "sign in";
+		}
+
+		@GetMapping("/error")
+		String errorPage() {
+			return "error";
 		}
 
 		@GetMapping("/v1/private-api")

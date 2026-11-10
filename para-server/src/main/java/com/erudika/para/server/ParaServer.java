@@ -76,7 +76,7 @@ public class ParaServer implements Ordered {
 
 	static {
 		System.setProperty("server.port", String.valueOf(Para.getConfig().serverPort()));
-		System.setProperty("server.use-forward-headers", String.valueOf(Para.getConfig().inProduction()));
+		System.setProperty("server.forward-headers-strategy", Para.getConfig().inProduction() ? "FRAMEWORK" : "NONE");
 
 		if (StringUtils.length(Para.getConfig().serverContextPath()) > 1 &&
 				Para.getConfig().serverContextPath().charAt(0) == '/') {

@@ -1033,6 +1033,8 @@ public class ParaConfig extends Config {
 				"/signout",
 				"/start",
 				"/not-found",
+				"/error",
+				"/error/**",
 				"/jwt_auth",
 				"/facebook_auth",
 				"/google_auth",

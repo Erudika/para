@@ -33,6 +33,7 @@ import com.erudika.para.server.security.filters.SAMLMetadataFilter;
 import com.erudika.para.server.security.filters.SlackAuthFilter;
 import com.erudika.para.server.security.filters.TwitterAuthFilter;
 import jakarta.annotation.security.DeclareRoles;
+import jakarta.servlet.DispatcherType;
 import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,10 +144,15 @@ public class SecurityConfig {
 		String signoutSuccessPath = Para.getConfig().signoutSuccessPath();
 
 		return http.authorizeHttpRequests((authorize) -> {
+			// Error and forward dispatches are internal. If they are protected, a failed request
+			// is redirected back to the sign-in page, which can create an endless redirect loop.
+			authorize.dispatcherTypeMatchers(DispatcherType.ERROR, DispatcherType.FORWARD).permitAll();
 			// Public pages and static resources must be listed in para.security.ignored.
 			// The configured sign-in path is also public so an unauthenticated user can sign in.
 			authorize.requestMatchers(IgnoredRequestMatcher.INSTANCE).permitAll();
 			authorize.requestMatchers(signinPath).permitAll();
+			// Allow direct requests to the error page as well, not only ERROR dispatches.
+			authorize.requestMatchers("/error", "/error/**").permitAll();
 			parseProtectedResources(http);
 			authorize.requestMatchers(RestRequestMatcher.INSTANCE).authenticated();
 			authorize.anyRequest().authenticated();
