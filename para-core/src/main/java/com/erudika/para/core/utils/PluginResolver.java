@@ -37,6 +37,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
@@ -47,27 +48,28 @@ import org.slf4j.LoggerFactory;
 /**
  * Downloads Para plugins and their runtime dependencies from Maven Central into the plugin folder.
  *
- * <p>Plugins are published as thin JARs. Each one carries a precomputed list of its runtime
- * dependencies in {@code META-INF/para/plugin-deps.txt}, generated at build time by
- * {@code maven-dependency-plugin:list}. This class fetches a plugin JAR, reads that manifest
- * without executing anything, then downloads each listed artifact into the plugin folder where
- * {@link Para#getParaClassLoader()} can see it.</p>
+ * <p>
+ * Plugins are published as thin JARs. Each one carries a precomputed list of its runtime dependencies in
+ * {@code META-INF/para/plugin-deps.txt}, generated at build time by {@code maven-dependency-plugin:list}. This class
+ * fetches a plugin JAR, reads that manifest without executing anything, then downloads each listed artifact into the
+ * plugin folder where {@link Para#getParaClassLoader()} can see it.</p>
  *
- * <p>Every downloaded artifact is checksum-verified before it is moved into place. SHA-256 is
- * preferred, SHA-1 is accepted as a fallback for artifacts that predate SHA-256 publication, and
- * a download is discarded if neither digest is available. Files are written to a temporary
- * location and atomically renamed, so a partial or corrupt download can never become visible to
- * the classloader.</p>
+ * <p>
+ * Every downloaded artifact is checksum-verified before it is moved into place. SHA-256 is preferred, SHA-1 is accepted
+ * as a fallback for artifacts that predate SHA-256 publication, and a download is discarded if neither digest is
+ * available. Files are written to a temporary location and atomically renamed, so a partial or corrupt download can
+ * never become visible to the classloader.</p>
  *
- * <p>The plugin folder is a flat classpath, so at most one version of any given library is kept.
- * When two plugins disagree about a version, the higher one wins and the lower one is removed.
- * This keeps the classpath deterministic regardless of the order plugins were installed in.</p>
+ * <p>
+ * The plugin folder is a flat classpath, so at most one version of any given library is kept. When two plugins disagree
+ * about a version, the higher one wins and the lower one is removed. This keeps the classpath deterministic regardless
+ * of the order plugins were installed in.</p>
  *
- * <p>Version conflicts are resolved per artifact, not per library. Installing
- * {@code para-search-lucene} after {@code para-search-elasticsearch} therefore leaves the Lucene
- * modules that only Elasticsearch needs at the version Elasticsearch asked for, and upgrades only
- * the modules both plugins declare. For the official plugins this means Lucene patch versions can
- * coexist, which is safe because a patch release of the same Lucene minor version is binary
+ * <p>
+ * Version conflicts are resolved per artifact, not per library. Installing {@code para-search-lucene} after
+ * {@code para-search-elasticsearch} therefore leaves the Lucene modules that only Elasticsearch needs at the version
+ * Elasticsearch asked for, and upgrades only the modules both plugins declare. For the official plugins this means
+ * Lucene patch versions can coexist, which is safe because a patch release of the same Lucene minor version is binary
  * compatible.</p>
  *
  * @author Alex Bogdanovski [alex@erudika.com]
@@ -75,14 +77,29 @@ import org.slf4j.LoggerFactory;
 public final class PluginResolver {
 
 	private static final Logger logger = LoggerFactory.getLogger(PluginResolver.class);
-	/** Location of the dependency manifest inside a plugin JAR. */
+	/**
+	 * Location of the dependency manifest inside a plugin JAR.
+	 */
 	private static final String MANIFEST_PATH = "META-INF/para/plugin-deps.txt";
+	private static final String POM_PROPERTIES_SUFFIX = "/pom.properties";
+	private static final List<String> PLUGIN_SERVICES = List.of(
+			"META-INF/services/com.erudika.para.core.persistence.DAO",
+			"META-INF/services/com.erudika.para.core.search.Search",
+			"META-INF/services/com.erudika.para.core.cache.Cache",
+			"META-INF/services/com.erudika.para.core.storage.FileStore",
+			"META-INF/services/com.erudika.para.core.queue.Queue",
+			"META-INF/services/com.erudika.para.core.email.Emailer",
+			"META-INF/services/com.erudika.para.core.rest.CustomResourceHandler");
 	private static final String CENTRAL = "https://repo1.maven.org/maven2/";
 	private static final int CONNECT_TIMEOUT_SECONDS = 15;
 	private static final int REQUEST_TIMEOUT_SECONDS = 120;
-	/** Cap on a single artifact, to bound damage from a misconfigured or hostile response. */
+	/**
+	 * Cap on a single artifact, to bound damage from a misconfigured or hostile response.
+	 */
 	private static final long MAX_ARTIFACT_BYTES = 512L * 1024L * 1024L;
-	/** Cap on the decompressed size of the dependency manifest. */
+	/**
+	 * Cap on the decompressed size of the dependency manifest.
+	 */
 	private static final int MAX_MANIFEST_BYTES = 1024 * 1024;
 
 	private final HttpClient httpClient;
@@ -98,6 +115,7 @@ public final class PluginResolver {
 
 	/**
 	 * Creates a resolver that writes into the given folder.
+	 *
 	 * @param pluginFolder the destination folder for plugins and their dependencies
 	 */
 	public PluginResolver(Path pluginFolder) {
@@ -106,6 +124,7 @@ public final class PluginResolver {
 
 	/**
 	 * Creates a resolver that writes into the given folder and fetches from the given repository.
+	 *
 	 * @param pluginFolder the destination folder for plugins and their dependencies
 	 * @param repositoryUrl base URL of the Maven repository to download from
 	 */
@@ -119,19 +138,70 @@ public final class PluginResolver {
 	}
 
 	/**
+	 * Resolves dependencies for every Para plugin already present in the plugin folder.
+	 *
+	 * <p>
+	 * Only JARs that publish a Para {@link java.util.ServiceLoader} provider are considered plugins. Ordinary
+	 * libraries, JDBC drivers and operator-provided support JARs are left untouched. Plugin coordinates are read from
+	 * Maven's standard {@code META-INF/maven/.../pom.properties} entry.</p>
+	 *
+	 * <p>
+	 * There must be one JAR per plugin artifact. Multiple versions, including duplicate copies of the same version, are
+	 * rejected because the plugin folder is a flat classpath.</p>
+	 *
+	 * @return the resolution results, in filename order
+	 * @throws IOException if a plugin is malformed, duplicated, or its dependencies cannot be resolved
+	 */
+	public List<ResolutionResult> resolveInstalledPlugins() throws IOException {
+		if (!Files.isDirectory(pluginFolder)) {
+			return List.of();
+		}
+		List<Path> jars;
+		try (var stream = Files.list(pluginFolder)) {
+			jars = stream.filter(path -> path.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".jar"))
+					.sorted().toList();
+		}
+		Map<String, PluginMetadata> plugins = new LinkedHashMap<>();
+		for (Path jar : jars) {
+			if (!isPluginJar(jar)) {
+				continue;
+			}
+			PluginMetadata metadata = readPluginMetadata(jar);
+			if (metadata == null) {
+				throw new IOException("Plugin JAR " + jar.getFileName()
+						+ " has no Maven coordinates in META-INF/maven/.../pom.properties");
+			}
+			PluginMetadata previous = plugins.putIfAbsent(metadata.artifactId, metadata);
+			if (previous != null) {
+				throw new IOException("Multiple versions of plugin " + metadata.artifactId + " are installed: "
+						+ previous.version + " (" + previous.pluginJar.getFileName() + ") and "
+						+ metadata.version + " (" + metadata.pluginJar.getFileName() + ")");
+			}
+		}
+
+		List<ResolutionResult> results = new ArrayList<>();
+		for (PluginMetadata metadata : plugins.values()) {
+			results.add(resolvePluginJar(metadata.groupId, metadata.artifactId, metadata.version,
+					metadata.pluginJar));
+		}
+		return List.copyOf(results);
+	}
+
+	/**
 	 * Downloads a plugin and all of its runtime dependencies into the plugin folder.
 	 *
-	 * <p>This is the bootstrap sequence: the plugin JAR is fetched first, then its embedded
-	 * manifest is read as a ZIP entry (no classloading, no code execution), then each listed
-	 * dependency is fetched and verified. The plugin is not usable until this method returns
-	 * without error, and a restart is required before the plugin can be loaded.</p>
+	 * <p>
+	 * This is the bootstrap sequence: the plugin JAR is fetched first, then its embedded manifest is read as a ZIP
+	 * entry (no classloading, no code execution), then each listed dependency is fetched and verified. The plugin is
+	 * not usable until this method returns without error, and a restart is required before the plugin can be
+	 * loaded.</p>
 	 *
 	 * @param groupId the Maven groupId of the plugin
 	 * @param artifactId the Maven artifactId of the plugin
 	 * @param version the plugin version
 	 * @return a result describing what was downloaded and what was already present
-	 * @throws IOException if the plugin cannot be fetched, its manifest is missing or unreadable,
-	 * or any artifact fails checksum verification
+	 * @throws IOException if the plugin cannot be fetched, its manifest is missing or unreadable, or any artifact fails
+	 * checksum verification
 	 */
 	public ResolutionResult resolvePlugin(String groupId, String artifactId, String version) throws IOException {
 		if (StringUtils.isAnyBlank(groupId, artifactId, version)) {
@@ -143,15 +213,34 @@ public final class PluginResolver {
 		String pluginFileName = artifactId + "-" + version + ".jar";
 		Path pluginJar = pluginFolder.resolve(pluginFileName);
 
-		if (Files.isRegularFile(pluginJar)) {
-			logger.info("Plugin JAR already present: {}", pluginFileName);
-		} else {
-			download(artifactUrl(groupId, artifactId, version), pluginJar);
-		}
+		boolean downloadedPlugin = false;
+		try {
+			if (Files.isRegularFile(pluginJar)) {
+				logger.info("Plugin JAR already present: {}", pluginFileName);
+			} else {
+				download(artifactUrl(groupId, artifactId, version), pluginJar);
+				downloadedPlugin = true;
+			}
 
+			ResolutionResult result = resolvePluginJar(groupId, artifactId, version, pluginJar);
+			removeOtherPluginVersions(artifactId, pluginJar);
+			return result;
+		} catch (IOException e) {
+			if (downloadedPlugin) {
+				Files.deleteIfExists(pluginJar);
+			}
+			throw e;
+		}
+	}
+
+	private ResolutionResult resolvePluginJar(String groupId, String artifactId, String version, Path pluginJar)
+			throws IOException {
 		List<String> dependencyLines = readDependencyManifest(pluginJar);
+		Set<String> previousClaims = readDependencyMarker(artifactId);
+		Set<String> managedByOthers = managedDependencies(artifactId);
 		if (dependencyLines.isEmpty()) {
 			logger.info("Plugin {} declares no runtime dependencies", artifactId);
+			removeStaleDependencies(artifactId, Set.of());
 			return new ResolutionResult(pluginJar.toFile(), List.of(), List.of(), 0);
 		}
 
@@ -180,10 +269,9 @@ public final class PluginResolver {
 		}
 
 		Set<String> resolvedNames = new LinkedHashSet<>();
+		Set<String> claimedNames = new LinkedHashSet<>();
 		List<File> downloaded = new ArrayList<>();
 		List<File> superseded = new ArrayList<>();
-		// dependency files that some plugin in this folder previously installed and therefore owns
-		Set<String> managed = managedDependencies(null);
 		for (Map.Entry<String, String> entry : coordinates.entrySet()) {
 			String[] gav = entry.getKey().split(":");
 			String depArtifactId = gav[1];
@@ -192,11 +280,12 @@ public final class PluginResolver {
 			// The plugin folder is a flat classpath, so two copies of one library make class loading
 			// depend on directory listing order. If a newer version is already installed for another
 			// plugin, reuse it instead of downloading the one declared here.
-			String newest = newestManagedVersion(depArtifactId, depVersion, managed);
+			String newest = newestManagedVersion(depArtifactId, depVersion, managedByOthers);
 			if (newest != null) {
 				logger.info("{}:{} is already satisfied by {} installed for another plugin",
 						depArtifactId, depVersion, newest);
 				resolvedNames.add(depArtifactId + "-" + newest + ".jar");
+				claimedNames.add(depArtifactId + "-" + newest + ".jar");
 				continue;
 			}
 
@@ -204,20 +293,26 @@ public final class PluginResolver {
 			resolvedNames.add(depFileName);
 			Path target = pluginFolder.resolve(depFileName);
 			if (Files.isRegularFile(target)) {
-				// already downloaded, but re-verify so a corrupted or truncated file is repaired
-				if (isValidChecksum(gav[0], depArtifactId, depVersion)) {
+				boolean managed = previousClaims.contains(depFileName) || managedByOthers.contains(depFileName);
+				// Resolver-owned files are re-verified. An unclaimed file may have been supplied by an operator,
+				// so it is kept and never deleted by uninstall.
+				if (!managed || isValidChecksum(gav[0], depArtifactId, depVersion)) {
 					logger.info("Dependency already present: {}", depFileName);
+					if (managed) {
+						claimedNames.add(depFileName);
+					}
 					continue;
 				}
 				logger.warn("Checksum mismatch for existing {}, re-downloading", depFileName);
 			}
 			download(artifactUrl(gav[0], depArtifactId, depVersion), target);
 			downloaded.add(target.toFile());
+			claimedNames.add(depFileName);
 
 			// Clean up older copies left behind by a previous install of a different plugin.
-			superseded.addAll(removeOlderVersions(depArtifactId, depVersion, managed));
+			superseded.addAll(removeOlderVersions(depArtifactId, depVersion, managedByOthers));
 		}
-		removeStaleDependencies(artifactId, resolvedNames);
+		removeStaleDependencies(artifactId, claimedNames);
 		logger.info("Resolved plugin {}:{}:{} ({} dependencies downloaded, {} already present, {} superseded)",
 				groupId, artifactId, version, downloaded.size(),
 				coordinates.size() - downloaded.size(), superseded.size());
@@ -226,9 +321,101 @@ public final class PluginResolver {
 	}
 
 	/**
-	 * Reads the dependency markers of every plugin in the folder, giving the set of dependency files
-	 * that Para installed and therefore owns. Files not listed in any marker were put there by an
-	 * operator and are never touched.
+	 * Removes one installed plugin and dependencies that no other plugin claims.
+	 *
+	 * @param artifactId the plugin artifactId
+	 * @param version the installed plugin version
+	 * @return true if the plugin JAR existed and was removed
+	 * @throws IOException if a file cannot be removed or its marker cannot be read
+	 */
+	public boolean uninstallPlugin(String artifactId, String version) throws IOException {
+		if (StringUtils.isAnyBlank(artifactId, version)) {
+			throw new IOException("Missing plugin coordinates");
+		}
+		Path pluginJar = pluginFolder.resolve(artifactId + "-" + version + ".jar");
+		if (!Files.isRegularFile(pluginJar)) {
+			return false;
+		}
+		Set<String> previousClaims = readDependencyMarker(artifactId);
+		Set<String> claimedByOthers = managedDependencies(artifactId);
+		Files.delete(pluginJar);
+		for (String dependency : previousClaims) {
+			if (!claimedByOthers.contains(dependency)) {
+				Files.deleteIfExists(pluginFolder.resolve(dependency));
+				logger.info("Removed stale dependency {}", dependency);
+			}
+		}
+		Files.deleteIfExists(pluginFolder.resolve(artifactId + ".deps"));
+		return true;
+	}
+
+	private boolean isPluginJar(Path jarPath) throws IOException {
+		try (JarFile jar = new JarFile(jarPath.toFile())) {
+			for (String service : PLUGIN_SERVICES) {
+				if (jar.getEntry(service) != null) {
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+
+	private PluginMetadata readPluginMetadata(Path jarPath) throws IOException {
+		try (JarFile jar = new JarFile(jarPath.toFile())) {
+			var entries = jar.stream().filter(entry -> entry.getName().startsWith("META-INF/maven/")
+					&& entry.getName().endsWith(POM_PROPERTIES_SUFFIX)).toList();
+			for (ZipEntry entry : entries) {
+				Properties properties = new Properties();
+				try (InputStream is = jar.getInputStream(entry)) {
+					properties.load(is);
+				}
+				String groupId = properties.getProperty("groupId");
+				String artifactId = properties.getProperty("artifactId");
+				String version = properties.getProperty("version");
+				if (!StringUtils.isAnyBlank(groupId, artifactId, version)) {
+					return new PluginMetadata(groupId.trim(), artifactId.trim(), version.trim(), jarPath);
+				}
+			}
+			return null;
+		}
+	}
+
+	private void removeOtherPluginVersions(String artifactId, Path retainedJar) throws IOException {
+		if (!Files.isDirectory(pluginFolder)) {
+			return;
+		}
+		try (var stream = Files.list(pluginFolder)) {
+			for (Path candidate : stream.filter(path -> path.getFileName().toString().endsWith(".jar")).toList()) {
+				if (candidate.equals(retainedJar)) {
+					continue;
+				}
+				boolean pluginJar;
+				try {
+					pluginJar = isPluginJar(candidate);
+				} catch (IOException e) {
+					// A non-JAR file with a .jar suffix may be an operator file. It is not a plugin version.
+					continue;
+				}
+				if (!pluginJar) {
+					continue;
+				}
+				PluginMetadata metadata = readPluginMetadata(candidate);
+				if (metadata != null && artifactId.equals(metadata.artifactId)) {
+					Files.delete(candidate);
+					logger.info("Removed previous version of plugin {}: {}", artifactId, candidate.getFileName());
+				}
+			}
+		}
+	}
+
+	private Set<String> readDependencyMarker(String artifactId) throws IOException {
+		Path marker = pluginFolder.resolve(artifactId + ".deps");
+		return Files.isRegularFile(marker) ? new LinkedHashSet<>(Files.readAllLines(marker)) : new LinkedHashSet<>();
+	}
+
+	/**
+	 * Reads the dependency markers of every plugin in the folder, giving the set of dependency files that Para
+	 * installed and therefore owns. Files not listed in any marker were put there by an operator and are never touched.
 	 *
 	 * @param excludeArtifactId a plugin whose marker to ignore, or null to include all of them
 	 * @return the file names of all managed dependency JARs
@@ -237,7 +424,7 @@ public final class PluginResolver {
 		Set<String> managed = new LinkedHashSet<>();
 		File[] markers = pluginFolder.toFile().listFiles(
 				(dir, name) -> name.endsWith(".deps")
-						&& !(excludeArtifactId != null && name.equals(excludeArtifactId + ".deps")));
+				&& !(excludeArtifactId != null && name.equals(excludeArtifactId + ".deps")));
 		if (markers == null) {
 			return managed;
 		}
@@ -281,11 +468,12 @@ public final class PluginResolver {
 	/**
 	 * Removes managed older versions of an artifact from the plugin folder, keeping the highest one.
 	 *
-	 * <p>Two plugins can require different versions of the same library. For example
-	 * {@code para-search-lucene} and {@code para-search-elasticsearch} both pull in Lucene, at
-	 * different patch versions. Because the folder is a flat classpath, leaving both copies installed
-	 * would make it undefined which one wins. The highest version is kept, which is the convention
-	 * Maven uses and is safe for the patch-level conflicts that occur between official plugins.</p>
+	 * <p>
+	 * Two plugins can require different versions of the same library. For example {@code para-search-lucene} and
+	 * {@code para-search-elasticsearch} both pull in Lucene, at different patch versions. Because the folder is a flat
+	 * classpath, leaving both copies installed would make it undefined which one wins. The highest version is kept,
+	 * which is the convention Maven uses and is safe for the patch-level conflicts that occur between official
+	 * plugins.</p>
 	 *
 	 * @param artifactId the Maven artifactId whose other versions should be removed
 	 * @param keepVersion the version that was just installed and must be retained
@@ -316,8 +504,8 @@ public final class PluginResolver {
 	}
 
 	/**
-	 * Compares two dotted version strings numerically, falling back to a lexical comparison of any
-	 * non-numeric segments. Returns a positive number if {@code a} is newer than {@code b}.
+	 * Compares two dotted version strings numerically, falling back to a lexical comparison of any non-numeric
+	 * segments. Returns a positive number if {@code a} is newer than {@code b}.
 	 */
 	private static int compareVersions(String a, String b) {
 		String[] left = a.split("[.\\-]");
@@ -362,10 +550,10 @@ public final class PluginResolver {
 	/**
 	 * Removes managed JARs that this plugin installed but no longer needs.
 	 *
-	 * <p>A plugin folder is shared across plugins, so a file is only deleted when two conditions
-	 * hold: this plugin installed it, as recorded in its dependency marker, and no other plugin in
-	 * the folder still claims it. Without the second check, upgrading one plugin would break
-	 * another that shares the same library.</p>
+	 * <p>
+	 * A plugin folder is shared across plugins, so a file is only deleted when two conditions hold: this plugin
+	 * installed it, as recorded in its dependency marker, and no other plugin in the folder still claims it. Without
+	 * the second check, upgrading one plugin would break another that shares the same library.</p>
 	 *
 	 * @param artifactId the plugin whose marker is being updated
 	 * @param keep the dependency file names this plugin now requires
@@ -394,8 +582,9 @@ public final class PluginResolver {
 	/**
 	 * Reads the dependency manifest out of a plugin JAR.
 	 *
-	 * <p>The JAR is opened as a ZIP and the entry is read directly. Nothing on the classpath is
-	 * touched, so this is safe to call on a JAR whose dependencies are not yet present.</p>
+	 * <p>
+	 * The JAR is opened as a ZIP and the entry is read directly. Nothing on the classpath is touched, so this is safe
+	 * to call on a JAR whose dependencies are not yet present.</p>
 	 */
 	private List<String> readDependencyManifest(Path pluginJar) throws IOException {
 		List<String> lines = new ArrayList<>();
@@ -469,9 +658,9 @@ public final class PluginResolver {
 	}
 
 	/**
-	 * Verifies a downloaded artifact against the checksum published by Maven Central.
-	 * SHA-256 is preferred; SHA-1 is accepted only when no SHA-256 exists. Fails closed when
-	 * neither digest is published, so an artifact is never installed unverified.
+	 * Verifies a downloaded artifact against the checksum published by Maven Central. SHA-256 is preferred; SHA-1 is
+	 * accepted only when no SHA-256 exists. Fails closed when neither digest is published, so an artifact is never
+	 * installed unverified.
 	 */
 	private void verifyChecksum(String artifactUrl, byte[] payload) throws IOException {
 		String baseUrl = artifactUrl.substring(0, artifactUrl.lastIndexOf('/'));
@@ -590,6 +779,21 @@ public final class PluginResolver {
 		return out.toByteArray();
 	}
 
+	private static final class PluginMetadata {
+
+		private final String groupId;
+		private final String artifactId;
+		private final String version;
+		private final Path pluginJar;
+
+		PluginMetadata(String groupId, String artifactId, String version, Path pluginJar) {
+			this.groupId = groupId;
+			this.artifactId = artifactId;
+			this.version = version;
+			this.pluginJar = pluginJar;
+		}
+	}
+
 	/**
 	 * The outcome of resolving a single plugin.
 	 */
@@ -610,6 +814,7 @@ public final class PluginResolver {
 
 		/**
 		 * Returns the plugin JAR in the plugin folder.
+		 *
 		 * @return the plugin JAR file
 		 */
 		public File getPluginJar() {
@@ -618,6 +823,7 @@ public final class PluginResolver {
 
 		/**
 		 * Returns the dependency JARs that were downloaded by this call.
+		 *
 		 * @return an unmodifiable list of newly downloaded files, possibly empty
 		 */
 		public List<File> getDownloadedDependencies() {
@@ -625,8 +831,9 @@ public final class PluginResolver {
 		}
 
 		/**
-		 * Returns the older-version dependency JARs that were removed because another plugin required
-		 * a newer version of the same library.
+		 * Returns the older-version dependency JARs that were removed because another plugin required a newer version
+		 * of the same library.
+		 *
 		 * @return an unmodifiable list of removed files, possibly empty
 		 */
 		public List<File> getSupersededDependencies() {
@@ -635,6 +842,7 @@ public final class PluginResolver {
 
 		/**
 		 * Returns the total number of runtime dependencies the plugin declares.
+		 *
 		 * @return the dependency count
 		 */
 		public int getTotalDependencies() {

@@ -67,6 +67,7 @@ public final class Para {
 	private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(CONF.executorThreads(),
 			Thread.ofVirtual().factory());
 	private static ClassLoader paraClassLoader;
+	private static volatile boolean pluginDependenciesResolved = false;
 	private static volatile boolean isInitialized = false;
 	private static volatile boolean isHealthy = true;
 
@@ -377,6 +378,7 @@ public final class Para {
 	 */
 	public static ClassLoader getParaClassLoader() {
 		if (paraClassLoader == null) {
+			resolveInstalledPluginDependencies();
 			try {
 				ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
 				List<URL> jars = new ArrayList<>();
@@ -393,6 +395,19 @@ public final class Para {
 			}
 		}
 		return paraClassLoader;
+	}
+
+	private static synchronized void resolveInstalledPluginDependencies() {
+		if (pluginDependenciesResolved) {
+			return;
+		}
+		try {
+			List<PluginResolver.ResolutionResult> results = new PluginResolver().resolveInstalledPlugins();
+			logger.info("Resolved dependencies for {} installed Para plugin(s)", results.size());
+			pluginDependenciesResolved = true;
+		} catch (java.io.IOException e) {
+			throw new IllegalStateException("Could not resolve dependencies for installed Para plugins", e);
+		}
 	}
 
 	/**

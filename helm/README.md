@@ -63,6 +63,16 @@ root app keys. Messages: `Only the root app can manage plugins.` Each artifact i
 before installation, and Para must be restarted afterwards.
 See the [plugins API](https://paraio.org/docs/#/configuration/plugins) for details.
 
+If a thin plugin JAR is added directly to `/para/lib` (for example, with a Dockerfile `ADD`), Para
+scans the folder during startup before loading plugins. It reads the dependency manifest inside the
+JAR and fetches missing runtime dependencies from Maven Central. The container therefore needs
+outbound access to Maven Central, unless all dependency JARs are already present in `/para/lib`.
+
+Only one version of each plugin may be installed. Para stops startup if it finds multiple versions
+of one plugin. Installing a new version replaces the old plugin version; uninstalling a plugin also
+removes resolver-managed dependencies that no other plugin uses. Dependency JARs supplied by the
+operator are preserved.
+
 To turn the whole plugin API off, set the `plugins_api_enabled` config property (default `true`).
 Requests are then rejected with `403 Forbidden` and the message `Plugins API is disabled.`
 

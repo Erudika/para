@@ -273,8 +273,8 @@ public final class PluginsApi {
 	 * Removes a plugin JAR from the plugin folder.
 	 *
 	 * <p>
-	 * Only the plugin JAR is deleted. Its dependencies stay, because plugins routinely share them and a dependency JAR
-	 * carries no record of which plugin wanted it.</p>
+	 * Dependencies claimed only by this plugin are deleted. Shared dependencies and operator-provided JARs stay in the
+	 * folder.</p>
 	 *
 	 * @param artifactId the Maven artifactId of the plugin
 	 * @param version the installed version
@@ -286,16 +286,18 @@ public final class PluginsApi {
 		if (denied != null) {
 			return denied;
 		}
-		File pluginJar = new File(pluginFolder(), artifactId + "-" + version + ".jar");
-		if (!pluginJar.isFile()) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+		try {
+			boolean removed = new PluginResolver().uninstallPlugin(artifactId, version);
+			if (!removed) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			}
+			logger.info("Uninstalled plugin {}:{} and cleaned unused dependencies - restart required",
+					artifactId, version);
+			return ResponseEntity.ok().build();
+		} catch (IOException e) {
+			logger.error("Could not uninstall plugin {}:{}", artifactId, version, e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error(e.getMessage()));
 		}
-		if (!pluginJar.delete()) {
-			logger.error("Could not delete plugin JAR {}", pluginJar);
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-		}
-		logger.info("Uninstalled plugin {}:{} - restart required", artifactId, version);
-		return ResponseEntity.ok().build();
 	}
 
 	/**

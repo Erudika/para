@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
@@ -260,6 +261,73 @@ class PluginResolverTest {
 	}
 
 	@Test
+	void resolvesDependenciesForPluginsAlreadyInTheFolder() throws IOException {
+		String manifest = "The following files have been resolved:\n"
+				+ "   com.example:dependency-a:jar:1.0.0:compile\n";
+		Files.write(libDir.resolve("test-plugin-1.0.0.jar"),
+				buildPluginJar(manifest, "com.example", "test-plugin", "1.0.0", true));
+
+		List<PluginResolver.ResolutionResult> results = new PluginResolver(libDir, baseUrl).resolveInstalledPlugins();
+
+		Assertions.assertEquals(1, results.size());
+		Assertions.assertTrue(Files.isRegularFile(libDir.resolve("dependency-a-1.0.0.jar")));
+		Assertions.assertTrue(Files.isRegularFile(libDir.resolve("test-plugin.deps")));
+	}
+
+	@Test
+	void rejectsMultipleInstalledVersionsOfOnePlugin() throws IOException {
+		Files.write(libDir.resolve("test-plugin-1.0.0.jar"),
+				buildPluginJar("", "com.example", "test-plugin", "1.0.0", true));
+		Files.write(libDir.resolve("test-plugin-2.0.0.jar"),
+				buildPluginJar("", "com.example", "test-plugin", "2.0.0", true));
+
+		IOException error = Assertions.assertThrows(IOException.class,
+				() -> new PluginResolver(libDir, baseUrl).resolveInstalledPlugins());
+		Assertions.assertTrue(error.getMessage().contains("Multiple versions of plugin test-plugin"));
+	}
+
+	@Test
+	void installingNewPluginVersionRemovesThePreviousVersion() throws IOException {
+		publish("/com/example/test-plugin/1.0.0/test-plugin-1.0.0.jar",
+				buildPluginJar("", "com.example", "test-plugin", "1.0.0", true));
+		publish("/com/example/test-plugin/2.0.0/test-plugin-2.0.0.jar",
+				buildPluginJar("", "com.example", "test-plugin", "2.0.0", true));
+		PluginResolver resolver = new PluginResolver(libDir, baseUrl);
+		resolver.resolvePlugin("com.example", "test-plugin", "1.0.0");
+		resolver.resolvePlugin("com.example", "test-plugin", "2.0.0");
+
+		Assertions.assertFalse(Files.exists(libDir.resolve("test-plugin-1.0.0.jar")));
+		Assertions.assertTrue(Files.isRegularFile(libDir.resolve("test-plugin-2.0.0.jar")));
+	}
+
+	@Test
+	void uninstallRemovesOnlyUnsharedResolverOwnedDependencies() throws IOException {
+		String otherManifest = "The following files have been resolved:\n"
+				+ "   com.example:dependency-a:jar:1.0.0:compile\n";
+		publish("/com/example/other-plugin/1.0.0/other-plugin-1.0.0.jar",
+				buildPluginJar(otherManifest, "com.example", "other-plugin", "1.0.0", true));
+		PluginResolver resolver = new PluginResolver(libDir, baseUrl);
+		resolver.resolvePlugin("com.example", "test-plugin", "1.0.0");
+		resolver.resolvePlugin("com.example", "other-plugin", "1.0.0");
+
+		Assertions.assertTrue(resolver.uninstallPlugin("test-plugin", "1.0.0"));
+		Assertions.assertFalse(Files.exists(libDir.resolve("test-plugin-1.0.0.jar")));
+		Assertions.assertFalse(Files.exists(libDir.resolve("dependency-b-2.0.0.jar")));
+		Assertions.assertTrue(Files.isRegularFile(libDir.resolve("dependency-a-1.0.0.jar")));
+		Assertions.assertFalse(Files.exists(libDir.resolve("test-plugin.deps")));
+	}
+
+	@Test
+	void uninstallPreservesAnOperatorProvidedDependency() throws IOException {
+		Files.write(libDir.resolve("dependency-a-1.0.0.jar"), "operator dependency".getBytes(StandardCharsets.UTF_8));
+		PluginResolver resolver = new PluginResolver(libDir, baseUrl);
+		resolver.resolvePlugin("com.example", "test-plugin", "1.0.0");
+
+		Assertions.assertTrue(resolver.uninstallPlugin("test-plugin", "1.0.0"));
+		Assertions.assertTrue(Files.isRegularFile(libDir.resolve("dependency-a-1.0.0.jar")));
+	}
+
+	@Test
 	void rejectsBlankCoordinates() {
 		PluginResolver resolver = new PluginResolver(libDir, baseUrl);
 		Assertions.assertThrows(IOException.class, () -> resolver.resolvePlugin("", "x", "1.0.0"));
@@ -279,6 +347,11 @@ class PluginResolverTest {
 	 * older plugin JAR would.
 	 */
 	private static byte[] buildPluginJar(String manifest) throws IOException {
+		return buildPluginJar(manifest, null, null, null, false);
+	}
+
+	private static byte[] buildPluginJar(String manifest, String groupId, String artifactId, String version,
+			boolean serviceProvider) throws IOException {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		try (JarOutputStream jos = new JarOutputStream(bos)) {
 			jos.putNextEntry(new JarEntry("com/erudika/Marker.class"));
@@ -287,6 +360,17 @@ class PluginResolverTest {
 			if (manifest != null) {
 				jos.putNextEntry(new JarEntry("META-INF/para/plugin-deps.txt"));
 				jos.write(manifest.getBytes(StandardCharsets.UTF_8));
+				jos.closeEntry();
+			}
+			if (groupId != null && artifactId != null && version != null) {
+				jos.putNextEntry(new JarEntry("META-INF/maven/" + groupId + "/" + artifactId + "/pom.properties"));
+				jos.write(("groupId=" + groupId + "\nartifactId=" + artifactId + "\nversion=" + version + "\n")
+						.getBytes(StandardCharsets.UTF_8));
+				jos.closeEntry();
+			}
+			if (serviceProvider) {
+				jos.putNextEntry(new JarEntry("META-INF/services/com.erudika.para.core.persistence.DAO"));
+				jos.write("com.erudika.Marker\n".getBytes(StandardCharsets.UTF_8));
 				jos.closeEntry();
 			}
 		}
