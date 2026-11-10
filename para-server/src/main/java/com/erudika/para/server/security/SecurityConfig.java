@@ -180,7 +180,7 @@ public class SecurityConfig {
 		}).
 		sessionManagement((session) -> {
 			session.enableSessionUrlRewriting(false);
-			session.sessionCreationPolicy(SessionCreationPolicy.NEVER);
+			session.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 			session.sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy());
 		}).
 		requestCache((cache) -> cache.requestCache(new SimpleRequestCache())).

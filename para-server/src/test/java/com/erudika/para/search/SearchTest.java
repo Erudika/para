@@ -350,6 +350,35 @@ public abstract class SearchTest {
 	}
 
 	@Test
+	public void testOutOfRangePageReturnsEmptyResultsAndExactCount() {
+		Pager pager = new Pager(5, 30);
+		List<User> page = s.findQuery(u.getType(), "type:user", pager);
+		assertTrue(page.isEmpty());
+		assertEquals(3, pager.getCount());
+	}
+
+	@Test
+	public void testPaginationTotalHitsIsExact() {
+		List<Sysprop> items = new ArrayList<>(60);
+		for (int i = 0; i < 60; i++) {
+			Sysprop sp = new Sysprop("page-" + i);
+			sp.setName("Page " + i);
+			items.add(sp);
+		}
+		s.indexAll(items);
+		try {
+			long expected = s.getCount(s1.getType());
+			assertTrue(expected > 20L, "the test needs more hits than the collector threshold");
+			Pager pager = new Pager(2, 10);
+			List<Sysprop> page = s.findQuery(s1.getType(), "*", pager);
+			assertEquals(10, page.size());
+			assertEquals(expected, pager.getCount());
+		} finally {
+			s.unindexAll(items);
+		}
+	}
+
+	@Test
 	public void testIndex() {
 		s.index(null);
 		Sysprop ux = new Sysprop("test-xxx");

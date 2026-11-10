@@ -37,8 +37,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 /**
  * A controller that handles errors and displays error messages.
@@ -73,7 +73,7 @@ public class ErrorController implements org.springframework.boot.webmvc.error.Er
 	 * @throws IOException if error
 	 * @return response
 	 */
-	@GetMapping({"/error", "/error/{code}"})
+	@RequestMapping({"/error", "/error/{code}"})
 	public ResponseEntity<?> get(@PathVariable(required = false) String code,
 			HttpServletRequest req, HttpServletResponse res, Model model) throws IOException {
 		String error = StringUtils.trimToEmpty((String) req.getAttribute("jakarta.servlet.error.message"));

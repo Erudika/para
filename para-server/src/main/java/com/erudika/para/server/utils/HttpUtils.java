@@ -24,6 +24,8 @@ import static com.erudika.para.core.utils.Para.getEmailer;
 import com.erudika.para.core.utils.ParaObjectUtils;
 import com.erudika.para.core.utils.RateLimiter;
 import com.erudika.para.core.utils.Utils;
+import com.erudika.para.server.rest.RestUtils;
+import static com.erudika.para.server.rest.RestUtils.getStatusResponse;
 import com.erudika.para.server.security.SecurityUtils;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -42,6 +44,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +64,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -103,6 +107,43 @@ public final class HttpUtils {
 	public static boolean isAjaxRequest(HttpServletRequest request) {
 		return "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With")) ||
 				"XMLHttpRequest".equalsIgnoreCase(request.getParameter("X-Requested-With"));
+	}
+
+	/////////////////////////////////////////////
+	//    	   ENTITY UTILS
+	/////////////////////////////////////////////
+
+	public static ResponseEntity<?> badReq(String msg) {
+		return getStatusResponse(HttpStatus.BAD_REQUEST, msg);
+	}
+
+	public static <T> T getEntity(Class<T> clazz, HttpServletRequest req) {
+		try {
+			if (req.getInputStream() != null) {
+				ResponseEntity<?> entityRes = RestUtils.getEntity(req.getInputStream(), clazz);
+				return entityRes.getStatusCode().is2xxSuccessful() ? (T) entityRes.getBody() : null;
+			}
+		} catch (IOException ex) {
+			logger.error(null, ex);
+		}
+		return null;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> T getEntity(ResponseEntity<?> resp) {
+		if (resp != null && resp.getStatusCode().is2xxSuccessful() && resp.hasBody()) {
+			return (T) resp.getBody();
+		}
+		return null;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> getEntityAsMap(ResponseEntity<?> resp) {
+		Object body = getEntity(resp);
+		if (body instanceof Map) {
+			return (Map<String, Object>) body;
+		}
+		return new HashMap<>();
 	}
 
 	/////////////////////////////////////////////
