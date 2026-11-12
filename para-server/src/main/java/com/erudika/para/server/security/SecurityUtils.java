@@ -38,6 +38,8 @@ import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jose.util.Base64URL;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.jwt.proc.BadJWTException;
+import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
@@ -73,6 +75,7 @@ public final class SecurityUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
 	public static final RateLimiter SIGNIN_LIMITER = Para.createRateLimiter(10, 50, 200);
+	private static final DefaultJWTClaimsVerifier<?> JWT_CLAIMS_VERIFIER = createJWTClaimsVerifier();
 
 	private SecurityUtils() { }
 
@@ -250,23 +253,23 @@ public final class SecurityUtils {
 			if (!StringUtils.isBlank(secret) && jwt != null) {
 				JWSVerifier verifier = new MACVerifier(secret);
 				if (jwt.verify(verifier)) {
-					Date referenceTime = new Date();
-					JWTClaimsSet claims = jwt.getJWTClaimsSet();
-
-					Date expirationTime = claims.getExpirationTime();
-					Date notBeforeTime = claims.getNotBeforeTime();
-					boolean expired = expirationTime == null || expirationTime.before(referenceTime);
-					boolean notYetValid = notBeforeTime != null && notBeforeTime.after(referenceTime);
-
-					return !(expired || notYetValid);
+					JWT_CLAIMS_VERIFIER.verify(jwt.getJWTClaimsSet(), null);
+					return true;
 				}
 			}
-		} catch (JOSEException e) {
-			logger.warn(null, e);
-		} catch (ParseException ex) {
-			logger.warn(null, ex);
+		} catch (BadJWTException e) {
+			logger.debug("JWT claims are invalid: {}", e.getMessage());
+		} catch (JOSEException | ParseException e) {
+			logger.warn("Bad or invalid JWT: {}", e.getMessage());
 		}
 		return false;
+	}
+
+	private static DefaultJWTClaimsVerifier<?> createJWTClaimsVerifier() {
+		DefaultJWTClaimsVerifier<?> verifier = new DefaultJWTClaimsVerifier<>(
+				new JWTClaimsSet.Builder().build(), Set.of("exp", "nbf"));
+		verifier.setMaxClockSkew(30);
+		return verifier;
 	}
 
 	/**
