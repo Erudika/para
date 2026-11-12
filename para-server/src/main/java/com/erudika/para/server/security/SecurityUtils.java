@@ -24,6 +24,7 @@ import com.erudika.para.core.rest.Signer;
 import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Para;
+import com.erudika.para.core.utils.RateLimiter;
 import com.erudika.para.core.utils.Utils;
 import com.erudika.para.server.security.filters.PasswordlessAuthFilter;
 import com.erudika.para.server.security.filters.SAMLAuthFilter;
@@ -71,6 +72,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 public final class SecurityUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
+	public static final RateLimiter SIGNIN_LIMITER = Para.createRateLimiter(10, 50, 200);
 
 	private SecurityUtils() { }
 
@@ -139,7 +141,6 @@ public final class SecurityUtils {
 		}
 		return app;
 	}
-
 
 	/**
 	 * Returns the current authenticated {@link App} object.
@@ -221,6 +222,21 @@ public final class SecurityUtils {
 				session.invalidate();
 			}
 		}
+	}
+
+	/**
+	 * Checks a shared per-IP limit for password, App, password-reset, and two-factor attempts.
+	 * @param request the current HTTP request
+	 * @return true if the attempt can continue
+	 */
+	public static boolean isSignInAttemptAllowed(String appid, String userIdOrIp, HttpServletRequest request) {
+		if (StringUtils.isBlank(userIdOrIp)) {
+			userIdOrIp = StringUtils.trimToEmpty(request.getRemoteAddr());
+		}
+		if (StringUtils.isBlank(appid) || StringUtils.isBlank(userIdOrIp)) {
+			return false;
+		}
+		return SIGNIN_LIMITER.isAllowed(appid, userIdOrIp);
 	}
 
 	/**
@@ -353,29 +369,54 @@ public final class SecurityUtils {
 
 	/**
 	 * Checks if account is active.
-	 * @param userAuth user authentication object
-	 * @param user user object
+	 * @param auth user or app authentication object
 	 * @param throwException throw or not
 	 * @return the authentication object if {@code user.active == true}
 	 */
-	public static UserAuthentication checkIfActive(UserAuthentication userAuth, User user, boolean throwException) {
-		if (userAuth == null || user == null || user.getIdentifier() == null) {
-			if (throwException) {
-				throw new BadCredentialsException("Bad credentials.");
-			} else {
-				logger.debug("Bad credentials. {}", userAuth);
-				return null;
+	public static Authentication checkIfActive(Authentication auth, boolean throwException) {
+		try {
+			if (auth instanceof UserAuthentication) {
+				User user = ((AuthenticatedUserDetails) ((UserAuthentication) auth).getPrincipal()).getUser();
+				if (user == null || user.getIdentifier() == null) {
+					if (throwException) {
+						throw new BadCredentialsException("Bad credentials.");
+					} else {
+						logger.debug("Bad credentials. {}", auth);
+						return null;
+					}
+				} else if (!user.getActive()) {
+					if (throwException) {
+						throw new LockedException("Account " + user.getId() + " (" + user.getAppid() + "/" +
+								user.getIdentifier() + ") is locked.");
+					} else {
+						logger.warn("Account {} ({}/{}) is locked.", user.getId(), user.getAppid(), user.getIdentifier());
+						return null;
+					}
+				}
+				return auth;
+			} else if (auth instanceof AppAuthentication) {
+				App app = (App) ((AppAuthentication) auth).getPrincipal();
+				if (app == null || StringUtils.isBlank(app.getAppIdentifier())) {
+					if (throwException) {
+						throw new BadCredentialsException("Bad credentials.");
+					} else {
+						logger.debug("Bad credentials. {}", auth);
+						return null;
+					}
+				} else if (!app.getActive()) {
+					if (throwException) {
+						throw new LockedException("App " + app.getId() + " is locked.");
+					} else {
+						logger.warn("Appp {} is locked.", app.getId());
+						return null;
+					}
+				}
+				return auth;
 			}
-		} else if (!user.getActive()) {
-			if (throwException) {
-				throw new LockedException("Account " + user.getId() + " (" + user.getAppid() + "/" +
-						user.getIdentifier() + ") is locked.");
-			} else {
-				logger.warn("Account {} ({}/{}) is locked.", user.getId(), user.getAppid(), user.getIdentifier());
-				return null;
-			}
+		} catch (Exception e) {
+			logger.warn("Failed to check authentication object: {}", e.getMessage());
 		}
-		return userAuth;
+		return null;
 	}
 
 	/**

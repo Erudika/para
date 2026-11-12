@@ -99,7 +99,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws IOException {
 		final String requestURI = request.getServletPath();
-		UserAuthentication userAuth = null;
+		Authentication userAuth = null;
 
 		if (requestURI.endsWith(TWITTER_ACTION)) {
 			String verifier = Utils.stripHtml(request.getParameter("oauth_verifier"));
@@ -119,7 +119,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 		}
 
-		return SecurityUtils.checkIfActive(userAuth, SecurityUtils.getAuthenticatedUser(userAuth), true);
+		return SecurityUtils.checkIfActive(userAuth, true);
 	}
 
 	private boolean stepOne(HttpServletResponse response, String redirectURI, String[] keys)
@@ -156,7 +156,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 		});
 	}
 
-	private UserAuthentication stepTwo(HttpServletRequest request, String verifier, String[] keys, App app)
+	private Authentication stepTwo(HttpServletRequest request, String verifier, String[] keys, App app)
 			throws UnsupportedEncodingException, IOException {
 		String token = request.getParameter("oauth_token");
 		Map<String, String[]> params = new HashMap<>();
@@ -197,9 +197,9 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException ex
 	 */
-	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
+	public Authentication getOrCreateUser(App app, String accessToken) throws IOException {
 		if (accessToken == null || !accessToken.contains(Para.getConfig().separator())) {
-			return SecurityUtils.checkIfActive(null, null, false);
+			return SecurityUtils.checkIfActive(null, false);
 		}
 		String[] tokens = accessToken.split(Para.getConfig().separator());
 		String[] keys = Para.getConfig().getOAuthKeysForApp(app, Config.TWITTER_PREFIX);
@@ -252,7 +252,7 @@ public class TwitterAuthFilter extends AbstractAuthenticationProcessingFilter {
 			} else {
 				logger.info("Authentication request failed because user profile doesn't contain the expected attributes");
 			}
-			return SecurityUtils.checkIfActive(userAuth, user, false);
+			return SecurityUtils.checkIfActive(userAuth, false);
 		});
 
 	}

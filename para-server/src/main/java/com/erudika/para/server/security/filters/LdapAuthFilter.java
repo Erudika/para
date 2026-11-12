@@ -106,7 +106,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 		}
 
-		return SecurityUtils.checkIfActive(userAuth, SecurityUtils.getAuthenticatedUser(userAuth), true);
+		return SecurityUtils.checkIfActive(userAuth, true);
 	}
 
 	private UserAuthentication getOrCreateUser(App app, Authentication ldapAuth) throws JsonProcessingException {
@@ -215,8 +215,8 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException ex
 	 */
-	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
-		UserAuthentication userAuth = null;
+	public Authentication getOrCreateUser(App app, String accessToken) throws IOException {
+		Authentication userAuth = null;
 		if (accessToken != null && accessToken.contains(Para.getConfig().separator())) {
 			String[] parts = accessToken.split(Para.getConfig().separator(), 2);
 			String username = parts[0];
@@ -236,7 +236,7 @@ public class LdapAuthFilter extends AbstractAuthenticationProcessingFilter {
 				LOG.info("Failed to authenticate '{}' with LDAP server: {}", username, ex.getMessage());
 			}
 		}
-		return SecurityUtils.checkIfActive(userAuth, SecurityUtils.getAuthenticatedUser(userAuth), false);
+		return SecurityUtils.checkIfActive(userAuth, false);
 	}
 
 	private String getAppid(App app) {

@@ -22,10 +22,12 @@ import com.erudika.para.core.User;
 import com.erudika.para.core.utils.Config;
 import com.erudika.para.core.utils.CoreUtils;
 import com.erudika.para.core.utils.Para;
+import com.erudika.para.server.security.AppAuthentication;
 import com.erudika.para.server.security.AuthenticatedUserDetails;
 import com.erudika.para.server.security.SecurityUtils;
 import com.erudika.para.server.security.UserAuthentication;
 import com.erudika.para.server.utils.HttpUtils;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,6 +35,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.text.ParseException;
+import java.util.Date;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -51,6 +54,8 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
 public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private static final Logger logger = LoggerFactory.getLogger(PasswordlessAuthFilter.class);
+	public static final int PROOF_LIFETIME_SECONDS = 30;
+	private static final int MAX_PROOF_LENGTH = 8192;
 
 	/**
 	 * The default filter mapping.
@@ -77,41 +82,49 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws IOException, ServletException {
 		String requestURI = request.getServletPath();
-		UserAuthentication userAuth = null;
 		boolean redirect = !"false".equals(request.getParameter("redirect"));
 		User user = null;
 		App app = null;
-		UserAuthentication auth = null;
-		// dont' use signin_success to prevent infinite loop of redirects!
-		String returnToSuccess = Para.getConfig().getSettingForApp(app, "returnto",
-				Para.getConfig().returnToPath());
-		String returnToFailure = Para.getConfig().getSettingForApp(app, "signin_failure",
-				Para.getConfig().signinFailurePath());
-
+		Authentication auth = null;
 		if (requestURI.endsWith(PASSWORDLESS_ACTION)) {
 			String token = StringUtils.defaultIfBlank(request.getParameter("token"), request.getParameter("jwt")); // JWT
 			String appid = SecurityUtils.getAppidFromAuthRequest(request, token);
 			app = Para.getDAO().read(App.id(appid));
+			int statusCode = HttpStatus.FORBIDDEN.value();
+
 			if (app != null) {
-				userAuth = getOrCreateUser(app, token);
-				if (userAuth != null) {
-					user = ((AuthenticatedUserDetails) userAuth.getPrincipal()).getUser();
-					user.setAppid(app.getAppIdentifier());
+				// we accept either a UserAuthention or AppAuthentication
+				// check app first (with a short-lived 'super' token)
+				Authentication appAuth = verifyAppWithShortLivedToken(app, token);
+				String userOrIpaddress = request.getRemoteAddr();
+				if (appAuth != null) {
+					auth = appAuth;
+				} else {
+					Authentication userAuth = getOrCreateUser(app, token);
+					if (userAuth != null) {
+						user = ((AuthenticatedUserDetails) userAuth.getPrincipal()).getUser();
+						user.setAppid(app.getAppIdentifier());
+						userOrIpaddress = user.getId();
+						auth = userAuth;
+					}
+				}
+				if (auth != null && !SecurityUtils.isSignInAttemptAllowed(appid, userOrIpaddress, request)) {
+					statusCode = HttpStatus.TOO_MANY_REQUESTS.value();
+					auth = null;
 				}
 			} else {
 				if (redirect) {
-					response.sendRedirect(returnToFailure, HttpStatus.FORBIDDEN.value());
+					response.sendRedirect(Para.getConfig().returnToPath(), statusCode);
 				} else {
-					response.sendError(HttpStatus.FORBIDDEN.value());
-					response.setStatus(HttpStatus.FORBIDDEN.value());
+					response.sendError(statusCode);
+					response.setStatus(statusCode);
 				}
 				return null;
 			}
-			auth = SecurityUtils.checkIfActive(userAuth, user, redirect);
 			if (!redirect) {
 				if (auth == null) {
-					response.sendError(HttpStatus.FORBIDDEN.value());
-					response.setStatus(HttpStatus.FORBIDDEN.value());
+					response.sendError(statusCode);
+					response.setStatus(statusCode);
 				} else {
 					response.setContentType(MediaType.TEXT_PLAIN_VALUE);
 					response.setStatus(HttpStatus.OK.value());
@@ -119,6 +132,12 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 				}
 				return null;
 			} else {
+				// dont' use signin_success to prevent infinite loop of redirects!
+				String returnToSuccess = Para.getConfig().getSettingForApp(app, "returnto",
+						Para.getConfig().returnToPath());
+				String returnToFailure = Para.getConfig().getSettingForApp(app, "signin_failure",
+						Para.getConfig().signinFailurePath());
+
 				if (!URI.create(returnToSuccess).isAbsolute() || !URI.create(returnToFailure).isAbsolute()) {
 					response.sendError(HttpStatus.BAD_REQUEST.value());
 					response.setStatus(HttpStatus.BAD_REQUEST.value());
@@ -129,7 +148,7 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 					return null;
 				}
 				if (auth == null) {
-					response.sendRedirect(returnToFailure, HttpStatus.FORBIDDEN.value());
+					response.sendRedirect(returnToFailure, statusCode);
 				} else {
 					boolean httpOnly = "true".equals(StringUtils.defaultIfBlank(request.getParameter("httpOnlyCookie"), "true"));
 					String sameSite = StringUtils.defaultIfBlank(request.getParameter("sameSiteCookie"), "Strict");
@@ -147,14 +166,55 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 	}
 
 	/**
+	 * Verifies a short lived super token, possibly signed on the client-side (app proof).
+	 * @param app the App that owns the secret
+	 * @param jwtShortLivedToken the short-lived super token signed with app's secret key
+	 * @return true if the signature, claims, and time window are valid
+	 */
+	public Authentication verifyAppWithShortLivedToken(App app, String jwtShortLivedToken) {
+		if (app == null || StringUtils.isBlank(app.getSecret()) || StringUtils.isBlank(app.getId())
+				|| StringUtils.isBlank(jwtShortLivedToken) || jwtShortLivedToken.length() > MAX_PROOF_LENGTH) {
+			return null;
+		}
+		Authentication appAuth = null;
+		try {
+			SignedJWT signedProof = SignedJWT.parse(jwtShortLivedToken);
+			if (!SecurityUtils.isValidJWToken(app.getSecret(), signedProof)) {
+				return null;
+			}
+			JWTClaimsSet claims = signedProof.getJWTClaimsSet();
+			String appidFromClaims = claims.getStringClaim(Config._APPID);
+			Date issuedAt = claims.getIssueTime();
+			Date expiresAt = claims.getExpirationTime();
+			long issuedAtSeconds = issuedAt.toInstant().getEpochSecond();
+			long expiresAtSeconds = expiresAt.toInstant().getEpochSecond();
+			if ((expiresAtSeconds - issuedAtSeconds <= PROOF_LIFETIME_SECONDS) && app.getId().equals(appidFromClaims)) {
+				// allow redirect overrides via JWT claims
+				String returnToSuccess = claims.getStringClaim("returnto");
+				String returnToFailure = claims.getStringClaim("signin_failure");
+				if (!StringUtils.isBlank(returnToSuccess)) {
+					app.addSetting("returnto", returnToSuccess);
+				}
+				if (!StringUtils.isBlank(returnToFailure)) {
+					app.addSetting("signin_failure", returnToFailure);
+				}
+				appAuth = new AppAuthentication(app);
+			}
+		} catch (ParseException ex) {
+			logger.debug("Error while parsing app super token. ", ex);
+		}
+		return SecurityUtils.checkIfActive(appAuth, false);
+	}
+
+	/**
 	 * Authenticates or creates a {@link User} using an signed JWT token.
 	 * Access token must be a valid JWT signed with "para.app_secret_key".
 	 * @param app the app where the user will be created, use null for root app
 	 * @param accessToken JWT
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 */
-	public UserAuthentication getOrCreateUser(App app, String accessToken) {
-		UserAuthentication userAuth = null;
+	public Authentication getOrCreateUser(App app, String accessToken) {
+		Authentication userAuth = null;
 		User user = new User();
 		String secret = Para.getConfig().getSettingForApp(app, "app_secret_key", app.getSecret());
 		try {
@@ -201,7 +261,7 @@ public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilt
 		} catch (ParseException e) {
 			logger.warn("Invalid token: " + e.getMessage());
 		}
-		return SecurityUtils.checkIfActive(userAuth, user, false);
+		return SecurityUtils.checkIfActive(userAuth, false);
 	}
 
 	private boolean updateUserInfo(User user, String picture, String email, String name, String accessToken, String groups) {

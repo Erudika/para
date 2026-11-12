@@ -23,10 +23,12 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.erudika.para.core.utils.Para;
 import com.erudika.para.server.security.SecurityConfig;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.context.web.WebAppConfiguration;
@@ -93,6 +96,13 @@ class SecurityConfigTest {
 		mvc.perform(get("/error"))
 				.andExpect(status().isOk())
 				.andExpect(content().string("error"));
+	}
+
+	@Test
+	void authCookieIsProcessedForNonRestWebPath() throws Exception {
+		mvc.perform(get("/private-page").cookie(new Cookie(Para.getConfig().authCookieName(), "invalid-token")))
+				.andExpect(status().is3xxRedirection())
+				.andExpect(header().string(HttpHeaders.WWW_AUTHENTICATE, "Bearer"));
 	}
 
 	@Test

@@ -97,7 +97,7 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws IOException {
 		final String requestURI = request.getServletPath();
-		UserAuthentication userAuth = null;
+		Authentication userAuth = null;
 
 		if (requestURI.endsWith(SLACK_ACTION)) {
 			String authCode = request.getParameter("code");
@@ -134,7 +134,7 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 		}
 
-		return SecurityUtils.checkIfActive(userAuth, SecurityUtils.getAuthenticatedUser(userAuth), true);
+		return SecurityUtils.checkIfActive(userAuth, true);
 	}
 
 	/**
@@ -145,9 +145,9 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * @throws IOException ex
 	 */
 	@SuppressWarnings("unchecked")
-	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
+	public Authentication getOrCreateUser(App app, String accessToken) throws IOException {
 		if (accessToken == null) {
-			return SecurityUtils.checkIfActive(null, null, false);
+			return SecurityUtils.checkIfActive(null, false);
 		}
 		HttpGet profileGet = new HttpGet(PROFILE_URL);
 		profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
@@ -207,7 +207,7 @@ public class SlackAuthFilter extends AbstractAuthenticationProcessingFilter {
 			} else {
 				logger.info("Authentication request failed because user profile doesn't contain the expected attributes");
 			}
-			return SecurityUtils.checkIfActive(userAuth, user, false);
+			return SecurityUtils.checkIfActive(userAuth, false);
 		});
 	}
 

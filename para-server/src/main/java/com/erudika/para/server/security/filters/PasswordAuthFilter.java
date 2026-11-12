@@ -83,6 +83,9 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 				}
 			}
 			try {
+				if (!SecurityUtils.isSignInAttemptAllowed(appid, user.getIdentifier(), request)) {
+					throw new RateLimitException("Too many login attempts!");
+				}
 				if (User.passwordMatches(user) && Strings.CS.contains(user.getIdentifier(), "@")) {
 					//success!
 					user = User.readUserForIdentifier(user);
@@ -93,7 +96,7 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 						+ user.getIdentifier() + ") is locked.");
 			}
 		}
-		return SecurityUtils.checkIfActive(userAuth, user, true);
+		return SecurityUtils.checkIfActive(userAuth, true);
 	}
 
 	/**
@@ -103,8 +106,8 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * @param accessToken token in the format "email:full_name:password" or "email::password_hash"
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 */
-	public UserAuthentication getOrCreateUser(App app, String accessToken) {
-		UserAuthentication userAuth = null;
+	public Authentication getOrCreateUser(App app, String accessToken) {
+		Authentication userAuth = null;
 		User user = new User();
 		if (accessToken != null && accessToken.contains(Para.getConfig().separator())) {
 			String[] parts = accessToken.split(Para.getConfig().separator(), 3);
@@ -143,6 +146,6 @@ public class PasswordAuthFilter extends AbstractAuthenticationProcessingFilter {
 						+ user.getIdentifier() + ") is locked.");
 			}
 		}
-		return SecurityUtils.checkIfActive(userAuth, user, false);
+		return SecurityUtils.checkIfActive(userAuth, false);
 	}
 }

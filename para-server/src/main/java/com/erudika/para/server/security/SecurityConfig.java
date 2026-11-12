@@ -167,8 +167,12 @@ public class SecurityConfig {
 			}
 		}).
 		logout((logout) -> {
-			logout.deleteCookies(Para.getConfig().authCookieName()).invalidateHttpSession(true).
-					logoutUrl(signoutPath).logoutSuccessUrl(signoutSuccessPath);
+			logout.deleteCookies(Para.getConfig().authCookieName(),
+						Para.getConfig().authCookieName() + "-2fa",
+						Para.getConfig().returnToCookieName()).
+					invalidateHttpSession(true).
+					logoutUrl(signoutPath).
+					logoutSuccessUrl(signoutSuccessPath);
 		}).
 		rememberMe((rme) -> rme.disable()).
 		csrf((csrf) -> {

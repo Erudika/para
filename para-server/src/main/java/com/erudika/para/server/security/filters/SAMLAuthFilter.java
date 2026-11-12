@@ -116,10 +116,10 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws IOException {
 		final String requestURI = request.getServletPath();
-		UserAuthentication userAuth = null;
+		Authentication userAuth = null;
 
 		if (!requestURI.startsWith(SAML_ACTION)) {
-			return SecurityUtils.checkIfActive(userAuth, SecurityUtils.getAuthenticatedUser(userAuth), true);
+			return SecurityUtils.checkIfActive(userAuth, true);
 		}
 
 		String appid = SecurityUtils.getAppidFromAuthRequest(request);
@@ -129,14 +129,14 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 			App app = Para.getDAO().read(App.id(appid));
 			if (app == null) {
 				LOG.warn("App '{}' not found for SAML authentication.", appid);
-				return SecurityUtils.checkIfActive(null, null, true);
+				return SecurityUtils.checkIfActive(null, true);
 			}
 
 			Optional<RelyingPartyRegistration> registrationOpt = buildRelyingPartyRegistration(app, appid,
 					request.getParameter("entityid"));
 			if (registrationOpt.isEmpty()) {
 				LOG.error("Failed to create SAML relying party registration for app '{}'.", appid);
-				return SecurityUtils.checkIfActive(null, null, true);
+				return SecurityUtils.checkIfActive(null, true);
 			}
 			samlSettingsLoaded = true;
 			RelyingPartyRegistration registration = registrationOpt.get();
@@ -168,7 +168,7 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 			requestRepo.removeAuthenticationRequest(request, response);
 		}
-		return SecurityUtils.checkIfActive(userAuth, SecurityUtils.getAuthenticatedUser(userAuth), true);
+		return SecurityUtils.checkIfActive(userAuth, true);
 	}
 
 	/**
@@ -178,8 +178,8 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException ex
 	 */
-	public UserAuthentication getOrCreateUser(App app, Saml2ResponseAssertion samlAttributes) throws IOException {
-		UserAuthentication userAuth = null;
+	public Authentication getOrCreateUser(App app, Saml2ResponseAssertion samlAttributes) throws IOException {
+		Authentication userAuth = null;
 		User user = new User();
 		Map<String, String> userData = populateUserData(app, samlAttributes);
 
@@ -229,7 +229,7 @@ public class SAMLAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 			userAuth = new UserAuthentication(new AuthenticatedUserDetails(user));
 		}
-		return SecurityUtils.checkIfActive(userAuth, user, false);
+		return SecurityUtils.checkIfActive(userAuth, false);
 	}
 
 	private boolean updateUserInfo(User user, String pic, String email, String name,

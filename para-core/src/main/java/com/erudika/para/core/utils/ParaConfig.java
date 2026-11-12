@@ -1024,6 +1024,7 @@ public class ParaConfig extends Config {
 				"/images/**",
 				"/styles/**",
 				"/scripts/**",
+				"/v1",
 				"/v1/_health",
 				"/v1/_setup",
 				"/v1/_setup/**",

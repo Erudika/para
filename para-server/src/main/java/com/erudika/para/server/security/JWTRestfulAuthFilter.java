@@ -145,7 +145,10 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 		HttpServletRequest request = (HttpServletRequest) req;
 		HttpServletResponse response = (HttpServletResponse) res;
 		boolean isRestRequestWithAuthHeader = RestRequestMatcher.INSTANCE_STRICT.matches(request);
-		boolean isRequestWithAuthCookie = ProtectedRequestMatcher.INSTANCE.matches(request);
+		// The auth cookie must be checked for every protected web path, not only for paths listed
+		// in security.protected. Otherwise anyRequest().authenticated() rejects valid cookie sessions.
+		boolean isRequestWithAuthCookie = !IgnoredRequestMatcher.INSTANCE.matches(request)
+				&& StringUtils.isNotBlank(HttpUtils.getCookieValue(request, Para.getConfig().authCookieName()));
 
 		if (authenticationRequestMatcher.matches(request)) {
 			if (HttpMethod.POST.matches(request.getMethod())) {
@@ -197,7 +200,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 			if (!App.isRoot(appid)) {
 				App app = Para.getDAO().read(App.id(appid));
 				if (app != null) {
-					UserAuthentication userAuth = getOrCreateUser(app, provider, token);
+					Authentication userAuth = getOrCreateUser(app, provider, token);
 					User user = SecurityUtils.getAuthenticatedUser(userAuth);
 					if (user != null) {
 						// issue token
@@ -331,7 +334,7 @@ public class JWTRestfulAuthFilter extends GenericFilterBean {
 		return null;
 	}
 
-	private UserAuthentication getOrCreateUser(App app, String identityProvider, String accessToken)
+	private Authentication getOrCreateUser(App app, String identityProvider, String accessToken)
 			throws IOException {
 		if ("facebook".equalsIgnoreCase(identityProvider)) {
 			return facebookAuth.getOrCreateUser(app, accessToken);

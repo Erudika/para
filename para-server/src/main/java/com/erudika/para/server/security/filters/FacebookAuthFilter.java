@@ -92,7 +92,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws IOException {
 		final String requestURI = request.getServletPath();
-		UserAuthentication userAuth = null;
+		Authentication userAuth = null;
 
 		if (requestURI.endsWith(FACEBOOK_ACTION)) {
 			String authCode = request.getParameter("code");
@@ -122,7 +122,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 			}
 		}
 
-		return SecurityUtils.checkIfActive(userAuth, SecurityUtils.getAuthenticatedUser(userAuth), true);
+		return SecurityUtils.checkIfActive(userAuth, true);
 	}
 
 	/**
@@ -133,9 +133,9 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 	 * @throws IOException ex
 	 */
 	@SuppressWarnings("unchecked")
-	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
+	public Authentication getOrCreateUser(App app, String accessToken) throws IOException {
 		if (accessToken == null) {
-			return SecurityUtils.checkIfActive(null, null, false);
+			return SecurityUtils.checkIfActive(null, false);
 		}
 		HttpGet profileGet = new HttpGet(PROFILE_URL + accessToken);
 		return httpclient.execute(profileGet, (resp2) -> {
@@ -184,7 +184,7 @@ public class FacebookAuthFilter extends AbstractAuthenticationProcessingFilter {
 			} catch (Exception e) {
 				logger.warn("Facebook auth request failed: GET " + PROFILE_URL + "{access_token}", e);
 			}
-			return SecurityUtils.checkIfActive(userAuth, user, false);
+			return SecurityUtils.checkIfActive(userAuth, false);
 		});
 	}
 

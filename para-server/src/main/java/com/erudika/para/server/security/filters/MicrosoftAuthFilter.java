@@ -97,7 +97,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws IOException {
 		final String requestURI = request.getServletPath();
-		UserAuthentication userAuth = null;
+		Authentication userAuth = null;
 
 		if (requestURI.endsWith(MICROSOFT_ACTION)) {
 			String authCode = request.getParameter("code");
@@ -132,7 +132,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 			}
 		}
 
-		return SecurityUtils.checkIfActive(userAuth, SecurityUtils.getAuthenticatedUser(userAuth), true);
+		return SecurityUtils.checkIfActive(userAuth, true);
 	}
 
 	/**
@@ -142,9 +142,9 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException ex
 	 */
-	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
+	public Authentication getOrCreateUser(App app, String accessToken) throws IOException {
 		if (accessToken == null) {
-			return SecurityUtils.checkIfActive(null, null, false);
+			return SecurityUtils.checkIfActive(null, false);
 		}
 		HttpGet profileGet = new HttpGet(PROFILE_URL);
 		profileGet.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
@@ -192,7 +192,7 @@ public class MicrosoftAuthFilter extends AbstractAuthenticationProcessingFilter 
 			} else {
 				logger.info("Authentication request failed because user profile doesn't contain the expected attributes");
 			}
-			return SecurityUtils.checkIfActive(userAuth, user, false);
+			return SecurityUtils.checkIfActive(userAuth, false);
 		});
 
 	}

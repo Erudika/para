@@ -106,7 +106,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws IOException {
 		final String requestURI = request.getServletPath();
-		UserAuthentication userAuth = null;
+		Authentication userAuth = null;
 		boolean isSecond = requestURI.endsWith(OAUTH2_SECOND_ACTION);
 		boolean isThird = requestURI.endsWith(OAUTH2_THIRD_ACTION);
 
@@ -130,7 +130,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 			}
 		}
 
-		return SecurityUtils.checkIfActive(userAuth, SecurityUtils.getAuthenticatedUser(userAuth), true);
+		return SecurityUtils.checkIfActive(userAuth, true);
 	}
 
 	/**
@@ -140,7 +140,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException ex if connection fails
 	 */
-	public UserAuthentication getOrCreateUser(App app, String accessToken) throws IOException {
+	public Authentication getOrCreateUser(App app, String accessToken) throws IOException {
 		return getOrCreateUser(app, accessToken, null);
 	}
 
@@ -152,7 +152,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 	 * @return {@link UserAuthentication} object or null if something went wrong
 	 * @throws IOException ex if connection fails
 	 */
-	public UserAuthentication getOrCreateUser(App app, String accessToken, String alias) throws IOException {
+	public Authentication getOrCreateUser(App app, String accessToken, String alias) throws IOException {
 		UserAuthentication userAuth = null;
 		User user = new User();
 		if (accessToken != null) {
@@ -226,7 +226,7 @@ public class GenericOAuth2Filter extends AbstractAuthenticationProcessingFilter 
 						+ "The names available are: " + (profile != null ? profile.keySet() : null));
 			}
 		}
-		return SecurityUtils.checkIfActive(userAuth, user, false);
+		return SecurityUtils.checkIfActive(userAuth, false);
 	}
 
 	private boolean updateUserInfo(App app, User user, String pic, String email, String name,
