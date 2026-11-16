@@ -154,16 +154,6 @@
 		</dependency>
 		<dependency>
 			<groupId>com.vladsch.flexmark</groupId>
-			<artifactId>flexmark-ext-attributes</artifactId>
-			<version>${flexmarkVer}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.vladsch.flexmark</groupId>
-			<artifactId>flexmark-ext-enumerated-reference</artifactId>
-			<version>${flexmarkVer}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.vladsch.flexmark</groupId>
 			<artifactId>flexmark-ext-anchorlink</artifactId>
 			<version>${flexmarkVer}</version>
 		</dependency>

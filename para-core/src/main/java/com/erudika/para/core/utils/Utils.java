@@ -23,12 +23,11 @@ import com.erudika.para.core.ParaObject;
 import com.erudika.para.core.annotations.Email;
 import com.samskivert.mustache.Mustache;
 import com.vladsch.flexmark.ast.LinkNode;
+import com.vladsch.flexmark.ast.LinkRendered;
 import com.vladsch.flexmark.ext.anchorlink.AnchorLinkExtension;
-import com.vladsch.flexmark.ext.attributes.AttributesExtension;
 import com.vladsch.flexmark.ext.autolink.AutolinkExtension;
 import com.vladsch.flexmark.ext.emoji.EmojiExtension;
 import com.vladsch.flexmark.ext.emoji.EmojiImageType;
-import com.vladsch.flexmark.ext.enumerated.reference.EnumeratedReferenceExtension;
 import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughExtension;
 import com.vladsch.flexmark.ext.gfm.tasklist.TaskListExtension;
 import com.vladsch.flexmark.ext.gitlab.GitLabExtension;
@@ -527,11 +526,13 @@ public final class Utils {
 						TaskListExtension.create(),
 						AutolinkExtension.create(),
 						RelAttributeExtension.create(),
-						AttributesExtension.create(),
 						AnchorLinkExtension.create(),
 						InsExtension.create(),
 						GitLabExtension.create(),
-						EnumeratedReferenceExtension.create(),
+						// avoid this extension as it allows inline styles in HTML tags,
+						// https://github.com/Erudika/para/security/advisories/GHSA-x68j-w39m-mgpf
+						//AttributesExtension.create(),
+						//EnumeratedReferenceExtension.create(),
 						MediaTagsExtension.create()));
 	}
 
@@ -584,7 +585,7 @@ public final class Utils {
 		RelAttributeProvider() { }
 
 		public void setAttributes(@NotNull Node node, @NotNull AttributablePart part, @NotNull MutableAttributes attributes) {
-			if (!(node instanceof LinkNode) || !part.equals(AttributablePart.LINK)) {
+			if (!(node instanceof LinkNode || node instanceof LinkRendered) || !part.equals(AttributablePart.LINK)) {
 				return;
 			}
 
