@@ -319,6 +319,33 @@ public final class SecurityUtils {
 	}
 
 	/**
+	 * Short-lived app proof token, proving proof of app's secret key to Para.
+	 * Works with the passwordless auth filter.
+	 * @param app app object
+	 * @return a signed JWT or null
+	 */
+	public static SignedJWT generateIdToken(App app, Map<String, Object> claims) {
+		if (app != null) {
+			try {
+				Date now = new Date();
+				JWTClaimsSet.Builder claimsSet = new JWTClaimsSet.Builder();
+				claimsSet.issueTime(now);
+				claimsSet.expirationTime(new Date(now.getTime() + (Para.getConfig().idTokenExpiresAfterSec() * 1000)));
+				claimsSet.notBeforeTime(now);
+				claimsSet.claim(Config._APPID, app.getId());
+				claims.entrySet().forEach(entry -> claimsSet.claim(entry.getKey(), entry.getValue()));
+				JWSSigner signer = new MACSigner(app.getSecret());
+				SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claimsSet.build());
+				signedJWT.sign(signer);
+				return signedJWT;
+			} catch (JOSEException e) {
+				logger.warn("Unable to sign JWT: {}.", e.getMessage());
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * Short-lived identity token, proving that a Para user has been successfully authenticated against an IDP.
 	 * Works with the passwordless auth filter.
 	 * @param user user object
