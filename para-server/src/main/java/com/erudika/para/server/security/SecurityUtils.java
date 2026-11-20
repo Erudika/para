@@ -74,8 +74,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 public final class SecurityUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
-	public static final RateLimiter SIGNIN_LIMITER = Para.createRateLimiter(10, 50, 200);
 	private static final DefaultJWTClaimsVerifier<?> JWT_CLAIMS_VERIFIER = createJWTClaimsVerifier();
+
+	/**
+	 * Rate limiter for sign in requests.
+	 */
+	public static final RateLimiter SIGNIN_LIMITER = Para.createRateLimiter(10, 50, 200);
 
 	private SecurityUtils() { }
 

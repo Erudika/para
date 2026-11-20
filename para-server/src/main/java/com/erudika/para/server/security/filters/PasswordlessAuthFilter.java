@@ -54,7 +54,7 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
 public class PasswordlessAuthFilter extends AbstractAuthenticationProcessingFilter {
 
 	private static final Logger logger = LoggerFactory.getLogger(PasswordlessAuthFilter.class);
-	public static final int PROOF_LIFETIME_SECONDS = 30;
+	private static final int PROOF_LIFETIME_SECONDS = 30;
 	private static final int MAX_PROOF_LENGTH = 8192;
 
 	/**

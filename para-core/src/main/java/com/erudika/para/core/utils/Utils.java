@@ -24,6 +24,7 @@ import com.erudika.para.core.annotations.Email;
 import com.samskivert.mustache.Mustache;
 import com.vladsch.flexmark.ast.LinkNode;
 import com.vladsch.flexmark.ast.LinkRendered;
+import com.vladsch.flexmark.ast.Paragraph;
 import com.vladsch.flexmark.ext.anchorlink.AnchorLinkExtension;
 import com.vladsch.flexmark.ext.autolink.AutolinkExtension;
 import com.vladsch.flexmark.ext.emoji.EmojiExtension;
@@ -36,9 +37,13 @@ import com.vladsch.flexmark.ext.media.tags.MediaTagsExtension;
 import com.vladsch.flexmark.ext.tables.TablesExtension;
 import com.vladsch.flexmark.html.AttributeProvider;
 import com.vladsch.flexmark.html.HtmlRenderer;
+import com.vladsch.flexmark.html.HtmlWriter;
 import com.vladsch.flexmark.html.IndependentAttributeProviderFactory;
 import com.vladsch.flexmark.html.renderer.AttributablePart;
 import com.vladsch.flexmark.html.renderer.LinkResolverContext;
+import com.vladsch.flexmark.html.renderer.NodeRenderer;
+import com.vladsch.flexmark.html.renderer.NodeRendererContext;
+import com.vladsch.flexmark.html.renderer.NodeRenderingHandler;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.ast.Document;
 import com.vladsch.flexmark.util.ast.Node;
@@ -68,10 +73,12 @@ import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
 import javax.crypto.Mac;
@@ -526,6 +533,7 @@ public final class Utils {
 						TaskListExtension.create(),
 						AutolinkExtension.create(),
 						RelAttributeExtension.create(),
+						KaTeXMathBlockExtension.create(),
 						AnchorLinkExtension.create(),
 						InsExtension.create(),
 						GitLabExtension.create(),
@@ -577,6 +585,107 @@ public final class Utils {
 
 		static RelAttributeExtension create() {
 			return new RelAttributeExtension();
+		}
+	}
+
+	/**
+	 * Renders complete math paragraphs from their raw Markdown source so Markdown cannot consume TeX syntax.
+	 */
+	static class KaTeXMathBlockExtension implements HtmlRenderer.HtmlRendererExtension {
+		private static final String MATH_SOURCE_CLASS = "math-source";
+		private static final List<KaTeXMathDelimiter> DELIMITERS = List.of(
+				new KaTeXMathDelimiter("$$", "$$"),
+				new KaTeXMathDelimiter("$", "$"),
+				new KaTeXMathDelimiter("\\(", "\\)"),
+				new KaTeXMathDelimiter("\\begin{equation}", "\\end{equation}"),
+				new KaTeXMathDelimiter("\\begin{align}", "\\end{align}"),
+				new KaTeXMathDelimiter("\\begin{alignat}", "\\end{alignat}"),
+				new KaTeXMathDelimiter("\\begin{gather}", "\\end{gather}"),
+				new KaTeXMathDelimiter("\\begin{CD}", "\\end{CD}"),
+				new KaTeXMathDelimiter("\\[", "\\]"));
+
+		@Override
+		public void rendererOptions(@NotNull MutableDataHolder options) { }
+
+		@Override
+		public void extend(@NotNull HtmlRenderer.Builder rendererBuilder, @NotNull String rendererType) {
+			rendererBuilder.nodeRendererFactory(options -> new KaTeXMathBlockNodeRenderer());
+		}
+
+		static KaTeXMathBlockExtension create() {
+			return new KaTeXMathBlockExtension();
+		}
+
+		private static String getMathBlockSource(Paragraph paragraph) {
+			// Use the original source, not inline child nodes: Markdown can consume TeX backslashes.
+			String source = paragraph.getChars().toString().trim();
+			for (KaTeXMathDelimiter delimiter : DELIMITERS) {
+				if (!source.startsWith(delimiter.left)) {
+					continue;
+				}
+				int closing = findClosingDelimiter(source, delimiter.left.length(), delimiter.right);
+				if (closing == source.length() - delimiter.right.length() &&
+						source.length() > delimiter.left.length() + delimiter.right.length()) {
+					return source;
+				}
+			}
+			return null;
+		}
+
+		private static int findClosingDelimiter(String source, int start, String delimiter) {
+			int braceDepth = 0;
+			for (int index = start; index < source.length();) {
+				if (braceDepth == 0 && source.startsWith(delimiter, index) && !isEscaped(source, index)) {
+					return index;
+				}
+				char current = source.charAt(index);
+				if (current == '\\') {
+					index = Math.min(index + 2, source.length());
+				} else {
+					if (current == '{') {
+						braceDepth++;
+					} else if (current == '}' && braceDepth > 0) {
+						braceDepth--;
+					}
+					index++;
+				}
+			}
+			return -1;
+		}
+
+		private static boolean isEscaped(String source, int index) {
+			int backslashCount = 0;
+			for (int i = index - 1; i >= 0 && source.charAt(i) == '\\'; i--) {
+				backslashCount++;
+			}
+			return backslashCount % 2 != 0;
+		}
+
+		private static final class KaTeXMathBlockNodeRenderer implements NodeRenderer {
+			@Override
+			public Set<NodeRenderingHandler<?>> getNodeRenderingHandlers() {
+				return Collections.singleton(new NodeRenderingHandler<>(Paragraph.class, this::renderParagraph));
+			}
+
+			private void renderParagraph(Paragraph paragraph, NodeRendererContext context, HtmlWriter html) {
+				String mathSource = getMathBlockSource(paragraph);
+				if (mathSource == null) {
+					context.delegateRender();
+					return;
+				}
+				html.tag("p", () -> html.withAttr().attr("class", MATH_SOURCE_CLASS)
+						.tag("span", () -> html.text(mathSource)));
+			}
+		}
+	}
+
+	private static final class KaTeXMathDelimiter {
+		private final String left;
+		private final String right;
+
+		private KaTeXMathDelimiter(String left, String right) {
+			this.left = left;
+			this.right = right;
 		}
 	}
 
